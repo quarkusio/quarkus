@@ -107,13 +107,15 @@ quarkus.opentelemetry.enabled=true // <2>
 quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://localhost:4317 // <3>
 
 quarkus.opentelemetry.tracer.exporter.otlp.headers=Authorization=Bearer my_secret // <4>
+
+quarkus.log.console.format=%d{HH:mm:ss} %-5p traceId=%X{traceId}, parentId=%X{parentId}, spanId=%X{spanId}, sampled=%X{sampled} [%c{2.}] (%t) %s%e%n  // <5>
 ----
 
 <1> All spans created from the application will include an OpenTelemetry `Resource` indicating the span was created by the `myservice` application. If not set, it will default to the artifact id.
 <2> Whether OpenTelemetry is enabled or not. The default is `true`, but shown here to indicate how it can be disabled
 <3> gRPC endpoint for sending spans
 <4> Optional gRPC headers commonly used for authentication
-
+<5> Add tracing information into log message.
 == Run the application
 
 The first step is to configure and start the https://opentelemetry.io/docs/collector/[OpenTelemetry Collector] to receive, process and export telemetry data to https://www.jaegertracing.io/[Jaeger] that will display the captured traces.
@@ -198,6 +200,16 @@ With the OpenTelemetry Collector, Jaeger system and application running, you can
 $ curl http://localhost:8080/hello
 hello
 ----
+
+When the first request has been submitted, you will be able to see the tracing information in the logs:
+
+[source]
+----
+10:49:02 INFO  traceId=, parentId=, spanId=, sampled= [io.quarkus] (main) Installed features: [cdi, opentelemetry, opentelemetry-otlp-exporter, rest-client, resteasy, smallrye-context-propagation, vertx]
+10:49:03 INFO  traceId=17ceb8429b9f25b0b879fa1503259456, parentId=3125c8bee75b7ad6, spanId=58ce77c86dd23457, sampled=true [or.ac.op.TracedResource] (executor-thread-1) hello
+10:49:03 INFO  traceId=ad23acd6d9a4ed3d1de07866a52fa2df, parentId=, spanId=df13f5b45cf4d1e2, sampled=true [or.ac.op.TracedResource] (executor-thread-0) hello
+----
+
 
 Then visit the http://localhost:16686[Jaeger UI] to see the tracing information.
 

@@ -14,7 +14,8 @@ import io.vertx.core.Vertx;
 /**
  * Bridges the OpenTelemetry ContextStorage with the Vert.x Context. The default OpenTelemetry ContextStorage (based in
  * ThreadLocals) is not suitable for Vert.x. In this case, the OpenTelemetry Context piggybacks on top of the Vert.x
- * Context. If the Vert.x Context is not available, fallbacks to the default OpenTelemetry ContextStorage.
+ * Context. If the Vert.x Context is not available, fallbacks to an MDC enabled context storage that wraps the default
+ * OpenTelemetry ContextStorage.
  */
 public enum QuarkusContextStorage implements ContextStorage {
     INSTANCE;
@@ -22,7 +23,7 @@ public enum QuarkusContextStorage implements ContextStorage {
     private static final Logger log = Logger.getLogger(QuarkusContextStorage.class);
     private static final String OTEL_CONTEXT = QuarkusContextStorage.class.getName() + ".otelContext";
 
-    private static final ContextStorage DEFAULT_CONTEXT_STORAGE = ContextStorage.defaultStorage();
+    private static final ContextStorage FALLBACK_CONTEXT_STORAGE = MDCEnabledContextStorage.INSTANCE;
     static Vertx vertx;
 
     /**
@@ -37,7 +38,7 @@ public enum QuarkusContextStorage implements ContextStorage {
     public Scope attach(Context toAttach) {
         io.vertx.core.Context vertxContext = getVertxContext();
         return vertxContext != null && isDuplicatedContext(vertxContext) ? attach(vertxContext, toAttach)
-                : DEFAULT_CONTEXT_STORAGE.attach(toAttach);
+                : FALLBACK_CONTEXT_STORAGE.attach(toAttach);
     }
 
     /**
@@ -64,6 +65,7 @@ public enum QuarkusContextStorage implements ContextStorage {
         }
 
         vertxContext.putLocal(OTEL_CONTEXT, toAttach);
+        OpenTelemetryUtil.setMDCData(toAttach, vertxContext);
 
         return () -> {
             if (getContext(vertxContext) != toAttach) {
@@ -72,8 +74,10 @@ public enum QuarkusContextStorage implements ContextStorage {
 
             if (beforeAttach == null) {
                 vertxContext.removeLocal(OTEL_CONTEXT);
+                OpenTelemetryUtil.clearMDCData(vertxContext);
             } else {
                 vertxContext.putLocal(OTEL_CONTEXT, beforeAttach);
+                OpenTelemetryUtil.setMDCData(beforeAttach, vertxContext);
             }
         };
     }
@@ -90,7 +94,7 @@ public enum QuarkusContextStorage implements ContextStorage {
         if (current != null) {
             return current.getLocal(OTEL_CONTEXT);
         } else {
-            return DEFAULT_CONTEXT_STORAGE.current();
+            return FALLBACK_CONTEXT_STORAGE.current();
         }
     }
 

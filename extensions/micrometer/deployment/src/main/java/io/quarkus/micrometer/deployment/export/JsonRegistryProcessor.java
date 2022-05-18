@@ -44,6 +44,7 @@ public class JsonRegistryProcessor {
 
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .routeFunction(config.export.json.path, recorder.route())
+                .routeConfigKey("quarkus.micrometer.export.json.path")
                 .handler(recorder.getHandler())
                 .blockingRoute()
                 .build());

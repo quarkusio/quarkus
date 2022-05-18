@@ -168,6 +168,7 @@ public class SmallRyeMetricsProcessor {
                 .build());
         routes.produce(frameworkRoot.routeBuilder()
                 .route(metrics.path)
+                .routeConfigKey("quarkus.smallrye-metrics.path")
                 .handler(recorder.handler(frameworkRoot.resolvePath(metrics.path)))
                 .displayOnNotFoundPage("Metrics")
                 .blockingRoute()

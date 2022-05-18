@@ -66,6 +66,7 @@ public class PrometheusRegistryProcessor {
         // Exact match for resources matched to the root path
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .routeFunction(pConfig.path, recorder.route())
+                .routeConfigKey("quarkus.micrometer.export.prometheus.path")
                 .handler(recorder.getHandler())
                 .displayOnNotFoundPage("Metrics")
                 .blockingRoute()

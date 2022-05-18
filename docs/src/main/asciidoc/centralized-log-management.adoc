@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Centralized log management (Graylog, Logstash, Fluentd)
 
 include::./attributes.adoc[]
-:es-version: 7.10.0
 
 This guide explains how you can send your logs to a centralized log management system like Graylog, Logstash (inside the Elastic Stack or ELK - Elasticsearch, Logstash, Kibana) or
 Fluentd (inside EFK - Elasticsearch, Fluentd, Kibana).
@@ -103,7 +102,7 @@ version: '3.2'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:{es-version}
+    image: {elasticsearch-image}
     ports:
       - "9200:9200"
     environment:
@@ -190,7 +189,7 @@ version: '3.2'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:{es-version}
+    image: {elasticsearch-image}
     ports:
       - "9200:9200"
       - "9300:9300"
@@ -201,7 +200,7 @@ services:
       - elk
 
   logstash:
-    image: docker.elastic.co/logstash/logstash-oss:{es-version}
+    image: {logstash-image}
     volumes:
       - source: $HOME/pipelines
         target: /usr/share/logstash/pipeline
@@ -216,7 +215,7 @@ services:
       - elasticsearch
 
   kibana:
-    image: docker.elastic.co/kibana/kibana-oss:{es-version}
+    image: {kibana-image}
     ports:
       - "5601:5601"
     networks:
@@ -279,7 +278,7 @@ version: '3.2'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:{es-version}
+    image: {elasticsearch-image}
     ports:
       - "9200:9200"
       - "9300:9300"
@@ -303,7 +302,7 @@ services:
       - elasticsearch
 
   kibana:
-    image: docker.elastic.co/kibana/kibana-oss:{es-version}
+    image: {kibana-image}
     ports:
       - "5601:5601"
     networks:
@@ -366,7 +365,7 @@ version: '3.2'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:{es-version}
+    image: {elasticsearch-image}
     ports:
       - "9200:9200"
       - "9300:9300"
@@ -389,7 +388,7 @@ services:
       - elasticsearch
 
   kibana:
-    image: docker.elastic.co/kibana/kibana-oss:{es-version}
+    image: {kibana-image}
     ports:
       - "5601:5601"
     networks:

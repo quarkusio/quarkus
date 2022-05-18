@@ -142,7 +142,7 @@
                             <autoCreateCustomNetworks>true</autoCreateCustomNetworks>
                             <images>
                                 <image>
-                                    <name>docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.0</name>
+                                    <name>${elasticsearch.image}</name>
                                     <alias>elasticsearch</alias>
                                     <run>
                                         <network>
@@ -174,7 +174,7 @@
                                     </run>
                                 </image>
                                 <image>
-                                    <name>docker.elastic.co/logstash/logstash-oss:7.10.0</name>
+                                    <name>${logstash.image}</name>
                                     <alias>logstash</alias>
                                     <run>
                                         <network>

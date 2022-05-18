@@ -32,6 +32,7 @@ import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.FastThreadLocal;
+import io.quarkus.bootstrap.logging.LateBoundMDCProvider;
 import io.quarkus.runtime.IOThreadDetector;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
@@ -242,6 +243,9 @@ public class VertxCoreRecorder {
                 LOGGER.error("Uncaught exception received by Vert.x", error);
             }
         });
+
+        LateBoundMDCProvider.setMDCProviderDelegate(VertxMDC.INSTANCE);
+
         return logVertxInitialization(vertx);
     }
 

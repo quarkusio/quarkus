@@ -3,6 +3,7 @@ package io.quarkus.it.amazon.lambda;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -13,6 +14,15 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 
 @Path("/hello")
 public class GreetingResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("comma")
+    public String comma(@HeaderParam("Access-Control-Request-Headers") String access) {
+        if (access == null || !access.contains(","))
+            throw new RuntimeException("should have comma");
+        return "ok";
+    }
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)

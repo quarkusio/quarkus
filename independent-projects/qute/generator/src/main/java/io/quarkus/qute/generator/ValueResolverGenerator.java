@@ -39,7 +39,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -273,15 +272,24 @@ public class ValueResolverGenerator {
         Function<FieldInfo, String> fieldToGetterFun = forceGettersFunction != null ? forceGettersFunction.apply(clazz) : null;
 
         // First collect and sort methods (getters must come before is/has properties, etc.)
-        List<MethodKey> methods = clazz.methods().stream().filter(filter::test).map(MethodKey::new).sorted()
-                .collect(Collectors.toList());
+        List<MethodKey> methods = new ArrayList<>();
+        for (MethodInfo method : clazz.methods()) {
+            if (filter.test(method)) {
+                methods.add(new MethodKey(method));
+            }
+        }
+        methods.sort(null);
+
         if (!ignoreSuperclasses && !clazz.isEnum()) {
             DotName superName = clazz.superName();
             while (superName != null && !superName.equals(DotNames.OBJECT)) {
                 ClassInfo superClass = index.getClassByName(superName);
                 if (superClass != null) {
-                    methods.addAll(
-                            superClass.methods().stream().filter(filter::test).map(MethodKey::new).collect(Collectors.toSet()));
+                    for (MethodInfo method : superClass.methods()) {
+                        if (filter.test(method)) {
+                            methods.add(new MethodKey(method));
+                        }
+                    }
                     superName = superClass.superName();
                 } else {
                     superName = null;
@@ -290,7 +298,12 @@ public class ValueResolverGenerator {
             }
         }
 
-        List<FieldInfo> fields = clazz.fields().stream().filter(filter::test).collect(Collectors.toList());
+        List<FieldInfo> fields = new ArrayList<>();
+        for (FieldInfo field : clazz.fields()) {
+            if (filter.test(field)) {
+                fields.add(field);
+            }
+        }
         if (!fields.isEmpty()) {
             BytecodeCreator zeroParamsBranch = resolve.ifNonZero(paramsCount).falseBranch();
             for (FieldInfo field : fields) {
@@ -437,24 +450,28 @@ public class ValueResolverGenerator {
         ResultHandle paramsCount = resolve.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, params);
 
         // First collect static members
-        List<MethodKey> methods = clazz.methods().stream()
-                .filter(filter::test)
-                .map(MethodKey::new)
-                .sorted()
-                .collect(Collectors.toList());
+        List<MethodKey> staticMethods = new ArrayList<>();
+        for (MethodInfo method : clazz.methods()) {
+            if (filter.test(method)) {
+                staticMethods.add(new MethodKey(method));
+            }
+        }
+        staticMethods.sort(null);
 
-        List<FieldInfo> fields = clazz.fields().stream()
-                .filter(filter::test)
-                .collect(Collectors.toList());
+        List<FieldInfo> staticFields = new ArrayList<>();
+        for (FieldInfo field : clazz.fields()) {
+            if (filter.test(field)) {
+                staticFields.add(field);
+            }
+        }
 
-        if (methods.isEmpty() && fields.isEmpty()) {
+        if (staticMethods.isEmpty() && staticFields.isEmpty()) {
             return false;
         }
 
-        // Static fields
-        if (!fields.isEmpty()) {
+        if (!staticFields.isEmpty()) {
             BytecodeCreator zeroParamsBranch = resolve.ifNonZero(paramsCount).falseBranch();
-            for (FieldInfo field : fields) {
+            for (FieldInfo field : staticFields) {
                 LOGGER.debugf("Static field added: %s", field);
                 // Match field name
                 BytecodeCreator fieldMatch = zeroParamsBranch
@@ -468,13 +485,12 @@ public class ValueResolverGenerator {
             }
         }
 
-        // Static methods
-        if (!methods.isEmpty()) {
+        if (!staticMethods.isEmpty()) {
             // name, number of params -> list of methods
             Map<Match, List<MethodInfo>> matches = new HashMap<>();
             Map<Match, List<MethodInfo>> varargsMatches = new HashMap<>();
 
-            for (MethodKey methodKey : methods) {
+            for (MethodKey methodKey : staticMethods) {
                 MethodInfo method = methodKey.method;
                 List<Type> methodParams = method.parameters();
                 if (methodParams.isEmpty()) {
@@ -991,13 +1007,27 @@ public class ValueResolverGenerator {
             // @TemplateData is present
             AnnotationValue ignoreValue = templateData.value(IGNORE);
             if (ignoreValue != null) {
-                List<Pattern> ignore = Arrays.asList(ignoreValue.asStringArray()).stream().map(Pattern::compile)
-                        .collect(Collectors.toList());
+                List<Pattern> ignores = new ArrayList<>();
+                for (String pattern : Arrays.asList(ignoreValue.asStringArray())) {
+                    ignores.add(Pattern.compile(pattern));
+                }
                 filter = filter.and(t -> {
                     if (t.kind() == Kind.FIELD) {
-                        return !ignore.stream().anyMatch(p -> p.matcher(t.asField().name()).matches());
+                        String fieldName = t.asField().name();
+                        for (Pattern p : ignores) {
+                            if (p.matcher(fieldName).matches()) {
+                                return false;
+                            }
+                        }
+                        return true;
                     } else {
-                        return !ignore.stream().anyMatch(p -> p.matcher(t.asMethod().name()).matches());
+                        String methodName = t.asMethod().name();
+                        for (Pattern p : ignores) {
+                            if (p.matcher(methodName).matches()) {
+                                return false;
+                            }
+                        }
+                        return true;
                     }
                 });
             }

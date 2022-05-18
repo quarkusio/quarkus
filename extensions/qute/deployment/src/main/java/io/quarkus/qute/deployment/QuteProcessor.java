@@ -528,20 +528,28 @@ public class QuteProcessor {
         // Map implicit class -> set of used members
         Map<DotName, Set<String>> implicitClassToMembersUsed = new HashMap<>();
 
-        Map<String, TemplateDataBuildItem> namespaceTemplateData = templateData.stream()
-                .filter(TemplateDataBuildItem::hasNamespace)
-                .collect(Collectors.toMap(TemplateDataBuildItem::getNamespace, Function.identity()));
+        Map<String, TemplateDataBuildItem> namespaceTemplateData = new HashMap<>();
+        for (TemplateDataBuildItem td : templateData) {
+            if (td.hasNamespace()) {
+                namespaceTemplateData.put(td.getNamespace(), td);
+            }
+        }
 
         Map<String, List<TemplateExtensionMethodBuildItem>> namespaceExtensionMethods = templateExtensionMethods.stream()
                 .filter(TemplateExtensionMethodBuildItem::hasNamespace)
                 .sorted(Comparator.comparingInt(TemplateExtensionMethodBuildItem::getPriority).reversed())
                 .collect(Collectors.groupingBy(TemplateExtensionMethodBuildItem::getNamespace));
 
-        List<TemplateExtensionMethodBuildItem> regularExtensionMethods = templateExtensionMethods.stream()
-                .filter(Predicate.not(TemplateExtensionMethodBuildItem::hasNamespace)).collect(Collectors.toUnmodifiableList());
+        List<TemplateExtensionMethodBuildItem> regularExtensionMethods = new ArrayList<>();
+        for (TemplateExtensionMethodBuildItem extensionMethod : templateExtensionMethods) {
+            if (!extensionMethod.hasNamespace()) {
+                regularExtensionMethods.add(extensionMethod);
+            }
+        }
 
         LookupConfig lookupConfig = new FixedLookupConfig(index, initDefaultMembersFilter(), false);
         Map<DotName, AssignableInfo> assignableCache = new HashMap<>();
+        int expressionsValidated = 0;
 
         for (TemplateAnalysis templateAnalysis : templatesAnalysis.getAnalysis()) {
             // The relevant checked template, may be null
@@ -568,7 +576,7 @@ public class QuteProcessor {
                 if (defaultValue != null) {
                     Match match;
                     if (defaultValue.isLiteral()) {
-                        match = new Match(index);
+                        match = new Match(index, assignableCache);
                         setMatchValues(match, defaultValue, generatedIdsToMatches, index);
                     } else {
                         match = generatedIdsToMatches.get(defaultValue.getGeneratedId());
@@ -598,7 +606,11 @@ public class QuteProcessor {
 
             expressionMatches
                     .produce(new TemplateExpressionMatchesBuildItem(templateAnalysis.generatedId, generatedIdsToMatches));
+
+            expressionsValidated += generatedIdsToMatches.size();
         }
+
+        LOGGER.debugf("Validated %s expressions", expressionsValidated);
 
         // Register an implicit value resolver for the classes collected during validation
         for (Entry<DotName, Set<String>> entry : implicitClassToMembersUsed.entrySet()) {
@@ -690,7 +702,7 @@ public class QuteProcessor {
             }
         }
 
-        Match match = new Match(index);
+        Match match = new Match(index, assignableCache);
 
         String namespace = expression.getNamespace();
         TemplateDataBuildItem templateData = null;
@@ -1712,25 +1724,19 @@ public class QuteProcessor {
         } else if (match.isClass() || match.isParameterizedType()) {
             Set<Type> closure = Types.getTypeClosure(match.clazz, Types.buildResolvedMap(
                     match.getParameterizedTypeArguments(), match.getTypeParameters(), new HashMap<>(), index), index);
-            Function<Type, Type> firstParamType = t -> t.asParameterizedType().arguments().get(0);
             // Iterable<Item> => Item
-            matchType = extractMatchType(closure, Names.ITERABLE, firstParamType);
+            matchType = extractMatchType(closure, Names.ITERABLE, FIRST_PARAM_TYPE_EXTRACT_FUN);
             if (matchType == null) {
                 // Stream<Long> => Long
-                matchType = extractMatchType(closure, Names.STREAM, firstParamType);
+                matchType = extractMatchType(closure, Names.STREAM, FIRST_PARAM_TYPE_EXTRACT_FUN);
             }
             if (matchType == null) {
                 // Entry<K,V> => Entry<String,Item>
-                matchType = extractMatchType(closure, Names.MAP, t -> {
-                    Type[] args = new Type[2];
-                    args[0] = t.asParameterizedType().arguments().get(0);
-                    args[1] = t.asParameterizedType().arguments().get(1);
-                    return ParameterizedType.create(Names.MAP_ENTRY, args, null);
-                });
+                matchType = extractMatchType(closure, Names.MAP, MAP_ENTRY_EXTRACT_FUN);
             }
             if (matchType == null) {
                 // Iterator<Item> => Item
-                matchType = extractMatchType(closure, Names.ITERATOR, firstParamType);
+                matchType = extractMatchType(closure, Names.ITERATOR, FIRST_PARAM_TYPE_EXTRACT_FUN);
             }
         }
 
@@ -1743,19 +1749,48 @@ public class QuteProcessor {
         }
     }
 
+    static final Function<Type, Type> FIRST_PARAM_TYPE_EXTRACT_FUN = new Function<Type, Type>() {
+
+        @Override
+        public Type apply(Type type) {
+            return type.asParameterizedType().arguments().get(0);
+        }
+
+    };
+
+    static final Function<Type, Type> MAP_ENTRY_EXTRACT_FUN = new Function<Type, Type>() {
+
+        @Override
+        public Type apply(Type type) {
+            Type[] args = new Type[2];
+            args[0] = type.asParameterizedType().arguments().get(0);
+            args[1] = type.asParameterizedType().arguments().get(1);
+            return ParameterizedType.create(Names.MAP_ENTRY, args, null);
+        }
+
+    };
+
     static Type extractMatchType(Set<Type> closure, DotName matchName, Function<Type, Type> extractFun) {
-        Type type = closure.stream().filter(t -> t.name().equals(matchName)).findFirst().orElse(null);
+        Type type = null;
+        for (Type t : closure) {
+            if (t.name().equals(matchName)) {
+                type = t;
+            }
+        }
         return type != null ? extractFun.apply(type) : null;
     }
 
     static class Match {
 
         private final IndexView index;
+        private final Map<DotName, AssignableInfo> assignableCache;
+
         private ClassInfo clazz;
         private Type type;
 
-        Match(IndexView index) {
+        Match(IndexView index, Map<DotName, AssignableInfo> assignableCache) {
             this.index = index;
+            this.assignableCache = assignableCache;
         }
 
         List<Type> getParameterizedTypeArguments() {
@@ -1808,17 +1843,20 @@ public class QuteProcessor {
         }
 
         void autoExtractType() {
-            boolean hasCompletionStage = ValueResolverGenerator.hasCompletionStageInTypeClosure(clazz, index);
-            boolean hasUni = hasCompletionStage ? false
-                    : ValueResolverGenerator.hasClassInTypeClosure(clazz, Names.UNI, index);
-            if (hasCompletionStage || hasUni) {
-                Set<Type> closure = Types.getTypeClosure(clazz, Types.buildResolvedMap(
-                        getParameterizedTypeArguments(), getTypeParameters(), new HashMap<>(), index), index);
-                Function<Type, Type> firstParamType = t -> t.asParameterizedType().arguments().get(0);
-                // CompletionStage<List<Item>> => List<Item>
-                // Uni<List<String>> => List<String>
-                this.type = extractMatchType(closure, hasCompletionStage ? Names.COMPLETION_STAGE : Names.UNI, firstParamType);
-                this.clazz = index.getClassByName(type.name());
+            if (clazz != null) {
+                boolean hasCompletionStage = Types.isAssignableFrom(Names.COMPLETION_STAGE, clazz.name(), index,
+                        assignableCache);
+                boolean hasUni = hasCompletionStage ? false
+                        : Types.isAssignableFrom(Names.UNI, clazz.name(), index, assignableCache);
+                if (hasCompletionStage || hasUni) {
+                    Set<Type> closure = Types.getTypeClosure(clazz, Types.buildResolvedMap(
+                            getParameterizedTypeArguments(), getTypeParameters(), new HashMap<>(), index), index);
+                    // CompletionStage<List<Item>> => List<Item>
+                    // Uni<List<String>> => List<String>
+                    this.type = extractMatchType(closure, hasCompletionStage ? Names.COMPLETION_STAGE : Names.UNI,
+                            FIRST_PARAM_TYPE_EXTRACT_FUN);
+                    this.clazz = index.getClassByName(type.name());
+                }
             }
         }
     }

@@ -196,7 +196,7 @@
                                         </log>
                                         <volumes>
                                             <bind>
-                                                <volume>${project.basedir}/src/test/resources/pipeline:/usr/share/logstash/pipeline</volume>
+                                                <volume>${project.basedir}/src/test/resources/pipeline:/usr/share/logstash/pipeline:Z</volume>
                                             </bind>
                                         </volumes>
                                         <wait>

@@ -142,7 +142,7 @@
                             <autoCreateCustomNetworks>true</autoCreateCustomNetworks>
                             <images>
                                 <image>
-                                    <name>docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.3</name>
+                                    <name>docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2</name>
                                     <alias>elasticsearch</alias>
                                     <run>
                                         <network>
@@ -159,7 +159,7 @@
                                             <discovery.type>single-node</discovery.type>
                                         </env>
                                         <log>
-                                            <prefix>Elasticsearch: </prefix>
+                                            <prefix>Elasticsearch:</prefix>
                                             <date>default</date>
                                             <color>cyan</color>
                                         </log>
@@ -174,7 +174,7 @@
                                     </run>
                                 </image>
                                 <image>
-                                    <name>docker.elastic.co/logstash/logstash-oss:7.9.3</name>
+                                    <name>docker.elastic.co/logstash/logstash-oss:7.11.0</name>
                                     <alias>logstash</alias>
                                     <run>
                                         <network>
@@ -190,7 +190,7 @@
                                             <port>9600:9600</port>
                                         </ports>
                                         <log>
-                                            <prefix>Logstash: </prefix>
+                                            <prefix>Logstash:</prefix>
                                             <date>default</date>
                                             <color>cyan</color>
                                         </log>

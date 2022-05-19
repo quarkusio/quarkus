@@ -131,7 +131,7 @@
         <infinispan.version>13.0.10.Final</infinispan.version>
         <infinispan.protostream.version>4.4.3.Final</infinispan.protostream.version>
         <caffeine.version>2.9.3</caffeine.version>
-        <netty.version>4.1.74.Final</netty.version>
+        <netty.version>4.1.77.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
         <mutiny.version>1.4.0</mutiny.version>

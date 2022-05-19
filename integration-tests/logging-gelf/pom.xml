@@ -157,6 +157,7 @@
                                         </ports>
                                         <env>
                                             <discovery.type>single-node</discovery.type>
+                                            <xpack.security.enabled>false</xpack.security.enabled>
                                             <ES_JAVA_OPTS>-Xms512m -Xmx512m</ES_JAVA_OPTS>
                                         </env>
                                         <log>

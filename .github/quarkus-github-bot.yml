@@ -225,6 +225,9 @@ triage:
         - integration-tests/spring-
     - labels: [env/windows]
       titleBody: "windows"
+    - labels: [env/m1]
+      titleBody: "\\bm1\\b"
+      notify: [gastaldi]
     - labels: [area/kubernetes]
       titleBody: "kubernetes"
       notify: [geoand, iocanel]

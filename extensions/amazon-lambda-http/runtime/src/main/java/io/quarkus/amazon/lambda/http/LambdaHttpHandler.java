@@ -9,7 +9,6 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -36,7 +35,6 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.ReferenceCountUtil;
-import io.quarkus.amazon.lambda.http.model.Headers;
 import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
 import io.quarkus.netty.runtime.virtual.VirtualResponseHandler;
 import io.quarkus.vertx.http.runtime.QuarkusHttpHeaders;
@@ -48,15 +46,11 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
 
     private static final int BUFFER_SIZE = 8096;
 
-    private static final Headers errorHeaders = new Headers();
+    private static final Map<String, List<String>> ERROR_HEADERS = Map.of("Content-Type", List.of("application/json"));
 
     // comma headers for headers that have comma in value and we don't want to split it up into
     // multiple headers
-    private static final Set<String> commaHeaders = new HashSet();
-    static {
-        errorHeaders.putSingle("Content-Type", "application/json");
-        commaHeaders.add("access-control-request-headers");
-    }
+    private static final Set<String> COMMA_HEADERS = Set.of("access-control-request-headers");
 
     public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent request, Context context) {
         InetSocketAddress clientAddress = null;
@@ -73,7 +67,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
             APIGatewayV2HTTPResponse res = new APIGatewayV2HTTPResponse();
             res.setStatusCode(500);
             res.setBody("{ \"message\": \"Internal Server Error\" }");
-            res.setMultiValueHeaders(errorHeaders);
+            res.setMultiValueHeaders(ERROR_HEADERS);
             return res;
         }
 
@@ -191,7 +185,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                 if (header.getValue() != null) {
                     // Some header values have commas in them and we don't want to
                     // split them up into multiple header values.
-                    if (commaHeaders.contains(header.getKey().toLowerCase(Locale.ROOT))) {
+                    if (COMMA_HEADERS.contains(header.getKey().toLowerCase(Locale.ROOT))) {
                         nettyRequest.headers().add(header.getKey(), header.getValue());
                     } else {
                         for (String val : header.getValue().split(","))

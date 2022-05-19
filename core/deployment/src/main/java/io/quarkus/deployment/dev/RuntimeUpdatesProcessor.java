@@ -927,11 +927,23 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 }
             }
 
-            for (String path : timestampSet.watchedFilePaths.keySet()) {
+            for (String watchedFilePath : timestampSet.watchedFilePaths.keySet()) {
+                Path watchedFile = Paths.get(watchedFilePath);
+                boolean isAbsolute = watchedFile.isAbsolute();
+                List<Path> watchedRoots = roots;
+                if (isAbsolute) {
+                    // absolute files are assumed to be read directly from the project root.
+                    // They therefore do not get copied to, and deleted from, the outputdir.
+                    watchedRoots = List.of(Path.of("/"));
+                }
+                if (watchedRoots.isEmpty()) {
+                    // this compilation unit has no resource roots, and therefore can not have this file
+                    continue;
+                }
                 boolean pathCurrentlyExisting = false;
                 boolean pathPreviouslyExisting = false;
-                for (Path root : roots) {
-                    Path file = root.resolve(path);
+                for (Path root : watchedRoots) {
+                    Path file = root.resolve(watchedFilePath);
                     if (file.toFile().exists()) {
                         pathCurrentlyExisting = true;
                         try {
@@ -940,7 +952,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                             //existing can be null when running tests
                             //as there is both normal and test resources, but only one set of watched timestampts
                             if (existing != null && value > existing) {
-                                ret.add(path);
+                                ret.add(watchedFilePath);
                                 //a write can be a 'truncate' + 'write'
                                 //if the file is empty we may be seeing the middle of a write
                                 if (Files.size(file) == 0) {
@@ -956,8 +968,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                                 value = Files.getLastModifiedTime(file).toMillis();
 
                                 log.infof("File change detected: %s", file);
-                                if (doCopy && !Files.isDirectory(file)) {
-                                    Path target = outputDir.resolve(path);
+                                if (!isAbsolute && doCopy && !Files.isDirectory(file)) {
+                                    Path target = outputDir.resolve(watchedFilePath);
                                     byte[] data = Files.readAllBytes(file);
                                     try (FileOutputStream out = new FileOutputStream(target.toFile())) {
                                         out.write(data);
@@ -975,56 +987,15 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 }
                 if (!pathCurrentlyExisting) {
                     if (pathPreviouslyExisting) {
-                        ret.add(path);
+                        ret.add(watchedFilePath);
                     }
 
-                    Path target = outputDir.resolve(path);
-                    try {
-                        FileUtil.deleteIfExists(target);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                }
-            }
-
-            // Mostly a copy of the code above but to handle watched files that are set with absolute path (not in the app resources)
-            for (String watchedFilePath : timestampSet.watchedFilePaths.keySet()) {
-                Path watchedFile = Paths.get(watchedFilePath);
-                if (watchedFile.isAbsolute()) {
-                    if (watchedFile.toFile().exists()) {
+                    if (!isAbsolute) {
+                        Path target = outputDir.resolve(watchedFilePath);
                         try {
-                            long value = Files.getLastModifiedTime(watchedFile).toMillis();
-                            Long existing = timestampSet.watchedFileTimestamps.get(watchedFile);
-                            //existing can be null when running tests
-                            //as there is both normal and test resources, but only one set of watched timestampts
-                            if (existing != null && value > existing) {
-                                ret.add(watchedFilePath);
-                                //a write can be a 'truncate' + 'write'
-                                //if the file is empty we may be seeing the middle of a write
-                                if (Files.size(watchedFile) == 0) {
-                                    try {
-                                        Thread.sleep(200);
-                                    } catch (InterruptedException e) {
-                                        //ignore
-                                    }
-                                }
-                                //re-read, as we may have read the original TS if the middle of
-                                //a truncate+write, even if the write had completed by the time
-                                //we read the size
-                                value = Files.getLastModifiedTime(watchedFile).toMillis();
-
-                                log.infof("File change detected: %s", watchedFile);
-                                timestampSet.watchedFileTimestamps.put(watchedFile, value);
-                            }
+                            FileUtil.deleteIfExists(target);
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
-                        }
-                    } else {
-
-                        Long prevValue = timestampSet.watchedFileTimestamps.put(watchedFile, 0L);
-
-                        if (prevValue != null && prevValue > 0) {
-                            ret.add(watchedFilePath);
                         }
                     }
                 }

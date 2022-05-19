@@ -11,6 +11,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.impl.Http1xServerResponse;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 import java.io.ByteArrayInputStream;
@@ -328,7 +329,13 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     public ServerHttpResponse end() {
         if (!response.ended()) {
-            response.end((Handler<AsyncResult<Void>>) null);
+            if (response instanceof Http1xServerResponse) {
+                // Http1xServerResponse correctly handles a null handler
+                response.end((Handler<AsyncResult<Void>>) null);
+            } else {
+                // we don't know if other instances handle a null handler so just use the future form
+                response.end();
+            }
         }
         return this;
     }

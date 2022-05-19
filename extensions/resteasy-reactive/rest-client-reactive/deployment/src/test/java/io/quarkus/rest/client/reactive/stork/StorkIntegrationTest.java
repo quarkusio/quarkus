@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.rest.client.reactive.HelloClient2;
 import io.quarkus.rest.client.reactive.HelloResource;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.stork.api.NoSuchServiceDefinitionException;
 
 public class StorkIntegrationTest {
     @RegisterExtension
@@ -45,15 +46,6 @@ public class StorkIntegrationTest {
         HelloClient2 client2 = RestClientBuilder.newBuilder()
                 .baseUri(URI.create("stork://nonexistent-service"))
                 .build(HelloClient2.class);
-        assertThatThrownBy(() -> client2.echo("foo")).isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
-    @Timeout(20)
-    void shouldFailForServiceWithoutEndpoints() {
-        HelloClient2 client2 = RestClientBuilder.newBuilder()
-                .baseUri(URI.create("stork://service-without-endpoints"))
-                .build(HelloClient2.class);
-        assertThatThrownBy(() -> client2.echo("foo")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> client2.echo("foo")).isInstanceOf(NoSuchServiceDefinitionException.class);
     }
 }

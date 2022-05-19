@@ -1,6 +1,7 @@
 package io.quarkus.logging.gelf;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
@@ -117,4 +118,17 @@ public class GelfConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean includeLocation;
+
+    /**
+     * Origin hostname
+     */
+    @ConfigItem
+    public Optional<String> originHost;
+
+    /**
+     * Bypass hostname resolution. If you didn't set the {@code originHost} property, and resolution is disabled, the value
+     * “unknown” will be used as hostname
+     */
+    @ConfigItem
+    public boolean skipHostnameResolution;
 }

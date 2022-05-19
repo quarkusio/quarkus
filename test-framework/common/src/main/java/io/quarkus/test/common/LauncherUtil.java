@@ -25,6 +25,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.utilities.OS;
 import io.smallrye.config.SmallRyeConfig;
 
 public final class LauncherUtil {
@@ -94,8 +95,14 @@ public final class LauncherUtil {
                     "Interrupted while waiting to determine the status of process '" + quarkusProcess.pid() + "'.");
         }
         if (!quarkusProcess.isAlive()) {
-            throw new RuntimeException("Unable to successfully launch process '" + quarkusProcess.pid() + "'. Exit code is: '"
-                    + quarkusProcess.exitValue() + "'.");
+            int exit = quarkusProcess.exitValue();
+            String message = "Unable to successfully launch process '" + quarkusProcess.pid() + "'. Exit code is: '"
+                    + exit + "'.";
+            if (OS.determineOS().equals(OS.MAC) && exit == 126) {
+                message += System.lineSeparator()
+                        + "This may be caused by building the native binary in a Linux container while the host is macOS.";
+            }
+            throw new RuntimeException(message);
         }
     }
 

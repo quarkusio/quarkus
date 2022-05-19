@@ -1331,4 +1331,30 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .atMost(1, TimeUnit.MINUTES)
                 .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("acme! other! acme-service!"));
     }
+
+    @Test
+    public void testThatWatchedAbsolutePathsAreNotDeleted() throws MavenInvocationException, IOException {
+        // for reference https://github.com/quarkusio/quarkus/issues/25667
+        // .env files got deleted on dev mode restarts
+        testDir = initProject("projects/no-resource-root", "projects/no-resource-root-run");
+        run(true);
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("Servus"));
+
+        // Update the .env
+        File source = new File(testDir, ".env");
+        FileUtils.write(source, "GREETING=Hallo", "UTF-8");
+
+        assertTrue(source.exists());
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("Hallo"));
+
+        assertTrue(source.exists());
+    }
 }

@@ -45,54 +45,12 @@ If you want a better understanding of how all this works, this guide has a lot m
 
 When testing or running in dev mode Quarkus can even provide you with a zero config database out of the box, a feature
 we refer to as Dev Services. Depending on your database type you may need Docker installed in order to use this feature.
-Dev Services is supported for the following databases:
 
-* DB2 (container) (requires license acceptance)
-* Derby (in-process)
-* H2 (in-process)
-* MariaDB (container)
-* Microsoft SQL Server (container) (requires license acceptance)
-* MySQL (container)
-* Oracle Express Edition (container)
-* PostgreSQL (container)
+If you want to use Dev Services then all you need to do is include the relevant extension for the type of database you want,
+e.g. `jdbc-postgresql`, `reactive-pg-client` or both. Don't configure a database URL, username and password -
+Quarkus will provide the database and you can just start coding without worrying about config.
 
-If you want to use Dev Services then all you need to do is include the relevant extension for the type of database you want (either reactive or
-JDBC, or both), and don't configure a database URL, username and password, Quarkus will provide the database and you can just start
-coding without worrying about config.
-
-If you are using a proprietary database such as DB2 or MSSQL you will need to accept the license agreement. To do this
-create a `src/main/resources/container-license-acceptance.txt` files in your project and add a line with the image
-name and tag of the database. By default Quarkus uses the default image for the current version of Testcontainers, if
-you attempt to start Quarkus the resulting failure will tell you the exact image name in use for you to add to the
-file.
-
-An example file is shown below:
-
-.src/main/resources/container-license-acceptance.txt
-----
-ibmcom/db2:11.5.0.0a
-mcr.microsoft.com/mssql/server:2017-CU12
-----
-
-[NOTE]
-====
-All services based on containers are run using Testcontainers but Quarkus is not using the Testcontainers JDBC driver.
-
-Thus, even though extra JDBC URL properties can be set in your `application.properties` file,
-specific properties supported by the Testcontainers JDBC driver such as `TC_INITSCRIPT`, `TC_INITFUNCTION`, `TC_DAEMON`, `TC_TMPFS` are not supported.
-
-Quarkus can support specific properties sent to the container itself though and,
-typically, this is the case for `TC_MY_CNF` which allows to override the MariaDB/MySQL configuration file.
-
-Overriding the MariaDB/MySQL configuration would be done as follows:
-
-[source,properties]
-----
-quarkus.datasource.devservices.container-properties.TC_MY_CNF=testcontainers/mysql-conf
-----
-
-This support is database specific and needs to be implemented in each dev service specifically.
-====
+See xref:databases-dev-services.adoc[Databases Dev Services] for more details and optional configurations.
 
 === JDBC datasource
 
@@ -506,22 +464,6 @@ for this data source, all values will be zero.
 If the Narayana JTA extension is also available, integration is automatic.
 
 You can override this by setting the `transactions` configuration property - see the <<configuration-reference, Configuration Reference>> below.
-
-== Dev Services (Configuration Free Databases)
-
-As mentioned above Quarkus supports a feature called Dev Services that allows you to create datasources without any config. If
-you have a database extension that supports it and no config is provided, Quarkus will automatically start a database (either
-using Testcontainers, or by starting a Java DB in process), and automatically configure a connection to this database.
-
-Production databases need to be configured as normal, so if you want to include a production database config in your
-application.properties and continue to use Dev Services we recommend that you use the `%prod.` profile to define your
-database settings.
-
-=== Configuring Dev Services
-
-Dev Services supports the following config options:
-
-include::{generated-dir}/config/quarkus-datasource-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
 
 === Named Datasources
 

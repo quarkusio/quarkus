@@ -1,0 +1,82 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Dev Services for Databases
+
+include::./attributes.adoc[]
+
+When testing or running in dev mode Quarkus can provide you with a zero config database out of the box, a feature we refer to as Dev Services.
+Depending on your database type you may need Docker installed in order to use this feature.
+Dev Services is supported for the following databases:
+
+* DB2 (container) (requires <<#license_acceptance,license acceptance>>)
+* Derby (in-process)
+* H2 (in-process)
+* MariaDB (container)
+* Microsoft SQL Server (container) (requires <<#license_acceptance,license acceptance>>)
+* MySQL (container)
+* Oracle Express Edition (container)
+* PostgreSQL (container)
+
+If you want to use Dev Services then all you need to do is include the relevant extension for the type of database you want (either reactive or JDBC, or both).
+Don't configure a database URL, username and password - Quarkus will provide the database and you can just start coding without worrying about config.
+
+Production databases need to be configured as normal, so if you want to include a production database config in your
+`application.properties` and continue to use Dev Services we recommend that you use the `%prod.` profile to define your database settings.
+
+== Enabling / Disabling Dev Services for Database
+
+Dev Services for databases automatically starts a database server in dev mode and when running tests.
+So, you don't have to start a server manually.
+The application is configured automatically.
+
+You can disable the automatic database start in `application.properties` via:
+
+[source,properties]
+----
+quarkus.devservices.enabled=false
+# OR
+quarkus.datasource.devservices.enabled=false
+----
+
+Dev Services for databases relies on Docker to start the server (except for H2 and Derby which are run in process).
+If your environment does not support Docker, you will need to start the server manually, or connect to an already running server.
+
+[[license_acceptance]]
+=== Proprietary Databases - License Acceptance
+
+If you are using a proprietary database such as DB2 or MSSQL you will need to accept the license agreement.
+To do this create a `src/main/resources/container-license-acceptance.txt` files in your project and add a line with the image name and tag of the database.
+By default, Quarkus uses the default image for the current version of Testcontainers, if you attempt to start Quarkus the resulting failure will tell you the exact image name in use for you to add to the file.
+
+An example file is shown below:
+
+.src/main/resources/container-license-acceptance.txt
+----
+ibmcom/db2:11.5.0.0a
+mcr.microsoft.com/mssql/server:2017-CU12
+----
+
+== Database Vendor Specific Configuration
+
+All services based on containers are run using Testcontainers but Quarkus is not using the Testcontainers JDBC driver.
+Thus, even though extra JDBC URL properties can be set in your `application.properties` file, specific properties supported by the Testcontainers JDBC driver such as `TC_INITSCRIPT`, `TC_INITFUNCTION`, `TC_DAEMON`, `TC_TMPFS` are not supported.
+
+Quarkus can support *specific* properties sent to the container itself though, e.g. this is the case for `TC_MY_CNF` which allows to override the MariaDB/MySQL configuration file.
+
+Overriding the MariaDB/MySQL configuration would be done as follows:
+
+[source,properties]
+----
+quarkus.datasource.devservices.container-properties.TC_MY_CNF=testcontainers/mysql-conf
+----
+
+This support is database specific and needs to be implemented in each dev service specifically.
+
+== Configuration Reference
+
+Datasource Dev Services support the following config options:
+
+include::{generated-dir}/config/quarkus-datasource-config-group-dev-services-build-time-config.adoc[opts=optional,leveloffset=+1]

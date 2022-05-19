@@ -44,7 +44,7 @@ include::{generated-dir}/config/quarkus-apicurio-registry-devservices-apicurio-r
 
 The database Dev Services will be enabled when a reactive or JDBC datasource extension is present in the application,
 and the database URL has not been configured. More information can be found at the
-xref:datasource.adoc#dev-services[Datasource Guide].
+xref:databases-dev-services.adoc[Databases Dev Services Guide].
 
 Quarkus provides Dev Services for all databases it supports. Most of these are run in a container, with the
 exception of H2 and Derby which are run in process. Dev Services are supported for both JDBC and reactive drivers.

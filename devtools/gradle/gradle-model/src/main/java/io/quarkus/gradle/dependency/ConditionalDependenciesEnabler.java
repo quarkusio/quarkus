@@ -23,37 +23,51 @@ import io.quarkus.runtime.LaunchMode;
 
 public class ConditionalDependenciesEnabler {
 
+    /**
+     * Links dependencies to extensions
+     */
     private final Map<GACT, Set<ExtensionDependency>> featureVariants = new HashMap<>();
-    private final Configuration baseRuntimeConfig;
+    /**
+     * Despite its name, only contains extensions which have no conditional dependencies, or have
+     * resolved their conditional dependencies.
+     */
     private final Map<ModuleVersionIdentifier, ExtensionDependency> allExtensions = new HashMap<>();
     private final Project project;
-    private final Collection<Dependency> enforcedPlatforms;
+    private final Configuration enforcedPlatforms;
     private final Set<ArtifactKey> existingArtifacts = new HashSet<>();
     private final List<Dependency> unsatisfiedConditionalDeps = new ArrayList<>();
 
     public ConditionalDependenciesEnabler(Project project, LaunchMode mode,
-            Collection<org.gradle.api.artifacts.Dependency> platforms) {
+            Configuration platforms) {
         this.project = project;
         this.enforcedPlatforms = platforms;
 
-        baseRuntimeConfig = project.getConfigurations()
+        // Get runtimeClasspath (quarkusProdBaseRuntimeClasspathConfiguration to be exact)
+        Configuration baseRuntimeConfig = project.getConfigurations()
                 .getByName(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(mode));
 
         if (!baseRuntimeConfig.getIncoming().getDependencies().isEmpty()) {
+            // Gather all extensions from the full resolved dependency tree
             collectConditionalDependencies(baseRuntimeConfig.getResolvedConfiguration().getResolvedArtifacts());
+            // If there are any extensions which had unresolved conditional dependencies:
             while (!unsatisfiedConditionalDeps.isEmpty()) {
                 boolean satisfiedConditionalDeps = false;
                 final int originalUnsatisfiedCount = unsatisfiedConditionalDeps.size();
                 int i = 0;
+                // Go through each unsatisfied/unresolved dependency once:
                 while (i < unsatisfiedConditionalDeps.size()) {
                     final Dependency conditionalDep = unsatisfiedConditionalDeps.get(i);
+                    // Try to resolve it with the latest evolved graph available
                     if (resolveConditionalDependency(conditionalDep)) {
+                        // Mark the resolution as a success so we know the graph evolved
                         satisfiedConditionalDeps = true;
                         unsatisfiedConditionalDeps.remove(i);
                     } else {
+                        // No resolution (yet) or graph evolution; move on to the next
                         ++i;
                     }
                 }
+                // If we didn't resolve any dependencies and the graph did not evolve, give up.
                 if (!satisfiedConditionalDeps && unsatisfiedConditionalDeps.size() == originalUnsatisfiedCount) {
                     break;
                 }
@@ -61,10 +75,6 @@ public class ConditionalDependenciesEnabler {
             reset();
         }
 
-    }
-
-    public Configuration getBaseRuntimeConfiguration() {
-        return baseRuntimeConfig;
     }
 
     public Collection<ExtensionDependency> getAllExtensions() {
@@ -78,12 +88,17 @@ public class ConditionalDependenciesEnabler {
     }
 
     private void collectConditionalDependencies(Set<ResolvedArtifact> runtimeArtifacts) {
+        // For every artifact in the dependency graph:
         for (ResolvedArtifact artifact : runtimeArtifacts) {
+            // Add to master list of artifacts:
             existingArtifacts.add(getKey(artifact));
             ExtensionDependency extension = DependencyUtils.getExtensionInfoOrNull(project, artifact);
+            // If this artifact represents an extension:
             if (extension != null) {
+                // Add to master list of accepted extensions:
                 allExtensions.put(extension.getExtensionId(), extension);
                 for (Dependency conditionalDep : extension.getConditionalDependencies()) {
+                    // If the dependency is not present yet in the graph, queue it for resolution later
                     if (!exists(conditionalDep)) {
                         queueConditionalDependency(extension, conditionalDep);
                     }
@@ -98,11 +113,16 @@ public class ConditionalDependenciesEnabler {
         Set<ResolvedArtifact> resolvedArtifacts = conditionalDeps.getResolvedConfiguration().getResolvedArtifacts();
 
         boolean satisfied = false;
+        // Resolved artifacts don't have great linking back to the original artifact, so I think
+        // this loop is trying to find the artifact that represents the original conditional
+        // dependency
         for (ResolvedArtifact artifact : resolvedArtifacts) {
             if (conditionalDep.getName().equals(artifact.getName())
                     && conditionalDep.getVersion().equals(artifact.getModuleVersion().getId().getVersion())
                     && artifact.getModuleVersion().getId().getGroup().equals(conditionalDep.getGroup())) {
+                // Once the dependency is found, reload the extension info from within
                 final ExtensionDependency extensionDependency = DependencyUtils.getExtensionInfoOrNull(project, artifact);
+                // Now check if this conditional dependency is resolved given the latest graph evolution
                 if (extensionDependency != null && (extensionDependency.getDependencyConditions().isEmpty()
                         || exist(extensionDependency.getDependencyConditions()))) {
                     satisfied = true;
@@ -112,19 +132,25 @@ public class ConditionalDependenciesEnabler {
             }
         }
 
+        // No resolution (yet); give up.
         if (!satisfied) {
             return false;
         }
 
+        // The conditional dependency resolved! Let's now add all of /its/ dependencies
         for (ResolvedArtifact artifact : resolvedArtifacts) {
+            // First add the artifact to the master list
             existingArtifacts.add(getKey(artifact));
             ExtensionDependency extensionDependency = DependencyUtils.getExtensionInfoOrNull(project, artifact);
             if (extensionDependency == null) {
                 continue;
             }
+            // If this artifact represents an extension, mark this one as a conditional extension
             extensionDependency.setConditional(true);
+            // Add to the master list of accepted extensions
             allExtensions.put(extensionDependency.getExtensionId(), extensionDependency);
             for (Dependency cd : extensionDependency.getConditionalDependencies()) {
+                // Add any unsatisfied/unresolved conditional dependencies of this dependency to the queue
                 if (!exists(cd)) {
                     queueConditionalDependency(extensionDependency, cd);
                 }
@@ -134,6 +160,8 @@ public class ConditionalDependenciesEnabler {
     }
 
     private void queueConditionalDependency(ExtensionDependency extension, Dependency conditionalDep) {
+        // 1. Add to master list of unresolved/unsatisfied dependencies
+        // 2. Add map entry to link dependency to extension
         featureVariants.computeIfAbsent(getFeatureKey(conditionalDep), k -> {
             unsatisfiedConditionalDeps.add(conditionalDep);
             return new HashSet<>();
@@ -141,10 +169,11 @@ public class ConditionalDependenciesEnabler {
     }
 
     private Configuration createConditionalDependenciesConfiguration(Project project, Dependency conditionalDep) {
-        final List<Dependency> deps = new ArrayList<>(enforcedPlatforms.size() + 1);
-        deps.addAll(enforcedPlatforms);
-        deps.add(conditionalDep);
-        return project.getConfigurations().detachedConfiguration(deps.toArray(new Dependency[0]));
+        Configuration conditionalDepConfiguration = project.getConfigurations()
+                .detachedConfiguration()
+                .extendsFrom(enforcedPlatforms);
+        conditionalDepConfiguration.getDependencies().add(conditionalDep);
+        return conditionalDepConfiguration;
     }
 
     private void enableConditionalDependency(ModuleVersionIdentifier dependency) {

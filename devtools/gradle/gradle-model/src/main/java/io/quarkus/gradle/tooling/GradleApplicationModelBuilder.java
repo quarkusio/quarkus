@@ -26,8 +26,6 @@ import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.initialization.IncludedBuild;
-import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
-import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.AbstractCompile;
@@ -39,10 +37,8 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.bootstrap.model.CapabilityContract;
 import io.quarkus.bootstrap.model.PlatformImports;
-import io.quarkus.bootstrap.model.PlatformImportsImpl;
 import io.quarkus.bootstrap.model.gradle.ModelParameter;
 import io.quarkus.bootstrap.model.gradle.impl.ModelParameterImpl;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.DefaultArtifactSources;
 import io.quarkus.bootstrap.workspace.DefaultSourceDir;
@@ -54,7 +50,6 @@ import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
@@ -98,19 +93,16 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
     public Object buildAll(String modelName, ModelParameter parameter, Project project) {
         final LaunchMode mode = LaunchMode.valueOf(parameter.getMode());
 
-        final List<org.gradle.api.artifacts.Dependency> enforcedPlatforms = ToolingUtils.getEnforcedPlatforms(project);
-        final PlatformImports platformImports = resolvePlatformImports(project, enforcedPlatforms);
+        final ApplicationDeploymentClasspathBuilder classpathBuilder = new ApplicationDeploymentClasspathBuilder(project, mode);
+        final Configuration classpathConfig = classpathBuilder.getRuntimeConfiguration();
+        final Configuration deploymentConfig = classpathBuilder.getDeploymentConfiguration();
+        final PlatformImports platformImports = classpathBuilder.getPlatformImports();
 
         final ResolvedDependency appArtifact = getProjectArtifact(project, mode);
         final ApplicationModelBuilder modelBuilder = new ApplicationModelBuilder()
                 .setAppArtifact(appArtifact)
                 .addReloadableWorkspaceModule(appArtifact.getKey())
                 .setPlatformImports(platformImports);
-
-        final ApplicationDeploymentClasspathBuilder classpathBuilder = new ApplicationDeploymentClasspathBuilder(project, mode,
-                enforcedPlatforms);
-        final Configuration classpathConfig = classpathBuilder.getRuntimeConfiguration();
-        final Configuration deploymentConfig = classpathBuilder.getDeploymentConfiguration();
 
         final Map<ArtifactKey, ResolvedDependencyBuilder> appDependencies = new LinkedHashMap<>();
         collectDependencies(classpathConfig.getResolvedConfiguration(), mode, project, appDependencies, modelBuilder,
@@ -165,46 +157,6 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             }
             paths.add(path);
         }
-    }
-
-    private PlatformImports resolvePlatformImports(Project project,
-            List<org.gradle.api.artifacts.Dependency> deploymentDeps) {
-        final Configuration boms = project.getConfigurations()
-                .detachedConfiguration(deploymentDeps.toArray(new org.gradle.api.artifacts.Dependency[0]));
-        final PlatformImportsImpl platformImports = new PlatformImportsImpl();
-        boms.getResolutionStrategy().eachDependency(d -> {
-            final String group = d.getTarget().getGroup();
-            final String name = d.getTarget().getName();
-            if (name.endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX)) {
-                platformImports.addPlatformDescriptor(group, name, d.getTarget().getVersion(), "json",
-                        d.getTarget().getVersion());
-            } else if (name.endsWith(BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX)) {
-                final DefaultDependencyArtifact dep = new DefaultDependencyArtifact();
-                dep.setExtension("properties");
-                dep.setType("properties");
-                dep.setName(name);
-
-                final DefaultExternalModuleDependency gradleDep = new DefaultExternalModuleDependency(
-                        group, name, d.getTarget().getVersion(), null);
-                gradleDep.addArtifact(dep);
-
-                for (ResolvedArtifact a : project.getConfigurations().detachedConfiguration(gradleDep)
-                        .getResolvedConfiguration().getResolvedArtifacts()) {
-                    if (a.getName().equals(name)) {
-                        try {
-                            platformImports.addPlatformProperties(group, name, null, "properties", d.getTarget().getVersion(),
-                                    a.getFile().toPath());
-                        } catch (AppModelResolverException e) {
-                            throw new GradleException("Failed to import platform properties " + a.getFile(), e);
-                        }
-                        break;
-                    }
-                }
-            }
-
-        });
-        boms.getResolvedConfiguration();
-        return platformImports;
     }
 
     private void collectExtensionDependencies(Project project, Configuration deploymentConfiguration,

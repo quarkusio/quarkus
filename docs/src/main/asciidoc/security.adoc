@@ -182,7 +182,7 @@ Below is a summary of the options.
 |Introspection
 |Local Verification
 |Introspection
-|Custom Token Verificition
+|Custom Token Verification
 |No
 |With Injected JWTParser
 |No

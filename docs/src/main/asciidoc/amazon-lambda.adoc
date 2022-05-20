@@ -390,7 +390,7 @@ sam local invoke --template target/sam.native.yaml --event payload.json
 
 == Modifying `function.zip`
 
-The are times where you may have to add some additions to the `function.zip` lambda deployment that is generated
+There are times where you may have to add some additions to the `function.zip` lambda deployment that is generated
 by the build.  To do this create a `zip.jvm` or `zip.native` directory within `src/main`.
 Create `zip.jvm/` if you are doing a pure Java lambda.  `zip.native/` if you are doing a native deployment.
 

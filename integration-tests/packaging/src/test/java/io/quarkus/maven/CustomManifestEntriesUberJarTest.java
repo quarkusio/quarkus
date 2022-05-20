@@ -40,6 +40,10 @@ public class CustomManifestEntriesUberJarTest {
                 String customAttribute = manifest.getMainAttributes().getValue("Built-By");
                 assertThat(customAttribute).isNotNull();
                 assertThat(customAttribute).isEqualTo("Quarkus Plugin");
+
+                String classPath = manifest.getMainAttributes().getValue("Class-Path");
+                assertThat(classPath).isNotNull();
+                assertThat(classPath).startsWith("resources/ libs/a.jar");
             }
         }
     }

@@ -1342,8 +1342,11 @@ public class JarResultBuildStep {
         if (attributes.containsKey(Attributes.Name.CLASS_PATH)) {
             log.warn(
                     "A CLASS_PATH entry was already defined in your MANIFEST.MF or using the property quarkus.package.manifest.attributes.\"Class-Path\". Quarkus has overwritten this existing entry.");
+            String existingClassPath = attributes.getValue(Attributes.Name.CLASS_PATH);
+            attributes.put(Attributes.Name.CLASS_PATH, existingClassPath + " " + classPath);
+        } else {
+            attributes.put(Attributes.Name.CLASS_PATH, classPath);
         }
-        attributes.put(Attributes.Name.CLASS_PATH, classPath);
         if (attributes.containsKey(Attributes.Name.MAIN_CLASS)) {
             String existingMainClass = attributes.getValue(Attributes.Name.MAIN_CLASS);
             if (!mainClassName.equals(existingMainClass)) {

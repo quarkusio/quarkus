@@ -5,12 +5,20 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+import org.jboss.resteasy.reactive.ResponseHeader;
+import org.jboss.resteasy.reactive.ResponseStatus;
+import org.jboss.resteasy.reactive.RestResponse;
 
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.resteasy.reactive.qute.RestTemplate;
+import io.smallrye.mutiny.Uni;
 
 @Path("hello")
 public class HelloResource {
@@ -44,11 +52,11 @@ public class HelloResource {
 
     @Path("no-injection")
     @GET
-    public TemplateInstance hello(@QueryParam("name") String name) {
+    public Uni<TemplateInstance> hello(@QueryParam("name") String name) {
         if (name == null) {
             name = "world";
         }
-        return RestTemplate.data("name", name);
+        return Uni.createFrom().item(RestTemplate.data("name", name));
     }
 
     @Path("type-error")
@@ -79,5 +87,28 @@ public class HelloResource {
             name = "world";
         }
         return io.quarkus.resteasy.reactive.qute.deployment.Templates.toplevel(name);
+    }
+
+    @ResponseStatus(201)
+    @ResponseHeader(name = "foo", value = { "bar" })
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("status-and-headers")
+    public TemplateInstance setStatusAndHeaders() {
+        return hello.data("name", "world");
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("rest-response")
+    public RestResponse<TemplateInstance> restResponse() {
+        return RestResponse.status(RestResponse.Status.ACCEPTED, hello.data("name", "world"));
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("response")
+    public Response response() {
+        return Response.status(203).entity(hello.data("name", "world")).build();
     }
 }

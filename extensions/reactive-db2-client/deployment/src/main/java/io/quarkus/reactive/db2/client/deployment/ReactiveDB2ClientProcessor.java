@@ -26,6 +26,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
@@ -33,6 +34,7 @@ import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.db2.client.runtime.DB2PoolRecorder;
+import io.quarkus.reactive.db2.client.runtime.DB2ServiceBindingConverter;
 import io.quarkus.reactive.db2.client.runtime.DataSourcesReactiveDB2Config;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -87,7 +89,13 @@ class ReactiveDB2ClientProcessor {
     }
 
     @BuildStep
-    void registerServiceBinding(BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
+    void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider,
+            BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
+        if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
+            serviceProvider.produce(
+                    new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
+                            DB2ServiceBindingConverter.class.getName()));
+        }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.DB2));
     }
 

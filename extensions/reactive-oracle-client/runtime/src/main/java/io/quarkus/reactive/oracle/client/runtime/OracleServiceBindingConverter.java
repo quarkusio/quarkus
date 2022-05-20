@@ -1,4 +1,4 @@
-package io.quarkus.jdbc.mssql.runtime;
+package io.quarkus.reactive.oracle.client.runtime;
 
 import java.util.List;
 import java.util.Optional;
@@ -8,11 +8,12 @@ import io.quarkus.kubernetes.service.binding.runtime.ServiceBinding;
 import io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConfigSource;
 import io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter;
 
-public class MsSQLServiceBindingConverter implements ServiceBindingConverter {
+public class OracleServiceBindingConverter implements ServiceBindingConverter {
 
     @Override
     public Optional<ServiceBindingConfigSource> convert(List<ServiceBinding> serviceBindings) {
-        return ServiceBinding.singleMatchingByType("sqlserver", serviceBindings)
-                .map(new DatasourceServiceBindingConfigSourceFactory.Jdbc());
+        return ServiceBinding.singleMatchingByType("oracle", serviceBindings)
+                .map(new DatasourceServiceBindingConfigSourceFactory.Reactive());
     }
+
 }

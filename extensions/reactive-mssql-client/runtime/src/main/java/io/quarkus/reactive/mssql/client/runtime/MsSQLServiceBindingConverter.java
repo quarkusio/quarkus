@@ -1,4 +1,4 @@
-package io.quarkus.jdbc.mssql.runtime;
+package io.quarkus.reactive.mssql.client.runtime;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,6 +13,6 @@ public class MsSQLServiceBindingConverter implements ServiceBindingConverter {
     @Override
     public Optional<ServiceBindingConfigSource> convert(List<ServiceBinding> serviceBindings) {
         return ServiceBinding.singleMatchingByType("sqlserver", serviceBindings)
-                .map(new DatasourceServiceBindingConfigSourceFactory.Jdbc());
+                .map(new DatasourceServiceBindingConfigSourceFactory.Reactive());
     }
 }

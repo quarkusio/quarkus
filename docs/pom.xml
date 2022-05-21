@@ -2824,6 +2824,9 @@
                         <restassured-version>${rest-assured.version}</restassured-version>
                         <maven-version>${proposed-maven-version}</maven-version>
                         <gradle-version>${gradle-wrapper.version}</gradle-version>
+                        <elasticsearch-image>${elasticsearch.image}</elasticsearch-image>
+                        <logstash-image>${logstash.image}</logstash-image>
+                        <kibana-image>${kibana.image}</kibana-image>
                         <keycloak-docker-image>${keycloak.docker.image}</keycloak-docker-image>
 
                         <jandex-maven-plugin-version>${jandex-maven-plugin.version}</jandex-maven-plugin-version>

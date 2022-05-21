@@ -29,7 +29,7 @@ mvn clean test -Dtest-gelf
 Additionally, you can generate a native image and run the tests for this native image by adding `-Dnative`:
 
 ```
-mvn clean integration-test -Dtest-gelf -Dnative
+mvn clean integration-test -Dtest-containers -Dnative
 ```
 
 ## Testing with ELK (Elasticsearch, Logstash, Kibana) aka the Elastic Stack
@@ -61,7 +61,7 @@ Then you can use the following commands to run an ELK cluster using the provided
 docker-compose -f src/test/resources/docker-compose-elk.yml up
 ```
 
-Finally, run the test via `mvn clean install -Dtest-gelf -Dmaven.test.failure.ignore` and manually verify that the log
+Finally, run the test via `mvn clean install -Dtest-containers -Dmaven.test.failure.ignore` and manually verify that the log
 events has been pushed to ELK. You can use Kibana on http://localhost:5601/ to access those logs.
 
 
@@ -99,5 +99,5 @@ Then you can use the following commands to run an EFK cluster using the provided
 docker-compose -f src/test/resources/docker-compose-efk.yml up
 ```
 
-Finally, run the test via `mvn clean install -Dtest-gelf -Dmaven.test.failure.ignore` and manually verify that the log
+Finally, run the test via `mvn clean install -Dtest-containers -Dmaven.test.failure.ignore` and manually verify that the log
 events has been pushed to EFK. You can use Kibana on http://localhost:5601/ to access those logs.

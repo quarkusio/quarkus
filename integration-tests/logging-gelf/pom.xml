@@ -142,7 +142,7 @@
                             <autoCreateCustomNetworks>true</autoCreateCustomNetworks>
                             <images>
                                 <image>
-                                    <name>docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.3</name>
+                                    <name>${elasticsearch.image}</name>
                                     <alias>elasticsearch</alias>
                                     <run>
                                         <network>
@@ -157,6 +157,8 @@
                                         </ports>
                                         <env>
                                             <discovery.type>single-node</discovery.type>
+                                            <xpack.security.enabled>false</xpack.security.enabled>
+                                            <ES_JAVA_OPTS>-Xms512m -Xmx512m</ES_JAVA_OPTS>
                                         </env>
                                         <log>
                                             <prefix>Elasticsearch: </prefix>
@@ -174,7 +176,7 @@
                                     </run>
                                 </image>
                                 <image>
-                                    <name>docker.elastic.co/logstash/logstash-oss:7.9.3</name>
+                                    <name>${logstash.image}</name>
                                     <alias>logstash</alias>
                                     <run>
                                         <network>
@@ -196,7 +198,7 @@
                                         </log>
                                         <volumes>
                                             <bind>
-                                                <volume>${project.basedir}/src/test/resources/pipeline:/usr/share/logstash/pipeline</volume>
+                                                <volume>${project.basedir}/src/test/resources/pipeline:/usr/share/logstash/pipeline:Z</volume>
                                             </bind>
                                         </volumes>
                                         <wait>

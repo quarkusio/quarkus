@@ -20,11 +20,11 @@ import io.vertx.core.Vertx;
 
 @ServiceDiscoveryType("my")
 @ServiceDiscoveryAttribute(name = "address-list", description = "a comma-separated list of addresses")
-public class MyServiceDiscoveryProvider implements ServiceDiscoveryProvider<MyServiceDiscoveryProviderConfiguration> {
+public class MyServiceDiscoveryProvider implements ServiceDiscoveryProvider<MyConfiguration> {
     public static volatile Vertx providedVertx;
 
     @Override
-    public ServiceDiscovery createServiceDiscovery(MyServiceDiscoveryProviderConfiguration config, String serviceName,
+    public ServiceDiscovery createServiceDiscovery(MyConfiguration config, String serviceName,
             ServiceConfig serviceConfig, StorkInfrastructure storkInfrastructure) {
         providedVertx = storkInfrastructure.get(Vertx.class, () -> null);
         String addressList = config.getAddressList();

@@ -202,12 +202,16 @@ public class OpenshiftProcessor {
             baseImage.ifPresent(b -> {
                 envProducer.produce(
                         KubernetesEnvBuildItem.createSimpleVar(b.getHomeDirEnvVar(), nativeBinaryDirectory, OPENSHIFT));
-                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getOptsEnvVar(),
-                        String.join(" ", config.nativeArguments), OPENSHIFT));
+                config.nativeArguments.ifPresent(nativeArguments -> {
+                    envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getOptsEnvVar(),
+                            String.join(" ", nativeArguments), OPENSHIFT));
+                });
+
             });
 
-            if (!baseImage.isPresent()) {
-                commandProducer.produce(KubernetesCommandBuildItem.commandWithArgs(pathToNativeBinary, config.nativeArguments));
+            if (!baseImage.isPresent() && config.nativeArguments.isPresent()) {
+                commandProducer
+                        .produce(KubernetesCommandBuildItem.commandWithArgs(pathToNativeBinary, config.nativeArguments.get()));
             }
         }
     }

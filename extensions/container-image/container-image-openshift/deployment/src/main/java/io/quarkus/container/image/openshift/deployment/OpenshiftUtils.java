@@ -101,7 +101,6 @@ public class OpenshiftUtils {
         boolean hasS2iBaseJvmImage = properties.contains("quarkus.s2i.base-jvm-image");
         boolean hasS2iBaseNativeImage = properties.contains("quarkus.s2i.base-native-image");
         boolean hasS2iJvmArguments = properties.contains("quarkus.s2i.jvm-arguments");
-        boolean hasS2iJvmAdditionalArguments = properties.contains("quarkus.s2i.jvm-additional-arguments");
         boolean hasS2iNativeArguments = properties.contains("quarkus.s2i.native-arguments");
         boolean hasS2iJarDirectory = properties.contains("quarkus.s2i.jar-directory");
         boolean hasS2iJarFileName = properties.contains("quarkus.s2i.jar-file-name");
@@ -112,7 +111,6 @@ public class OpenshiftUtils {
         boolean hasOpenshiftBaseJvmImage = properties.contains("quarkus.openshift.base-jvm-image");
         boolean hasOpenshiftBaseNativeImage = properties.contains("quarkus.openshift.base-native-image");
         boolean hasOpenshiftJvmArguments = properties.contains("quarkus.openshift.jvm-arguments");
-        boolean hasOpenshiftJvmAdditionalArguments = properties.contains("quarkus.openshift.jvm-additional-arguments");
         boolean hasOpenshiftNativeArguments = properties.contains("quarkus.openshift.native-arguments");
         boolean hasOpenshiftJarDirectory = properties.contains("quarkus.openshift.jar-directory");
         boolean hasOpenshiftJarFileName = properties.contains("quarkus.openshift.jar-file-name");
@@ -126,9 +124,6 @@ public class OpenshiftUtils {
                 : openshiftConfig.baseNativeImage;
         result.jvmArguments = hasS2iJvmArguments && !hasOpenshiftJvmArguments ? s2iConfig.jvmArguments
                 : openshiftConfig.jvmArguments;
-        result.jvmAdditionalArguments = hasS2iJvmAdditionalArguments && !hasOpenshiftJvmAdditionalArguments
-                ? s2iConfig.jvmAdditionalArguments
-                : openshiftConfig.jvmAdditionalArguments;
         result.nativeArguments = hasS2iNativeArguments && !hasOpenshiftNativeArguments ? s2iConfig.nativeArguments
                 : openshiftConfig.nativeArguments;
         result.jarDirectory = hasS2iJarDirectory && !hasOpenshiftJarDirectory ? Optional.of(s2iConfig.jarDirectory)

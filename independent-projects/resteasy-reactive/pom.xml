@@ -54,7 +54,7 @@
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <jboss-jaxrs-api_2.1_spec.version>2.0.1.Final</jboss-jaxrs-api_2.1_spec.version>
         <jakarta.json.version>1.1.6</jakarta.json.version>
-        <mutiny.version>1.4.0</mutiny.version>
+        <mutiny.version>1.5.0</mutiny.version>
         <smallrye-common.version>1.12.0</smallrye-common.version>
         <vertx.version>4.2.4</vertx.version>
         <rest-assured.version>4.5.1</rest-assured.version>
@@ -66,7 +66,7 @@
         <yasson.version>1.0.11</yasson.version>
         <jakarta.json.bind-api.version>1.0.2</jakarta.json.bind-api.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <smallrye-mutiny-vertx-core.version>2.19.0</smallrye-mutiny-vertx-core.version>
+        <smallrye-mutiny-vertx-core.version>2.22.0</smallrye-mutiny-vertx-core.version>
     </properties>
 
     <modules>

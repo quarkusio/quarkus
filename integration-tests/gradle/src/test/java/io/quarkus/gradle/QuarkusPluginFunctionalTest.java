@@ -38,7 +38,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
         BuildResult build = runGradleWrapper(projectRoot, "build", "--stacktrace");
 
-        assertThat(build.getTasks().get(":build")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(build.getTasks().get(":build"))).isTrue();
         // gradle build should not build the native image
         assertThat(build.getTasks().get(":buildNative")).isNull();
         Path buildDir = projectRoot.toPath().resolve("build");
@@ -51,7 +51,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
         createProject(SourceType.JAVA);
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
-        assertThat(firstBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
         assertThat(secondBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.UPTODATE_OUTCOME);
@@ -62,13 +62,13 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
         createProject(SourceType.JAVA);
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
-        assertThat(firstBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
 
         final File applicationProperties = projectRoot.toPath().resolve("src/main/resources/application.properties").toFile();
         Files.write(applicationProperties.toPath(), "quarkus.http.port=8888".getBytes());
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
-        assertThat(secondBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(secondBuild.getTasks().get(":quarkusBuild"))).isTrue();
     }
 
     @Test
@@ -76,14 +76,14 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
         createProject(SourceType.JAVA);
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
-        assertThat(firstBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
 
         final File greetingResourceFile = projectRoot.toPath().resolve("src/main/java/org/acme/foo/GreetingResource.java")
                 .toFile();
         DevModeTestUtils.filter(greetingResourceFile, ImmutableMap.of("\"/greeting\"", "\"/test/hello\""));
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
-        assertThat(secondBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(secondBuild.getTasks().get(":quarkusBuild"))).isTrue();
     }
 
     @Test
@@ -91,11 +91,11 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
         createProject(SourceType.JAVA);
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
-        assertThat(firstBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
 
         runGradleWrapper(projectRoot, "addExtension", "--extensions=hibernate-orm");
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
-        assertThat(secondBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(secondBuild.getTasks().get(":quarkusBuild"))).isTrue();
     }
 
     @Test
@@ -104,13 +104,13 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
 
-        assertThat(firstBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
         Path runnerJar = projectRoot.toPath().resolve("build").resolve("quarkus-app").resolve("quarkus-run.jar");
         Files.delete(runnerJar);
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
 
-        assertThat(secondBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(secondBuild.getTasks().get(":quarkusBuild"))).isTrue();
         assertThat(runnerJar).exists();
     }
 
@@ -120,7 +120,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "test");
 
-        assertThat(firstBuild.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":test"))).isTrue();
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "test");
 
@@ -133,12 +133,12 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
 
-        assertThat(firstBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
         assertThat(projectRoot.toPath().resolve("build").resolve("quarkus-app").resolve("quarkus-run.jar")).exists();
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "-Dquarkus.package.type=fast-jar");
 
-        assertThat(secondBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(secondBuild.getTasks().get(":quarkusBuild"))).isTrue();
         assertThat(projectRoot.toPath().resolve("build").resolve("quarkus-app")).exists();
     }
 
@@ -148,7 +148,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
         BuildResult buildResult = runGradleWrapper(projectRoot, "test", "--stacktrace");
 
-        assertThat(buildResult.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(buildResult.getTasks().get(":test"))).isTrue();
     }
 
     @Test
@@ -158,7 +158,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
         BuildResult firstBuild = runGradleWrapper(projectRoot, "test", "--stacktrace");
         assertThat(firstBuild.getOutput()).contains("Task :quarkusGenerateCode");
         assertThat(firstBuild.getOutput()).contains("Task :quarkusGenerateCodeTests");
-        assertThat(firstBuild.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":test"))).isTrue();
     }
 
     private void createProject(SourceType sourceType) throws Exception {

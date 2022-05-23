@@ -15,7 +15,7 @@ public class DependencyConstraintsTest extends QuarkusGradleWrapperTestBase {
 
         BuildResult buildResult = runGradleWrapper(projectDir, "clean", "quarkusBuild", "-Dquarkus.package.type=mutable-jar");
 
-        assertThat(buildResult.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(buildResult.getTasks().get(":quarkusBuild"))).isTrue();
 
         final File buildDir = new File(projectDir, "build");
         final Path mainLib = buildDir.toPath().resolve("quarkus-app").resolve("lib").resolve("main");

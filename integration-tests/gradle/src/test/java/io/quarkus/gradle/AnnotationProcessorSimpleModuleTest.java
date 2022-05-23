@@ -15,7 +15,7 @@ public class AnnotationProcessorSimpleModuleTest extends QuarkusGradleWrapperTes
 
         BuildResult buildResult = runGradleWrapper(projectDir, "clean", "test");
 
-        assertThat(buildResult.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(buildResult.getTasks().get(":test"))).isTrue();
     }
 
     @Test
@@ -24,7 +24,7 @@ public class AnnotationProcessorSimpleModuleTest extends QuarkusGradleWrapperTes
 
         BuildResult buildResult = runGradleWrapper(projectDir, "clean", "quarkusBuild");
 
-        assertThat(buildResult.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(buildResult.getTasks().get(":quarkusBuild"))).isTrue();
         File buildDir = new File(projectDir, "build");
 
         Path metaInfDir = buildDir.toPath().resolve("classes").resolve("java").resolve("main").resolve("META-INF");

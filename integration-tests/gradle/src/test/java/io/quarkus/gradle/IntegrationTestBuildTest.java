@@ -14,8 +14,8 @@ public class IntegrationTestBuildTest extends QuarkusGradleWrapperTestBase {
 
         BuildResult buildResult = runGradleWrapper(projectDir, "clean", "quarkusIntTest");
 
-        assertThat(buildResult.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
-        assertThat(buildResult.getTasks().get(":quarkusIntTest")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(buildResult.getTasks().get(":test"))).isTrue();
+        assertThat(BuildResult.isSuccessful(buildResult.getTasks().get(":quarkusIntTest"))).isTrue();
     }
 
 }

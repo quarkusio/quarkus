@@ -12,6 +12,6 @@ public class BeanInTestSourcesTest extends QuarkusGradleWrapperTestBase {
     public void testBasicMultiModuleBuild() throws Exception {
         final File projectDir = getProjectDir("bean-in-testsources-project");
         final BuildResult build = runGradleWrapper(projectDir, "clean", "test");
-        assertThat(build.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(build.getTasks().get(":test"))).isTrue();
     }
 }

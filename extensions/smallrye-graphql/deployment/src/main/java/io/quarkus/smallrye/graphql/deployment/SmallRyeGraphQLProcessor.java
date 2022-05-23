@@ -440,9 +440,9 @@ public class SmallRyeGraphQLProcessor {
     private Set<String> getAllReferenceClasses(Reference reference) {
         Set<String> classes = new HashSet<>();
         classes.add(reference.getClassName());
-        if (reference.getParametrizedTypeArguments() != null && !reference.getParametrizedTypeArguments().isEmpty()) {
+        if (reference.getClassParametrizedTypes() != null && !reference.getClassParametrizedTypes().isEmpty()) {
 
-            Collection<Reference> parametrized = reference.getParametrizedTypeArguments().values();
+            Collection<Reference> parametrized = reference.getClassParametrizedTypes().values();
             for (Reference r : parametrized) {
                 classes.addAll(getAllReferenceClasses(r));
             }

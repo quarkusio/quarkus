@@ -13,6 +13,7 @@ import static io.quarkus.amazon.lambda.runtime.AmazonLambdaApi.logStreamName;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.URL;
 
 import com.amazonaws.services.lambda.runtime.ClientContext;
 import com.amazonaws.services.lambda.runtime.CognitoIdentity;
@@ -34,7 +35,7 @@ public class AmazonLambdaContext implements Context {
     private long runtimeDeadlineMs = 0;
     private final int memoryLimitInMB;
     private final LambdaLogger logger;
-
+    private final URL requestURL;
 
     public AmazonLambdaContext(HttpURLConnection request, ObjectReader cognitoReader, ObjectReader clientCtxReader)
             throws IOException {
@@ -63,6 +64,7 @@ public class AmazonLambdaContext implements Context {
             runtimeDeadlineMs = Long.valueOf(runtimeDeadline);
         }
         logger = LambdaRuntime.getLogger();
+        requestURL = request.getURL();
     }
 
     @Override
@@ -118,5 +120,9 @@ public class AmazonLambdaContext implements Context {
     @Override
     public LambdaLogger getLogger() {
         return logger;
+    }
+
+    public URL getRequestURL() {
+        return requestURL;
     }
 }

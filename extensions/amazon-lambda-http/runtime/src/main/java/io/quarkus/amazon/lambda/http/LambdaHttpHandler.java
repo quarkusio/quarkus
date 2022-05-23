@@ -4,6 +4,7 @@ import static java.util.Optional.ofNullable;
 
 import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
+import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
@@ -35,10 +36,13 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.ReferenceCountUtil;
+import io.quarkus.amazon.lambda.runtime.AmazonLambdaContext;
 import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
 import io.quarkus.netty.runtime.virtual.VirtualResponseHandler;
 import io.quarkus.vertx.http.runtime.QuarkusHttpHeaders;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
+import io.vertx.core.net.SocketAddress;
+import io.vertx.core.net.impl.ConnectionBase;
 
 @SuppressWarnings("unused")
 public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, APIGatewayV2HTTPResponse> {
@@ -61,7 +65,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         }
 
         try {
-            return nettyDispatch(clientAddress, request, context);
+            return nettyDispatch(clientAddress, request, (AmazonLambdaContext) context);
         } catch (Exception e) {
             log.error("Request Failure", e);
             APIGatewayV2HTTPResponse res = new APIGatewayV2HTTPResponse();
@@ -162,7 +166,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
     }
 
     private APIGatewayV2HTTPResponse nettyDispatch(InetSocketAddress clientAddress, APIGatewayV2HTTPEvent request,
-            Context context)
+            AmazonLambdaContext context)
             throws Exception {
         QuarkusHttpHeaders quarkusHeaders = new QuarkusHttpHeaders();
         quarkusHeaders.setContextObject(Context.class, context);
@@ -211,6 +215,11 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         NettyResponseHandler handler = new NettyResponseHandler(request);
         VirtualClientConnection connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP,
                 clientAddress);
+        if (connection.peer().remoteAddress().equals(VertxHttpRecorder.VIRTUAL_HTTP)) {
+            URL requestURL = context.getRequestURL();
+            connection.peer().attr(ConnectionBase.REMOTE_ADDRESS_OVERRIDE).set(
+                    SocketAddress.inetSocketAddress(requestURL.getPort(), requestURL.getHost()));
+        }
 
         connection.sendMessage(nettyRequest);
         connection.sendMessage(requestContent);

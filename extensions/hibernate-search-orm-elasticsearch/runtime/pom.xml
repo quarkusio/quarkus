@@ -38,6 +38,14 @@
                     <groupId>javax.persistence</groupId>
                     <artifactId>javax.persistence-api</artifactId>
                 </exclusion>
+                <!--
+                The activation implementation is coming from the quarkus-hibernate-orm extension.
+                The implementation contains the API.
+                -->
+                <exclusion>
+                    <groupId>jakarta.activation</groupId>
+                    <artifactId>jakarta.activation-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

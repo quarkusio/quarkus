@@ -687,12 +687,16 @@ public class DevMojo extends AbstractMojo {
 
     private void addProject(MavenDevModeLauncher.Builder builder, ResolvedDependency module, boolean root) throws Exception {
 
+        if (!ArtifactCoords.TYPE_JAR.equals(module.getType())) {
+            return;
+        }
+
         String projectDirectory;
         Set<Path> sourcePaths;
         String classesPath = null;
         Set<Path> resourcePaths;
         Set<Path> testSourcePaths;
-        String testClassesPath;
+        String testClassesPath = null;
         Set<Path> testResourcePaths;
         List<Profile> activeProfiles = Collections.emptyList();
 
@@ -702,6 +706,10 @@ public class DevMojo extends AbstractMojo {
                 : null;
         final ArtifactSources sources = module.getSources();
         if (mavenProject == null) {
+            if (sources == null) {
+                getLog().debug("Local dependency " + module.toCompactCoords() + " does not appear to have any sources");
+                return;
+            }
             projectDirectory = module.getWorkspaceModule().getModuleDir().getAbsolutePath();
             sourcePaths = new LinkedHashSet<>();
             for (SourceDir src : sources.getSourceDirs()) {
@@ -732,28 +740,33 @@ public class DevMojo extends AbstractMojo {
         }
 
         final Path sourceParent;
-        if (sources.getSourceDirs() == null) {
-            if (sources.getResourceDirs() == null) {
-                throw new MojoExecutionException("The project does not appear to contain any sources or resources");
+        if (sourcePaths.isEmpty()) {
+            if (sources == null || sources.getResourceDirs() == null) {
+                throw new MojoExecutionException(
+                        "Local dependency " + module.toCompactCoords() + " does not appear to have any sources");
             }
             sourceParent = sources.getResourceDirs().iterator().next().getDir().toAbsolutePath().getParent();
         } else {
-            sourceParent = sources.getSourceDirs().iterator().next().getDir().toAbsolutePath().getParent();
+            sourceParent = sourcePaths.iterator().next().toAbsolutePath().getParent();
         }
 
-        Path classesDir = sources.getSourceDirs().iterator().next().getOutputDir().toAbsolutePath();
-        if (Files.isDirectory(classesDir)) {
-            classesPath = classesDir.toString();
-        }
-        Path testClassesDir = module.getWorkspaceModule().getTestSources().getSourceDirs().iterator().next().getOutputDir()
-                .toAbsolutePath();
-        testClassesPath = testClassesDir.toString();
-
+        Path classesDir = null;
         resourcePaths = new LinkedHashSet<>();
-        for (SourceDir src : sources.getResourceDirs()) {
-            for (Path p : src.getSourceTree().getRoots()) {
-                resourcePaths.add(p.toAbsolutePath());
+        if (sources != null) {
+            classesDir = sources.getSourceDirs().iterator().next().getOutputDir().toAbsolutePath();
+            if (Files.isDirectory(classesDir)) {
+                classesPath = classesDir.toString();
             }
+            for (SourceDir src : sources.getResourceDirs()) {
+                for (Path p : src.getSourceTree().getRoots()) {
+                    resourcePaths.add(p.toAbsolutePath());
+                }
+            }
+        }
+        if (module.getWorkspaceModule().hasTestSources()) {
+            Path testClassesDir = module.getWorkspaceModule().getTestSources().getSourceDirs().iterator().next().getOutputDir()
+                    .toAbsolutePath();
+            testClassesPath = testClassesDir.toString();
         }
 
         testResourcePaths = new LinkedHashSet<>();
@@ -773,13 +786,13 @@ public class DevMojo extends AbstractMojo {
                 resourcePaths.addAll(
                         build.getResources().stream()
                                 .map(Resource::getDirectory)
-                                .map(Paths::get)
+                                .map(Path::of)
                                 .map(Path::toAbsolutePath)
                                 .collect(Collectors.toList()));
                 testResourcePaths.addAll(
                         build.getTestResources().stream()
                                 .map(Resource::getDirectory)
-                                .map(Paths::get)
+                                .map(Path::of)
                                 .map(Path::toAbsolutePath)
                                 .collect(Collectors.toList()));
             }
@@ -787,10 +800,11 @@ public class DevMojo extends AbstractMojo {
 
         if (classesPath == null && (!sourcePaths.isEmpty() || !resourcePaths.isEmpty())) {
             throw new MojoExecutionException("Hot reloadable dependency " + module.getWorkspaceModule().getId()
-                    + " has not been compiled yet (the classes directory " + classesDir + " does not exist)");
+                    + " has not been compiled yet (the classes directory " + (classesDir == null ? "" : classesDir)
+                    + " does not exist)");
         }
 
-        Path targetDir = Paths.get(project.getBuild().getDirectory());
+        Path targetDir = Path.of(project.getBuild().getDirectory());
 
         DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo.Builder()
                 .setArtifactKey(module.getKey())
@@ -956,7 +970,6 @@ public class DevMojo extends AbstractMojo {
             bootstrapProvider.close();
         } else {
             final MavenArtifactResolver.Builder resolverBuilder = MavenArtifactResolver.builder()
-                    .setRepositorySystem(repoSystem)
                     .setRemoteRepositories(repos)
                     .setRemoteRepositoryManager(remoteRepositoryManager)
                     .setWorkspaceDiscovery(true)
@@ -968,16 +981,18 @@ public class DevMojo extends AbstractMojo {
             boolean reinitializeMavenSession = Files.exists(appModelLocation);
             if (reinitializeMavenSession) {
                 Files.delete(appModelLocation);
+                // we can't re-use the repo system because we want to use our interpolating model builder
+                // a use-case where it fails with the original repo system is when dev mode is launched with -Dquarkus.platform.version=xxx
+                // overriding the version of the quarkus-bom in the pom.xml
             } else {
                 // we can re-use the original Maven session
-                resolverBuilder.setRepositorySystemSession(repoSession);
+                resolverBuilder.setRepositorySystemSession(repoSession).setRepositorySystem(repoSystem);
             }
 
             appModel = new BootstrapAppModelResolver(resolverBuilder.build())
                     .setDevMode(true)
                     .setCollectReloadableDependencies(!noDeps)
-                    .resolveModel(new GACTV(project.getGroupId(), project.getArtifactId(), null, ArtifactCoords.TYPE_JAR,
-                            project.getVersion()));
+                    .resolveModel(new GACTV(project.getGroupId(), project.getArtifactId(), project.getVersion()));
         }
 
         // serialize the app model to avoid re-resolving it in the dev process

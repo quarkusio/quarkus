@@ -12,7 +12,7 @@ public class CookieParser {
         // cookie headers can be separated by "," (HTTP header separator), or ";" (Cookie separator)
         // FIXME: the current cookie RFC doesn't mention params for cookies sent by the client
         // doesn't mention $ as a prefix either
-        // FIXME: make this faster if we have a single cooke
+        // FIXME: make this faster if we have a single cookie
         try {
             List<Cookie> cookies = new ArrayList<>();
 

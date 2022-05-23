@@ -184,7 +184,7 @@ public class HttpConfiguration {
     /**
      * The accept backlog, this is how many connections can be waiting to be accepted before connections start being rejected
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "-1")
     public int acceptBacklog;
 
     /**

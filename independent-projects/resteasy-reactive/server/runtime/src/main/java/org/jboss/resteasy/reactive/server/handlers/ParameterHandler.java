@@ -37,6 +37,8 @@ public class ParameterHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) {
+        // needed because user provided ParamConverter classes could use request scoped CDI beans
+        requestContext.requireCDIRequestScope();
         try {
             Object result = extractor.extractParameter(requestContext);
             if (result instanceof ParameterExtractor.ParameterCallback) {

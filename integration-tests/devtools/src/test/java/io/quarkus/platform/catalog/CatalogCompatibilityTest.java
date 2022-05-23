@@ -5,17 +5,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.util.List;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
 import io.quarkus.devtools.project.CodestartResourceLoadersBuilder;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.platform.catalog.processor.CatalogProcessor;
 import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 import io.quarkus.platform.catalog.processor.ProcessedCategory;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
-import io.quarkus.registry.Constants;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.Extension;
@@ -25,20 +24,13 @@ import io.quarkus.registry.catalog.PlatformCatalog;
 import io.quarkus.registry.catalog.PlatformRelease;
 import io.quarkus.registry.catalog.PlatformStream;
 
-@Disabled
-public class RegistrySnapshotCatalogCompatibilityTest {
-
-    private final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.getCatalogResolver();
-
-    public RegistrySnapshotCatalogCompatibilityTest() throws RegistryResolutionException {
-    }
+public class CatalogCompatibilityTest extends PlatformAwareTestBase {
 
     @Test
-    public void testRegistrySnapshotPlatformCatalog() throws RegistryResolutionException, IOException {
-        // TODO Use a local snapshot of the registry for testing
-        final PlatformCatalog platformCatalog = getRegistryPlatformCatalog();
-        assertThat(platformCatalog.getMetadata().get(Constants.LAST_UPDATED)).isNotNull();
-        testPlatformCatalog(catalogResolver, platformCatalog, "io.quarkus.platform");
+    void testCatalog() throws RegistryResolutionException, IOException {
+        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.getCatalogResolver();
+        testPlatformCatalog(catalogResolver, catalogResolver.resolvePlatformCatalog(),
+                "io.quarkus");
     }
 
     static void testPlatformCatalog(ExtensionCatalogResolver catalogResolver, PlatformCatalog platformCatalog,
@@ -55,7 +47,6 @@ public class RegistrySnapshotCatalogCompatibilityTest {
             for (PlatformRelease r : s.getReleases()) {
                 checkPlatformRelease(catalogResolver, r);
             }
-
         }
     }
 
@@ -102,7 +93,4 @@ public class RegistrySnapshotCatalogCompatibilityTest {
         extensionProcessor.getNonQuarkusBomOnly();
     }
 
-    private PlatformCatalog getRegistryPlatformCatalog() throws RegistryResolutionException {
-        return catalogResolver.resolvePlatformCatalog();
-    }
 }

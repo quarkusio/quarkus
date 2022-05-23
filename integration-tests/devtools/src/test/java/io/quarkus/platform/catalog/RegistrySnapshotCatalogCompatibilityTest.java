@@ -25,6 +25,7 @@ import io.quarkus.registry.catalog.PlatformCatalog;
 import io.quarkus.registry.catalog.PlatformRelease;
 import io.quarkus.registry.catalog.PlatformStream;
 
+@Disabled
 public class RegistrySnapshotCatalogCompatibilityTest {
 
     private final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.getCatalogResolver();
@@ -33,7 +34,6 @@ public class RegistrySnapshotCatalogCompatibilityTest {
     }
 
     @Test
-    @Disabled
     public void testRegistrySnapshotPlatformCatalog() throws RegistryResolutionException, IOException {
         // TODO Use a local snapshot of the registry for testing
         final PlatformCatalog platformCatalog = getRegistryPlatformCatalog();

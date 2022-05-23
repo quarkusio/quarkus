@@ -260,4 +260,9 @@ final class JnaNativeSubstitutions {
     public static String getWebStartLibraryPath(final String libName) {
         return null;
     }
+
+    @Substitute
+    public static void register(Class<?> cls, String libName) {
+
+    }
 }

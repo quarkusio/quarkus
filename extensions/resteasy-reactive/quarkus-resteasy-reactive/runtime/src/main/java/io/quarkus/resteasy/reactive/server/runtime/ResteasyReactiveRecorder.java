@@ -3,14 +3,18 @@ package io.quarkus.resteasy.reactive.server.runtime;
 import static io.quarkus.resteasy.reactive.server.runtime.NotFoundExceptionMapper.classMappers;
 
 import java.io.Closeable;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import javax.ws.rs.core.Application;
 
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
@@ -55,10 +59,60 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder implements EndpointInvokerFactory {
 
+    static final Logger logger = Logger.getLogger("io.quarkus");
+
     public static final Supplier<Executor> EXECUTOR_SUPPLIER = new Supplier<Executor>() {
         @Override
         public Executor get() {
             return ExecutorRecorder.getCurrent();
+        }
+    };
+    public static final Supplier<Executor> VIRTUAL_EXECUTOR_SUPPLIER = new Supplier<Executor>() {
+        Executor current = null;
+
+        /**
+         * This method is used to specify a custom executor to dispatch virtual threads on carrier threads
+         * We need reflection for both ease of use (see {@link #get() Get} method) but also because we call methods
+         * of private classes from the java.lang package.
+         *
+         * It is used for testing purposes only for now
+         */
+        private Executor setVirtualThreadCustomScheduler(Executor executor) throws ClassNotFoundException,
+                InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException {
+            var vtf = Class.forName("java.lang.ThreadBuilders").getDeclaredClasses()[0];
+            Constructor constructor = vtf.getDeclaredConstructors()[0];
+            constructor.setAccessible(true);
+            ThreadFactory tf = (ThreadFactory) constructor.newInstance(
+                    new Object[] { executor, "quarkus-virtual-factory-", 0, 0,
+                            null });
+
+            return (Executor) Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class)
+                    .invoke(this, tf);
+        }
+
+        /**
+         * This method uses reflection in order to allow developers to quickly test quarkus-loom without needing to
+         * change --release, --source, --target flags and to enable previews.
+         * Since we try to load the "Loom-preview" classes/methods at runtime, the application can even be compiled
+         * using java 11 and executed with a loom-compliant JDK.
+         */
+        @Override
+        public Executor get() {
+            if (current == null) {
+                try {
+                    current = (Executor) Executors.class.getMethod("newVirtualThreadPerTaskExecutor")
+                            .invoke(this);
+                } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+                    System.err.println(e);
+                    //quite ugly but works
+                    logger.warnf("You weren't able to create an executor that spawns virtual threads, the default" +
+                            " blocking executor will be used, please check that your JDK is compatible with " +
+                            "virtual threads");
+                    //if for some reason a class/method can't be loaded or invoked we return the traditional EXECUTOR
+                    current = EXECUTOR_SUPPLIER.get();
+                }
+            }
+            return current;
         }
     };
 
@@ -114,6 +168,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         }
 
         RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, EXECUTOR_SUPPLIER,
+                VIRTUAL_EXECUTOR_SUPPLIER,
                 closeTaskHandler, contextFactory, new ArcThreadSetupAction(beanContainer.requestContext()),
                 vertxConfig.rootPath);
         Deployment deployment = runtimeDeploymentManager.deploy();
@@ -164,6 +219,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                     SingletonBeanFactory.setInstance(i.getClass().getName(), i);
                 }
                 applicationSupplier = new Supplier<Application>() {
+
                     @Override
                     public Application get() {
                         return application;

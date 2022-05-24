@@ -85,9 +85,11 @@ class RuntimeMappingDeployment {
             //now we just create a fake RuntimeResource
             //we could add another layer of indirection, however this is not a common case
             //so we don't want to add any extra latency into the common case
+
             RuntimeResource fake = new RuntimeResource(currentHttpMethod, path, null, null, Collections.emptyList(),
                     null, null,
-                    new ServerRestHandler[] { mapper }, null, new Class[0], null, false, null, null, null, null, null,
+                    new ServerRestHandler[] { mapper }, null, new Class[0], null, false,
+                    false, null, null, null, null, null,
                     Collections.emptyMap());
             currentMapperPerMethodTemplates.add(new RequestMapper.RequestPath<>(false, fake.getPath(), fake));
         }

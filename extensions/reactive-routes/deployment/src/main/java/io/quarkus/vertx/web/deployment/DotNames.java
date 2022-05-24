@@ -15,6 +15,7 @@ import io.quarkus.vertx.web.RouteBase;
 import io.quarkus.vertx.web.RouteFilter;
 import io.quarkus.vertx.web.RoutingExchange;
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
@@ -51,6 +52,7 @@ final class DotNames {
     static final DotName EXCEPTION = DotName.createSimple(Exception.class.getName());
     static final DotName THROWABLE = DotName.createSimple(Throwable.class.getName());
     static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
+    static final DotName RUN_ON_VIRTUAL_THREAD = DotName.createSimple(RunOnVirtualThread.class.getName());
     static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
     static final DotName COMPRESSED = DotName.createSimple(Compressed.class.getName());
     static final DotName UNCOMPRESSED = DotName.createSimple(Uncompressed.class.getName());

@@ -58,6 +58,8 @@ public class ResourceMethod {
 
     private boolean blocking;
 
+    private boolean runOnVirtualThread;
+
     private boolean suspended;
 
     private boolean isSse;
@@ -181,8 +183,17 @@ public class ResourceMethod {
         return blocking;
     }
 
+    public boolean isRunOnVirtualThread() {
+        return runOnVirtualThread;
+    }
+
     public ResourceMethod setBlocking(boolean blocking) {
         this.blocking = blocking;
+        return this;
+    }
+
+    public ResourceMethod setRunOnVirtualThread(boolean runOnVirtualThread) {
+        this.runOnVirtualThread = runOnVirtualThread;
         return this;
     }
 

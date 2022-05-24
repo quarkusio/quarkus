@@ -16,7 +16,7 @@ ifdef::prerequisites-docker[]
 * A working container runtime (Docker or Podman)
 endif::[]
 ifdef::prerequisites-docker-compose[]
-* Docker and Docker Compose
+* Docker and Docker Compose or xref:podman.adoc[Podman], and Docker Compose
 endif::[]
 ifndef::prerequisites-no-cli[]
 * Optionally the xref:cli-tooling.adoc[Quarkus CLI] if you want to use it

@@ -1,0 +1,77 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Using Podman with Quarkus
+
+https://podman.io/[Podman] is a daemonless and rootless container engine for developing, managing, and running OCI Containers on your Linux system or other OS.
+Podman can be used the same way as Docker with the `podman-docker` package.
+
+== Installing Podman on Linux
+
+The Podman package is available in several Linux distributions. To install it for your OS, please refer to the  https://podman.io/getting-started/installation[Podman installation guide].
+Below is the short installation instruction for popular Linux distributions:
+
+.Fedora
+[source,bash]
+----
+sudo dnf install podman podman-docker docker-compose
+----
+.Ubuntu (21.04 and later)
+[source,bash]
+----
+sudo apt install podman podman-docker docker-compose
+----
+
+=== After installation
+
+Podman is a daemonless container engine. Most Quarkus Dev Services and Testcontainers expect a running Docker daemon listening at a Unix socket.
+That's why the following steps are required.
+[source,bash]
+----
+# Enable the podman socket with Docker REST API
+systemctl --user enable podman.socket --now
+# Set the required envvars
+export DOCKER_HOST=unix:///run/user/${UID}/podman/podman.sock
+export TESTCONTAINERS_RYUK_DISABLED=true
+----
+For a detailed explanation, see this https://quarkus.io/blog/quarkus-devservices-testcontainers-podman/[blog article].
+
+To make changes permanent, add the exported environment variables to the "init" file from your shell. For example, the `bash` shell uses  the `~/.bashrc` file:
+[source,bash]
+----
+echo "export DOCKER_HOST=unix:///run/user/${UID}/podman/podman.sock" >> ~/.bashrc
+echo "export TESTCONTAINERS_RYUK_DISABLED=true" >> ~/.bashrc
+----
+
+=== Short names of images
+
+Testcontainers and Quarkus Dev Services also expect the container service they make requests against to be non-interactive.
+In case you have multiple registries configured in your Docker or Podman configuration, and when using short image names, Podman responds with a prompt asking which registry should be used to pull images.
+
+While we recommend you to avoid short names and always use fully specified names including the registry,
+Testcontainers unfortunately relies on short names internally for the time being.
+If you are using Testcontainers, either directly or through Dev Services,
+you need to disable this prompt by setting the `short-name-mode="disabled"` configuration property of Podman in `/etc/containers/registries.conf`.
+
+== Other operating systems
+
+Containers are really Linux. As such, Linux containers cannot run natively on macOS or Windows.
+Therefore, the containers must run in a Linux virtual machine (VM), and a Podman client interacts with that VM.
+So a native hypervisor subsystem and virtualization software is used to run the Linux VM on the OS, and then containers are run within this VM.
+
+.macOS
+macOS users can install Podman through https://brew.sh/[Homebrew]. Once you have set up `brew`, you can use the `brew install` command to install Podman and `docker-compose`:
+[source,bash]
+----
+brew install podman
+brew install docker-compose
+podman machine init
+podman machine start
+alias docker='podman'
+----
+For more details, please see the https://podman.io/getting-started/installation#macos[official Podman documentation] and this https://www.redhat.com/sysadmin/replace-docker-podman-macos[article].
+
+.Windows
+Please see the https://github.com/containers/podman/blob/main/docs/tutorials/podman-for-windows.md[Podman for Windows guide] for setup and usage instructions.

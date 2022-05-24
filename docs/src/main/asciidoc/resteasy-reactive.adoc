@@ -711,9 +711,9 @@ public class Endpoint {
 }
 ----
 
-NOTE: Response filters are not invoked on streamed responses, because they would give a false
+NOTE: Response filters are **not** invoked on streamed responses, because they would give a false
 impression that you can set headers or HTTP status codes, which is not true after the initial
-response.
+response. Exception mappers are also not invoked because part of the response may already have been written.
 
 === Server-Sent Event (SSE) support
 

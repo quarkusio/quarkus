@@ -175,7 +175,14 @@ public class PackageConfig {
      * Fernflower Decompiler configuration
      */
     @ConfigItem
+    @Deprecated(forRemoval = true)
     public FernflowerConfig fernflower;
+
+    /**
+     * Quiltflower Decompiler configuration
+     */
+    @ConfigItem
+    public QuiltFlowerConfig quiltflower;
 
     /**
      * If set to {@code true}, it will result in the Quarkus writing the transformed application bytecode
@@ -217,6 +224,7 @@ public class PackageConfig {
     }
 
     @ConfigGroup
+    @Deprecated(forRemoval = true)
     public static class FernflowerConfig {
 
         /**
@@ -231,6 +239,28 @@ public class PackageConfig {
          */
         @ConfigItem(defaultValue = "dbf407a655")
         public String hash;
+
+        /**
+         * The directory into which to save the fernflower tool if it doesn't exist
+         */
+        @ConfigItem(defaultValue = "${user.home}/.quarkus")
+        public String jarDirectory;
+    }
+
+    @ConfigGroup
+    public static class QuiltFlowerConfig {
+        /**
+         * An advanced option that will decompile generated and transformed bytecode into the 'decompiled' directory.
+         * This is only taken into account when fast-jar is used.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean enabled;
+
+        /**
+         * The version of Quiltflower to use
+         */
+        @ConfigItem(defaultValue = "1.8.1")
+        public String version;
 
         /**
          * The directory into which to save the fernflower tool if it doesn't exist

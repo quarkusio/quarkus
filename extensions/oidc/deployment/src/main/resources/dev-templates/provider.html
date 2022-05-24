@@ -187,7 +187,8 @@ var port = {config:property('quarkus.http.port')};
         localStorage.removeItem('authorized');
     
         window.location.assign('{info:logoutUrl??}'
-          + "?" + '{info:postLogoutUriParam??}' + "=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider");
+          + "?" + '{info:postLogoutUriParam??}' + "=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
+          + "&" + "id_token_hint" + "=" + idToken);
     }
         
     function exchangeCodeForTokens(code){

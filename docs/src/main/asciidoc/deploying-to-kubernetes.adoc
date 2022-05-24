@@ -613,6 +613,11 @@ To access the API server from within a Kubernetes cluster, some RBAC related res
 So, when the `kubernetes-client` extension is present, the `kubernetes` extension is going to create those resources automatically, so that application will be granted the `view` role.
 If more roles are required, they will have to be added manually.
 
+[NOTE]
+====
+You can disable the RBAC resources generation using the property `quarkus.kubernetes-client.generate-rbac=false`.
+====
+
 === Deploying to Minikube
 
 https://github.com/kubernetes/minikube[Minikube] is quite popular when a Kubernetes cluster is needed for development purposes. To make the deployment to Minikube

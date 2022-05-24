@@ -155,4 +155,10 @@ public class KubernetesClientBuildConfig {
     @ConfigItem
     public Optional<String[]> noProxy;
 
+    /**
+     * Enable the generation of the RBAC manifests.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean generateRbac;
+
 }

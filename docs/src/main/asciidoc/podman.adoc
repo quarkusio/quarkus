@@ -50,8 +50,10 @@ echo "export TESTCONTAINERS_RYUK_DISABLED=true" >> ~/.bashrc
 Testcontainers and Quarkus Dev Services also expect the container service they make requests against to be non-interactive.
 In case you have multiple registries configured in your Docker or Podman configuration, and when using short image names, Podman responds with a prompt asking which registry should be used to pull images.
 
-We recommend you to avoid short names and always use fully specified names including the registry.
-If, for some reason, it is not an option for you, you can disable this prompt by setting the `short-name-mode="disabled"` configuration property of Podman in `/etc/containers/registries.conf`.
+While we recommend you to avoid short names and always use fully specified names including the registry,
+Testcontainers unfortunately relies on short names internally for the time being.
+If you are using Testcontainers, either directly or through Dev Services,
+you need to disable this prompt by setting the `short-name-mode="disabled"` configuration property of Podman in `/etc/containers/registries.conf`.
 
 == Other operating systems
 

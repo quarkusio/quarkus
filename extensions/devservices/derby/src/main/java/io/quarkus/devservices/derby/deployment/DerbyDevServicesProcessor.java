@@ -69,6 +69,7 @@ public class DerbyDevServicesProcessor {
                                     + additionalArgs.toString(),
                             null,
                             null,
+                            null,
                             new Closeable() {
                                 @Override
                                 public void close() throws IOException {

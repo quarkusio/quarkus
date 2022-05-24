@@ -21,14 +21,17 @@ public interface DevServicesDatasourceProvider {
     class RunningDevServicesDatasource {
 
         private final String id;
-        private final String url;
+        private final String jdbcUrl;
+        private final String reactiveUrl;
         private final String username;
         private final String password;
         private final Closeable closeTask;
 
-        public RunningDevServicesDatasource(String id, String url, String username, String password, Closeable closeTask) {
+        public RunningDevServicesDatasource(String id, String jdbcUrl, String reactiveUrl, String username, String password,
+                Closeable closeTask) {
             this.id = id;
-            this.url = url;
+            this.jdbcUrl = jdbcUrl;
+            this.reactiveUrl = reactiveUrl;
             this.username = username;
             this.password = password;
             this.closeTask = closeTask;
@@ -38,8 +41,12 @@ public interface DevServicesDatasourceProvider {
             return id;
         }
 
-        public String getUrl() {
-            return url;
+        public String getJdbcUrl() {
+            return jdbcUrl;
+        }
+
+        public String getReactiveUrl() {
+            return reactiveUrl;
         }
 
         public Closeable getCloseTask() {

@@ -60,6 +60,7 @@ public class OracleDevServicesProcessor {
 
                 return new RunningDevServicesDatasource(container.getContainerId(),
                         container.getEffectiveJdbcUrl(),
+                        container.getReactiveUrl(),
                         container.getUsername(),
                         container.getPassword(),
                         new ContainerShutdownCloseable(container, "Oracle"));
@@ -109,6 +110,10 @@ public class OracleDevServicesProcessor {
             } else {
                 return super.getJdbcUrl();
             }
+        }
+
+        public String getReactiveUrl() {
+            return getEffectiveJdbcUrl().replaceFirst("jdbc:", "vertx-reactive:");
         }
     }
 }

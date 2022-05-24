@@ -15,7 +15,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.ReaderInterceptor;
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.jaxrs.ReaderInterceptorContextImpl;
@@ -47,7 +46,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
         String requestTypeString = requestContext.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
         if (requestTypeString != null) {
             try {
-                effectiveRequestType = MediaTypeHelper.withSuffixAsSubtype(MediaType.valueOf(requestTypeString));
+                effectiveRequestType = MediaType.valueOf(requestTypeString);
             } catch (Exception e) {
                 throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
             }

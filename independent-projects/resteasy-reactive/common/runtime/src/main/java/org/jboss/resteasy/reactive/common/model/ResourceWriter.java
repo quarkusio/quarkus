@@ -99,7 +99,7 @@ public class ResourceWriter {
         if (serverMediaType == null) {
             synchronized (this) {
                 // a MessageBodyWriter should always return its configured media type when negotiating, hence the 'false' for 'useSuffix'
-                serverMediaType = new ServerMediaType(mediaTypes(), StandardCharsets.UTF_8.name(), false, false);
+                serverMediaType = new ServerMediaType(mediaTypes(), StandardCharsets.UTF_8.name(), false);
             }
         }
         return serverMediaType;
@@ -129,7 +129,15 @@ public class ResourceWriter {
      */
     public static class ResourceWriterComparator implements Comparator<ResourceWriter> {
 
-        public static final ResourceWriterComparator INSTANCE = new ResourceWriterComparator();
+        private final List<MediaType> produces;
+
+        public ResourceWriterComparator() {
+            this(Collections.emptyList());
+        }
+
+        public ResourceWriterComparator(List<MediaType> produces) {
+            this.produces = produces;
+        }
 
         @Override
         public int compare(ResourceWriter o1, ResourceWriter o2) {
@@ -157,6 +165,14 @@ public class ResourceWriter {
             int mediaTypeCompare = MediaTypeHelper.compareWeight(mediaTypes1.get(0), mediaTypes2.get(0));
             if (mediaTypeCompare != 0) {
                 return mediaTypeCompare;
+            }
+
+            // try to compare using the number of matching produces media types
+            if (!produces.isEmpty()) {
+                mediaTypeCompare = MediaTypeHelper.compareMatchingMediaTypes(produces, mediaTypes1, mediaTypes2);
+                if (mediaTypeCompare != 0) {
+                    return mediaTypeCompare;
+                }
             }
 
             // done to make the sorting result deterministic

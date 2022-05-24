@@ -79,8 +79,7 @@
         <plexus-utils.version>3.3.0</plexus-utils.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
         <graal-sdk.version>22.1.0</graal-sdk.version>
-        <!-- Use previous graal version till https://github.com/oracle/graal/issues/4518 gets resolved -->
-        <graal-svm.version>22.0.0.2</graal-svm.version>
+        <graal-svm.version>${graal-sdk.version}</graal-svm.version>
         <gizmo.version>1.0.11.Final</gizmo.version>
         <jackson-bom.version>2.13.3</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>

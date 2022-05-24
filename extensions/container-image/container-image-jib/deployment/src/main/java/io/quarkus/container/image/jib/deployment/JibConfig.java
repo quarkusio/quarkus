@@ -203,6 +203,13 @@ public class JibConfig {
     public Optional<String> dockerExecutableName;
 
     /**
+     * Sets environment variables used by the Docker executable. This is only used by Jib
+     * when the container image is being built locally.
+     */
+    @ConfigItem
+    public Map<String, String> dockerEnvironment;
+
+    /**
      * Whether to set the creation time to the actual build time. Otherwise, the creation time
      * will be set to the Unix epoch (00:00:00, January 1st, 1970 in UTC). See <a href=
      * "https://github.com/GoogleContainerTools/jib/blob/master/docs/faq.md#why-is-my-image-created-48-years-ago">Jib

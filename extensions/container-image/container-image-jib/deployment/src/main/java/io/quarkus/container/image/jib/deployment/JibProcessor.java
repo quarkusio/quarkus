@@ -276,6 +276,7 @@ public class JibProcessor {
                 log.infof("Using %s to run the native image builder", detectedContainerRuntime.getExecutableName());
                 dockerDaemonImage.setDockerExecutable(Paths.get(detectedContainerRuntime.getExecutableName()));
             }
+            dockerDaemonImage.setDockerEnvironment(jibConfig.dockerEnvironment);
             containerizer = Containerizer.to(dockerDaemonImage);
         }
         containerizer.setToolName("Quarkus");

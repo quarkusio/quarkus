@@ -3,7 +3,6 @@ package io.quarkus.it.rest.client.trustall;
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.Matchers.is;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -11,7 +10,6 @@ import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 @QuarkusTestResource(ExternalTlsTrustAllTestResource.class)
-@Disabled("certificate expired")
 public class ExternalTlsTrustAllTestCase {
 
     @Test

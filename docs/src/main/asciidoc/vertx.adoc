@@ -227,7 +227,7 @@ public Multi<String> readLargeFile() {                                          
                     new OpenOptions().setRead(true)
             )
             .onItem().transformToMulti(file -> file.toMulti())                       // <3>
-            .onItem().transform(content -> content.toString(StandardCharsets.UTF_8)) // <4>
+            .onItem().transform(content -> content.toString(StandardCharsets.UTF_8) // <4>
                     + "\n------------\n");                                           // <5>
 }
 ----

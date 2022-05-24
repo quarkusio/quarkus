@@ -4,6 +4,8 @@ import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.servers.Server;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
@@ -48,6 +50,29 @@ public class OpenApiResourceSecuredAtMethodLevel {
     @Path("/test-security/methodLevel/public")
     public String publicEndpoint() {
         return "boo";
+    }
+
+    @APIResponses({
+            @APIResponse(responseCode = "401", description = "Who are you?"),
+            @APIResponse(responseCode = "403", description = "You cannot do that.")
+    })
+    @GET
+    @Path("/test-security/annotated/documented")
+    @RolesAllowed("admin")
+    @SecurityRequirement(name = "JWTCompanyAuthentication")
+    public String secureEndpointWithSecurityAnnotationAndDocument() {
+        return "secret";
+    }
+
+    @APIResponses({
+            @APIResponse(responseCode = "401", description = "Who are you?"),
+            @APIResponse(responseCode = "403", description = "You cannot do that.")
+    })
+    @GET
+    @Path("/test-security/methodLevel/3")
+    @RolesAllowed("admin")
+    public String secureEndpoint3() {
+        return "secret";
     }
 
 }

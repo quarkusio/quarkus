@@ -254,7 +254,7 @@ public class IndexingUtil {
                             "Can't read Jandex index from " + visit.getPath() + ": " + e.getMessage());
                 }
             } catch (IOException e) {
-                throw new UncheckedIOException(e);
+                throw new UncheckedIOException("Can't read Jandex index from " + visit.getPath(), e);
             }
         }
     }

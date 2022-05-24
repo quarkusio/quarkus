@@ -15,6 +15,7 @@ import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.archive.scan.spi.Scanner;
+import org.hibernate.engine.spi.SessionLazyDelegator;
 import org.hibernate.integrator.spi.Integrator;
 import org.jboss.logging.Logger;
 
@@ -25,7 +26,6 @@ import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
-import io.quarkus.hibernate.orm.runtime.session.ForwardingSession;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -123,14 +123,12 @@ public class HibernateOrmRecorder {
             public Session get() {
                 TransactionSessions transactionSessions = Arc.container()
                         .instance(TransactionSessions.class).get();
-                ForwardingSession session = new ForwardingSession() {
-
+                return new SessionLazyDelegator(new Supplier<Session>() {
                     @Override
-                    protected Session delegate() {
+                    public Session get() {
                         return transactionSessions.getSession(persistenceUnitName);
                     }
-                };
-                return session;
+                });
             }
         };
     }

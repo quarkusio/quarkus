@@ -2,11 +2,12 @@
 .CLI
 ----
 ifdef::build-additional-parameters[]
-quarkus build --native -Dquarkus.native.container-build=true {build-additional-parameters}
+quarkus build --native --no-tests -Dquarkus.native.container-build=true {build-additional-parameters}
 endif::[]
 ifndef::build-additional-parameters[]
-quarkus build --native -Dquarkus.native.container-build=true
+quarkus build --native --no-tests -Dquarkus.native.container-build=true
 endif::[]
+# The --no-tests flag is required only on Windows and macOS.
 ----
 ifndef::devtools-no-maven[]
 ifdef::devtools-wrapped[+]

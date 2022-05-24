@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import java.util.Comparator;
 import java.util.Locale;
 
 import javax.enterprise.inject.Default;
@@ -35,6 +36,19 @@ public class PersistenceUnitUtil {
     public static <T> InjectableInstance<T> extensionInstanceForPersistenceUnit(Class<T> beanType, String persistenceUnitName) {
         return Arc.container().select(beanType,
                 new PersistenceUnitExtension.Literal(persistenceUnitName));
+    }
+
+    public static class PersistenceUnitNameComparator implements Comparator<String> {
+        @Override
+        public int compare(String o1, String o2) {
+            if (DEFAULT_PERSISTENCE_UNIT_NAME.equals(o1)) {
+                return -1;
+            } else if (DEFAULT_PERSISTENCE_UNIT_NAME.equals(o2)) {
+                return +1;
+            } else {
+                return o1.compareTo(o2);
+            }
+        }
     }
 
     @Deprecated

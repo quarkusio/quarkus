@@ -915,7 +915,7 @@ quarkus.oidc.end-session-path=/protocol/openid-connect/logout
 ----
 
 === Token Propagation
-Please see xref:security-openid-connect-client.adoc#token-propagation[Token Propagation] section about the Authorization Code Flow access token propagation to the downstream services.
+Please see xref:security-openid-connect-client-reference.adoc#token-propagation[Token Propagation] section about the Authorization Code Flow access token propagation to the downstream services.
 
 [[oidc-provider-client-authentication]]
 === Oidc Provider Client Authentication
@@ -1389,7 +1389,7 @@ include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * xref:security-openid-connect-providers.adoc[Well Known OpenID Connect providers].
-* xref:security-openid-connect-client.adoc[Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens]
+* xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 Client and Filters Reference Guide]
 * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]
 * xref:security.adoc#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
 * xref:security.adoc[Quarkus Security]

@@ -566,7 +566,7 @@ quarkus.oidc.introspection-path=/protocol/openid-connect/tokens/introspect
 
 === Token Propagation
 
-Please see xref:security-openid-connect-client.adoc#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
+Please see xref:security-openid-connect-client-reference.adoc#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
 
 [[oidc-provider-authentication]]
 === Oidc Provider Client Authentication
@@ -1146,7 +1146,7 @@ Note Quarkus `web-app` applications always require `quarkus.oidc.client-id` prop
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
-* xref:security-openid-connect-client.adoc[Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens]
+* xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 Client and Filters Reference Guide]
 * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]
 * xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
 * xref:security.adoc#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]

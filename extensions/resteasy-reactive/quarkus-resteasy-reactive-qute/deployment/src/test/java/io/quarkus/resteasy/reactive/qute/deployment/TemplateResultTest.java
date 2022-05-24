@@ -11,7 +11,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 
-public class TemplateResponseFilterTest {
+public class TemplateResultTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -26,8 +26,8 @@ public class TemplateResponseFilterTest {
                     .addAsResource(new StringAsset("Hello {name}!"), "templates/hello.txt"));
 
     @Test
-    public void testFilter() {
-        when().get("/hello").then().body(Matchers.is("Hello world!"));
+    public void test() {
+        when().get("/hello").then().statusCode(200).body(Matchers.is("Hello world!"));
         when().get("/hello?name=Joe").then().body(Matchers.is("Hello Joe!"));
         when().get("/hello/no-injection").then().body(Matchers.is("Salut world!"));
         when().get("/hello/no-injection?name=Joe").then().body(Matchers.is("Salut Joe!"));
@@ -40,6 +40,9 @@ public class TemplateResponseFilterTest {
         when().get("/hello/native/typed-template-primitives").then()
                 .body(Matchers.is("Byte: 0 Short: 1 Int: 2 Long: 3 Char: a Boolean: true Float: 4.0 Double: 5.0"));
         when().get("/hello/native/toplevel?name=Joe").then().body(Matchers.is("Salut Joe!"));
+        when().get("/hello/status-and-headers").then().statusCode(201).header("foo", "bar").body(Matchers.is("Hello world!"));
+        when().get("/hello/rest-response").then().statusCode(202).body(Matchers.is("Hello world!"));
+        when().get("/hello/response").then().statusCode(203).body(Matchers.is("Hello world!"));
     }
 
 }

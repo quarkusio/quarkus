@@ -366,7 +366,9 @@ public class RuntimeResourceDeployment {
         }
         boolean afterMethodInvokeHandlersAdded = addHandlers(handlers, clazz, method, info,
                 HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE);
-        if (afterMethodInvokeHandlersAdded) {
+        boolean afterMethodInvokeHandlersSecondRoundAdded = addHandlers(handlers, clazz, method, info,
+                HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE_SECOND_ROUND);
+        if (afterMethodInvokeHandlersAdded || afterMethodInvokeHandlersSecondRoundAdded) {
             addStreamingResponseCustomizers(method, handlers);
         }
 

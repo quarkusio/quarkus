@@ -98,6 +98,12 @@ public interface HandlerChainCustomizer {
          * handlers are invoked just after the resource method is invoked
          */
         AFTER_METHOD_INVOKE,
+
+        /**
+         * handlers are invoked after the handlers that run after the method invocation
+         */
+        AFTER_METHOD_INVOKE_SECOND_ROUND,
+
         /**
          * handlers are invoked just after the resource method result has been turned into a {@link Response}
          */

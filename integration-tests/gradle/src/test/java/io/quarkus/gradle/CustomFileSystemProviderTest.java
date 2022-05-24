@@ -14,6 +14,6 @@ public class CustomFileSystemProviderTest extends QuarkusGradleWrapperTestBase {
         final File projectDir = getProjectDir("custom-filesystem-provider");
 
         BuildResult build = runGradleWrapper(projectDir, "clean", ":application:test");
-        assertThat(build.getTasks().get(":application:test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(build.getTasks().get(":application:test"))).isTrue();
     }
 }

@@ -14,6 +14,6 @@ public class AnnotationProcessorMultiModuleTest extends QuarkusGradleWrapperTest
 
         BuildResult buildResult = runGradleWrapper(projectDir, "clean", "test");
 
-        assertThat(buildResult.getTasks().get(":application:test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(buildResult.getTasks().get(":application:test"))).isTrue();
     }
 }

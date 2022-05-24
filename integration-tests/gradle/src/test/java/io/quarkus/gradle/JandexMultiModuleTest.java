@@ -14,8 +14,8 @@ public class JandexMultiModuleTest extends QuarkusGradleWrapperTestBase {
         final File projectDir = getProjectDir("jandex-basic-multi-module-project");
 
         BuildResult build = runGradleWrapper(projectDir, "clean", ":application:quarkusBuild");
-        assertThat(build.getTasks().get(":common:jandex")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
-        assertThat(build.getTasks().get(":application:quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(build.getTasks().get(":common:jandex"))).isTrue();
+        assertThat(BuildResult.isSuccessful(build.getTasks().get(":application:quarkusBuild"))).isTrue();
     }
 
 }

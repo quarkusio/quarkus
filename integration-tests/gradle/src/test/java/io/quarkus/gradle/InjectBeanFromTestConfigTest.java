@@ -14,6 +14,6 @@ public class InjectBeanFromTestConfigTest extends QuarkusGradleWrapperTestBase {
         final File projectDir = getProjectDir("inject-bean-from-test-config");
 
         BuildResult build = runGradleWrapper(projectDir, "clean", ":application:test");
-        assertThat(build.getTasks().get(":application:test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(build.getTasks().get(":application:test"))).isTrue();
     }
 }

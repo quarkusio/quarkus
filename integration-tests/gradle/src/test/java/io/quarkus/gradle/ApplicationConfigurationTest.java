@@ -14,7 +14,7 @@ public class ApplicationConfigurationTest extends QuarkusGradleWrapperTestBase {
 
         BuildResult testResult = runGradleWrapper(projectDir, "clean", ":application:test");
 
-        assertThat(testResult.getTasks().get(":application:test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(testResult.getTasks().get(":application:test"))).isTrue();
     }
 
 }

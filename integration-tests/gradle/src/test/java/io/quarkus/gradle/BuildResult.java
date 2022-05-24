@@ -12,6 +12,7 @@ public class BuildResult {
 
     public static final String SUCCESS_OUTCOME = "SUCCESS";
     public static final String UPTODATE_OUTCOME = "UP-TO-DATE";
+    public static final String FROM_CACHE = "FROM-CACHE";
     private static final String TASK_RESULT_PREFIX = "> Task";
 
     private Map<String, String> tasks;
@@ -53,5 +54,9 @@ public class BuildResult {
 
     public String getOutput() {
         return output;
+    }
+
+    public static boolean isSuccessful(String result) {
+        return SUCCESS_OUTCOME.equals(result) || FROM_CACHE.equals(result);
     }
 }

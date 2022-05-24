@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::./attributes.adoc[]
 
 
-Quarkus includes the `kubernetes-config` extension which allows developers to use Kubernetes https://cloud.google.com/kubernetes-engine/docs/concepts/configmap[ConfigMaps] and https://cloud.google.com/kubernetes-engine/docs/concepts/secret[Secrets] as a configuration source, without having to mount them into the https://kubernetes.io/docs/concepts/workloads/pods/pod/[Pod] running the Quarkus application or make any other modifications to their Kubernetes `Deployment` (or Openshift `DeploymentConfig`).
+Quarkus includes the `kubernetes-config` extension which allows developers to use Kubernetes https://cloud.google.com/kubernetes-engine/docs/concepts/configmap[ConfigMaps] and https://cloud.google.com/kubernetes-engine/docs/concepts/secret[Secrets] as a configuration source, without having to mount them into the https://kubernetes.io/docs/concepts/workloads/pods/pod/[Pod] running the Quarkus application or make any other modifications to their Kubernetes `Deployment` (or OpenShift `DeploymentConfig`).
 
 
 == Configuration

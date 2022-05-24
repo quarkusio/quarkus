@@ -373,6 +373,14 @@ jobs:
             **/windows-java-11.txt
             !**/build/tmp/**
           retention-days: 5
+      - name: Upload build.log (if build failed)
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "build-logs-JVM Tests - JDK ${{matrix.java.name}}"
+          path: |
+            **/build.log
+          retention-days: 2
 
   maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}

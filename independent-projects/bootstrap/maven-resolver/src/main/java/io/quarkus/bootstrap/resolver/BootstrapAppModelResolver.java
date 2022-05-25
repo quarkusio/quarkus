@@ -269,17 +269,17 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
         final ResolvedDependency appArtifact = resolve(coords, mvnArtifact, managedRepos);
 
-        final List<String> excludedScopes;
+        final String[] excludedScopes;
         if (test) {
-            excludedScopes = List.of();
+            excludedScopes = new String[0];
         } else if (devmode) {
-            excludedScopes = List.of("test");
+            excludedScopes = new String[] { "test" };
         } else {
-            excludedScopes = List.of("provided", "test");
+            excludedScopes = new String[] { "provided", "test" };
         }
 
         final DependencyNode resolvedDeps = mvn.resolveManagedDependencies(mvnArtifact,
-                directMvnDeps, managedDeps, managedRepos, excludedScopes.toArray(new String[0])).getRoot();
+                directMvnDeps, managedDeps, managedRepos, excludedScopes).getRoot();
 
         ArtifactDescriptorResult appArtifactDescr = mvn.resolveDescriptor(toAetherArtifact(appArtifact));
         if (managingProject == null) {
@@ -307,7 +307,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     }
 
     private ApplicationModel buildAppModel(ResolvedDependency appArtifact, DependencyNode resolvedDeps,
-            Set<ArtifactKey> reloadableModules, List<Dependency> managedDeps, final List<RemoteRepository> repos)
+            Set<ArtifactKey> reloadableModules, List<Dependency> managedDeps, List<RemoteRepository> repos)
             throws AppModelResolverException, BootstrapMavenException {
         final ApplicationModelBuilder appBuilder = new ApplicationModelBuilder().setAppArtifact(appArtifact);
         if (appArtifact.getWorkspaceModule() != null) {
@@ -340,7 +340,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                 throw new AppModelResolverException("Failed to normalize the dependency graph", e);
             }
             final BuildDependencyGraphVisitor buildDepsVisitor = new BuildDependencyGraphVisitor(
-                    deploymentInjector.allRuntimeDeps,
+                    deploymentInjector.getAllRuntimeDependencies(),
                     buildTreeConsumer);
             buildDepsVisitor.visit(resolvedDeps);
             final List<ArtifactRequest> requests = buildDepsVisitor.getArtifactRequests();

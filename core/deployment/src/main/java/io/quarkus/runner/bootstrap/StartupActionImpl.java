@@ -59,7 +59,7 @@ public class StartupActionImpl implements StartupAction {
         //test mode only has a single class loader, while dev uses a disposable runtime class loader
         //that is discarded between restarts
         Map<String, byte[]> resources = new HashMap<>(extractGeneratedResources(true));
-        if (curatedApplication.getQuarkusBootstrap().isFlatClassPath()) {
+        if (curatedApplication.isFlatClassPath()) {
             resources.putAll(extractGeneratedResources(false));
             baseClassLoader.reset(resources, transformedClasses);
             runtimeClassLoader = baseClassLoader;

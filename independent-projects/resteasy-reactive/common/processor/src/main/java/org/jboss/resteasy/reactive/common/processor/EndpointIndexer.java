@@ -118,6 +118,7 @@ import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
+import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion.Status;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
@@ -159,6 +160,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     public static final String METHOD_CONTEXT_ANNOTATION_STORE = "ANNOTATION_STORE";
     public static final String METHOD_PRODUCES = "METHOD_PRODUCES";
 
+    private static final boolean JDK_SUPPORTS_VIRTUAL_THREADS;
+
     static {
         Map<String, String> prims = new HashMap<>();
         prims.put(byte.class.getName(), Byte.class.getName());
@@ -195,6 +198,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         supportedReaderJavaTps.put(BIG_DECIMAL, BigDecimal.class);
         supportedReaderJavaTps.put(BIG_INTEGER, BigInteger.class);
         supportedReaderJavaTypes = Collections.unmodifiableMap(supportedReaderJavaTps);
+
+        boolean isJDKCompatible = true;
+        try {
+            Class.forName("java.lang.ThreadBuilders");
+        } catch (ClassNotFoundException e) {
+            isJDKCompatible = false;
+        }
+        JDK_SUPPORTS_VIRTUAL_THREADS = isJDKCompatible;
     }
 
     protected final IndexView index;
@@ -217,6 +228,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Set<DotName> contextTypes;
     private final MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension;
     private final MultipartParameterIndexerExtension multipartParameterIndexerExtension;
+    private final TargetJavaVersion targetJavaVersion;
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
         this.index = builder.index;
@@ -238,6 +250,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.contextTypes = builder.contextTypes;
         this.multipartReturnTypeIndexerExtension = builder.multipartReturnTypeIndexerExtension;
         this.multipartParameterIndexerExtension = builder.multipartParameterIndexerExtension;
+        this.targetJavaVersion = builder.targetJavaVersion;
     }
 
     public Optional<ResourceClass> createEndpoints(ClassInfo classInfo, boolean considerApplication) {
@@ -700,20 +713,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     private boolean isRunOnVirtualThread(MethodInfo info, BlockingDefault defaultValue) {
         boolean isRunOnVirtualThread = false;
-        boolean isJDKCompatible = true;
-        try {
-            Class.forName("java.lang.ThreadBuilders");
-        } catch (ClassNotFoundException e) {
-            isJDKCompatible = false;
-        }
-
-        if (!isJDKCompatible) {
-            log.warn("Your version of the JDK is '" + Runtime.version() +
-                    "' and doesn't support Loom's virtual threads" +
-                    ", your runtime will have to use jdk-19-loom or superior to leverage virtual threads " +
-                    "(else java platform threads will be used instead).");
-        }
-
         Map.Entry<AnnotationTarget, AnnotationInstance> runOnVirtualThreadAnnotation = getInheritableAnnotation(info,
                 RUN_ON_VIRTUAL_THREAD);
 
@@ -725,6 +724,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
 
         if (runOnVirtualThreadAnnotation != null) {
+            if (!JDK_SUPPORTS_VIRTUAL_THREADS) {
+                throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
+                        + "' uses @RunOnVirtualThread but the JDK version '" + Runtime.version() +
+                        "' and doesn't support virtual threads");
+            }
+            if (targetJavaVersion.isJava19OrHigher() == Status.FALSE) {
+                throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
+                        + "' uses @RunOnVirtualThread but the target JDK version doesn't support virtual threads. Please configure your build tool to target Java 19 or above");
+            }
             isRunOnVirtualThread = true;
         }
 
@@ -1403,6 +1411,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             public void handleMultipartParameter(ClassInfo multipartClassInfo, IndexView indexView) {
             }
         };
+        private TargetJavaVersion targetJavaVersion = new TargetJavaVersion.Unknown();
 
         public B setMultipartReturnTypeIndexerExtension(MultipartReturnTypeIndexerExtension multipartReturnTypeHandler) {
             this.multipartReturnTypeIndexerExtension = multipartReturnTypeHandler;
@@ -1501,6 +1510,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         public B setApplicationScanningResult(ApplicationScanningResult applicationScanningResult) {
             this.applicationScanningResult = applicationScanningResult;
+            return (B) this;
+        }
+
+        public B setTargetJavaVersion(TargetJavaVersion targetJavaVersion) {
+            this.targetJavaVersion = targetJavaVersion;
             return (B) this;
         }
 

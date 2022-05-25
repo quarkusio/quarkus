@@ -58,6 +58,7 @@ import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.DefaultProducesHandler;
 import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
@@ -117,6 +118,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
+import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
@@ -359,6 +361,7 @@ public class ResteasyReactiveProcessor {
             List<MethodScannerBuildItem> methodScanners,
             List<AnnotationsTransformerBuildItem> annotationTransformerBuildItems,
             List<ContextTypeBuildItem> contextTypeBuildItems,
+            CompiledJavaVersionBuildItem compiledJavaVersionBuildItem,
             Capabilities capabilities)
             throws NoSuchMethodException {
 
@@ -514,7 +517,28 @@ public class ResteasyReactiveProcessor {
                                 }
                             })
                             .setResteasyReactiveRecorder(recorder)
-                            .setApplicationClassPredicate(applicationClassPredicate);
+                            .setApplicationClassPredicate(applicationClassPredicate)
+                            .setTargetJavaVersion(new TargetJavaVersion() {
+
+                                private final Status result;
+
+                                {
+                                    CompiledJavaVersionBuildItem.JavaVersion.Status status = compiledJavaVersionBuildItem
+                                            .getJavaVersion().isJava19OrHigher();
+                                    if (status == CompiledJavaVersionBuildItem.JavaVersion.Status.FALSE) {
+                                        result = Status.FALSE;
+                                    } else if (status == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
+                                        result = Status.TRUE;
+                                    } else {
+                                        result = Status.UNKNOWN;
+                                    }
+                                }
+
+                                @Override
+                                public Status isJava19OrHigher() {
+                                    return result;
+                                }
+                            });
 
             if (!serverDefaultProducesHandlers.isEmpty()) {
                 List<DefaultProducesHandler> handlers = new ArrayList<>(serverDefaultProducesHandlers.size());

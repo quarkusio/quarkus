@@ -23,6 +23,10 @@ public class CompiledJavaVersionBuildStep {
      */
     @BuildStep
     public CompiledJavaVersionBuildItem compiledJavaVersion(BuildSystemTargetBuildItem buildSystemTarget) {
+        if ((buildSystemTarget.getOutputDirectory() == null) || (!Files.exists(buildSystemTarget.getOutputDirectory()))) {
+            // needed for Arquillian TCK tests
+            return CompiledJavaVersionBuildItem.unknown();
+        }
         AtomicReference<Integer> majorVersion = new AtomicReference<>(null);
         try {
             Files.walkFileTree(buildSystemTarget.getOutputDirectory(), new SimpleFileVisitor<>() {

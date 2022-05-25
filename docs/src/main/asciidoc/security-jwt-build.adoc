@@ -329,6 +329,12 @@ SmallRye JWT supports the following properties which can be used to customize th
 |smallrye.jwt.new-token.issuer|none|Token issuer which can be used to set an `iss` (issuer) claim value if this claim has not already been set.
 |smallrye.jwt.new-token.audience|none|Token audience which can be used to set an `aud` (audience) claim value if this claim has not already been set.
 |smallrye.jwt.new-token.override-matching-claims|false| Set this property to `true` for `smallrye.jwt.new-token.issuer` and `smallrye.jwt.new-token.audience` values to override the already initialized `iss` (issuer) and `aud` (audience) claims.
+|smallrye.jwt.keystore.type|`JKS`|This property can be used to customize a keystore type if either `smallrye.jwt.sign.key.location` or `smallrye.jwt.encrypt.key.location` or both of these properties point to a `KeyStore` file. If it is not set then the file name will be checked to determine the keystore type before defaulting to `JKS`.
+|smallrye.jwt.keystore.provider||This property can be used to customize a `KeyStore` provider if `smallrye.jwt.sign.key.location` or `smallrye.jwt.encrypt.key.location` point to a `KeyStore` file.
+|smallrye.jwt.keystore.password||Keystore password. If `smallrye.jwt.sign.key.location` or `smallrye.jwt.encrypt.key.location` point to a `KeyStore` file then this property has be set.
+|smallrye.jwt.keystore.encrypt.key.alias||This property has to be set to identify a public encryption key which will be extracted from `KeyStore` from a matching certificate if `smallrye.jwt.encrypt.key.location` points to a `KeyStore` file.
+|smallrye.jwt.keystore.sign.key.alias||This property has to be set to identify a private signing key if `smallrye.jwt.sign.key.location` points to a `KeyStore` file.
+|smallrye.jwt.keystore.sign.key.password||This property may be set if a private signing key's password in `KeyStore` is different to `smallrye.jwt.keystore.password` when `smallrye.jwt.sign.key.location` points to a `KeyStore` file.
 |===
 
 == References

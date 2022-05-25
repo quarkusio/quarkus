@@ -1021,6 +1021,12 @@ SmallRye JWT provides more properties which can be used to customize the token p
 |smallrye.jwt.client.tls.trusted.hosts|none|Set of trusted hostnames. If the keys have to be fetched over `HTTPS` and `smallrye.jwt.client.tls.trust-all` is set to `false` then this property can be used to configure the trusted hostnames.
 |smallrye.jwt.http.proxy.host|none|HTTP proxy host.
 |smallrye.jwt.http.proxy.port|80|HTTP proxy port.
+|smallrye.jwt.keystore.type|`JKS`|This property can be used to customize a keystore type if either `mp.jwt.verify.publickey.location` or mp.jwt.decrypt.key.location` points to a `KeyStore` file. If it is not set then the file name will be checked to determine the keystore type before defaulting to `JKS`.
+|smallrye.jwt.keystore.provider||This property can be used to customize a `KeyStore` provider if `mp.jwt.verify.publickey.location` or `mp.jwt.decrypt.key.location` points to a `KeyStore` file.
+|smallrye.jwt.keystore.password||Keystore password. If `mp.jwt.verify.publickey.location` or `mp.jwt.decrypt.key.location` then this property has be set.
+|smallrye.jwt.keystore.verify.key.alias||This property has to be set to identify a public verification key which will be extracted from `KeyStore` from a matching certificate if `mp.jwt.verify.publickey.location` points to a `KeyStore` file.
+|smallrye.jwt.keystore.decrypt.key.alias||This property has to be set to identify a private decryption key if `mp.jwt.decrypt.key.location` points to a `KeyStore` file.
+|smallrye.jwt.keystore.decrypt.key.password||This property may be set if a private decryption key's password in `KeyStore` is different to `smallrye.jwt.keystore.password` when `mp.jwt.decrypt.key.location` points to a `KeyStore` file.
 |===
 
 == References

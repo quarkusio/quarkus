@@ -163,8 +163,9 @@ public class QuarkusIntegrationTestExtension
             hasPerTestResources = testResourceManager.hasPerTestResources();
 
             Map<String, String> additionalProperties = new HashMap<>(testProfileAndProperties.properties);
-            additionalProperties.putAll(QuarkusIntegrationTestExtension.devServicesProps);
-            Map<String, String> resourceManagerProps = testResourceManager.start();
+            Map<String, String> resourceManagerProps = new HashMap<>(testResourceManager.start());
+            //we also make the dev services config accessible from the test itself
+            resourceManagerProps.putAll(QuarkusIntegrationTestExtension.devServicesProps);
             Map<String, String> old = new HashMap<>();
             for (Map.Entry<String, String> i : resourceManagerProps.entrySet()) {
                 old.put(i.getKey(), System.getProperty(i.getKey()));

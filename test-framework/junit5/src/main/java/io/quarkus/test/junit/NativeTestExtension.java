@@ -132,9 +132,10 @@ public class NativeTestExtension
             hasPerTestResources = testResourceManager.hasPerTestResources();
 
             Map<String, String> additionalProperties = new HashMap<>(testProfileAndProperties.properties);
-            additionalProperties.putAll(devServicesProps);
-            Map<String, String> resourceManagerProps = testResourceManager.start();
+            Map<String, String> resourceManagerProps = new HashMap<>(testResourceManager.start());
+            resourceManagerProps.putAll(devServicesProps);
             Map<String, String> old = new HashMap<>();
+            //we also make the dev services config accessible from the test itself
             for (Map.Entry<String, String> i : resourceManagerProps.entrySet()) {
                 old.put(i.getKey(), System.getProperty(i.getKey()));
                 if (i.getValue() == null) {
@@ -157,6 +158,7 @@ public class NativeTestExtension
                             }
                         }
                     });
+            //this includes dev services props
             additionalProperties.putAll(resourceManagerProps);
 
             NativeImageLauncher launcher = createLauncher(requiredTestClass);

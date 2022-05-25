@@ -181,12 +181,6 @@ public class WebAuthnRunTimeConfig {
          */
         @ConfigItem(defaultValue = "Quarkus server")
         public String name;
-
-        /**
-         * A URL location for an icon
-         */
-        @ConfigItem
-        public Optional<String> icon;
     }
 
     // FIXME: merge with form config?

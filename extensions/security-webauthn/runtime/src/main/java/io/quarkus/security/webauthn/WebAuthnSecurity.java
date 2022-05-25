@@ -41,9 +41,6 @@ public class WebAuthnSecurity {
         }
         // this is required
         relyingParty.setName(config.relyingParty.name);
-        if (config.relyingParty.icon.isPresent()) {
-            relyingParty.setIcon(config.relyingParty.icon.get());
-        }
         options.setRelyingParty(relyingParty);
         if (config.attestation.isPresent()) {
             options.setAttestation(config.attestation.get());

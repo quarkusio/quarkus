@@ -84,7 +84,7 @@ public final class DatabaseKind {
         return is(value, POSTGRESQL);
     }
 
-    private static boolean is(String value, String mainName) {
+    public static boolean is(String value, String mainName) {
         if (value == null) {
             return false;
         }

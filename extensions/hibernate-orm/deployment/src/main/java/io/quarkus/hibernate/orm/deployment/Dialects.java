@@ -44,7 +44,7 @@ public final class Dialects {
 
         // This is created for third party extentions. I think hardcode above can be refactored by owners
         for (DatasourceDbKindHibernateOrmMetadataBuildItem item : dbKindMetadataBuildItems) {
-            if (item.getDbKind().equalsIgnoreCase(resolvedDbKind)) {
+            if (DatabaseKind.is(resolvedDbKind, item.getDbKind())) {
                 return item.getDialect();
             }
         }

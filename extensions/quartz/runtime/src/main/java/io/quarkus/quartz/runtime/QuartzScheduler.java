@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.Properties;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.annotation.PreDestroy;
@@ -302,7 +303,17 @@ public class QuartzScheduler implements Scheduler {
                                         scheduled, oldTrigger.getKey().getName());
                             }
                         }
-                        scheduledTasks.put(identity, new QuartzTrigger(trigger, invoker,
+                        scheduledTasks.put(identity, new QuartzTrigger(trigger.getKey(),
+                                new Function<>() {
+                                    @Override
+                                    public org.quartz.Trigger apply(TriggerKey triggerKey) {
+                                        try {
+                                            return scheduler.getTrigger(triggerKey);
+                                        } catch (SchedulerException e) {
+                                            throw new IllegalStateException(e);
+                                        }
+                                    }
+                                }, invoker,
                                 SchedulerUtils.parseOverdueGracePeriod(scheduled, defaultOverdueGracePeriod)));
                     }
                 }
@@ -593,25 +604,28 @@ public class QuartzScheduler implements Scheduler {
 
     static class QuartzTrigger implements Trigger {
 
-        final org.quartz.Trigger trigger;
+        final org.quartz.TriggerKey triggerKey;
+        final Function<TriggerKey, org.quartz.Trigger> triggerFunction;
         final ScheduledInvoker invoker;
         final Duration gracePeriod;
 
-        QuartzTrigger(org.quartz.Trigger trigger, ScheduledInvoker invoker, Duration gracePeriod) {
-            this.trigger = trigger;
+        QuartzTrigger(org.quartz.TriggerKey triggerKey, Function<TriggerKey, org.quartz.Trigger> triggerFunction,
+                ScheduledInvoker invoker, Duration gracePeriod) {
+            this.triggerKey = triggerKey;
+            this.triggerFunction = triggerFunction;
             this.invoker = invoker;
             this.gracePeriod = gracePeriod;
         }
 
         @Override
         public Instant getNextFireTime() {
-            Date nextFireTime = trigger.getNextFireTime();
+            Date nextFireTime = getTrigger().getNextFireTime();
             return nextFireTime != null ? nextFireTime.toInstant() : null;
         }
 
         @Override
         public Instant getPreviousFireTime() {
-            Date previousFireTime = trigger.getPreviousFireTime();
+            Date previousFireTime = getTrigger().getPreviousFireTime();
             return previousFireTime != null ? previousFireTime.toInstant() : null;
         }
 
@@ -627,7 +641,11 @@ public class QuartzScheduler implements Scheduler {
 
         @Override
         public String getId() {
-            return trigger.getKey().getName();
+            return getTrigger().getKey().getName();
+        }
+
+        private org.quartz.Trigger getTrigger() {
+            return triggerFunction.apply(triggerKey);
         }
 
     }

@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -805,7 +806,9 @@ public class ArcProcessor {
 
         };
 
-        Set<TypeAndQualifiers> unremovables = new HashSet<>();
+        List<TypeAndQualifiers> unremovables = new ArrayList<>();
+        Set<String> ids = new HashSet<>();
+
         for (InjectionPointInfo injectionPoint : injectionPoints) {
 
             // The injection point must be registered immediately and NOT inside the creator callback
@@ -815,10 +818,21 @@ public class ArcProcessor {
                 reflectionRegistration.registerMethod(injectionPoint.getTarget().asMethod());
             }
 
+            AnnotationInstance identifiedAnnotation = injectionPoint.getRequiredQualifier(DotNames.IDENTIFIED);
+            if (identifiedAnnotation == null
+                    // The id is a hash of "type + all annotations" - if there's an exact match then we don't need to add another bean
+                    || !ids.add(identifiedAnnotation.value().asString())) {
+                continue;
+            }
+
             // All qualifiers but @All and @Identified
-            Set<AnnotationInstance> qualifiers = injectionPoint.getRequiredQualifiers().stream()
-                    .filter(a -> !DotNames.ALL.equals(a.name()) && !DotNames.IDENTIFIED.equals(a.name()))
-                    .collect(Collectors.toSet());
+            Set<AnnotationInstance> qualifiers = new HashSet<>(injectionPoint.getRequiredQualifiers());
+            for (Iterator<AnnotationInstance> it = qualifiers.iterator(); it.hasNext();) {
+                AnnotationInstance qualifier = it.next();
+                if (DotNames.ALL.equals(qualifier.name()) || DotNames.IDENTIFIED.equals(qualifier.name())) {
+                    it.remove();
+                }
+            }
             if (qualifiers.isEmpty()) {
                 // If no other qualifier is used then add @Any
                 qualifiers.add(AnnotationInstance.create(DotNames.ANY, null, new AnnotationValue[] {}));
@@ -826,14 +840,11 @@ public class ArcProcessor {
 
             Type elementType = injectionPoint.getType().asParameterizedType().arguments().get(0);
 
-            if (!unremovables
-                    .add(new TypeAndQualifiers(
-                            elementType.name().equals(DotNames.INSTANCE_HANDLE)
-                                    ? elementType.asParameterizedType().arguments().get(0)
-                                    : elementType,
-                            qualifiers))) {
-                continue;
-            }
+            unremovables.add(new TypeAndQualifiers(
+                    elementType.name().equals(DotNames.INSTANCE_HANDLE)
+                            ? elementType.asParameterizedType().arguments().get(0)
+                            : elementType,
+                    qualifiers));
 
             BeanConfigurator<?> configurator = beanRegistrationPhase.getContext()
                     .configure(List.class)

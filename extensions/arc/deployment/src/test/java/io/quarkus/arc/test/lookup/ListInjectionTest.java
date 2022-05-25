@@ -61,6 +61,8 @@ public class ListInjectionTest {
         // Test constructor injection and additional qualifier
         assertEquals(1, foo.convertersMyQualifier.size());
         assertEquals("OK", foo.convertersMyQualifier.get(0).convert("OK"));
+        assertEquals(1, foo.convertersMyQualifierField.size());
+        assertEquals("OK", foo.convertersMyQualifierField.get(0).convert("OK"));
 
         // Test List<InstanceHandle<?>>
         assertEquals(1, foo.counterHandles.size());
@@ -107,6 +109,11 @@ public class ListInjectionTest {
         List<Converter> convertersDefault;
 
         final List<Converter> convertersMyQualifier;
+
+        @Inject
+        @All
+        @MyQualifier
+        List<Converter> convertersMyQualifierField;
 
         Foo(@All @MyQualifier List<Converter> convertersMyQualifier) {
             this.convertersMyQualifier = convertersMyQualifier;

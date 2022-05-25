@@ -1,6 +1,9 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import java.util.List;
+
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DatabaseKindBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
 public final class Dialects {
@@ -9,7 +12,8 @@ public final class Dialects {
         //utility
     }
 
-    public static String guessDialect(String persistenceUnitName, String resolvedDbKind) {
+    public static String guessDialect(String persistenceUnitName, String resolvedDbKind,
+            List<DatabaseKindBuildItem> databaseKindBuildItems) {
         // For now select the latest dialect from the driver
         // later, we can keep doing that but also avoid DCE
         // of all the dialects we want in so that people can override them
@@ -36,6 +40,13 @@ public final class Dialects {
         }
         if (DatabaseKind.isMsSQL(resolvedDbKind)) {
             return "org.hibernate.dialect.SQLServer2016Dialect";
+        }
+
+        // This is created for third party extentions. I think hardcode above can be refactored by owners
+        for (DatabaseKindBuildItem item : databaseKindBuildItems) {
+            if (item.getDbKind().equalsIgnoreCase(resolvedDbKind)) {
+                return item.getDialect();
+            }
         }
 
         String error = "Hibernate extension could not guess the dialect from the database kind '" + resolvedDbKind

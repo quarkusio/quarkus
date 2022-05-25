@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.deployment;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import java.util.Collections;
 import java.util.Set;
 
 import org.hibernate.dialect.DB297Dialect;
@@ -46,7 +47,8 @@ public class ConstantsTest {
     }
 
     private void assertDialectMatch(String dbName, Class<?> dialectClass) {
-        final String guessDialect = Dialects.guessDialect(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, dbName);
+        final String guessDialect = Dialects
+                .guessDialect(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, dbName, Collections.emptyList());
         Assertions.assertEquals(dialectClass.getName(), guessDialect);
     }
 

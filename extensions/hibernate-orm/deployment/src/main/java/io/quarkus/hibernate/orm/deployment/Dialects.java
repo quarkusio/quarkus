@@ -3,7 +3,7 @@ package io.quarkus.hibernate.orm.deployment;
 import java.util.List;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
-import io.quarkus.datasource.deployment.spi.DatabaseKindBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.DatasourceDbKindHibernateOrmMetadataBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
 public final class Dialects {
@@ -13,7 +13,7 @@ public final class Dialects {
     }
 
     public static String guessDialect(String persistenceUnitName, String resolvedDbKind,
-            List<DatabaseKindBuildItem> databaseKindBuildItems) {
+            List<DatasourceDbKindHibernateOrmMetadataBuildItem> dbKindMetadataBuildItems) {
         // For now select the latest dialect from the driver
         // later, we can keep doing that but also avoid DCE
         // of all the dialects we want in so that people can override them
@@ -43,7 +43,7 @@ public final class Dialects {
         }
 
         // This is created for third party extentions. I think hardcode above can be refactored by owners
-        for (DatabaseKindBuildItem item : databaseKindBuildItems) {
+        for (DatasourceDbKindHibernateOrmMetadataBuildItem item : dbKindMetadataBuildItems) {
             if (item.getDbKind().equalsIgnoreCase(resolvedDbKind)) {
                 return item.getDialect();
             }

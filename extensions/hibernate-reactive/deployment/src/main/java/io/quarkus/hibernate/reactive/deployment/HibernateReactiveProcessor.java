@@ -23,8 +23,6 @@ import java.util.stream.Collectors;
 import javax.persistence.SharedCacheMode;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
-import io.quarkus.datasource.deployment.spi.DatabaseKindBuildItem;
-import io.quarkus.hibernate.orm.deployment.*;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.loader.BatchFetchStyle;
@@ -48,7 +46,9 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.hibernate.orm.deployment.*;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.DatasourceDbKindHibernateOrmMetadataBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
@@ -119,8 +119,7 @@ public final class HibernateReactiveProcessor {
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            List<DatabaseKindBuildItem> databaseKindBuildItems
-            ) {
+            List<DatasourceDbKindHibernateOrmMetadataBuildItem> dbKindMetadataBuildItems) {
 
         final boolean enableHR = hasEntities(jpaModel);
         if (!enableHR) {
@@ -152,7 +151,7 @@ public final class HibernateReactiveProcessor {
             ParsedPersistenceXmlDescriptor reactivePU = generateReactivePersistenceUnit(
                     hibernateOrmConfig, jpaModel,
                     dbKind, applicationArchivesBuildItem, launchMode.getLaunchMode(),
-                    systemProperties, nativeImageResources, hotDeploymentWatchedFiles, databaseKindBuildItems);
+                    systemProperties, nativeImageResources, hotDeploymentWatchedFiles, dbKindMetadataBuildItems);
 
             //Some constant arguments to the following method:
             // - this is Reactive
@@ -205,7 +204,7 @@ public final class HibernateReactiveProcessor {
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
-            List<DatabaseKindBuildItem> databaseKindBuildItems) {
+            List<DatasourceDbKindHibernateOrmMetadataBuildItem> dbKindMetadataBuildItems) {
 
         HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit;
 
@@ -217,7 +216,7 @@ public final class HibernateReactiveProcessor {
         if (explicitDialect.isPresent()) {
             dialect = explicitDialect.get();
         } else {
-            dialect = Dialects.guessDialect(persistenceUnitConfigName, dbKind, databaseKindBuildItems);
+            dialect = Dialects.guessDialect(persistenceUnitConfigName, dbKind, dbKindMetadataBuildItems);
         }
 
         // we found one

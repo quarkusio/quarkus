@@ -25,6 +25,7 @@ public class ApplicationModelBuilder {
     public static final String PARENT_FIRST_ARTIFACTS = "parent-first-artifacts";
     public static final String RUNNER_PARENT_FIRST_ARTIFACTS = "runner-parent-first-artifacts";
     public static final String EXCLUDED_ARTIFACTS = "excluded-artifacts";
+    public static final String REMOVED_RESOURCES_DOT = "removed-resources.";
     public static final String LESSER_PRIORITY_ARTIFACTS = "lesser-priority-artifacts";
 
     private static final Logger log = Logger.getLogger(ApplicationModelBuilder.class);
@@ -35,6 +36,7 @@ public class ApplicationModelBuilder {
     final Set<ArtifactKey> parentFirstArtifacts = new HashSet<>();
     final Set<ArtifactKey> runnerParentFirstArtifacts = new HashSet<>();
     final Set<ArtifactKey> excludedArtifacts = new HashSet<>();
+    final Map<ArtifactKey, Set<String>> excludedResources = new HashMap<>(0);
     final Set<ArtifactKey> lesserPriorityArtifacts = new HashSet<>();
     final Set<ArtifactKey> reloadableWorkspaceModules = new HashSet<>();
     final List<ExtensionCapabilities> extensionCapabilities = new ArrayList<>();
@@ -102,6 +104,11 @@ public class ApplicationModelBuilder {
         return this;
     }
 
+    public ApplicationModelBuilder addRemovedResources(ArtifactKey key, Set<String> resources) {
+        this.excludedResources.computeIfAbsent(key, k -> new HashSet<>(resources.size())).addAll(resources);
+        return this;
+    }
+
     public ApplicationModelBuilder addLesserPriorityArtifact(ArtifactKey deps) {
         this.lesserPriorityArtifacts.add(deps);
         return this;
@@ -134,34 +141,69 @@ public class ApplicationModelBuilder {
      * @param props The quarkus-extension.properties file
      */
     public void handleExtensionProperties(Properties props, String extension) {
-        String parentFirst = props.getProperty(PARENT_FIRST_ARTIFACTS);
-        if (parentFirst != null) {
-            String[] artifacts = parentFirst.split(",");
-            for (String artifact : artifacts) {
-                parentFirstArtifacts.add(new GACT(artifact.split(":")));
+        for (Map.Entry<Object, Object> prop : props.entrySet()) {
+            if (prop.getValue() == null) {
+                continue;
             }
-        }
-        String runnerParentFirst = props.getProperty(RUNNER_PARENT_FIRST_ARTIFACTS);
-        if (runnerParentFirst != null) {
-            String[] artifacts = runnerParentFirst.split(",");
-            for (String artifact : artifacts) {
-                runnerParentFirstArtifacts.add(new GACT(artifact.split(":")));
+            final String value = prop.getValue().toString();
+            if (value.isBlank()) {
+                continue;
             }
-        }
-        String excluded = props.getProperty(EXCLUDED_ARTIFACTS);
-        if (excluded != null) {
-            String[] artifacts = excluded.split(",");
-            for (String artifact : artifacts) {
-                excludedArtifacts.add(new GACT(artifact.split(":")));
-                log.debugf("Extension %s is excluding %s", extension, artifact);
-            }
-        }
-        String lesserPriority = props.getProperty(LESSER_PRIORITY_ARTIFACTS);
-        if (lesserPriority != null) {
-            String[] artifacts = lesserPriority.split(",");
-            for (String artifact : artifacts) {
-                lesserPriorityArtifacts.add(new GACT(artifact.split(":")));
-                log.debugf("Extension %s is making %s a lesser priority artifact", extension, artifact);
+            final String name = prop.getKey().toString();
+            switch (name) {
+                case PARENT_FIRST_ARTIFACTS:
+                    for (String artifact : value.split(",")) {
+                        parentFirstArtifacts.add(new GACT(artifact.split(":")));
+                    }
+                    break;
+                case RUNNER_PARENT_FIRST_ARTIFACTS:
+                    for (String artifact : value.split(",")) {
+                        runnerParentFirstArtifacts.add(new GACT(artifact.split(":")));
+                    }
+                    break;
+                case EXCLUDED_ARTIFACTS:
+                    for (String artifact : value.split(",")) {
+                        excludedArtifacts.add(new GACT(artifact.split(":")));
+                        log.debugf("Extension %s is excluding %s", extension, artifact);
+                    }
+                    break;
+                case LESSER_PRIORITY_ARTIFACTS:
+                    String[] artifacts = value.split(",");
+                    for (String artifact : artifacts) {
+                        lesserPriorityArtifacts.add(new GACT(artifact.split(":")));
+                        log.debugf("Extension %s is making %s a lesser priority artifact", extension, artifact);
+                    }
+                    break;
+                default:
+                    if (name.startsWith(REMOVED_RESOURCES_DOT)) {
+                        final String keyStr = name.substring(REMOVED_RESOURCES_DOT.length());
+                        if (!keyStr.isBlank()) {
+                            ArtifactKey key = null;
+                            try {
+                                key = ArtifactKey.fromString(keyStr);
+                            } catch (IllegalArgumentException e) {
+                                log.warnf("Failed to parse artifact key %s in %s from descriptor of extension %s", keyStr, name,
+                                        extension);
+                            }
+                            if (key != null) {
+                                final Set<String> resources;
+                                Collection<String> existingResources = excludedResources.get(key);
+                                if (existingResources == null || existingResources.isEmpty()) {
+                                    resources = Set.of(value.split(","));
+                                } else {
+                                    final String[] split = value.split(",");
+                                    resources = new HashSet<>(existingResources.size() + split.length);
+                                    resources.addAll(existingResources);
+                                    for (String s : split) {
+                                        resources.add(s);
+                                    }
+                                }
+                                log.debugf("Extension %s is excluding resources %s from artifact %s", extension, resources,
+                                        key);
+                                excludedResources.put(key, resources);
+                            }
+                        }
+                    }
             }
         }
     }

@@ -14,7 +14,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
@@ -25,6 +25,7 @@ import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.capabilities.CapabilitiesConfig;
 import io.quarkus.maven.capabilities.CapabilityConfig;
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACTV;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -152,6 +153,14 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
      */
     @Parameter
     List<String> excludedArtifacts;
+
+    /**
+     * Resources that should excluded from the classloader and the packaged application.
+     * It is an equivalent of {@code quarkus.class-loading.removed-resources} from {@code application.properties}
+     * but in the `META-INF/quarkus-extension.properties`.
+     */
+    @Parameter
+    Map<String, String> removedResources = Map.of();
 
     /**
      * Artifacts that are always loaded parent first when running in dev or test mode. This is an advanced option
@@ -285,22 +294,56 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         if (parentFirstArtifacts != null && !parentFirstArtifacts.isEmpty()) {
             String val = String.join(",", parentFirstArtifacts);
-            props.put(ApplicationModel.PARENT_FIRST_ARTIFACTS, val);
+            props.put(ApplicationModelBuilder.PARENT_FIRST_ARTIFACTS, val);
         }
 
         if (runnerParentFirstArtifacts != null && !runnerParentFirstArtifacts.isEmpty()) {
             String val = String.join(",", runnerParentFirstArtifacts);
-            props.put(ApplicationModel.RUNNER_PARENT_FIRST_ARTIFACTS, val);
+            props.put(ApplicationModelBuilder.RUNNER_PARENT_FIRST_ARTIFACTS, val);
         }
 
         if (excludedArtifacts != null && !excludedArtifacts.isEmpty()) {
             String val = String.join(",", excludedArtifacts);
-            props.put(ApplicationModel.EXCLUDED_ARTIFACTS, val);
+            props.put(ApplicationModelBuilder.EXCLUDED_ARTIFACTS, val);
+        }
+
+        if (!removedResources.isEmpty()) {
+            for (Map.Entry<String, String> entry : removedResources.entrySet()) {
+                final ArtifactKey key;
+                try {
+                    key = ArtifactKey.fromString(entry.getKey());
+                } catch (IllegalArgumentException e) {
+                    throw new MojoExecutionException(
+                            "Failed to parse removed resource '" + entry.getKey() + '=' + entry.getValue() + "'", e);
+                }
+                if (entry.getValue() == null || entry.getValue().isBlank()) {
+                    continue;
+                }
+                final String[] resources = entry.getValue().split(",");
+                if (resources.length == 0) {
+                    continue;
+                }
+                final String value;
+                if (resources.length == 1) {
+                    value = resources[0];
+                } else {
+                    final StringBuilder sb = new StringBuilder();
+                    sb.append(resources[0]);
+                    for (int i = 1; i < resources.length; ++i) {
+                        final String resource = resources[i];
+                        if (!resource.isBlank()) {
+                            sb.append(',').append(resource);
+                        }
+                    }
+                    value = sb.toString();
+                }
+                props.setProperty(ApplicationModelBuilder.REMOVED_RESOURCES_DOT + key.toString(), value);
+            }
         }
 
         if (lesserPriorityArtifacts != null && !lesserPriorityArtifacts.isEmpty()) {
             String val = String.join(",", lesserPriorityArtifacts);
-            props.put(ApplicationModel.LESSER_PRIORITY_ARTIFACTS, val);
+            props.put(ApplicationModelBuilder.LESSER_PRIORITY_ARTIFACTS, val);
         }
 
         final Path output = outputDirectory.toPath().resolve(BootstrapConstants.META_INF);

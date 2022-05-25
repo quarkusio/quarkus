@@ -44,6 +44,13 @@ public interface ApplicationModel {
 
     Set<ArtifactKey> getReloadableWorkspaceDependencies();
 
+    /**
+     * Resources that should be removed from the classpath.
+     *
+     * @return resources that should be removed from the classpath
+     */
+    Map<ArtifactKey, Set<String>> getRemovedResources();
+
     default WorkspaceModule getApplicationModule() {
         return getAppArtifact().getWorkspaceModule();
     }

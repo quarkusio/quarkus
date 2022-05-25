@@ -12,7 +12,6 @@ import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -108,6 +107,17 @@ public class ConfiguredClassLoading implements Serializable {
                         }
                     }
                 }
+
+                if (!appModel.getRemovedResources().isEmpty()) {
+                    for (Map.Entry<ArtifactKey, Set<String>> e : appModel.getRemovedResources().entrySet()) {
+                        Collection<String> resources = removedResources.get(e.getKey());
+                        if (resources == null) {
+                            removedResources.put(e.getKey(), e.getValue());
+                        } else {
+                            resources.addAll(e.getValue());
+                        }
+                    }
+                }
             }
 
             return ConfiguredClassLoading.this;
@@ -135,7 +145,11 @@ public class ConfiguredClassLoading implements Serializable {
                 if (key.startsWith(baseConfigKey)) {
                     String artifactId = key.substring(baseConfigKey.length());
                     artifactId = artifactId.replace("\"", "");
-                    List<String> resources = Arrays.asList(value.split(","));
+                    final String[] split = value.split(",");
+                    List<String> resources = new ArrayList<>(split.length);
+                    for (String s : split) {
+                        resources.add(s);
+                    }
                     removedResources.put(new GACT(artifactId.split(":")), resources);
                 }
             }

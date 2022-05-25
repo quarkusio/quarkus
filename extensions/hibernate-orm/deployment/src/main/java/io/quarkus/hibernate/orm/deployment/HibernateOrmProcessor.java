@@ -80,6 +80,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanTypeExclusion;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -168,6 +169,27 @@ public final class HibernateOrmProcessor {
     private static final Logger LOG = Logger.getLogger(HibernateOrmProcessor.class);
 
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
+
+    @BuildStep
+    void registerHibernateOrmMetadataForCoreDialects(
+            BuildProducer<DatasourceDbKindHibernateOrmMetadataBuildItem> producer) {
+        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.DB2,
+                "org.hibernate.dialect.DB297Dialect"));
+        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.DERBY,
+                "org.hibernate.dialect.DerbyTenSevenDialect"));
+        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.H2,
+                "io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect"));
+        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.MARIADB,
+                "org.hibernate.dialect.MariaDB106Dialect"));
+        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.MSSQL,
+                "org.hibernate.dialect.SQLServer2016Dialect"));
+        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.MYSQL,
+                "org.hibernate.dialect.MySQL8Dialect"));
+        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.ORACLE,
+                "org.hibernate.dialect.Oracle12cDialect"));
+        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.POSTGRESQL,
+                "io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect"));
+    }
 
     @BuildStep
     void checkTransactionsSupport(Capabilities capabilities) {

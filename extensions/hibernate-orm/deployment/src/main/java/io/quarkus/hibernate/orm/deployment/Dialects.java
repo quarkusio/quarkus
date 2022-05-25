@@ -14,42 +14,13 @@ public final class Dialects {
 
     public static String guessDialect(String persistenceUnitName, String resolvedDbKind,
             List<DatasourceDbKindHibernateOrmMetadataBuildItem> dbKindMetadataBuildItems) {
-        // For now select the latest dialect from the driver
-        // later, we can keep doing that but also avoid DCE
-        // of all the dialects we want in so that people can override them
-        if (DatabaseKind.isDB2(resolvedDbKind)) {
-            return "org.hibernate.dialect.DB297Dialect";
-        }
-        if (DatabaseKind.isPostgreSQL(resolvedDbKind)) {
-            return "io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect";
-        }
-        if (DatabaseKind.isH2(resolvedDbKind)) {
-            return "io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect";
-        }
-        if (DatabaseKind.isMariaDB(resolvedDbKind)) {
-            return "org.hibernate.dialect.MariaDB106Dialect";
-        }
-        if (DatabaseKind.isMySQL(resolvedDbKind)) {
-            return "org.hibernate.dialect.MySQL8Dialect";
-        }
-        if (DatabaseKind.isOracle(resolvedDbKind)) {
-            return "org.hibernate.dialect.Oracle12cDialect";
-        }
-        if (DatabaseKind.isDerby(resolvedDbKind)) {
-            return "org.hibernate.dialect.DerbyTenSevenDialect";
-        }
-        if (DatabaseKind.isMsSQL(resolvedDbKind)) {
-            return "org.hibernate.dialect.SQLServer2016Dialect";
-        }
-
-        // This is created for third party extentions. I think hardcode above can be refactored by owners
         for (DatasourceDbKindHibernateOrmMetadataBuildItem item : dbKindMetadataBuildItems) {
             if (DatabaseKind.is(resolvedDbKind, item.getDbKind())) {
                 return item.getDialect();
             }
         }
 
-        String error = "Hibernate extension could not guess the dialect from the database kind '" + resolvedDbKind
+        String error = "The Hibernate ORM extension could not guess the dialect from the database kind '" + resolvedDbKind
                 + "'. Add an explicit '" + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "dialect") + "' property.";
         throw new ConfigurationException(error);
     }

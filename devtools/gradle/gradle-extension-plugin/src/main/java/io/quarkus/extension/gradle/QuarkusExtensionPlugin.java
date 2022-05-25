@@ -3,11 +3,14 @@ package io.quarkus.extension.gradle;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Set;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ModuleVersionIdentifier;
+import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
@@ -22,6 +25,7 @@ import io.quarkus.extension.gradle.tasks.ExtensionDescriptorTask;
 import io.quarkus.extension.gradle.tasks.ValidateExtensionTask;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.tooling.ToolingUtils;
+import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusExtensionPlugin implements Plugin<Project> {
@@ -110,13 +114,21 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
     }
 
     private void addAnnotationProcessorDependency(Project project) {
-        project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
-                .getResolutionStrategy().eachDependency(d -> {
-                    if ("io.quarkus".equals(d.getRequested().getGroup())
-                            && "quarkus-core".equals(d.getRequested().getName())
-                            && !d.getRequested().getVersion().isEmpty()) {
-                        project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME,
-                                QUARKUS_ANNOTATION_PROCESSOR + ':' + d.getRequested().getVersion());
+        project.getConfigurations().getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME)
+                .withDependencies(annotationProcessors -> {
+                    Set<ResolvedArtifact> compileClasspathArtifacts = DependencyUtils
+                            .duplicateConfiguration(project, project.getConfigurations()
+                                    .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME))
+                            .getResolvedConfiguration()
+                            .getResolvedArtifacts();
+
+                    for (ResolvedArtifact artifact : compileClasspathArtifacts) {
+                        ModuleVersionIdentifier id = artifact.getModuleVersion().getId();
+                        if ("io.quarkus".equals(id.getGroup()) && "quarkus-core".equals(id.getName())
+                                && !id.getVersion().isEmpty()) {
+                            annotationProcessors.add(
+                                    project.getDependencies().create(QUARKUS_ANNOTATION_PROCESSOR + ':' + id.getVersion()));
+                        }
                     }
                 });
     }

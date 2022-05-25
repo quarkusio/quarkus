@@ -114,7 +114,11 @@ public class ResourceReader {
      */
     public static class ResourceReaderComparator implements Comparator<ResourceReader> {
 
-        public static final ResourceReaderComparator INSTANCE = new ResourceReaderComparator();
+        private final List<MediaType> produces;
+
+        public ResourceReaderComparator(List<MediaType> produces) {
+            this.produces = produces;
+        }
 
         @Override
         public int compare(ResourceReader o1, ResourceReader o2) {
@@ -142,6 +146,14 @@ public class ResourceReader {
             int mediaTypeCompare = MediaTypeHelper.compareWeight(mediaTypes1.get(0), mediaTypes2.get(0));
             if (mediaTypeCompare != 0) {
                 return mediaTypeCompare;
+            }
+
+            // try to compare using the number of matching produces media types
+            if (!produces.isEmpty()) {
+                mediaTypeCompare = MediaTypeHelper.compareMatchingMediaTypes(produces, mediaTypes1, mediaTypes2);
+                if (mediaTypeCompare != 0) {
+                    return mediaTypeCompare;
+                }
             }
 
             // done to make the sorting result deterministic

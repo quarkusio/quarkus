@@ -55,15 +55,16 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
                     @Override
                     public Map<String, String> apply(String dsName,
                             DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevDb) {
+                        String jdbcUrl = runningDevDb.getJdbcUrl();
                         if (dsName == null) {
-                            return Collections.singletonMap("quarkus.datasource.jdbc.url", runningDevDb.getUrl());
+                            return Collections.singletonMap("quarkus.datasource.jdbc.url", jdbcUrl);
                         } else {
                             // we use quoted and unquoted versions because depending on whether a user configured other JDBC properties
                             // one of the URLs may be ignored
                             // see https://github.com/quarkusio/quarkus/issues/21387
                             return Map.of(
-                                    datasourceURLPropName(dsName), runningDevDb.getUrl(),
-                                    datasourceURLPropName("\"" + dsName + "\""), runningDevDb.getUrl());
+                                    datasourceURLPropName(dsName), jdbcUrl,
+                                    datasourceURLPropName("\"" + dsName + "\""), jdbcUrl);
                         }
                     }
 
@@ -90,12 +91,16 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
                     @Override
                     public Map<String, String> apply(String dsName,
                             DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevDb) {
+                        String reactiveUrl = runningDevDb.getReactiveUrl();
                         if (dsName == null) {
-                            return Collections.singletonMap("quarkus.datasource.reactive.url",
-                                    runningDevDb.getUrl().replaceFirst("jdbc:", "vertx-reactive:"));
+                            return Collections.singletonMap("quarkus.datasource.reactive.url", reactiveUrl);
                         } else {
-                            return Collections.singletonMap("quarkus.datasource.\"" + dsName + "\".reactive.url",
-                                    runningDevDb.getUrl().replaceFirst("jdbc:", "vertx-reactive:"));
+                            // we use quoted and unquoted versions because depending on whether a user configured other JDBC properties
+                            // one of the URLs may be ignored
+                            // see https://github.com/quarkusio/quarkus/issues/21387
+                            return Map.of(
+                                    datasourceReactiveURLPropName(dsName, false), reactiveUrl,
+                                    datasourceReactiveURLPropName(dsName, true), reactiveUrl);
                         }
                     }
                 }, new Predicate<String>() {
@@ -104,10 +109,24 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
                         if (dsName == null) {
                             return ConfigUtils.isPropertyPresent("quarkus.datasource.reactive.url");
                         } else {
-                            return ConfigUtils.isPropertyPresent("quarkus.datasource.\"" + dsName + "\".reactive.url") ||
-                                    ConfigUtils.isPropertyPresent("quarkus.datasource." + dsName + ".reactive.url");
+                            return ConfigUtils.isPropertyPresent(datasourceReactiveURLPropName(dsName, false)) ||
+                                    ConfigUtils.isPropertyPresent(datasourceReactiveURLPropName(dsName, true));
                         }
                     }
                 });
+    }
+
+    private static String datasourceReactiveURLPropName(String dsName, boolean quotedName) {
+        StringBuilder key = new StringBuilder("quarkus.datasource");
+        key.append('.');
+        if (quotedName) {
+            key.append('"');
+        }
+        key.append(dsName);
+        if (quotedName) {
+            key.append('"');
+        }
+        key.append(".reactive.url");
+        return key.toString();
     }
 }

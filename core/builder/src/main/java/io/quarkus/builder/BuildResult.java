@@ -11,6 +11,7 @@ import io.quarkus.builder.diag.Diagnostic;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.builder.metrics.BuildMetrics;
 
 /**
  * The final result of a successful deployment operation.
@@ -22,14 +23,16 @@ public final class BuildResult {
     private final ConcurrentHashMap<ItemId, List<BuildItem>> multiItems;
     private final List<Diagnostic> diagnostics;
     private final long nanos;
+    private final BuildMetrics metrics;
 
     BuildResult(final ConcurrentHashMap<ItemId, BuildItem> simpleItems,
             final ConcurrentHashMap<ItemId, List<BuildItem>> multiItems, final Set<ItemId> finalIds,
-            final List<Diagnostic> diagnostics, final long nanos) {
+            final List<Diagnostic> diagnostics, final long nanos, BuildMetrics metrics) {
         this.simpleItems = simpleItems;
         this.multiItems = multiItems;
         this.diagnostics = diagnostics;
         this.nanos = nanos;
+        this.metrics = metrics;
     }
 
     /**
@@ -100,6 +103,13 @@ public final class BuildResult {
      */
     public long getDuration(TimeUnit timeUnit) {
         return timeUnit.convert(nanos, TimeUnit.NANOSECONDS);
+    }
+
+    /**
+     * @return the build metrics
+     */
+    public BuildMetrics getMetrics() {
+        return metrics;
     }
 
     /**

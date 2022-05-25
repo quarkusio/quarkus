@@ -224,6 +224,49 @@ If more than one custom `SecurityIdentityAugmentor` is registered then they will
 You can enforce the order by implementing a default `SecurityIdentityAugmentor#priority` method. Augmentors with higher priorities will be invoked first.
 ====
 
+By default, the request context is not activated when augmenting the security identity, this means that if you want to use for example Hibernate
+that mandates a request context, you will have a `javax.enterprise.context.ContextNotActiveException`.
+
+The solution is to activate the request context, the following example shows how to get the roles from an Hibernate with Panache `UserRoleEntity`.
+
+[source,java]
+----
+import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.SecurityIdentityAugmentor;
+import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.smallrye.mutiny.Uni;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.control.ActivateRequestContext;
+import java.util.function.Supplier;
+
+@ApplicationScoped
+public class RolesAugmentor implements SecurityIdentityAugmentor {
+    @Override
+    public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
+        if(identity.isAnonymous()) {
+            return Uni.createFrom().item(identity);
+        }
+
+        // Hibernate ORM is blocking
+        return context.runBlocking(build(identity));
+    }
+
+    @ActivateRequestContext // Will activate the request context
+    Supplier<SecurityIdentity> build(SecurityIdentity identity) {
+        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
+        String user = identity.getPrincipal().getName();
+
+        UserRoleEntity.<userRoleEntity>streamAll()
+                .filter(role -> user.equals(role.user))
+                .forEach(role -> builder.addRole(role.role));
+
+        return builder::build;
+    }
+}
+----
+
 [[jaxrs-security-context]]
 == Custom JAX-RS SecurityContext
 

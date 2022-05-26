@@ -13,6 +13,7 @@ import static io.quarkus.amazon.lambda.runtime.AmazonLambdaApi.logStreamName;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.URL;
 
 import com.amazonaws.services.lambda.runtime.ClientContext;
 import com.amazonaws.services.lambda.runtime.CognitoIdentity;
@@ -23,17 +24,18 @@ import com.fasterxml.jackson.databind.ObjectReader;
 
 public class AmazonLambdaContext implements Context {
 
-    private String awsRequestId;
-    private String logGroupName;
-    private String logStreamName;
-    private String functionName;
-    private String functionVersion;
-    private String invokedFunctionArn;
+    private final String awsRequestId;
+    private final String logGroupName;
+    private final String logStreamName;
+    private final String functionName;
+    private final String functionVersion;
+    private final String invokedFunctionArn;
     private CognitoIdentity cognitoIdentity;
     private ClientContext clientContext;
     private long runtimeDeadlineMs = 0;
-    private int memoryLimitInMB;
-    private LambdaLogger logger;
+    private final int memoryLimitInMB;
+    private final LambdaLogger logger;
+    private final URL requestURL;
 
     public AmazonLambdaContext(HttpURLConnection request, ObjectReader cognitoReader, ObjectReader clientCtxReader)
             throws IOException {
@@ -62,6 +64,7 @@ public class AmazonLambdaContext implements Context {
             runtimeDeadlineMs = Long.valueOf(runtimeDeadline);
         }
         logger = LambdaRuntime.getLogger();
+        requestURL = request.getURL();
     }
 
     @Override
@@ -117,5 +120,9 @@ public class AmazonLambdaContext implements Context {
     @Override
     public LambdaLogger getLogger() {
         return logger;
+    }
+
+    public URL getRequestURL() {
+        return requestURL;
     }
 }

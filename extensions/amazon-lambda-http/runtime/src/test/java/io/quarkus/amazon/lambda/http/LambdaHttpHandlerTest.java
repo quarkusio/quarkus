@@ -20,7 +20,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
 
@@ -28,6 +27,9 @@ import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
+import io.quarkus.amazon.lambda.runtime.AmazonLambdaContext;
+import io.quarkus.netty.runtime.virtual.VirtualAddress;
+import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
 import io.quarkus.netty.runtime.virtual.VirtualResponseHandler;
 import io.quarkus.runtime.Application;
@@ -47,8 +49,9 @@ public class LambdaHttpHandlerTest {
     private final APIGatewayV2HTTPEvent.RequestContext requestContext = mock(APIGatewayV2HTTPEvent.RequestContext.class);
     private final APIGatewayV2HTTPEvent.RequestContext.Http requestContextMethod = mock(
             APIGatewayV2HTTPEvent.RequestContext.Http.class);
-    private final Context context = mock(Context.class);
+    private final AmazonLambdaContext context = mock(AmazonLambdaContext.class);
     private final VirtualClientConnection<?> connection = mock(VirtualClientConnection.class);
+    private final VirtualChannel peer = mock(VirtualChannel.class);
 
     @BeforeEach
     public void mockSetup() {
@@ -57,6 +60,8 @@ public class LambdaHttpHandlerTest {
         when(requestContext.getHttp()).thenReturn(requestContextMethod);
         when(requestContextMethod.getMethod()).thenReturn(METHOD);
         when(request.getHeaders()).thenReturn(Collections.singletonMap(HOST_HEADER, HOST));
+        when(connection.peer()).thenReturn(peer);
+        when(peer.remoteAddress()).thenReturn(new VirtualAddress("whatever"));
     }
 
     @SuppressWarnings({ "rawtypes", "unused" })

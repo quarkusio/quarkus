@@ -20,7 +20,7 @@ public class TypeErrorTest {
                     .addAsResource("templates/HelloResource/typedTemplatePrimitives.txt")
                     .addAsResource(new StringAsset("Hello {name}!"), "templates/hello.txt"))
             .assertException(t -> {
-                assertTrue(t.getMessage().contains("Incorrect expression"));
+                assertTrue(t.getMessage().contains("Found incorrect expressions"));
                 assertTrue(t.getMessage().contains("name.foo()"));
             });
 

@@ -35,7 +35,7 @@ public class NamedBeanValidationFailureTest {
                     e = e.getCause();
                 }
                 assertNotNull(te);
-                assertTrue(te.getMessage().contains("Found template problems (2)"), te.getMessage());
+                assertTrue(te.getMessage().contains("Found incorrect expressions (2)"), te.getMessage());
                 assertTrue(te.getMessage().contains("it.ping"), te.getMessage());
                 assertTrue(te.getMessage().contains("cdi:foo.bar"), te.getMessage());
             });

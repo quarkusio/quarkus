@@ -33,11 +33,10 @@ public class TemplateGlobalValidationFailureTest {
                 }
                 assertNotNull(te);
                 assertTrue(
-                        te.getMessage().contains("Incorrect expression found: {user.name}"),
-                        te.getMessage());
+                        te.getMessage().contains("Found incorrect expressions (1)"), te.getMessage());
                 assertTrue(
                         te.getMessage().contains(
-                                "property/method [name] not found on class [java.lang.String] nor handled by an extension method"),
+                                "Property/method [name] not found on class [java.lang.String] nor handled by an extension method"),
                         te.getMessage());
             });
 

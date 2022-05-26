@@ -22,7 +22,7 @@ public class QuteErrorPageTest {
     public void testErrorPage() {
         config.modifyResourceFile("templates/hello.txt", file -> "{@java.lang.String hello}{hello.foo}");
         RestAssured.when().get("/hello").then()
-                .body(containsString("Incorrect expression found: {hello.foo}"))
+                .body(containsString("hello.txt:1"), containsString("{hello.foo}"))
                 .statusCode(Status.INTERNAL_SERVER_ERROR.getStatusCode());
     }
 

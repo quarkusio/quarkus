@@ -286,9 +286,12 @@ public class SmallRyeGraphQLProcessor {
             recorder.setupClDevMode(shutdownContext);
         }
 
+        boolean runBlocking = shouldRunBlockingRoute(graphQLConfig);
+
         // Subscriptions
         Handler<RoutingContext> graphqlOverWebsocketHandler = recorder
-                .graphqlOverWebsocketHandler(beanContainer.getValue(), graphQLInitializedBuildItem.getInitialized());
+                .graphqlOverWebsocketHandler(beanContainer.getValue(), graphQLInitializedBuildItem.getInitialized(),
+                        runBlocking);
 
         HttpRootPathBuildItem.Builder subscriptionsBuilder = httpRootPathBuildItem.routeBuilder()
                 .orderedRoute(graphQLConfig.rootPath, Integer.MIN_VALUE)
@@ -312,7 +315,6 @@ public class SmallRyeGraphQLProcessor {
         });
 
         // Queries and Mutations
-        boolean runBlocking = shouldRunBlockingRoute(graphQLConfig);
         boolean allowGet = getBooleanConfigValue(ConfigKey.ALLOW_GET, false);
         boolean allowQueryParametersOnPost = getBooleanConfigValue(ConfigKey.ALLOW_POST_WITH_QUERY_PARAMETERS, false);
         Handler<RoutingContext> executionHandler = recorder.executionHandler(graphQLInitializedBuildItem.getInitialized(),

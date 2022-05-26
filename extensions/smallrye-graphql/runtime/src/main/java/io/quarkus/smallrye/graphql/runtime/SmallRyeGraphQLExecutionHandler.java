@@ -5,10 +5,7 @@ import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import javax.json.Json;
@@ -23,7 +20,6 @@ import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.smallrye.graphql.execution.ExecutionResponse;
 import io.smallrye.graphql.execution.ExecutionResponseWriter;
-import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
@@ -38,7 +34,6 @@ import io.vertx.ext.web.RoutingContext;
 public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHandler {
     private final boolean allowGet;
     private final boolean allowPostWithQueryParameters;
-    private final boolean runBlocking;
     private static final String QUERY = "query";
     private static final String OPERATION_NAME = "operationName";
     private static final String VARIABLES = "variables";
@@ -54,10 +49,9 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     public SmallRyeGraphQLExecutionHandler(boolean allowGet, boolean allowPostWithQueryParameters, boolean runBlocking,
             CurrentIdentityAssociation currentIdentityAssociation,
             CurrentVertxRequest currentVertxRequest) {
-        super(currentIdentityAssociation, currentVertxRequest);
+        super(currentIdentityAssociation, currentVertxRequest, runBlocking);
         this.allowGet = allowGet;
         this.allowPostWithQueryParameters = allowPostWithQueryParameters;
-        this.runBlocking = runBlocking;
     }
 
     @Override
@@ -299,20 +293,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     private void doRequest(JsonObject jsonInput, HttpServerResponse response, RoutingContext ctx,
             String requestedCharset) {
         VertxExecutionResponseWrtiter writer = new VertxExecutionResponseWrtiter(response, ctx, requestedCharset);
-        // Add some context to dfe
-        Map<String, Object> metaData = new ConcurrentHashMap<>();
-        metaData.put("httpHeaders", getHeaders(ctx));
-        metaData.put("runBlocking", runBlocking);
-        getExecutionService().executeAsync(jsonInput, metaData, writer);
-    }
-
-    private Map<String, List<String>> getHeaders(RoutingContext ctx) {
-        Map<String, List<String>> h = new HashMap<>();
-        MultiMap headers = ctx.request().headers();
-        for (String header : headers.names()) {
-            h.put(header, headers.getAll(header));
-        }
-        return h;
+        getExecutionService().executeAsync(jsonInput, getMetaData(ctx), writer);
     }
 
     private static JsonObject toJsonObject(String jsonString) {

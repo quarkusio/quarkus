@@ -29,14 +29,14 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeBuild;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import picocli.CommandLine;
 
 public class PicocliNativeImageProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(PicocliNativeImageProcessor.class);
 
-    @BuildStep(onlyIf = NativeBuild.class)
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void reflectionConfiguration(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -112,7 +112,7 @@ public class PicocliNativeImageProcessor {
                 .build()));
     }
 
-    @BuildStep(onlyIf = NativeBuild.class)
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void resourceBundlesConfiguration(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundles) {
         combinedIndexBuildItem.getIndex().getAnnotations(DotName.createSimple(CommandLine.Command.class.getName()))

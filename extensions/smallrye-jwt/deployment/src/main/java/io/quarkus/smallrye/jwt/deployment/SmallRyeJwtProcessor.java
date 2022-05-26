@@ -32,7 +32,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeBuild;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.security.deployment.JCAProviderBuildItem;
 import io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMechanism;
 import io.quarkus.smallrye.jwt.runtime.auth.JsonWebTokenCredentialProducer;
@@ -119,7 +119,7 @@ class SmallRyeJwtProcessor {
      *
      * @return NativeImageResourceBuildItem
      */
-    @BuildStep(onlyIf = NativeBuild.class)
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     NativeImageResourceBuildItem registerNativeImageResources() {
         final Config config = ConfigProvider.getConfig();
         try {

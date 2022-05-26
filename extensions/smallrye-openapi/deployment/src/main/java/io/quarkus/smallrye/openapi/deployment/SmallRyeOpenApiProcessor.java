@@ -85,6 +85,7 @@ import io.quarkus.smallrye.openapi.deployment.filter.AutoTagFilter;
 import io.quarkus.smallrye.openapi.deployment.filter.SecurityConfigFilter;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.smallrye.openapi.deployment.spi.IgnoreStaticDocumentBuildItem;
+import io.quarkus.smallrye.openapi.deployment.spi.OpenApiDocumentBuildItem;
 import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;
@@ -650,6 +651,7 @@ public class SmallRyeOpenApiProcessor {
     public void build(BuildProducer<FeatureBuildItem> feature,
             BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
+            BuildProducer<OpenApiDocumentBuildItem> openApiDocumentProducer,
             OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem,
             Capabilities capabilities,
             List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems,
@@ -686,11 +688,9 @@ public class SmallRyeOpenApiProcessor {
             nativeImageResources.produce(new NativeImageResourceBuildItem(name));
         }
 
-        // Store the document if needed
-        boolean shouldStore = openApiConfig.storeSchemaDirectory.isPresent();
-        if (shouldStore) {
-            storeDocument(out, openApiConfig, staticModel, annotationModel, openAPIBuildItems);
-        }
+        OpenApiDocument finalStoredOpenApiDocument = storeDocument(out, openApiConfig, staticModel, annotationModel,
+                openAPIBuildItems);
+        openApiDocumentProducer.produce(new OpenApiDocumentBuildItem(finalStoredOpenApiDocument));
     }
 
     @BuildStep
@@ -964,7 +964,7 @@ public class SmallRyeOpenApiProcessor {
         return document;
     }
 
-    private void storeDocument(OutputTargetBuildItem out,
+    private OpenApiDocument storeDocument(OutputTargetBuildItem out,
             SmallRyeOpenApiConfig smallRyeOpenApiConfig,
             OpenAPI staticModel,
             OpenAPI annotationModel,
@@ -978,12 +978,17 @@ public class SmallRyeOpenApiProcessor {
         document.filter(filter(openApiConfig)); // This usually happens at runtime, so when storing we want to filter here too.
         document.initialize();
 
-        for (Format format : Format.values()) {
-            String name = OpenApiConstants.BASE_NAME + format;
-            byte[] schemaDocument = OpenApiSerializer.serialize(document.get(), format).getBytes(StandardCharsets.UTF_8);
-            storeGeneratedSchema(smallRyeOpenApiConfig, out, schemaDocument, format);
+        // Store the document if needed
+        boolean shouldStore = smallRyeOpenApiConfig.storeSchemaDirectory.isPresent();
+        if (shouldStore) {
+            for (Format format : Format.values()) {
+                String name = OpenApiConstants.BASE_NAME + format;
+                byte[] schemaDocument = OpenApiSerializer.serialize(document.get(), format).getBytes(StandardCharsets.UTF_8);
+                storeGeneratedSchema(smallRyeOpenApiConfig, out, schemaDocument, format);
+            }
         }
 
+        return document;
     }
 
     private OpenApiDocument prepareOpenApiDocument(OpenAPI staticModel,

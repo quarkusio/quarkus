@@ -656,9 +656,10 @@ A simple example of implementing such a `ResponseExceptionMapper` for the `Exten
 
 [source, java]
 ----
-public interface MyResponseExceptionMapper implements ResponseExceptionMapper<RuntimeException> {
+public class MyResponseExceptionMapper implements ResponseExceptionMapper<RuntimeException> {
 
-    RuntimeException toThrowable(Response response) {
+    @Override
+    public RuntimeException toThrowable(Response response) {
         if (response.getStatus() == 500) {
             throw new RuntimeException("The remote service responded with HTTP 500");
         }

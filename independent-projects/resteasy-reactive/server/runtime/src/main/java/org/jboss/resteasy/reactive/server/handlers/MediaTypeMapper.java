@@ -131,8 +131,9 @@ public class MediaTypeMapper implements ServerRestHandler {
         }
 
         public void setupServerMediaType() {
-            MediaTypeHelper.sortByQSWeight(mtsWithParams); // TODO: this isn't completely correct as we are supposed to take q and then qs into account...
-            serverMediaType = new ServerMediaType(mtsWithParams, StandardCharsets.UTF_8.name(), true, false);
+            // TODO: this isn't completely correct as we are supposed to take q and then qs into account...
+            MediaTypeHelper.sortByQSWeight(mtsWithParams);
+            serverMediaType = new ServerMediaType(mtsWithParams, StandardCharsets.UTF_8.name(), true);
         }
     }
 }

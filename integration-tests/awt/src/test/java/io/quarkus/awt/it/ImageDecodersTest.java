@@ -4,6 +4,10 @@ import static io.quarkus.awt.it.TestUtil.checkLog;
 import static io.quarkus.awt.it.TestUtil.compareArrays;
 import static io.quarkus.awt.it.TestUtil.decodeArray4;
 import static io.restassured.RestAssured.given;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -13,7 +17,6 @@ import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -85,21 +88,22 @@ public class ImageDecodersTest {
                 .asByteArray();
         final BufferedImage image = ImageIO.read(new ByteArrayInputStream(imgBytes));
 
-        Assertions.assertNotNull(image, fileName + ": The image returned is not a valid PNG.");
+        assertNotNull(image, fileName + ": The image returned is not a valid PNG.");
 
-        Assertions.assertTrue(image.getWidth() == 237 && image.getHeight() == 296,
+        assertTrue(image.getWidth() == 237 && image.getHeight() == 296,
                 String.format("%s image's expected dimension is %d x %d, but was %d x %d.",
                         fileName, 237, 296, image.getWidth(), image.getHeight()));
 
         final int[] expected = decodeArray4(filePixel[1].trim());
         final int[] actual = new int[4]; //4BYTE RGBA
         image.getData().getPixel(100, 100, actual);
-        Assertions.assertTrue(compareArrays(expected, actual, PIXEL_DIFFERENCE_THRESHOLD_RGBA_VEC),
+        assertTrue(compareArrays(expected, actual, PIXEL_DIFFERENCE_THRESHOLD_RGBA_VEC),
                 String.format("%s: Wrong pixel. Expected: [%d,%d,%d,%d] Actual: [%d,%d,%d,%d]", fileName,
                         expected[0], expected[1], expected[2], expected[3],
                         actual[0], actual[1], actual[2], actual[3]));
     }
 
+    // @formatter:off
     /**
      * Suite of either specifically invalid images, to trigger exceptions
      * during parsing, or more exotic images, utilizing e.g. colour profiles
@@ -107,37 +111,39 @@ public class ImageDecodersTest {
      *
      * Notes on selected images:
      *
-     * weird_230.bmp: Triggers an error that is supposed to have a text
-     * in src/java.desktop/share/classes/com/sun/imageio/plugins/common/iio-plugin.properties
-     * associated with it. If the native image works right, the expected text should be captured
-     * in the log.
+     *   weird_230.bmp: Triggers an error that is supposed to have a text
+     *   in src/java.desktop/share/classes/com/sun/imageio/plugins/common/iio-plugin.properties
+     *   associated with it. If the native image works right, the expected text should be captured
+     *   in the log.
      *
      * See the test data spreadsheet below for more:
      *
-     * OK - must produce a readable BufferedImage
-     * NOK - must not produce any readable image, i.e. must fail
+     * OK  - must produce a readable BufferedImage, metadata could be checked with a regexp
+     * NOK - must not produce any readable image, i.e. must fail, Quarkus log is checked with a regexp
+     * NA  - undefined, e.g. JDK inconsistent across versions, we just want no JNI/static init errors,
+     *       e.g. https://mail.openjdk.java.net/pipermail/client-libs-dev/2022-May/004780.html
      */
     @ParameterizedTest
-    // @formatter:off
     @ValueSource(strings = {
-    // File name         █OK/NOK█ Optionally a regexp to look for in the log
+    // File name            █OK/NOK/NA█ Optionally a regexp to look for in the log or image toString()
     "weird_1000.jpg         █NOK█.*weird_1000.jpg.*Bogus Huffman table definition.*" , // Affects javax/imageio/IIOException
-    "test_a98.jpg           █OK", // Affects sun.java2d.cmm.lcms.LCMSTransform
-    "test_gray_to_k.tiff    █OK", // Affects java.awt.color.ICC_Profile
+    "test_a98.jpg           █OK █.*type = 5 .* #pixelBits = 24 .*", // Affects sun.java2d.cmm.lcms.LCMSTransform
+    "test_gray_to_k.tiff    █OK █.*type = 5 .* #pixelBits = 24 .*", // Affects java.awt.color.ICC_Profile
     "test_gray_to_k.jpg     █NOK█.*test_gray_to_k.jpg.*(Can not access.*profile|LUT is not suitable).*", // Affects java.awt.color.ICC_Profile
-    "test_ps_gray.tiff      █OK", // Affects java.awt.color.ICC_ProfileGray
-    "test_sRGB_ICC_Miss.tiff█OK", // Affects java.awt.color.CMMException
-    "weird_488-1.tif        █OK", // Affects sun.awt.image.*Raster
-    "test_hyperstack.tiff   █OK", // Affects tiff plugin
-    "test_lut_3c_fiji.tiff  █OK", // Life sciences imagery, Fiji used to edit colour Lookup Table (LUT)
-    "test_jpeg.tiff         █NOK█.*test_jpeg.tiff.*Unsupported Image Type.*", // JPEG compression TIFF by GIMP
+    "test_ps_gray.tiff      █OK █.*type = 5 .* #pixelBits = 24 .*", // Affects java.awt.color.ICC_ProfileGray
+    "test_sRGB_ICC_Miss.tiff█OK █.*type = 5 .* #pixelBits = 24 .*", // Affects java.awt.color.CMMException
+    "weird_488-1.tif        █OK █.*type = 11 .* #pixelBits = 16 .*", // Affects sun.awt.image.*Raster
+    "test_hyperstack.tiff   █OK █.*type = 5 .* #pixelBits = 24 numComponents = 3 .*", // Affects tiff plugin
+    "test_lut_3c_fiji.tiff  █OK █.*type = 5 .* #pixelBits = 24 numComponents = 3 .*", // Life sciences imagery, Fiji used to edit colour Lookup Table (LUT)
+    "test_jpeg.tiff         █NA █(?i:.*(type = 6 .* #pixelBits = 32 numComponents = 4 |test_jpeg.tiff.*Unsupported Image Type).*)", // JPEG compression TIFF by GIMP, bogus, inconsistent in JDK
+    "test_jpeg_2.tiff       █NOK█.*test_jpeg_2.tiff.*Unsupported Image Type.*", // JPEG compression TIFF by GIMP, Transparent pixels color saved
     "weird_230.bmp          █NOK█.*weird_230.bmp.*New BMP version not implemented yet.*" // Tested with a custom iio-plugin.properties too
     })
     // @formatter:on
     public void testComplexImages(String testData) throws IOException {
         final String[] imgExpectations = testData.split("█");
         final String fileName = imgExpectations[0].trim();
-        final boolean validImage = "OK".equals(imgExpectations[1].trim());
+        final String okNoKNA = imgExpectations[1].trim();
         final Pattern pattern = (imgExpectations.length > 2) ? Pattern.compile(imgExpectations[2].trim()) : null;
         final byte[] imgBytes = given()
                 .multiPart("image", new File(ImageDecodersTest.class.getResource("/complex/" + fileName).getFile()))
@@ -145,13 +151,33 @@ public class ImageDecodersTest {
                 .post("/topng/" + fileName)
                 .asByteArray();
         final BufferedImage image = ImageIO.read(new ByteArrayInputStream(imgBytes));
-        if (validImage) {
-            Assertions.assertNotNull(image, "The image " + fileName + " should have been converted to a valid PNG.");
-        } else {
-            Assertions.assertNull(image, "The image " + fileName + " should have triggered a parsing error.");
-        }
-        if (pattern != null) {
-            checkLog(pattern, fileName);
+        switch (okNoKNA) {
+            case "OK":
+                assertNotNull(image, "The image " + fileName + " should have been converted to a valid PNG.");
+                if (pattern != null) {
+                    assertTrue(pattern.matcher(image.toString()).matches(),
+                            "Image description should have matched " + pattern);
+                }
+                break;
+            case "NOK":
+                assertNull(image, "The image " + fileName + " should have triggered a parsing error.");
+                if (pattern != null) {
+                    checkLog(pattern, fileName);
+                }
+                break;
+            case "NA":
+                if (pattern != null) {
+                    if (image == null) {
+                        checkLog(pattern, fileName);
+                    } else {
+                        assertTrue(pattern.matcher(image.toString()).matches(),
+                                "Image description should have matched " + pattern);
+                    }
+                }
+                break;
+            default:
+                fail("Bogus test data: unknown condition: " + okNoKNA);
+                break;
         }
     }
 }

@@ -30,6 +30,8 @@ public final class CompiledJavaVersionBuildItem extends SimpleBuildItem {
 
         Status isJava17OrHigher();
 
+        Status isJava19OrHigher();
+
         enum Status {
             TRUE,
             FALSE,
@@ -57,12 +59,18 @@ public final class CompiledJavaVersionBuildItem extends SimpleBuildItem {
             public Status isJava17OrHigher() {
                 return Status.UNKNOWN;
             }
+
+            @Override
+            public Status isJava19OrHigher() {
+                return Status.UNKNOWN;
+            }
         }
 
         final class Known implements JavaVersion {
 
             private static final int JAVA_11_MAJOR = 55;
             private static final int JAVA_17_MAJOR = 61;
+            private static final int JAVA_19_MAJOR = 63;
 
             private final int determinedMajor;
 
@@ -83,6 +91,11 @@ public final class CompiledJavaVersionBuildItem extends SimpleBuildItem {
             @Override
             public Status isJava17OrHigher() {
                 return higherOrEqualStatus(JAVA_17_MAJOR);
+            }
+
+            @Override
+            public Status isJava19OrHigher() {
+                return higherOrEqualStatus(JAVA_19_MAJOR);
             }
 
             private Status higherOrEqualStatus(int javaMajor) {

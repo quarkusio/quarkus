@@ -186,39 +186,47 @@ public class QuteProcessor {
                 errors.add(TemplateException.builder()
                         .code(Code.INCORRECT_EXPRESSION)
                         .origin(incorrectExpression.origin)
-                        .message("Incorrect expression found: \\{{}\\}\n\t- {}\n\t- at {}:{}")
-                        .arguments(incorrectExpression.expression, incorrectExpression.reason,
-                                findTemplatePath(analysis, incorrectExpression.origin.getTemplateGeneratedId()),
-                                incorrectExpression.origin.getLine())
+                        .message(
+                                "{templatePath.or(origin.templateId)}:{origin.line}:{origin.lineCharacterStart} - \\{{expression}\\}: {reason}")
+                        .argument("templatePath",
+                                findTemplatePath(analysis, incorrectExpression.origin.getTemplateGeneratedId()))
+                        .argument("expression", incorrectExpression.expression)
+                        .argument("reason", incorrectExpression.reason)
                         .build());
             } else if (incorrectExpression.clazz != null) {
                 errors.add(TemplateException.builder()
                         .code(Code.INCORRECT_EXPRESSION)
                         .origin(incorrectExpression.origin)
                         .message(
-                                "Incorrect expression found: \\{{}}\n\t- property/method [{}] not found on class [{}] nor handled by an extension method\n\t- at {}:{}")
-                        .arguments(incorrectExpression.expression, incorrectExpression.property, incorrectExpression.clazz,
-                                findTemplatePath(analysis, incorrectExpression.origin.getTemplateGeneratedId()),
-                                incorrectExpression.origin.getLine())
+                                "{templatePath.or(origin.templateId)}:{origin.line}:{origin.lineCharacterStart} - \\{{expression}}: Property/method [{property}] not found on class [{clazz}] nor handled by an extension method")
+                        .argument("templatePath",
+                                findTemplatePath(analysis, incorrectExpression.origin.getTemplateGeneratedId()))
+                        .argument("expression", incorrectExpression.expression)
+                        .argument("property", incorrectExpression.property)
+                        .argument("clazz", incorrectExpression.clazz)
                         .build());
             } else {
                 errors.add(TemplateException.builder()
                         .code(Code.INCORRECT_EXPRESSION)
                         .origin(incorrectExpression.origin)
-                        .message("Incorrect expression found: \\{{}}\n\t- @Named bean not found for [{}]\n\t- at {}:{}")
-                        .arguments(incorrectExpression.expression, incorrectExpression.property,
-                                findTemplatePath(analysis, incorrectExpression.origin.getTemplateGeneratedId()),
-                                incorrectExpression.origin.getLine())
+                        .message(
+                                "{templatePath.or(origin.templateId)}:{origin.line}:{origin.lineCharacterStart} - \\{{expression}}: @Named bean not found for [{property}]")
+                        .argument("templatePath",
+                                findTemplatePath(analysis, incorrectExpression.origin.getTemplateGeneratedId()))
+                        .argument("expression", incorrectExpression.expression)
+                        .argument("property", incorrectExpression.property)
                         .build());
             }
         }
 
         if (!errors.isEmpty()) {
-            StringBuilder message = new StringBuilder("Found template problems (").append(errors.size()).append("):");
+            StringBuilder message = new StringBuilder("Found incorrect expressions (").append(errors.size())
+                    .append("):");
             int idx = 1;
             for (TemplateException error : errors) {
-                message.append("\n").append("[").append(idx++).append("] ").append(error.getMessage());
+                message.append("\n\t").append("[").append(idx++).append("] ").append(error.getMessage());
             }
+            message.append("\n");
             TemplateException exception = new TemplateException(message.toString());
             for (TemplateException error : errors) {
                 exception.addSuppressed(error);
@@ -832,7 +840,7 @@ public class QuteProcessor {
             } else {
                 // No namespace extension method found - incorrect expression
                 incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                        String.format("no matching namespace [%s] extension method found", namespace), expression.getOrigin()));
+                        String.format("No matching namespace [%s] extension method found", namespace), expression.getOrigin()));
                 match.clearValues();
                 return putResult(match, results, expression);
             }

@@ -36,7 +36,7 @@ public class MessageBundleExpressionValidationTest {
                 if (te == null) {
                     fail("No template exception thrown: " + t);
                 }
-                assertTrue(te.getMessage().contains("Found template problems (5)"), te.getMessage());
+                assertTrue(te.getMessage().contains("Found incorrect expressions (5)"), te.getMessage());
                 assertTrue(te.getMessage().contains("item.foo"), te.getMessage());
                 assertTrue(te.getMessage().contains("bar"), te.getMessage());
                 assertTrue(te.getMessage().contains("foo"), te.getMessage());

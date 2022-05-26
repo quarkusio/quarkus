@@ -19,9 +19,18 @@ public class TypesafeClientTest {
     URL url;
 
     @Test
-    public void testTypesafeClient() {
+    public void testTypesafeClientSingleResultOperationOverHttp() {
         when()
-                .get("/typesafe/" + url.toString())
+                .get("/typesafe-single-http/" + url.toString())
+                .then()
+                .log().everything()
+                .statusCode(204);
+    }
+
+    @Test
+    public void testTypesafeClientSingleResultOperationOverWebSocket() {
+        when()
+                .get("/typesafe-single-websocket/" + url.toString())
                 .then()
                 .log().everything()
                 .statusCode(204);

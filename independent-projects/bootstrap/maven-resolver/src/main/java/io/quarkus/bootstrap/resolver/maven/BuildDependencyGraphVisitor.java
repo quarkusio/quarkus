@@ -143,8 +143,7 @@ public class BuildDependencyGraphVisitor {
             requests.add(new ArtifactRequest(node));
         }
         if (currentDeployment != null) {
-            if (currentRuntime == null && !allRuntimeDeps.contains(new GACT(artifact.getGroupId(), artifact.getArtifactId(),
-                    artifact.getClassifier(), artifact.getExtension()))) {
+            if (currentRuntime == null && !allRuntimeDeps.contains(getKey(artifact))) {
                 deploymentDepNodes.add(node);
             } else if (currentRuntime == node) {
                 currentRuntime = null;
@@ -154,5 +153,9 @@ public class BuildDependencyGraphVisitor {
                 currentDeployment = null;
             }
         }
+    }
+
+    private static ArtifactKey getKey(Artifact artifact) {
+        return new GACT(artifact.getGroupId(), artifact.getArtifactId(), artifact.getClassifier(), artifact.getExtension());
     }
 }

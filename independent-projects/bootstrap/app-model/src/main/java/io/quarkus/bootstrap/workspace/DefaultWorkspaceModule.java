@@ -97,6 +97,18 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
         }
 
         @Override
+        public Builder setTestClasspathDependencyExclusions(Collection<String> excludes) {
+            DefaultWorkspaceModule.this.testClasspathDependencyExclusions = excludes;
+            return this;
+        }
+
+        @Override
+        public Builder setAdditionalTestClasspathElements(Collection<String> elements) {
+            DefaultWorkspaceModule.this.additionalTestClasspathElements = elements;
+            return this;
+        }
+
+        @Override
         public WorkspaceModule build() {
             final DefaultWorkspaceModule module = DefaultWorkspaceModule.this;
             if (module.id == null) {
@@ -154,6 +166,16 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
         public Collection<Dependency> getDirectDependencies() {
             return DefaultWorkspaceModule.this.getDirectDependencies();
         }
+
+        @Override
+        public Collection<String> getTestClasspathDependencyExclusions() {
+            return DefaultWorkspaceModule.this.testClasspathDependencyExclusions;
+        }
+
+        @Override
+        public Collection<String> getAdditionalTestClasspathElements() {
+            return DefaultWorkspaceModule.this.additionalTestClasspathElements;
+        }
     }
 
     private WorkspaceModuleId id;
@@ -163,6 +185,8 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
     private Map<String, ArtifactSources> sourcesSets = new HashMap<>();
     private List<Dependency> directDepConstraints;
     private List<Dependency> directDeps;
+    private Collection<String> testClasspathDependencyExclusions = List.of();
+    private Collection<String> additionalTestClasspathElements = List.of();
 
     private DefaultWorkspaceModule() {
     }
@@ -202,10 +226,6 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
         return buildDir;
     }
 
-    public void addArtifactSources(ArtifactSources src) {
-        sourcesSets.put(src.getClassifier(), src);
-    }
-
     @Override
     public boolean hasSources(String classifier) {
         return sourcesSets.containsKey(classifier);
@@ -235,24 +255,19 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
         return directDepConstraints == null ? Collections.emptyList() : directDepConstraints;
     }
 
-    public void setDirectDependencyConstraints(List<Dependency> directDepConstraints) {
-        this.directDepConstraints = directDepConstraints;
-    }
-
     @Override
     public Collection<Dependency> getDirectDependencies() {
         return directDeps == null ? Collections.emptyList() : directDeps;
     }
 
-    public void setDirectDependencies(List<Dependency> directDeps) {
-        this.directDeps = directDeps;
+    @Override
+    public Collection<String> getTestClasspathDependencyExclusions() {
+        return testClasspathDependencyExclusions;
     }
 
-    public void addDirectDependency(Dependency directDep) {
-        if (directDeps == null || directDeps.isEmpty()) {
-            directDeps = new ArrayList<>();
-        }
-        this.directDeps.add(directDep);
+    @Override
+    public Collection<String> getAdditionalTestClasspathElements() {
+        return additionalTestClasspathElements;
     }
 
     @Override

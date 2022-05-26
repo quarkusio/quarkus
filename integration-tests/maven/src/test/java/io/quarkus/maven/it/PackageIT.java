@@ -34,6 +34,15 @@ public class PackageIT extends MojoTestBase {
     private File testDir;
 
     @Test
+    public void testPluginClasspathConfig() throws Exception {
+        testDir = initProject("projects/test-plugin-classpath-config");
+        running = new RunningInvoker(testDir, false);
+        final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
+                Collections.emptyMap());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+    }
+
+    @Test
     public void testUberJarMavenPluginConfiguration()
             throws MavenInvocationException, IOException, InterruptedException {
         testDir = initProject("projects/uberjar-maven-plugin-config");

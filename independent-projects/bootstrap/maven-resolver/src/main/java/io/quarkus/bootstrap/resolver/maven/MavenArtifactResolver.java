@@ -273,7 +273,7 @@ public class MavenArtifactResolver {
         try {
             return repoSystem.resolveDependencies(repoSession,
                     new DependencyRequest().setCollectRequest(
-                            newCollectManagedRequest(artifact, deps, managedDeps, mainRepos, excludedScopes)));
+                            newCollectManagedRequest(artifact, deps, managedDeps, mainRepos, List.of(), excludedScopes)));
         } catch (DependencyResolutionException e) {
             throw new BootstrapMavenException("Failed to resolve dependencies for " + artifact, e);
         }
@@ -320,11 +320,6 @@ public class MavenArtifactResolver {
         } catch (DependencyCollectionException e) {
             throw new BootstrapMavenException("Failed to collect dependencies for " + artifact, e);
         }
-    }
-
-    private CollectRequest newCollectManagedRequest(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps,
-            List<RemoteRepository> mainRepos, String... excludedScopes) throws BootstrapMavenException {
-        return newCollectManagedRequest(artifact, deps, managedDeps, mainRepos, Collections.emptyList(), excludedScopes);
     }
 
     private CollectRequest newCollectManagedRequest(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps,

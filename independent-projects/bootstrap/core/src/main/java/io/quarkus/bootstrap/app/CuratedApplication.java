@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.security.ProtectionDomain;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -83,6 +84,10 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     @Deprecated
     public AppModel getAppModel() {
         return BootstrapUtils.convert(appModel);
+    }
+
+    public boolean isFlatClassPath() {
+        return configuredClassLoading.isFlatTestClassPath();
     }
 
     public ApplicationModel getApplicationModel() {
@@ -154,7 +159,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             consumer.accept(ClassPathElement.EMPTY);
             return;
         }
-        List<String> filteredResources = configuredClassLoading.removedResources.get(artifact.getKey());
+        Collection<String> filteredResources = configuredClassLoading.getRemovedResources().get(artifact.getKey());
         if (filteredResources != null) {
             Consumer<ClassPathElement> old = consumer;
             consumer = new Consumer<ClassPathElement>() {
@@ -181,8 +186,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
     private void addCpElement(QuarkusClassLoader.Builder builder, ResolvedDependency dep, ClassPathElement element) {
         final ArtifactKey key = dep.getKey();
-        if (appModel.getParentFirst().contains(key)
-                || configuredClassLoading.parentFirstArtifacts.contains(key)) {
+        if (configuredClassLoading.isParentFirstArtifact(key)) {
             //we always load this from the parent if it is available, as this acts as a bridge between the running
             //app and the dev mode code
             builder.addParentFirstElement(element);
@@ -204,21 +208,21 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             //any of the runtime artifacts, or user classes
             //this will load any deployment artifacts from the parent CL if they are present
             for (ResolvedDependency i : appModel.getDependencies()) {
-                if (configuredClassLoading.reloadableArtifacts.contains(i.getKey())) {
+                if (configuredClassLoading.isRemovedArtifact(i.getKey())) {
+                    processCpElement(i, builder::addBannedElement);
                     continue;
                 }
-                if (configuredClassLoading.removedArtifacts.contains(i.getKey())) {
-                    processCpElement(i, builder::addBannedElement);
-                } else {
-                    processCpElement(i, element -> addCpElement(builder, i, element));
+                if (configuredClassLoading.isReloadableArtifact(i.getKey())) {
+                    continue;
                 }
+                processCpElement(i, element -> addCpElement(builder, i, element));
             }
 
             for (Path i : quarkusBootstrap.getAdditionalDeploymentArchives()) {
                 builder.addElement(ClassPathElement.fromPath(i, false));
             }
             Map<String, byte[]> banned = new HashMap<>();
-            for (List<String> i : configuredClassLoading.removedResources.values()) {
+            for (Collection<String> i : configuredClassLoading.getRemovedResources().values()) {
                 for (String j : i) {
                     banned.put(j, new byte[0]);
                 }
@@ -246,9 +250,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                     .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled());
             builder.addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners());
 
-            final boolean flatTestClassPath = quarkusBootstrap.getMode() == QuarkusBootstrap.Mode.TEST
-                    && quarkusBootstrap.isFlatClassPath();
-            if (flatTestClassPath) {
+            if (configuredClassLoading.isFlatTestClassPath()) {
                 //in test mode we have everything in the base class loader
                 //there is no need to restart so there is no need for an additional CL
 
@@ -275,9 +277,14 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                     }
                 }
             }
+            for (Path i : configuredClassLoading.getAdditionalClasspathElements()) {
+                hotReloadPaths.add(i);
+                builder.addBannedElement(new ClassFilteredBannedElement(ClassPathElement.fromPath(i, true)));
+            }
+
             builder.setResettableElement(new MemoryClassPathElement(Collections.emptyMap(), true));
             Map<String, byte[]> banned = new HashMap<>();
-            for (List<String> i : configuredClassLoading.removedResources.values()) {
+            for (Collection<String> i : configuredClassLoading.getRemovedResources().values()) {
                 for (String j : i) {
                     banned.put(j, new byte[0]);
                 }
@@ -285,19 +292,18 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             builder.addBannedElement(new MemoryClassPathElement(banned, true));
 
             for (ResolvedDependency dependency : appModel.getDependencies()) {
+                if (configuredClassLoading.isRemovedArtifact(dependency.getKey())) {
+                    processCpElement(dependency, builder::addBannedElement);
+                    continue;
+                }
                 if (!dependency.isRuntimeCp()
                         || isHotReloadable(dependency, hotReloadPaths)
-                        || configuredClassLoading.reloadableArtifacts.contains(dependency.getKey())
-                        || !flatTestClassPath && dependency.isReloadable()
+                        || configuredClassLoading.isReloadableArtifact(dependency.getKey())
+                        || !configuredClassLoading.isFlatTestClassPath() && dependency.isReloadable()
                                 && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey())) {
                     continue;
                 }
-
-                if (configuredClassLoading.removedArtifacts.contains(dependency.getKey())) {
-                    processCpElement(dependency, builder::addBannedElement);
-                } else {
-                    processCpElement(dependency, element -> addCpElement(builder, dependency, element));
-                }
+                processCpElement(dependency, element -> addCpElement(builder, dependency, element));
             }
 
             baseRuntimeClassLoader = builder.build();
@@ -336,11 +342,17 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             }
         }
         for (ResolvedDependency dependency : appModel.getDependencies()) {
+            if (configuredClassLoading.isRemovedArtifact(dependency.getKey())) {
+                continue;
+            }
             if (dependency.isRuntimeCp() && dependency.isJar() &&
                     (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
-                            configuredClassLoading.reloadableArtifacts.contains(dependency.getKey()))) {
+                            configuredClassLoading.isReloadableArtifact(dependency.getKey()))) {
                 processCpElement(dependency, element -> addCpElement(builder, dependency, element));
             }
+        }
+        for (Path root : configuredClassLoading.getAdditionalClasspathElements()) {
+            builder.addElement(ClassPathElement.fromPath(root, true));
         }
         return builder.build();
     }
@@ -373,11 +385,17 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             }
         }
         for (ResolvedDependency dependency : appModel.getDependencies()) {
+            if (configuredClassLoading.isRemovedArtifact(dependency.getKey())) {
+                continue;
+            }
             if (dependency.isRuntimeCp() && dependency.isJar() &&
                     (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
-                            configuredClassLoading.reloadableArtifacts.contains(dependency.getKey()))) {
+                            configuredClassLoading.isReloadableArtifact(dependency.getKey()))) {
                 processCpElement(dependency, element -> addCpElement(builder, dependency, element));
             }
+        }
+        for (Path root : configuredClassLoading.getAdditionalClasspathElements()) {
+            builder.addElement(ClassPathElement.fromPath(root, true));
         }
         return builder.build();
     }

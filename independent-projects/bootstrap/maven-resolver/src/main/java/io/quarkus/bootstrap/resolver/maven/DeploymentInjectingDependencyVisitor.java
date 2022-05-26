@@ -81,12 +81,13 @@ public class DeploymentInjectingDependencyVisitor {
     private List<ConditionalDependency> conditionalDepsToProcess = new ArrayList<>();
     private final Deque<Collection<Exclusion>> exclusionStack = new ArrayDeque<>();
 
-    public final Set<ArtifactKey> allRuntimeDeps = new HashSet<>();
+    private final Set<ArtifactKey> allRuntimeDeps = new HashSet<>();
 
     public DeploymentInjectingDependencyVisitor(MavenArtifactResolver resolver, List<Dependency> managedDeps,
             List<RemoteRepository> mainRepos, ApplicationModelBuilder appBuilder,
             boolean collectReloadableModules)
             throws BootstrapDependencyProcessingException {
+
         if (collectReloadableModules) {
             setWalkingFlag(COLLECT_RELOADABLE_MODULES);
         }
@@ -111,6 +112,10 @@ public class DeploymentInjectingDependencyVisitor {
         this.managedDeps = managedDeps.isEmpty() ? new ArrayList<>() : managedDeps;
         this.mainRepos = mainRepos;
         this.appBuilder = appBuilder;
+    }
+
+    public Set<ArtifactKey> getAllRuntimeDependencies() {
+        return allRuntimeDeps;
     }
 
     public boolean isInjectedDeps() {
@@ -647,7 +652,7 @@ public class DeploymentInjectingDependencyVisitor {
                 && a2.getExtension().equals(a1.getExtension());
     }
 
-    public static GACT getKey(Artifact a) {
+    public static ArtifactKey getKey(Artifact a) {
         return new GACT(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getExtension());
     }
 

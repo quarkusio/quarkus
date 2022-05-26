@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -45,6 +45,7 @@ import org.gradle.jvm.toolchain.JavaToolchainSpec;
 import org.gradle.util.GradleVersion;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.app.ConfiguredClassLoading;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.devmode.DependenciesFilter;
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -304,17 +305,18 @@ public class QuarkusDev extends QuarkusTask {
             resourceDirs.add(resourceDir.getOutputDir());
         }
 
-        Set<ArtifactKey> configuredParentFirst = QuarkusBootstrap.createClassLoadingConfig(PathsCollection.from(resourceDirs),
-                QuarkusBootstrap.Mode.DEV, Collections.emptyList()).parentFirstArtifacts;
-
-        Set<ArtifactKey> parentFirstArtifactKeys = new HashSet<>(configuredParentFirst);
-        parentFirstArtifactKeys.addAll(appModel.getParentFirst());
+        final Collection<ArtifactKey> configuredParentFirst = ConfiguredClassLoading.builder()
+                .setApplicationModel(appModel)
+                .setApplicationRoot(PathsCollection.from(resourceDirs))
+                .setMode(QuarkusBootstrap.Mode.DEV)
+                .addParentFirstArtifacts(appModel.getParentFirst())
+                .build().getParentFirstArtifacts();
 
         for (io.quarkus.maven.dependency.ResolvedDependency artifact : appModel.getDependencies()) {
             if (!projectDependencies.contains(artifact.getKey())) {
                 artifact.getResolvedPaths().forEach(p -> {
                     File file = p.toFile();
-                    if (file.exists() && parentFirstArtifactKeys.contains(artifact.getKey())
+                    if (file.exists() && configuredParentFirst.contains(artifact.getKey())
                             && filesIncludedInClasspath.add(file)) {
                         getProject().getLogger().debug("Adding dependency {}", file);
                         builder.classpathEntry(file);

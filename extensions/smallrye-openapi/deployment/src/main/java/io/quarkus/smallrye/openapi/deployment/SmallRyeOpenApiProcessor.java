@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Modifier;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -855,7 +856,7 @@ public class SmallRyeOpenApiProcessor {
                         addStaticModelIfExist(results, ignorePatterns, possibleModelFile);
                     }
                 } catch (IOException ioe) {
-                    ioe.printStackTrace();
+                    throw new UncheckedIOException("An error occured while processing " + path, ioe);
                 }
             }
         }
@@ -881,16 +882,19 @@ public class SmallRyeOpenApiProcessor {
             while (urls.hasMoreElements()) {
                 URL url = urls.nextElement();
                 // Check if we should ignore
-                if (!shouldIgnore(ignorePatterns, url.toString())) {
+                String urlAsString = url.toString();
+                if (!shouldIgnore(ignorePatterns, urlAsString)) {
                     // Add as static model
-                    try (InputStream inputStream = url.openStream()) {
+                    URLConnection con = url.openConnection();
+                    con.setUseCaches(false);
+                    try (InputStream inputStream = con.getInputStream()) {
                         if (inputStream != null) {
                             byte[] contents = IoUtil.readBytes(inputStream);
 
                             results.add(new Result(format, new ByteArrayInputStream(contents)));
                         }
                     } catch (IOException ex) {
-                        throw new UncheckedIOException(ex);
+                        throw new UncheckedIOException("An error occured while processing " + urlAsString + " for " + path, ex);
                     }
                 }
             }

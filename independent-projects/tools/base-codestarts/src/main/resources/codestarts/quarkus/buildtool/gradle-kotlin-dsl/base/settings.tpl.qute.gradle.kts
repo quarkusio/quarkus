@@ -2,9 +2,9 @@ pluginManagement {
     val quarkusPluginVersion: String by settings
     val quarkusPluginId: String by settings
     repositories {
-        mavenLocal()
         mavenCentral()
         gradlePluginPortal()
+        mavenLocal()
 {#if gradle.plugin-repositories}
 {#for rep in gradle.plugin-repositories}
         maven { url = uri("{rep.url}") }

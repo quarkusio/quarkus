@@ -6,14 +6,12 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 
-abstract class AbstractInvocationContext implements ArcInvocationContext, Supplier<Map<String, Object>> {
+abstract class AbstractInvocationContext implements ArcInvocationContext {
 
     private static final Object[] EMPTY_PARAMS = new Object[0];
 
@@ -23,25 +21,24 @@ abstract class AbstractInvocationContext implements ArcInvocationContext, Suppli
     protected final List<InterceptorInvocation> chain;
     protected Object target;
     protected Object[] parameters;
-    // The map is initialized lazily but we need to use a holder so that all interceptors in the chain can access the same data
-    protected LazyValue<Map<String, Object>> contextData;
+    protected ContextDataMap contextData;
 
     protected AbstractInvocationContext(Object target, Method method,
             Constructor<?> constructor,
-            Object[] parameters, LazyValue<Map<String, Object>> contextData,
+            Object[] parameters, ContextDataMap contextData,
             Set<Annotation> interceptorBindings, List<InterceptorInvocation> chain) {
         this.target = target;
         this.method = method;
         this.constructor = constructor;
         this.parameters = parameters != null ? parameters : EMPTY_PARAMS;
-        this.contextData = contextData != null ? contextData : new LazyValue<>(this);
+        this.contextData = contextData != null ? contextData : new ContextDataMap(interceptorBindings);
         this.interceptorBindings = interceptorBindings;
         this.chain = chain;
     }
 
     @Override
     public Map<String, Object> getContextData() {
-        return contextData.get();
+        return contextData;
     }
 
     @Override
@@ -123,13 +120,6 @@ abstract class AbstractInvocationContext implements ArcInvocationContext, Suppli
     @Override
     public Constructor<?> getConstructor() {
         return constructor;
-    }
-
-    @Override
-    public Map<String, Object> get() {
-        Map<String, Object> result = new HashMap<String, Object>();
-        result.put(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS, interceptorBindings);
-        return result;
     }
 
 }

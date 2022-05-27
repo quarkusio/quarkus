@@ -4,7 +4,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import javax.interceptor.InvocationContext;
@@ -26,7 +25,7 @@ class AroundInvokeInvocationContext extends AbstractInvocationContext {
     private final Function<InvocationContext, Object> aroundInvokeForward;
 
     AroundInvokeInvocationContext(Object target, Method method, Object[] parameters,
-            LazyValue<Map<String, Object>> contextData, Set<Annotation> interceptorBindings, int position,
+            ContextDataMap contextData, Set<Annotation> interceptorBindings, int position,
             List<InterceptorInvocation> chain, Function<InvocationContext, Object> aroundInvokeForward) {
         super(target, method, null, parameters, contextData, interceptorBindings, chain);
         this.position = position;

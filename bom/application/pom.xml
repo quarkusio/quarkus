@@ -45,7 +45,7 @@
         <smallrye-common.version>1.10.0</smallrye-common.version>
         <smallrye-config.version>2.9.2</smallrye-config.version>
         <smallrye-health.version>3.1.2</smallrye-health.version>
-        <smallrye-metrics.version>3.0.4</smallrye-metrics.version>
+        <smallrye-metrics.version>3.0.5</smallrye-metrics.version>
         <smallrye-open-api.version>2.1.22</smallrye-open-api.version>
         <smallrye-graphql.version>1.4.3.1</smallrye-graphql.version>
         <smallrye-opentracing.version>2.0.1</smallrye-opentracing.version>

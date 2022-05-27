@@ -84,7 +84,9 @@ public class ServerSerialisers extends Serialisers {
     private static final String TYPE_LOWER = "type";
     private static final String LENGTH = "Length";
     private static final String LENGTH_LOWER = "length";
-    private static final String CONTENT_TYPE = CONTENT + "-" + TYPE; // use this instead of the Vert.x constant because the TCK expects upper case
+    private static final String CONTENT_TYPE = HttpHeaders.CONTENT_TYPE;
+
+    // use this instead of the Vert.x constant because the TCK expects upper case
 
     static {
         primitivesToWrappers.put(boolean.class, Boolean.class);
@@ -95,6 +97,7 @@ public class ServerSerialisers extends Serialisers {
         primitivesToWrappers.put(long.class, Long.class);
         primitivesToWrappers.put(float.class, Float.class);
         primitivesToWrappers.put(double.class, Double.class);
+        assert CONTENT_TYPE.equals(CONTENT + '-' + TYPE) : "TCK expect upper case Content-Type: Jakarta ones should match";
     }
 
     public final static List<Serialisers.BuiltinReader> BUILTIN_READERS = List.of(

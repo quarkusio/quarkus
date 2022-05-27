@@ -38,6 +38,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.impl.Http1xServerRequest;
 import io.vertx.core.http.impl.Http1xServerResponse;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
@@ -146,6 +147,19 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public String getRequestHeader(CharSequence name) {
+        final HttpServerRequest request = this.request;
+        if (request instanceof Http1xServerRequest) {
+            // this is an HTTP 1.1 fast path optimization to enable cached ASCII keys constants:
+            // see ClassRoutingHandler::handle's HttpHeaders used.
+            // We're not using switch on purpose: we don't want to force String::hashCode
+            // for not constant/cached String(s)
+            if (name == HttpHeaders.CONTENT_TYPE) {
+                return request.headers().get(HttpHeaderNames.CONTENT_TYPE);
+            }
+            if (name == HttpHeaders.ACCEPT) {
+                return request.headers().get(HttpHeaderNames.ACCEPT);
+            }
+        }
         return request.headers().get(name);
     }
 
@@ -156,6 +170,19 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public List<String> getAllRequestHeaders(String name) {
+        final HttpServerRequest request = this.request;
+        if (request instanceof Http1xServerRequest) {
+            // this is an HTTP 1.1 fast path optimization to enable cached ASCII keys constants:
+            // see ClassRoutingHandler::handle's HttpHeaders used.
+            // We're not using switch on purpose: we don't want to force String::hashCode
+            // for not constant/cached String(s)
+            if (name == HttpHeaders.CONTENT_TYPE) {
+                return request.headers().getAll(HttpHeaderNames.CONTENT_TYPE);
+            }
+            if (name == HttpHeaders.ACCEPT) {
+                return request.headers().getAll(HttpHeaderNames.ACCEPT);
+            }
+        }
         return request.headers().getAll(name);
     }
 
@@ -379,7 +406,13 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse setResponseHeader(CharSequence name, CharSequence value) {
-        response.headers().set(name, value);
+        final HttpServerResponse response = this.response;
+        if (response instanceof Http1xServerResponse && name == HttpHeaders.CONTENT_TYPE) {
+            // this is an HTTP 1.1 fast path optimization to enable cached ASCII keys constants
+            response.headers().set(HttpHeaderNames.CONTENT_TYPE, value);
+        } else {
+            response.headers().set(name, value);
+        }
         return this;
     }
 

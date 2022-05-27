@@ -17,6 +17,10 @@ been blocked using `quarkus.http.auth.` configuration. If you are using JAX-RS y
 requirements instead of HTTP path level matching, as these properties can be overridden by annotations on an individual
 endpoint.
 
+Authorization is based on user roles that are provided by the security provider.
+To customize these roles, a `SecurityIdentityAugmentor` can be created, see
+xref:security-customization.adoc#security-identity-customization[Security Identity Customization].
+
 == Authorization using Configuration
 
 The default implementation allows you to define permissions using config in `application.properties`. An example

@@ -13,11 +13,13 @@ public abstract class WiremockBase implements QuarkusTestResourceLifecycleManage
 
     abstract Map<String, String> initWireMock(WireMockServer server);
 
-    abstract int port();
+    abstract int httpPort();
+
+    abstract int httpsPort();
 
     @Override
     public Map<String, String> start() {
-        server = new WireMockServer(options().port(port()));
+        server = new WireMockServer(options().port(httpPort()).httpsPort(httpsPort()));
 
         var result = initWireMock(server);
         server.start();

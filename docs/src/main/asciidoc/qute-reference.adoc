@@ -1176,11 +1176,10 @@ engineBuilder.addValueResolver(ValueResolver.builder()
 [[template-locator]]
 ==== Template Locator
 
-Manual registration is sometimes handy but it's also possible to register a template locator using `EngineBuilder.addLocator()`.
-This locator is used whenever the `Engine.getTemplate()` method is called and the engine has no template for a given id stored in the cache.
+A template can be either registered manually or automatically via a template locator. The locators are used whenever the `Engine.getTemplate()` method is called and the engine has no template for a given id stored in the cache.
 The locator is responsible to use the correct character encoding when reading the contents of a template.
 
-NOTE: In Quarkus, all templates from the `src/main/resources/templates` are located automatically and the encoding set via `quarkus.qute.default-charset` (UTF-8 by default) is used.
+NOTE: In Quarkus, all templates from the `src/main/resources/templates` are located automatically and the encoding set via `quarkus.qute.default-charset` (UTF-8 by default) is used. Custom locators can be <<template-locator-registration,registered>> via the `@Locate` annotation.
 
 ==== Content Filters
 
@@ -1274,6 +1273,34 @@ class MyBean {
     }
 }
 ----
+
+[[template-locator-registration]]
+=== Template Locator Registration
+
+The easiest way to register <<template-locator,template locators>> is to make them CDI beans.
+As the custom locator is not available during the build time when a template validation is done, you need to disable the validation via the `@Locate` annotation.
+
+.Custom Locator Example
+[source,java]
+----
+@Locate("bar.html") <1>
+@Locate("foo.*") <2>
+public class CustomLocator implements TemplateLocator {
+
+    @Inject <3>
+    MyLocationService myLocationService;
+
+    @Override
+    public Optional<TemplateLocation> locate(String templateId) {
+
+        return myLocationService.getTemplateLocation(templateId);
+    }
+
+}
+----
+<1> A template named `bar.html` is located by the custom locator at runtime.
+<2> A regular expression `foo.*` disables validation for templates whose name is starting with `foo`.
+<3> Injection fields are resolved as template locators annotated with `@Locate` are registered as singleton session beans.
 
 === Template Variants
 
@@ -2270,7 +2297,7 @@ You'll need to configure a new instance via `Engine.builder()`.
 
 Templates:: 
 * By default, no <<template-locator,template locators>> are registered, i.e. `Engine.getTemplate(String)` will not work. 
-* You can register a custom template locator or parse a template manually and put the reulst in the cache via `Engine.putTemplate(String, Template)`.
+* You can register a custom template locator using `EngineBuilder.addLocator()` or parse a template manually and put the result in the cache via `Engine.putTemplate(String, Template)`.
 
 Sections::
 * No section helpers are registered by default.

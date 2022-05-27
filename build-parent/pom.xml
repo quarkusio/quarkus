@@ -75,6 +75,9 @@
         <!-- Antlr is used by the PanacheQL parser-->
         <antlr.version>4.9.2</antlr.version>
 
+        <!-- SELinux access label, used when mounting local volumes into containers in tests -->
+        <volume.access.modifier>:Z</volume.access.modifier>
+
         <!-- Defaults for integration tests -->
         <elasticsearch-server.version>7.16.3</elasticsearch-server.version>
         <elasticsearch.image>docker.io/elastic/elasticsearch:${elasticsearch-server.version}</elasticsearch.image>
@@ -102,7 +105,7 @@
         <keycloak.version>18.0.0</keycloak.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.version}-legacy</keycloak.docker.legacy.image>
-        
+
         <unboundid-ldap.version>6.0.5</unboundid-ldap.version>
 
         <assertj.version>3.22.0</assertj.version>
@@ -141,7 +144,7 @@
         <build-helper-plugin.version>1.9.1</build-helper-plugin.version>
         <revapi-reporter-text.version>0.14.5</revapi-reporter-text.version>
         <revapi-reporter-json.version>0.4.5</revapi-reporter-json.version>
-         <!-- Latest release to be used by api-compatibility-check to check backwards compatibility of the Quarkus API. -->
+        <!-- Latest release to be used by api-compatibility-check to check backwards compatibility of the Quarkus API. -->
         <revapi.oldVersion>1.6.0.Final</revapi.oldVersion>
         <revapi.newVersion>${project.version}</revapi.newVersion>
         <!-- severity Possible values: equivalent, nonBreaking, potentiallyBreaking, breaking -->
@@ -363,8 +366,8 @@
                 <scope>test</scope>
                 <exclusions>
                     <exclusion>
-                       <groupId>org.apache.activemq</groupId>
-                       <artifactId>artemis-server</artifactId>
+                        <groupId>org.apache.activemq</groupId>
+                        <artifactId>artemis-server</artifactId>
                     </exclusion>
                     <!-- Excluding the API jar as the impl jar also contains the API -->
                     <exclusion>
@@ -673,7 +676,7 @@
                             <groupId>io.quarkus</groupId>
                             <version>${project.version}</version>
                         </dependency>
-                      </dependencies>
+                    </dependencies>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
                         <cachedir>.cache/formatter-maven-plugin-${formatter-maven-plugin.version}</cachedir>
@@ -1225,6 +1228,19 @@
             </activation>
             <properties>
                 <script.extension>bat</script.extension>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>mac-m1</id>
+            <activation>
+                <os>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
+                <!-- Podman compatibility. Currently, mac file systems based on Plan 9 does not support SELinux labeling z and Z should not be used. When they transition to use virtiofsd, it should support SELinux labeling, and then we can use it for better container separation on the Mac.-->
+                <volume.access.modifier></volume.access.modifier>
             </properties>
         </profile>
 

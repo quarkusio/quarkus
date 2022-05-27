@@ -1237,12 +1237,17 @@
             <properties>
                 <!-- Podman compatibility. Currently, mac file systems based on Plan 9 does not support SELinux labeling z and Z should not be used. When they transition to use virtiofsd, it should support SELinux labeling, and then we can use it for better container separation on the Mac.-->
                 <volume.access.modifier></volume.access.modifier>
-                
+
                 <!-- See https://stackoverflow.com/questions/65456814/docker-apple-silicon-m1-preview-mysql-no-matching-manifest-for-linux-arm64-v8
                 and https://www.emmanuelgautier.com/blog/mysql-docker-arm-m1
                 This hopefully should be temporary -->
                 <mysql.image>arm64v8/mysql:8-oracle</mysql.image>
 
+                <!-- See
+                https://github.com/microsoft/mssql-docker/issues/668 and https://stackoverflow.com/questions/65398641/docker-connect-sql-server-container-non-zero-code-1/66919852#66919852.
+                The MS SQL image segfaults on ARM. Azure Edge is not fully compatible, but it is better than not running the tests at all.
+                DockerHub does not list any tags so we have to use latest for the moment.-->
+                <mssql.image>mcr.microsoft.com/azure-sql-edge:latest</mssql.image>
             </properties>
         </profile>
 

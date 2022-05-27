@@ -55,4 +55,14 @@ public class JaxbResource {
             return Response.serverError().entity(e.getMessage()).build();
         }
     }
+
+    @GET
+    @Path("/see-also")
+    @Produces(MediaType.APPLICATION_XML)
+    public io.quarkus.it.jaxb.Response seeAlso() {
+        io.quarkus.it.jaxb.Response response = new io.quarkus.it.jaxb.Response();
+        response.setEvenMoreZeep("ZEEEP");
+        return response;
+    }
+
 }

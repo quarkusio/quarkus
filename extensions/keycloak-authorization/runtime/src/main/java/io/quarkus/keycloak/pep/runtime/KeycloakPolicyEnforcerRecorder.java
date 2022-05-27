@@ -1,11 +1,14 @@
 package io.quarkus.keycloak.pep.runtime;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.adapters.authorization.PolicyEnforcer;
 import org.keycloak.representations.adapters.config.AdapterConfig;
@@ -34,25 +37,50 @@ public class KeycloakPolicyEnforcerRecorder {
 
     public Supplier<PolicyEnforcerResolver> setup(OidcConfig oidcConfig, KeycloakPolicyEnforcerConfig config,
             TlsConfig tlsConfig) {
-        PolicyEnforcer defaultPolicyEnforcer = createPolicyEnforcer(oidcConfig.defaultTenant, config.defaultTenant, tlsConfig);
+        PolicyEnforcer defaultPolicyEnforcer = null;
+        try {
+            defaultPolicyEnforcer = createPolicyEnforcer(oidcConfig.defaultTenant.authServerUrl.get(),
+                    oidcConfig.defaultTenant, config.defaultTenant, tlsConfig);
+        } catch (Throwable t) {
+            String clientAuthServerUrl = ConfigProvider.getConfig().getValue("client.quarkus.oidc.auth-server-url",
+                    String.class);
+            try {
+                defaultPolicyEnforcer = createPolicyEnforcer(
+                        clientAuthServerUrl, oidcConfig.defaultTenant, config.defaultTenant, tlsConfig);
+            } catch (Throwable t2) {
+                throw new RuntimeException(
+                        "PolicyEnforcer first exception: \"" + errorMessage(t, oidcConfig.defaultTenant.authServerUrl.get())
+                                + "\", second exception: \"" + errorMessage(t2, clientAuthServerUrl) + "\"");
+            }
+        }
+        PolicyEnforcer theDefaultPolicyEnforcer = defaultPolicyEnforcer;
         Map<String, PolicyEnforcer> policyEnforcerTenants = new HashMap<String, PolicyEnforcer>();
         for (Map.Entry<String, KeycloakPolicyEnforcerTenantConfig> tenant : config.namedTenants.entrySet()) {
             OidcTenantConfig oidcTenantConfig = oidcConfig.namedTenants.get(tenant.getKey());
             if (oidcTenantConfig == null) {
                 throw new ConfigurationException("Failed to find a matching OidcTenantConfig for tenant: " + tenant.getKey());
             }
-            policyEnforcerTenants.put(tenant.getKey(), createPolicyEnforcer(oidcTenantConfig, tenant.getValue(), tlsConfig));
+            policyEnforcerTenants.put(tenant.getKey(),
+                    createPolicyEnforcer(null, oidcTenantConfig, tenant.getValue(), tlsConfig));
         }
         return new Supplier<PolicyEnforcerResolver>() {
             @Override
             public PolicyEnforcerResolver get() {
-                return new PolicyEnforcerResolver(defaultPolicyEnforcer, policyEnforcerTenants,
+                return new PolicyEnforcerResolver(theDefaultPolicyEnforcer, policyEnforcerTenants,
                         httpConfiguration.readTimeout.toMillis());
             }
         };
     }
 
-    private static PolicyEnforcer createPolicyEnforcer(OidcTenantConfig oidcConfig,
+    private static String errorMessage(Throwable e, String address) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        e.printStackTrace(pw);
+        return e.getMessage() + ", address:" + address + ". stacktrace:" + sw.toString();
+
+    }
+
+    private static PolicyEnforcer createPolicyEnforcer(String address, OidcTenantConfig oidcConfig,
             KeycloakPolicyEnforcerTenantConfig keycloakPolicyEnforcerConfig,
             TlsConfig tlsConfig) {
 
@@ -62,7 +90,7 @@ public class KeycloakPolicyEnforcerRecorder {
         }
 
         AdapterConfig adapterConfig = new AdapterConfig();
-        String authServerUrl = oidcConfig.getAuthServerUrl().get();
+        String authServerUrl = address;//oidcConfig.getAuthServerUrl().get();
 
         try {
             adapterConfig.setRealm(authServerUrl.substring(authServerUrl.lastIndexOf('/') + 1));

@@ -765,7 +765,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 Class<?> outerClass = actualTestClass.getEnclosingClass();
                 Constructor<?> declaredConstructor = actualTestClass.getDeclaredConstructor(outerClass);
                 declaredConstructor.setAccessible(true);
-                if (outerClass.getEnclosingClass() != null) {
+                if (outerClass.isInstance(actualTestInstance)) {
                     outerInstances.add(actualTestInstance);
                     actualTestInstance = declaredConstructor.newInstance(actualTestInstance);
                 } else {

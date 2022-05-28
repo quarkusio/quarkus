@@ -60,4 +60,14 @@ public class ContainerLocator {
             return Optional.empty();
         }
     }
+
+    public Optional<Integer> locatePublicPort(String serviceName, boolean shared, LaunchMode launchMode, int privatePort) {
+        if (shared && launchMode == LaunchMode.DEVELOPMENT) {
+            return lookup(serviceName)
+                    .flatMap(container -> getMappedPort(container, privatePort))
+                    .map(ContainerPort::getPublicPort);
+        } else {
+            return Optional.empty();
+        }
+    }
 }

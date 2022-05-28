@@ -2,6 +2,7 @@ package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -109,7 +110,15 @@ public class RabbitMQDevServicesBuildTimeConfig {
      * If not defined, the port will be chosen randomly.
      */
     @ConfigItem
-    public Optional<Integer> port;
+    public OptionalInt port;
+
+    /**
+     * Optional fixed port for the RabbitMQ management plugin.
+     * <p>
+     * If not defined, the port will be chosen randomly.
+     */
+    @ConfigItem
+    public OptionalInt httpPort;
 
     /**
      * The image to use.

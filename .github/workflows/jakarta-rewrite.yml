@@ -30,7 +30,7 @@ jobs:
         run: |
           export PATH="$HOME/.jbang/bin:$PATH"
           git checkout -b temp-jakarta-rewrite
-          REWRITE_TESTS_CONTAINERS=true ./jakarta/transform.sh
+          REWRITE_NO_TESTS=true ./jakarta/transform.sh
           git add .
           git commit -m 'Transform sources to Jakarta'
         shell: bash

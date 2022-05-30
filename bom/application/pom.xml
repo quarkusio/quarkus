@@ -123,7 +123,7 @@
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
         <db2-jdbc.version>11.5.7.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
-        <rest-assured.version>4.5.1</rest-assured.version>
+        <rest-assured.version>5.1.0</rest-assured.version>
         <junit.jupiter.version>5.8.2</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
         <testng.version>6.14.2</testng.version>
@@ -154,7 +154,7 @@
         <jboss-logmanager.version>1.0.10</jboss-logmanager.version>
         <flyway.version>8.5.11</flyway.version>
         <yasson.version>1.0.11</yasson.version>
-        <liquibase.version>4.10.0</liquibase.version>
+        <liquibase.version>4.11.0</liquibase.version>
         <snakeyaml.version>1.30</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>4.3.4</mongo-client.version>

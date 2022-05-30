@@ -5,7 +5,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 import liquibase.command.CommandResultsBuilder;
 
-@TargetClass(className = "com.datical.liquibase.ext.command.init.StartH2CommandStep")
+@TargetClass(className = "liquibase.command.core.StartH2CommandStep")
 final class SubstituteStartH2CommandStep {
 
     @Substitute

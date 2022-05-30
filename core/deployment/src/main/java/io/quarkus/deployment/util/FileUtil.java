@@ -78,14 +78,15 @@ public class FileUtil {
      * @param windowsStylePath A path formatted in Windows-style, e.g. "C:\foo\bar".
      * @return A translated path accepted by Docker, e.g. "//c/foo/bar".
      */
-    public static String translateToVolumePath(String windowsStylePath) {
+    public static String translateToVolumePath(String windowsStylePath, boolean isPodman) {
         String translated = windowsStylePath.replace('\\', '/');
         Pattern p = Pattern.compile("^(\\w)(?:$|:(/)?(.*))");
         Matcher m = p.matcher(translated);
         if (m.matches()) {
             String slash = Optional.ofNullable(m.group(2)).orElse("/");
             String path = Optional.ofNullable(m.group(3)).orElse("");
-            return "//" + m.group(1).toLowerCase() + slash + path;
+            // Ad `/' and `//' see https://github.com/containers/podman/issues/14414
+            return (isPodman ? "/" : "//") + m.group(1).toLowerCase() + slash + path;
         }
         return translated;
     }

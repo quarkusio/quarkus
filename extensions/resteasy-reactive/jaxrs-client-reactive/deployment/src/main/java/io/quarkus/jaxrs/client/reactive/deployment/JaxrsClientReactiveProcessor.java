@@ -2325,6 +2325,8 @@ public class JaxrsClientReactiveProcessor {
         AssignableResultHandle result = methodCreator.createVariable(WebTarget.class);
         BranchResult isValueNull = methodCreator.ifNull(webTarget);
         BytecodeCreator notNullValue = isValueNull.falseBranch();
+        BranchResult isParamNull = notNullValue.ifNull(queryParamHandle);
+        BytecodeCreator notNullParam = isParamNull.falseBranch();
         if (isMap(type, index)) {
             var resolvesTypes = resolveMapTypes(type, index, jandexMethod);
             var keyType = resolvesTypes.getKey();
@@ -2332,13 +2334,13 @@ public class JaxrsClientReactiveProcessor {
                 throw new IllegalArgumentException(
                         "Map parameter types must have String keys. Offending method is: " + jandexMethod);
             }
-            notNullValue.assign(result, webTarget);
+            notNullParam.assign(result, webTarget);
             // Loop through the keys
-            ResultHandle keySet = notNullValue.invokeInterfaceMethod(ofMethod(Map.class, "keySet", Set.class),
+            ResultHandle keySet = notNullParam.invokeInterfaceMethod(ofMethod(Map.class, "keySet", Set.class),
                     queryParamHandle);
-            ResultHandle keysIterator = notNullValue.invokeInterfaceMethod(
+            ResultHandle keysIterator = notNullParam.invokeInterfaceMethod(
                     ofMethod(Set.class, "iterator", Iterator.class), keySet);
-            BytecodeCreator loopCreator = notNullValue.whileLoop(c -> iteratorHasNext(c, keysIterator)).block();
+            BytecodeCreator loopCreator = notNullParam.whileLoop(c -> iteratorHasNext(c, keysIterator)).block();
             ResultHandle key = loopCreator.invokeInterfaceMethod(
                     ofMethod(Iterator.class, "next", Object.class), keysIterator);
             // get the value and convert
@@ -2373,7 +2375,7 @@ public class JaxrsClientReactiveProcessor {
             String componentType = null;
             if (type.kind() == Type.Kind.ARRAY) {
                 componentType = type.asArrayType().component().name().toString();
-                paramArray = notNullValue.checkCast(queryParamHandle, Object[].class);
+                paramArray = notNullParam.checkCast(queryParamHandle, Object[].class);
             } else if (isCollection(type, index)) {
                 if (type.kind() == PARAMETERIZED_TYPE) {
                     Type paramType = type.asParameterizedType().arguments().get(0);
@@ -2384,20 +2386,23 @@ public class JaxrsClientReactiveProcessor {
                 if (componentType == null) {
                     componentType = DotNames.OBJECT.toString();
                 }
-                paramArray = notNullValue.invokeStaticMethod(
+                paramArray = notNullParam.invokeStaticMethod(
                         MethodDescriptor.ofMethod(ToObjectArray.class, "collection", Object[].class, Collection.class),
                         queryParamHandle);
             } else {
                 componentType = type.name().toString();
-                paramArray = notNullValue.invokeStaticMethod(
+                paramArray = notNullParam.invokeStaticMethod(
                         MethodDescriptor.ofMethod(ToObjectArray.class, "value", Object[].class, Object.class),
                         queryParamHandle);
             }
 
-            addQueryParamToWebTarget(notNullValue, notNullValue.load(paramName), webTarget, client, genericType,
+            addQueryParamToWebTarget(notNullParam, notNullParam.load(paramName), webTarget, client, genericType,
                     paramAnnotations, paramIndex,
                     paramArray, componentType, result);
         }
+
+        BytecodeCreator nullParam = isParamNull.trueBranch();
+        nullParam.assign(result, webTarget);
 
         BytecodeCreator nullValue = isValueNull.trueBranch();
         nullValue.assign(result, nullValue.loadNull());

@@ -101,18 +101,26 @@ public class QuarkusPlugin implements Plugin<Project> {
     @Override
     public void apply(Project project) {
         verifyGradleVersion();
+
+        // Apply the `java` plugin
+        project.getPluginManager().apply(JavaPlugin.class);
+
         registerModel();
+
         // register extension
         final QuarkusPluginExtension quarkusExt = project.getExtensions().create(EXTENSION_NAME, QuarkusPluginExtension.class,
                 project);
-        // register plugin
-        project.getPluginManager().apply(JavaPlugin.class);
 
+        createConfigurations(project);
         registerTasks(project, quarkusExt);
     }
 
     private void registerTasks(Project project, QuarkusPluginExtension quarkusExt) {
         TaskContainer tasks = project.getTasks();
+
+        final String devRuntimeConfigName = ApplicationDeploymentClasspathBuilder
+                .getBaseRuntimeConfigName(LaunchMode.DEVELOPMENT);
+        final Configuration devRuntimeDependencies = project.getConfigurations().maybeCreate(devRuntimeConfigName);
 
         tasks.register(LIST_EXTENSIONS_TASK_NAME, QuarkusListExtensions.class);
         tasks.register(LIST_CATEGORIES_TASK_NAME, QuarkusListCategories.class);
@@ -141,9 +149,12 @@ public class QuarkusPlugin implements Plugin<Project> {
             build.dependsOn(quarkusGenerateCode);
         });
 
-        TaskProvider<QuarkusDev> quarkusDev = tasks.register(QUARKUS_DEV_TASK_NAME, QuarkusDev.class);
-        TaskProvider<QuarkusRemoteDev> quarkusRemoteDev = tasks.register(QUARKUS_REMOTE_DEV_TASK_NAME, QuarkusRemoteDev.class);
-        TaskProvider<QuarkusTest> quarkusTest = tasks.register(QUARKUS_TEST_TASK_NAME, QuarkusTest.class);
+        TaskProvider<QuarkusDev> quarkusDev = tasks.register(QUARKUS_DEV_TASK_NAME, QuarkusDev.class, devRuntimeDependencies,
+                quarkusExt);
+        TaskProvider<QuarkusRemoteDev> quarkusRemoteDev = tasks.register(QUARKUS_REMOTE_DEV_TASK_NAME, QuarkusRemoteDev.class,
+                devRuntimeDependencies, quarkusExt);
+        TaskProvider<QuarkusTest> quarkusTest = tasks.register(QUARKUS_TEST_TASK_NAME, QuarkusTest.class,
+                devRuntimeDependencies, quarkusExt);
         tasks.register(QUARKUS_TEST_CONFIG_TASK_NAME, QuarkusTestConfig.class);
 
         tasks.register(BUILD_NATIVE_TASK_NAME, DefaultTask.class, task -> {
@@ -176,8 +187,6 @@ public class QuarkusPlugin implements Plugin<Project> {
         project.getPlugins().withType(
                 JavaPlugin.class,
                 javaPlugin -> {
-
-                    createConfigurations(project);
 
                     project.afterEvaluate(this::afterEvaluate);
 
@@ -224,20 +233,14 @@ public class QuarkusPlugin implements Plugin<Project> {
                         task.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask,
                                 quarkusGenerateCodeDev,
                                 quarkusGenerateCodeTests);
-                        task.setQuarkusDevConfiguration(project.getConfigurations().getByName(
-                                ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.DEVELOPMENT)));
                     });
                     quarkusRemoteDev.configure(task -> {
                         task.dependsOn(classesTask, resourcesTask);
-                        task.setQuarkusDevConfiguration(project.getConfigurations().getByName(
-                                ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.DEVELOPMENT)));
                     });
                     quarkusTest.configure(task -> {
                         task.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask,
                                 quarkusGenerateCode,
                                 quarkusGenerateCodeTests);
-                        task.setQuarkusDevConfiguration(project.getConfigurations().getByName(
-                                ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.DEVELOPMENT)));
                     });
                     quarkusBuild.configure(
                             task -> task.dependsOn(classesTask, resourcesTask, tasks.named(JavaPlugin.JAR_TASK_NAME)));

@@ -15,7 +15,7 @@ import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -31,23 +31,17 @@ import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusPluginExtension {
-
     private final Project project;
 
-    private File outputDirectory;
-
-    private String finalName;
-
-    private File sourceDir;
-
-    private File workingDir;
-
-    private File outputConfigDirectory;
-
+    private final Property<String> finalName;
     private final SourceSetExtension sourceSetExtension;
 
     public QuarkusPluginExtension(Project project) {
         this.project = project;
+
+        finalName = project.getObjects().property(String.class);
+        finalName.convention(project.provider(() -> String.format("%s-%s", project.getName(), project.getVersion())));
+
         this.sourceSetExtension = new SourceSetExtension();
     }
 
@@ -65,6 +59,11 @@ public class QuarkusPluginExtension {
             }
             props.put(BootstrapConstants.OUTPUT_SOURCES_DIR, outputSourcesDir.toString());
 
+            final SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
+            final SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+
+            final File outputDirectoryAsFile = getLastFile(mainSourceSet.getOutput().getClassesDirs());
+
             // Identify the folder containing the sources associated with this test task
             String fileList = getSourceSets().stream()
                     .filter(sourceSet -> Objects.equals(
@@ -75,9 +74,10 @@ public class QuarkusPluginExtension {
                     .distinct()
                     .map(testSrcDir -> String.format("%s:%s",
                             project.relativePath(testSrcDir),
-                            project.relativePath(outputDirectory())))
+                            project.relativePath(outputDirectoryAsFile)))
                     .collect(Collectors.joining(","));
             task.environment(BootstrapConstants.TEST_TO_MAIN_MAPPINGS, fileList);
+            project.getLogger().lifecycle("test dir mapping - {}", fileList);
 
             final String nativeRunner = task.getProject().getBuildDir().toPath().resolve(finalName() + "-runner")
                     .toAbsolutePath()
@@ -88,90 +88,16 @@ public class QuarkusPluginExtension {
         }
     }
 
-    public Path appJarOrClasses() {
-        final Jar jarTask = (Jar) project.getTasks().findByName(JavaPlugin.JAR_TASK_NAME);
-        if (jarTask == null) {
-            throw new RuntimeException("Failed to locate task 'jar' in the project.");
-        }
-        final Provider<RegularFile> jarProvider = jarTask.getArchiveFile();
-        Path classesDir = null;
-        if (jarProvider.isPresent()) {
-            final File f = jarProvider.get().getAsFile();
-            if (f.exists()) {
-                classesDir = f.toPath();
-            }
-        }
-        if (classesDir == null) {
-            final SourceSet mainSourceSet = getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-            if (mainSourceSet != null) {
-                final String classesPath = QuarkusGradleUtils.getClassesDir(mainSourceSet, jarTask.getTemporaryDir(), false);
-                if (classesPath != null) {
-                    classesDir = Paths.get(classesPath);
-                }
-            }
-        }
-        if (classesDir == null) {
-            throw new RuntimeException("Failed to locate project's classes directory");
-        }
-        return classesDir;
-    }
-
-    public File outputDirectory() {
-        if (outputDirectory == null) {
-            outputDirectory = getLastFile(getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput()
-                    .getClassesDirs());
-        }
-        return outputDirectory;
-    }
-
-    public void setOutputDirectory(String outputDirectory) {
-        this.outputDirectory = new File(outputDirectory);
-    }
-
-    public File outputConfigDirectory() {
-        if (outputConfigDirectory == null) {
-            outputConfigDirectory = getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput()
-                    .getResourcesDir();
-        }
-        return outputConfigDirectory;
-    }
-
-    public void setOutputConfigDirectory(String outputConfigDirectory) {
-        this.outputConfigDirectory = new File(outputConfigDirectory);
-    }
-
-    public File sourceDir() {
-        if (sourceDir == null) {
-            sourceDir = getLastFile(getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getAllJava()
-                    .getSourceDirectories());
-        }
-        return sourceDir;
-    }
-
-    public void setSourceDir(String sourceDir) {
-        this.sourceDir = new File(sourceDir);
-    }
-
-    public File workingDir() {
-        if (workingDir == null) {
-            workingDir = outputDirectory();
-        }
-        return workingDir;
-    }
-
-    public void setWorkingDir(String workingDir) {
-        this.workingDir = new File(workingDir);
-    }
-
-    public String finalName() {
-        if (finalName == null || finalName.length() == 0) {
-            this.finalName = String.format("%s-%s", project.getName(), project.getVersion());
-        }
+    public Property<String> getFinalName() {
         return finalName;
     }
 
+    public String finalName() {
+        return getFinalName().get();
+    }
+
     public void setFinalName(String finalName) {
-        this.finalName = finalName;
+        getFinalName().set(finalName);
     }
 
     public void sourceSets(Action<? super SourceSetExtension> action) {
@@ -211,9 +137,8 @@ public class QuarkusPluginExtension {
 
     /**
      * Returns the last file from the specified {@link FileCollection}.
-     * Needed for the Scala plugin.
      */
-    private File getLastFile(FileCollection fileCollection) {
+    public static File getLastFile(FileCollection fileCollection) {
         File result = null;
         for (File f : fileCollection) {
             if (result == null || f.exists()) {
@@ -229,6 +154,32 @@ public class QuarkusPluginExtension {
      * @return the source sets associated with the current project.
      */
     private SourceSetContainer getSourceSets() {
-        return project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets();
+        return project.getExtensions().getByType(SourceSetContainer.class);
+    }
+
+    public Path appJarOrClasses() {
+        final Jar jarTask = (Jar) project.getTasks().findByName(JavaPlugin.JAR_TASK_NAME);
+        if (jarTask == null) {
+            throw new RuntimeException("Failed to locate task 'jar' in the project.");
+        }
+        final Provider<RegularFile> jarProvider = jarTask.getArchiveFile();
+        Path classesDir = null;
+        if (jarProvider.isPresent()) {
+            final File f = jarProvider.get().getAsFile();
+            if (f.exists()) {
+                classesDir = f.toPath();
+            }
+        }
+        if (classesDir == null) {
+            final SourceSet mainSourceSet = getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+            final String classesPath = QuarkusGradleUtils.getClassesDir(mainSourceSet, jarTask.getTemporaryDir(), false);
+            if (classesPath != null) {
+                classesDir = Paths.get(classesPath);
+            }
+        }
+        if (classesDir == null) {
+            throw new RuntimeException("Failed to locate project's classes directory");
+        }
+        return classesDir;
     }
 }

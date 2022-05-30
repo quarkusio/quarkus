@@ -204,6 +204,20 @@ public class ExtensionsAppearingInPlatformAndNonPlatformCatalogsTest extends Mul
     }
 
     @Test
+    public void addNonPlatformExtensionWithGA() throws Exception {
+        final Path projectDir = newProjectDir("add-non-platform-extension-with-ga");
+        createProject(projectDir, Arrays.asList("acme-foo"));
+
+        assertModel(projectDir, toPlatformBomCoords("acme-foo-bom"), toPlatformExtensionCoords("acme-foo"), "2.0.4");
+
+        addExtensions(projectDir, Arrays.asList("org.other:other-six-zero"));
+
+        final List<ArtifactCoords> expectedExtensions = toPlatformExtensionCoords("acme-foo");
+        expectedExtensions.add(ArtifactCoords.fromString("org.other:other-six-zero:6.0"));
+        assertModel(projectDir, toPlatformBomCoords("acme-foo-bom"), expectedExtensions, "2.0.4");
+    }
+
+    @Test
     public void attemptCreateWithIncompatibleExtensions() throws Exception {
         final Path projectDir = newProjectDir("create-with-incompatible-extensions");
         assertThat(createProject(projectDir, Arrays.asList("acme-bar", "other-five-one")).isSuccess()).isFalse();

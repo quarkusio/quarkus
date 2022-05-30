@@ -50,8 +50,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     /**
      * Indicates if a given class is present at runtime.
      *
-     * @param resourceName the path of the resource, for instance {@code path/to/my-resources.properties} for a properties file
-     *        or {@code my/package/MyClass.class} for a class.
+     * @param className the name of the class.
      */
     public static boolean isClassPresentAtRuntime(String className) {
         return isResourcePresentAtRuntime(className.replace('.', '/') + ".class");

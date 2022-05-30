@@ -7,9 +7,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import io.quarkus.deployment.steps.BannerProcessor;
 import io.quarkus.fs.util.ZipUtils;
@@ -23,12 +23,12 @@ public class BannerProcessorTest {
     }
 
     @Test
-    public void checkQuarkusCoreBannerOnFilesystemWithSpecialCharacters() throws Exception {
+    public void checkQuarkusCoreBannerOnFilesystemWithSpecialCharacters(@TempDir Path tempDir) throws Exception {
         MyBannerProcessor processor = new MyBannerProcessor();
 
-        assertFalse(processor.test(Paths.get("tmp", "Descărcări", "test", "something!")));
+        assertFalse(processor.test(tempDir.resolve("Descărcări").resolve("test").resolve("something!")));
 
-        final Path tmpDir = Files.createTempDirectory("Descărcări");
+        final Path tmpDir = Files.createTempDirectory(tempDir, "Descărcări");
         final Path zipPath = tmpDir.resolve("BannerProcessorTest.jar");
 
         try {

@@ -72,6 +72,13 @@ public final class SmallRyeOpenApiConfig {
     public boolean autoAddTags;
 
     /**
+     * Setting it to `true` will automatically add a default server to the schema if none is provided,
+     * using the current running server host and port.
+     */
+    @ConfigItem
+    public Optional<Boolean> autoAddServer;
+
+    /**
      * This will automatically add security based on the security extension included (if any).
      */
     @ConfigItem(defaultValue = "true")

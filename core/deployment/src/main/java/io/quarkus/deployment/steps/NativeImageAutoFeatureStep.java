@@ -28,6 +28,7 @@ import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ForceNonWeakReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.LambdaCapturingTypeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
@@ -72,6 +73,17 @@ public class NativeImageAutoFeatureStep {
     private static final MethodDescriptor RERUN_INITIALIZATION = ofMethod(
             "org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport",
             "rerunInitialization", void.class, Class.class, String.class);
+
+    private static final MethodDescriptor CONFIGURATION_ALWAYS_TRUE = ofMethod(
+            "org.graalvm.nativeimage.impl.ConfigurationCondition",
+            "alwaysTrue", "org.graalvm.nativeimage.impl.ConfigurationCondition");
+
+    private static final MethodDescriptor REGISTER_LAMBDA_CAPTURING_CLASS = ofMethod(
+            "org.graalvm.nativeimage.impl.RuntimeSerializationSupport",
+            "registerLambdaCapturingClass", void.class,
+            "org.graalvm.nativeimage.impl.ConfigurationCondition",
+            String.class);
+
     private static final MethodDescriptor LOOKUP_METHOD = ofMethod(
             "com.oracle.svm.util.ReflectionUtil",
             "lookupMethod", Method.class, Class.class, String.class, Class[].class);
@@ -120,7 +132,8 @@ public class NativeImageAutoFeatureStep {
             List<ForceNonWeakReflectiveClassBuildItem> nonWeakReflectiveClassBuildItems,
             List<ServiceProviderBuildItem> serviceProviderBuildItems,
             List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields,
-            List<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses) {
+            List<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses,
+            List<LambdaCapturingTypeBuildItem> lambdaCapturingTypeBuildItems) {
         ClassCreator file = new ClassCreator(new ClassOutput() {
             @Override
             public void write(String s, byte[] bytes) {
@@ -297,6 +310,25 @@ public class NativeImageAutoFeatureStep {
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
             overallCatch.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class),
                     overallCatch.load(i.serviceDescriptorFile()));
+        }
+
+        // Register Lambda Capturing Types
+        if (!lambdaCapturingTypeBuildItems.isEmpty()) {
+            ResultHandle runtimeSerializationSupportSingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
+                    overallCatch.loadClassFromTCCL("org.graalvm.nativeimage.impl.RuntimeSerializationSupport"));
+            ResultHandle configAlwaysTrue = overallCatch.invokeStaticMethod(CONFIGURATION_ALWAYS_TRUE);
+
+            for (LambdaCapturingTypeBuildItem i : lambdaCapturingTypeBuildItems) {
+                TryBlock tryBlock = overallCatch.tryBlock();
+
+                tryBlock.invokeInterfaceMethod(REGISTER_LAMBDA_CAPTURING_CLASS, runtimeSerializationSupportSingleton,
+                        configAlwaysTrue,
+                        tryBlock.load(i.getClassName()));
+
+                CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
+                catchBlock.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class),
+                        catchBlock.getCaughtException());
+            }
         }
 
         if (!resourceBundles.isEmpty()) {

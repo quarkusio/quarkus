@@ -154,7 +154,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 }
                 listeners.sort(Comparator.comparingInt(DevModeListener::order));
 
-                for (DevModeListener listener : ServiceLoader.load(DevModeListener.class)) {
+                for (DevModeListener listener : listeners) {
                     try {
                         listener.afterFirstStart(runner);
                     } catch (Exception e) {

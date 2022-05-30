@@ -82,10 +82,12 @@ import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.security.Authenticated;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoRolesAllowedFilter;
+import io.quarkus.smallrye.openapi.deployment.filter.AutoServerFilter;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoTagFilter;
 import io.quarkus.smallrye.openapi.deployment.filter.SecurityConfigFilter;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.smallrye.openapi.deployment.spi.IgnoreStaticDocumentBuildItem;
+import io.quarkus.smallrye.openapi.deployment.spi.OpenApiDocumentBuildItem;
 import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;
@@ -290,7 +292,7 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    void addSecurityFilter(BuildProducer<AddToOpenAPIDefinitionBuildItem> addToOpenAPIDefinitionProducer,
+    void addAutoFilters(BuildProducer<AddToOpenAPIDefinitionBuildItem> addToOpenAPIDefinitionProducer,
             OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
             SmallRyeOpenApiConfig config) {
 
@@ -343,6 +345,11 @@ public class SmallRyeOpenApiProcessor {
             addToOpenAPIDefinitionProducer.produce(new AddToOpenAPIDefinitionBuildItem(autoTagFilter));
         }
 
+        // Add Auto Server based on the current server details
+        OASFilter autoServerFilter = getAutoServerFilter(config, false);
+        if (autoServerFilter != null) {
+            addToOpenAPIDefinitionProducer.produce(new AddToOpenAPIDefinitionBuildItem(autoServerFilter));
+        }
     }
 
     private OASFilter getAutoSecurityFilter(List<SecurityInformationBuildItem> securityInformationBuildItems,
@@ -436,6 +443,27 @@ public class SmallRyeOpenApiProcessor {
             if (classNamesMethodReferences != null && !classNamesMethodReferences.isEmpty()) {
                 return new AutoTagFilter(classNamesMethodReferences);
             }
+        }
+        return null;
+    }
+
+    private OASFilter getAutoServerFilter(SmallRyeOpenApiConfig config, boolean defaultFlag) {
+        if (config.autoAddServer.orElse(defaultFlag)) {
+            Config c = ConfigProvider.getConfig();
+
+            String scheme = "http";
+            String host = c.getOptionalValue("quarkus.http.host", String.class).orElse("0.0.0.0");
+            int port;
+
+            String insecure = c.getOptionalValue("quarkus.http.insecure-requests", String.class).orElse("enabled");
+            if (insecure.equalsIgnoreCase("enabled")) {
+                port = c.getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
+            } else {
+                scheme = "https";
+                port = c.getOptionalValue("quarkus.http.ssl-port", Integer.class).orElse(8443);
+            }
+
+            return new AutoServerFilter(scheme, host, port);
         }
         return null;
     }
@@ -651,6 +679,7 @@ public class SmallRyeOpenApiProcessor {
     public void build(BuildProducer<FeatureBuildItem> feature,
             BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
+            BuildProducer<OpenApiDocumentBuildItem> openApiDocumentProducer,
             OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem,
             Capabilities capabilities,
             List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems,
@@ -687,11 +716,9 @@ public class SmallRyeOpenApiProcessor {
             nativeImageResources.produce(new NativeImageResourceBuildItem(name));
         }
 
-        // Store the document if needed
-        boolean shouldStore = openApiConfig.storeSchemaDirectory.isPresent();
-        if (shouldStore) {
-            storeDocument(out, openApiConfig, staticModel, annotationModel, openAPIBuildItems);
-        }
+        OpenApiDocument finalStoredOpenApiDocument = storeDocument(out, openApiConfig, staticModel, annotationModel,
+                openAPIBuildItems);
+        openApiDocumentProducer.produce(new OpenApiDocumentBuildItem(finalStoredOpenApiDocument));
     }
 
     @BuildStep
@@ -968,7 +995,7 @@ public class SmallRyeOpenApiProcessor {
         return document;
     }
 
-    private void storeDocument(OutputTargetBuildItem out,
+    private OpenApiDocument storeDocument(OutputTargetBuildItem out,
             SmallRyeOpenApiConfig smallRyeOpenApiConfig,
             OpenAPI staticModel,
             OpenAPI annotationModel,
@@ -980,14 +1007,24 @@ public class SmallRyeOpenApiProcessor {
         OpenApiDocument document = prepareOpenApiDocument(staticModel, annotationModel, openAPIBuildItems);
 
         document.filter(filter(openApiConfig)); // This usually happens at runtime, so when storing we want to filter here too.
+        // By default also add the auto generated server
+        OASFilter autoServerFilter = getAutoServerFilter(smallRyeOpenApiConfig, true);
+        if (autoServerFilter != null) {
+            document.filter(autoServerFilter);
+        }
         document.initialize();
 
-        for (Format format : Format.values()) {
-            String name = OpenApiConstants.BASE_NAME + format;
-            byte[] schemaDocument = OpenApiSerializer.serialize(document.get(), format).getBytes(StandardCharsets.UTF_8);
-            storeGeneratedSchema(smallRyeOpenApiConfig, out, schemaDocument, format);
+        // Store the document if needed
+        boolean shouldStore = smallRyeOpenApiConfig.storeSchemaDirectory.isPresent();
+        if (shouldStore) {
+            for (Format format : Format.values()) {
+                String name = OpenApiConstants.BASE_NAME + format;
+                byte[] schemaDocument = OpenApiSerializer.serialize(document.get(), format).getBytes(StandardCharsets.UTF_8);
+                storeGeneratedSchema(smallRyeOpenApiConfig, out, schemaDocument, format);
+            }
         }
 
+        return document;
     }
 
     private OpenApiDocument prepareOpenApiDocument(OpenAPI staticModel,

@@ -80,6 +80,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanTypeExclusion;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -120,6 +121,7 @@ import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.DatasourceDbKindHibernateOrmMetadataBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
@@ -167,6 +169,27 @@ public final class HibernateOrmProcessor {
     private static final Logger LOG = Logger.getLogger(HibernateOrmProcessor.class);
 
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
+
+    @BuildStep
+    void registerHibernateOrmMetadataForCoreDialects(
+            BuildProducer<DatasourceDbKindHibernateOrmMetadataBuildItem> producer) {
+        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.DB2,
+                "org.hibernate.dialect.DB297Dialect"));
+        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.DERBY,
+                "org.hibernate.dialect.DerbyTenSevenDialect"));
+        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.H2,
+                "io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect"));
+        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.MARIADB,
+                "org.hibernate.dialect.MariaDB106Dialect"));
+        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.MSSQL,
+                "org.hibernate.dialect.SQLServer2016Dialect"));
+        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.MYSQL,
+                "org.hibernate.dialect.MySQL8Dialect"));
+        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.ORACLE,
+                "org.hibernate.dialect.Oracle12cDialect"));
+        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.POSTGRESQL,
+                "io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect"));
+    }
 
     @BuildStep
     void checkTransactionsSupport(Capabilities capabilities) {
@@ -400,7 +423,8 @@ public final class HibernateOrmProcessor {
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
-            BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors) {
+            BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
+            List<DatasourceDbKindHibernateOrmMetadataBuildItem> dbKindMetadataBuildItems) {
 
         if (!hasEntities(jpaModel)) {
             // we can bail out early as there are no entities
@@ -424,7 +448,8 @@ public final class HibernateOrmProcessor {
         if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
             handleHibernateORMWithNoPersistenceXml(hibernateOrmConfig, index, persistenceXmlDescriptors,
                     jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), jpaModel, capabilities,
-                    systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors);
+                    systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
+                    dbKindMetadataBuildItems);
         }
     }
 
@@ -909,7 +934,8 @@ public final class HibernateOrmProcessor {
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
-            BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors) {
+            BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
+            List<DatasourceDbKindHibernateOrmMetadataBuildItem> dbKindMetadataBuildItems) {
         if (!descriptors.isEmpty()) {
             if (hibernateOrmConfig.isAnyPropertySet() || !hibernateOrmConfig.persistenceUnits.isEmpty()) {
                 throw new ConfigurationException(
@@ -943,7 +969,7 @@ public final class HibernateOrmProcessor {
                     jpaModel.getXmlMappings(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
                     jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
-                    storageEngineCollector);
+                    storageEngineCollector, dbKindMetadataBuildItems);
         } else if (!modelClassesAndPackagesForDefaultPersistenceUnit.isEmpty()
                 && (!hibernateOrmConfig.defaultPersistenceUnit.datasource.isPresent()
                         || DataSourceUtil.isDefault(hibernateOrmConfig.defaultPersistenceUnit.datasource.get()))
@@ -966,7 +992,7 @@ public final class HibernateOrmProcessor {
                     jpaModel.getXmlMappings(persistenceUnitEntry.getKey()),
                     jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
-                    storageEngineCollector);
+                    storageEngineCollector, dbKindMetadataBuildItems);
         }
 
         if (storageEngineCollector.size() > 1) {
@@ -989,7 +1015,8 @@ public final class HibernateOrmProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
-            Set<String> storageEngineCollector) {
+            Set<String> storageEngineCollector,
+            List<DatasourceDbKindHibernateOrmMetadataBuildItem> dbKindMetadataBuildItems) {
         Optional<JdbcDataSourceBuildItem> jdbcDataSource = findJdbcDataSource(persistenceUnitName, persistenceUnitConfig,
                 jdbcDataSources);
 
@@ -1002,7 +1029,8 @@ public final class HibernateOrmProcessor {
             if (explicitDialect.isPresent()) {
                 dialect = explicitDialect.get();
             } else if (jdbcDataSource.isPresent()) {
-                dialect = Dialects.guessDialect(persistenceUnitName, jdbcDataSource.get().getDbKind());
+                dialect = Dialects.guessDialect(persistenceUnitName, jdbcDataSource.get().getDbKind(),
+                        dbKindMetadataBuildItems);
             } else {
                 throw new ConfigurationException(String.format(Locale.ROOT,
                         "The Hibernate ORM extension could not infer the dialect for persistence unit '%s'."
@@ -1025,7 +1053,8 @@ public final class HibernateOrmProcessor {
             if (explicitDialect.isPresent()) {
                 dialect = explicitDialect.get();
             } else {
-                dialect = Dialects.guessDialect(persistenceUnitName, jdbcDataSource.get().getDbKind());
+                dialect = Dialects.guessDialect(persistenceUnitName, jdbcDataSource.get().getDbKind(),
+                        dbKindMetadataBuildItems);
             }
         }
 

@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ public class MutableJarApplicationModel implements Serializable {
     private Set<ArtifactKey> runnerParentFirstArtifacts;
     private Set<ArtifactKey> lesserPriorityArtifacts;
     private Set<ArtifactKey> localProjectArtifacts;
+    private Map<ArtifactKey, Set<String>> excludedResources;
     private Collection<ExtensionCapabilities> capabilitiesContracts;
     private PlatformImports platformImports;
     private String userProvidersDirectory;
@@ -51,6 +53,7 @@ public class MutableJarApplicationModel implements Serializable {
         parentFirstArtifacts = new HashSet<>(appModel.getParentFirst());
         runnerParentFirstArtifacts = new HashSet<>(appModel.getRunnerParentFirst());
         lesserPriorityArtifacts = new HashSet<>(appModel.getLowerPriorityArtifacts());
+        excludedResources = new HashMap<>(appModel.getRemovedResources());
         capabilitiesContracts = new ArrayList<>(appModel.getExtensionCapabilities());
         this.platformImports = appModel.getPlatforms();
     }
@@ -76,6 +79,9 @@ public class MutableJarApplicationModel implements Serializable {
         }
         for (ArtifactKey i : localProjectArtifacts) {
             model.addReloadableWorkspaceModule(i);
+        }
+        for (Map.Entry<ArtifactKey, Set<String>> i : excludedResources.entrySet()) {
+            model.addRemovedResources(i.getKey(), i.getValue());
         }
         for (ExtensionCapabilities ec : capabilitiesContracts) {
             model.addExtensionCapabilities(ec);

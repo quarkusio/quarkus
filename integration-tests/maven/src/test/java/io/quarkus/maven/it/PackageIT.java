@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.jar.JarFile;
@@ -39,6 +40,14 @@ public class PackageIT extends MojoTestBase {
         running = new RunningInvoker(testDir, false);
         final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
                 Collections.emptyMap());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+    }
+
+    @Test
+    public void testExtensionRemovedResources() throws Exception {
+        testDir = initProject("projects/extension-removed-resources");
+        running = new RunningInvoker(testDir, false);
+        final MavenProcessInvocationResult result = running.execute(List.of("verify"), Map.of());
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
     }
 

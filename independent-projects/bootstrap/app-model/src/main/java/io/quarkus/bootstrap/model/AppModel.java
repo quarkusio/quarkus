@@ -360,4 +360,10 @@ public class AppModel implements ApplicationModel, Serializable {
     public Set<ArtifactKey> getReloadableWorkspaceDependencies() {
         return new HashSet<>(localProjectArtifacts);
     }
+
+    @Override
+    public Map<ArtifactKey, Set<String>> getRemovedResources() {
+        // not supported
+        return Map.of();
+    }
 }

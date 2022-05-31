@@ -9,7 +9,7 @@ import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.maven.dependency.GACT;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
  * The Oracle JDBC driver includes a {@literal META-INF/native-image} which enables a set
@@ -118,13 +118,13 @@ public final class OracleMetadataOverrides {
 
     @BuildStep
     RemovedResourceBuildItem overrideSubstitutions() {
-        return new RemovedResourceBuildItem(GACT.fromString("com.oracle.database.jdbc:ojdbc11"),
+        return new RemovedResourceBuildItem(ArtifactKey.fromString("com.oracle.database.jdbc:ojdbc11"),
                 Collections.singleton("oracle/nativeimage/Target_java_io_ObjectStreamClass.class"));
     }
 
     @BuildStep
     RemovedResourceBuildItem enhancedCharsetSubstitutions() {
-        return new RemovedResourceBuildItem(GACT.fromString("com.oracle.database.jdbc:ojdbc11"),
+        return new RemovedResourceBuildItem(ArtifactKey.fromString("com.oracle.database.jdbc:ojdbc11"),
                 Collections.singleton("oracle/nativeimage/CharacterSetFeature.class"));
     }
 

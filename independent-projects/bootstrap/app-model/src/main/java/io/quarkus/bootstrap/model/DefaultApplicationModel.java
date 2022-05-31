@@ -5,6 +5,7 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class DefaultApplicationModel implements ApplicationModel, Serializable {
@@ -19,6 +20,7 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
     private final Set<ArtifactKey> runnerParentFirstArtifacts;
     private final Set<ArtifactKey> lesserPriorityArtifacts;
     private final Set<ArtifactKey> localProjectArtifacts;
+    private final Map<ArtifactKey, Set<String>> excludedResources;
 
     public DefaultApplicationModel(ApplicationModelBuilder builder) {
         this.appArtifact = builder.appArtifact;
@@ -29,6 +31,7 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
         this.runnerParentFirstArtifacts = builder.runnerParentFirstArtifacts;
         this.lesserPriorityArtifacts = builder.lesserPriorityArtifacts;
         this.localProjectArtifacts = builder.reloadableWorkspaceModules;
+        this.excludedResources = builder.excludedResources;
     }
 
     @Override
@@ -69,5 +72,10 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
     @Override
     public Set<ArtifactKey> getReloadableWorkspaceDependencies() {
         return localProjectArtifacts;
+    }
+
+    @Override
+    public Map<ArtifactKey, Set<String>> getRemovedResources() {
+        return excludedResources;
     }
 }

@@ -146,7 +146,7 @@
                                             <ORACLE_PASSWORD>hibernate_orm_test</ORACLE_PASSWORD>
                                         </env>
                                         <log>
-                                            <prefix>Oracle Database: </prefix>
+                                            <prefix>Oracle Database:</prefix>
                                             <date>default</date>
                                             <color>red</color>
                                         </log>
@@ -154,7 +154,8 @@
                                             <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
                                             <!-- Unfortunately booting this is slow, needs to set a generous timeout: -->
                                             <time>60000</time>
-                                            <log>DATABASE IS READY TO USE!</log>
+                                            <!-- leversge the healthcheck in the image we use -->
+                                            <healthy>yes</healthy>
                                         </wait>
                                     </run>
                                 </image>
@@ -196,6 +197,41 @@
                                 </configuration>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- In general, we want to avoid os- or arch-based guards on tests, but the Oracle
+         db would not start on M1 - see https://stackoverflow.com/questions/68605011/oracle-12c-docker-setup-on-apple-m1-->
+        <profile>
+            <id>mac-m1</id>
+            <activation>
+                <os>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <configuration>
+                            <images>
+                                <image>
+                                    <name>${oracle.image}</name>
+                                    <run>
+                                        <skip>true</skip>
+                                    </run>
+                                </image>
+                            </images>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

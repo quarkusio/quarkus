@@ -52,6 +52,8 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
 
     private static final Map<String, List<String>> ERROR_HEADERS = Map.of("Content-Type", List.of("application/json"));
 
+    private static final String COOKIE_HEADER = "Cookie";
+
     // comma headers for headers that have comma in value and we don't want to split it up into
     // multiple headers
     private static final Set<String> COMMA_HEADERS = Set.of("access-control-request-headers");
@@ -198,6 +200,10 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                 }
             }
         }
+        if (request.getCookies() != null) {
+            nettyRequest.headers().add(COOKIE_HEADER, String.join("; ", request.getCookies()));
+        }
+
         if (!nettyRequest.headers().contains(HttpHeaderNames.HOST)) {
             nettyRequest.headers().add(HttpHeaderNames.HOST, "localhost");
         }

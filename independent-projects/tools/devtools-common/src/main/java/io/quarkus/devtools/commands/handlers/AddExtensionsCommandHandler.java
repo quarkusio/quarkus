@@ -103,17 +103,26 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
         ExtensionInstallPlan.Builder builder = ExtensionInstallPlan.builder();
         for (String keyword : keywords) {
             int countColons = StringUtils.countMatches(keyword, ":");
-            // Check if it's just groupId:artifactId
-            if (countColons == 1) {
-                ArtifactKey artifactKey = ArtifactKey.fromString(keyword);
-                builder.addManagedExtension(new ArtifactCoords(artifactKey, null));
-                continue;
-            } else if (countColons > 1) {
+            if (countColons > 1) {
                 // it's a gav
                 builder.addIndependentExtension(ArtifactCoords.fromString(keyword));
                 continue;
             }
-            List<Extension> listed = listInternalExtensions(quarkusCore, keyword, catalog.getExtensions());
+            List<Extension> listed = List.of();
+            // Check if it's just groupId:artifactId
+            if (countColons == 1) {
+                ArtifactKey artifactKey = ArtifactKey.fromString(keyword);
+                for (Extension e : invocation.getExtensionsCatalog().getExtensions()) {
+                    if (e.getArtifact().getKey().equals(artifactKey)) {
+                        listed = List.of(e);
+                        break;
+                    }
+                }
+
+                //builder.addManagedExtension(new ArtifactCoords(artifactKey, null));
+            } else {
+                listed = listInternalExtensions(quarkusCore, keyword, catalog.getExtensions());
+            }
             if (listed.isEmpty()) {
                 // No extension found for this keyword.
                 builder.addUnmatchedKeyword(keyword);
@@ -125,7 +134,6 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
             }
             for (Extension e : listed) {
                 final ArtifactCoords extensionCoords = e.getArtifact();
-
                 boolean managed = false;
                 ExtensionOrigin firstPlatform = null;
                 ExtensionOrigin preferredOrigin = null;

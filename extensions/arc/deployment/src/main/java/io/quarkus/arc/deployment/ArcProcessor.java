@@ -256,7 +256,6 @@ public class ArcProcessor {
             additionalStereotypes.putAll(item.getStereotypes());
         }
         builder.setAdditionalStereotypes(additionalStereotypes);
-        builder.setSharedAnnotationLiterals(true);
         builder.addResourceAnnotations(
                 resourceAnnotations.stream().map(ResourceAnnotationBuildItem::getName).collect(Collectors.toList()));
         // register all annotation transformers

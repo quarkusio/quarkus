@@ -587,8 +587,7 @@ public class ObserverGenerator extends AbstractGenerator {
                     ClassInfo qualifierClass = observer.getBeanDeployment()
                             .getQualifier(qualifierAnnotation.name());
                     constructor.writeArrayValue(qualifiersArray, constructor.load(qualifiersIndex++),
-                            annotationLiterals.process(constructor, classOutput,
-                                    qualifierClass, qualifierAnnotation, Types.getPackageName(observerCreator.getClassName())));
+                            annotationLiterals.create(constructor, qualifierClass, qualifierAnnotation));
                 }
             }
             constructor.writeInstanceField(

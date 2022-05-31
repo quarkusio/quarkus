@@ -239,10 +239,8 @@ public class SubclassGenerator extends AbstractGenerator {
             @Override
             public ResultHandle apply(BindingKey key) {
                 // Create annotation literal if needed
-                ClassInfo bindingClass = bean.getDeployment()
-                        .getInterceptorBinding(key.annotation.name());
-                return annotationLiterals.process(constructor, classOutput, bindingClass, key.annotation,
-                        Types.getPackageName(subclass.getClassName()));
+                ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(key.annotation.name());
+                return annotationLiterals.create(constructor, bindingClass, key.annotation);
             }
         };
         // Shared lists of interceptor bindings literals
@@ -812,8 +810,7 @@ public class SubclassGenerator extends AbstractGenerator {
                 // Create annotation literals first
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
                 destroy.writeArrayValue(bindingsArray, bindingsIndex++,
-                        annotationLiterals.process(destroy, classOutput, bindingClass, binding,
-                                Types.getPackageName(subclass.getClassName())));
+                        annotationLiterals.create(destroy, bindingClass, binding));
             }
 
             // try

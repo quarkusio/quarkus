@@ -82,7 +82,7 @@ public class BeanProcessor {
         this.applicationClassPredicate = builder.applicationClassPredicate;
         this.name = builder.name;
         this.output = builder.output;
-        this.annotationLiterals = new AnnotationLiteralProcessor(builder.sharedAnnotationLiterals, applicationClassPredicate);
+        this.annotationLiterals = new AnnotationLiteralProcessor(builder.beanArchiveIndex, applicationClassPredicate);
         this.generateSources = builder.generateSources;
         this.allowMocking = builder.allowMocking;
         this.transformUnproxyableClasses = builder.transformUnproxyableClasses;
@@ -173,7 +173,6 @@ public class BeanProcessor {
         ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals, applicationClassPredicate,
                 privateMembers, generateSources, reflectionRegistration, existingClasses, observerToGeneratedName,
                 injectionPointAnnotationsPredicate, allowMocking);
-        AnnotationLiteralGenerator annotationLiteralsGenerator = new AnnotationLiteralGenerator(generateSources);
 
         List<Resource> resources = new ArrayList<>();
 
@@ -242,8 +241,8 @@ public class BeanProcessor {
 
         // Generate AnnotationLiterals
         if (annotationLiterals.hasLiteralsToGenerate()) {
-            resources.addAll(
-                    annotationLiteralsGenerator.generate(name, beanDeployment, annotationLiterals.getCache(), existingClasses));
+            AnnotationLiteralGenerator generator = new AnnotationLiteralGenerator(generateSources);
+            resources.addAll(generator.generate(annotationLiterals.getCache(), existingClasses));
         }
 
         if (output != null) {
@@ -293,7 +292,6 @@ public class BeanProcessor {
         Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations;
         Map<DotName, Collection<AnnotationInstance>> additionalStereotypes;
         ResourceOutput output;
-        boolean sharedAnnotationLiterals;
         ReflectionRegistration reflectionRegistration;
 
         final List<DotName> resourceAnnotations;
@@ -326,7 +324,6 @@ public class BeanProcessor {
             name = DEFAULT_NAME;
             additionalBeanDefiningAnnotations = Collections.emptySet();
             additionalStereotypes = Collections.emptyMap();
-            sharedAnnotationLiterals = true;
             reflectionRegistration = ReflectionRegistration.NOOP;
             resourceAnnotations = new ArrayList<>();
             annotationTransformers = new ArrayList<>();
@@ -412,8 +409,12 @@ public class BeanProcessor {
             return this;
         }
 
+        /**
+         * @deprecated annotation literal sharing is now always enabled, this method doesn't do anything
+         *             and will be removed at some time after Quarkus 3.0
+         */
+        @Deprecated
         public Builder setSharedAnnotationLiterals(boolean sharedAnnotationLiterals) {
-            this.sharedAnnotationLiterals = sharedAnnotationLiterals;
             return this;
         }
 

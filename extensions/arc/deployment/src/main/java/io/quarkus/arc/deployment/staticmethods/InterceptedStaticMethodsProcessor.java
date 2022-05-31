@@ -187,7 +187,7 @@ public class InterceptedStaticMethodsProcessor {
 
             List<String> initMethods = new ArrayList<>();
             for (InterceptedStaticMethodBuildItem interceptedStaticMethod : entry.getValue()) {
-                initMethods.add(implementInit(beanArchiveIndex.getIndex(), classOutput, initializer, interceptedStaticMethod,
+                initMethods.add(implementInit(beanArchiveIndex.getIndex(), initializer, interceptedStaticMethod,
                         reflectiveMethods, phase.getBeanProcessor()));
                 implementForward(initializer, interceptedStaticMethod);
             }
@@ -255,7 +255,7 @@ public class InterceptedStaticMethodsProcessor {
         forward.returnValue(ret);
     }
 
-    private String implementInit(IndexView index, ClassOutput classOutput, ClassCreator initializer,
+    private String implementInit(IndexView index, ClassCreator initializer,
             InterceptedStaticMethodBuildItem interceptedStaticMethod,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods, BeanProcessor beanProcessor) {
 
@@ -312,13 +312,13 @@ public class InterceptedStaticMethodsProcessor {
         ResultHandle bindingsHandle;
         if (bindings.size() == 1) {
             bindingsHandle = init.invokeStaticMethod(MethodDescriptors.COLLECTIONS_SINGLETON,
-                    createBindingLiteral(index, classOutput, init, bindings.iterator().next(),
+                    createBindingLiteral(index, init, bindings.iterator().next(),
                             beanProcessor.getAnnotationLiteralProcessor()));
         } else {
             bindingsHandle = init.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
             for (AnnotationInstance binding : bindings) {
                 init.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
-                        createBindingLiteral(index, classOutput, init, binding, beanProcessor.getAnnotationLiteralProcessor()));
+                        createBindingLiteral(index, init, binding, beanProcessor.getAnnotationLiteralProcessor()));
             }
         }
 
@@ -343,11 +343,10 @@ public class InterceptedStaticMethodsProcessor {
         return name;
     }
 
-    private ResultHandle createBindingLiteral(IndexView index, ClassOutput classOutput, BytecodeCreator init,
-            AnnotationInstance binding, AnnotationLiteralProcessor annotationLiteralProcessor) {
+    private ResultHandle createBindingLiteral(IndexView index, BytecodeCreator init,
+            AnnotationInstance binding, AnnotationLiteralProcessor annotationLiterals) {
         ClassInfo bindingClass = index.getClassByName(binding.name());
-        return annotationLiteralProcessor.process(init, classOutput, bindingClass, binding,
-                "io.quarkus.arc.runtime");
+        return annotationLiterals.create(init, bindingClass, binding);
     }
 
     private ResultHandle createInterceptorInvocation(InterceptorInfo interceptor, BytecodeCreator init,

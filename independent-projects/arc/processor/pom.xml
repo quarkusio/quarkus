@@ -56,6 +56,12 @@
             <artifactId>assertj-core</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.quarkus.gizmo</groupId>
+            <artifactId>gizmo</artifactId>
+            <type>test-jar</type>
+        </dependency>
+
     </dependencies>
 
 </project>

@@ -1,16 +1,23 @@
 package io.quarkus.kubernetes.client.deployment;
 
-import java.util.Arrays;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -43,6 +50,7 @@ public class KubernetesClientProcessor {
     private static final Logger log = Logger.getLogger(KubernetesClientProcessor.class.getName());
 
     private static final Predicate<DotName> IS_OKHTTP_CLASS = d -> d.toString().startsWith("okhttp3");
+    private static final DotName JSON_FORMAT = DotName.createSimple(JsonFormat.class.getName());
 
     @BuildStep
     public void registerBeanProducers(BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem,
@@ -99,20 +107,46 @@ public class KubernetesClientProcessor {
             }
         }
 
-        final String[] modelClasses = combinedIndexBuildItem.getIndex()
-                .getAllKnownImplementors(KUBERNETES_RESOURCE)
+        Collection<ClassInfo> kubernetesResourceImpls = combinedIndexBuildItem.getIndex()
+                .getAllKnownImplementors(KUBERNETES_RESOURCE);
+        // default sizes determined experimentally - these are only set in order to prevent continuous expansion of the array list
+        List<String> withoutFieldsRegistration = new ArrayList<>(kubernetesResourceImpls.size());
+        List<String> withFieldsRegistration = new ArrayList<>(2);
+        kubernetesResourceImpls
                 .stream()
                 .peek(c -> {
                     // we need to make sure that the Jackson extension does not try to fully register the model classes
                     // since we are going to register them weakly
                     ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(c.name()));
                 })
-                .map(ClassInfo::name)
-                .filter(c -> !watchedClasses.contains(c))
-                .map(Object::toString)
-                .toArray(String[]::new);
-        reflectiveClasses.produce(ReflectiveClassBuildItem
-                .builder(modelClasses).weak(true).methods(true).fields(false).build());
+                .filter(c -> !watchedClasses.contains(c.name()))
+                .map(c -> {
+                    boolean registerFields = false;
+                    List<AnnotationInstance> jsonFormatInstances = c.annotations().get(JSON_FORMAT);
+                    if (jsonFormatInstances != null) {
+                        for (AnnotationInstance jsonFormatInstance : jsonFormatInstances) {
+                            if (jsonFormatInstance.target().kind() == AnnotationTarget.Kind.FIELD) {
+                                registerFields = true;
+                                break;
+                            }
+                        }
+                    }
+                    return new AbstractMap.SimpleEntry<>(c.name(), registerFields);
+                }).forEach(e -> {
+                    if (e.getValue()) {
+                        withFieldsRegistration.add(e.getKey().toString());
+                    } else {
+                        withoutFieldsRegistration.add(e.getKey().toString());
+                    }
+                });
+        if (!withFieldsRegistration.isEmpty()) {
+            reflectiveClasses.produce(ReflectiveClassBuildItem
+                    .builder(withFieldsRegistration.toArray(new String[0])).weak(true).methods(true).fields(true).build());
+        }
+        if (!withoutFieldsRegistration.isEmpty()) {
+            reflectiveClasses.produce(ReflectiveClassBuildItem
+                    .builder(withoutFieldsRegistration.toArray(new String[0])).weak(true).methods(true).fields(false).build());
+        }
 
         // we also ignore some classes that are annotated with @JsonDeserialize that would force the registration of the entire model
         ignoredJsonDeserializationClasses.produce(
@@ -151,7 +185,10 @@ public class KubernetesClientProcessor {
                     .sorted()
                     .collect(Collectors.joining("\n"));
             log.debugv("Watched Classes:\n{0}", watchedClassNames);
-            Arrays.sort(modelClasses);
+            List<String> modelClasses = new ArrayList<>(withFieldsRegistration.size() + withoutFieldsRegistration.size());
+            modelClasses.addAll(withFieldsRegistration);
+            modelClasses.addAll(withoutFieldsRegistration);
+            Collections.sort(modelClasses);
             log.debugv("Model Classes:\n{0}", String.join("\n", modelClasses));
         }
 

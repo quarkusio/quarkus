@@ -227,6 +227,15 @@ To produce a native executable, this means that the `--enable-preview` flag need
 You can do so by prepending the flag with `-J` and passing it as additional native build argument: `-Dquarkus.native.additional-build-args=-J--enable-preview`.
 ====
 
+=== Build fully static native executables
+
+IMPORTANT: Fully static native executables support is experimental.
+
+On Linux it's possible to package a native executable that doesn't depend on any system shared library.
+There are https://www.graalvm.org/22.1/reference-manual/native-image/StaticImages/#preparation[some system requirements] to be fulfilled and additional build arguments to be used along with the `native-image` invocation, a minimum is `-Dquarkus.native.additional-build-args="--static","--libc=musl"`.
+
+Compiling fully static binaries is done by statically linking https://musl.libc.org/[musl] instead of `glibc` and should not be used in production without rigorous testing.
+
 == Testing the native executable
 
 Producing a native executable can lead to a few issues, and so it's also a good idea to run some tests against the application running in the native file. The reasoning is explained in the link:getting-started-testing#quarkus-integration-test[Testing Guide].
@@ -624,6 +633,46 @@ It contains the required packages to run a native executable and is only **9Mb**
 Just add your application on top of this image, and you will get a tiny container image.
 
 Distroless images should not be used in production without rigorous testing.
+
+=== Using a scratch base image
+
+IMPORTANT: Scratch image support is experimental.
+
+Building fully statically linked binaries enables the usage of a https://hub.docker.com/_/scratch[scratch image] containing solely the resulting native executable.
+
+Sample multistage Dockerfile for building an image from `scratch`:
+
+[source, dockerfile]
+----
+## Stage 1 : build with maven builder image with native capabilities
+FROM quay.io/quarkus/ubi-quarkus-native-image:22.0-java11 AS build
+USER root
+RUN microdnf install make gcc
+COPY --chown=quarkus:quarkus mvnw /code/mvnw
+COPY --chown=quarkus:quarkus .mvn /code/.mvn
+COPY --chown=quarkus:quarkus pom.xml /code/
+RUN mkdir /musl && \
+    curl -L -o musl.tar.gz https://more.musl.cc/10.2.1/x86_64-linux-musl/x86_64-linux-musl-native.tgz && \
+    tar -xvzf musl.tar.gz -C /musl --strip-components 1 && \
+    curl -L -o zlib.tar.gz https://zlib.net/zlib-1.2.12.tar.gz && \
+    mkdir zlib && tar -xvzf zlib.tar.gz -C zlib --strip-components 1 && \
+    cd zlib && ./configure --static --prefix=/musl && \
+    make && make install && \
+    cd .. && rm -rf zlib && rm -f zlib.tar.gz && rm -f musl.tar.gz
+ENV PATH="/musl/bin:${PATH}"
+USER quarkus
+WORKDIR /code
+RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline
+COPY src /code/src
+RUN ./mvnw package -Pnative -Dquarkus.native.additional-build-args="--static","--libc=musl"
+
+## Stage 2 : create the docker final image
+FROM scratch
+COPY --from=build /code/target/*-runner /application
+ENTRYPOINT [ "/application" ]
+----
+
+Scratch images should not be used in production without rigorous testing.
 
 === Native executable compression
 

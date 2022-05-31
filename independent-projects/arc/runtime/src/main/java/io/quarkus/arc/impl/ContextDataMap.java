@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -38,7 +39,7 @@ final class ContextDataMap implements Map<String, Object> {
 
     private Map<String, Object> getDelegateForRead() {
         if (delegate == null) {
-            return Collections.EMPTY_MAP;
+            return Collections.emptyMap();
         } else {
             return delegate;
         }
@@ -81,7 +82,7 @@ final class ContextDataMap implements Map<String, Object> {
         if (delegate == null) {
             return Collections.singleton(firstEntry);
         } else {
-            HashSet entries = new HashSet(delegate.size() + 1);
+            Set<Map.Entry<String, Object>> entries = new HashSet<>(delegate.size() + 1);
             entries.addAll(delegate.entrySet());
             entries.add(firstEntry);
             return entries;
@@ -106,7 +107,7 @@ final class ContextDataMap implements Map<String, Object> {
         if (delegate == null) {
             return Collections.singleton(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS);
         } else {
-            HashSet set = new HashSet(delegate.size() + 1);
+            Set<String> set = new HashSet<>(delegate.size() + 1);
             set.addAll(delegate.keySet());
             set.add(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS);
             return set;
@@ -114,7 +115,7 @@ final class ContextDataMap implements Map<String, Object> {
     }
 
     @Override
-    public void putAll(Map m) {
+    public void putAll(Map<? extends String, ? extends Object> m) {
         if (m.containsKey(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS)) {
             throw new IllegalArgumentException(
                     "Not allowed to put key '" + ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS + "' in the context data map");
@@ -140,11 +141,11 @@ final class ContextDataMap implements Map<String, Object> {
     }
 
     @Override
-    public Collection values() {
+    public Collection<Object> values() {
         if (delegate == null) {
             return Collections.singleton(interceptorBindings);
         } else {
-            ArrayList list = new ArrayList(delegate.size() + 1);
+            List<Object> list = new ArrayList<>(delegate.size() + 1);
             list.addAll(delegate.values());
             list.add(interceptorBindings);
             return list;

@@ -21,7 +21,7 @@ At build time all the capabilities found in the application will be aggregated i
 
 == Declaring capabilities
 
-The `quarkus-bootstrap-maven-plugin:extension-descriptor` Maven goal and the `extensionDescriptor` Gradle task, that generate extension descriptors, allow configuring provided and required capabilities in the following way:
+The `quarkus-extension-maven-plugin:extension-descriptor` Maven goal and the `extensionDescriptor` Gradle task, that generate extension descriptors, allow configuring provided and required capabilities in the following way:
 
 [role="primary asciidoc-tabs-sync-maven"]
 .Maven
@@ -30,7 +30,7 @@ The `quarkus-bootstrap-maven-plugin:extension-descriptor` Maven goal and the `ex
 ----
 <plugin>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+    <artifactId>quarkus-extension-maven-plugin</artifactId>
     <configuration>
         <capabilities>
             <provides>io.quarkus.hibernate.orm</provides> <1>
@@ -92,7 +92,7 @@ A capability may be provided or required only if a certain condition is satisfie
 ----
 <plugin>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+    <artifactId>quarkus-extension-maven-plugin</artifactId>
     <configuration>
         <capabilities>
             <providesIf> <1>

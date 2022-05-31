@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Component;
@@ -75,15 +76,18 @@ import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 
 /**
- * Generates Quarkus extension descriptor for the runtime artifact.
- * <p>
- * <p/>
- * Also generates META-INF/quarkus-extension.json which includes properties of
- * the extension such as name, labels, maven coordinates, etc that are used by
- * the tools.
+ * @deprecated in favor of {@code io.quarkus:quarkus-extension-maven-plugin}.
+ *             <p>
+ *             Generates Quarkus extension descriptor for the runtime artifact.
+ *             <p>
+ *             <p/>
+ *             Also generates META-INF/quarkus-extension.json which includes properties of
+ *             the extension such as name, labels, maven coordinates, etc that are used by
+ *             the tools.
  *
  * @author Alexey Loubyansky
  */
+@Deprecated(since = "2.10.0.Final")
 @Mojo(name = "extension-descriptor", defaultPhase = LifecyclePhase.PROCESS_RESOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class ExtensionDescriptorMojo extends AbstractMojo {
 
@@ -203,6 +207,12 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     @Parameter(property = "skipCodestartValidation")
     boolean skipCodestartValidation;
 
+    /**
+     * The context of the execution of the plugin.
+     */
+    @Parameter(defaultValue = "${mojoExecution}", readonly = true, required = true)
+    private MojoExecution mojoExecution;
+
     AppArtifactCoords deploymentCoords;
     CollectResult collectedDeploymentDeps;
     DependencyResult runtimeDeps;
@@ -211,6 +221,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
+
+        getLog().warn("This Maven plugin was deprecated in favor of io.quarkus:quarkus-extension-maven-plugin:"
+                + mojoExecution.getVersion() + ", please, update the artifactId of the plugin in your project configuration.");
 
         if (!skipExtensionValidation) {
             validateExtensionDeps();

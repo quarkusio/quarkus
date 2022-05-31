@@ -132,6 +132,7 @@ public class GrpcCodeGen implements CodeGenProvider {
                     throw new CodeGenException("Failed to generate Java classes from proto files: " + protoFiles +
                             " to " + outDir.toAbsolutePath() + " with command " + String.join(" ", command));
                 }
+                log.info("Successfully finished generating sources from proto files");
                 return true;
             }
         } catch (IOException | InterruptedException e) {

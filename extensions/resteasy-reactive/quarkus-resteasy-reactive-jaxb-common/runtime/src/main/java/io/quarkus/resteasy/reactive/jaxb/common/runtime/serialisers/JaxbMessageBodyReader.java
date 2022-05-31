@@ -47,9 +47,9 @@ public class JaxbMessageBodyReader implements ServerMessageBodyReader<Object> {
             return false;
         }
         String subtype = mediaType.getSubtype();
-        boolean isApplicationMediaType = "application".equals(mediaType.getType());
-        return (isApplicationMediaType && "xml".equalsIgnoreCase(subtype) || subtype.endsWith("+xml"))
-                || (mediaType.isWildcardSubtype() && (mediaType.isWildcardType() || isApplicationMediaType));
+        boolean isCorrectMediaType = "application".equals(mediaType.getType()) || "text".equals(mediaType.getType());
+        return (isCorrectMediaType && "xml".equalsIgnoreCase(subtype) || subtype.endsWith("+xml"))
+                || (mediaType.isWildcardSubtype() && (mediaType.isWildcardType() || isCorrectMediaType));
     }
 
     private Object doReadFrom(Class<Object> type, Type genericType, InputStream entityStream) throws IOException {

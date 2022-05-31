@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.jaxb.common.deployment;
 
-import java.util.Collections;
+import java.util.List;
 
 import javax.ws.rs.core.MediaType;
 
@@ -25,8 +25,8 @@ public class ResteasyReactiveJaxbCommonProcessor {
                 .setUnremovable().build());
 
         additionalReaders.produce(new MessageBodyReaderBuildItem(JaxbMessageBodyReader.class.getName(), Object.class.getName(),
-                Collections.singletonList(MediaType.APPLICATION_XML)));
+                List.of(MediaType.APPLICATION_XML, MediaType.TEXT_XML)));
         additionalWriters.produce(new MessageBodyWriterBuildItem(JaxbMessageBodyWriter.class.getName(), Object.class.getName(),
-                Collections.singletonList(MediaType.APPLICATION_XML)));
+                List.of(MediaType.APPLICATION_XML, MediaType.TEXT_XML)));
     }
 }

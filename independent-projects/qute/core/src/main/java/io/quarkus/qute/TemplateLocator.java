@@ -5,6 +5,8 @@ import java.util.Optional;
 
 /**
  * Locates template sources. The locator with higher priority takes precedence.
+ * Quarkus automatically register all CDI beans that implement this interface
+ * with {@link EngineBuilder#addLocator(TemplateLocator)}.
  *
  * @see Engine#getTemplate(String)
  */

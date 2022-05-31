@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -56,6 +57,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.QualifierRegistrarBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -167,6 +169,13 @@ public class QuteProcessor {
     }
 
     @BuildStep
+    List<BeanDefiningAnnotationBuildItem> registerLocatorsAsSingleton() {
+        return List.of(
+                new BeanDefiningAnnotationBuildItem(Names.LOCATE, DotNames.SINGLETON),
+                new BeanDefiningAnnotationBuildItem(Names.LOCATES, DotNames.SINGLETON));
+    }
+
+    @BuildStep
     void processTemplateErrors(TemplatesAnalysisBuildItem analysis, List<IncorrectExpressionBuildItem> incorrectExpressions,
             BuildProducer<ServiceStartBuildItem> serviceStart) {
 
@@ -234,7 +243,8 @@ public class QuteProcessor {
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             List<TemplatePathBuildItem> templatePaths,
             List<CheckedTemplateAdapterBuildItem> templateAdaptorBuildItems,
-            TemplateFilePathsBuildItem filePaths) {
+            TemplateFilePathsBuildItem filePaths,
+            CustomTemplateLocatorPatternsBuildItem locatorPatternsBuildItem) {
         List<CheckedTemplateBuildItem> ret = new ArrayList<>();
 
         Map<DotName, CheckedTemplateAdapter> adaptors = new HashMap<>();
@@ -311,7 +321,9 @@ public class QuteProcessor {
                                     templatePath, methodInfo.declaringClass().name(), methodInfo,
                                     checkedTemplateMethod.declaringClass().name(), checkedTemplateMethod));
                 }
-                if (!filePaths.contains(templatePath)) {
+                if (!filePaths.contains(templatePath)
+                        && isNotLocatedByCustomTemplateLocator(locatorPatternsBuildItem.getLocationPatterns(),
+                                templatePath)) {
                     List<String> startsWith = new ArrayList<>();
                     for (String filePath : filePaths.getFilePaths()) {
                         if (filePath.startsWith(templatePath)) {
@@ -352,6 +364,18 @@ public class QuteProcessor {
         }
 
         return ret;
+    }
+
+    private boolean isNotLocatedByCustomTemplateLocator(
+            Collection<Pattern> locationPatterns, String templatePath) {
+        if (!locationPatterns.isEmpty() && templatePath != null) {
+            for (Pattern locationPattern : locationPatterns) {
+                if (locationPattern.matcher(templatePath).matches()) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     @BuildStep
@@ -1400,8 +1424,8 @@ public class QuteProcessor {
 
     @BuildStep
     void validateTemplateInjectionPoints(TemplateFilePathsBuildItem filePaths, List<TemplatePathBuildItem> templatePaths,
-            ValidationPhaseBuildItem validationPhase,
-            BuildProducer<ValidationErrorBuildItem> validationErrors) {
+            ValidationPhaseBuildItem validationPhase, BuildProducer<ValidationErrorBuildItem> validationErrors,
+            CustomTemplateLocatorPatternsBuildItem locatorPatternsBuildItem) {
 
         for (InjectionPointInfo injectionPoint : validationPhase.getContext().getInjectionPoints()) {
             if (injectionPoint.getRequiredType().name().equals(Names.TEMPLATE)) {
@@ -1418,7 +1442,9 @@ public class QuteProcessor {
                     // For "@Inject Template items" we try to match "items"
                     // For "@Location("github/pulls") Template pulls" we try to match "github/pulls"
                     // For "@Location("foo/bar/baz.txt") Template baz" we try to match "foo/bar/baz.txt"
-                    if (!filePaths.contains(name)) {
+                    if (!filePaths.contains(name)
+                            && isNotLocatedByCustomTemplateLocator(locatorPatternsBuildItem.getLocationPatterns(),
+                                    name)) {
                         validationErrors.produce(new ValidationErrorBuildItem(
                                 new TemplateException(
                                         String.format(
@@ -1429,6 +1455,82 @@ public class QuteProcessor {
                 }
             }
         }
+    }
+
+    @BuildStep
+    CustomTemplateLocatorPatternsBuildItem validateAndCollectCustomTemplateLocatorLocations(
+            BeanArchiveIndexBuildItem beanArchiveIndex,
+            BuildProducer<ValidationErrorBuildItem> validationErrors) {
+
+        Collection<Pattern> locationPatterns = new ArrayList<>();
+
+        // Collect TemplateLocators annotated with io.quarkus.qute.Locate
+        for (AnnotationInstance locate : beanArchiveIndex.getIndex().getAnnotations(Names.LOCATE)) {
+            AnnotationTarget locateTarget = locate.target();
+            if (isTargetClass(locateTarget)) {
+                if (isNotTemplateLocatorImpl(locateTarget)) {
+                    reportFoundInvalidTarget(validationErrors, locateTarget);
+                } else {
+                    addLocationRegExToLocators(locationPatterns, locate.value(), locateTarget, validationErrors);
+                }
+            }
+        }
+
+        // Collect TemplateLocators annotated with multiple 'io.quarkus.qute.Locate'
+        for (AnnotationInstance locates : beanArchiveIndex.getIndex().getAnnotations(Names.LOCATES)) {
+            AnnotationTarget locatesTarget = locates.target();
+            if (isTargetClass(locatesTarget)) {
+                if (isNotTemplateLocatorImpl(locatesTarget)) {
+                    reportFoundInvalidTarget(validationErrors, locatesTarget);
+                } else {
+                    // locates.value() is array of 'io.quarkus.qute.Locate'
+                    for (AnnotationInstance locate : locates.value().asNestedArray()) {
+                        addLocationRegExToLocators(locationPatterns, locate.value(), locatesTarget, validationErrors);
+                    }
+                }
+            }
+        }
+
+        return new CustomTemplateLocatorPatternsBuildItem(locationPatterns);
+    }
+
+    private void addLocationRegExToLocators(Collection<Pattern> locationToLocators,
+            AnnotationValue value, AnnotationTarget target,
+            BuildProducer<ValidationErrorBuildItem> validationErrors) {
+        String regex = value.asString();
+        if (regex.isBlank()) {
+            validationErrors.produce(
+                    new ValidationErrorBuildItem(
+                            new TemplateException(String.format(
+                                    "'io.quarkus.qute.Locate#value()' must not be blank: %s",
+                                    target.asClass().name().toString()))));
+        } else {
+            locationToLocators.add(Pattern.compile(regex));
+        }
+    }
+
+    private void reportFoundInvalidTarget(BuildProducer<ValidationErrorBuildItem> validationErrors,
+            AnnotationTarget locateTarget) {
+        validationErrors.produce(
+                new ValidationErrorBuildItem(
+                        new TemplateException(String.format(
+                                "Classes annotated with 'io.quarkus.qute.Locate' must implement 'io.quarkus.qute.TemplateLocator': %s",
+                                locateTarget.asClass().name().toString()))));
+    }
+
+    private boolean isTargetClass(AnnotationTarget locateTarget) {
+        return locateTarget.kind() == Kind.CLASS;
+    }
+
+    private boolean isNotTemplateLocatorImpl(AnnotationTarget locateTarget) {
+        boolean targetImplTemplateLocator = false;
+        for (DotName interfaceName : locateTarget.asClass().interfaceNames()) {
+            if (interfaceName.equals(Names.TEMPLATE_LOCATOR)) {
+                targetImplTemplateLocator = true;
+                break;
+            }
+        }
+        return !targetImplTemplateLocator;
     }
 
     @BuildStep
@@ -1538,6 +1640,7 @@ public class QuteProcessor {
 
     @BuildStep
     QualifierRegistrarBuildItem turnLocationIntoQualifier() {
+
         return new QualifierRegistrarBuildItem(new QualifierRegistrar() {
 
             @Override

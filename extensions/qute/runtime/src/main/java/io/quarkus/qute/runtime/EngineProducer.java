@@ -28,6 +28,7 @@ import javax.interceptor.Interceptor;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.All;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
@@ -45,6 +46,7 @@ import io.quarkus.qute.Results;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateInstance.Initializer;
+import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
@@ -80,8 +82,8 @@ public class EngineProducer {
     private final ArcContainer container;
 
     public EngineProducer(QuteContext context, QuteConfig config, QuteRuntimeConfig runtimeConfig,
-            Event<EngineBuilder> builderReady, Event<Engine> engineReady, ContentTypes contentTypes, LaunchMode launchMode,
-            LocalesBuildTimeConfig locales) {
+            Event<EngineBuilder> builderReady, Event<Engine> engineReady, ContentTypes contentTypes,
+            LaunchMode launchMode, LocalesBuildTimeConfig locales, @All List<TemplateLocator> locators) {
         this.contentTypes = contentTypes;
         this.suffixes = config.suffixes;
         this.basePath = "templates/";
@@ -183,6 +185,7 @@ public class EngineProducer {
         }
         // Add locator
         builder.addLocator(this::locate);
+        registerCustomLocators(builder, locators);
 
         // Add a special parserk hook for Qute.fmt() methods
         builder.addParserHook(new Qute.IndexedArgumentsParserHook());
@@ -260,6 +263,15 @@ public class EngineProducer {
 
         // Set the engine instance
         Qute.setEngine(engine);
+    }
+
+    private void registerCustomLocators(EngineBuilder builder,
+            List<TemplateLocator> locators) {
+        if (locators != null && !locators.isEmpty()) {
+            for (TemplateLocator locator : locators) {
+                builder.addLocator(locator);
+            }
+        }
     }
 
     @Produces

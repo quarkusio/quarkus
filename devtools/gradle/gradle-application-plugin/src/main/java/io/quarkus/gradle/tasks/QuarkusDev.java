@@ -26,7 +26,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
-import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.Directory;
 import org.gradle.api.file.FileSystemLocation;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.JavaPlugin;
@@ -34,13 +34,8 @@ import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
-import org.gradle.api.tasks.Optional;
-import org.gradle.api.tasks.PathSensitive;
-import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskAction;
@@ -98,7 +93,7 @@ public class QuarkusDev extends QuarkusTask {
     public QuarkusDev(
             String name,
             Configuration quarkusDevConfiguration,
-            @SuppressWarnings("unused") QuarkusPluginExtension extension) {
+            QuarkusPluginExtension extension) {
         super(name);
         this.quarkusDevConfiguration = quarkusDevConfiguration;
         mainSourceSet = getProject().getExtensions().getByType(SourceSetContainer.class)
@@ -107,7 +102,7 @@ public class QuarkusDev extends QuarkusTask {
         final ObjectFactory objectFactory = getProject().getObjects();
 
         workingDirectory = objectFactory.property(File.class);
-        workingDirectory.convention(getProject().provider(() -> QuarkusPluginExtension.getLastFile(getCompilationOutput())));
+        workingDirectory.convention(extension.getDevMode().getWorkingDirectory().map(Directory::getAsFile));
 
         preventNoVerify = objectFactory.property(Boolean.class);
         preventNoVerify.convention(false);
@@ -125,29 +120,8 @@ public class QuarkusDev extends QuarkusTask {
      * for up-to-date checks
      */
     @SuppressWarnings("unused")
-    @CompileClasspath
     public Configuration getQuarkusDevConfiguration() {
         return this.quarkusDevConfiguration;
-    }
-
-    /**
-     * The JVM sources (Java, Kotlin, ..) for the project
-     */
-    @Optional
-    @InputFiles
-    @PathSensitive(PathSensitivity.RELATIVE)
-    public FileCollection getSources() {
-        return mainSourceSet.getAllJava().getSourceDirectories();
-    }
-
-    /**
-     * The JVM classes directory (compilation output)
-     */
-    @Optional
-    @InputFiles
-    @PathSensitive(PathSensitivity.RELATIVE)
-    public FileCollection getCompilationOutput() {
-        return mainSourceSet.getOutput().getClassesDirs();
     }
 
     /**
@@ -156,7 +130,6 @@ public class QuarkusDev extends QuarkusTask {
      * Defaults to the main source set's classes directory. If there are
      * multiple, one is picked at random (see {@link QuarkusPluginExtension#getLastFile}).
      */
-    @Input
     public Property<File> getWorkingDirectory() {
         return workingDirectory;
     }
@@ -169,7 +142,6 @@ public class QuarkusDev extends QuarkusTask {
         workingDirectory.set(getProject().file(workingDir));
     }
 
-    @Input
     public Property<Boolean> getPreventNoVerify() {
         return preventNoVerify;
     }
@@ -179,7 +151,6 @@ public class QuarkusDev extends QuarkusTask {
      */
     @SuppressWarnings("SpellCheckingInspection")
     @Deprecated
-    @Internal
     public boolean isPreventnoverify() {
         return getPreventNoVerify().get();
     }
@@ -278,7 +249,7 @@ public class QuarkusDev extends QuarkusTask {
             String outputFile = System.getProperty(IO_QUARKUS_DEVMODE_ARGS);
             if (outputFile == null) {
                 getProject().exec(action -> {
-                    action.commandLine(runner.args()).workingDir(QuarkusPluginExtension.getLastFile(getCompilationOutput()));
+                    action.commandLine(runner.args()).workingDir(getWorkingDirectory().get());
                     action.setStandardInput(System.in)
                             .setErrorOutput(System.out)
                             .setStandardOutput(System.out);
@@ -312,7 +283,7 @@ public class QuarkusDev extends QuarkusTask {
     }
 
     private boolean classesExist() {
-        for (FileSystemLocation location : getCompilationOutput().getElements().get()) {
+        for (FileSystemLocation location : mainSourceSet.getOutput().getClassesDirs().getElements().get()) {
             final File locationAsFile = location.getAsFile();
             if (locationAsFile.isDirectory()) {
                 return true;

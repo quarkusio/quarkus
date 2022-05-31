@@ -34,11 +34,11 @@ import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.options.Option;
 import org.gradle.jvm.toolchain.JavaLauncher;
@@ -65,6 +65,7 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 
+@UntrackedTask(because = "QuarkusDev should always run")
 public class QuarkusDev extends QuarkusTask {
 
     public static final String IO_QUARKUS_DEVMODE_ARGS = "io.quarkus.devmode-args";
@@ -95,6 +96,7 @@ public class QuarkusDev extends QuarkusTask {
             Configuration quarkusDevConfiguration,
             QuarkusPluginExtension extension) {
         super(name);
+
         this.quarkusDevConfiguration = quarkusDevConfiguration;
         mainSourceSet = getProject().getExtensions().getByType(SourceSetContainer.class)
                 .getByName(SourceSet.MAIN_SOURCE_SET_NAME);
@@ -120,6 +122,7 @@ public class QuarkusDev extends QuarkusTask {
      * for up-to-date checks
      */
     @SuppressWarnings("unused")
+    @Internal
     public Configuration getQuarkusDevConfiguration() {
         return this.quarkusDevConfiguration;
     }
@@ -130,20 +133,28 @@ public class QuarkusDev extends QuarkusTask {
      * Defaults to the main source set's classes directory. If there are
      * multiple, one is picked at random (see {@link QuarkusPluginExtension#getLastFile}).
      */
+    @Internal
     public Property<File> getWorkingDirectory() {
         return workingDirectory;
     }
 
     /**
-     * @deprecated See {@link #workingDirectory}
+     * @see #workingDirectory
      */
-    @Deprecated
     public void setWorkingDir(String workingDir) {
         workingDirectory.set(getProject().file(workingDir));
     }
 
+    @Internal
     public Property<Boolean> getPreventNoVerify() {
         return preventNoVerify;
+    }
+
+    /**
+     * @see #getPreventNoVerify
+     */
+    public void setPreventNoVerify(boolean preventNoVerify) {
+        getPreventNoVerify().set(preventNoVerify);
     }
 
     /**
@@ -151,6 +162,7 @@ public class QuarkusDev extends QuarkusTask {
      */
     @SuppressWarnings("SpellCheckingInspection")
     @Deprecated
+    @Internal
     public boolean isPreventnoverify() {
         return getPreventNoVerify().get();
     }
@@ -167,7 +179,7 @@ public class QuarkusDev extends QuarkusTask {
         getPreventNoVerify().set(preventNoVerify);
     }
 
-    @Input
+    @Internal
     public ListProperty<String> getJvmArguments() {
         return jvmArgs;
     }
@@ -183,7 +195,7 @@ public class QuarkusDev extends QuarkusTask {
         this.jvmArgs.set(jvmArgs);
     }
 
-    @Input
+    @Internal
     public ListProperty<String> getArguments() {
         return args;
     }
@@ -204,7 +216,7 @@ public class QuarkusDev extends QuarkusTask {
         this.setArgs(Arrays.asList(Commandline.translateCommandline(argsString)));
     }
 
-    @Input
+    @Internal
     public ListProperty<String> getCompilerArguments() {
         return compilerArgs;
     }

@@ -29,7 +29,6 @@ jobs:
       matrix:
 #        os: [windows-latest, macos-latest, ubuntu-latest]
         os: [ubuntu-latest]
-    fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
       - name: Prepare git

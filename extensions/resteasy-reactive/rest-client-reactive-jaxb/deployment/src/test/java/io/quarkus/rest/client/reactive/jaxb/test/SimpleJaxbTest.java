@@ -9,6 +9,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import javax.xml.bind.annotation.XmlRootElement;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.junit.jupiter.api.Test;
@@ -26,9 +27,16 @@ public class SimpleJaxbTest {
     URI uri;
 
     @Test
-    void shouldConsumeJsonEntity() {
+    void shouldConsumeXMLEntity() {
         var dto = RestClientBuilder.newBuilder().baseUri(uri).build(XmlClient.class)
                 .dto();
+        assertThat(dto).isEqualTo(new Dto("foo", "bar"));
+    }
+
+    @Test
+    void shouldConsumePlainXMLEntity() {
+        var dto = RestClientBuilder.newBuilder().baseUri(uri).build(XmlClient.class)
+                .plain();
         assertThat(dto).isEqualTo(new Dto("foo", "bar"));
     }
 
@@ -39,6 +47,11 @@ public class SimpleJaxbTest {
         @Path("/dto")
         @Produces(MediaType.APPLICATION_XML)
         Dto dto();
+
+        @GET
+        @Path("/plain")
+        @Produces(MediaType.TEXT_XML)
+        Dto plain();
     }
 
     @Path("/xml")
@@ -50,8 +63,16 @@ public class SimpleJaxbTest {
         public Dto dto() {
             return new Dto("foo", "bar");
         }
+
+        @GET
+        @Produces(MediaType.TEXT_XML)
+        @Path("/plain")
+        public Dto plain() {
+            return new Dto("foo", "bar");
+        }
     }
 
+    @XmlRootElement(name = "Dto")
     public static class Dto {
         public String name;
         public String value;

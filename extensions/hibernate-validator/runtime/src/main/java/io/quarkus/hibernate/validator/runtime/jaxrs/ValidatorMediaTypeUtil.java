@@ -10,8 +10,10 @@ import javax.ws.rs.core.MediaType;
  */
 public final class ValidatorMediaTypeUtil {
 
-    private static final List<MediaType> SUPPORTED_MEDIA_TYPES = Arrays.asList(MediaType.APPLICATION_JSON_TYPE,
+    private static final List<MediaType> SUPPORTED_MEDIA_TYPES = Arrays.asList(
+            MediaType.APPLICATION_JSON_TYPE,
             MediaType.APPLICATION_XML_TYPE,
+            MediaType.TEXT_XML_TYPE,
             MediaType.TEXT_PLAIN_TYPE);
 
     private ValidatorMediaTypeUtil() {

@@ -119,6 +119,27 @@ public class ExtensionDescriptorTaskTest {
     }
 
     @Test
+    public void shouldContainsRemoveResources() throws IOException {
+        String buildFileContent = TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(),
+                "removedResources { \n" +
+                        "artifact('org.acme:acme-resources').resource('META-INF/a') \n" +
+                        "artifact('org.acme:acme-resources-two').resource('META-INF/b').resource('META-INF/c') \n" +
+                        "}\n");
+
+        TestUtils.writeFile(buildFile, buildFileContent);
+        TestUtils.runExtensionDescriptorTask(testProjectDir);
+
+        File extensionPropertiesFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.properties");
+        assertThat(extensionPropertiesFile).exists();
+
+        Properties extensionProperty = TestUtils.readPropertyFile(extensionPropertiesFile.toPath());
+        assertThat(extensionProperty).containsEntry("deployment-artifact", "org.acme:test-deployment:1.0.0");
+        assertThat(extensionProperty).containsEntry("removed-resources.org.acme:acme-resources::jar", "META-INF/a");
+        assertThat(extensionProperty).containsEntry("removed-resources.org.acme:acme-resources-two::jar",
+                "META-INF/b,META-INF/c");
+    }
+
+    @Test
     public void shouldGenerateDescriptorBasedOnExistingFile() throws IOException {
         TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
         File metaInfDir = new File(testProjectDir, "src/main/resources/META-INF");

@@ -9,6 +9,8 @@ import org.gradle.api.provider.Property;
 
 import io.quarkus.extension.gradle.dsl.Capabilities;
 import io.quarkus.extension.gradle.dsl.Capability;
+import io.quarkus.extension.gradle.dsl.RemovedResource;
+import io.quarkus.extension.gradle.dsl.RemovedResources;
 
 public class QuarkusExtensionConfiguration {
 
@@ -21,6 +23,7 @@ public class QuarkusExtensionConfiguration {
     private ListProperty<String> lesserPriorityArtifacts;
     private ListProperty<String> conditionalDependencies;
     private ListProperty<String> dependencyCondition;
+    private RemovedResources removedResources = new RemovedResources();
     private Capabilities capabilities = new Capabilities();
 
     private Project project;
@@ -123,6 +126,14 @@ public class QuarkusExtensionConfiguration {
 
     public void capabilities(Action<Capabilities> capabilitiesAction) {
         capabilitiesAction.execute(this.capabilities);
+    }
+
+    public List<RemovedResource> getRemoveResources() {
+        return removedResources.getRemovedResources();
+    }
+
+    public void removedResources(Action<RemovedResources> removedResourcesAction) {
+        removedResourcesAction.execute(this.removedResources);
     }
 
     public String getDefaultDeployementArtifactName() {

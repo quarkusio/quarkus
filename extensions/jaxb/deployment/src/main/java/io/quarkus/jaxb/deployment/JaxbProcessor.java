@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -67,7 +65,7 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 
 class JaxbProcessor {
 
-    private static final List<Class<? extends Annotation>> JAXB_ANNOTATIONS = Arrays.asList(
+    private static final List<Class<? extends Annotation>> JAXB_ANNOTATIONS = List.of(
             XmlAccessorType.class,
             XmlAnyAttribute.class,
             XmlAnyElement.class,
@@ -100,7 +98,7 @@ class JaxbProcessor {
             XmlJavaTypeAdapter.class,
             XmlJavaTypeAdapters.class);
 
-    private static final List<Class<?>> JAXB_REFLECTIVE_CLASSES = Collections.singletonList(XmlAccessOrder.class);
+    private static final List<Class<?>> JAXB_REFLECTIVE_CLASSES = List.of(XmlAccessOrder.class);
 
     private static final DotName XML_ROOT_ELEMENT = DotName.createSimple(XmlRootElement.class.getName());
     private static final DotName XML_TYPE = DotName.createSimple(XmlType.class.getName());
@@ -110,10 +108,60 @@ class JaxbProcessor {
     private static final DotName XML_ANY_ELEMENT = DotName.createSimple(XmlAnyElement.class.getName());
     private static final DotName XML_SEE_ALSO = DotName.createSimple(XmlSeeAlso.class.getName());
 
-    private static final List<DotName> JAXB_ROOT_ANNOTATIONS = Arrays.asList(XML_ROOT_ELEMENT, XML_TYPE, XML_REGISTRY);
+    private static final List<DotName> JAXB_ROOT_ANNOTATIONS = List.of(XML_ROOT_ELEMENT, XML_TYPE, XML_REGISTRY);
 
-    private static final List<DotName> IGNORE_TYPES = Collections
-            .singletonList(DotName.createSimple("javax.xml.datatype.XMLGregorianCalendar"));
+    private static final List<DotName> IGNORE_TYPES = List.of(DotName.createSimple("javax.xml.datatype.XMLGregorianCalendar"));
+
+    private static final List<String> NATIVE_PROXY_DEFINITIONS = List.of(
+            "com.sun.xml.bind.marshaller.CharacterEscapeHandler",
+            "com.sun.xml.txw2.output.CharacterEscapeHandler",
+            "com.sun.xml.bind.v2.schemagen.episode.Bindings",
+            "com.sun.xml.bind.v2.schemagen.episode.SchemaBindings",
+            "com.sun.xml.bind.v2.schemagen.episode.Klass",
+            "com.sun.xml.bind.v2.schemagen.episode.Package",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.Annotated",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.Annotation",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.Any",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.Appinfo",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.AttrDecls",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.AttributeType",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.ComplexContent",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.ComplexExtension",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.ComplexRestriction",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.ComplexType",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.ComplexTypeHost",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.ComplexTypeModel",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.ContentModelContainer",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.Documentation",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.Element",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.ExplicitGroup",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.ExtensionType",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.FixedOrDefault",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.Import",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.List",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.LocalAttribute",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.LocalElement",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.NestedParticle",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.NoFixedFacet",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.Occurs",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.Particle",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.Redefinable",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.Schema",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.SchemaTop",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.SimpleContent",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.SimpleDerivation",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.SimpleExtension",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.SimpleRestriction",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.SimpleRestrictionModel",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.SimpleType",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.SimpleTypeHost",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.TopLevelAttribute",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.TopLevelElement",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.TypeDefParticle",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.TypeHost",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.Union",
+            "com.sun.xml.bind.v2.schemagen.xmlschema.Wildcard",
+            "com.sun.xml.txw2.TypedXmlWriter");
 
     @BuildStep
     void processAnnotationsAndIndexFiles(
@@ -169,127 +217,26 @@ class JaxbProcessor {
         JAXB_ANNOTATIONS.stream()
                 .map(Class::getName)
                 .forEach(className -> {
-                    proxyDefinitions.produce(new NativeImageProxyDefinitionBuildItem(className,
-                            "com.sun.xml.bind.v2.model.annotation.Locatable"));
                     addReflectiveClass(reflectiveClass, true, false, className);
                 });
 
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.marshaller.CharacterEscapeHandler"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.txw2.output.CharacterEscapeHandler"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.episode.Bindings"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.episode.SchemaBindings"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.episode.Klass"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.episode.Package"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.Annotated"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.Annotation"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.Any"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.Appinfo"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.AttrDecls"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.AttributeType"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.ComplexContent"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.ComplexExtension"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.ComplexRestriction"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.ComplexType"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.ComplexTypeHost"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.ComplexTypeModel"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem(
-                        "com.sun.xml.bind.v2.schemagen.xmlschema.ContentModelContainer"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.Documentation"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.Element"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.ExplicitGroup"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.ExtensionType"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.FixedOrDefault"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.Import"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.List"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.LocalAttribute"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.LocalElement"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.NestedParticle"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.NoFixedFacet"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.Occurs"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.Particle"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.Redefinable"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.Schema"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.SchemaTop"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.SimpleContent"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.SimpleDerivation"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.SimpleExtension"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.SimpleRestriction"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem(
-                        "com.sun.xml.bind.v2.schemagen.xmlschema.SimpleRestrictionModel"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.SimpleType"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.SimpleTypeHost"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.TopLevelAttribute"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.TopLevelElement"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.TypeDefParticle"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.TypeHost"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.Union"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.bind.v2.schemagen.xmlschema.Wildcard"));
-        proxyDefinitions
-                .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.txw2.TypedXmlWriter"));
-
-        for (JaxbFileRootBuildItem i : fileRoots) {
-            iterateResources(applicationArchivesBuildItem, i.getFileRoot(), resource, reflectiveClass);
-        }
-    }
-
-    @BuildStep
-    void seeAlso(CombinedIndexBuildItem combinedIndexBuildItem,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveItems) {
-        IndexView index = combinedIndexBuildItem.getIndex();
+        // Register @XmlSeeAlso
+        proxyDefinitions.produce(new NativeImageProxyDefinitionBuildItem(XmlSeeAlso.class.getName(),
+                "com.sun.xml.bind.v2.model.annotation.Locatable"));
         for (AnnotationInstance xmlSeeAlsoAnn : index.getAnnotations(XML_SEE_ALSO)) {
             AnnotationValue value = xmlSeeAlsoAnn.value();
             Type[] types = value.asClassArray();
             for (Type t : types) {
-                reflectiveItems.produce(new ReflectiveClassBuildItem(false, false, t.name().toString()));
+                addReflectiveClass(reflectiveClass, false, false, t.name().toString());
             }
+        }
+        // Register Native proxy definitions
+        for (String s : NATIVE_PROXY_DEFINITIONS) {
+            proxyDefinitions.produce(new NativeImageProxyDefinitionBuildItem(s));
+        }
+
+        for (JaxbFileRootBuildItem i : fileRoots) {
+            iterateResources(applicationArchivesBuildItem, i.getFileRoot(), resource, reflectiveClass);
         }
     }
 

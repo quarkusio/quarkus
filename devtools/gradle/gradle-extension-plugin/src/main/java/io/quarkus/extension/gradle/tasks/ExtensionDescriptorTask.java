@@ -36,10 +36,12 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.extension.gradle.QuarkusExtensionConfiguration;
 import io.quarkus.extension.gradle.dsl.Capability;
+import io.quarkus.extension.gradle.dsl.RemovedResource;
 import io.quarkus.fs.util.ZipUtils;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 
 /**
@@ -115,25 +117,25 @@ public class ExtensionDescriptorTask extends DefaultTask {
         List<String> parentFirstArtifacts = quarkusExtensionConfiguration.getParentFirstArtifacts().get();
         if (parentFirstArtifacts != null && !parentFirstArtifacts.isEmpty()) {
             String val = String.join(",", parentFirstArtifacts);
-            props.put(AppModel.PARENT_FIRST_ARTIFACTS, val);
+            props.put(ApplicationModelBuilder.PARENT_FIRST_ARTIFACTS, val);
         }
 
         List<String> runnerParentFirstArtifacts = quarkusExtensionConfiguration.getRunnerParentFirstArtifacts().get();
         if (runnerParentFirstArtifacts != null && !runnerParentFirstArtifacts.isEmpty()) {
             String val = String.join(",", runnerParentFirstArtifacts);
-            props.put(AppModel.RUNNER_PARENT_FIRST_ARTIFACTS, val);
+            props.put(ApplicationModelBuilder.RUNNER_PARENT_FIRST_ARTIFACTS, val);
         }
 
         List<String> excludedArtifacts = quarkusExtensionConfiguration.getExcludedArtifacts().get();
         if (excludedArtifacts != null && !excludedArtifacts.isEmpty()) {
             String val = String.join(",", excludedArtifacts);
-            props.put(AppModel.EXCLUDED_ARTIFACTS, val);
+            props.put(ApplicationModelBuilder.EXCLUDED_ARTIFACTS, val);
         }
 
         List<String> lesserPriorityArtifacts = quarkusExtensionConfiguration.getLesserPriorityArtifacts().get();
         if (lesserPriorityArtifacts != null && !lesserPriorityArtifacts.isEmpty()) {
             String val = String.join(",", lesserPriorityArtifacts);
-            props.put(AppModel.LESSER_PRIORITY_ARTIFACTS, val);
+            props.put(ApplicationModelBuilder.LESSER_PRIORITY_ARTIFACTS, val);
         }
 
         if (!quarkusExtensionConfiguration.getProvidedCapabilities().isEmpty()) {
@@ -154,6 +156,40 @@ public class ExtensionDescriptorTask extends DefaultTask {
                 appendCapability(i.next(), buf.append(','));
             }
             props.setProperty(BootstrapConstants.PROP_REQUIRES_CAPABILITIES, buf.toString());
+        }
+
+        if (!quarkusExtensionConfiguration.getRemoveResources().isEmpty()) {
+            for (RemovedResource removedResource : quarkusExtensionConfiguration.getRemoveResources()) {
+                final ArtifactKey key;
+                try {
+                    key = ArtifactKey.fromString(removedResource.getArtifactName());
+                } catch (IllegalArgumentException e) {
+                    throw new GradleException(
+                            "Failed to parse removed resource '" + removedResource.getArtifactName(), e);
+                }
+                if (removedResource.getRemovedResources().isEmpty()) {
+                    continue;
+                }
+                final List<String> resources = removedResource.getRemovedResources();
+                if (resources.size() == 0) {
+                    continue;
+                }
+                final String value;
+                if (resources.size() == 1) {
+                    value = resources.get(0);
+                } else {
+                    final StringBuilder sb = new StringBuilder();
+                    sb.append(resources.get(0));
+                    for (int i = 1; i < resources.size(); ++i) {
+                        final String resource = resources.get(i);
+                        if (!resource.isBlank()) {
+                            sb.append(',').append(resource);
+                        }
+                    }
+                    value = sb.toString();
+                }
+                props.setProperty(ApplicationModelBuilder.REMOVED_RESOURCES_DOT + key, value);
+            }
         }
 
         try {

@@ -45,4 +45,9 @@ public @interface RegisterForReflection {
     String[] classNames() default {};
 
     boolean serialization() default false;
+
+    /**
+     * The lambda capturing types performing serialization in the native image
+     */
+    String[] lambdaCapturingTypes() default {};
 }

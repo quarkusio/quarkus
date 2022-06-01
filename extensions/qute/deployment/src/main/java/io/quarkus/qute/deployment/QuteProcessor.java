@@ -2492,6 +2492,16 @@ public class QuteProcessor {
             Iterator<Path> iter = files.iterator();
             while (iter.hasNext()) {
                 Path filePath = iter.next();
+                /*
+                 * Fix for https://github.com/quarkusio/quarkus/issues/25751 where running tests in Eclipse
+                 * sometimes produces `/templates/tags` (absolute) files listed for `templates` (relative)
+                 * directories, so we work around this
+                 */
+                if (!directory.isAbsolute()
+                        && filePath.isAbsolute()
+                        && filePath.getRoot() != null) {
+                    filePath = filePath.getRoot().relativize(filePath);
+                }
                 if (Files.isRegularFile(filePath)) {
                     LOGGER.debugf("Found template: %s", filePath);
                     String templatePath = root.relativize(filePath).toString();

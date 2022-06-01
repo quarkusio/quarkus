@@ -19,8 +19,8 @@ public class SmallRyeGraphQLOverWebSocketHandler extends SmallRyeGraphQLAbstract
     private static final Logger log = Logger.getLogger(SmallRyeGraphQLOverWebSocketHandler.class);
 
     public SmallRyeGraphQLOverWebSocketHandler(CurrentIdentityAssociation currentIdentityAssociation,
-            CurrentVertxRequest currentVertxRequest) {
-        super(currentIdentityAssociation, currentVertxRequest);
+            CurrentVertxRequest currentVertxRequest, boolean runBlocking) {
+        super(currentIdentityAssociation, currentVertxRequest, runBlocking);
     }
 
     @Override
@@ -34,11 +34,11 @@ public class SmallRyeGraphQLOverWebSocketHandler extends SmallRyeGraphQLAbstract
                     switch (subprotocol) {
                         case "graphql-transport-ws":
                             handler = new GraphQLTransportWSSubprotocolHandler(
-                                    new QuarkusVertxWebSocketSession(serverWebSocket));
+                                    new QuarkusVertxWebSocketSession(serverWebSocket), getMetaData(ctx));
                             break;
                         case "graphql-ws":
                             handler = new GraphQLWSSubprotocolHandler(
-                                    new QuarkusVertxWebSocketSession(serverWebSocket));
+                                    new QuarkusVertxWebSocketSession(serverWebSocket), getMetaData(ctx));
                             break;
                         default:
                             log.warn("Unknown graphql-over-websocket protocol: " + subprotocol);

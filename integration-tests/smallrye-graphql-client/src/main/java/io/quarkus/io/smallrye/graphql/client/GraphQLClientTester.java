@@ -7,6 +7,7 @@ import static io.smallrye.graphql.client.core.Field.field;
 import static io.smallrye.graphql.client.core.Operation.operation;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.GET;
@@ -30,11 +31,27 @@ import io.smallrye.graphql.client.typesafe.api.TypesafeGraphQLClientBuilder;
 public class GraphQLClientTester {
 
     @GET
-    @Path("/typesafe/{url}")
-    public void typesafe(@PathParam("url") String url) {
-        LuckyNumbersClientApi client = TypesafeGraphQLClientBuilder.newBuilder()
+    @Path("/typesafe-single-http/{url}")
+    public void typesafeClientSingleResultOperationOverPureHttp(@PathParam("url") String url) throws Exception {
+        try (LuckyNumbersClientApi client = TypesafeGraphQLClientBuilder.newBuilder()
                 .endpoint(url + "/graphql")
-                .build(LuckyNumbersClientApi.class);
+                .build(LuckyNumbersClientApi.class)) {
+            testSingleResultOperationsWithTypesafeClient(client);
+        }
+    }
+
+    @GET
+    @Path("/typesafe-single-websocket/{url}")
+    public void typesafeClientSingleResultOperationOverWebSocket(@PathParam("url") String url) throws Exception {
+        try (LuckyNumbersClientApi client = TypesafeGraphQLClientBuilder.newBuilder()
+                .endpoint(url + "/graphql")
+                .executeSingleOperationsOverWebsocket(true)
+                .build(LuckyNumbersClientApi.class)) {
+            testSingleResultOperationsWithTypesafeClient(client);
+        }
+    }
+
+    private void testSingleResultOperationsWithTypesafeClient(LuckyNumbersClientApi client) {
         client.setLuckyNumber(21);
         Integer returned = client.luckyNumber();
         if (!returned.equals(21)) {
@@ -69,29 +86,44 @@ public class GraphQLClientTester {
     }
 
     @GET
-    @Path("/dynamic/{url}")
-    public void dynamic(@PathParam("url") String url) throws Exception {
+    @Path("/dynamic-single-http/{url}")
+    public void dynamicClientSingleResultOperationsOverPureHttp(@PathParam("url") String url) throws Exception {
         try (DynamicGraphQLClient client = DynamicGraphQLClientBuilder.newBuilder().url(url + "/graphql").build()) {
-            Document setLuckyNumberMutation = document(
-                    operation(OperationType.MUTATION,
-                            field("set",
-                                    args(arg("newLuckyNumber", 15)))));
-            Document getLuckyNumberQuery = document(
-                    operation("number", field("get")));
+            testSingleResultOperationsWithDynamicClient(client);
+        }
+    }
 
-            // set the lucky number to 15
-            Response response = client.executeSync(setLuckyNumberMutation);
-            int returnedNumber = response.getData().getInt("set");
-            if (returnedNumber != 15) {
-                throw new RuntimeException("Unexpected response: " + response);
-            }
+    @GET
+    @Path("/dynamic-single-websocket/{url}")
+    public void dynamicClientSingleResultOperationsOverWebSocket(@PathParam("url") String url) throws Exception {
+        try (DynamicGraphQLClient client = DynamicGraphQLClientBuilder.newBuilder()
+                .executeSingleOperationsOverWebsocket(true)
+                .url(url + "/graphql").build()) {
+            testSingleResultOperationsWithDynamicClient(client);
+        }
+    }
 
-            // get the lucky number and assert that it's 15
-            response = client.executeSync(getLuckyNumberQuery);
-            returnedNumber = response.getData().getInt("get");
-            if (returnedNumber != 15) {
-                throw new RuntimeException("Unexpected response: " + response);
-            }
+    private void testSingleResultOperationsWithDynamicClient(DynamicGraphQLClient client)
+            throws ExecutionException, InterruptedException {
+        Document setLuckyNumberMutation = document(
+                operation(OperationType.MUTATION,
+                        field("set",
+                                args(arg("newLuckyNumber", 15)))));
+        Document getLuckyNumberQuery = document(
+                operation("number", field("get")));
+
+        // set the lucky number to 15
+        Response response = client.executeSync(setLuckyNumberMutation);
+        int returnedNumber = response.getData().getInt("set");
+        if (returnedNumber != 15) {
+            throw new RuntimeException("Unexpected response: " + response);
+        }
+
+        // get the lucky number and assert that it's 15
+        response = client.executeSync(getLuckyNumberQuery);
+        returnedNumber = response.getData().getInt("get");
+        if (returnedNumber != 15) {
+            throw new RuntimeException("Unexpected response: " + response);
         }
     }
 

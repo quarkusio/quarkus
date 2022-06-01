@@ -19,9 +19,18 @@ public class DynamicClientTest {
     URL url;
 
     @Test
-    public void testDynamicClient() {
+    public void testDynamicClientSingleResultOperationOverHttp() {
         when()
-                .get("/dynamic/" + url.toString())
+                .get("/dynamic-single-http/" + url.toString())
+                .then()
+                .log().everything()
+                .statusCode(204);
+    }
+
+    @Test
+    public void testDynamicClientSingleResultOperationOverWebSocket() {
+        when()
+                .get("/dynamic-single-websocket/" + url.toString())
                 .then()
                 .log().everything()
                 .statusCode(204);

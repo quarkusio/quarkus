@@ -1,6 +1,10 @@
 package io.quarkus.smallrye.graphql.runtime;
 
 import java.io.StringReader;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -15,6 +19,7 @@ import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.graphql.execution.ExecutionService;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -26,17 +31,21 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
     private final CurrentVertxRequest currentVertxRequest;
     private final ManagedContext currentManagedContext;
 
+    private final boolean runBlocking;
+
     private volatile ExecutionService executionService;
 
     protected static final JsonReaderFactory jsonReaderFactory = Json.createReaderFactory(null);
 
     public SmallRyeGraphQLAbstractHandler(
             CurrentIdentityAssociation currentIdentityAssociation,
-            CurrentVertxRequest currentVertxRequest) {
+            CurrentVertxRequest currentVertxRequest,
+            boolean runBlocking) {
 
         this.currentIdentityAssociation = currentIdentityAssociation;
         this.currentVertxRequest = currentVertxRequest;
         this.currentManagedContext = Arc.container().requestContext();
+        this.runBlocking = runBlocking;
     }
 
     @Override
@@ -83,5 +92,22 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
             this.executionService = Arc.container().instance(ExecutionService.class).get();
         }
         return this.executionService;
+    }
+
+    protected Map<String, Object> getMetaData(RoutingContext ctx) {
+        // Add some context to dfe
+        Map<String, Object> metaData = new ConcurrentHashMap<>();
+        metaData.put("runBlocking", runBlocking);
+        metaData.put("httpHeaders", getHeaders(ctx));
+        return metaData;
+    }
+
+    private Map<String, List<String>> getHeaders(RoutingContext ctx) {
+        Map<String, List<String>> h = new HashMap<>();
+        MultiMap headers = ctx.request().headers();
+        for (String header : headers.names()) {
+            h.put(header, headers.getAll(header));
+        }
+        return h;
     }
 }

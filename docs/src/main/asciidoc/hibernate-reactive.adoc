@@ -46,6 +46,7 @@ Add the following dependencies to your project:
   - `quarkus-reactive-mysql-client`: link:https://vertx.io/docs/vertx-mysql-client/java[the client MySQL or MariaDB]
   - `quarkus-reactive-mssql-client`: link:https://vertx.io/docs/vertx-mssql-client/java[the client for Microsoft SQL Server]
   - `quarkus-reactive-db2-client`: link:https://vertx.io/docs/vertx-db2-client/java[the client for IBM Db2]
+  - `quarkus-reactive-oracle-client`: link:https://vertx.io/docs/vertx-oracle-client/java[the client for Oracle]
 
 For instance:
 

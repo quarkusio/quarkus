@@ -20,7 +20,7 @@ This guide covers:
 
 :prerequisites-time: 1 hour for all modalities
 :prerequisites-no-graalvm:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * https://www.heroku.com/[A Heroku Account]. Free accounts work.
 * https://devcenter.heroku.com/articles/heroku-cli[Heroku CLI installed]
 

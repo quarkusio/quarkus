@@ -15,7 +15,7 @@ the low level and the high level clients.
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * Elasticsearch installed or Docker installed
 
 == Architecture
@@ -32,7 +32,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: elasticsearch-quickstart
 :create-app-extensions: resteasy-reactive-jackson,elasticsearch-rest-client
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven structure importing the RESTEasy Reactive/JAX-RS, Jackson, and the Elasticsearch low level client extensions.
 After this, the `quarkus-elasticsearch-rest-client` extension has been added to your build file.
@@ -346,7 +346,7 @@ Now let's run our application via Quarkus dev mode:
 
 :devtools-wrapped:
 +
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 :!devtools-wrapped:
 
 You can add new fruits to the list via the following curl command:
@@ -497,7 +497,7 @@ You can use both clients in a native executable.
 
 You can build a native executable with the usual command:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 Running it is as simple as executing `./target/elasticsearch-low-level-client-quickstart-1.0.0-SNAPSHOT-runner`.
 

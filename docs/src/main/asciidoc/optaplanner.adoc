@@ -48,7 +48,7 @@ The solution is located in {quickstarts-tree-url}/optaplanner-quickstart[the `op
 
 :prerequisites-time: 30 minutes
 :prerequisites-no-graalvm:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == The build file and the dependencies
 
@@ -64,7 +64,7 @@ Alternatively, generate it from the command line:
 
 :create-app-artifact-id: optaplanner-quickstart
 :create-app-extensions: resteasy-reactive,resteasy-reactive-jackson,optaplanner-quarkus,optaplanner-quarkus-jackson
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This will include the following dependencies in your build file:
 
@@ -671,7 +671,7 @@ quarkus.optaplanner.solver.termination.spent-limit=5s
 
 First start the application:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 === Try the application
 

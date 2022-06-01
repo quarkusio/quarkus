@@ -20,7 +20,7 @@ This guide covers:
 
 :prerequisites-time: 1 hour for all modalities
 :prerequisites-no-graalvm:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * https://cloud.google.com/[A Google Cloud Account].  Free accounts work.
 * https://cloud.google.com/sdk[Cloud SDK CLI Installed]
 

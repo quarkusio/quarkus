@@ -12,7 +12,7 @@ This guide demonstrates how your Quarkus application can use a database to store
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -41,7 +41,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-jdbc-quickstart
 :create-app-extensions: elytron-security-jdbc,jdbc-postgresql,resteasy-reactive
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 [NOTE]
 ====
@@ -55,7 +55,7 @@ If you already have your Quarkus project configured, you can add the `elytron-se
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: elytron-security-jdbc
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 

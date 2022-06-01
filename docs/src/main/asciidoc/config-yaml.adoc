@@ -19,7 +19,7 @@ Quarkus offers the possibility to use YAML in addition to the standard Java Prop
 To enable YAML configuration, add the `quarkus-config-yaml` extension:
 
 :add-extension-extensions: quarkus-config-yaml
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 You can also just add the following dependency into your project:
 

@@ -22,7 +22,7 @@ Once you have your Quarkus project configured you can add the `kubernetes-client
 to your project by running the following command in your project base directory.
 
 :add-extension-extensions: kubernetes-client
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -393,7 +393,7 @@ particular they have the same `quarkus.kubernetes-client` prefix.
 Add the extension with:
 
 :add-extension-extensions: openshift-client
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 Note that `openshift-client` extension has a dependency on the `kubernetes-client` extension.
 

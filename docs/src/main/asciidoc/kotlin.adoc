@@ -12,11 +12,11 @@ https://kotlinlang.org/[Kotlin] is a very popular programming language that targ
 
 Quarkus provides first class support for using Kotlin as will be explained in this guide.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 [WARNING]
 ====
@@ -33,7 +33,7 @@ First, we need a new Kotlin project. This can be done using the following comman
 :create-app-artifact-id: rest-kotlin-quickstart
 :create-app-extensions: kotlin,resteasy-reactive-jackson
 :create-app-code:
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 When adding `kotlin` to the extensions list, the Maven plugin will generate a project that is properly
 configured to work with Kotlin. Furthermore  the `org.acme.ReactiveGreetingResource` class is implemented as Kotlin source code (as is the case with the generated tests).
@@ -312,7 +312,7 @@ code and immediately see their changes reflected.
 
 To see this feature in action, first execute:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 When executing an HTTP GET request against `http://localhost:8080/hello`, you see a JSON message with the value `hello` as its `message` field.
 
@@ -380,13 +380,13 @@ tasks.quarkusDev {
 
 As usual, the application can be packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 and executed with `java -jar target/quarkus-app/quarkus-run.jar`.
 
 You can also build the native executable using:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 [[kotlin-jackson]]
 == Kotlin and Jackson

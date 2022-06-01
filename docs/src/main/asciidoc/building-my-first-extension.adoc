@@ -25,7 +25,7 @@ Keep in mind it's not representative of the power of moving things to build time
 
 :prerequisites-time: 30 minutes
 :prerequisites-no-graalvm:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Basic Concepts
 

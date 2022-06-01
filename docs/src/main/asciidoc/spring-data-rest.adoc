@@ -12,11 +12,11 @@ While users are encouraged to use REST Data with Panache for the REST data acces
 Quarkus provides a compatibility layer for Spring Data REST in the form of the `spring-data-rest` extension.
 
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Solution
 
@@ -33,7 +33,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-data-rest-quickstart
 :create-app-extensions: spring-data-rest,resteasy-reactive-jackson,quarkus-jdbc-postgresql
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a project with the `spring-data-rest` extension.
 
@@ -41,7 +41,7 @@ If you already have your Quarkus project configured, you can add the `spring-dat
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: spring-data-rest
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -283,14 +283,14 @@ class FruitsRepositoryTest {
 
 The test can be easily run by issuing:
 
-include::includes/devtools/test.adoc[]
+include::{includes}/devtools/test.adoc[]
 
 == Package and run the application
 
 Quarkus dev mode works with the defined repositories just like with any other Quarkus extension, greatly enhancing your productivity during the dev cycle.
 The application can be started in dev mode as usual using:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 == Run the application as a native binary
 

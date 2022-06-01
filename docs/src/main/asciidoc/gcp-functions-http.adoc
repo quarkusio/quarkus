@@ -13,12 +13,12 @@ Undertow (Servlet), Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP], and ma
 
 One Google Cloud Functions deployment can represent any number of JAX-RS, Servlet, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] endpoints.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
 :prerequisites-no-graalvm:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * https://cloud.google.com/[A Google Cloud Account]. Free accounts work.
 * https://cloud.google.com/sdk[Cloud SDK CLI Installed]
 
@@ -41,7 +41,7 @@ You can use the following Maven command to create it:
 
 :create-app-artifact-id: google-cloud-functions-http
 :create-app-extensions: google-cloud-functions-http,resteasy-reactive-jackson,undertow,reactive-routes,funqy-http
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 == Login to Google Cloud
 

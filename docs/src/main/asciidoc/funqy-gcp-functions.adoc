@@ -10,13 +10,13 @@ include::./attributes.adoc[]
 
 The guide walks through quickstart code to show you how you can deploy Funqy functions to Google Cloud Functions.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
 :prerequisites-time: 30 minutes
 :prerequisites-no-graalvm:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * https://cloud.google.com/[A Google Cloud Account].  Free accounts work.
 * https://cloud.google.com/sdk[Cloud SDK CLI Installed]
 
@@ -42,7 +42,7 @@ You can use the following Maven command to create it:
 
 :create-app-artifact-id: funqy-google-cloud-functions
 :create-app-extensions: funqy-google-cloud-functions
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 == The Code
 
@@ -67,7 +67,7 @@ Alternatively, you can set the `QUARKUS_FUNQY_EXPORT` environment variable when 
 
 Build the project:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 This will compile and package your code.
 
@@ -283,7 +283,7 @@ mvn dependency:copy \
 
 Before using the invoker, you first need to build your function via:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 Then you can use it to launch your function locally, again, the command depends on the type of function and the type of events.
 

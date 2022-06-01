@@ -20,7 +20,7 @@ The web UI allows you to write and execute GraphQL queries against it.
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == GraphQL client types introduction
 
@@ -57,7 +57,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: microprofile-graphql-client-quickstart
 :create-app-extensions: resteasy-reactive-jsonb,graphql-client,rest-client-reactive
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 NOTE: The typesafe GraphQL client depends on REST client, thus we included the `rest-client-reactive` extension
 in the `extensions` list. You may also switch to the traditional non-reactive `rest-client` if the rest of
@@ -70,7 +70,7 @@ If you already have your Quarkus project configured, you can add the `smallrye-g
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: graphql-client,rest-client-reactive
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 Again, you may leave out `rest-client-reactive` if you're only going to use the dynamic client.
 
@@ -333,7 +333,7 @@ all the returned data.
 
 Launch the application in dev mode using:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 To execute the queries, you need to send GET requests to our REST endpoint:
 [source,bash]

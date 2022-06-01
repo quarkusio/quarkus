@@ -30,7 +30,7 @@ This guide will help you with:
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 NOTE: Verify that Maven is using the Java version you expect.
 If you have multiple JDKs installed, make sure Maven is using the expected one.
@@ -288,11 +288,11 @@ Packaging and running the application does not change either.
 
 You can use the following command as usual:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 or to build a native executable:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 You can also package the application in a container.
 

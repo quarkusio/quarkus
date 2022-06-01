@@ -17,7 +17,7 @@ documentation.
 == Prerequisites
 
 :prerequisites-docker-compose:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -57,7 +57,7 @@ To create the _producer_ project, in a terminal run:
 :create-app-artifact-id: amqp-quickstart-producer
 :create-app-extensions: resteasy-reactive-jackson,smallrye-reactive-messaging-amqp
 :create-app-post-command:
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command creates the project structure and select the two Quarkus extensions we will be using:
 
@@ -69,7 +69,7 @@ To create the _processor_ project, from the same directory, run:
 :create-app-artifact-id: amqp-quickstart-processor
 :create-app-extensions: smallrye-reactive-messaging-amqp
 :create-app-post-command:
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 At that point you should have the following structure:
 

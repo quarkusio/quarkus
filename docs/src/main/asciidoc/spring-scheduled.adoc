@@ -13,7 +13,7 @@ This guide explains how a Quarkus application can leverage the well known Spring
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * Some familiarity with the Spring Web extension
 
 == Solution
@@ -31,7 +31,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-scheduler-quickstart
 :create-app-extensions: resteasy-reactive,spring-scheduled
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven project with the `spring-scheduled` extension.
 
@@ -39,7 +39,7 @@ If you already have your Quarkus project configured, you can add the `spring-sch
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: spring-scheduled
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -187,7 +187,7 @@ public class CountResourceTest {
 
 Run the application with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 In another terminal, run `curl localhost:8080/count` to check the counter value.
 After a few seconds, re-run `curl localhost:8080/count` to verify the counter has been incremented.
@@ -201,13 +201,13 @@ These messages indicate that the executions of methods annotated with `@Schedule
 
 As usual, the application can be packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 And executed using `java -jar target/quarkus-app/quarkus-run.jar`.
 
 You can also generate the native executable with:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 == Using Property Expressions
 

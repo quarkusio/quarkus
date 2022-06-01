@@ -14,7 +14,7 @@ To streamline this task, REST Data with Panache extension can generate the basic
 While this extension is still experimental and provides a limited feature set, we hope to get an early feedback for it.
 Currently, this extension supports Hibernate ORM and MongoDB with Panache and can generate CRUD resources that work with `application/json` and `application/hal+json` content.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Setting up REST Data with Panache
 

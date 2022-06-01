@@ -49,7 +49,7 @@ from the `ExtensionsResourceTest` class.
 
 Now let's build the application as a native executable and run the tests:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 And we obtain the following result:
 
@@ -144,7 +144,7 @@ quarkus.ssl.native=false
 
 And let's try to build again:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 The native executable tests will fail with the following error:
 
@@ -166,7 +166,7 @@ and since http://stage.code.quarkus.io/api responds with 302 status code we need
 Now we can build again:
 
 :build-additional-parameters: -DskipTests
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 :!build-additional-parameters:
 
 If you check carefully the native executable build options, you can see that the SSL related options are gone:
@@ -209,7 +209,7 @@ git checkout -- src/main/resources/application.properties
 
 And let's build the native executable again:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 [#the-truststore-path]
 == The TrustStore path

@@ -11,12 +11,12 @@ include::./attributes.adoc[]
 The `quarkus-google-cloud-functions` extension allows you to use Quarkus to build your Google Cloud Functions.
 Your functions can use injection annotations from CDI or Spring and other Quarkus facilities as you need them.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
 :prerequisites-no-graalvm:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * https://cloud.google.com/[A Google Cloud Account].  Free accounts work.
 * https://cloud.google.com/sdk[Cloud SDK CLI Installed]
 
@@ -39,7 +39,7 @@ You can use the following Maven command to create it:
 
 :create-app-artifact-id: google-cloud-functions
 :create-app-extensions: google-cloud-functions
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 Now, let's remove the `index.html` from `resources/META-INF/resources` or it will be picked up instead of your Function.
 
@@ -238,7 +238,7 @@ public class CloudEventStorageTest implements CloudEventsFunction { // <3>
 
 To build your application, you can package it using the standard command:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 The result of the previous command is a single JAR file inside the `target/deployment` repository that contains classes and dependencies of the project.
 
@@ -386,7 +386,7 @@ mvn dependency:copy \
 
 Before using the invoker, you first need to build your function via:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 === The HttpFunction
 

@@ -21,7 +21,7 @@ A more detailed guide about RESTEasy Reactive is available xref:resteasy-reactiv
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -44,7 +44,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: rest-json-quickstart
 :create-app-extensions: resteasy-reactive-jackson
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a new project importing the RESTEasy Reactive/JAX-RS and https://github.com/FasterXML/jackson[Jackson] extensions,
 and in particular adds the following dependency:
@@ -73,7 +73,7 @@ Quarkus also supports https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] so, if y
 
 :create-app-artifact-id: rest-json-quickstart
 :create-app-extensions: resteasy-reactive-jsonb
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a new project importing the RESTEasy Reactive/JAX-RS and https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] extensions,
 and in particular adds the following dependency:
@@ -318,7 +318,7 @@ You can now interact with your REST service:
 
  * start Quarkus with:
 +
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
  * open a browser to `http://localhost:8080/fruits.html`
  * add new fruits to the list via the form
 
@@ -328,7 +328,7 @@ include::includes/devtools/dev.adoc[]
 
 You can build a native executable with the usual command:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 Running it is as simple as executing `./target/rest-json-quickstart-1.0.0-SNAPSHOT-runner`.
 
@@ -450,7 +450,7 @@ The interesting part starts when running the application as a native executable:
 
  * create the native executable with:
 +
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
  * execute it with `./target/rest-json-quickstart-1.0.0-SNAPSHOT-runner`
  * open a browser and go to http://localhost:8080/legumes.html
 
@@ -489,7 +489,7 @@ Let's do that and follow the same steps as before:
  * hit `Ctrl+C` to stop the application
  * create the native executable with:
 +
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
  * execute it with `./target/rest-json-quickstart-1.0.0-SNAPSHOT-runner`
  * open a browser and go to http://localhost:8080/legumes.html
 

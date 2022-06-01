@@ -21,7 +21,7 @@ than these alternatives (except Vert.x which is still super fast).
 == Prerequisites
 
 :prerequisites-no-graalvm:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * Read about xref:funqy.adoc[Funqy Basics].  This is a short read!
 
 == The Quickstart

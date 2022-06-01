@@ -226,7 +226,7 @@ quarkus.ssl.native=true
 
 Then, create the native executable with:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 [#using-vert-x-json]
 == Using Vert.x JSON

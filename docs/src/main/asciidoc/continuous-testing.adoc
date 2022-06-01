@@ -21,7 +21,7 @@ Learn how to use continuous testing in your Quarkus Application.
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * The completed greeter application from the xref:getting-started.adoc[Getting Started Guide]
 
 == Introduction
@@ -34,7 +34,7 @@ only run the relevant tests when code is changed.
 
 Start the xref:getting-started.adoc[Getting Started] application (or any other application) using:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Quarkus will start in development mode as normal, but down the bottom of the screen you should see the following:
 

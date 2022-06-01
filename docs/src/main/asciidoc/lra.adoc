@@ -46,7 +46,7 @@ Once you have your Quarkus Maven project configured you can add the `narayana-lr
 by running the following command in your project base directory:
 
 :add-extension-extensions: narayana-lra,resteasy-jackson,rest-client-jackson
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 

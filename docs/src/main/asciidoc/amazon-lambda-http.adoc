@@ -22,12 +22,12 @@ Amazon has a https://docs.aws.amazon.com/apigateway/latest/developerguide/http-a
 
 Like most Quarkus extensions, the Quarkus AWS Lambda HTTP/REST extensions support Live Coding.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
 :prerequisites-time: 30 minutes
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * https://aws.amazon.com[An Amazon AWS account]
 * https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html[AWS SAM CLI]
 
@@ -68,7 +68,7 @@ mvn archetype:generate \
 
 Build the project:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 This will compile the code and run the unit tests included within the generated project.
 Unit testing is the same as any other Java project and does not require running on Amazon.  Quarkus dev mode is also
@@ -77,13 +77,13 @@ available with this extension.
 If you want to build a native executable, make sure you have GraalVM installed correctly and just add a `native` property
 to the build
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 NOTE: If you are building on a non-Linux system, you will need to also pass in a property instructing quarkus to use a Docker build as Amazon
 Lambda requires Linux binaries.  You can do this by passing `-Dquarkus.native.container-build=true` to your build command.
 This requires you to have Docker installed locally, however.
 
-include::includes/devtools/build-native-container.adoc[]
+include::{includes}/devtools/build-native-container.adoc[]
 
 == Extra Build Generated Files
 
@@ -216,7 +216,7 @@ you may need to manually manage that encoding.
 
 To deploy a native executable, you must build it with GraalVM.
 
-include::includes/devtools/build-native-container.adoc[]
+include::{includes}/devtools/build-native-container.adoc[]
 
 You can then test the executable locally with sam local
 

@@ -12,7 +12,7 @@ Because it's the _canonical_ web socket application, we are going to create a si
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -35,7 +35,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: websockets-quickstart
 :create-app-extensions: websockets
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates the project (without any classes) and imports the `websockets` extension.
 
@@ -43,7 +43,7 @@ If you already have your Quarkus project configured, you can add the `websockets
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: websockets
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -143,7 +143,7 @@ Create the `src/main/resources/META-INF/resources` directory and copy this {quic
 
 Now, let's see our application in action. Run it with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Then open your 2 browser windows to http://localhost:8080/:
 
@@ -155,13 +155,13 @@ image:websocket-guide-screenshot.png[alt=Application]
 
 As usual, the application can be packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 And executed using `java -jar target/quarkus-app/quarkus-run.jar`.
 
 You can also build the native executable using:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 You can also test your web socket applications using the approach detailed {quickstarts-blob-url}/websockets-quickstart/src/test/java/org/acme/websockets/ChatTest.java[here].
 

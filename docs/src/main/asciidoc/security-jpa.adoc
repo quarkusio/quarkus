@@ -13,7 +13,7 @@ xref:hibernate-orm.adoc[Hibernate ORM] or xref:hibernate-orm-panache.adoc[Hibern
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -42,7 +42,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-jpa-quickstart
 :create-app-extensions: security-jpa,jdbc-postgresql,resteasy-reactive,hibernate-orm-panache
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 [NOTE]
 ====
@@ -56,7 +56,7 @@ If you already have your Quarkus project configured, you can add the `security-j
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: security-jpa
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -256,7 +256,7 @@ As a result, the `security-jpa` defaults to using bcrypt-hashed passwords.
 
 You can start the application in dev mode as follows:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 [NOTE]
 ====

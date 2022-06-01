@@ -13,7 +13,7 @@ This guide demonstrates how your Quarkus application can utilize the Apache Kafk
 
 :prerequisites-time: 30 minutes
 :prerequisites-docker-compose:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 It is recommended, that you have read the {quickstarts-tree-url}/kafka-quickstart[Kafka quickstart] before.
 
@@ -80,7 +80,7 @@ Create a new project with the following command:
 :create-app-artifact-id: kafka-streams-quickstart-producer
 :create-app-extensions: kafka
 :create-app-post-command: mv kafka-streams-quickstart-producer producer
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven project, importing the Reactive Messaging and Kafka connector extensions.
 
@@ -88,7 +88,7 @@ If you already have your Quarkus project configured, you can add the `smallrye-r
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: quarkus-smallrye-reactive-messaging-kafka
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -232,7 +232,7 @@ Create another project like so:
 :create-app-artifact-id: kafka-streams-quickstart-aggregator
 :create-app-extensions: kafka-streams,resteasy-reactive-jackson
 :create-app-post-command: mv kafka-streams-quickstart-aggregator aggregator
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This creates the `aggregator` project with the Quarkus extension for Kafka Streams and with the Jackson support for RESTEasy Reactive.
 
@@ -240,7 +240,7 @@ If you already have your Quarkus project configured, you can add the `kafka-stre
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: kafka-streams
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your `pom.xml`:
 

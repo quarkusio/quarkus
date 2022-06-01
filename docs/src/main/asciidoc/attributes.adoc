@@ -5,3 +5,4 @@
 :idseparator: -
 :icons: font
 :imagesdir: ./images
+:includes: ./includes

@@ -17,7 +17,7 @@ This guide explains how to:
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Solution
 
@@ -33,7 +33,7 @@ The solution is located in the `lifecycle-quickstart` {quickstarts-tree-url}/lif
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: lifecycle-quickstart
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 It generates:
 
@@ -126,7 +126,7 @@ Command line arguments can be passed to the application through the `-D` flag wi
 
 * For Quarkus dev mode:
 +
-include::includes/devtools/dev-parameters.adoc[]
+include::{includes}/devtools/dev-parameters.adoc[]
 
 * For a runner jar: `java -Dquarkus.args=<cmd-args> -jar target/quarkus-app/quarkus-run.jar`
 * For a native executable: `./target/lifecycle-quickstart-1.0-SNAPSHOT-runner -Dquarkus.args=<cmd-args>`
@@ -213,20 +213,20 @@ TIP: If a class is annotated with `@Startup` but with no scope annotation then `
 
 Run the application with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 The logged message is printed.
 When the application is stopped, the second log message is printed.
 
 As usual, the application can be packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 and executed using `java -jar target/quarkus-app/quarkus-run.jar`.
 
 You can also generate the native executable using:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 == Launch Modes
 

@@ -15,7 +15,7 @@ for the server part.
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Solution
 
@@ -32,7 +32,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: rest-client-reactive-quickstart
 :create-app-extensions: resteasy-reactive-jackson,rest-client-reactive-jackson
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates the Maven project with a REST endpoint and imports:
 
@@ -43,7 +43,7 @@ If you already have your Quarkus project configured, you can add the `rest-clien
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: rest-client-reactive-jackson
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -821,7 +821,7 @@ NOTE: MicroProfile REST Client specification does not allow setting proxy creden
 
 Run the application with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Open your browser to http://localhost:8080/extension/id/io.quarkus:quarkus-rest-client-reactive.
 
@@ -829,13 +829,13 @@ You should see a JSON object containing some basic information about this extens
 
 As usual, the application can be packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 And executed with `java -jar target/quarkus-app/quarkus-run.jar`.
 
 You can also generate the native executable with:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 == Logging traffic
 REST Client Reactive can log the requests it sends and the responses it receives.

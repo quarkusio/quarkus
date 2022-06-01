@@ -13,7 +13,7 @@ distributed tracing for interactive web applications.
 == Prerequisites
 
 :prerequisites-docker-compose:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -34,7 +34,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: opentelemetry-quickstart
 :create-app-extensions: resteasy-reactive,quarkus-opentelemetry-exporter-otlp
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates the Maven project and imports the `quarkus-opentelemetry-exporter-otlp` extension,
 which includes the OpenTelemetry support,
@@ -44,7 +44,7 @@ If you already have your Quarkus project configured, you can add the `quarkus-op
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: opentelemetry-otlp-exporter
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -185,12 +185,12 @@ services:
 
 Now we are ready to run our application. If using `application.properties` to configure the tracer:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 or if configuring the OTLP gRPC endpoint via JVM arguments:
 
 :dev-additional-parameters: -Djvm.args="-Dquarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://localhost:55680"
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 :!dev-additional-parameters:
 
 With the OpenTelemetry Collector, Jaeger system and application running, you can make a request to the provided endpoint:

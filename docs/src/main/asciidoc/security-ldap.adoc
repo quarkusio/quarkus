@@ -12,7 +12,7 @@ This guide demonstrates how your Quarkus application can use an LDAP server to a
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -44,7 +44,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-ldap-quickstart
 :create-app-extensions: elytron-security-ldap,resteasy-reactive
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a project, importing the `elytron-security-ldap` extension
 which is a `wildfly-elytron-realm-ldap` adapter for Quarkus applications.
@@ -53,7 +53,7 @@ If you already have your Quarkus project configured, you can add the `elytron-se
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: elytron-security-ldap
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -177,7 +177,7 @@ The `elytron-security-ldap` extension requires a dir-context and an identity-map
 The application is now protected and the identities are provided by our LDAP server.
 Let's start the application in dev mode:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 The very first thing to check is to ensure the anonymous access works.
 

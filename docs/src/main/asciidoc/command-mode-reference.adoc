@@ -127,7 +127,7 @@ in order to unblock the main thread and initiate the shutdown process.
 Also for command mode applications the dev mode is supported.
 When you start your application in dev mode, the command mode application is executed:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 As command mode applications will often require arguments to be passed on the command line, this is also possible in dev mode:
 

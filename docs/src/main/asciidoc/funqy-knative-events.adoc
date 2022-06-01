@@ -19,7 +19,7 @@ with Knative Events.
 
 :prerequisites-time: 1 hour
 :prerequisites-no-graalvm:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * Read about xref:funqy.adoc[Funqy Basics].  This is a short read!
 * Have gone through the link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/index.html[Knative Tutorial], specifically link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/eventing/eventing-trigger-broker.html[Brokers and Triggers]
 
@@ -206,7 +206,7 @@ Funqy also works with Quarkus Dev mode!
 
 First build the Java artifacts:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 Next, a docker image is required by Knative, so you'll need to build that next:
 

@@ -14,7 +14,7 @@ TIP: If you need a clustered scheduler use the xref:quartz.adoc[Quartz extension
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -38,7 +38,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: scheduler-quickstart
 :create-app-extensions: resteasy-reactive,scheduler
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 It generates a new project including:
 
@@ -52,7 +52,7 @@ If you already have your Quarkus project configured, you can add the `scheduler`
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: scheduler
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -167,7 +167,7 @@ public class CountResource {
 
 Run the application with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 In another terminal, run `curl localhost:8080/count` to check the counter value.
 After a few seconds, re-run `curl localhost:8080/count` to verify the counter has been incremented.
@@ -177,13 +177,13 @@ that the cron job using an expression configured in `application.properties` has
 
 As usual, the application can be packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 And executed with `java -jar target/quarkus-app/quarkus-run.jar`.
 
 You can also generate the native executable with:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 [[scheduler-configuration-reference]]
 == Scheduler Configuration Reference

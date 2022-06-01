@@ -14,12 +14,12 @@ The guide walks through quickstart code to show you how you can deploy Funqy fun
 Funqy functions can be deployed using the AWS Lambda Java Runtime, or you can build a native executable and use
 Lambda Custom Runtime if you want a smaller memory footprint and faster cold boot startup time.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
 :prerequisites-time: 30 minutes
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * Read about xref:funqy.adoc[Funqy Basics].  This is a short read!
 * https://aws.amazon.com[An Amazon AWS account]
 * https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html[AWS CLI]
@@ -68,7 +68,7 @@ at build time.
 
 Build the project using Maven:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 This will compile and package your code.
 
@@ -187,13 +187,13 @@ code to a native executable.  Just make sure to rebuild your project with the `-
 
 For Linux hosts execute:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 NOTE: If you are building on a non-Linux system, you will need to also pass in a property instructing Quarkus to use a Docker build as Amazon
 Lambda requires Linux binaries.  You can do this by passing this property to your build:
 `-Dnative-image.docker-build=true`.  This requires you to have Docker installed locally, however.
 
-include::includes/devtools/build-native-container.adoc[]
+include::{includes}/devtools/build-native-container.adoc[]
 
 Either of these commands will compile and create a native executable.  It also generates a zip file `target/function.zip`.
 This zip file contains your native executable image renamed to `bootstrap`.  This is a requirement of the AWS Lambda

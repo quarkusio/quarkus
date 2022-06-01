@@ -26,7 +26,7 @@ Locate the solution in the `infinispan-client-quickstart` {quickstarts-tree-url}
 Run the following command in the base directory of your Quarkus project to add the `infinispan-client` extension:
 
 :add-extension-extensions: infinispan-client
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This command adds the following dependency to your build file:
 

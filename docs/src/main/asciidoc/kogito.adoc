@@ -19,7 +19,7 @@ in a domain specific way.
 
 :prerequisites-docker:
 :prerequisites-ide: (VSCode is preferred with the Red Hat BPMN Editor VSCode Extension)
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 === Install modelling plugins in your IDE
 
@@ -81,7 +81,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: kogito-quickstart
 :create-app-extensions: kogito,resteasy-reactive-jackson
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven project, importing the `kogito` extension
 that comes with all needed dependencies and configuration to equip your application
@@ -92,7 +92,7 @@ If you already have your Quarkus project configured, you can add the `kogito` ex
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: kogito
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -260,7 +260,7 @@ To model this process yourself, just follow these steps (start event should be a
 
 To run the microservice in dev mode, use:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 === Running in JVM Mode
 
@@ -268,7 +268,7 @@ When you're done playing with "dev-mode" you can run it as a standard Java appli
 
 First compile it:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 Then run it:
 
@@ -288,7 +288,7 @@ the produced binary, and optimized to run with minimal resource overhead.
 Compilation will take a bit longer, so this step is disabled by default;
 let's build a native executable with the following command:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 After getting a cup of coffee, you'll be able to run this binary directly:
 

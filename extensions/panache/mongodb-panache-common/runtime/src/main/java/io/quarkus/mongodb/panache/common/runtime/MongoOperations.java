@@ -321,19 +321,20 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     ClientSession getSession(Class<?> entityClass) {
+        ClientSession clientSession = null;
         MongoEntity mongoEntity = entityClass.getAnnotation(MongoEntity.class);
         InstanceHandle<TransactionSynchronizationRegistry> instance = Arc.container()
                 .instance(TransactionSynchronizationRegistry.class);
         if (instance.isAvailable()) {
             TransactionSynchronizationRegistry registry = instance.get();
             if (registry.getTransactionStatus() == Status.STATUS_ACTIVE) {
-                ClientSession clientSession = (ClientSession) registry.getResource(SESSION_KEY);
+                clientSession = (ClientSession) registry.getResource(SESSION_KEY);
                 if (clientSession == null) {
                     return registerClientSession(mongoEntity, registry);
                 }
             }
         }
-        return null;
+        return clientSession;
     }
 
     private ClientSession registerClientSession(MongoEntity mongoEntity,

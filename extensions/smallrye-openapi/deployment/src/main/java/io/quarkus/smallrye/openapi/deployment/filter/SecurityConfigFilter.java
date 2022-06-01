@@ -59,6 +59,11 @@ public class SecurityConfigFilter implements OASFilter {
                     securityScheme.setScheme(config.jwtSecuritySchemeValue);
                     securityScheme.setBearerFormat(config.jwtBearerFormat);
                     break;
+                case oauth2:
+                    securityScheme.setType(SecurityScheme.Type.HTTP);
+                    securityScheme.setScheme(config.oauth2SecuritySchemeValue);
+                    securityScheme.setBearerFormat(config.oauth2BearerFormat);
+                    break;
                 case oidc:
                     securityScheme.setType(SecurityScheme.Type.OPENIDCONNECT);
                     securityScheme.setOpenIdConnectUrl(config.oidcOpenIdConnectUrl.orElse(null));

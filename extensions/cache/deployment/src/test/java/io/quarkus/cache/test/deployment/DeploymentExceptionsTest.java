@@ -4,6 +4,8 @@ import static java.util.Arrays.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.lang.reflect.Method;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -17,9 +19,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheInvalidateAll;
+import io.quarkus.cache.CacheKeyGenerator;
 import io.quarkus.cache.CacheName;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.cache.deployment.exception.ClassTargetException;
+import io.quarkus.cache.deployment.exception.KeyGeneratorConstructorException;
 import io.quarkus.cache.deployment.exception.PrivateMethodTargetException;
 import io.quarkus.cache.deployment.exception.VoidReturnTypeTargetException;
 import io.quarkus.test.QuarkusUnitTest;
@@ -38,12 +42,16 @@ public class DeploymentExceptionsTest {
             .withApplicationRoot((jar) -> jar.addClasses(TestResource.class, TestBean.class))
             .assertException(t -> {
                 assertEquals(DeploymentException.class, t.getClass());
-                assertEquals(7, t.getSuppressed().length);
+                assertEquals(11, t.getSuppressed().length);
                 assertPrivateMethodTargetException(t, "shouldThrowPrivateMethodTargetException", 1);
                 assertPrivateMethodTargetException(t, "shouldAlsoThrowPrivateMethodTargetException", 2);
                 assertVoidReturnTypeTargetException(t, "showThrowVoidReturnTypeTargetException");
                 assertClassTargetException(t, TestResource.class, 1);
                 assertClassTargetException(t, TestBean.class, 2);
+                assertKeyGeneratorConstructorException(t, KeyGen1.class);
+                assertKeyGeneratorConstructorException(t, KeyGen2.class);
+                assertKeyGeneratorConstructorException(t, KeyGen3.class);
+                assertKeyGeneratorConstructorException(t, KeyGen4.class);
             });
 
     private static void assertPrivateMethodTargetException(Throwable t, String expectedMethodName, long expectedCount) {
@@ -59,6 +67,11 @@ public class DeploymentExceptionsTest {
     private static void assertClassTargetException(Throwable t, Class<?> expectedClassName, long expectedCount) {
         assertEquals(expectedCount, filterSuppressed(t, ClassTargetException.class)
                 .filter(s -> expectedClassName.getName().equals(s.getClassName().toString())).count());
+    }
+
+    private static void assertKeyGeneratorConstructorException(Throwable t, Class<?> expectedClassName) {
+        assertEquals(1, filterSuppressed(t, KeyGeneratorConstructorException.class)
+                .filter(s -> expectedClassName.getName().equals(s.getClassInfo().name().toString())).count());
     }
 
     private static <T extends RuntimeException> Stream<T> filterSuppressed(Throwable t, Class<T> filterClass) {
@@ -107,6 +120,52 @@ public class DeploymentExceptionsTest {
         }
 
         public void setCache(@CacheName(UNKNOWN_CACHE_3) Cache cache) {
+        }
+
+        @CacheResult(cacheName = "should-throw-key-generator-constructor-exception", keyGenerator = KeyGen1.class)
+        public String shouldThrowKeyGeneratorConstructorException() {
+            return new String();
+        }
+
+        @CacheInvalidate(cacheName = "should-throw-key-generator-constructor-exception", keyGenerator = KeyGen2.class)
+        public void shouldAlsoThrowKeyGeneratorConstructorException() {
+        }
+
+        @CacheInvalidate(cacheName = "should-throw-key-generator-constructor-exception", keyGenerator = KeyGen3.class)
+        @CacheInvalidate(cacheName = "should-throw-key-generator-constructor-exception", keyGenerator = KeyGen4.class)
+        public void shouldThrowKeyGeneratorConstructorExceptionAsWell() {
+        }
+    }
+
+    private static class KeyGen1 implements CacheKeyGenerator {
+
+        public KeyGen1(String arg) {
+        }
+
+        @Override
+        public Object generate(Method method, Object... methodParams) {
+            return UUID.randomUUID(); // Not used.
+        }
+    }
+
+    private static class KeyGen2 extends KeyGen1 {
+
+        public KeyGen2(String arg) {
+            super(arg);
+        }
+    }
+
+    private static class KeyGen3 extends KeyGen2 {
+
+        public KeyGen3(String arg) {
+            super(arg);
+        }
+    }
+
+    private static class KeyGen4 extends KeyGen3 {
+
+        public KeyGen4(String arg) {
+            super(arg);
         }
     }
 }

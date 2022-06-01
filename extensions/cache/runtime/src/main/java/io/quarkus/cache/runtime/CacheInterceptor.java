@@ -1,6 +1,8 @@
 package io.quarkus.cache.runtime;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +11,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.interceptor.Interceptor.Priority;
 import javax.interceptor.InvocationContext;
@@ -19,6 +22,7 @@ import io.quarkus.arc.runtime.InterceptorBindings;
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheException;
 import io.quarkus.cache.CacheKey;
+import io.quarkus.cache.CacheKeyGenerator;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.CompositeCacheKey;
 import io.smallrye.mutiny.Uni;
@@ -33,6 +37,9 @@ public abstract class CacheInterceptor {
 
     @Inject
     CacheManager cacheManager;
+
+    @Inject
+    Instance<CacheKeyGenerator> keyGenerator;
 
     /*
      * The interception is almost always managed by Arc in a Quarkus application. In such a case, we want to retrieve the
@@ -112,8 +119,11 @@ public abstract class CacheInterceptor {
         return (T) annotation;
     }
 
-    protected Object getCacheKey(Cache cache, List<Short> cacheKeyParameterPositions, Object[] methodParameterValues) {
-        if (methodParameterValues == null || methodParameterValues.length == 0) {
+    protected Object getCacheKey(Cache cache, Class<? extends CacheKeyGenerator> keyGeneratorClass,
+            List<Short> cacheKeyParameterPositions, Method method, Object[] methodParameterValues) {
+        if (keyGeneratorClass != UndefinedCacheKeyGenerator.class) {
+            return generateKey(keyGeneratorClass, method, methodParameterValues);
+        } else if (methodParameterValues == null || methodParameterValues.length == 0) {
             // If the intercepted method doesn't have any parameter, then the default cache key will be used.
             return cache.getDefaultKey();
         } else if (cacheKeyParameterPositions.size() == 1) {
@@ -135,6 +145,31 @@ public abstract class CacheInterceptor {
             // If the intercepted method has two or more parameters, then a composite cache key built from all these parameters
             // will be used.
             return new CompositeCacheKey(methodParameterValues);
+        }
+    }
+
+    private <T extends CacheKeyGenerator> Object generateKey(Class<T> keyGeneratorClass, Method method,
+            Object[] methodParameterValues) {
+        Instance<T> keyGenInstance = keyGenerator.select(keyGeneratorClass);
+        if (keyGenInstance.isResolvable()) {
+            LOGGER.tracef("Using cache key generator bean from Arc [class=%s]", keyGeneratorClass.getName());
+            T keyGen = keyGenInstance.get();
+            try {
+                return keyGen.generate(method, methodParameterValues);
+            } finally {
+                keyGenerator.destroy(keyGen);
+            }
+        } else {
+            try {
+                LOGGER.tracef("Creating a new cache key generator instance [class=%s]", keyGeneratorClass.getName());
+                return keyGeneratorClass.getConstructor().newInstance().generate(method, methodParameterValues);
+            } catch (NoSuchMethodException e) {
+                // This should never be thrown because the default constructor availability is checked at build time.
+                throw new CacheException("No default constructor found in cache key generator [class="
+                        + keyGeneratorClass.getName() + "]", e);
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                throw new CacheException("Cache key generator instantiation failed", e);
+            }
         }
     }
 

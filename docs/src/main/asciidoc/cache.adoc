@@ -282,9 +282,7 @@ They will work fine with any other access modifier including package-private (no
 Loads a method result from the cache without executing the method body whenever possible.
 
 When a method annotated with `@CacheResult` is invoked, Quarkus will compute a cache key and use it to check in the cache whether the method has been already invoked.
-If the method has one or more arguments, the key computation is done from all the method arguments if none of them is annotated with `@CacheKey`, or all the arguments annotated with `@CacheKey` otherwise.
-Each non-primitive method argument that is part of the key must implement `equals()` and `hashCode()` correctly for the cache to work as expected.
-This annotation can also be used on a method with no arguments, a default key derived from the cache name is used in that case.
+See the <<cache-keys-building-logic>> section of this guide to learn how the cache key is computed.
 If a value is found in the cache, it is returned and the annotated method is never actually executed.
 If no value is found, the annotated method is invoked and the returned value is stored in the cache using the computed key.
 
@@ -308,8 +306,7 @@ See <<negative-cache,more on this topic below>>.
 Removes an entry from the cache.
 
 When a method annotated with `@CacheInvalidate` is invoked, Quarkus will compute a cache key and use it to try to remove an existing entry from the cache.
-If the method has one or more arguments, the key computation is done from all the method arguments if none of them is annotated with `@CacheKey`, or all the arguments annotated with `@CacheKey` otherwise.
-This annotation can also be used on a method with no arguments, a default key derived from the cache name is used in that case.
+See the <<cache-keys-building-logic>> section of this guide to learn how the cache key is computed.
 If the key does not identify any cache entry, nothing will happen.
 
 === @CacheInvalidateAll
@@ -323,7 +320,22 @@ method annotated with `@CacheResult` or `@CacheInvalidate`.
 
 This annotation is optional and should only be used when some of the method arguments are NOT part of the cache key.
 
-=== Composite cache key building logic
+[#cache-keys-building-logic]
+=== Cache keys building logic
+
+Cache keys are built by the annotations API using the following logic:
+
+* If an `io.quarkus.cache.CacheKeyGenerator` is declared in a `@CacheResult` or a `@CacheInvalidate` annotation, then it is used to generate the cache key. The `@CacheKey` annotations that might be present on some of the method arguments are ignored.
+* Otherwise, if the method has no arguments, then the cache key is an instance of `io.quarkus.cache.DefaultCacheKey` built from the cache name.
+* Otherwise, if the method has exactly one argument, then that argument is the cache key.
+* Otherwise, if the method has multiple arguments but only one annotated with `@CacheKey`, then that annotated argument is the cache key.
+* Otherwise, if the method has multiple arguments annotated with `@CacheKey`, then the cache key is an instance of `io.quarkus.cache.CompositeCacheKey` built from these annotated arguments.
+* Otherwise, if the method has multiple arguments and none of them are annotated with `@CacheKey`, the cache key is an instance of `io.quarkus.cache.CompositeCacheKey` built from all the method arguments.
+
+[WARNING]
+====
+Each non-primitive method argument that is part of the key must implement `equals()` and `hashCode()` correctly for the cache to work as expected.
+====
 
 When a cache key is built from several method arguments, whether they are explicitly identified with `@CacheKey` or not, the building logic depends on the order of these arguments in the method signature. On the other hand, the arguments names are not used at all and do not have any effect on the cache key.
 
@@ -365,6 +377,106 @@ public class CachedService {
 <2> Calling this method WILL NOT invalidate values cached by the `load` method because the key elements order is different.
 <3> Calling this method WILL invalidate values cached by the `load` method because the key elements order is the same.
 <4> Calling this method WILL NOT invalidate values cached by the `load` method because the key elements order is different.
+
+=== Generating a cache key with `CacheKeyGenerator`
+
+You may want to include more than the arguments of a method into a cache key.
+This can be done by implementing the `io.quarkus.cache.CacheKeyGenerator` interface and declaring that implementation in the `keyGenerator` field of a `@CacheResult` or `@CacheInvalidate` annotation.
+
+If a CDI scope is declared on a key generator class and if that class has a default qualifier (no qualifier annotation or `@javax.enterprise.inject.Default`), then the key generator will be injected as a CDI bean during the cache key computation.
+Otherwise, the key generator will be instantiated using its default constructor.
+All CDI scopes supported by Quarkus can be used on a key generator.
+
+The following key generator will be injected as a CDI bean:
+
+[source,java]
+----
+package org.acme.cache;
+
+import java.lang.reflect.Method;
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
+import io.quarkus.cache.CacheKeyGenerator;
+import io.quarkus.cache.CompositeCacheKey;
+
+@ApplicationScoped
+public class ApplicationScopedKeyGen implements CacheKeyGenerator {
+
+    @Inject
+    AnythingYouNeedHere anythingYouNeedHere; <1>
+
+    @Override
+    public Object generate(Method method, Object... methodParams) { <2>
+        return new CompositeCacheKey(anythingYouNeedHere.getData(), methodParams[1]); <3>
+    }
+}
+----
+<1> External data can be included into the cache key by injecting a CDI bean in the key generator.
+<2> Be careful while using `Method`, some of its methods can be expensive.
+<3> Make sure the method has enough arguments before accessing them from their index.
+Otherwise, an `IndexOutOfBoundsException` may be thrown during the cache key computation.
+
+The following key generator will be instantiated using its default constructor:
+
+[source,java]
+----
+package org.acme.cache;
+
+import java.lang.reflect.Method;
+
+import io.quarkus.cache.CacheKeyGenerator;
+import io.quarkus.cache.CompositeCacheKey;
+
+public class NotABeanKeyGen implements CacheKeyGenerator {
+
+    // CDI injections won't work here because it's not a CDI bean.
+
+    @Override
+    public Object generate(Method method, Object... methodParams) {
+        return new CompositeCacheKey(method.getName(), methodParams[0]); <1>
+    }
+}
+----
+<1> Including the method name into the cache key is not expensive, unlike other methods from `Method`.
+
+Both kinds of key generators can be used in a similar way:
+
+[source,java]
+----
+package org.acme.cache;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import org.acme.cache.ApplicationScopedKeyGen;
+import org.acme.cache.NotABeanKeyGen;
+
+import io.quarkus.cache.CacheKey;
+import io.quarkus.cache.CacheInvalidate;
+import io.quarkus.cache.CacheResult;
+
+@ApplicationScoped
+public class CachedService {
+
+    @CacheResult(cacheName = "foo", keyGenerator = ApplicationScopedKeyGen.class) <1>
+    public Object load(@CacheKey Object notUsedInKey, String keyElement) { <2>
+        // Call expensive service here.
+    }
+
+    @CacheInvalidate(cacheName = "foo", keyGenerator = NotABeanKeyGen.class) <3>
+    public void invalidate(Object keyElement) {
+    }
+
+    @CacheInvalidate(cacheName = "foo", keyGenerator = NotABeanKeyGen.class)
+    @CacheInvalidate(cacheName = "bar")
+    public void invalidate(Integer param0, @CacheKey BigDecimal param1) { <4>
+    }
+}
+----
+<1> This key generator is a CDI bean.
+<2> The `@CacheKey` annotation will be ignored because a key generator is declared in the `@CacheResult` annotation.
+<3> This key generator is not a CDI bean.
+<4> The `@CacheKey` annotation will be ignored when the `foo` cache data is invalidated, but `param1` will be the cache key when the `bar` cache data is invalidated.
 
 [#programmatic-api]
 == Caching using the programmatic API
@@ -451,12 +563,8 @@ public class CacheClearer {
 
 === Building a programmatic cache key
 
-Before building a programmatic cache key, you need to know how cache keys are built by the annotations API when an annotated method is invoked:
-
-* If the method has no arguments, then the cache key is an instance of `io.quarkus.cache.DefaultCacheKey` built from the cache name.
-* If the method has exactly one argument, then this argument is the cache key.
-* If the method has multiple arguments but only one annotated with `@CacheKey`, then this annotated argument is the cache key.
-* In all other cases, the cache key is an instance of `io.quarkus.cache.CompositeCacheKey` built from multiple method arguments (annotated with `@CacheKey` or not).
+Before building a programmatic cache key, you need to know how cache keys are built by the annotations API when an annotated method is invoked.
+This is explained in the <<cache-keys-building-logic>> section of this guide.
 
 Now, if you want to retrieve or delete, using the programmatic API, a cache value that was stored using the annotations API, you just need to make sure the same key is used with both APIs.
 

@@ -138,6 +138,8 @@ public class OraclePoolRecorder {
             }
         }
 
+        dataSourceReactiveRuntimeConfig.additionalProperties.forEach(oracleConnectOptions::addProperty);
+
         return oracleConnectOptions;
     }
 

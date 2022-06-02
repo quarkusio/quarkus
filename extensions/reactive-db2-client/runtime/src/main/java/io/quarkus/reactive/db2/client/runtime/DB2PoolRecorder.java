@@ -173,6 +173,8 @@ public class DB2PoolRecorder {
                     dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get());
         }
 
+        dataSourceReactiveRuntimeConfig.additionalProperties.forEach(connectOptions::addProperty);
+
         return connectOptions;
     }
 }

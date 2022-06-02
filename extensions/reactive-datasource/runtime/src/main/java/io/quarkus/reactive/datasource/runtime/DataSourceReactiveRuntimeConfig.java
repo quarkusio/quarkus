@@ -1,6 +1,7 @@
 package io.quarkus.reactive.datasource.runtime;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -145,4 +146,11 @@ public class DataSourceReactiveRuntimeConfig {
      */
     @ConfigItem
     public Optional<String> name;
+
+    /**
+     * Other unspecified properties to be passed through the Reactive SQL Client directly to the database when new connections
+     * are initiated.
+     */
+    @ConfigItem
+    public Map<String, String> additionalProperties;
 }

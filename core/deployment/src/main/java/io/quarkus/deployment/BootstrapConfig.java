@@ -18,6 +18,13 @@ public class BootstrapConfig {
     boolean effectiveModelBuilder;
 
     /**
+     * If set to true, workspace discovery will be enabled for all launch modes.
+     * Usually, workspace discovery is enabled by default only for dev and test modes.
+     */
+    @ConfigItem(defaultValue = "false")
+    Boolean workspaceDiscovery;
+
+    /**
      * Whether to throw an error, warn or silently ignore misaligned platform BOM imports
      */
     @ConfigItem(defaultValue = "error")

@@ -645,7 +645,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
             if (returnsMultipart && !blocking) {
                 throw new DeploymentException(
-                        "Endpoints that produce a Multipart result can only be used on non blocking methods. Offending method is '"
+                        "Endpoints that produce a Multipart result can only be used on blocking methods. Offending method is '"
                                 + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
             }
 

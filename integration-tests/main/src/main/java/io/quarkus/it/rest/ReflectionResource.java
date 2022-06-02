@@ -17,4 +17,17 @@ public class ReflectionResource {
             return "FAILED";
         }
     }
+
+    @GET
+    @Path("/lambda")
+    public String getLambdaClassName() {
+        try {
+            ResourceLambda lambda = new ResourceLambda();
+            Class<?> clazz = lambda.getLambdaFuncClass(5);
+            return clazz.getSimpleName();
+        } catch (Exception e) {
+            return e.toString();
+        }
+    }
+
 }

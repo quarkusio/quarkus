@@ -6,7 +6,10 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -117,11 +120,40 @@ final class LinksProcessor {
             for (LinkInfo linkInfo : linkInfos) {
                 String entityType = linkInfo.getEntityType();
                 for (String parameterName : linkInfo.getPathParameters()) {
+                    DotName className = DotName.createSimple(entityType);
+                    FieldInfoSupplier byParamName = new FieldInfoSupplier(c -> c.field(parameterName), className, index);
+
                     // We implement a getter inside a class that has the required field.
                     // We later map that getter's accessor with an entity type.
                     // If a field is inside a parent class, the getter accessor will be mapped to each subclass which
                     // has REST links that need access to that field.
-                    FieldInfo fieldInfo = getFieldInfo(index, DotName.createSimple(entityType), parameterName);
+
+                    FieldInfo fieldInfo = byParamName.get();
+                    if ((fieldInfo == null) && parameterName.equals("id")) {
+                        // this is a special case where we want to go through the fields of the class
+                        // and see if any is annotated with any sort of @Id annotation
+                        // N.B. as this module does not depend on any other module that could supply this @Id annotation
+                        // (like Panache), we need this general lookup
+                        FieldInfoSupplier byIdAnnotation = new FieldInfoSupplier(
+                                c -> {
+                                    for (FieldInfo field : c.fields()) {
+                                        List<AnnotationInstance> annotationInstances = field.annotations();
+                                        for (AnnotationInstance annotationInstance : annotationInstances) {
+                                            if (annotationInstance.name().toString().endsWith("persistence.Id")) {
+                                                return field;
+                                            }
+                                        }
+                                    }
+                                    return null;
+                                },
+                                className,
+                                index);
+                        fieldInfo = byIdAnnotation.get();
+                    }
+                    if (fieldInfo == null) {
+                        throw new RuntimeException(
+                                String.format("Class '%s' field '%s' was not found", className, parameterName));
+                    }
                     GetterMetadata getterMetadata = new GetterMetadata(fieldInfo);
                     if (!implementedGetters.contains(getterMetadata)) {
                         implementGetterWithAccessor(classOutput, bytecodeTransformersProducer, getterMetadata);
@@ -129,7 +161,7 @@ final class LinksProcessor {
                     }
 
                     getterAccessorsContainerRecorder.addAccessor(getterAccessorsContainer,
-                            entityType, parameterName, getterMetadata.getGetterAccessorName());
+                            entityType, getterMetadata.getFieldName(), getterMetadata.getGetterAccessorName());
                 }
             }
         }
@@ -148,22 +180,37 @@ final class LinksProcessor {
         getterAccessorImplementor.implement(classOutput, getterMetadata);
     }
 
-    /**
-     * Find a field info by name inside a class.
-     * This is a recursive method that looks through the class hierarchy until the field throws an error if it's not.
-     */
-    private FieldInfo getFieldInfo(IndexView index, DotName className, String fieldName) {
-        ClassInfo classInfo = index.getClassByName(className);
-        if (classInfo == null) {
-            throw new RuntimeException(String.format("Class '%s' was not found", className));
+    private static class FieldInfoSupplier implements Supplier<FieldInfo> {
+
+        private final Function<ClassInfo, FieldInfo> strategy;
+        private final DotName className;
+        private final IndexView index;
+
+        public FieldInfoSupplier(Function<ClassInfo, FieldInfo> strategy, DotName className, IndexView index) {
+            this.strategy = strategy;
+            this.className = className;
+            this.index = index;
         }
-        FieldInfo fieldInfo = classInfo.field(fieldName);
-        if (fieldInfo != null) {
-            return fieldInfo;
+
+        @Override
+        public FieldInfo get() {
+            return findFieldRecursively(className);
         }
-        if (classInfo.superName() != null && !classInfo.superName().equals(OBJECT_NAME)) {
-            return getFieldInfo(index, classInfo.superName(), fieldName);
+
+        private FieldInfo findFieldRecursively(DotName className) {
+            ClassInfo classInfo = index.getClassByName(className);
+            if (classInfo == null) {
+                throw new RuntimeException(String.format("Class '%s' was not found", className));
+            }
+            FieldInfo result = strategy.apply(classInfo);
+            if (result != null) {
+                return result;
+            }
+            if (classInfo.superName() != null && !classInfo.superName().equals(OBJECT_NAME)) {
+                return findFieldRecursively(classInfo.superName());
+            }
+            return null;
         }
-        throw new RuntimeException(String.format("Class '%s' field '%s' was not found", className, fieldName));
     }
+
 }

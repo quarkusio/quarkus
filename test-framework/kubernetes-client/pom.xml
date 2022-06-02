@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>quarkus-test-kubernetes-client</artifactId>
-    <name>Quarkus - Test Framework - Kubernetes Client Mock Server support</name>
+    <name>Quarkus - Test Framework - Kubernetes Client support</name>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -54,6 +54,10 @@
         <dependency>
             <groupId>org.jboss.spec.javax.xml.bind</groupId>
             <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
         </dependency>
     </dependencies>
 

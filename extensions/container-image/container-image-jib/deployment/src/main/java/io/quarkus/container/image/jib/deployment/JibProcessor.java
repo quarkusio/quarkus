@@ -374,6 +374,10 @@ public class JibProcessor {
             if (artifact == null) {
                 continue;
             }
+            if (artifact.isWorkspaceModule()) {
+                fastChangingLibs.add(artifact);
+                continue;
+            }
             String artifactVersion = artifact.getVersion();
             if ((artifactVersion == null) || artifactVersion.isEmpty()) {
                 continue;
@@ -430,14 +434,14 @@ public class JibProcessor {
                             jibConfig.baseRegistryPassword));
             if (fastChangingLibPaths.isEmpty()) {
                 // just create a layer with the entire lib structure intact
-                jibContainerBuilder.addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.LIB)),
-                        workDirInContainer);
+                addLayer(jibContainerBuilder, Collections.singletonList(componentsPath.resolve(JarResultBuildStep.LIB)),
+                        workDirInContainer, "fast-jar-lib");
             } else {
                 // we need to manually create each layer
                 // the idea here is that the fast changing libraries are created in a later layer, thus when they do change,
                 // docker doesn't have to create an entire layer with all dependencies - only change the fast ones
 
-                FileEntriesLayer.Builder bootLibsLayerBuilder = FileEntriesLayer.builder();
+                FileEntriesLayer.Builder bootLibsLayerBuilder = FileEntriesLayer.builder().setName("fast-jar-boot-libs");
                 Path bootLibPath = componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.BOOT_LIB);
                 try (Stream<Path> boolLibPaths = Files.list(bootLibPath)) {
                     boolLibPaths.forEach(lib -> {
@@ -462,7 +466,8 @@ public class JibProcessor {
 
                 Path deploymentPath = componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.DEPLOYMENT_LIB);
                 if (Files.exists(deploymentPath)) { // this is the case of mutable-jar
-                    FileEntriesLayer.Builder deploymentLayerBuilder = FileEntriesLayer.builder();
+                    FileEntriesLayer.Builder deploymentLayerBuilder = FileEntriesLayer.builder()
+                            .setName("fast-jar-deployment-libs");
                     Files.list(deploymentPath).forEach(lib -> {
                         AbsoluteUnixPath libPathInContainer = workDirInContainer.resolve(JarResultBuildStep.LIB)
                                 .resolve(JarResultBuildStep.DEPLOYMENT_LIB)
@@ -472,14 +477,14 @@ public class JibProcessor {
                     jibContainerBuilder.addFileEntriesLayer(deploymentLayerBuilder.build());
                 }
 
-                jibContainerBuilder.addLayer(nonFastChangingLibPaths,
-                        workDirInContainer.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.MAIN));
-                jibContainerBuilder.addLayer(new ArrayList<>(fastChangingLibPaths),
-                        workDirInContainer.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.MAIN));
+                AbsoluteUnixPath libsMainPath = workDirInContainer.resolve(JarResultBuildStep.LIB)
+                        .resolve(JarResultBuildStep.MAIN);
+                addLayer(jibContainerBuilder, nonFastChangingLibPaths, libsMainPath, "fast-jar-normal-libs");
+                addLayer(jibContainerBuilder, new ArrayList<>(fastChangingLibPaths), libsMainPath, "fast-jar-changing-libs");
             }
 
             if (appCDSResult.isPresent()) {
-                jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder().addEntry(
+                jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder().setName("app-cds").addEntry(
                         componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
                         workDirInContainer.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
                         Files.getLastModifiedTime(componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR)).toInstant())
@@ -487,16 +492,15 @@ public class JibProcessor {
                 jibContainerBuilder
                         .addLayer(Collections.singletonList(appCDSResult.get().getAppCDS()), workDirInContainer);
             } else {
-                jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder().addEntry(
+                jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder().setName("fast-jar-run").addEntry(
                         componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
                         workDirInContainer.resolve(JarResultBuildStep.QUARKUS_RUN_JAR)).build());
             }
 
-            jibContainerBuilder
-                    .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.APP)),
-                            workDirInContainer)
-                    .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS)),
-                            workDirInContainer);
+            addLayer(jibContainerBuilder, Collections.singletonList(componentsPath.resolve(JarResultBuildStep.APP)),
+                    workDirInContainer, "fast-jar-quarkus-app");
+            addLayer(jibContainerBuilder, Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS)),
+                    workDirInContainer, "fast-jar-quarkus");
             if (JibConfig.DEFAULT_WORKING_DIR.equals(jibConfig.workingDirectory)) {
                 // this layer ensures that the working directory is writeable
                 // see https://github.com/GoogleContainerTools/jib/issues/1270
@@ -531,6 +535,19 @@ public class JibProcessor {
         } catch (InvalidImageReferenceException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public JibContainerBuilder addLayer(JibContainerBuilder jibContainerBuilder, List<Path> files,
+            AbsoluteUnixPath pathInContainer, String name)
+            throws IOException {
+        FileEntriesLayer.Builder layerConfigurationBuilder = FileEntriesLayer.builder().setName(name);
+
+        for (Path file : files) {
+            layerConfigurationBuilder.addEntryRecursive(
+                    file, pathInContainer.resolve(file.getFileName()));
+        }
+
+        return jibContainerBuilder.addFileEntriesLayer(layerConfigurationBuilder.build());
     }
 
     private List<String> determineEffectiveJvmArguments(JibConfig jibConfig, Optional<AppCDSResultBuildItem> appCDSResult) {

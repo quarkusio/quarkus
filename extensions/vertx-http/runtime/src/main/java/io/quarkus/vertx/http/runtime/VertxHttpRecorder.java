@@ -99,6 +99,7 @@ import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.impl.Http1xServerConnection;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.EventLoopContext;
+import io.vertx.core.impl.Utils;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.core.net.KeyStoreOptions;
@@ -1033,7 +1034,14 @@ public class VertxHttpRecorder {
                         startFuture.complete(null);
                     }
                 } else {
-                    startFuture.fail(event.cause());
+                    if (event.cause() instanceof IllegalArgumentException) {
+                        startFuture.fail(new IllegalArgumentException(
+                                String.format(
+                                        "Unable to bind to Unix domain socket. Consider adding the 'io.netty:%s' dependency. See the Quarkus Vert.x reference guide for more details.",
+                                        Utils.isLinux() ? "netty-transport-native-epoll" : "netty-transport-native-kqueue")));
+                    } else {
+                        startFuture.fail(event.cause());
+                    }
                 }
             });
         }

@@ -15,6 +15,8 @@ public class CaffeineCacheInfo {
 
     public Duration expireAfterAccess;
 
+    public Duration refreshAfterWrite;
+
     public boolean metricsEnabled;
 
     @Override

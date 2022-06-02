@@ -75,6 +75,13 @@ public class CacheConfig {
             Optional<Duration> expireAfterAccess;
 
             /**
+             * Specifies that active entries are eligible for automatic refresh once a fixed duration has
+             * elapsed after the entry's creation, or the most recent replacement of its value.
+             */
+            @ConfigItem
+            Optional<Duration> refreshAfterWrite;
+
+            /**
              * Whether or not metrics are recorded if the application depends on the Micrometer extension. Setting this
              * value to {@code true} will enable the accumulation of cache stats inside Caffeine.
              */

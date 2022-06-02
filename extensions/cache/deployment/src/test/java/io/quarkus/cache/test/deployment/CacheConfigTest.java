@@ -35,6 +35,7 @@ public class CacheConfigTest {
         assertEquals(100L, cache.getCacheInfo().maximumSize);
         assertEquals(Duration.ofSeconds(30L), cache.getCacheInfo().expireAfterWrite);
         assertEquals(Duration.ofDays(2L), cache.getCacheInfo().expireAfterAccess);
+        assertEquals(Duration.ofSeconds(30L), cache.getCacheInfo().refreshAfterWrite);
         assertTrue(cache.getCacheInfo().metricsEnabled);
     }
 

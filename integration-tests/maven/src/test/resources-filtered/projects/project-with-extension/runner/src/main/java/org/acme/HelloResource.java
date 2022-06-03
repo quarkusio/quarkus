@@ -2,14 +2,12 @@ package org.acme;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.net.URL;
-import java.util.Enumeration;
 
 @Path("/hello")
 public class HelloResource {
@@ -20,6 +18,9 @@ public class HelloResource {
     @Inject
     @ConfigProperty(name = "greeting")
     String greeting;
+
+    @Inject
+    ModuleList moduleList;
 
     public HelloResource(CommonBean common, LibraryBean library) {
         this.common = java.util.Objects.requireNonNull(common);
@@ -37,5 +38,12 @@ public class HelloResource {
     @Produces(MediaType.TEXT_PLAIN)
     public String greeting() {
         return greeting;
+    }
+
+    @GET
+    @Path("/local-modules")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String localModules() {
+        return moduleList.getModules().toString();
     }
 }

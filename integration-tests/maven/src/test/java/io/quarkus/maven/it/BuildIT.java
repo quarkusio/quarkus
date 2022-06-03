@@ -32,6 +32,18 @@ class BuildIT extends MojoTestBase {
     private File testDir;
 
     @Test
+    void testQuarkusBootstrapWorkspaceDiscovery() throws Exception {
+        testDir = initProject("projects/project-with-extension", "projects/project-with-extension-build");
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running
+                .execute(List.of("clean", "compile", "quarkus:build", "-Dquarkus.bootstrap.workspace-discovery"), Map.of());
+        assertThat(result.getProcess().waitFor()).isZero();
+
+        launch(TestContext.FAST_NO_PREFIX, "/app/hello/local-modules", new File(testDir, "runner"), "",
+                "[org.acme:acme-common-transitive:1.0-SNAPSHOT, org.acme:acme-common:1.0-SNAPSHOT, org.acme:acme-library:1.0-SNAPSHOT, org.acme:acme-quarkus-ext-deployment:1.0-SNAPSHOT, org.acme:acme-quarkus-ext:1.0-SNAPSHOT]");
+    }
+
+    @Test
     void testCustomTestSourceSets()
             throws MavenInvocationException, IOException, InterruptedException {
         testDir = initProject("projects/test-source-sets");
@@ -179,6 +191,11 @@ class BuildIT extends MojoTestBase {
     }
 
     private void launch(TestContext context, File testDir, String outputPrefix, String expectedMessage) throws IOException {
+        launch(context, "/hello", testDir, outputPrefix, expectedMessage);
+    }
+
+    private void launch(TestContext context, String path, File testDir, String outputPrefix, String expectedMessage)
+            throws IOException {
         File output = new File(testDir, String.format("target/%s%soutput.log", context.prefix, outputPrefix));
         output.createNewFile();
         Process process = JarRunnerIT
@@ -187,7 +204,7 @@ class BuildIT extends MojoTestBase {
                         Collections.emptyList())
                 .start();
         try {
-            Assertions.assertEquals(expectedMessage, DevModeTestUtils.getHttpResponse("/hello"));
+            Assertions.assertEquals(expectedMessage, DevModeTestUtils.getHttpResponse(path));
         } finally {
             process.destroy();
         }

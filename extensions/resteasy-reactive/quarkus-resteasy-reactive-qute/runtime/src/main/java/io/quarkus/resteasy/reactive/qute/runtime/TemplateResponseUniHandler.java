@@ -3,6 +3,8 @@ package io.quarkus.resteasy.reactive.qute.runtime;
 import static io.quarkus.resteasy.reactive.qute.runtime.Util.*;
 import static io.quarkus.resteasy.reactive.qute.runtime.Util.toUni;
 
+import javax.ws.rs.core.MediaType;
+
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
@@ -33,8 +35,9 @@ public class TemplateResponseUniHandler implements ServerRestHandler {
     }
 
     private Uni<String> createUni(ResteasyReactiveRequestContext requestContext, TemplateInstance result, Engine engine) {
-        setSelectedVariant(result, requestContext.getRequest(),
+        MediaType mediaType = setSelectedVariant(result, requestContext.getRequest(),
                 requestContext.getHttpHeaders().getAcceptableLanguages());
+        requestContext.setResponseContentType(mediaType);
         return toUni(result, engine);
     }
 

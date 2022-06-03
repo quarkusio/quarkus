@@ -6,6 +6,7 @@ http:
     port: 8080
     timeout: 60s
     io-threads: 200
+    bytes: dummy
 
     form:
       login-page: login.html

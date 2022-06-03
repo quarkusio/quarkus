@@ -1,5 +1,6 @@
 package io.quarkus.it.smallrye.config;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Period;
 import java.util.List;
@@ -10,6 +11,8 @@ import java.util.OptionalInt;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.Size;
+
+import org.eclipse.microprofile.config.spi.Converter;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -37,6 +40,9 @@ public interface Server extends Alias {
     @JsonProperty
     @WithName("io-threads")
     int threads();
+
+    @WithConverter(ByteArrayConverter.class)
+    byte[] bytes();
 
     @JsonProperty
     @WithParentName
@@ -153,6 +159,13 @@ public interface Server extends Alias {
             @JsonProperty
             @Size(max = 3)
             String username();
+        }
+    }
+
+    class ByteArrayConverter implements Converter<byte[]> {
+        @Override
+        public byte[] convert(String value) throws IllegalArgumentException, NullPointerException {
+            return value.getBytes(StandardCharsets.UTF_8);
         }
     }
 }

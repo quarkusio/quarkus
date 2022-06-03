@@ -13,7 +13,7 @@ Check the xref:mailer-reference.adoc[Quarkus Mailer Reference documentation] for
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * The SMTP hostname, port and credentials, and an email address
 * cURL
 
@@ -51,7 +51,7 @@ Click on "Generate your application", download the zip file and unzip it on your
 Open the generated project in your IDE.
 In a terminal, navigate to the project and start dev mode:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 === Implement the HTTP endpoint
 

@@ -10,11 +10,11 @@ include::./attributes.adoc[]
 
 In this guide, you will learn how to enable application data caching in any CDI managed bean of your Quarkus application.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Scenario
 
@@ -39,7 +39,7 @@ First, we need to create a new Quarkus project with the following command:
 
 :create-app-artifact-id: cache-quickstart
 :create-app-extensions: cache,resteasy-reactive-jackson
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates the project and imports the `cache` and `resteasy-reactive-jackson` extensions.
 
@@ -47,7 +47,7 @@ If you already have your Quarkus project configured, you can add the `cache` ext
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: cache
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -182,7 +182,7 @@ We're all done! Let's check if everything's working.
 
 First, run the application using dev mode from the project directory:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Then, call `http://localhost:8080/weather?city=Raleigh` from a browser.
 After six long seconds, the application will answer something like this:

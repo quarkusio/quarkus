@@ -12,7 +12,7 @@ how you can test it via a user-friendly UI named Swagger UI.
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -34,7 +34,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: openapi-swaggerui-quickstart
 :create-app-extensions: resteasy-reactive-jackson
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 == Expose a REST Resource
 
@@ -167,7 +167,7 @@ https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.0.md[OpenAPI
 You just need to add the `openapi` extension to your Quarkus application:
 
 :add-extension-extensions: quarkus-smallrye-openapi
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -188,7 +188,7 @@ implementation("io.quarkus:quarkus-smallrye-openapi")
 
 Now, we are ready to run our application:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Once your application is started, you can make a request to the default `/q/openapi` endpoint:
 

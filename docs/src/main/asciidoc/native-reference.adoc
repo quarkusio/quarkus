@@ -50,7 +50,7 @@ For Linux & MacOS users
 :create-app-artifact-id: debugging-native
 :create-app-extensions: resteasy-reactive,container-image-docker
 :create-app-code:
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 For Windows users
 

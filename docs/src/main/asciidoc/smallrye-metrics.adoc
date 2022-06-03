@@ -19,7 +19,7 @@ IMPORTANT: xref:micrometer.adoc[Micrometer] is the recommended approach to metri
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -45,14 +45,14 @@ To create a new project:
 
 :create-app-artifact-id: microprofile-metrics-quickstart
 :create-app-extensions: resteasy-reactive,smallrye-metrics
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Quarkus project that uses the `smallrye-metrics` extension.
 
 If you already have your Quarkus project configured, you can add the `smallrye-metrics` extension to your project by running the following command in your project base directory:
 
 :add-extension-extensions: smallrye-metrics
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This adds the following to your build file:
 
@@ -147,7 +147,7 @@ To execute the application created in xref:writing-an-application_{context}[], d
 :devtools-wrapped:
 . Run the microservice in dev mode:
 +
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 :!devtools-wrapped:
 
 . Generate values for the metrics.

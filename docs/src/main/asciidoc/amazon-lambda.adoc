@@ -19,7 +19,7 @@ bring up your Quarkus lambda project in dev or test mode and code on your projec
 == Prerequisites
 
 :prerequisites-time: 30 minutes
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * https://aws.amazon.com[An Amazon AWS account]
 * https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html[AWS CLI]
 * https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html[AWS SAM CLI], for local testing
@@ -111,7 +111,7 @@ create, update, delete, and invoke your lambdas for pure Java and native deploym
 
 Build the project:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 This will compile and package your code.
 
@@ -232,13 +232,13 @@ code to a native executable.  Just make sure to rebuild your project with the `-
 
 For Linux hosts, execute:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 NOTE: If you are building on a non-Linux system, you will need to also pass in a property instructing Quarkus to use a docker build as Amazon
 Lambda requires linux binaries.  You can do this by passing this property to your build:
 `-Dquarkus.native.container-build=true`. This requires you to have Docker installed locally, however.
 
-include::includes/devtools/build-native-container.adoc[]
+include::{includes}/devtools/build-native-container.adoc[]
 
 Either of these commands will compile and create a native executable image.  It also generates a zip file `target/function.zip`.
 This zip file contains your native executable image renamed to `bootstrap`.  This is a requirement of the AWS Lambda
@@ -305,7 +305,7 @@ While running in Quarkus Dev Mode, you can feed events to it by doing an HTTP PO
 The mock event server will receive the events and your lambda will be invoked.  You can perform live coding on your lambda
 and changes will automatically be recompiled and available the next invocation you make.  Here's an example:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 [source,bash]
 ----

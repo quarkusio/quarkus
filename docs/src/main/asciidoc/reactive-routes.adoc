@@ -709,7 +709,7 @@ You can add support for link:https://www.openapis.org/[OpenAPI] and link:https:/
 Add the extension by running this command:
 
 :add-extension-extensions: quarkus-smallrye-openapi
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 

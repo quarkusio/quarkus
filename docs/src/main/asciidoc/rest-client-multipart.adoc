@@ -24,7 +24,7 @@ requiring `multipart/form-data` content-type with very little effort.
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Solution
 
@@ -43,7 +43,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: rest-client-multipart-quickstart
 :create-app-extensions: rest-client,resteasy,resteasy-multipart
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates the Maven project with a REST endpoint and imports the `rest-client` and `resteasy` extensions.
 It also adds the `resteasy-multipart` extension to support `multipart/form-data` requests.
@@ -274,7 +274,7 @@ quarkus.rest-client."org.acme.rest.client.multipart.MultipartService".url=http:/
 
 Run the application with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 In a terminal, run `curl -X POST http://localhost:8080/client/multipart`
 
@@ -297,13 +297,13 @@ HELLO WORLD
 
 As usual, the application can be packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 And executed with `java -jar target/quarkus-app/quarkus-run.jar`.
 
 You can also generate the native executable with:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 == Further reading
 

@@ -515,7 +515,7 @@ This is great because you can define different combinations of Hibernate ORM pro
 You can start dev mode using a custom profile:
 
 :dev-additional-parameters: -Dquarkus.profile=dev-with-data
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 :!dev-additional-parameters:
 
 == Hibernate ORM in production mode

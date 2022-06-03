@@ -27,7 +27,7 @@ This guide covers:
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * The completed greeter application from the xref:getting-started.adoc[Getting Started Guide]
 
 == Architecture

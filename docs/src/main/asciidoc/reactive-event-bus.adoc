@@ -27,13 +27,13 @@ If you are creating a new project, set the `extensions` parameter are follows:
 
 :create-app-artifact-id: vertx-quickstart
 :create-app-extensions: vertx,resteasy-reactive
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 If you have an already created project, the `vertx` extension can be added to an existing Quarkus project with
 the `add-extension` command:
 
 :add-extension-extensions: vertx
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 Otherwise, you can manually add this to the dependencies section of your build file:
 
@@ -291,11 +291,11 @@ First create a new project using:
 
 :create-app-artifact-id: vertx-http-quickstart
 :create-app-extensions: vertx,resteasy-reactive
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 You can already start the application in _dev mode_ using:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Then, creates a new JAX-RS resource with the following content:
 
@@ -374,11 +374,11 @@ To better understand, let's detail how the HTTP request/response has been handle
 
 This application can be packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 You can also compile it as a native executable with:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 == Using codecs
 

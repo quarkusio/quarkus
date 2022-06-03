@@ -11,11 +11,11 @@ include::./attributes.adoc[]
 This guide demonstrates how your Quarkus application can use JMS messaging via the
 Apache Qpid JMS AMQP client, or alternatively the Apache ActiveMQ Artemis JMS client.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * A running Artemis server, or Docker to start one
 
 == Architecture
@@ -53,7 +53,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: jms-quickstart
 :create-app-extensions: resteasy-reactive,qpid-jms
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a new project importing the quarkus-qpid-jms extension:
 
@@ -297,7 +297,7 @@ More detail about the configuration are available in the https://github.com/amqp
 If you followed the instructions, you should have the Artemis server running.
 Then, you just need to run the application using:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Open `http://localhost:8080/prices.html` in your browser.
 
@@ -305,11 +305,11 @@ Open `http://localhost:8080/prices.html` in your browser.
 
 You can build the native executable with:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 Or, if you don't have GraalVM installed, you can instead use Docker to build the native executable using:
 
-include::includes/devtools/build-native-container.adoc[]
+include::{includes}/devtools/build-native-container.adoc[]
 
 and then run with:
 
@@ -347,7 +347,7 @@ Create a new project with the following command:
 
 :create-app-artifact-id: jms-quickstart
 :create-app-extensions: resteasy-reactive,artemis-jms
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This creates a new project importing the quarkus-artemis-jms extension:
 

@@ -52,7 +52,7 @@ and https://github.com/graalvm/mandrel/releases[Mandrel releases].
 
 :prerequisites-docker:
 :prerequisites-graalvm-mandatory:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * A xref:configuring-c-development[working C development environment]
 * The code of the application developed in the xref:getting-started.adoc[Getting Started Guide].
 
@@ -197,7 +197,7 @@ this allows native image tests to also be run.
 
 Create a native executable using:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 [[graal-and-windows]]
 [NOTE]
@@ -349,7 +349,7 @@ to install as little software as possible).
 To this end, Quarkus provides a very convenient way of creating a native Linux executable by leveraging a container runtime such as Docker or podman.
 The easiest way of accomplishing this task is to execute:
 
-include::includes/devtools/build-native-container.adoc[]
+include::{includes}/devtools/build-native-container.adoc[]
 
 [TIP]
 ====
@@ -359,13 +359,13 @@ If you want to explicitely select the container runtime, you can do it with:
 For Docker:
 
 :build-additional-parameters: -Dquarkus.native.container-runtime=docker
-include::includes/devtools/build-native-container-parameters.adoc[]
+include::{includes}/devtools/build-native-container-parameters.adoc[]
 :!build-additional-parameters:
 
 For podman:
 
 :build-additional-parameters: -Dquarkus.native.container-runtime=podman
-include::includes/devtools/build-native-container-parameters.adoc[]
+include::{includes}/devtools/build-native-container-parameters.adoc[]
 :!build-additional-parameters:
 
 These are normal Quarkus config properties, so if you always want to build in a container
@@ -389,7 +389,7 @@ The reason for this is that the local build driver invoked through `-Dquarkus.na
 Building with Mandrel requires a custom builder image parameter to be passed additionally:
 
 :build-additional-parameters: -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor}
-include::includes/devtools/build-native-container-parameters.adoc[]
+include::{includes}/devtools/build-native-container-parameters.adoc[]
 :!build-additional-parameters:
 
 Please note that the above command points to a floating tag.

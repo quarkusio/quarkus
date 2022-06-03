@@ -65,7 +65,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: mongodb-panache-quickstart
 :create-app-extensions: resteasy-reactive-jackson,mongodb-panache
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven structure importing the RESTEasy Reactive Jackson and MongoDB with Panache extensions.
 After this, the `quarkus-mongodb-panache` extension has been added to your build file.

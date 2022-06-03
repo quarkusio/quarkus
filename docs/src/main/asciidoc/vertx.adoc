@@ -170,7 +170,7 @@ public Uni<String> readShortFile() {                                            
 
 In a terminal, navigate to the root of the project and run:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 In another terminal, run:
 

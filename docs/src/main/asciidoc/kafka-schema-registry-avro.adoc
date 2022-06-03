@@ -17,7 +17,7 @@ first going through the xref:kafka.adoc[Using Apache Kafka with Reactive Messagi
 
 :prerequisites-time: 30 minutes
 :prerequisites-docker-compose:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -47,7 +47,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: kafka-avro-schema-quickstart
 :create-app-extensions: resteasy-reactive-jackson,smallrye-reactive-messaging-kafka,apicurio-registry-avro
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 [TIP]
 ====
@@ -145,7 +145,7 @@ Create a file called `src/main/avro/movie.avsc` with the schema for our record (
 
 If you build the project with:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 the `movies.avsc` will get compiled to a `Movie.java` file
 placed in the `target/generated-sources/avsc` directory.
@@ -157,7 +157,7 @@ TIP: With Quarkus, there's no need to use a specific Maven plugin to process the
 
 If you run the project with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 the changes you do to the schema file will be
 automatically applied to the generated Java files.
@@ -299,7 +299,7 @@ They are both detected automatically.
 
 Start the application in dev mode:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Kafka broker and Apicurio Registry instance are started automatically thanks to Dev Services.
 See xref:kafka-dev-services.adoc[Dev Services for Kafka] and xref:apicurio-registry-dev-services.adoc[Dev Services for Apicurio Registry] for more details.
@@ -432,7 +432,7 @@ the containers with `docker-compose rm`
 
 You can build the application with:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 And run it in JVM mode with:
 
@@ -453,7 +453,7 @@ Specifying the registry URL on the command line is not very convenient, so you c
 
 You can build a native executable with:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 and run it with:
 
@@ -593,7 +593,7 @@ NOTE: We modified the `MovieResourceTest` that was generated together with the p
 subclass, `NativeMovieResourceIT`, that runs the same test against the native executable.
 To run it, execute:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 === Manual setup
 

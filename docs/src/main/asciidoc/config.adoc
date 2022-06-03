@@ -17,7 +17,7 @@ In this guide, we will learn how to configure a Quarkus application.
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Solution
 
@@ -34,7 +34,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: config-quickstart
 :create-app-extensions: resteasy-reactive
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 It generates:
 
@@ -164,7 +164,7 @@ public class GreetingResourceTest {
 
 Run the application with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Open your browser to http://localhost:8080/greeting.
 
@@ -173,13 +173,13 @@ You can add the `greeting.suffix`, remove the other properties, change the value
 
 As usual, the application can be packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 and executed using `java -jar target/quarkus-app/quarkus-run.jar`.
 
 You can also generate the native executable with:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 == Programmatically access the configuration
 

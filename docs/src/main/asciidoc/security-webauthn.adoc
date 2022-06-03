@@ -11,11 +11,11 @@ include::./attributes.adoc[]
 This guide demonstrates how your Quarkus application can use WebAuthn authentication instead of 
 passwords.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Introduction to WebAuthn
 
@@ -88,7 +88,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-webauthn-quickstart
 :create-app-extensions: security-webauthn,reactive-pg-client,resteasy-reactive,hibernate-reactive-panache,test-security-webauthn
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 [NOTE]
 ====
@@ -102,7 +102,7 @@ If you already have your Quarkus project configured, you can add the `security-w
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: security-webauthn
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -642,7 +642,7 @@ The application is now protected and the identities are provided by our database
 
 Run your application in dev mode with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 which will start a PostgreSQL Dev Service container,
 and open http://localhost:8080 in your browser.

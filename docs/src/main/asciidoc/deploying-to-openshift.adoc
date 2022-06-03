@@ -13,7 +13,7 @@ This guide covers generating and deploying OpenShift resources based on sane def
 == Prerequisites
 
 :prerequisites-no-graalvm:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * Access to an OpenShift cluster (Minishift is a viable option)
 * OpenShift CLI (Optional, only required for manual deployment)
 
@@ -24,7 +24,7 @@ First, we need a new project that contains the OpenShift extension. This can be 
 :create-app-artifact-id: openshift-quickstart
 :create-app-extensions: resteasy-reactive,openshift
 :create-app-code:
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 Quarkus offers the ability to automatically generate OpenShift resources based on sane defaults and user supplied configuration.
 The OpenShift extension is actually a wrapper extension that brings together the xref:deploying-to-kubernetes.adoc[kubernetes] and xref:container-image.adoc#s2i[container-image-s2i]
@@ -73,7 +73,7 @@ Finally, you don't need to use the OpenShift CLI at all.
 Instead, set the `quarkus.kubernetes-client.master-url` config property and authenticate with the `quarkus.kubernetes-client.token`, or `quarkus.kubernetes-client.username` and `quarkus.kubernetes-client.password` respectively:
 
 :build-additional-parameters: -Dquarkus.kubernetes-client.master-url=myServerUrl -Dquarkus.kubernetes-client.token=myToken
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 :!build-additional-parameters:
 
 == Build and Deployment
@@ -83,7 +83,7 @@ You can trigger a build and deployment in a single step or build the container i
 To trigger a build and deployment in a single step:
 
 :build-additional-parameters: -Dquarkus.kubernetes.deploy=true
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 :!build-additional-parameters:
 
 TIP: If you want to test your application immediately then set the `quarkus.openshift.route.expose` config property to `true` to <<exposing_routes,expose the service automatically>>, e.g. add `-Dquarkus.openshift.route.expose=true` to the command above.

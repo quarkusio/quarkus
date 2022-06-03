@@ -23,7 +23,7 @@ Otherwise, you can find more information in the Keycloak https://www.keycloak.or
 == Prerequisites
 
 :prerequisites-docker:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * https://stedolan.github.io/jq/[jq tool]
 * https://www.keycloak.org/docs/latest/server_installation/index.html[Keycloak]
 
@@ -65,7 +65,7 @@ Create a new project with the following command:
 
 :create-app-artifact-id: security-keycloak-authorization-quickstart
 :create-app-extensions: oidc,keycloak-authorization,resteasy-reactive-jackson
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a project, importing the `keycloak-authorization` extension which is an implementation of a Keycloak Adapter for Quarkus applications and provides all the necessary capabilities to integrate with a Keycloak Server and perform bearer token authorization.
 
@@ -73,7 +73,7 @@ If you already have your Quarkus project configured, you can add the `oidc` and 
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: oidc,keycloak-authorization
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -224,7 +224,7 @@ It explains why the endpoint has no `@RolesAllowed` annotations - the resource a
 
 To run the application in dev mode, use:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
 
@@ -245,7 +245,7 @@ When you're done playing with the `dev` mode" you can run it as a standard Java 
 
 First compile it:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 Then run it:
 
@@ -262,7 +262,7 @@ This implies that you no longer need to install a JVM on your production environ
 
 Compilation will take a bit longer, so this step is disabled by default; let's build again by enabling the `native` profile:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 After getting a cup of coffee, you'll be able to run this binary directly:
 

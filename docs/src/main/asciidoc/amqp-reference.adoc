@@ -25,7 +25,7 @@ To use the connector, you need to add the `quarkus-smallrye-reactive-messaging-a
 You can add the extension to your project using:
 
 :add-extension-extensions: quarkus-smallrye-reactive-messaging-amqp
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 Or just add the following dependency to your project:
 

@@ -9,11 +9,11 @@ include::./attributes.adoc[]
 
 This guide demonstrates how your Quarkus application can connect to a Redis server using the Redis Client extension.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * A running Redis server, or Docker Compose to start one
 
 == Architecture
@@ -39,7 +39,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: redis-quickstart
 :create-app-extensions: redis-client,resteasy-reactive-jackson
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a new project, importing the Redis extension.
 
@@ -48,7 +48,7 @@ If you already have your Quarkus project configured, you can add the `redis-clie
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: redis-client
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -391,7 +391,7 @@ public class IncrementResourceTest {
 If you followed the instructions, you should have the Redis server running.
 Then, you just need to run the application using:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Open another terminal and run the `curl http://localhost:8080/increments` command.
 
@@ -487,7 +487,7 @@ You can run the application as a conventional jar file.
 
 First, we will need to package it:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 NOTE: This command will start a Redis instance to execute the tests. Thus your Redis containers need to be stopped.
 
@@ -509,7 +509,7 @@ Compiling a native executable takes a bit longer, as GraalVM performs additional
 steps to remove unnecessary codepaths. Use the  `native` profile to compile a
 native executable:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 Once the build is finished, you can run the executable with:
 

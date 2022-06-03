@@ -17,7 +17,7 @@ You can scaffold a new Maven project with:
 :create-app-artifact-id: my-artifactId
 :create-app-code:
 :create-app-post-command:
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 If you are using the CLI, you can get the list of available options with:
 
@@ -88,12 +88,12 @@ Instructions to build the image and run the container are written in those Docke
 
 From inside a Quarkus project, you can obtain a list of the available extensions with:
 
-include::includes/devtools/extension-list.adoc[]
+include::{includes}/devtools/extension-list.adoc[]
 
 You can add an extension using:
 
 :add-extension-extensions: hibernate-validator
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 Extensions are passed using a comma-separated list.
 
@@ -119,7 +119,7 @@ $ ./mvnw quarkus:add-extensions -Dextensions=jdbc,agroal,non-exist-ent
 You can install all extensions which match a globbing pattern :
 
 :add-extension-extensions: smallrye-*
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 [[dev-mode]]
 == Development mode
@@ -127,7 +127,7 @@ include::includes/devtools/extension-add.adoc[]
 Quarkus comes with a built-in development mode.
 Run your application with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 You can then update the application sources, resources and configurations.
 The changes are automatically reflected in your running application.
@@ -148,7 +148,7 @@ Hit `CTRL+C` to stop the application.
 By default, `quarkus:dev` sets the debug host to `localhost` (for security reasons). If you need to change this, for example to enable debugging on all hosts, you can use the `-DdebugHost` option like so:
 
 :dev-additional-parameters: -DdebugHost=0.0.0.0
-include::includes/devtools/dev-parameters.adoc[]
+include::{includes}/devtools/dev-parameters.adoc[]
 :!dev-additional-parameters:
 ====
 
@@ -178,7 +178,7 @@ may want to leave it out of the properties file and specify it as a system prope
 
 The `mutable-jar` is then built in the same way that a regular Quarkus jar is built, i.e. by issuing:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 Before you start Quarkus on the remote host set the environment variable `QUARKUS_LAUNCH_DEVMODE=true`. If you are
 on bare metal you can set it via the `export QUARKUS_LAUNCH_DEVMODE=true` command and then run the application with the proper `java -jar ...` command to run the application.
@@ -269,7 +269,7 @@ An additional system property `suspend` can be used to suspend the JVM, when lau
 You can also run a Quarkus application in debug mode with a suspended JVM using:
 
 :dev-additional-parameters: -Dsuspend -Ddebug
-include::includes/devtools/dev-parameters.adoc[]
+include::{includes}/devtools/dev-parameters.adoc[]
 :!dev-additional-parameters:
 
 Then, attach your debugger to `localhost:5005`.
@@ -289,7 +289,7 @@ The next screen list the found modules; select the generated project and click o
 
 In a separated terminal, run:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 and enjoy a highly productive environment.
 
@@ -305,7 +305,7 @@ In IntelliJ:
 
 In a separated terminal or in the embedded terminal, run:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Enjoy!
 
@@ -319,7 +319,7 @@ In NetBeans:
 
 In a separated terminal or the embedded terminal, go to the project root and run:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Enjoy!
 
@@ -378,7 +378,7 @@ Verify that your `pom.xml` has the proper `native` profile (see <<build-tool-mav
 
 Create a native executable using:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 A native executable will be present in `target/`.
 
@@ -421,7 +421,7 @@ The native executable will be specific to your operating system.
 To create an executable that will run in a container, use the following:
 
 :build-additional-parameters: -Dquarkus.native.container-build=true
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 :!build-additional-parameters:
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
@@ -611,7 +611,7 @@ The profile can be provided directly in the Maven build's command thanks to the 
 
 // TODO switch to <profile-name-here> once escaping issue is fixed in Asciidoctor
 :build-additional-parameters: -Dquarkus.profile=profile-name-here
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 :!build-additional-parameters:
 
 However it is also possible to specify the profile directly in the POM file of the project using project properties, the Quarkus Maven plugin configuration properties or system properties set in the Quarkus Maven plugin configuration.

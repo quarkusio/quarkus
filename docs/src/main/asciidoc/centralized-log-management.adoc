@@ -19,7 +19,7 @@ By default, it is disabled, if you enable it but still use another handler (by d
 == Prerequisites
 
 :prerequisites-docker-compose:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Example application
 
@@ -29,13 +29,13 @@ Create an application with the `quarkus-logging-gelf` extension. You can use the
 
 :create-app-artifact-id: gelf-logging
 :create-app-extensions: resteasy-reactive,logging-gelf
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 If you already have your Quarkus project configured, you can add the `logging-gelf` extension
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: logging-gelf
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following dependency to your build file:
 

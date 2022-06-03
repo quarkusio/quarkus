@@ -19,12 +19,12 @@ It offers:
 * Built-in support for Consul and Kubernetes
 * Customizable client load-balancing strategies
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
 :prerequisites-docker:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * Access to a Kubernetes cluster (Minikube is a viable option)
 
 == Architecture
@@ -70,7 +70,7 @@ Create a Quarkus project importing the quarkus-rest-client-reactive and quarkus-
 
 :create-app-artifact-id: stork-kubernetes-quickstart
 :create-app-extensions: quarkus-rest-client-reactive,quarkus-resteasy-reactive
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 In the generated project, also add the following dependencies:
 
@@ -457,7 +457,7 @@ The responses should alternate randomly between `Hello from Red!` and `Hello fro
 
 You can compile this application into a native executable:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 Then, you need to build a container image based on the native executable. For this use the corresponding Dockerfile:
 

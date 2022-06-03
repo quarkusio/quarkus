@@ -11,7 +11,7 @@ This guide explains how your Quarkus application can read configuration properti
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Solution
 
@@ -28,7 +28,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-cloud-config-quickstart
 :create-app-extensions: resteasy-reactive,spring-cloud-config-client
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a project which imports the `spring-cloud-config-client` extension.
 
@@ -36,7 +36,7 @@ If you already have your Quarkus project configured, you can add the `spring-clo
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: spring-cloud-config-client
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -125,7 +125,7 @@ quarkus.spring-cloud-config.url=http://localhost:8888
 
 Run the application with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Open your browser to http://localhost:8080/greeting.
 

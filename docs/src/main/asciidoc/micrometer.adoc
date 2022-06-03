@@ -18,7 +18,7 @@ IMPORTANT: Micrometer is the recommended approach to metrics for Quarkus.
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -57,7 +57,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: micrometer-quickstart
 :create-app-extensions: resteasy-reactive,micrometer-registry-prometheus
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven project, that imports the `micrometer-registry-prometheus` extension as a dependency.
 This extension will load the core `micrometer` extension as well as additional library dependencies required to support
@@ -67,7 +67,7 @@ If you already have your Quarkus project configured, you can add the `micrometer
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: micrometer-registry-prometheus
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -159,7 +159,7 @@ Note that even numbers are added to the list, and odd numbers remove an element 
 
 Start your application in dev mode:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Then try the following sequence and look for `example_list_size` in the plain text output:
 
@@ -283,7 +283,7 @@ output. Note that the `_total` suffix is added when Micrometer applies Prometheu
 
 If you did not leave Quarkus running in dev mode, start it again:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Then execute the following sequence:
 
@@ -337,7 +337,7 @@ visiting the prime endpoint a few more times, look in the plain text output for 
 
 If you did not leave Quarkus running in dev mode, start it again:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Then execute the following sequence:
 

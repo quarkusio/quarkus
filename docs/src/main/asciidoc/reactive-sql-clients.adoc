@@ -75,12 +75,12 @@ If you are creating a new project, use the following command:
 
 :create-app-artifact-id: reactive-pg-client-quickstart
 :create-app-extensions: resteasy-reactive,reactive-pg-client
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 If you have an already created project, the `reactive-pg-client` extension can be added to an existing Quarkus project with the `add-extension` command:
 
 :add-extension-extensions: reactive-pg-client
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 Otherwise, you can manually add the dependency to your build file:
 
@@ -115,7 +115,7 @@ We will expose `Fruit` instances over HTTP in the JSON format.
 Consequently, you also need to add the `quarkus-resteasy-reactive-jackson` extension:
 
 :add-extension-extensions: resteasy-jackson
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 If you prefer not to use the command line, manually add the dependency to your build file:
 
@@ -271,7 +271,7 @@ public Multi<Fruit> get() {
 
 Now start Quarkus in dev mode with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Lastly, open your browser and navigate to http://localhost:8080/fruits, you should see:
 

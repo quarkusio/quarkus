@@ -23,7 +23,7 @@ Please read the xref:security-openid-connect-multitenancy.adoc[Using OpenID Conn
 === Prerequisites
 
 :prerequisites-docker:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * https://stedolan.github.io/jq/[jq tool]
 
 === Architecture
@@ -56,7 +56,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-openid-connect-quickstart
 :create-app-extensions: oidc,resteasy-reactive-jackson
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven project, importing the `oidc` extension
 which is an implementation of OIDC for Quarkus.
@@ -65,7 +65,7 @@ If you already have your Quarkus project configured, you can add the `oidc` exte
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: oidc
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -204,7 +204,7 @@ either `quarkus-keycloak-admin-client` or the `quarkus-keycloak-admin-client-rea
 
 To run the application in a dev mode, use:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
 
@@ -225,7 +225,7 @@ When you're done playing with the `dev` mode" you can run it as a standard Java 
 
 First compile it:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 Then run it:
 
@@ -245,7 +245,7 @@ the produced binary, and optimized to run with minimal resource overhead.
 Compilation will take a bit longer, so this step is disabled by default;
 let's build again by enabling the `native` profile:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 After getting a cup of coffee, you'll be able to run this binary directly:
 

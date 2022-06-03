@@ -11,14 +11,14 @@ include::./attributes.adoc[]
 Modern applications often need to run specific tasks periodically.
 In this guide, you learn how to schedule periodic clustered tasks using the http://www.quartz-scheduler.org/[Quartz] extension.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 TIP: If you only need to run in-memory scheduler use the xref:scheduler.adoc[Scheduler] extension.
 
 == Prerequisites
 
 :prerequisites-docker-compose:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -39,7 +39,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: quartz-quickstart
 :create-app-extensions: resteasy-reactive-jackson,quartz,hibernate-orm-panache,flyway,jdbc-postgresql
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 It generates:
 
@@ -54,7 +54,7 @@ If you already have your Quarkus project configured, you can add the `quartz` ex
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: quartz
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -380,25 +380,25 @@ docker-compose up postgres <1>
 
 Run the application with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 After a few seconds, open another terminal and run `curl localhost:8080/tasks` to verify that we have at least one task created.
 
 As usual, the application can be packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 and executed with `java -jar target/quarkus-app/quarkus-run.jar`.
 
 You can also generate the native executable with:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 == Packaging the application and run several instances
 
 The application can be packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 Once the build is successful, run the below command:
 
@@ -412,7 +412,7 @@ After a few seconds, in another terminal, run `curl localhost:8080/tasks` to ver
 
 You can also generate the native executable with:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 WARNING: It's the reponsibility of the deployer to clear/remove the previous state, i.e. stale jobs and triggers. Moreover, the applications that form the "Quartz cluster" should be identical, otherwise an unpredictable result may occur.
 

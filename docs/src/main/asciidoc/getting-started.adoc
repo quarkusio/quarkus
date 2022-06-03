@@ -30,7 +30,7 @@ This guide covers:
 == Prerequisites
 
 :prerequisites-no-graalvm:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 [TIP]
 .Verify Maven is using the Java you expect
@@ -74,7 +74,7 @@ For Linux & MacOS users
 :create-app-artifact-id: getting-started
 :create-app-extensions: resteasy-reactive
 :create-app-code:
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 For Windows users
 
@@ -188,7 +188,7 @@ of the resource is created and not one per request. You can configure this using
 
 Now we are ready to run our application:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 [source,shell]
 ----
@@ -293,7 +293,7 @@ If you stopped the application
 (keep in mind you don't have to do it, changes will be automatically deployed by our live reload feature),
 restart the application with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Then check that the endpoint returns `hello quarkus` as expected:
 
@@ -454,7 +454,7 @@ Be sure to read the xref:cdi-reference.adoc#bean_discovery[Bean Discovery] secti
 
 The application is packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 It produces several outputs in `/target`:
 

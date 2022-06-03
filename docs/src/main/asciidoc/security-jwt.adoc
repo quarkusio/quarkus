@@ -18,7 +18,7 @@ OpenID Connect extension has to be used if the Quarkus application needs to auth
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Quickstart
 
@@ -37,7 +37,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-jwt-quickstart
 :create-app-extensions: resteasy-reactive-jackson,smallrye-jwt,smallrye-jwt-build
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates the Maven project and imports the `smallrye-jwt` extension, which includes the {mp-jwt} support.
 
@@ -45,7 +45,7 @@ If you already have your Quarkus project configured, you can add the `smallrye-j
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: smallrye-jwt,smallrye-jwt-build
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -140,7 +140,7 @@ public class TokenSecuredResource {
 
 Now we are ready to run our application. Use:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 and you should see output similar to:
 
@@ -562,7 +562,7 @@ hello + jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birth
 
 As usual, the application can be packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 And executed using `java -jar target/quarkus-app/quarkus-run.jar`:
 
@@ -576,7 +576,7 @@ $ java -jar target/quarkus-app/quarkus-run.jar
 
 You can also generate the native executable with:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 .Native Executable Example
 [source,shell]

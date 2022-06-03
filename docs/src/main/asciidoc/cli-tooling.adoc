@@ -11,7 +11,7 @@ include::./attributes.adoc[]
 The `quarkus` command lets you create projects, manage extensions and
 do essential build and dev commands using the underlying project build tool.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Installing the CLI
 

@@ -15,7 +15,7 @@ Finally, when either one of container image extensions is present (see the xref:
 == Prerequisites
 
 :prerequisites-no-graalvm:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * Access to a Kubernetes cluster (Minikube is a viable option)
 
 [#kubernetes]
@@ -26,7 +26,7 @@ Let's create a new project that contains both the Kubernetes and Jib extensions:
 :create-app-artifact-id: kubernetes-quickstart
 :create-app-extensions: resteasy-reactive,kubernetes,jib
 :create-app-code:
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This added the following dependencies to the build file:
 
@@ -58,7 +58,7 @@ implementation("io.quarkus:quarkus-container-image-jib")
 By adding these dependencies, we enable the generation of Kubernetes manifests each time we perform a build while also enabling the build of a container image using Jib.
 For example, following the execution of:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 you will notice amongst the other files that are created, two files named
 `kubernetes.json` and `kubernetes.yml` in the `target/kubernetes/` directory.

@@ -17,7 +17,7 @@ include::./platform-include.adoc[]
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * A running link:https://cassandra.apache.org[Apache Cassandra],
 link:https://www.datastax.fr/products/datastax-enterprise[DataStax Enterprise] (DSE) or
 link:https://astra.datastax.com[DataStax Astra] database; or alternatively, a fresh Docker

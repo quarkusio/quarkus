@@ -14,7 +14,7 @@ This guide covers how to use Hibernate Validator/Bean Validation for:
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -39,7 +39,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: validation-quickstart
 :create-app-extensions: resteasy-reactive-jackson,hibernate-validator
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven structure importing the RESTEasy Reactive/JAX-RS, Jackson and Hibernate Validator/Bean Validation extensions.
 
@@ -47,7 +47,7 @@ If you already have your Quarkus project configured, you can add the `hibernate-
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: hibernate-validator
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 The result of this command is dependent on your build tool:
 
@@ -252,7 +252,7 @@ In the `src/main/resources/META-INF/resources` directory, replace the `index.htm
 
 Now, let's see our application in action. Run it with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Then, open your browser to http://localhost:8080/:
 
@@ -263,13 +263,13 @@ image:validation-guide-screenshot.png[alt=Application]
 
 The application can be packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 and executed using `java -jar target/quarkus-app/quarkus-run.jar`.
 
 You can also build the native executable using:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 == Going further
 

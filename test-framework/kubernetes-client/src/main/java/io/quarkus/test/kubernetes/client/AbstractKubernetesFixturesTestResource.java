@@ -7,17 +7,11 @@ import java.util.concurrent.TimeUnit;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
-public abstract class AbstractKubernetesFixturesTestResource extends AbstractNamespaceManagingTestResource {
+public abstract class AbstractKubernetesFixturesTestResource extends
+        AbstractNamespaceCreatingTestResource {
     private List<HasMetadata> resourceFixtures = Collections.emptyList();
     private int waitAtMostSecondsForFixturesReadiness;
     private boolean createNSIfNeeded;
-
-    @Override
-    public int order() {
-        // if WithDisposableNamespace is used, make sure we start after it so that we use the same
-        // namespace if we're not creating the resources in a specific namespace
-        return 1;
-    }
 
     @Override
     protected Map<String, String> doStart() {

@@ -12,7 +12,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.utils.KubernetesResourceUtil;
 import io.quarkus.test.common.QuarkusTestResourceConfigurableLifecycleManager;
 
-public class DisposableNamespaceTestResource extends AbstractNamespaceManagingTestResource
+public class DisposableNamespaceTestResource extends AbstractNamespaceCreatingTestResource
         implements
         QuarkusTestResourceConfigurableLifecycleManager<WithDisposableNamespace> {
 

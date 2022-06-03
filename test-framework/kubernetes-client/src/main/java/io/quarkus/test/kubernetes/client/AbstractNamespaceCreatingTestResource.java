@@ -6,19 +6,11 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.awaitility.Awaitility;
-import org.slf4j.Logger;
 
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
-public abstract class AbstractNamespaceManagingTestResource implements
-        QuarkusTestResourceLifecycleManager {
-
-    private String namespace;
-    private KubernetesClient client;
+public abstract class AbstractNamespaceCreatingTestResource extends AbstractNamespaceConnectingTestResource {
 
     private boolean createdNamespace = false;
     private Context context;
@@ -39,8 +31,11 @@ public abstract class AbstractNamespaceManagingTestResource implements
 
     @Override
     public void stop() {
+        final var client = client();
+
         if (createdNamespace) {
             // todo: add namespace preservation on error if/when quarkusio/quarkus#25905 becomes available
+            final var namespace = namespace();
             logger().info("Deleting namespace '{}'", namespace);
             client.namespaces().withName(namespace).delete();
             final var secondsToWaitForNamespaceDeletion = numberOfSecondsToWaitForNamespaceDeletion();
@@ -59,21 +54,10 @@ public abstract class AbstractNamespaceManagingTestResource implements
         client.close();
     }
 
-    protected void initNamespaceAndClient(String optionalNamespace) {
-        final var defaultKubernetesClient = new DefaultKubernetesClient();
-
-        var namespace = optionalNamespace;
-        if (namespace == null || AnnotationConstants.UNSET_STRING_VALUE.equals(namespace)) {
-            // connect to the namespace configured by default but let subclasses the opportunity to decide otherwise
-            namespace = defaultNamespaceName(defaultKubernetesClient);
-        }
-        this.namespace = namespace;
-
-        client = defaultKubernetesClient.inNamespace(namespace);
-    }
-
     protected void createNamespaceIfRequested() {
+        final var client = client();
         final var configuration = client.getConfiguration();
+        final var namespace = namespace();
         logger().info("Connecting to cluster {}", configuration.getMasterUrl());
 
         if (client.namespaces().withName(namespace).get() != null) {
@@ -107,23 +91,9 @@ public abstract class AbstractNamespaceManagingTestResource implements
         return 0;
     }
 
-    protected String namespace() {
-        return namespace;
-    }
-
-    protected KubernetesClient client() {
-        return client;
-    }
-
-    protected String defaultNamespaceName(KubernetesClient client) {
-        return client.getNamespace();
-    }
-
     protected abstract Map<String, String> doStart();
 
     protected abstract void doStop(boolean deletedNamespace);
 
     protected abstract Class<? extends Annotation> relatedAnnotationClass();
-
-    protected abstract Logger logger();
 }

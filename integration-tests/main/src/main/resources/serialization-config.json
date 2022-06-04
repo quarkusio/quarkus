@@ -1,9 +1,0 @@
-{
-   "types":[
-              {"name":"io.quarkus.it.rest.SerializableDoubleFunction"},
-              {"name":"java.lang.invoke.SerializedLambda"}
-           ],
-   "lambdaCapturingTypes":[
-              {"name":"java.util.Comparator"}
-           ]
-}

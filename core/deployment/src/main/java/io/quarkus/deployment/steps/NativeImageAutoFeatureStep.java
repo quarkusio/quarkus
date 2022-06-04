@@ -94,6 +94,7 @@ public class NativeImageAutoFeatureStep {
     static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
     static final String JNI_RUNTIME_ACCESS = "com.oracle.svm.core.jni.JNIRuntimeAccess";
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
+    static final String DURING_SETUP_ACCESS = Feature.DuringSetupAccess.class.getName();
     static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
     static final String LEGACY_LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.LocalizationFeature";
     static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.localization.LocalizationFeature";
@@ -143,7 +144,27 @@ public class NativeImageAutoFeatureStep {
                 Object.class.getName(), Feature.class.getName());
         file.addAnnotation("com.oracle.svm.core.annotate.AutomaticFeature");
 
-        //MethodCreator afterReg = file.getMethodCreator("afterRegistration", void.class, "org.graalvm.nativeimage.Feature$AfterRegistrationAccess");
+        MethodCreator duringSetup = file.getMethodCreator("duringSetup", "V", DURING_SETUP_ACCESS);
+        // Register Lambda Capturing Types
+        if (!lambdaCapturingTypeBuildItems.isEmpty()) {
+            ResultHandle runtimeSerializationSupportSingleton = duringSetup.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
+                    duringSetup.loadClassFromTCCL("org.graalvm.nativeimage.impl.RuntimeSerializationSupport"));
+            ResultHandle configAlwaysTrue = duringSetup.invokeStaticMethod(CONFIGURATION_ALWAYS_TRUE);
+
+            for (LambdaCapturingTypeBuildItem i : lambdaCapturingTypeBuildItems) {
+                TryBlock tryBlock = duringSetup.tryBlock();
+
+                tryBlock.invokeInterfaceMethod(REGISTER_LAMBDA_CAPTURING_CLASS, runtimeSerializationSupportSingleton,
+                        configAlwaysTrue,
+                        tryBlock.load(i.getClassName()));
+
+                CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
+                catchBlock.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class),
+                        catchBlock.getCaughtException());
+            }
+        }
+        duringSetup.returnValue(null);
+
         MethodCreator beforeAn = file.getMethodCreator("beforeAnalysis", "V", BEFORE_ANALYSIS_ACCESS);
         TryBlock overallCatch = beforeAn.tryBlock();
         //TODO: at some point we are going to need to break this up, as if it get too big it will hit the method size limit
@@ -310,25 +331,6 @@ public class NativeImageAutoFeatureStep {
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
             overallCatch.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class),
                     overallCatch.load(i.serviceDescriptorFile()));
-        }
-
-        // Register Lambda Capturing Types
-        if (!lambdaCapturingTypeBuildItems.isEmpty()) {
-            ResultHandle runtimeSerializationSupportSingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
-                    overallCatch.loadClassFromTCCL("org.graalvm.nativeimage.impl.RuntimeSerializationSupport"));
-            ResultHandle configAlwaysTrue = overallCatch.invokeStaticMethod(CONFIGURATION_ALWAYS_TRUE);
-
-            for (LambdaCapturingTypeBuildItem i : lambdaCapturingTypeBuildItems) {
-                TryBlock tryBlock = overallCatch.tryBlock();
-
-                tryBlock.invokeInterfaceMethod(REGISTER_LAMBDA_CAPTURING_CLASS, runtimeSerializationSupportSingleton,
-                        configAlwaysTrue,
-                        tryBlock.load(i.getClassName()));
-
-                CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
-                catchBlock.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class),
-                        catchBlock.getCaughtException());
-            }
         }
 
         if (!resourceBundles.isEmpty()) {

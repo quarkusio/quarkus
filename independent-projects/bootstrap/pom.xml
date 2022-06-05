@@ -38,7 +38,7 @@
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
 
         <!-- Dependency versions -->
-        <assertj.version>3.22.0</assertj.version>
+        <assertj.version>3.23.1</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
         <jsoup.version>1.14.2</jsoup.version> <!-- wagon-http dependency -->

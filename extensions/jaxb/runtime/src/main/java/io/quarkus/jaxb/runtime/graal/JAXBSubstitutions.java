@@ -57,8 +57,8 @@ final class Target_com_sun_xml_bind_v2_runtime_reflect_opt_AccessorInjector {
 final class Target_com_sun_xml_bind_v2_model_annotation_RuntimeInlineAnnotationReader {
 
     @Alias
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FromAlias)
-    private Map<Class<? extends Annotation>, Map<Package, Annotation>> packageCache = new HashMap<>();
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.NewInstance, declClass = HashMap.class)
+    private Map<Class<? extends Annotation>, Map<Package, Annotation>> packageCache;
 
     @Substitute
     public <A extends Annotation> A getFieldAnnotation(Class<A> annotation, Field field, Locatable srcPos) {

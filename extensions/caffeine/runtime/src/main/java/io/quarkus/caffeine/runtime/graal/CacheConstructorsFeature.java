@@ -6,8 +6,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
-import com.oracle.svm.core.annotate.AutomaticFeature;
-
 /**
  * This Automatic Feature for GraalVM will register for reflection
  * the most commonly used cache implementations from Caffeine.
@@ -20,8 +18,7 @@ import com.oracle.svm.core.annotate.AutomaticFeature;
  * Caffeine is indeed being used: only if the cache builder is reachable
  * in the application code.
  */
-@AutomaticFeature
-public class CacheConstructorsAutofeature implements Feature {
+public class CacheConstructorsFeature implements Feature {
 
     private final AtomicBoolean triggered = new AtomicBoolean(false);
 

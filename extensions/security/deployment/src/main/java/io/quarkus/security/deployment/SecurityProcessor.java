@@ -46,10 +46,12 @@ import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -231,6 +233,20 @@ public class SecurityProcessor {
         }
     }
 
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    NativeImageFeatureBuildItem bouncyCastleFeature(
+            List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
+            List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {
+
+        Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
+        Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(bouncyCastleProviders);
+
+        if (bouncyCastleJsseProvider.isPresent() || bouncyCastleProvider.isPresent()) {
+            return new NativeImageFeatureBuildItem("io.quarkus.security.BouncyCastleFeature");
+        }
+        return null;
+    }
+
     @BuildStep
     void addBouncyCastleProvidersToNativeImage(
             BuildProducer<GeneratedNativeImageClassBuildItem> nativeImageClass,
@@ -251,12 +267,11 @@ public class SecurityProcessor {
                 }
             }, "io.quarkus.security.BouncyCastleFeature", null, Object.class.getName(),
                     org.graalvm.nativeimage.hosted.Feature.class.getName());
-            file.addAnnotation("com.oracle.svm.core.annotate.AutomaticFeature");
 
-            MethodCreator beforeAn = file.getMethodCreator("beforeAnalysis", "V",
-                    org.graalvm.nativeimage.hosted.Feature.BeforeAnalysisAccess.class.getName());
+            MethodCreator afterRegistration = file.getMethodCreator("afterRegistration", "V",
+                    org.graalvm.nativeimage.hosted.Feature.AfterRegistrationAccess.class.getName());
 
-            TryBlock overallCatch = beforeAn.tryBlock();
+            TryBlock overallCatch = afterRegistration.tryBlock();
 
             if (bouncyCastleJsseProvider.isPresent()) {
                 // BCJSSE or BCJSSEFIPS
@@ -318,7 +333,7 @@ public class SecurityProcessor {
             // Complete BouncyCastle AutoFeature generation
             CatchBlockCreator print = overallCatch.addCatch(Throwable.class);
             print.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), print.getCaughtException());
-            beforeAn.returnValue(null);
+            afterRegistration.returnValue(null);
             file.close();
         }
 

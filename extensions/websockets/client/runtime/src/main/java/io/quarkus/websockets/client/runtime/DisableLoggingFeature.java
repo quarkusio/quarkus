@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.search.orm.elasticsearch.runtime.graal;
+package io.quarkus.websockets.client.runtime;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -7,16 +7,13 @@ import java.util.logging.Logger;
 
 import org.graalvm.nativeimage.hosted.Feature;
 
-import com.oracle.svm.core.annotate.AutomaticFeature;
-
 /**
  * Disables logging during the analysis phase
  */
-@AutomaticFeature
-public class DisableLoggingAutoFeature implements Feature {
+public class DisableLoggingFeature implements Feature {
 
     private static final String[] CATEGORIES = {
-            "org.hibernate.search.mapper.orm.bootstrap.impl.HibernateSearchPreIntegrationService"
+            "io.undertow.websockets",
     };
 
     private final Map<String, Level> categoryMap = new HashMap<>(CATEGORIES.length);

@@ -6,11 +6,8 @@ import java.io.InputStreamReader;
 
 import org.graalvm.nativeimage.hosted.Feature;
 
-import com.oracle.svm.core.annotate.AutomaticFeature;
-
 import io.quarkus.runtime.ResourceHelper;
 
-@AutomaticFeature
 public class ResourcesFeature implements Feature {
 
     public static final String META_INF_QUARKUS_NATIVE_RESOURCES_TXT = "META-INF/quarkus-native-resources.txt";

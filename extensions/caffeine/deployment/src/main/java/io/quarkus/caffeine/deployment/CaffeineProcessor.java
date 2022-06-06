@@ -7,10 +7,13 @@ import java.util.List;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
+import io.quarkus.caffeine.runtime.graal.CacheConstructorsFeature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
 public class CaffeineProcessor {
 
@@ -40,5 +43,10 @@ public class CaffeineProcessor {
                 reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, name));
             }
         }
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    NativeImageFeatureBuildItem nativeImageFeature() {
+        return new NativeImageFeatureBuildItem(CacheConstructorsFeature.class);
     }
 }

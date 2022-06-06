@@ -33,9 +33,11 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
@@ -51,6 +53,7 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElas
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit.ElasticsearchIndexBuildTimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRecorder;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.graal.DisableLoggingFeature;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
 class HibernateSearchElasticsearchProcessor {
@@ -59,9 +62,14 @@ class HibernateSearchElasticsearchProcessor {
 
     HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig;
 
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    NativeImageFeatureBuildItem nativeImageFeature() {
+        return new NativeImageFeatureBuildItem(DisableLoggingFeature.class);
+    }
+
     @BuildStep
     void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
-        // if the category changes, please also update DisableLoggingAutoFeature in the runtime module
+        // if the category changes, please also update DisableLoggingFeature in the runtime module
         filters.produce(new LogCleanupFilterBuildItem(
                 "org.hibernate.search.mapper.orm.bootstrap.impl.HibernateSearchPreIntegrationService", "HSEARCH000034"));
     }

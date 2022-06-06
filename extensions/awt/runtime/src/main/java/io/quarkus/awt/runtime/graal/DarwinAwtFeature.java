@@ -6,11 +6,8 @@ import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 
-import com.oracle.svm.core.annotate.AutomaticFeature;
-
 import io.quarkus.runtime.util.JavaVersionUtil;
 
-@AutomaticFeature
 @Platforms({ Platform.DARWIN_AMD64.class, Platform.DARWIN_AARCH64.class })
 public class DarwinAwtFeature implements Feature {
     @Override

@@ -126,7 +126,7 @@ this, however there are a few cases where this is necessary:
 - Some logging related classes, as logging must be loaded by the system ClassLoader
 - Quarkus bootstrap itself
 
-If this is required it can be configured in the `quarkus-bootstrap-maven-plugin`. Note that if you
+If this is required it can be configured in the `quarkus-extension-maven-plugin`. Note that if you
 mark a dependency as parent first then all of its dependencies must also be parent first,
 or a `LinkageError` can occur.
 
@@ -134,7 +134,7 @@ or a `LinkageError` can occur.
 ----
 <plugin>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+    <artifactId>quarkus-extension-maven-plugin</artifactId>
     <configuration>
         <parentFirstArtifacts>
             <parentFirstArtifact>io.quarkus:quarkus-bootstrap-core</parentFirstArtifact>
@@ -153,14 +153,14 @@ There are some dependencies that we can be sure we do not want. This generally h
 change (e.g. smallrye-config changing groups from `org.smallrye` to `org.smallrye.config`, the `javax` -> `jakarta` rename).
 This can cause problems, as if these artifacts end up in the dependency tree out of date classes can be loaded that are
 not compatible with Quarkus. To deal with this extensions can specify artifacts that should never be loaded. This is
-done by modifying the `quarkus-bootstrap-maven-plugin` config in the pom (which generates the `quarkus-extension.properties`
+done by modifying the `quarkus-extension-maven-plugin` config in the pom (which generates the `quarkus-extension.properties`
 file). Simply add an `excludedArtifacts` section as shown below:
 
 [source,xml]
 ----
 <plugin>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+    <artifactId>quarkus-extension-maven-plugin</artifactId>
     <configuration>
         <excludedArtifacts>
             <excludedArtifact>io.smallrye:smallrye-config</excludedArtifact>

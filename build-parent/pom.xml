@@ -452,7 +452,7 @@
                 </plugin>
                 <plugin>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                    <artifactId>quarkus-extension-maven-plugin</artifactId>
                     <version>${project.version}</version>
                     <executions>
                         <execution>
@@ -487,7 +487,7 @@
                                          3.0.0 suffers from https://issues.apache.org/jira/browse/MENFORCER-394, so we need to wait for a fixed release.
                                     <requirePluginVersions>
                                         <phases>compile</phases>
-                                        <unCheckedPluginList>io.quarkus:quarkus-bootstrap-maven-plugin,io.quarkus:quarkus-platform-descriptor-json-plugin,io.quarkus:quarkus-maven-plugin</unCheckedPluginList>
+                                        <unCheckedPluginList>io.quarkus:quarkus-extension-maven-plugin,io.quarkus:quarkus-bootstrap-maven-plugin,io.quarkus:quarkus-platform-descriptor-json-plugin,io.quarkus:quarkus-maven-plugin</unCheckedPluginList>
                                     </requirePluginVersions>-->
                                     <bannedDependencies>
                                         <excludes>

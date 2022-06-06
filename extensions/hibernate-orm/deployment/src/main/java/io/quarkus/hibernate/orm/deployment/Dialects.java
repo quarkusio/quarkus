@@ -3,7 +3,7 @@ package io.quarkus.hibernate.orm.deployment;
 import java.util.List;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
-import io.quarkus.hibernate.orm.deployment.spi.DatasourceDbKindHibernateOrmMetadataBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
 public final class Dialects {
@@ -13,8 +13,8 @@ public final class Dialects {
     }
 
     public static String guessDialect(String persistenceUnitName, String resolvedDbKind,
-            List<DatasourceDbKindHibernateOrmMetadataBuildItem> dbKindMetadataBuildItems) {
-        for (DatasourceDbKindHibernateOrmMetadataBuildItem item : dbKindMetadataBuildItems) {
+            List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems) {
+        for (DatabaseKindDialectBuildItem item : dbKindDialectBuildItems) {
             if (DatabaseKind.is(resolvedDbKind, item.getDbKind())) {
                 return item.getDialect();
             }

@@ -121,7 +121,7 @@ import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.DatasourceDbKindHibernateOrmMetadataBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
@@ -172,22 +172,22 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     void registerHibernateOrmMetadataForCoreDialects(
-            BuildProducer<DatasourceDbKindHibernateOrmMetadataBuildItem> producer) {
-        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.DB2,
+            BuildProducer<DatabaseKindDialectBuildItem> producer) {
+        producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.DB2,
                 "org.hibernate.dialect.DB297Dialect"));
-        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.DERBY,
+        producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.DERBY,
                 "org.hibernate.dialect.DerbyTenSevenDialect"));
-        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.H2,
+        producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.H2,
                 "io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect"));
-        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.MARIADB,
+        producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MARIADB,
                 "org.hibernate.dialect.MariaDB106Dialect"));
-        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.MSSQL,
+        producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MSSQL,
                 "org.hibernate.dialect.SQLServer2016Dialect"));
-        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.MYSQL,
+        producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MYSQL,
                 "org.hibernate.dialect.MySQL8Dialect"));
-        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.ORACLE,
+        producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.ORACLE,
                 "org.hibernate.dialect.Oracle12cDialect"));
-        producer.produce(new DatasourceDbKindHibernateOrmMetadataBuildItem(DatabaseKind.POSTGRESQL,
+        producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.POSTGRESQL,
                 "io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect"));
     }
 
@@ -424,7 +424,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
-            List<DatasourceDbKindHibernateOrmMetadataBuildItem> dbKindMetadataBuildItems) {
+            List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
 
         if (!hasEntities(jpaModel)) {
             // we can bail out early as there are no entities
@@ -935,7 +935,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
-            List<DatasourceDbKindHibernateOrmMetadataBuildItem> dbKindMetadataBuildItems) {
+            List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
         if (!descriptors.isEmpty()) {
             if (hibernateOrmConfig.isAnyPropertySet() || !hibernateOrmConfig.persistenceUnits.isEmpty()) {
                 throw new ConfigurationException(
@@ -1016,7 +1016,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             Set<String> storageEngineCollector,
-            List<DatasourceDbKindHibernateOrmMetadataBuildItem> dbKindMetadataBuildItems) {
+            List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
         Optional<JdbcDataSourceBuildItem> jdbcDataSource = findJdbcDataSource(persistenceUnitName, persistenceUnitConfig,
                 jdbcDataSources);
 

@@ -26,6 +26,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ForceNonWeakReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.LambdaCapturingTypeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -117,7 +118,17 @@ public class NativeImageAutoFeatureStep {
     }
 
     @BuildStep
+    JPMSExportBuildItem addExportsToNativeImage(List<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses) {
+        // required in order to access com.oracle.svm.core.jni.JNIRuntimeAccess
+        if (jniRuntimeAccessibleClasses != null && !jniRuntimeAccessibleClasses.isEmpty()) {
+            return new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jni");
+        }
+        return null;
+    }
+
+    @BuildStep
     void generateFeature(BuildProducer<GeneratedNativeImageClassBuildItem> nativeImageClass,
+            BuildProducer<JPMSExportBuildItem> exports,
             List<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems,
             List<RuntimeInitializedPackageBuildItem> runtimeInitializedPackageBuildItems,
             List<RuntimeReinitializedClassBuildItem> runtimeReinitializedClassBuildItems,
@@ -239,6 +250,9 @@ public class NativeImageAutoFeatureStep {
         }
 
         if (!proxies.isEmpty()) {
+            // Needed to access DYNAMIC_PROXY_REGISTRY
+            exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk.proxy"));
+
             ResultHandle proxySupportClass = overallCatch.loadClassFromTCCL(DYNAMIC_PROXY_REGISTRY);
             ResultHandle proxySupport = overallCatch.invokeStaticMethod(
                     IMAGE_SINGLETONS_LOOKUP,
@@ -259,6 +273,9 @@ public class NativeImageAutoFeatureStep {
 
         /* Resource includes and excludes */
         if (!resourcePatterns.isEmpty()) {
+            // Needed to access LOOKUP_METHOD
+            exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.base", "com.oracle.svm.util"));
+
             ResultHandle resourcesRegistrySingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
                     overallCatch.loadClassFromTCCL("com.oracle.svm.core.configure.ResourcesRegistry"));
             TryBlock tc = overallCatch.tryBlock();
@@ -316,6 +333,9 @@ public class NativeImageAutoFeatureStep {
         }
 
         if (!resourceBundles.isEmpty()) {
+            // Needed to access LOCALIZATION_FEATURE
+            exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk.localization"));
+
             AssignableResultHandle registerMethod = overallCatch.createVariable(Method.class);
             AssignableResultHandle locClass = overallCatch.createVariable(Class.class);
             TryBlock locTryBlock = overallCatch.tryBlock();
@@ -474,6 +494,8 @@ public class NativeImageAutoFeatureStep {
 
             if (entry.getValue().serialization) {
                 if (registerSerializationMethod == null) {
+                    // Needed by createRegisterSerializationForClassMethod to access LOOKUP_METHOD
+                    exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.base", "com.oracle.svm.util"));
                     registerSerializationMethod = createRegisterSerializationForClassMethod(file);
                 }
 

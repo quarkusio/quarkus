@@ -7,8 +7,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
@@ -97,7 +97,8 @@ public class AppCDSBuildStep {
         }
 
         appCDS.produce(new AppCDSResultBuildItem(appCDSPath));
-        artifactResult.produce(new ArtifactResultBuildItem(appCDSPath, "appCDS", Collections.emptyMap()));
+        artifactResult.produce(new ArtifactResultBuildItem(appCDSPath, "appCDS",
+                Map.of("jar-result-path", jarResult.getPath())));
     }
 
     private String determineContainerImage(PackageConfig packageConfig,

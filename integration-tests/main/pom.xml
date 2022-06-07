@@ -512,6 +512,27 @@
                     <runOrder>alphabetical</runOrder>
                 </configuration>
             </plugin>
+            <plugin>
+                <artifactId>maven-invoker-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>integration-tests</id>
+                        <goals>
+                            <goal>run</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+                    <cloneClean>true</cloneClean>
+                    <preBuildHookScript>setup</preBuildHookScript>
+                    <postBuildHookScript>verify</postBuildHookScript>
+                    <addTestClassPath>true</addTestClassPath>
+                    <streamLogs>true</streamLogs>
+                    <invokerPropertiesFile>invoker.properties</invokerPropertiesFile>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

@@ -27,7 +27,7 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
 
     @Override
     public JarArtifactLauncher create(CreateContext context) {
-        String pathStr = context.quarkusArtifactProperties().getProperty("path");
+        String pathStr = getPath(context);
         if ((pathStr != null) && !pathStr.isEmpty()) {
             JarArtifactLauncher launcher;
             ServiceLoader<JarArtifactLauncher> loader = ServiceLoader.load(JarArtifactLauncher.class);
@@ -44,13 +44,21 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
                     ConfigUtil.waitTimeValue(config),
                     config.getOptionalValue("quarkus.test.native-image-profile", String.class).orElse(null),
-                    ConfigUtil.argLineValue(config),
+                    argLineValue(context, config),
                     context.devServicesLaunchResult(),
                     context.buildOutputDirectory().resolve(pathStr)));
             return launcher;
         } else {
             throw new IllegalStateException("The path of the native binary could not be determined");
         }
+    }
+
+    protected String getPath(CreateContext context) {
+        return context.quarkusArtifactProperties().getProperty("path");
+    }
+
+    protected List<String> argLineValue(CreateContext context, Config config) {
+        return ConfigUtil.argLineValue(config);
     }
 
     static class DefaultJarInitContext extends DefaultInitContextBase implements JarArtifactLauncher.JarInitContext {

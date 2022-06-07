@@ -230,8 +230,15 @@ public class AugmentActionImpl implements AugmentAction {
         Map<String, Object> metadata = lastResult.getMetadata();
         if (metadata != null) {
             for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+                String value = null;
                 if (entry.getValue() instanceof String) {
-                    properties.put("metadata." + entry.getKey(), entry.getValue());
+                    value = (String) entry.getValue();
+                } else if (entry.getValue() instanceof Path) {
+                    value = outputTargetBuildItem.getOutputDirectory().relativize((Path) entry.getValue()).toString();
+                }
+
+                if (value != null) {
+                    properties.put("metadata." + entry.getKey(), value);
                 }
             }
         }

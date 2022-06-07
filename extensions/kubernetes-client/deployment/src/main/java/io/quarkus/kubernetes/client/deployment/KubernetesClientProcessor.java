@@ -34,6 +34,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.jackson.deployment.IgnoreJsonDeserializeClassBuildItem;
+import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
 import io.quarkus.kubernetes.client.runtime.KubernetesConfigProducer;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
@@ -72,6 +73,7 @@ public class KubernetesClientProcessor {
 
     @BuildStep
     public void process(ApplicationIndexBuildItem applicationIndex, CombinedIndexBuildItem combinedIndexBuildItem,
+            KubernetesClientBuildConfig kubernetesClientConfig,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<FeatureBuildItem> featureProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -80,7 +82,9 @@ public class KubernetesClientProcessor {
             BuildProducer<KubernetesRoleBindingBuildItem> roleBindingProducer) {
 
         featureProducer.produce(new FeatureBuildItem(Feature.KUBERNETES_CLIENT));
-        roleBindingProducer.produce(new KubernetesRoleBindingBuildItem("view", true));
+        if (kubernetesClientConfig.generateRbac) {
+            roleBindingProducer.produce(new KubernetesRoleBindingBuildItem("view", true));
+        }
 
         // register fully (and not weakly) for reflection watchers, informers and custom resources
         final Set<DotName> watchedClasses = new HashSet<>();

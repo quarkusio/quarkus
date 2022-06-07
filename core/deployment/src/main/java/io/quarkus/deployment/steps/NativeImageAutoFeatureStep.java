@@ -2,7 +2,6 @@ package io.quarkus.deployment.steps;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
-import java.io.ObjectStreamClass;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
@@ -41,8 +40,6 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuil
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -239,39 +236,24 @@ public class NativeImageAutoFeatureStep {
             AssignableResultHandle resourcesArgs = tc.createVariable(Object[].class);
             AssignableResultHandle argsIndex = tc.createVariable(int.class);
 
-            BranchResult graalVm21_3Test = tc.ifGreaterEqualZero(
-                    tc.invokeVirtualMethod(VERSION_COMPARE_TO,
-                            tc.invokeStaticMethod(VERSION_CURRENT),
-                            tc.marshalAsArray(int.class, tc.load(21), tc.load(3))));
-            /* GraalVM >= 21.3 */
-            BytecodeCreator greaterThan21_2 = graalVm21_3Test.trueBranch();
-            ResultHandle argTypes = greaterThan21_2.newArray(Class.class, greaterThan21_2.load(2));
-            ResultHandle configurationConditionClass = greaterThan21_2.invokeStaticMethod(FOR_NAME,
-                    greaterThan21_2.load("org.graalvm.nativeimage.impl.ConfigurationCondition"),
-                    greaterThan21_2.load(false), tccl);
-            greaterThan21_2.writeArrayValue(argTypes, 0, configurationConditionClass);
-            greaterThan21_2.writeArrayValue(argTypes, 1, greaterThan21_2.loadClassFromTCCL(String.class));
-            greaterThan21_2.assign(resourcesArgTypes, argTypes);
-            ResultHandle args = greaterThan21_2.newArray(Object.class, greaterThan21_2.load(2));
-            ResultHandle alwaysTrueMethod = greaterThan21_2.invokeStaticMethod(LOOKUP_METHOD,
+            ResultHandle argTypes = tc.newArray(Class.class, tc.load(2));
+            ResultHandle configurationConditionClass = tc.invokeStaticMethod(FOR_NAME,
+                    tc.load("org.graalvm.nativeimage.impl.ConfigurationCondition"),
+                    tc.load(false), tccl);
+            tc.writeArrayValue(argTypes, 0, configurationConditionClass);
+            tc.writeArrayValue(argTypes, 1, tc.loadClassFromTCCL(String.class));
+            tc.assign(resourcesArgTypes, argTypes);
+            ResultHandle args = tc.newArray(Object.class, tc.load(2));
+            ResultHandle alwaysTrueMethod = tc.invokeStaticMethod(LOOKUP_METHOD,
                     configurationConditionClass,
-                    greaterThan21_2.load("alwaysTrue"),
-                    greaterThan21_2.newArray(Class.class, greaterThan21_2.load(0)));
-            ResultHandle alwaysTrueResult = greaterThan21_2.invokeVirtualMethod(INVOKE,
-                    alwaysTrueMethod, greaterThan21_2.loadNull(),
-                    greaterThan21_2.newArray(Object.class, greaterThan21_2.load(0)));
-            greaterThan21_2.writeArrayValue(args, 0, alwaysTrueResult);
-            greaterThan21_2.assign(resourcesArgs, args);
-            greaterThan21_2.assign(argsIndex, greaterThan21_2.load(1));
-
-            /* GraalVM < 21.3 */
-            BytecodeCreator smallerThan21_3 = graalVm21_3Test.falseBranch();
-            argTypes = smallerThan21_3.newArray(Class.class, smallerThan21_3.load(1));
-            smallerThan21_3.writeArrayValue(argTypes, 0, smallerThan21_3.loadClassFromTCCL(String.class));
-            smallerThan21_3.assign(resourcesArgTypes, argTypes);
-            args = smallerThan21_3.newArray(Object.class, smallerThan21_3.load(1));
-            smallerThan21_3.assign(resourcesArgs, args);
-            smallerThan21_3.assign(argsIndex, smallerThan21_3.load(0));
+                    tc.load("alwaysTrue"),
+                    tc.newArray(Class.class, tc.load(0)));
+            ResultHandle alwaysTrueResult = tc.invokeVirtualMethod(INVOKE,
+                    alwaysTrueMethod, tc.loadNull(),
+                    tc.newArray(Object.class, tc.load(0)));
+            tc.writeArrayValue(args, 0, alwaysTrueResult);
+            tc.assign(resourcesArgs, args);
+            tc.assign(argsIndex, tc.load(1));
 
             ResultHandle ignoreResourcesMethod = tc.invokeStaticMethod(LOOKUP_METHOD,
                     tc.loadClassFromTCCL("com.oracle.svm.core.configure.ResourcesRegistry"),
@@ -560,127 +542,20 @@ public class NativeImageAutoFeatureStep {
                 ofMethod(Thread.class, "getContextClassLoader", ClassLoader.class),
                 currentThread);
 
-        BranchResult graalVm21_3Test = tc.ifGreaterEqualZero(
-                tc.invokeVirtualMethod(VERSION_COMPARE_TO, tc.invokeStaticMethod(VERSION_CURRENT),
-                        tc.marshalAsArray(int.class, tc.load(21), tc.load(3))));
-
-        BytecodeCreator greaterThan21_3 = graalVm21_3Test.trueBranch();
-        ResultHandle runtimeSerializationClass = greaterThan21_3.invokeStaticMethod(FOR_NAME,
-                greaterThan21_3.load("org.graalvm.nativeimage.hosted.RuntimeSerialization"),
-                greaterThan21_3.load(false), tccl);
-        ResultHandle registerArgTypes = greaterThan21_3.newArray(Class.class, greaterThan21_3.load(1));
-        greaterThan21_3.writeArrayValue(registerArgTypes, 0, greaterThan21_3.loadClassFromTCCL(Class[].class));
-        ResultHandle registerLookupMethod = greaterThan21_3.invokeStaticMethod(LOOKUP_METHOD, runtimeSerializationClass,
-                greaterThan21_3.load("register"), registerArgTypes);
-        ResultHandle registerArgs = greaterThan21_3.newArray(Object.class, greaterThan21_3.load(1));
-        ResultHandle classesToRegister = greaterThan21_3.newArray(Class.class, greaterThan21_3.load(1));
-        greaterThan21_3.writeArrayValue(classesToRegister, 0, clazz);
-        greaterThan21_3.writeArrayValue(registerArgs, 0, classesToRegister);
-        greaterThan21_3.invokeVirtualMethod(INVOKE, registerLookupMethod,
-                greaterThan21_3.loadNull(), registerArgs);
-        greaterThan21_3.returnValue(null);
-
-        ResultHandle serializationRegistryClass = tc.invokeStaticMethod(FOR_NAME,
-                tc.load("com.oracle.svm.core.jdk.serialize.SerializationRegistry"),
+        ResultHandle runtimeSerializationClass = tc.invokeStaticMethod(FOR_NAME,
+                tc.load("org.graalvm.nativeimage.hosted.RuntimeSerialization"),
                 tc.load(false), tccl);
-        ResultHandle addReflectionsClass = tc.invokeStaticMethod(FOR_NAME,
-                tc.load("com.oracle.svm.reflect.serialize.hosted.SerializationFeature"),
-                tc.load(false), tccl);
-
-        ResultHandle serializationSupport = tc.invokeStaticMethod(
-                IMAGE_SINGLETONS_LOOKUP,
-                serializationRegistryClass);
-
-        ResultHandle addReflectionsLookupArgs = tc.newArray(Class.class, tc.load(2));
-        tc.writeArrayValue(addReflectionsLookupArgs, 0, tc.loadClassFromTCCL(Class.class));
-        tc.writeArrayValue(addReflectionsLookupArgs, 1, tc.loadClassFromTCCL(Class.class));
-        ResultHandle addReflectionsLookupMethod = tc.invokeStaticMethod(LOOKUP_METHOD, addReflectionsClass,
-                tc.load("addReflections"), addReflectionsLookupArgs);
-
-        ResultHandle reflectionFactory = tc.invokeStaticMethod(
-                ofMethod("sun.reflect.ReflectionFactory", "getReflectionFactory", "sun.reflect.ReflectionFactory"));
-
-        AssignableResultHandle newSerializationConstructor = tc.createVariable(Constructor.class);
-
-        ResultHandle externalizableClass = tc.invokeStaticMethod(FOR_NAME, tc.load("java.io.Externalizable"), tc.load(false),
-                tccl);
-
-        BranchResult isExternalizable = tc
-                .ifTrue(tc.invokeVirtualMethod(ofMethod(Class.class, "isAssignableFrom", boolean.class, Class.class),
-                        externalizableClass, clazz));
-        BytecodeCreator ifIsExternalizable = isExternalizable.trueBranch();
-
-        ResultHandle array1 = ifIsExternalizable.newArray(Class.class, tc.load(1));
-        ResultHandle classClass = ifIsExternalizable.invokeStaticMethod(FOR_NAME,
-                ifIsExternalizable.load("java.lang.Class"), ifIsExternalizable.load(false), tccl);
-        ifIsExternalizable.writeArrayValue(array1, 0, classClass);
-
-        ResultHandle externalizableLookupMethod = ifIsExternalizable.invokeStaticMethod(LOOKUP_METHOD,
-                ifIsExternalizable.loadClassFromTCCL(ObjectStreamClass.class),
-                ifIsExternalizable.load("getExternalizableConstructor"),
-                array1);
-
-        ResultHandle array2 = ifIsExternalizable.newArray(Object.class, tc.load(1));
-        ifIsExternalizable.writeArrayValue(array2, 0, clazz);
-
-        ResultHandle externalizableConstructor = ifIsExternalizable.invokeVirtualMethod(
-                INVOKE, externalizableLookupMethod, ifIsExternalizable.loadNull(), array2);
-
-        ResultHandle externalizableConstructorClass = ifIsExternalizable.invokeVirtualMethod(
-                ofMethod(Constructor.class, "getDeclaringClass", Class.class),
-                externalizableConstructor);
-
-        ResultHandle addReflectionsArgs1 = ifIsExternalizable.newArray(Class.class, tc.load(2));
-        ifIsExternalizable.writeArrayValue(addReflectionsArgs1, 0, clazz);
-        ifIsExternalizable.writeArrayValue(addReflectionsArgs1, 1, externalizableConstructorClass);
-        ifIsExternalizable.invokeVirtualMethod(INVOKE, addReflectionsLookupMethod,
-                ifIsExternalizable.loadNull(), addReflectionsArgs1);
-
-        ifIsExternalizable.returnValue(null);
-
-        ResultHandle clazzModifiers = tc
-                .invokeVirtualMethod(ofMethod(Class.class, "getModifiers", int.class), clazz);
-        BranchResult isAbstract = tc.ifTrue(tc
-                .invokeStaticMethod(ofMethod(Modifier.class, "isAbstract", boolean.class, int.class), clazzModifiers));
-
-        BytecodeCreator ifIsAbstract = isAbstract.trueBranch();
-        BytecodeCreator ifNotAbstract = isAbstract.falseBranch();
-
-        //abstract classes uses SerializationSupport$StubForAbstractClass for constructor
-        ResultHandle stubConstructor = ifIsAbstract.invokeVirtualMethod(
-                ofMethod("sun.reflect.ReflectionFactory", "newConstructorForSerialization", Constructor.class,
-                        Class.class),
-                reflectionFactory,
-                tc
-                        .loadClass("com.oracle.svm.reflect.serialize.SerializationSupport$StubForAbstractClass"));
-        ifIsAbstract.assign(newSerializationConstructor, stubConstructor);
-
-        ResultHandle classConstructor = ifNotAbstract.invokeVirtualMethod(
-                ofMethod("sun.reflect.ReflectionFactory", "newConstructorForSerialization", Constructor.class,
-                        Class.class),
-                reflectionFactory, clazz);
-        ifNotAbstract.assign(newSerializationConstructor, classConstructor);
-
-        ResultHandle newSerializationConstructorClass = tc.invokeVirtualMethod(
-                ofMethod(Constructor.class, "getDeclaringClass", Class.class),
-                newSerializationConstructor);
-
-        ResultHandle getConstructorAccessor = tc.invokeStaticMethod(
-                LOOKUP_METHOD, tc.loadClassFromTCCL(Constructor.class), tc.load("getConstructorAccessor"),
-                tc.newArray(Class.class, tc.load(0)));
-
-        ResultHandle accessor = tc.invokeVirtualMethod(
-                INVOKE, getConstructorAccessor, newSerializationConstructor,
-                tc.newArray(Object.class, tc.load(0)));
-
-        tc.invokeVirtualMethod(
-                ofMethod("com.oracle.svm.reflect.serialize.SerializationSupport", "addConstructorAccessor",
-                        Object.class, Class.class, Class.class, Object.class),
-                serializationSupport, clazz, newSerializationConstructorClass, accessor);
-        ResultHandle addReflectionsArgs2 = tc.newArray(Class.class, tc.load(2));
-        tc.writeArrayValue(addReflectionsArgs2, 0, clazz);
-        tc.writeArrayValue(addReflectionsArgs2, 1, newSerializationConstructorClass);
-        tc.invokeVirtualMethod(INVOKE, addReflectionsLookupMethod, tc.loadNull(), addReflectionsArgs2);
+        ResultHandle registerArgTypes = tc.newArray(Class.class, tc.load(1));
+        tc.writeArrayValue(registerArgTypes, 0, tc.loadClassFromTCCL(Class[].class));
+        ResultHandle registerLookupMethod = tc.invokeStaticMethod(LOOKUP_METHOD, runtimeSerializationClass,
+                tc.load("register"), registerArgTypes);
+        ResultHandle registerArgs = tc.newArray(Object.class, tc.load(1));
+        ResultHandle classesToRegister = tc.newArray(Class.class, tc.load(1));
+        tc.writeArrayValue(classesToRegister, 0, clazz);
+        tc.writeArrayValue(registerArgs, 0, classesToRegister);
+        tc.invokeVirtualMethod(INVOKE, registerLookupMethod,
+                tc.loadNull(), registerArgs);
+        tc.returnValue(null);
 
         addSerializationForClass.returnValue(null);
 

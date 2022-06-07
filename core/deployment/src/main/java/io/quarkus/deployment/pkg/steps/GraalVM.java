@@ -21,7 +21,6 @@ final class GraalVM {
                         "(\\(Java Version (?<jfeature>[0-9]+)(\\.(?<jinterim>[0-9]*)\\.(?<jupdate>[0-9]*))?.*)?$");
 
         static final Version UNVERSIONED = new Version("Undefined", "snapshot", Distribution.ORACLE);
-        static final Version VERSION_21_2 = new Version("GraalVM 21.2", "21.2", Distribution.ORACLE);
         static final Version VERSION_21_3 = new Version("GraalVM 21.3", "21.3", Distribution.ORACLE);
         static final Version VERSION_21_3_0 = new Version("GraalVM 21.3.0", "21.3.0", Distribution.ORACLE);
         static final Version VERSION_21_3_2 = new Version("GraalVM 21.3.2", "21.3.2", Distribution.ORACLE);
@@ -29,7 +28,7 @@ final class GraalVM {
 
         static final Version VERSION_22_1_0 = new Version("GraalVM 22.1.0", "22.1.0", Distribution.ORACLE);
 
-        static final Version MINIMUM = VERSION_21_2;
+        static final Version MINIMUM = VERSION_21_3;
         static final Version CURRENT = VERSION_22_1_0;
         public static final int UNDEFINED = -1;
 

@@ -51,7 +51,7 @@
         <version.gizmo>1.0.11.Final</version.gizmo>
         <version.jpa>2.2.3</version.jpa>
 
-        <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
+        <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
     </properties>
 

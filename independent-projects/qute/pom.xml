@@ -44,7 +44,7 @@
         <version.assertj>3.23.1</version.assertj>
         <version.gizmo>1.0.11.Final</version.gizmo>
         <version.jboss-logging>3.5.0.Final</version.jboss-logging>
-        <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
+        <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
         <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
         <version.smallrye-mutiny>1.5.0</version.smallrye-mutiny>
     </properties>

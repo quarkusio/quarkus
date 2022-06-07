@@ -7329,7 +7329,7 @@
         "doc-root" : "https://quarkus.io",
         "rest-assured-version" : "4.3.2",
         "compiler-plugin-version" : "3.8.1",
-        "surefire-plugin-version" : "3.0.0-M5",
+        "surefire-plugin-version" : "3.0.0-M7",
         "kotlin-version" : "1.4.32",
         "scala-version" : "2.12.13",
         "scala-plugin-version" : "4.4.0",

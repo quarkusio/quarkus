@@ -17,7 +17,7 @@
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <quarkus.platform.version>999-SNAPSHOT</quarkus.platform.version>
     <resources-plugin.version>3.1.0</resources-plugin.version>
-    <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
+    <surefire-plugin.version>3.0.0-M7</surefire-plugin.version>
 
     <azure.functions.maven.plugin.version>1.9.1</azure.functions.maven.plugin.version>
     <functionAppName>${appName}</functionAppName>

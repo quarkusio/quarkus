@@ -604,7 +604,7 @@ public class TestRegistryClientBuilder {
             metadata.put("maven-plugin-artifactId", "quarkus-maven-plugin");
             metadata.put("maven-plugin-version", quarkusBom.extensions.getBom().getVersion());
             metadata.put("compiler-plugin-version", "3.8.1");
-            metadata.put("surefire-plugin-version", "3.0.0-M5");
+            metadata.put("surefire-plugin-version", "3.0.0-M7");
             return quarkusBom;
         }
 

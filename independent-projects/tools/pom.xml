@@ -56,7 +56,7 @@
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
         <maven-core.version>3.8.4</maven-core.version>
         <mockito.version>4.6.0</mockito.version>
-        <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
+        <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>20</maven-model-helper.version>

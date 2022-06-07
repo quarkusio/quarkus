@@ -10,7 +10,6 @@
     <build-helper-maven-plugin.version>3.3.0</build-helper-maven-plugin.version>
     <compiler-plugin.version>3.8.1</compiler-plugin.version>
     <dependency-plugin.version>3.2.0</dependency-plugin.version>
-    <failsafe.useModulePath>false</failsafe.useModulePath>
     <maven.compiler.release>11</maven.compiler.release>
 
     <!-- General project setup -->
@@ -40,7 +39,7 @@
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <quarkus.platform.version>@project.version@</quarkus.platform.version>
-    <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
+    <surefire-plugin.version>3.0.0-M7</surefire-plugin.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -216,7 +215,6 @@
               <includes>
                 <include>**/*.java</include>
               </includes>
-              <trimStackTrace>false</trimStackTrace>
               <systemPropertyVariables>
                 <native.image.path>\${project.build.directory}/\${project.build.finalName}-runner</native.image.path>
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>

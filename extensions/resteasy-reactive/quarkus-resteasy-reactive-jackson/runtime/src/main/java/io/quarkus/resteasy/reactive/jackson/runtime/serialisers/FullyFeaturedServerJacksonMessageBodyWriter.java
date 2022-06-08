@@ -25,17 +25,18 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJacksonRecorder;
 
 public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
-    private final ObjectMapper originalMapper;
+    private final JsonMapper originalMapper;
     private final ObjectWriter defaultWriter;
     private final ConcurrentMap<String, ObjectWriter> perMethodWriter = new ConcurrentHashMap<>();
 
     @Inject
-    public FullyFeaturedServerJacksonMessageBodyWriter(ObjectMapper mapper) {
+    public FullyFeaturedServerJacksonMessageBodyWriter(JsonMapper mapper) {
         this.originalMapper = mapper;
         this.defaultWriter = createDefaultWriter(mapper);
     }

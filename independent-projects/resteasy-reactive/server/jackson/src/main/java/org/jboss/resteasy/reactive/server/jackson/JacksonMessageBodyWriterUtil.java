@@ -5,8 +5,8 @@ import static org.jboss.resteasy.reactive.common.providers.serialisers.JsonMessa
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
@@ -18,7 +18,7 @@ public final class JacksonMessageBodyWriterUtil {
     private JacksonMessageBodyWriterUtil() {
     }
 
-    public static ObjectWriter createDefaultWriter(ObjectMapper mapper) {
+    public static ObjectWriter createDefaultWriter(JsonMapper mapper) {
         // we don't want the ObjectWriter to close the stream automatically, as we want to handle closing manually at the proper points
         JsonFactory jsonFactory = mapper.getFactory();
         if (JacksonMessageBodyWriterUtil.needsNewFactory(jsonFactory)) {

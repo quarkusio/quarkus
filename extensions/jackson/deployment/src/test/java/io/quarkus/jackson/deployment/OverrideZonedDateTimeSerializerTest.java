@@ -15,11 +15,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperCustomizer;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class OverrideZonedDateTimeSerializerTest {
@@ -28,7 +28,7 @@ public class OverrideZonedDateTimeSerializerTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest();
 
     @Inject
-    ObjectMapper objectMapper;
+    JsonMapper objectMapper;
 
     @Test
     public void test() throws JsonProcessingException {
@@ -38,15 +38,15 @@ public class OverrideZonedDateTimeSerializerTest {
     }
 
     @Singleton
-    static class TestCustomizer implements ObjectMapperCustomizer {
+    static class TestCustomizer implements JsonMapperCustomizer {
 
         @Override
         public int priority() {
-            return ObjectMapperCustomizer.MINIMUM_PRIORITY;
+            return JsonMapperCustomizer.MINIMUM_PRIORITY;
         }
 
         @Override
-        public void customize(ObjectMapper objectMapper) {
+        public void customize(JsonMapper.Builder builder) {
             SimpleModule module = new SimpleModule();
             module.addSerializer(ZonedDateTime.class, new JsonSerializer<ZonedDateTime>() {
                 @Override
@@ -55,7 +55,7 @@ public class OverrideZonedDateTimeSerializerTest {
                 }
 
             });
-            objectMapper.registerModule(module);
+            builder.addModule(module);
         }
     }
 }

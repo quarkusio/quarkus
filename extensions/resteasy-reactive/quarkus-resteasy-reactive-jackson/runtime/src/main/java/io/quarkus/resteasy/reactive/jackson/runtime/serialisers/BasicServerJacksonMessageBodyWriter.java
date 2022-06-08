@@ -17,15 +17,15 @@ import javax.ws.rs.core.MultivaluedMap;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
 public class BasicServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
     private final ObjectWriter defaultWriter;
 
     @Inject
-    public BasicServerJacksonMessageBodyWriter(ObjectMapper mapper) {
+    public BasicServerJacksonMessageBodyWriter(JsonMapper mapper) {
         this.defaultWriter = createDefaultWriter(mapper);
     }
 

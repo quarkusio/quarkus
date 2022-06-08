@@ -3,16 +3,16 @@ package com.example.reactivejackson;
 import javax.inject.Singleton;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperCustomizer;
 
 @Singleton
-public class DisableNullValueSerializationCustomizer implements ObjectMapperCustomizer {
+public class DisableNullValueSerializationCustomizer implements JsonMapperCustomizer {
 
     @Override
-    public void customize(ObjectMapper objectMapper) {
+    public void customize(JsonMapper.Builder builder) {
         // To suppress serializing properties with null values
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        builder.serializationInclusion(JsonInclude.Include.NON_NULL);
     }
 }

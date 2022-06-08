@@ -26,6 +26,8 @@ import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.cfg.MapperBuilder;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -46,8 +48,8 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.jackson.ObjectMapperCustomizer;
-import io.quarkus.jackson.runtime.ObjectMapperProducer;
+import io.quarkus.jackson.JsonMapperCustomizer;
+import io.quarkus.jackson.runtime.JsonMapperProducer;
 import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
 
@@ -213,7 +215,7 @@ public class JacksonProcessor {
         }
 
         // this needs to be registered manually since the runtime module is not indexed by Jandex
-        additionalBeans.produce(new AdditionalBeanBuildItem(ObjectMapperProducer.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(JsonMapperProducer.class));
     }
 
     private void addReflectiveHierarchyClass(DotName className,
@@ -239,7 +241,7 @@ public class JacksonProcessor {
         }
     }
 
-    // Generate a ObjectMapperCustomizer bean that registers each serializer / deserializer as well as detected modules with the ObjectMapper
+    // Generate a JsonMapperCustomizer bean that registers each serializer / deserializer as well as detected modules with the ObjectMapper
     @BuildStep
     void generateCustomizer(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             List<JacksonModuleBuildItem> jacksonModules, List<ClassPathJacksonModuleBuildItem> classPathJacksonModules) {
@@ -252,12 +254,12 @@ public class JacksonProcessor {
 
         try (ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
                 .className("io.quarkus.jackson.customizer.RegisterSerializersAndDeserializersCustomizer")
-                .interfaces(ObjectMapperCustomizer.class.getName())
+                .interfaces(JsonMapperCustomizer.class.getName())
                 .build()) {
             classCreator.addAnnotation(Singleton.class);
 
-            try (MethodCreator customize = classCreator.getMethodCreator("customize", void.class, ObjectMapper.class)) {
-                ResultHandle objectMapper = customize.getMethodParam(0);
+            try (MethodCreator customize = classCreator.getMethodCreator("customize", void.class, JsonMapper.Builder.class)) {
+                ResultHandle builder = customize.getMethodParam(0);
 
                 for (JacksonModuleBuildItem jacksonModule : jacksonModules) {
                     if (jacksonModule.getItems().isEmpty()) {
@@ -270,7 +272,7 @@ public class JacksonProcessor {
                      * SimpleModule module = new SimpleModule("somename");
                      * module.addSerializer(Foo.class, new FooSerializer());
                      * module.addDeserializer(Foo.class, new FooDeserializer());
-                     * objectMapper.registerModule(module);
+                     * builder.addModule(module);
                      */
                     ResultHandle module = customize.newInstance(
                             MethodDescriptor.ofConstructor(SimpleModule.class, String.class),
@@ -301,16 +303,16 @@ public class JacksonProcessor {
                     }
 
                     customize.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(ObjectMapper.class, "registerModule", ObjectMapper.class, Module.class),
-                            objectMapper, module);
+                            MethodDescriptor.ofMethod(MapperBuilder.class, "addModule", MapperBuilder.class, Module.class),
+                            builder, module);
                 }
 
                 for (ClassPathJacksonModuleBuildItem classPathJacksonModule : classPathJacksonModules) {
                     ResultHandle module = customize
                             .newInstance(MethodDescriptor.ofConstructor(classPathJacksonModule.getModuleClassName()));
                     customize.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(ObjectMapper.class, "registerModule", ObjectMapper.class, Module.class),
-                            objectMapper, module);
+                            MethodDescriptor.ofMethod(MapperBuilder.class, "addModule", MapperBuilder.class, Module.class),
+                            builder, module);
                 }
 
                 customize.returnValue(null);
@@ -318,7 +320,7 @@ public class JacksonProcessor {
 
             // ensure that the things we auto-register have the lower priority - this ensures that user registered modules take priority
             try (MethodCreator priority = classCreator.getMethodCreator("priority", int.class)) {
-                priority.returnValue(priority.load(ObjectMapperCustomizer.QUARKUS_CUSTOMIZER_PRIORITY));
+                priority.returnValue(priority.load(JsonMapperCustomizer.QUARKUS_CUSTOMIZER_PRIORITY));
             }
         }
     }

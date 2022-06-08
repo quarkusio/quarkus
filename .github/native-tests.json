@@ -45,7 +45,7 @@
         {
             "category": "Data7",
             "timeout": 65,
-            "test-modules": "reactive-mysql-client, reactive-db2-client, hibernate-reactive-db2, hibernate-reactive-mysql",
+            "test-modules": "reactive-oracle-client, reactive-mysql-client, reactive-db2-client, hibernate-reactive-db2, hibernate-reactive-mysql",
             "os-name": "ubuntu-latest"
         },
         {

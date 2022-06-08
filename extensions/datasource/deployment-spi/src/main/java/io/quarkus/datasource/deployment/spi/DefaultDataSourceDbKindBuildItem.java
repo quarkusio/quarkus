@@ -76,7 +76,7 @@ public final class DefaultDataSourceDbKindBuildItem extends MultiBuildItem {
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         if (defaultDbKinds.isEmpty()) {
             return Optional.empty();
-        } else if (defaultDbKinds.size() == 1) {
+        } else if (defaultDbKinds.stream().map(DefaultDataSourceDbKindBuildItem::getDbKind).distinct().count() == 1) {
             return Optional.of(defaultDbKinds.get(0).dbKind);
         } else {
             //if we have one and only one test scoped driver we assume it is the default

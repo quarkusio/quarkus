@@ -53,7 +53,7 @@ public class CreateExtension {
     public static final String DEFAULT_QUARKIVERSE_PARENT_VERSION = "9";
     public static final String DEFAULT_QUARKIVERSE_NAMESPACE_ID = "quarkus-";
 
-    private static final String DEFAULT_SUREFIRE_PLUGIN_VERSION = "3.0.0-M5";
+    private static final String DEFAULT_SUREFIRE_PLUGIN_VERSION = "3.0.0-M7";
     private static final String DEFAULT_COMPILER_PLUGIN_VERSION = "3.8.1";
 
     private final QuarkusExtensionCodestartProjectInputBuilder builder = QuarkusExtensionCodestartProjectInput.builder();

@@ -50,7 +50,7 @@
         <gizmo.version>1.0.11.Final</gizmo.version>
         <jakarta.persistence-api.version>2.2.3</jakarta.persistence-api.version>
 
-        <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
+        <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <jboss-jaxrs-api_2.1_spec.version>2.0.1.Final</jboss-jaxrs-api_2.1_spec.version>
         <jakarta.json.version>1.1.6</jakarta.json.version>

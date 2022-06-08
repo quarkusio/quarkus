@@ -38,7 +38,6 @@
         {#if maven.surefire-plugin.version}
         <surefire-plugin.version>{maven.surefire-plugin.version}</surefire-plugin.version>
         <failsafe-plugin.version>$\{surefire-plugin.version}</failsafe-plugin.version>
-        <failsafe.useModulePath>false</failsafe.useModulePath>
         {/if}
     </properties>
 

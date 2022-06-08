@@ -347,7 +347,6 @@ public class ResteasyReactiveProcessor {
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             ResteasyReactiveRecorder recorder,
             List<ServerDefaultProducesHandlerBuildItem> serverDefaultProducesHandlers,
             Optional<ClassLevelExceptionMappersBuildItem> classLevelExceptionMappers,
@@ -424,8 +423,6 @@ public class ResteasyReactiveProcessor {
                             .setEndpointInvokerFactory(
                                     new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
                             .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
-                            .setBytecodeTransformerBuildProducer(bytecodeTransformerBuildItemBuildProducer)
-                            .setReflectiveClassProducer(reflectiveClassBuildItemBuildProducer)
                             .setExistingConverters(existingConverters)
                             .setScannedResourcePaths(scannedResourcePaths)
                             .setConfig(createRestReactiveConfig(config))
@@ -517,7 +514,6 @@ public class ResteasyReactiveProcessor {
                                 }
                             })
                             .setResteasyReactiveRecorder(recorder)
-                            .setApplicationClassPredicate(applicationClassPredicate)
                             .setTargetJavaVersion(new TargetJavaVersion() {
 
                                 private final Status result;
@@ -558,9 +554,9 @@ public class ResteasyReactiveProcessor {
             }
 
             serverEndpointIndexerBuilder.setMultipartReturnTypeIndexerExtension(new QuarkusMultipartReturnTypeHandler(
-                    generatedClassBuildItemBuildProducer, applicationClassPredicate, reflectiveClassBuildItemBuildProducer));
+                    generatedClassBuildItemBuildProducer, applicationClassPredicate, reflectiveClass));
             serverEndpointIndexerBuilder.setMultipartParameterIndexerExtension(new QuarkusMultipartParamHandler(
-                    generatedClassBuildItemBuildProducer, applicationClassPredicate, reflectiveClassBuildItemBuildProducer,
+                    generatedClassBuildItemBuildProducer, applicationClassPredicate, reflectiveClass,
                     bytecodeTransformerBuildItemBuildProducer));
             serverEndpointIndexer = serverEndpointIndexerBuilder.build();
 
@@ -568,13 +564,17 @@ public class ResteasyReactiveProcessor {
             for (ClassInfo i : scannedResources.values()) {
                 Optional<ResourceClass> endpoints = serverEndpointIndexer.createEndpoints(i, true);
                 if (endpoints.isPresent()) {
+                    ResourceClass resourceClass = endpoints.get();
                     if (singletonClasses.contains(i.name().toString())) {
-                        endpoints.get().setFactory(new SingletonBeanFactory<>(i.name().toString()));
+                        resourceClass.setFactory(new SingletonBeanFactory<>(i.name().toString()));
                     }
-                    resourceClasses.add(endpoints.get());
-                    for (ResourceMethod rm : endpoints.get().getMethods()) {
-                        addResourceMethodByPath(allMethods, endpoints.get().getPath(), i, rm);
+                    resourceClasses.add(resourceClass);
+                    for (ResourceMethod rm : resourceClass.getMethods()) {
+                        addResourceMethodByPath(allMethods, resourceClass.getPath(), i, rm);
                     }
+
+                    // Ensure native support of resource endpoints:
+                    reflectiveClass.produce(new ReflectiveClassBuildItem(false, true, false, resourceClass.getClassName()));
                 }
             }
 

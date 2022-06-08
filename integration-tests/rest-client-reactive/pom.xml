@@ -11,6 +11,10 @@
     <artifactId>quarkus-integration-test-rest-client-reactive</artifactId>
     <name>Quarkus - Integration Tests - REST Client Reactive</name>
 
+    <properties>
+        <integration.tests.invoker.properties>invoker.jvm.properties</integration.tests.invoker.properties>
+    </properties>
+
     <!--todo add ssl tests-->
 
     <dependencies>
@@ -160,6 +164,27 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-invoker-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>integration-tests</id>
+                        <goals>
+                            <goal>run</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+                    <cloneClean>true</cloneClean>
+                    <preBuildHookScript>setup</preBuildHookScript>
+                    <postBuildHookScript>verify</postBuildHookScript>
+                    <addTestClassPath>true</addTestClassPath>
+                    <streamLogs>true</streamLogs>
+                    <invokerPropertiesFile>${integration.tests.invoker.properties}</invokerPropertiesFile>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -173,6 +198,7 @@
             </activation>
             <properties>
                 <quarkus.package.type>native</quarkus.package.type>
+                <integration.tests.invoker.properties>invoker.native.properties</integration.tests.invoker.properties>
             </properties>
             <!-- add some custom config, the rest comes from parent -->
             <build>

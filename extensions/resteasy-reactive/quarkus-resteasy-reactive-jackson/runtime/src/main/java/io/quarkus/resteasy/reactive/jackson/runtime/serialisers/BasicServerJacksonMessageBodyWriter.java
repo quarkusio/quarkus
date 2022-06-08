@@ -9,6 +9,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -20,13 +21,16 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
+import io.quarkus.resteasy.reactive.jackson.common.RestServerObjectMapper;
+
 public class BasicServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
     private final ObjectWriter defaultWriter;
 
     @Inject
-    public BasicServerJacksonMessageBodyWriter(ObjectMapper mapper) {
-        this.defaultWriter = createDefaultWriter(mapper);
+    public BasicServerJacksonMessageBodyWriter(ObjectMapper mapper,
+            @RestServerObjectMapper Instance<ObjectMapper> serverInstance) {
+        this.defaultWriter = createDefaultWriter(serverInstance.isUnsatisfied() ? mapper : serverInstance.get());
     }
 
     @Override

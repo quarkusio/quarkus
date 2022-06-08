@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -26,6 +27,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
+import io.quarkus.resteasy.reactive.jackson.common.RestServerObjectMapper;
 import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJacksonRecorder;
 
 public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
@@ -35,9 +37,10 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
     private final ConcurrentMap<String, ObjectWriter> perMethodWriter = new ConcurrentHashMap<>();
 
     @Inject
-    public FullyFeaturedServerJacksonMessageBodyWriter(ObjectMapper mapper) {
-        this.originalMapper = mapper;
-        this.defaultWriter = createDefaultWriter(mapper);
+    public FullyFeaturedServerJacksonMessageBodyWriter(ObjectMapper mapper,
+            @RestServerObjectMapper Instance<ObjectMapper> serverInstance) {
+        this.originalMapper = serverInstance.isUnsatisfied() ? mapper : serverInstance.get();
+        this.defaultWriter = createDefaultWriter(originalMapper);
     }
 
     @Override

@@ -252,6 +252,151 @@ public class CustomObjectMapper {
 }
 ----
 
+There is one unqualified `ObjectMapper` instance provided by the quarkus-jackson extension.  Your code may produce two additional
+`ObjectMapper` instances. The REST client `ObjectMapper` instance is qualified by the `@RestClientObjectMapper` annotation. The REST server
+`ObjectMapper` instance is qualified by the `@RestServerObjectMapper` annotation.
+
+If the REST client `ObjectMapper` instance is available, it is used by the quarkus-rest-client-reactive extension for serialization
+and deserialization.  If the REST client instance is not provided, then quarkus-rest-client-reactive uses the unqualified `ObjectMapper`
+instance.
+
+If the REST server `ObjectMapper` is available, it is used by the quarkus-resteasy-reactive extension for serialization and
+deserialization.  If the REST server instance is not provided, then quarkus-resteasy-reactive uses the unqualified `ObjectMapper`
+instance.
+
+You can produce, inject, and customize each of these instances independently.  The following snippet demonstrates how to inject
+each instance using the `@RestClientObjectMapper` and `@RestServerObjectMapper` annotations.
+
+[source,java]
+----
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.resteasy.reactive.jackson.common.RestClientObjectMapper;
+import io.quarkus.resteasy.reactive.jackson.common.RestServerObjectMapper;
+
+import javax.inject.Inject;
+
+public class UseFallback {
+
+    private final ObjectMapper serializer;
+
+    @Inject
+    public UseFallback(ObjectMapper mapper,
+            @RestClientObjectMapper Instance<ObjectMapper> clientInstance) {
+        serializer = clientInstance.isUnsatisfied() ? mapper : clientInstance.get();
+    }
+
+}
+----
+
+If you want to customize the unqualified, client, and server instances differently, you can use the `@RestClientObjectMapper` and
+`@RestServerObjectMapper` annotations on your `ObjectMapperCustomizer`.  `ObjectMapperCustomizer` instances without any
+qualifier will customize all three `ObjectMapper`s. `ObjectMapperCustomizer` annotated with `@RestClientObjectMapper` will customize
+only the client instance.  `ObjectMapperCustomizer` annotated with `@RestServerObjectMapper` will customize only the server instance.
+
+[source,java]
+----
+package io.quarkus.jackson.deployment;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.resteasy.reactive.jackson.common.RestClientObjectMapper;
+import io.quarkus.resteasy.reactive.jackson.common.RestServerObjectMapper;
+
+import javax.inject.Singleton;
+
+public class DistinctObjectMapperCustomizers {
+    @Singleton
+    static class UnqualifiedCustomizer implements ObjectMapperCustomizer {
+        @Override
+        public void customize(ObjectMapper objectMapper) {
+            // customize ObjectMappers for unqualified, client, and server use
+        }
+    }
+
+    @Singleton
+    @RestClientObjectMapper
+    static class ClientCustomizer implements ObjectMapperCustomizer {
+        @Override
+        public void customize(ObjectMapper objectMapper) {
+            // customize ObjectMapper for client use
+        }
+    }
+
+    @Singleton
+    @RestServerObjectMapper
+    static class ServerCustomizer implements ObjectMapperCustomizer {
+        @Override
+        public void customize(ObjectMapper objectMapper) {
+            // customize ObjectMapper for server use
+        }
+    }
+}
+----
+
+If you want to provide an alternate `ObjectMapper` bean instance, you can use the `@RestClientObjectMapper` and `@RestServerObjectMapper`
+annotations on the producer method.  Again, it is important to apply all appropriate `ObjectMapperCustomizer` beans in the CDI
+producer.
+
+[source,java]
+----
+package io.quarkus.jackson.deployment;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.resteasy.reactive.jackson.common.RestClientObjectMapper;
+import io.quarkus.resteasy.reactive.jackson.common.RestServerObjectMapper;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Instance;
+import javax.enterprise.inject.Produces;
+import javax.inject.Singleton;
+import java.util.stream.Stream;
+
+@ApplicationScoped
+public class DistinctObjectMapperProducer {
+
+    // This producer overrides the default producer provided by resteasy-jackson extension
+    @Singleton
+    @Produces
+    public ObjectMapper unqualifiedObjectMapper(Instance<ObjectMapperCustomizer> unqualifiedCustomizers) {
+        return objectMapper(unqualifiedCustomizers, null);
+    }
+
+    @RestClientObjectMapper
+    @Singleton
+    @Produces
+    public ObjectMapper clientObjectMapper(Instance<ObjectMapperCustomizer> unqualifiedCustomizers,
+            @RestClientObjectMapper Instance<ObjectMapperCustomizer> clientCustomizers) {
+        return objectMapper(unqualifiedCustomizers, clientCustomizers);
+    }
+
+    @RestServerObjectMapper
+    @Singleton
+    @Produces
+    public ObjectMapper serverObjectMapper(Instance<ObjectMapperCustomizer> unqualifiedCustomizers,
+            @RestServerObjectMapper Instance<ObjectMapperCustomizer> serverCustomizers) {
+        return objectMapper(unqualifiedCustomizers, serverCustomizers);
+    }
+
+    private ObjectMapper objectMapper(Instance<ObjectMapperCustomizer> unqualifiedCustomizers,
+            Instance<ObjectMapperCustomizer> qualifiedCustomizers) {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        // apply base configuration here ...
+
+        // concat all customizers
+        Stream<ObjectMapperCustomizer> customizers = unqualifiedCustomizers.stream();
+        if (qualifiedCustomizers != null) {
+            customizers = Stream.concat(customizers, qualifiedCustomizers.stream());
+        }
+
+        // apply customizers in priority order
+        customizers.sorted().forEach(c -> c.customize(objectMapper));
+        return objectMapper;
+    }
+}
+----
+
 ==== JSON-B
 
 As stated above, Quarkus provides the option of using JSON-B instead of Jackson via the use of the `quarkus-resteasy-jsonb` extension.

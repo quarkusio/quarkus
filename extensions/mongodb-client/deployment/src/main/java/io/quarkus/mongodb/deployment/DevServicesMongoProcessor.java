@@ -62,14 +62,6 @@ public class DevServicesMongoProcessor {
             connectionNames.add(mongoConnection.getName());
         }
 
-        // TODO: handle named connections as well
-        if (connectionNames.size() != 1) {
-            return null;
-        }
-        if (!isDefault(connectionNames.get(0))) {
-            return null;
-        }
-
         Map<String, CapturedProperties> currentCapturedProperties = captureProperties(connectionNames,
                 mongoClientBuildTimeConfig);
 
@@ -93,26 +85,24 @@ public class DevServicesMongoProcessor {
 
         List<RunningDevService> newDevServices = new ArrayList<>(mongoConnections.size());
 
-        // TODO: we need to go through each connection
-        String connectionName = connectionNames.get(0);
-        RunningDevService devService;
-        StartupLogCompressor compressor = new StartupLogCompressor(
-                (launchMode.isTest() ? "(test) " : "") + "Mongo Dev Services Starting:", consoleInstalledBuildItem,
-                loggingSetupBuildItem);
-        try {
-            devService = startMongo(dockerStatusBuildItem, connectionName, currentCapturedProperties.get(connectionName),
-                    !devServicesSharedNetworkBuildItem.isEmpty(), globalDevServicesConfig.timeout);
-            if (devService == null) {
+        for (String connectionName : connectionNames) {
+            RunningDevService devService;
+            StartupLogCompressor compressor = new StartupLogCompressor(
+                    (launchMode.isTest() ? "(test) " : "") + "Mongo Dev Services Starting:", consoleInstalledBuildItem,
+                    loggingSetupBuildItem);
+            try {
+                devService = startMongo(dockerStatusBuildItem, connectionName, currentCapturedProperties.get(connectionName),
+                        !devServicesSharedNetworkBuildItem.isEmpty(), globalDevServicesConfig.timeout);
+                if (devService == null) {
+                    compressor.closeAndDumpCaptured();
+                } else {
+                    compressor.close();
+                    newDevServices.add(devService);
+                }
+            } catch (Throwable t) {
                 compressor.closeAndDumpCaptured();
-            } else {
-                compressor.close();
+                throw new RuntimeException(t);
             }
-        } catch (Throwable t) {
-            compressor.closeAndDumpCaptured();
-            throw new RuntimeException(t);
-        }
-        if (devService != null) {
-            newDevServices.add(devService);
         }
 
         if (first) {

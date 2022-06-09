@@ -211,6 +211,7 @@ public class SimpleXmlTest {
     public static class SimpleXmlResource {
 
         @GET
+        @Produces(MediaType.APPLICATION_XML)
         @Path("/person")
         public Person getPerson() {
             Person person = new Person();

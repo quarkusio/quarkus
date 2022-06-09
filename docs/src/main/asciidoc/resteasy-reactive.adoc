@@ -1138,6 +1138,93 @@ Importing this module will allow HTTP message bodies to be read from XML
 and serialised to XML, for <<resource-types,all the types not already registered with a more specific
 serialisation>>.
 
+==== Advanced JAXB-specific features
+
+When using the `quarkus-resteasy-reactive-jaxb` extension there are some advanced features that RESTEasy Reactive supports.
+
+===== Inject JAXB components
+
+The JAXB resteasy reactive extension will serialize and unserialize requests and responses transparently for users. However, if you need finer grain control over JAXB components, you can inject either the JAXBContext, Marshaller, or Unmarshaller components into your beans:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyService {
+
+    @Inject
+    JAXBContext jaxbContext;
+
+    @Inject
+    Marshaller marshaller;
+
+    @Inject
+    Unmarshaller unmarshaller;
+
+    // ...
+}
+----
+
+[NOTE]
+====
+Quarkus will automatically find all the classes annotated with `@XmlRootElement` and then bound them to the JAXB context.
+====
+
+===== Customize the JAXB configuration
+
+To customize the JAXB configuration for either the JAXB context, and/or the Marshaller/Unmarshaller components, the suggested approach is to define a CDI bean of type `io.quarkus.jaxb.runtime.JaxbContextCustomizer`.
+
+An example where a custom module needs to be registered would look like so:
+
+[source,java]
+----
+@Singleton
+public class RegisterCustomModuleCustomizer implements JaxbContextCustomizer {
+
+    // For JAXB context configuration
+    @Override
+    public void customizeContextProperties(Map<String, Object> properties) {
+
+    }
+
+    // For Marshaller configuration
+    @Override
+    public void customizeMarshaller(Marshaller marshaller) throws PropertyException {
+        marshaller.setProperty("jaxb.formatted.output", Boolean.TRUE);
+    }
+
+    // For Unmarshaller configuration
+    @Override
+    public void customizeUnmarshaller(Unmarshaller unmarshaller) throws PropertyException {
+        // ...
+    }
+}
+----
+
+[NOTE]
+====
+It's not necessary to implement all three methods, but only the want you need.
+====
+
+Alternatively, you can provide your own `JAXBContext` bean by doing:
+
+[source,java]
+----
+public class CustomJaxbContext {
+
+    // Replaces the CDI producer for JAXBContext built into Quarkus
+    @Singleton
+    @Produces
+    JAXBContext jaxbContext() {
+        // ...
+    }
+}
+----
+
+[IMPORTANT]
+====
+Note that if you provide your custom JAXB context instance, you will need to register the classes you want to use for the XML serialization. This means that Quarkus will not update your custom JAXB context instance with the auto-discovered classes. 
+====
+
 === Web Links support
 
 [[links]]

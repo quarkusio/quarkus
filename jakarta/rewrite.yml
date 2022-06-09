@@ -430,7 +430,7 @@ recipeList:
       newValue: 2.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-jwt.version
-      newValue: 4.0.0-RC1
+      newValue: 4.0.0-RC2
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-lra.version
       newValue: 2.0-RC1

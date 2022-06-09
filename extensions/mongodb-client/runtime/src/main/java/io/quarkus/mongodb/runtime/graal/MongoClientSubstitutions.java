@@ -158,7 +158,7 @@ final class DefaultDnsResolverSubstitution {
      * domain equal to the domain of the srvHost.
      */
     @Substitute
-    public List<String> resolveHostFromSrvRecords(final String srvHost) {
+    public List<String> resolveHostFromSrvRecords(String srvHost, String srvServiceName) {
         Config config = ConfigProvider.getConfig();
         if (!config.getOptionalValue(DnsClientProducer.FLAG, Boolean.class).orElse(false)) {
             throw new MongoConfigurationException(
@@ -172,12 +172,12 @@ final class DefaultDnsResolverSubstitution {
         List<String> hosts = new ArrayList<>();
         Duration timeout = config.getOptionalValue(DnsClientProducer.LOOKUP_TIMEOUT, Duration.class)
                 .orElse(Duration.ofSeconds(5));
-
+        String resourceName = "_" + srvServiceName + "._tcp." + srvHost;
         try {
-            List<SrvRecord> srvRecords = dnsClient.resolveSRV("_mongodb._tcp." + srvHost).await().atMost(timeout);
+            List<SrvRecord> srvRecords = dnsClient.resolveSRV(resourceName).await().atMost(timeout);
 
             if (srvRecords.isEmpty()) {
-                throw new MongoConfigurationException("No SRV records available for host " + "_mongodb._tcp." + srvHost);
+                throw new MongoConfigurationException("No SRV records available for host " + resourceName);
             }
             for (SrvRecord srvRecord : srvRecords) {
                 String resolvedHost = srvRecord.target().endsWith(".")

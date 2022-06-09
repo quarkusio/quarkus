@@ -1,7 +1,5 @@
 package io.quarkus.deployment.steps;
 
-import javax.inject.Inject;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -12,6 +10,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.LambdaCapturingTypeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
@@ -19,11 +18,11 @@ public class RegisterForReflectionBuildStep {
 
     private static final Logger log = Logger.getLogger(RegisterForReflectionBuildStep.class);
 
-    @Inject
-    CombinedIndexBuildItem combinedIndexBuildItem;
-
     @BuildStep
-    public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+    public void build(CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<LambdaCapturingTypeBuildItem> lambdaCapturingTypeProducer) {
+
         for (AnnotationInstance i : combinedIndexBuildItem.getIndex()
                 .getAnnotations(DotName.createSimple(RegisterForReflection.class.getName()))) {
 
@@ -34,6 +33,13 @@ public class RegisterForReflectionBuildStep {
 
             AnnotationValue targetsValue = i.value("targets");
             AnnotationValue classNamesValue = i.value("classNames");
+            AnnotationValue lambdaCapturingTypesValue = i.value("lambdaCapturingTypes");
+
+            if (lambdaCapturingTypesValue != null) {
+                for (String lambdaCapturingType : lambdaCapturingTypesValue.asStringArray()) {
+                    lambdaCapturingTypeProducer.produce(new LambdaCapturingTypeBuildItem(lambdaCapturingType));
+                }
+            }
 
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             if (targetsValue == null && classNamesValue == null) {

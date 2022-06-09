@@ -27,6 +27,7 @@ import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ForceNonWeakReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.LambdaCapturingTypeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
@@ -69,6 +70,17 @@ public class NativeImageAutoFeatureStep {
     private static final MethodDescriptor RERUN_INITIALIZATION = ofMethod(
             "org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport",
             "rerunInitialization", void.class, Class.class, String.class);
+
+    private static final MethodDescriptor CONFIGURATION_ALWAYS_TRUE = ofMethod(
+            "org.graalvm.nativeimage.impl.ConfigurationCondition",
+            "alwaysTrue", "org.graalvm.nativeimage.impl.ConfigurationCondition");
+
+    private static final MethodDescriptor REGISTER_LAMBDA_CAPTURING_CLASS = ofMethod(
+            "org.graalvm.nativeimage.impl.RuntimeSerializationSupport",
+            "registerLambdaCapturingClass", void.class,
+            "org.graalvm.nativeimage.impl.ConfigurationCondition",
+            String.class);
+
     private static final MethodDescriptor LOOKUP_METHOD = ofMethod(
             "com.oracle.svm.util.ReflectionUtil",
             "lookupMethod", Method.class, Class.class, String.class, Class[].class);
@@ -79,6 +91,7 @@ public class NativeImageAutoFeatureStep {
     static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
     static final String JNI_RUNTIME_ACCESS = "com.oracle.svm.core.jni.JNIRuntimeAccess";
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
+    static final String DURING_SETUP_ACCESS = Feature.DuringSetupAccess.class.getName();
     static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
     static final String LEGACY_LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.LocalizationFeature";
     static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.localization.LocalizationFeature";
@@ -117,7 +130,8 @@ public class NativeImageAutoFeatureStep {
             List<ForceNonWeakReflectiveClassBuildItem> nonWeakReflectiveClassBuildItems,
             List<ServiceProviderBuildItem> serviceProviderBuildItems,
             List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields,
-            List<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses) {
+            List<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses,
+            List<LambdaCapturingTypeBuildItem> lambdaCapturingTypeBuildItems) {
         ClassCreator file = new ClassCreator(new ClassOutput() {
             @Override
             public void write(String s, byte[] bytes) {
@@ -127,7 +141,27 @@ public class NativeImageAutoFeatureStep {
                 Object.class.getName(), Feature.class.getName());
         file.addAnnotation("com.oracle.svm.core.annotate.AutomaticFeature");
 
-        //MethodCreator afterReg = file.getMethodCreator("afterRegistration", void.class, "org.graalvm.nativeimage.Feature$AfterRegistrationAccess");
+        MethodCreator duringSetup = file.getMethodCreator("duringSetup", "V", DURING_SETUP_ACCESS);
+        // Register Lambda Capturing Types
+        if (!lambdaCapturingTypeBuildItems.isEmpty()) {
+            ResultHandle runtimeSerializationSupportSingleton = duringSetup.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
+                    duringSetup.loadClassFromTCCL("org.graalvm.nativeimage.impl.RuntimeSerializationSupport"));
+            ResultHandle configAlwaysTrue = duringSetup.invokeStaticMethod(CONFIGURATION_ALWAYS_TRUE);
+
+            for (LambdaCapturingTypeBuildItem i : lambdaCapturingTypeBuildItems) {
+                TryBlock tryBlock = duringSetup.tryBlock();
+
+                tryBlock.invokeInterfaceMethod(REGISTER_LAMBDA_CAPTURING_CLASS, runtimeSerializationSupportSingleton,
+                        configAlwaysTrue,
+                        tryBlock.load(i.getClassName()));
+
+                CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
+                catchBlock.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class),
+                        catchBlock.getCaughtException());
+            }
+        }
+        duringSetup.returnValue(null);
+
         MethodCreator beforeAn = file.getMethodCreator("beforeAnalysis", "V", BEFORE_ANALYSIS_ACCESS);
         TryBlock overallCatch = beforeAn.tryBlock();
         //TODO: at some point we are going to need to break this up, as if it get too big it will hit the method size limit

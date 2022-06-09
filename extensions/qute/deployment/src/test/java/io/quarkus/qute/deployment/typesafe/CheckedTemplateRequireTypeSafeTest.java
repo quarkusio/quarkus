@@ -46,7 +46,7 @@ public class CheckedTemplateRequireTypeSafeTest {
                     e = e.getCause();
                 }
                 assertNotNull(te);
-                assertTrue(te.getMessage().contains("Found template problems (3)"), te.getMessage());
+                assertTrue(te.getMessage().contains("Found incorrect expressions (3)"), te.getMessage());
                 assertTrue(te.getMessage().contains("any"), te.getMessage());
                 assertTrue(te.getMessage().contains("identifier"), te.getMessage());
                 assertTrue(te.getMessage().contains("index"), te.getMessage());

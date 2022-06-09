@@ -3,7 +3,6 @@ package io.quarkus.hibernate.orm.runtime.customized;
 import java.util.Map;
 
 import org.hibernate.HibernateException;
-import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.jdbc.connections.internal.ConnectionProviderInitiator;
@@ -11,6 +10,7 @@ import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 import io.agroal.api.AgroalDataSource;
+import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 
 public final class QuarkusConnectionProviderInitiator implements StandardServiceInitiator<ConnectionProvider> {
 

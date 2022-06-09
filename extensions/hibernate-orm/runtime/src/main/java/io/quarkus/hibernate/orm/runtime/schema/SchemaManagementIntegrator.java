@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.runtime.schema;
 
+import static org.hibernate.cfg.AvailableSettings.PERSISTENCE_UNIT_NAME;
+
 import java.io.StringWriter;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -72,7 +74,7 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         if (name != null) {
             return name;
         }
-        Object persistenceUnitName = sf.getProperties().get("hibernate.ejb.persistenceUnitName");
+        Object persistenceUnitName = sf.getProperties().get(PERSISTENCE_UNIT_NAME);
         if (persistenceUnitName != null) {
             return persistenceUnitName.toString();
         }

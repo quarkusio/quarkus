@@ -8,6 +8,7 @@ import javax.persistence.EntityNotFoundException;
 import javax.persistence.PersistenceException;
 import javax.sql.DataSource;
 
+import org.hibernate.HibernateException;
 import org.hibernate.Interceptor;
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.SessionFactory;
@@ -20,7 +21,6 @@ import org.hibernate.bytecode.spi.BytecodeProvider;
 import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.SessionFactoryImpl;
-import org.hibernate.jpa.AvailableSettings;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.proxy.EntityNotFoundDelegate;
 import org.hibernate.service.ServiceRegistry;
@@ -125,7 +125,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         // will use user override value or default to false if not supplied to follow
         // JPA spec.
         final boolean jtaTransactionAccessEnabled = runtimeSettings.getBoolean(
-                AvailableSettings.ALLOW_JTA_TRANSACTION_ACCESS);
+                org.hibernate.cfg.AvailableSettings.ALLOW_JTA_TRANSACTION_ACCESS);
         if (!jtaTransactionAccessEnabled) {
             options.disableJtaTransactionAccess();
         }
@@ -136,8 +136,16 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
             options.disableRefreshDetachedEntity();
         }
 
+        //Check for use of deprecated org.hibernate.jpa.AvailableSettings.SESSION_FACTORY_OBSERVER
+        final Object legacyObserver = runtimeSettings.get("hibernate.ejb.session_factory_observer");
+        if (legacyObserver != null) {
+            throw new HibernateException("Legacy setting being used: 'hibernate.ejb.session_factory_observer' was replaced by '"
+                    + org.hibernate.cfg.AvailableSettings.SESSION_FACTORY_OBSERVER + "'. Please update your configuration.");
+        }
+
         // Locate and apply any requested SessionFactoryObserver
-        final Object sessionFactoryObserverSetting = runtimeSettings.get(AvailableSettings.SESSION_FACTORY_OBSERVER);
+        final Object sessionFactoryObserverSetting = runtimeSettings
+                .get(org.hibernate.cfg.AvailableSettings.SESSION_FACTORY_OBSERVER);
         if (sessionFactoryObserverSetting != null) {
 
             final StrategySelector strategySelector = ssr.getService(StrategySelector.class);

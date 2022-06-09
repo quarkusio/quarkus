@@ -7,7 +7,6 @@ import java.util.Optional;
 
 import javax.enterprise.inject.Default;
 
-import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.jboss.logging.Logger;
 
@@ -17,6 +16,7 @@ import io.quarkus.agroal.DataSource;
 import io.quarkus.arc.Arc;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider;
+import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 
 /**
  * Creates a database connection based on the data sources in the configuration file.

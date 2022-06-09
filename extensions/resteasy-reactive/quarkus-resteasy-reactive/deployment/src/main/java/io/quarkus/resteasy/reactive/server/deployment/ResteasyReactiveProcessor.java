@@ -6,6 +6,7 @@ import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReac
 import static java.util.stream.Collectors.toList;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
 
+import java.io.File;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -182,6 +183,7 @@ public class ResteasyReactiveProcessor {
             DotName.createSimple(HttpServerRequest.class.getName()),
             DotName.createSimple(HttpServerResponse.class.getName()),
             DotName.createSimple(RoutingContext.class.getName()));
+    private static final DotName FILE = DotName.createSimple(File.class.getName());
 
     private static final int SECURITY_EXCEPTION_MAPPERS_PRIORITY = Priorities.USER + 1;
 
@@ -500,6 +502,10 @@ public class ResteasyReactiveProcessor {
                                                             QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
                                                     .source(source)
                                                     .build());
+                                        }
+                                        if (parameterType.name().equals(FILE)) {
+                                            reflectiveClass.produce(new ReflectiveClassBuildItem(false, true, false,
+                                                    entry.getActualEndpointInfo().name().toString()));
                                         }
                                     }
                                 }

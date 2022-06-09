@@ -23,6 +23,6 @@ public class ModelWithJsonNamingStrategyResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public String get() throws IOException {
-        return objectMapper.writeValueAsString(new SampleResponse("My blog post"));
+        return objectMapper.writeValueAsString(new SampleResponse("My blog post", "best"));
     }
 }

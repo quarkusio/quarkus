@@ -89,13 +89,13 @@
         <opensearch.protocol>http</opensearch.protocol>
 
         <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
-        <postgres.image>docker.io/postgres:14.2</postgres.image>
-        <mariadb.image>docker.io/mariadb:10.7</mariadb.image>
+        <postgres.image>docker.io/postgres:14</postgres.image>
+        <mariadb.image>docker.io/mariadb:10.6</mariadb.image>
         <db2.image>docker.io/ibmcom/db2:11.5.7.0a</db2.image>
-        <mssql.image>mcr.microsoft.com/mssql/server:2019-CU15-ubuntu-20.04</mssql.image>
+        <mssql.image>mcr.microsoft.com/mssql/server:2019-latest</mssql.image>
         <mysql.image>docker.io/mysql:8.0</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-xe:21-slim</oracle.image>
-        <mongo.image>docker.io/mongo:4.4.13</mongo.image>
+        <mongo.image>docker.io/mongo:4.4</mongo.image>
 
         <!-- Align various dependencies that are not really part of the bom-->
         <junit4.version>4.13.2</junit4.version>

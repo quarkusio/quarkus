@@ -21,6 +21,12 @@ import io.vertx.core.buffer.Buffer;
 public interface MultipartClient {
 
     @POST
+    @Path("/octet-stream")
+    @Consumes(MediaType.APPLICATION_OCTET_STREAM)
+    @Produces(MediaType.TEXT_PLAIN)
+    String octetStreamFile(File body);
+
+    @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/binary")

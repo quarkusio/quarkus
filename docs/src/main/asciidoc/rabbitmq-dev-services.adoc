@@ -55,7 +55,8 @@ quarkus.rabbitmq.devservices.image-name=rabbitmq:latest
 
 == Access the management UI
 
-By default, Dev Services for RabbitMQ uses the official image with the `management` tag. This means you have the https://github.com/docker-library/docs/tree/master/rabbitmq#management-plugin[management plugin] available. You can use the xref:dev-ui.adoc[Dev UI] to find the random http port or configure a static one via `quarkus.rabbitmq.devservices.http-port`.
+By default, Dev Services for RabbitMQ use the official image with the `management` tag. This means you have the https://github.com/docker-library/docs/tree/master/rabbitmq#management-plugin[management plugin] available. You can use the xref:dev-ui.adoc[Dev UI] to find the HTTP port randomly affected
+or configure a static one via `quarkus.rabbitmq.devservices.http-port`.
 
 == Predefined Topology
 

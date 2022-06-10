@@ -201,6 +201,8 @@ clean_project
 ## remove banned dependencies
 remove_banned_dependency "independent-projects/bootstrap" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
 remove_banned_dependency "independent-projects/bootstrap" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
+remove_banned_dependency "independent-projects/extension-maven-plugin" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
+remove_banned_dependency "independent-projects/extension-maven-plugin" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
 remove_banned_dependency "independent-projects/tools" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
 remove_banned_dependency "independent-projects/tools" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
 update_banned_dependency "independent-projects/resteasy-reactive" 'jakarta.xml.bind:jakarta.xml.bind-api' 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec'

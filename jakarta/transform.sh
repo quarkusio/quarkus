@@ -222,6 +222,7 @@ sed -i 's@ServletContextConfigSourceImpl@ServletContextConfigSource@g' extension
 # I started some discussions with James Perkins about how to contribute back our changes
 # For now, this will have to do
 cp "jakarta/overrides/rest-client/QuarkusRestClientBuilder.java" "extensions/resteasy-classic/rest-client/runtime/src/main/java/io/quarkus/restclient/runtime/"
+cp "jakarta/overrides/jaxb/JAXBSubstitutions.java" "extensions/jaxb/runtime/src/main/java/io/quarkus/jaxb/runtime/graal/"
 
 ## JSON-P implementation switch
 sed -i 's@<runnerParentFirstArtifact>org.glassfish:jakarta.json</runnerParentFirstArtifact>@<runnerParentFirstArtifact>org.eclipse.parsson:jakarta.json</runnerParentFirstArtifact>@g' extensions/logging-json/runtime/pom.xml

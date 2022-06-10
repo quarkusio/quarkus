@@ -163,7 +163,7 @@ public class ExecUtil {
             String... args) {
         try {
             Process process = startProcess(directory, command, args);
-            outputFilterFunction.apply(process.getInputStream());
+            outputFilterFunction.apply(process.getInputStream()).run();
             process.waitFor();
             return process.exitValue() == 0;
         } catch (InterruptedException e) {

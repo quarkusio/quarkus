@@ -49,6 +49,8 @@ public class GrpcCodeGen implements CodeGenProvider {
     private static final String SCAN_DEPENDENCIES_FOR_PROTO = "quarkus.generate-code.grpc.scan-for-proto";
     private static final String SCAN_FOR_IMPORTS = "quarkus.generate-code.grpc.scan-for-imports";
 
+    private static final String POST_PROCESS_SKIP = "quarkus.generate.code.grpc-post-processing.skip";
+
     private Executables executables;
 
     @Override
@@ -132,7 +134,8 @@ public class GrpcCodeGen implements CodeGenProvider {
                     throw new CodeGenException("Failed to generate Java classes from proto files: " + protoFiles +
                             " to " + outDir.toAbsolutePath() + " with command " + String.join(" ", command));
                 }
-                log.info("Successfully finished generating sources from proto files");
+                postprocessing(context, outDir);
+                log.info("Successfully finished generating and post-processing sources from proto files");
                 return true;
             }
         } catch (IOException | InterruptedException e) {
@@ -141,6 +144,17 @@ public class GrpcCodeGen implements CodeGenProvider {
         }
 
         return false;
+    }
+
+    private void postprocessing(CodeGenContext context, Path outDir) {
+        if (TRUE.toString().equalsIgnoreCase(System.getProperties().getProperty(POST_PROCESS_SKIP, "false"))
+                || context.config().getOptionalValue(POST_PROCESS_SKIP, Boolean.class).orElse(false)) {
+            log.info("Skipping gRPC Post-Processing on user's request");
+            return;
+        }
+
+        new GrpcPostProcessing(context, outDir).postprocess();
+
     }
 
     private Collection<Path> gatherProtosFromDependencies(Path workDir, Set<String> protoDirectories,

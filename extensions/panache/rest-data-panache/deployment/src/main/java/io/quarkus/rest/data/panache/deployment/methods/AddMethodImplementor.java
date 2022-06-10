@@ -28,8 +28,9 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
 
     private final boolean withValidation;
 
-    public AddMethodImplementor(boolean withValidation, boolean isResteasyClassic, boolean isReactivePanache) {
-        super(isResteasyClassic, isReactivePanache);
+    public AddMethodImplementor(boolean withValidation, boolean isResteasyClassic, boolean isReactivePanache,
+            boolean isOpenApiEnabled) {
+        super(isResteasyClassic, isReactivePanache, isOpenApiEnabled);
         this.withValidation = withValidation;
     }
 
@@ -110,6 +111,7 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
         addProducesJsonAnnotation(methodCreator, resourceProperties);
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addOpenApiAnnotations(methodCreator, resourceMetadata.getEntityType(), Response.Status.CREATED);
         // Add parameter annotations
         if (withValidation) {
             methodCreator.getParameterAnnotations(0).addAnnotation(Valid.class);

@@ -26,8 +26,8 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
 
     private static final String REL = "self";
 
-    public GetMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
-        super(isResteasyClassic, isReactivePanache);
+    public GetMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache, boolean isOpenApiEnabled) {
+        super(isResteasyClassic, isReactivePanache, isOpenApiEnabled);
     }
 
     /**
@@ -93,6 +93,7 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
         addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_METHOD_NAME), "{id}"));
         addGetAnnotation(methodCreator);
         addProducesJsonAnnotation(methodCreator, resourceProperties);
+        addOpenApiAnnotations(methodCreator, resourceMetadata.getEntityType(), Response.Status.OK);
 
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);

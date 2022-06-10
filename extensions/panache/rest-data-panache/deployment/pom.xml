@@ -44,6 +44,11 @@
             <artifactId>quarkus-resteasy-reactive-links-deployment</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-openapi-deployment</artifactId>
+            <optional>true</optional>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -26,8 +26,8 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
 
     private static final String REL = "remove";
 
-    public DeleteMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
-        super(isResteasyClassic, isReactivePanache);
+    public DeleteMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache, boolean isOpenApiEnabled) {
+        super(isResteasyClassic, isReactivePanache, isOpenApiEnabled);
     }
 
     /**
@@ -92,6 +92,7 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
         addDeleteAnnotation(methodCreator);
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addOpenApiAnnotations(methodCreator, resourceMetadata.getEntityType(), Response.Status.NO_CONTENT);
 
         ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());
         ResultHandle id = methodCreator.getMethodParam(0);

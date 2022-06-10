@@ -57,6 +57,7 @@ public class RestDataProcessor {
 
         boolean isReactivePanache = capabilities.isPresent(Capability.HIBERNATE_REACTIVE);
         boolean isResteasyClassic = capabilities.isPresent(Capability.RESTEASY);
+        boolean isOpenApiEnabled = capabilities.isPresent(Capability.SMALLRYE_OPENAPI);
 
         if (isReactivePanache && isResteasyClassic) {
             throw new IllegalStateException(
@@ -66,7 +67,7 @@ public class RestDataProcessor {
         ClassOutput classOutput = isResteasyClassic ? new GeneratedBeanGizmoAdaptor(resteasyClassicImplementationsProducer)
                 : new GeneratedJaxRsResourceGizmoAdaptor(resteasyReactiveImplementationsProducer);
         JaxRsResourceImplementor jaxRsResourceImplementor = new JaxRsResourceImplementor(hasValidatorCapability(capabilities),
-                isResteasyClassic, isReactivePanache);
+                isResteasyClassic, isReactivePanache, isOpenApiEnabled);
         ResourcePropertiesProvider resourcePropertiesProvider = new ResourcePropertiesProvider(index.getIndex());
 
         for (RestDataResourceBuildItem resourceBuildItem : resourceBuildItems) {

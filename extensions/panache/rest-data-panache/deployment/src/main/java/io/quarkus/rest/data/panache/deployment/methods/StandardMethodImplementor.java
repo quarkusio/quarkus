@@ -11,7 +11,10 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
 
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.jboss.logging.Logger;
 
 import io.quarkus.gizmo.AnnotatedElement;
@@ -37,10 +40,12 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
     protected final ResponseImplementor responseImplementor;
     private final boolean isResteasyClassic;
     private final boolean isReactivePanache;
+    private final boolean isOpenApiEnabled;
 
-    protected StandardMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
+    protected StandardMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache, boolean isOpenApiEnabled) {
         this.isResteasyClassic = isResteasyClassic;
         this.isReactivePanache = isReactivePanache;
+        this.isOpenApiEnabled = isOpenApiEnabled;
         this.responseImplementor = new ResponseImplementor(isResteasyClassic);
     }
 
@@ -103,7 +108,7 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
                 linkResource.addValue("entityType", entityClass);
                 linkResource.addValue("rel", rel);
             } catch (ClassNotFoundException e) {
-                LOGGER.error("Unable to create links for entity: '" + entityClassName + "'", e);
+                throw new IllegalStateException("Unable to create links for entity: '" + entityClassName + "'", e);
             }
         }
     }
@@ -142,6 +147,21 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
 
     protected void addContextAnnotation(AnnotatedElement element) {
         element.addAnnotation(Context.class);
+    }
+
+    protected void addOpenApiAnnotations(AnnotatedElement element, String returnType, Response.Status status) {
+        if (isOpenApiEnabled) {
+            try {
+                element.addAnnotation(APIResponseSchema.class)
+                        .add("value", Thread.currentThread().getContextClassLoader().loadClass(returnType))
+                        .add("responseCode", String.valueOf(status.getStatusCode()));
+
+                // We need to add an empty APIResponses annotation, so OpenAPI does not try to determine the return type.
+                element.addAnnotation(APIResponses.class.getName());
+            } catch (ClassNotFoundException ex) {
+                throw new IllegalStateException("Unable to add the @APIResponseSchema annotation", ex);
+            }
+        }
     }
 
     protected void addSortQueryParamValidatorAnnotation(AnnotatedElement element) {

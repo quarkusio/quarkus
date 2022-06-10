@@ -40,8 +40,8 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
 
     private final SortImplementor sortImplementor = new SortImplementor();
 
-    public ListHalMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
-        super(isResteasyClassic, isReactivePanache);
+    public ListHalMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache, boolean isOpenApiEnabled) {
+        super(isResteasyClassic, isReactivePanache, isOpenApiEnabled);
         this.paginationImplementor = new PaginationImplementor();
     }
 
@@ -131,6 +131,7 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
         addGetAnnotation(methodCreator);
         addProducesAnnotation(methodCreator, APPLICATION_HAL_JSON);
+        addOpenApiAnnotations(methodCreator, resourceMetadata.getEntityType(), Response.Status.OK);
         addSortQueryParamValidatorAnnotation(methodCreator);
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(1), "page");
@@ -205,6 +206,7 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
         addGetAnnotation(methodCreator);
         addProducesAnnotation(methodCreator, APPLICATION_HAL_JSON);
+        addOpenApiAnnotations(methodCreator, resourceMetadata.getEntityType(), Response.Status.OK);
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
 
         ResultHandle sortQuery = methodCreator.getMethodParam(0);

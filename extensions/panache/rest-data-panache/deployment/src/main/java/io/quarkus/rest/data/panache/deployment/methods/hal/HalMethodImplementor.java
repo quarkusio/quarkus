@@ -26,8 +26,8 @@ import io.quarkus.resteasy.reactive.links.runtime.hal.ResteasyReactiveHalService
  */
 abstract class HalMethodImplementor extends StandardMethodImplementor {
 
-    HalMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
-        super(isResteasyClassic, isReactivePanache);
+    HalMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache, boolean isOpenApiEnabled) {
+        super(isResteasyClassic, isReactivePanache, isOpenApiEnabled);
     }
 
     /**

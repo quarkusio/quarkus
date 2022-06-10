@@ -32,15 +32,17 @@ class JaxRsResourceImplementor {
 
     private final List<MethodImplementor> methodImplementors;
 
-    JaxRsResourceImplementor(boolean withValidation, boolean isResteasyClassic, boolean isReactivePanache) {
-        this.methodImplementors = Arrays.asList(new GetMethodImplementor(isResteasyClassic, isReactivePanache),
-                new ListMethodImplementor(isResteasyClassic, isReactivePanache),
-                new AddMethodImplementor(withValidation, isResteasyClassic, isReactivePanache),
-                new UpdateMethodImplementor(withValidation, isResteasyClassic, isReactivePanache),
-                new DeleteMethodImplementor(isResteasyClassic, isReactivePanache),
+    JaxRsResourceImplementor(boolean withValidation, boolean isResteasyClassic, boolean isReactivePanache,
+            boolean isOpenApiEnabled) {
+        this.methodImplementors = Arrays.asList(
+                new GetMethodImplementor(isResteasyClassic, isReactivePanache, isOpenApiEnabled),
+                new ListMethodImplementor(isResteasyClassic, isReactivePanache, isOpenApiEnabled),
+                new AddMethodImplementor(withValidation, isResteasyClassic, isReactivePanache, isOpenApiEnabled),
+                new UpdateMethodImplementor(withValidation, isResteasyClassic, isReactivePanache, isOpenApiEnabled),
+                new DeleteMethodImplementor(isResteasyClassic, isReactivePanache, isOpenApiEnabled),
                 // The list hal endpoint needs to be added for both resteasy classic and resteasy reactive
                 // because the pagination links are programmatically added.
-                new ListHalMethodImplementor(isResteasyClassic, isReactivePanache));
+                new ListHalMethodImplementor(isResteasyClassic, isReactivePanache, isOpenApiEnabled));
     }
 
     /**

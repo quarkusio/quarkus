@@ -39,8 +39,8 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
 
     private final SortImplementor sortImplementor = new SortImplementor();
 
-    public ListMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
-        super(isResteasyClassic, isReactivePanache);
+    public ListMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache, boolean isOpenApiEnabled) {
+        super(isResteasyClassic, isReactivePanache, isOpenApiEnabled);
 
         this.paginationImplementor = new PaginationImplementor();
     }
@@ -140,6 +140,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addOpenApiAnnotations(methodCreator, resourceMetadata.getEntityType(), Response.Status.OK);
         addSortQueryParamValidatorAnnotation(methodCreator);
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(1), "page");
@@ -205,6 +206,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addOpenApiAnnotations(methodCreator, resourceMetadata.getEntityType(), Response.Status.OK);
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
 
         ResultHandle sortQuery = methodCreator.getMethodParam(0);

@@ -7,7 +7,7 @@ import io.quarkus.registry.catalog.Platform;
 import io.quarkus.registry.catalog.PlatformCatalog;
 import io.quarkus.registry.client.RegistryClient;
 import io.quarkus.registry.config.RegistryConfig;
-import io.quarkus.registry.util.GlobUtil;
+import io.quarkus.util.GlobUtil;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;

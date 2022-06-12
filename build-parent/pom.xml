@@ -583,6 +583,8 @@
                                             <!-- Includes its own copy of an old version of the servlet API-->
                                             <exclude>org.apache.tomcat.embed:tomcat-embed-core</exclude>
                                             <exclude>org.jboss.modules:jboss-modules</exclude>
+                                            <!-- We prefer ByteBuddy where possible -->
+                                            <exclude>org.javassist:javassist</exclude>
                                         </excludes>
                                         <includes>
                                             <!-- this is for REST Assured -->
@@ -1156,13 +1158,13 @@
                             <newArtifacts>
                                 <artifact>${project.groupId}:${project.artifactId}:${revapi.newVersion}</artifact>
                             </newArtifacts>
-                            <!-- don't fail is false making it possible to have 
+                            <!-- don't fail is false making it possible to have
                                 revapi checks without requiring config files -->
                             <failOnMissingConfigurationFiles>false</failOnMissingConfigurationFiles>
-                            <!-- Consider changes from the latest .Final version, 
+                            <!-- Consider changes from the latest .Final version,
                                 not from the latest non-snapshot. -->
                             <versionFormat>\d+\.\d+\.\d+\.Final</versionFormat>
-                            <!-- By default revapi will check the oldArtifact 
+                            <!-- By default revapi will check the oldArtifact
                                 against the currently executed build -->
                             <!-- <checkDependencies>false</checkDependencies> -->
                             <analysisConfigurationFiles>
@@ -1176,8 +1178,8 @@
                                     </roots>
                                 </configurationFile>
                             </analysisConfigurationFiles>
-                            <!-- By default, revapi will only fail the build 
-                                 if there are potentially breaking or breaking changes. However, in the report 
+                            <!-- By default, revapi will only fail the build
+                                 if there are potentially breaking or breaking changes. However, in the report
                                  we want even non breaking changes to be present. -->
                             <reportSeverity>nonBreaking</reportSeverity>
                             <failSeverity>potentiallyBreaking</failSeverity>
@@ -1187,11 +1189,11 @@
                             <ignoreSuggestionsFile>${project.build.directory}/api-changes-suggestions.xml</ignoreSuggestionsFile>
                             <expandProperties>true</expandProperties>
                         </configuration>
-                        <!-- Running two executions is a workaround to make sure 
-                             we get a HTML report in case revapi finds some incompatible changes. The 
-                             "check" goal will simply fail the whole build before it could get to the 
-                             report. To make sure we always get a HTML report, the "report" goal needs 
-                             to be executed before the "check" goal. Once https://github.com/revapi/revapi/issues/11 
+                        <!-- Running two executions is a workaround to make sure
+                             we get a HTML report in case revapi finds some incompatible changes. The
+                             "check" goal will simply fail the whole build before it could get to the
+                             report. To make sure we always get a HTML report, the "report" goal needs
+                             to be executed before the "check" goal. Once https://github.com/revapi/revapi/issues/11
                              is fixed it should be possible to use single execution. -->
                         <executions>
                             <execution>

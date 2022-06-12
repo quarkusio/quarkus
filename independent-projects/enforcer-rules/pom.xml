@@ -37,7 +37,7 @@
 
         <enforcer-api.version>3.0.0-M3</enforcer-api.version>
         <maven-invoker-plugin.version>3.2.2</maven-invoker-plugin.version>
-        <maven-core.version>3.8.4</maven-core.version>
+        <maven-core.version>3.8.6</maven-core.version>
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
     </properties>

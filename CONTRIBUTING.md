@@ -140,6 +140,8 @@ export MAVEN_OPTS="-Xmx4g"
 
 Wait for a bit and you're done.
 
+**Note** For Apple Silicon computer, Rosetta must be installed. It can be done using `softwareupdate --install-rosetta`
+
 ### Updating the version
 
 When using the `main` branch, you need to use the group id `io.quarkus` instead of `io.quarkus.platform` for both the Quarkus BOM and the Quarkus Maven Plugin.

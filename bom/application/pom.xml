@@ -2886,7 +2886,12 @@
                 <version>${bytebuddy.version}</version>
             </dependency>
 
-            <!-- GRPC dependency -->
+            <!-- GRPC dependencies -->
+            <dependency>
+                <groupId>com.google.api.grpc</groupId>
+                <artifactId>proto-google-common-protos</artifactId>
+                <version>${proto-google-common-protos.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.google.code.findbugs</groupId>
                 <artifactId>jsr305</artifactId>

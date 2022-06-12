@@ -28,7 +28,8 @@
         <opentelemetry-alpha.version>1.13.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.8.0</jaeger.version>
         <quarkus-http.version>4.1.9</quarkus-http.version>
-        <micrometer.version>1.9.0</micrometer.version>
+        <micrometer.version>1.9.0</micrometer.version><!-- keep in sync with hdrhistogram -->
+        <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <microprofile-config-api.version>2.0.1</microprofile-config-api.version>
         <microprofile-metrics-api.version>3.0.1</microprofile-metrics-api.version>
@@ -5543,6 +5544,13 @@
                 <groupId>info.picocli</groupId>
                 <artifactId>picocli-codegen</artifactId>
                 <version>${picocli.version}</version>
+            </dependency>
+
+            <!-- Micrometer -->
+            <dependency>
+                <groupId>org.hdrhistogram</groupId>
+                <artifactId>HdrHistogram</artifactId>
+                <version>${hdrhistogram.version}</version>
             </dependency>
 
             <!-- Quarkus build related dependencies -->

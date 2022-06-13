@@ -1338,6 +1338,25 @@ For example, when registering types and methods for reflection access,
 the analysis can’t easily see what’s behind those types or methods,
 so it has to do more work to complete the analysis step.
 
+=== I get an `OutOfMemoryError` (OOME) building native executables, what can I do?
+
+Building native executables is not only time consuming, but it also takes a fair amount of memory.
+For example, building a sample native Quarkus JPA application such as the Hibernate quickstart,
+may use 6GB to 8GB resident set size in memory.
+A big chunk of this memory is Java heap,
+but extra memory is required for other aspects of the JVM that runs the native building process.
+It is still possible to build such applications in environments that have total memory close to the limits,
+but to do that it is necessary to shrink the maximum heap size of the GraalVM native image process.
+To do that, set a maximum heap size using the `quarkus.native.native-image-xmx` property.
+For example, we can instruct GraalVM to use 5GB of maximum heap size by passing in
+`-Dquarkus.native.native-image-xmx=5g` in the command line.
+
+Building native executables this way might have the side effect of requiring more time to complete.
+This is due to garbage collection having to work harder for native image generation to have free space to do its job.
+
+Note that typical applications are likely bigger than quickstarts,
+so the memory requirements will also likely be higher.
+
 === Why is runtime performance of a native executable inferior compared to JVM mode?
 
 As with most things in life there are some trade-offs involved when choosing native compilation over JVM mode.

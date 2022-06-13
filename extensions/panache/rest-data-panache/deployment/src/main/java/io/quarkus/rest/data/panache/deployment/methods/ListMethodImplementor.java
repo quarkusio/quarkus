@@ -3,6 +3,7 @@ package io.quarkus.rest.data.panache.deployment.methods;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor.DEFAULT_PAGE_INDEX;
 import static io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor.DEFAULT_PAGE_SIZE;
+import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.ofType;
 
 import java.util.List;
 
@@ -21,6 +22,7 @@ import io.quarkus.rest.data.panache.deployment.Constants;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor;
+import io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator;
 import io.quarkus.rest.data.panache.deployment.utils.SortImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.UniImplementor;
 import io.smallrye.mutiny.Uni;
@@ -131,8 +133,8 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
     private void implementPaged(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
         // Method parameters: sort strings, page index, page size, uri info
-        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME,
-                isNotReactivePanache() ? Response.class : Uni.class,
+        MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
+                isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
                 List.class, int.class, int.class, UriInfo.class);
 
         // Add method annotations
@@ -196,8 +198,8 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
 
     private void implementNotPaged(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceFieldDescriptor) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME,
-                isNotReactivePanache() ? Response.class : Uni.class,
+        MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
+                isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
                 List.class);
 
         // Add method annotations

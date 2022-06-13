@@ -115,6 +115,14 @@ Executing that will produce additional output lines like this:
 # Printing native-library information to: /project/reports/native_library_info_20220223_100925.txt
 ----
 
+[NOTE]
+====
+Note that `/project` is a folder within the container that is building the native executable.
+So, this is not a folder that you will find in the host environment.
+`/project` folder is mapped to `target/debugging-native-1.0.0-SNAPSHOT-native-image-source-jar`,
+so you will find the files under the `reports` folder in that directory.
+====
+
 The target info file contains information such as the target platform,
 the toolchain used to compile the executable,
 and the C library in use:

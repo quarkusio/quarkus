@@ -7,8 +7,8 @@ import io.quarkus.devtools.commands.CreateExtension;
 import picocli.CommandLine;
 
 public class ExtensionGAVMixin {
-    final static String DEFAULT_EXTENSION_ID = "custom";
-    final static String DEFAULT_GAV = "io.quarkiverse.custom:"
+    static final String DEFAULT_EXTENSION_ID = "custom";
+    static final String DEFAULT_GAV = "io.quarkiverse.custom:"
             + DEFAULT_EXTENSION_ID + ":"
             + CreateExtension.DEFAULT_VERSION;
 

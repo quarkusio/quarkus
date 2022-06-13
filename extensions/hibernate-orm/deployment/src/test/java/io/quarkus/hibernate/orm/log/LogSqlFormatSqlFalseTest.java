@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.logsql;
+package io.quarkus.hibernate.orm.log;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 

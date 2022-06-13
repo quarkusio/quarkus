@@ -217,7 +217,7 @@ Once started, you can request the provided endpoint:
 [source,shell]
 ----
 $ curl -w "\n" http://localhost:8080/hello
-hello
+Hello from RESTEasy Reactive
 ----
 
 Hit `CTRL+C` to stop the application, or keep it running and enjoy the blazing fast hot-reload.

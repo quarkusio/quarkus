@@ -31,6 +31,14 @@
             <artifactId>jsoup</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-extension-processor</artifactId>
             <version>${project.version}</version>
@@ -54,7 +62,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- Required by Tooltip inline macro -->
+        <!-- Required by Tooltip inline macro and YamlMetadata Generator -->
         <dependency>
             <groupId>org.asciidoctor</groupId>
             <artifactId>asciidoctorj</artifactId>
@@ -2770,24 +2778,46 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <skip>${skipDocs}</skip>
+                </configuration>
                 <executions>
                     <execution>
+                        <id>all-config-classes</id>
                         <phase>process-classes</phase>
                         <goals>
                             <goal>java</goal>
                         </goals>
+                        <configuration>
+                            <skip>${skipDocs}</skip>
+                            <mainClass>io.quarkus.docs.generation.AllConfigGenerator</mainClass>
+                            <arguments>
+                                <argument>${project.basedir}/../devtools/bom-descriptor-json/target/quarkus-bom-quarkus-platform-descriptor-${project.version}-${project.version}.json</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-doc-manifests</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipDocs}</skip>
+                            <mainClass>io.quarkus.docs.generation.YamlMetadataGenerator</mainClass>
+                            <arguments>
+                                <argument>${project.basedir}/src/main/asciidoc</argument>
+                                <argument>${project.basedir}/target</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
+                            </environmentVariables>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <skip>${skipDocs}</skip>
-                    <mainClass>io.quarkus.docs.generation.AllConfigGenerator</mainClass>
-                    <arguments>
-                        <argument>${project.basedir}/../devtools/bom-descriptor-json/target/quarkus-bom-quarkus-platform-descriptor-${project.version}-${project.version}.json</argument>
-                    </arguments>
-                    <environmentVariables>
-                        <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
-                    </environmentVariables>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.asciidoctor</groupId>
@@ -2885,6 +2915,7 @@
                         <neo4j-guide>https://quarkiverse.github.io/quarkiverse-docs/quarkus-neo4j/dev/index.html</neo4j-guide>
                         <vault-guide>https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/index.html</vault-guide>
                         <vault-datasource-guide>https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/vault-datasource.html</vault-datasource-guide>
+                        <micrometer-registry-gulde>https://quarkiverse.github.io/quarkiverse-docs/quarkus-micrometer-registry/dev/</micrometer-registry-gulde>
                     </attributes>
                 </configuration>
                 <executions>
@@ -2919,7 +2950,7 @@
                         <artifactId>asciidoctorj</artifactId>
                         <version>${asciidoctorj.version}</version>
                     </dependency>
-                    <!-- Tooltip inline macro is provided by quarkus-documentation -->
+                    <!-- Tooltip inline macro & Yaml metadata generator are provided by quarkus-documentation -->
                     <dependency>
                         <groupId>${project.groupId}</groupId>
                         <artifactId>${project.artifactId}</artifactId>

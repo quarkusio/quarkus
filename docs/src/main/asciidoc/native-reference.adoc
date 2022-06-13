@@ -1453,15 +1453,9 @@ $ ./target/debugging-native-1.0.0-SNAPSHOT-runner -XX:PrintFlags=
 
 === Can I get a heap dump of a native executable? e.g. if it runs out of memory
 
-Unfortunately generating heap dumps in hprof format,
-which can be opened by tools such as VisualVM or Eclipse MAT,
-can only be achieved with
-https://www.graalvm.org/reference-manual/native-image/NativeImageHeapdump[GraalVM Enterprise Edition].
-Mandrel, which is based on the GraalVM Community Edition, does not have this capability.
-
-Although Mandrel can generate debug symbols and these contain a fair amount of information about object layouts,
-including what is a pointer field vs a primitive field, this information cannot be used as is to detect memory leaks or find dominator objects.
-This is because it has no idea what constitutes a root pointer nor how to recursively trace pointers from those roots.
+Starting with GraalVM 22.2.0 it will be possible to heap dumps upon request,
+e.g. `kill -SIGUSR1 <pid>`.
+Support for dumping the heap dump upon an out of memory error will follow up.
 
 === Can I build and run this examples outside of a container in Linux?
 

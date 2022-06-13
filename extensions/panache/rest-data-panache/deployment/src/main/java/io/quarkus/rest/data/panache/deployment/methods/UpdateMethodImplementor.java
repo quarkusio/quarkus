@@ -1,6 +1,7 @@
 package io.quarkus.rest.data.panache.deployment.methods;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
+import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.ofType;
 
 import java.lang.annotation.Annotation;
 import java.util.function.Supplier;
@@ -23,6 +24,7 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.rest.data.panache.RestDataResource;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
+import io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator;
 import io.quarkus.rest.data.panache.deployment.utils.UniImplementor;
 import io.quarkus.rest.data.panache.runtime.UpdateExecutor;
 import io.smallrye.mutiny.Uni;
@@ -132,8 +134,8 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
     @Override
     protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME,
-                isNotReactivePanache() ? Response.class : Uni.class,
+        MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
+                isNotReactivePanache() ? ofType(Response.class) : ofType(Uni.class, resourceMetadata.getEntityType()),
                 resourceMetadata.getIdType(), resourceMetadata.getEntityType());
 
         // Add method annotations

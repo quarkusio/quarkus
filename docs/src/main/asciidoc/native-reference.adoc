@@ -781,6 +781,17 @@ Then, from inside the tools container we execute:
 perf record -F 1009 -g -a ./target/debugging-native-1.0.0-SNAPSHOT-runner
 ----
 
+[INFO]
+====
+The `perf record` command above takes `1009` samples per second.
+Increasing this value means more samples are gathered,
+which can end up affecting the runtime performance.
+This also increases the amount of data generated.
+The more data generated, the longer it takes to process it,
+but the more precision you get on what the application is doing.
+So, finding the right value is a balancing act.
+====
+
 While `perf record` is running, open another window and access the endpoint:
 
 [source,bash]

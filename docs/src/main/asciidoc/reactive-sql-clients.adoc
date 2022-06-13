@@ -177,8 +177,7 @@ But for development we can simply drop and create the tables on startup, and the
 @ConfigProperty(name = "myapp.schema.create", defaultValue = "true") // <1>
 boolean schemaCreate;
 
-@PostConstruct
-void config() {
+void config(@Observes StartupEvent ev) {
     if (schemaCreate) {
         initdb();
     }

@@ -485,6 +485,12 @@ These are called expert options and you can learn more about them by running:
 docker run quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor} --expert-options-all
 ----
 
+[WARNING]
+====
+These expert options are not considered part of the GraalVM native image API,
+so they might change anytime.
+====
+
 To use these expert options, add them comma separated to the `-Dquarkus.native.additional-build-args` parameter.
 
 == Build-time vs Run-time Initialization

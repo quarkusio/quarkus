@@ -413,7 +413,7 @@ public class QuteProcessor {
         }
 
         builder.computeSectionHelper(name -> {
-            // Create a dummy section helper factory for an uknown section that could be potentially registered at runtime
+            // Create a dummy section helper factory for an unknown section that could be potentially registered at runtime
             return new SectionHelperFactory<SectionHelper>() {
                 @Override
                 public SectionHelper initialize(SectionInitContext context) {
@@ -950,7 +950,7 @@ public class QuteProcessor {
                 }
 
                 if (member == null) {
-                    // Then try to find an etension method
+                    // Then try to find an extension method
                     extensionMethod = findTemplateExtensionMethod(info, match.type(), regularExtensionMethods, expression,
                             index, templateIdToPathFun, results, assignableCache);
                     if (extensionMethod != null) {
@@ -2517,7 +2517,7 @@ public class QuteProcessor {
                         templatePath = templatePath.replace(File.separatorChar, '/');
                     }
                     if (config.templatePathExclude.matcher(templatePath).matches()) {
-                        LOGGER.debugf("Template file exluded: %s", filePath);
+                        LOGGER.debugf("Template file excluded: %s", filePath);
                         continue;
                     }
                     produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources, basePath, templatePath,
@@ -2633,7 +2633,7 @@ public class QuteProcessor {
     static class FirstPassLookupConfig implements LookupConfig {
 
         private final LookupConfig next;
-        // used for the firt part
+        // used for the first part
         private Predicate<AnnotationTarget> filter;
         private Boolean declaredMembersOnly;
 

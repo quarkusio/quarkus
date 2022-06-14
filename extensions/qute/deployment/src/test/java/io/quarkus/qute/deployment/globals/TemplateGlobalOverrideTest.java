@@ -47,7 +47,7 @@ public class TemplateGlobalOverrideTest {
 
     public static class Globals {
 
-        // this global variable is overriden in both templates
+        // this global variable is overridden in both templates
         @TemplateGlobal
         static String user = "Fu";
 

@@ -148,12 +148,12 @@ abstract class AbstractDependencyBuilder<B extends AbstractDependencyBuilder<B, 
         return scope;
     }
 
-    public String toGACTVString() {
-        return getGroupId() + ":" + getArtifactId() + ":" + getClassifier() + ":" + getType() + ":" + getVersion();
+    public ArtifactKey getKey() {
+        return ArtifactKey.gact(groupId, artifactId, classifier, type);
     }
 
-    public ArtifactKey getKey() {
-        return new GACT(groupId, artifactId, classifier, type);
+    public String toGACTVString() {
+        return getGroupId() + ":" + getArtifactId() + ":" + getClassifier() + ":" + getType() + ":" + getVersion();
     }
 
     public abstract T build();

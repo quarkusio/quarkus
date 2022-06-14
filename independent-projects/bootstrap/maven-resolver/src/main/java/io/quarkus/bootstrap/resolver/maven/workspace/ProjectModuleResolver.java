@@ -5,9 +5,9 @@ import io.quarkus.maven.dependency.ArtifactKey;
 
 public interface ProjectModuleResolver {
 
-    WorkspaceModule getProjectModule(String groupId, String artifactId);
-
-    default WorkspaceModule getProjectModule(ArtifactKey key) {
-        return getProjectModule(key.getGroupId(), key.getArtifactId());
+    default WorkspaceModule getProjectModule(String groupId, String artifactId) {
+        return getProjectModule(ArtifactKey.ga(groupId, artifactId));
     }
+
+    WorkspaceModule getProjectModule(ArtifactKey key);
 }

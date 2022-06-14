@@ -199,26 +199,31 @@ public class QuarkusBootstrapProvider implements Closeable {
 
             final BootstrapAppModelResolver modelResolver = new BootstrapAppModelResolver(artifactResolver(mojo, mode))
                     .setDevMode(mode == LaunchMode.DEVELOPMENT)
-                    .setTest(mode == LaunchMode.TEST);
+                    .setTest(mode == LaunchMode.TEST)
+                    .setCollectReloadableDependencies(mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST);
 
-            final ArtifactCoords artifactCoords = appArtifact(mojo);
-            final List<MavenProject> localProjects = mojo.mavenProject().getCollectedProjects();
-            final Set<ArtifactKey> localProjectKeys = new HashSet<>(localProjects.size());
-            for (MavenProject p : localProjects) {
-                localProjectKeys.add(new GACT(p.getGroupId(), p.getArtifactId()));
-            }
-            final Set<ArtifactKey> reloadableModules = new HashSet<>(localProjects.size() + 1);
-            for (Artifact a : mojo.mavenProject().getArtifacts()) {
-                if (localProjectKeys.contains(new GACT(a.getGroupId(), a.getArtifactId()))) {
-                    reloadableModules.add(new GACT(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getType()));
+            final ArtifactCoords appArtifact = appArtifact(mojo);
+            Set<ArtifactKey> reloadableModules = Set.of();
+            if (mode == LaunchMode.NORMAL) {
+                // collect reloadable artifacts for remote-dev
+                final List<MavenProject> localProjects = mojo.mavenProject().getCollectedProjects();
+                final Set<ArtifactKey> localProjectKeys = new HashSet<>(localProjects.size());
+                for (MavenProject p : localProjects) {
+                    localProjectKeys.add(new GACT(p.getGroupId(), p.getArtifactId()));
                 }
+                reloadableModules = new HashSet<>(localProjects.size() + 1);
+                for (Artifact a : mojo.mavenProject().getArtifacts()) {
+                    if (localProjectKeys.contains(new GACT(a.getGroupId(), a.getArtifactId()))) {
+                        reloadableModules.add(new GACT(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getType()));
+                    }
+                }
+                reloadableModules.add(appArtifact.getKey());
             }
-            reloadableModules.add(artifactCoords.getKey());
 
             final List<Dependency> forcedDependencies = mojo.forcedDependencies(mode);
             final ApplicationModel appModel;
             try {
-                appModel = modelResolver.resolveManagedModel(artifactCoords, forcedDependencies, managingProject(mojo),
+                appModel = modelResolver.resolveManagedModel(appArtifact, forcedDependencies, managingProject(mojo),
                         reloadableModules);
             } catch (AppModelResolverException e) {
                 throw new MojoExecutionException("Failed to bootstrap application in " + mode + " mode", e);

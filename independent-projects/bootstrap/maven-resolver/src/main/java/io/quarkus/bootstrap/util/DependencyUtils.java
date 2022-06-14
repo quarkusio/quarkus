@@ -1,16 +1,61 @@
 package io.quarkus.bootstrap.util;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACTV;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
 
-public class DependencyNodeUtils {
+public class DependencyUtils {
 
-    public static AppArtifactKey toKey(Artifact artifact) {
-        return new AppArtifactKey(artifact.getGroupId(), artifact.getArtifactId(),
+    public static ArtifactKey getKey(Artifact artifact) {
+        return ArtifactKey.gact(artifact.getGroupId(), artifact.getArtifactId(),
                 artifact.getClassifier(), artifact.getExtension());
+    }
+
+    public static ArtifactCoords getCoords(Artifact artifact) {
+        return new GACTV(artifact.getGroupId(), artifact.getArtifactId(),
+                artifact.getClassifier(), artifact.getExtension(), artifact.getVersion());
+    }
+
+    public static List<Dependency> mergeDeps(List<Dependency> dominant, List<Dependency> recessive,
+            Map<ArtifactKey, String> managedVersions, Set<String> excludedScopes) {
+        final int initialCapacity = dominant.size() + recessive.size();
+        if (initialCapacity == 0) {
+            return List.of();
+        }
+        final List<Dependency> result = new ArrayList<>(initialCapacity);
+        final Set<ArtifactKey> ids = new HashSet<>(initialCapacity, 1.0f);
+        for (Dependency dependency : dominant) {
+            if (excludedScopes.contains(dependency.getScope())) {
+                continue;
+            }
+            ids.add(getKey(dependency.getArtifact()));
+            result.add(dependency);
+        }
+        for (Dependency dependency : recessive) {
+            if (excludedScopes.contains(dependency.getScope())) {
+                continue;
+            }
+            final ArtifactKey id = getKey(dependency.getArtifact());
+            if (ids.contains(id)) {
+                continue;
+            }
+            final String managedVersion = managedVersions.get(id);
+            if (managedVersion != null) {
+                dependency = dependency.setArtifact(dependency.getArtifact().setVersion(managedVersion));
+            }
+            result.add(dependency);
+        }
+        return result;
     }
 
     public static Artifact toArtifact(String str) {
@@ -21,7 +66,7 @@ public class DependencyNodeUtils {
         String groupId = null;
         String artifactId = null;
         String classifier = "";
-        String type = "jar";
+        String type = ArtifactCoords.TYPE_JAR;
         String version = null;
 
         int colon = str.indexOf(':', offset);

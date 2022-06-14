@@ -444,7 +444,7 @@ For example, methods that directly call a method can be located via:
 
 [source,cypher]
 ----
-match (m:Method) <- [*1..1] - (o) where m.name = "hello" return *
+match (m:Method) <- [*1..1] - (o) where m.name = "hello" and m.type =~ ".*GreetingResource" return *
 ----
 
 Then you can look for direct calls at depth of 2,
@@ -452,7 +452,7 @@ so you’d search for methods that call methods that call into the target method
 
 [source,cypher]
 ----
-match (m:Method) <- [*1..2] - (o) where m.name = "hello" return *
+match (m:Method) <- [*1..2] - (o) where m.name = "hello" and m.type =~ ".*GreetingResource" return *
 ----
 
 You can continue going up layers,
@@ -463,7 +463,7 @@ When that happens, you can alternatively run the queries directly against the cy
 [source,bash]
 ----
 docker exec testneo4j bin/cypher-shell -u neo4j -p ${NEO_PASS} \
-  "match (m:Method) <- [*1..10] - (o) where m.name = 'hello' return *"
+  "match (m:Method) <- [*1..10] - (o) where m.name = 'hello' and m.type =~ '.*GreetingResource' return *"
 ----
 
 For further information, check out this

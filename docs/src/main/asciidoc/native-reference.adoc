@@ -260,6 +260,21 @@ For example, we can see how the heap and text sections take most of the binary:
 readelf -SW ./target/debugging-native-1.0.0-SNAPSHOT-runner
 ----
 
+[NOTE]
+====
+Runtime containers produced by Quarkus to run native executables will not include the tools mentioned above.
+To explore a native executable within a runtime container,
+it's best to run the container itself and then `docker cp` the executable locally, e.g.:
+
+[source,bash]
+----
+docker run -i --rm --name=mytest -p 8080:8080 test/debugging-native:1.0.0-SNAPSHOT
+docker cp mytest:/work/application path/on/host/
+----
+
+From there, you can either inspect the executable directly or use a tools container like above.
+====
+
 == Native Reports
 
 Optionally, the native build process can generate reports that show what goes into the binary:

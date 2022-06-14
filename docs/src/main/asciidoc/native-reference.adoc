@@ -685,6 +685,17 @@ but sometimes the tracing options can show some stack traces that do not represe
 The best option is to dig through the source code and use tracing output for guidance but not as full truth.
 
 Moving the `KEY_PAIR_GEN.initialize(1024);` call to the run-time executed method `encryptDecrypt` is enough to solve this particular issue.
+Rebuild the application and verify that encrypt/decrypt endpoint works as expected by sending any message and check if the reply is the same as the incoming message:
+
+[source,bash,subs=attributes+]
+----
+$ ./mvnw package -DskipTests -Dnative
+...
+$ docker run -i --rm -p 8080:8080 test/debugging-native:1.0.0-SNAPSHOT
+...
+$ curl -w '\n' http://localhost:8080/encrypt-decrypt/hellomandrel
+hellomandrel
+----
 
 Additional information on which classes are initialized and why can be obtained by passing in the `-H:+PrintClassInitialization` flag via `-Dquarkus.native.additional-build-args`.
 

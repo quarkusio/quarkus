@@ -61,4 +61,15 @@ public @interface ConfigItem {
      * @return the default value documentation
      */
     String defaultValueDocumentation() default "";
+
+    /**
+     * Specify whether documentation should be generated for this config item.
+     * <p>
+     * This is only useful in very niche use cases where the build-time and runtime config
+     * both contain a configuration property with the exact same name,
+     * and we only want to generate documentation from one of them.
+     *
+     * @return whether documentation should be generated
+     */
+    boolean generateDocumentation() default true;
 }

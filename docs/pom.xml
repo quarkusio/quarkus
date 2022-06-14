@@ -2860,6 +2860,7 @@
                         <keycloak-docker-image>${keycloak.docker.image}</keycloak-docker-image>
 
                         <jandex-maven-plugin-version>${jandex-maven-plugin.version}</jandex-maven-plugin-version>
+                        <kotlin-version>${kotlin.version}</kotlin-version>
 
                         <grpc-version>${grpc.version}</grpc-version>
                         <protoc-version>${protoc.version}</protoc-version>

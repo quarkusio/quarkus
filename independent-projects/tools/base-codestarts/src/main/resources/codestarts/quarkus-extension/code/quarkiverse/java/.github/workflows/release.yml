@@ -20,7 +20,7 @@ jobs:
           github-token: ${{secrets.GITHUB_TOKEN}}
           metadata-file-path: '.github/project.yml'
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Import GPG key
         id: import_gpg
@@ -30,11 +30,14 @@ jobs:
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Set up JDK 11
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: 11
           cache: 'maven'
+          server-id: ossrh
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
 
       - name: Configure Git author
         run: |
@@ -43,12 +46,14 @@ jobs:
 
       - name: Maven release ${{steps.metadata.outputs.current-version}}
         run: |
-          gpg --quiet --batch --yes --decrypt --passphrase="${{secrets.GPG_PASSPHRASE}}" --output /tmp/maven-settings.xml .github/release/maven-settings.xml.gpg
           git checkout -b release
-          mvn -B release:prepare -Prelease -DreleaseVersion=${{steps.metadata.outputs.current-version}} -DdevelopmentVersion=${{steps.metadata.outputs.next-version}} -s /tmp/maven-settings.xml
+          mvn -B release:prepare -Prelease -DreleaseVersion=${{steps.metadata.outputs.current-version}} -DdevelopmentVersion=${{steps.metadata.outputs.next-version}}
           git checkout ${{github.base_ref}}
           git rebase release
-          mvn -B release:perform -Darguments=-DperformRelease -DperformRelease -Prelease -s /tmp/maven-settings.xml
+          mvn -B release:perform -Darguments=-DperformRelease -DperformRelease -Prelease
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
 
       - name: Push changes to ${{github.base_ref}}
         uses: ad-m/github-push-action@v0.6.0

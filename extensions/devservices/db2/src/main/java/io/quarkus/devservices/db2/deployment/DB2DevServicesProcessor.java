@@ -40,6 +40,7 @@ public class DB2DevServicesProcessor {
                         .withDatabaseName(datasourceName.orElse("default"))
                         .withReuse(true);
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
+                containerConfig.getCommand().ifPresent(container::setCommand);
                 container.start();
 
                 LOG.info("Dev Services for IBM Db2 started.");

@@ -266,7 +266,8 @@ public class DevServicesDatasourceProcessor {
                     dataSourceBuildTimeConfig.devservices.imageName,
                     dataSourceBuildTimeConfig.devservices.containerProperties,
                     dataSourceBuildTimeConfig.devservices.properties,
-                    dataSourceBuildTimeConfig.devservices.port);
+                    dataSourceBuildTimeConfig.devservices.port,
+                    dataSourceBuildTimeConfig.devservices.command);
 
             DevServicesDatasourceProvider.RunningDevServicesDatasource datasource = devDbProvider
                     .startDatabase(ConfigProvider.getConfig().getOptionalValue(prefix + "username", String.class),
@@ -276,6 +277,9 @@ public class DevServicesDatasourceProcessor {
 
             propertiesMap.put(prefix + "db-kind", dataSourceBuildTimeConfig.dbKind.orElse(null));
             String devServicesPrefix = prefix + "devservices.";
+            if (dataSourceBuildTimeConfig.devservices.command.isPresent()) {
+                propertiesMap.put(devServicesPrefix + "command", dataSourceBuildTimeConfig.devservices.command.get());
+            }
             if (dataSourceBuildTimeConfig.devservices.imageName.isPresent()) {
                 propertiesMap.put(devServicesPrefix + "image-name", dataSourceBuildTimeConfig.devservices.imageName.get());
             }

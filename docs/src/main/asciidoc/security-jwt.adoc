@@ -1015,6 +1015,7 @@ SmallRye JWT provides more properties which can be used to customize the token p
 |smallrye.jwt.required.claims|none|Comma separated list of the claims that a token must contain.
 |smallrye.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified. This property is deprecated - use 'mp.jwt.decrypt.key.location'.
 |smallrye.jwt.decrypt.algorithm|`RSA_OAEP`|Decryption algorithm.
+|smallrye.jwt.decrypt.key|none|Decryption key supplied as a string.
 |smallrye.jwt.token.decryption.kid|none|Decryption Key identifier. If it is set then the decryption JWK key as well every JWT token must have a matching `kid` header.
 |smallrye.jwt.client.tls.certificate.path|none|Path to TLS trusted certificate which may need to be configured if the keys have to be fetched over `HTTPS`.
 |smallrye.jwt.client.tls.trust-all|false|Trust all the hostnames. If the keys have to be fetched over `HTTPS` and this property is set to `true` then all the hostnames are trusted by default.

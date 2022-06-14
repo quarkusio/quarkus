@@ -7,8 +7,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
@@ -97,8 +97,7 @@ public class AppCDSBuildStep {
         }
 
         appCDS.produce(new AppCDSResultBuildItem(appCDSPath));
-        artifactResult.produce(new ArtifactResultBuildItem(appCDSPath, "appCDS",
-                Map.of("jar-result-path", jarResult.getPath())));
+        artifactResult.produce(new ArtifactResultBuildItem(appCDSPath, "appCDS", Collections.emptyMap()));
     }
 
     private String determineContainerImage(PackageConfig packageConfig,
@@ -165,12 +164,13 @@ public class AppCDSBuildStep {
             }
             exitCode = processBuilder.start().waitFor();
         } catch (Exception e) {
-            log.debug("Failed to launch process used to create '" + CLASSES_LIST_FILE_NAME + "'.", e);
+            log.warn("Failed to launch process used to create '" + CLASSES_LIST_FILE_NAME + "'. using the following command:'"
+                    + command + "'", e);
             return null;
         }
 
         if (exitCode != 0) {
-            log.debugf("The process that was supposed to create AppCDS exited with error code: %d.", exitCode);
+            log.warnf("Command '%s' that was supposed to create AppCDS exited with error code: %d.", command, exitCode);
             return null;
         }
 

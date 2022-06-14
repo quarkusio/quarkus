@@ -49,6 +49,8 @@ public class MariaDBDevServicesProcessor {
                 }
 
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
+                containerConfig.getCommand().ifPresent(container::setCommand);
+
                 container.start();
 
                 LOG.info("Dev Services for MariaDB started.");

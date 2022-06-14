@@ -53,6 +53,16 @@ public class MultipartResource {
     MultipartClient client;
 
     @GET
+    @Path("/client/octet-stream")
+    @Produces(MediaType.TEXT_PLAIN)
+    @Blocking
+    public String sendOctetStreamFile() throws IOException {
+        java.nio.file.Path tempFile = Files.createTempFile("dummy", ".txt");
+        Files.write(tempFile, "test".getBytes(UTF_8));
+        return client.octetStreamFile(tempFile.toFile());
+    }
+
+    @GET
     @Path("/client/byte-array-as-binary-file-with-pojo")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
@@ -226,6 +236,13 @@ public class MultipartResource {
         data.file = tempFile.toPath();
         data.number = NUMBER;
         return client.sendPathAsTextFile(data);
+    }
+
+    @POST
+    @Path("/echo/octet-stream")
+    @Consumes(MediaType.APPLICATION_OCTET_STREAM)
+    public String consumeOctetStream(File file) throws IOException {
+        return Files.readString(file.toPath());
     }
 
     @POST

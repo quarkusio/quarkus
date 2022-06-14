@@ -22,6 +22,7 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.DependencyNodeUtils;
 import io.quarkus.fs.util.ZipUtils;
+import io.quarkus.maven.ExtensionDescriptorMojo.RemovedResources;
 import io.quarkus.maven.capabilities.CapabilitiesConfig;
 import io.quarkus.maven.capabilities.CapabilityConfig;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -90,6 +91,11 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 @Deprecated(since = "2.10.0.Final")
 @Mojo(name = "extension-descriptor", defaultPhase = LifecyclePhase.PROCESS_RESOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class ExtensionDescriptorMojo extends AbstractMojo {
+
+    public static class RemovedResources {
+        String key;
+        String resources;
+    }
 
     private static final String GROUP_ID = "group-id";
     private static final String ARTIFACT_ID = "artifact-id";
@@ -164,7 +170,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
      * but in the `META-INF/quarkus-extension.properties`.
      */
     @Parameter
-    Map<String, String> removedResources = Map.of();
+    List<RemovedResources> removedResources = List.of();
 
     /**
      * Artifacts that are always loaded parent first when running in dev or test mode. This is an advanced option
@@ -321,18 +327,18 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
 
         if (!removedResources.isEmpty()) {
-            for (Map.Entry<String, String> entry : removedResources.entrySet()) {
+            for (RemovedResources entry : removedResources) {
                 final ArtifactKey key;
                 try {
-                    key = ArtifactKey.fromString(entry.getKey());
+                    key = ArtifactKey.fromString(entry.key);
                 } catch (IllegalArgumentException e) {
                     throw new MojoExecutionException(
-                            "Failed to parse removed resource '" + entry.getKey() + '=' + entry.getValue() + "'", e);
+                            "Failed to parse removed resource '" + entry.key + '=' + entry.resources + "'", e);
                 }
-                if (entry.getValue() == null || entry.getValue().isBlank()) {
+                if (entry.resources == null || entry.resources.isBlank()) {
                     continue;
                 }
-                final String[] resources = entry.getValue().split(",");
+                final String[] resources = entry.resources.split(",");
                 if (resources.length == 0) {
                     continue;
                 }

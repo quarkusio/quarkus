@@ -828,8 +828,8 @@ Next, generate a flame graph using the data captured via `perf record`:
 
 [source,bash]
 ----
-$ perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl > out.perf-folded
-$ ${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
+perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl > out.perf-folded
+${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
 ----
 
 The flame graph is a svg file that a web browser, such as Firefox, can easily display.

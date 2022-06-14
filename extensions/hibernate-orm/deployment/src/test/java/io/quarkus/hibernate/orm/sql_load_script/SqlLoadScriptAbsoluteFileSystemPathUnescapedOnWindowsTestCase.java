@@ -45,7 +45,7 @@ public class SqlLoadScriptAbsoluteFileSystemPathUnescapedOnWindowsTestCase {
         // which is a meta-character and will be stripped by Quarkus when parsing the properties file,
         // resulting in the path being interpreted wrongly.
         // That's exactly what we want: we want to check that a user forgetting to escape backslashes
-        // in a Windows path in a properties file will still get an error messsage,
+        // in a Windows path in a properties file will still get an error message,
         // even though it's not that clear.
         sqlLoadScriptAbsolutePath = path.toString();
         System.out.println("(Unescaped) absolute filesystem path passed to sql-load-script: " + sqlLoadScriptAbsolutePath);

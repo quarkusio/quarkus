@@ -25,6 +25,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -138,8 +139,9 @@ public class SmallRyeGraphQLProcessor {
 
     @BuildStep
     void additionalBeanDefiningAnnotation(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotationProducer) {
-        // Make ArC discover the beans marked with the @GraphQlApi qualifier
-        beanDefiningAnnotationProducer.produce(new BeanDefiningAnnotationBuildItem(Annotations.GRAPHQL_API));
+        // Make ArC discover the beans marked with the @GraphQLApi qualifier
+        beanDefiningAnnotationProducer
+                .produce(new BeanDefiningAnnotationBuildItem(Annotations.GRAPHQL_API, BuiltinScope.SINGLETON.getName()));
     }
 
     @BuildStep

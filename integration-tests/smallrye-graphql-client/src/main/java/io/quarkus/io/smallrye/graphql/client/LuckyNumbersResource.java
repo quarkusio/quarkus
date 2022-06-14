@@ -2,7 +2,6 @@ package io.quarkus.io.smallrye.graphql.client;
 
 import java.util.List;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
@@ -15,7 +14,6 @@ import io.smallrye.graphql.api.Subscription;
 import io.smallrye.mutiny.Multi;
 
 @GraphQLApi
-@ApplicationScoped
 public class LuckyNumbersResource {
 
     private volatile Integer luckyNumber = 12;

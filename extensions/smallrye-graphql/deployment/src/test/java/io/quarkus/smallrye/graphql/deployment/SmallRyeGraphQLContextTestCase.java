@@ -9,7 +9,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
@@ -125,7 +124,6 @@ public class SmallRyeGraphQLContextTestCase extends AbstractGraphQLTest {
     }
 
     @GraphQLApi
-    @ApplicationScoped
     public static class ContextPropagationResource {
 
         @Inject

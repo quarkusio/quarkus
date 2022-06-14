@@ -7,7 +7,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 
@@ -107,7 +106,6 @@ public class GraphQLCDIContextPropagationTest extends AbstractGraphQLTest {
     }
 
     @GraphQLApi
-    @ApplicationScoped
     public static class ResourceThatNeedsCdiContextPropagation {
 
         /**

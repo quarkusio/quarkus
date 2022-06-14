@@ -1,7 +1,5 @@
 package io.quarkus.smallrye.graphql.deployment;
 
-import javax.enterprise.context.ApplicationScoped;
-
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
@@ -64,7 +62,6 @@ public class ErrorTest extends AbstractGraphQLTest {
     }
 
     @GraphQLApi
-    @ApplicationScoped
     public static class ErrorApi {
 
         @Query

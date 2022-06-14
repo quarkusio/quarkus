@@ -1629,3 +1629,14 @@ Once the image is compiled, enable and start JFR via runtime flags: `-XX:+Flight
 ----
 
 For more details on using JFR, see https://www.graalvm.org/reference-manual/native-image/JFR[here].
+
+=== How can we troubleshoot performance problems only reproducible in production?
+
+In this situation, switching to JVM mode would be the best thing to try first.
+If the performance issues continue after switching to JVM mode,
+you can use more established and mature tooling to figure out the root cause.
+If the performance issue is limited to native mode only,
+you might not be able to use `perf`,
+so JFR is the only way to gather any information in this situation.
+As JFR support for native expands,
+the ability to detect root causes of performance issues directly in production will improve.

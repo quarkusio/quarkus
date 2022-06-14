@@ -4,6 +4,7 @@ import java.util.List;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
+import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
 public final class Dialects {
@@ -21,7 +22,8 @@ public final class Dialects {
         }
 
         String error = "The Hibernate ORM extension could not guess the dialect from the database kind '" + resolvedDbKind
-                + "'. Add an explicit '" + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "dialect") + "' property.";
+                + "'. Add an explicit '" + HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect")
+                + "' property.";
         throw new ConfigurationException(error);
     }
 }

@@ -1037,7 +1037,7 @@ public final class HibernateOrmProcessor {
                                 + " When using database multi-tenancy, you must either configure a datasource for that persistence unit"
                                 + " (refer to https://quarkus.io/guides/datasource for guidance),"
                                 + " or set the dialect explicitly through property '"
-                                + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "dialect") + "'.",
+                                + HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect") + "'.",
                         persistenceUnitName));
             }
 
@@ -1168,7 +1168,7 @@ public final class HibernateOrmProcessor {
                 } catch (RuntimeException e) {
                     throw new ConfigurationException(
                             "Unable to interpret path referenced in '"
-                                    + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
+                                    + HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
                                     + String.join(",", persistenceUnitConfig.sqlLoadScript.get())
                                     + "': " + e.getMessage());
                 }
@@ -1180,7 +1180,7 @@ public final class HibernateOrmProcessor {
                     //raise exception if explicit file is not present (i.e. not the default)
                     throw new ConfigurationException(
                             "Unable to find file referenced in '"
-                                    + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
+                                    + HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
                                     + String.join(",", persistenceUnitConfig.sqlLoadScript.get())
                                     + "'. Remove property or add file to your path.");
                 }

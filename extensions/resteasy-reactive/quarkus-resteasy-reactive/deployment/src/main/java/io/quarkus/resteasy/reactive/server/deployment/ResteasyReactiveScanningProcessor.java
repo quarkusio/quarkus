@@ -336,6 +336,9 @@ public class ResteasyReactiveScanningProcessor {
                         generated.getGeneratedClassName())
                                 .setRegisterAsBean(false)// it has already been made a bean
                                 .setPriority(generated.getPriority());
+                if (!generated.getNameBindingNames().isEmpty()) {
+                    builder.setNameBindingNames(generated.getNameBindingNames());
+                }
                 additionalContainerResponseFilters.produce(builder.build());
             }
         }

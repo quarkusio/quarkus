@@ -136,7 +136,7 @@ public class EngineProducer {
                         break;
                 }
             } else {
-                // Throw an expection in the development mode
+                // Throw an exception in the development mode
                 if (launchMode == LaunchMode.DEVELOPMENT) {
                     builder.addResultMapper(new PropertyNotFoundThrowException());
                 }

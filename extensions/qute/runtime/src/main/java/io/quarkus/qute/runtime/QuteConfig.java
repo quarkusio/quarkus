@@ -40,7 +40,7 @@ public class QuteConfig {
      * <ul>
      * <li>{@code org.acme.Foo.name} - exclude the property/method {@code name} on the {@code org.acme.Foo} class</li>
      * <li>{@code org.acme.Foo.*} - exclude any property/method on the {@code org.acme.Foo} class</li>
-     * <li>{@code *.age} - exlude the property/method {@code age} on any class</li>
+     * <li>{@code *.age} - exclude the property/method {@code age} on any class</li>
      * </ul>
      */
     @ConfigItem

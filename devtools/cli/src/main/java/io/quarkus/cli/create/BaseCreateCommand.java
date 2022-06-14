@@ -245,7 +245,7 @@ public class BaseCreateCommand implements Callable<Integer> {
     public String toString() {
         return "BaseCreateCommand ["
                 + "outputPath=" + outputPath
-                + ", registryClient" + registryClient
+                + ", registryClient=" + registryClient
                 + ", projectDirName=" + projectDirName
                 + ", projectRootPath=" + projectRootPath
                 + ", targetDirectory=" + targetDirectory

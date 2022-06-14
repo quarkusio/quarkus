@@ -8,7 +8,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 
 public class TargetQuarkusVersionGroup {
-    final static String FULL_EXAMPLE = ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID + ":"
+    static final String FULL_EXAMPLE = ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID + ":"
             + ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID + ":2.2.0.Final";
     PlatformStreamCoords streamCoords = null;
     String validStream = null;
@@ -30,7 +30,7 @@ public class TargetQuarkusVersionGroup {
             } catch (IllegalArgumentException iex) {
                 throw new CommandLine.ParameterException(spec.commandLine(),
                         String.format("Invalid value '%s' for option '--stream'. " +
-                                "Value should be specified as 'platformKey:streamId'. %s", iex.getMessage()));
+                                "Value should be specified as 'platformKey:streamId'. %s", stream, iex.getMessage()));
             }
         }
     }

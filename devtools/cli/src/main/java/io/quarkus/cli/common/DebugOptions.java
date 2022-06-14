@@ -6,7 +6,7 @@ import picocli.CommandLine;
 
 public class DebugOptions {
     final static String LOCALHOST = "localhost";
-    final static int DEFAULT_PORT = 5005;
+    static final int DEFAULT_PORT = 5005;
 
     public enum DebugMode {
         connect,

@@ -1060,7 +1060,7 @@ docker run -t -i --rm -v ${PWD}:/data -p 8080:8080 fedora-tools:v1 /bin/bash
 
 Then start the application in `gdb` and execute `run`.
 
-[source,bash]
+[source]
 ----
 gdb ./target/debugging-native-1.0.0-SNAPSHOT-runner
 ...
@@ -1087,7 +1087,7 @@ Thread 4 "ecutor-thread-0" received signal SIGSEGV, Segmentation fault.
 
 If we try to get more info about the backtrace that led to this crash we will see that there is not enough information available.
 
-[source,bash]
+[source]
 ----
 (gdb) bt
 #0  0x0000000000418b5e in ?? ()
@@ -1134,7 +1134,7 @@ com.oracle.svm.core.UnmanagedMemoryUtil::copyLongsBackward(org.graalvm.word.Poin
 We already see that `gdb` is able to tell us which method caused the crash and where it’s located in the source code.
 We can also get a backtrace of the call graph that led us to this state:
 
-[source,bash]
+[source]
 ----
 (gdb) bt
 #0  com.oracle.svm.core.UnmanagedMemoryUtil::copyLongsBackward(org.graalvm.word.Pointer *, org.graalvm.word.Pointer *, org.graalvm.word.UnsignedWord *) () at com/oracle/svm/core/UnmanagedMemoryUtil.java:169
@@ -1152,7 +1152,7 @@ Similarly, we can get a backtrace of the call graph of other threads.
 
 1. First, we can list the available threads with:
 +
-[source,bash]
+[source]
 ----
 (gdb) info threads
   Id   Target Id                                             Frame 
@@ -1166,7 +1166,7 @@ Similarly, we can get a backtrace of the call graph of other threads.
 +
 2. select the thread we want to inspect, e.g. thread 1:
 +
-[source,bash]
+[source]
 ----
 (gdb) thread 1
 [Switching to thread 1 (Thread 0x7ffff7a58d00 (LWP 1028851))]
@@ -1176,7 +1176,7 @@ Similarly, we can get a backtrace of the call graph of other threads.
 +
 3. and, finally, print the stack trace:
 +
-[source,bash]
+[source]
 ----
 (gdb) bt
 #0  __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x2cd7adc) at futex-internal.c:57
@@ -1207,7 +1207,7 @@ Similarly, we can get a backtrace of the call graph of other threads.
 
 Alternatively, we can list the backtraces of all threads with a single command:
 
-[source,bash]
+[source]
 ----
 (gdb) thread apply all backtrace
 
@@ -1257,7 +1257,7 @@ Thread 20 (Thread 0x7fffc9ffb640 (LWP 1028870) "tloop-thread-13"):
 
 Note, however, that despite being able to get a backtrace we can still not list the source code at point with the `list` command.
 
-[source,bash]
+[source]
 ----
 (gdb) list
 164    in com/oracle/svm/core/UnmanagedMemoryUtil.java
@@ -1268,7 +1268,7 @@ We are running the executable outside of the target directory.
 To fix this we can either rerun `gdb` from the target directory or,
 run `directory target/debugging-native-1.0.0-SNAPSHOT-native-image-source-jar/sources` e.g.:
 
-[source,bash]
+[source]
 ----
 (gdb) directory target/debugging-native-1.0.0-SNAPSHOT-native-image-source-jar/sources
 Source directories searched: /data/target/debugging-native-1.0.0-SNAPSHOT-native-image-source-jar/sources:$cdir:$cwd

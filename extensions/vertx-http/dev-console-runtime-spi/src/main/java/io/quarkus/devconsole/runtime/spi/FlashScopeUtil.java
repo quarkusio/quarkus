@@ -45,7 +45,7 @@ public class FlashScopeUtil {
     }
 
     // we don't use json because quarkus-vertx-http does not depend on Jackson databind and therefore the
-    // stardard vert.x encoding methods fail
+    // standard vert.x encoding methods fail
 
     private static byte[] marshallMap(Map<String, Object> data) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();

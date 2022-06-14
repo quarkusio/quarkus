@@ -114,7 +114,7 @@ public class ConfigDescriptionsManager extends DevConsolePostHandler implements 
         for (ConfigDescription item : configDescriptions) {
             //if they are a non-wildcard description we just add them directly
             if (!item.getName().contains("{*}")) {
-                //we don't want to accidently use these properties as name expansions
+                //we don't want to accidentally use these properties as name expansions
                 //we ban them which means that the only way the name can be expanded into a map
                 //is if it is quoted
                 bannedExpansionCombos.add(item.getName());

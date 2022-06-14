@@ -26,7 +26,11 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
+                {#if maven.quarkus-extension-plugin}
+                <artifactId>{maven.quarkus-extension-plugin}</artifactId>
+                {#else}
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
+                {/if}
                 {#if quarkus.version}
                 <version>$\{quarkus.version}</version>
                 <executions>

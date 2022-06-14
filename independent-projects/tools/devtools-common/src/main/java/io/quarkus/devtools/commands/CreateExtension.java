@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.lang.model.SourceVersion;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.model.Model;
 
 /**
@@ -259,6 +260,14 @@ public class CreateExtension {
         ensureRequiredStringData(IT_PARENT_ARTIFACT_ID, resolveArtifactId(itTestModel));
         ensureRequiredStringData(IT_PARENT_VERSION, resolveVersion(itTestModel));
         ensureRequiredStringData(IT_PARENT_RELATIVE_PATH, "../pom.xml");
+
+        final Optional<String> quarkusVersion = data.getStringValue(QUARKUS_VERSION);
+        // in 2.10.0.CR1 quarkus-bootstrap-maven-plugin was deprecated in favor of quarkus-extension-maven-plugin
+        if (quarkusVersion.isPresent() &&
+                new DefaultArtifactVersion("2.10.0.CR1").compareTo(new DefaultArtifactVersion(quarkusVersion.get())) > 0) {
+            // the legacy bootstrap plugin, if MAVEN_QUARKUS_EXTENSION_PLUGIN isn't set, it will default to the quarkus-extension-maven-plugin
+            data.putIfAbsent(MAVEN_QUARKUS_EXTENSION_PLUGIN, "quarkus-bootstrap-maven-plugin");
+        }
 
         builder.addData(data);
 

@@ -34,7 +34,7 @@ public class StorkResponseTimeLoadBalancerTest {
     @BeforeAll
     public static void setUp() {
         server = new WireMockServer(options().port(8766));
-        server.stubFor(WireMock.post("/hello/")
+        server.stubFor(WireMock.post("/hello")
                 .willReturn(aResponse().withFixedDelay(1000)
                         .withBody(SLOW_RESPONSE).withStatus(200)));
         server.start();

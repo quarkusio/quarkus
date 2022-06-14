@@ -34,7 +34,10 @@
             <configuration>
               <deployment>\${project.groupId}:\${project.artifactId}-deployment:\${project.version}</deployment>
               <removedResources>
-                <org.acme:acme-resources>META-INF/a</org.acme:acme-resources>
+                <artifact>
+                  <key>org.acme:acme-resources</key>
+                  <resources>META-INF/a</resources>
+                </artifact>
               </removedResources>
             </configuration>
           </execution>

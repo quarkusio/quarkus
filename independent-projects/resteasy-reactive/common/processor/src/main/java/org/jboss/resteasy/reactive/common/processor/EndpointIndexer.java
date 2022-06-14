@@ -391,6 +391,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                         if (!methodPath.startsWith("/")) {
                             methodPath = "/" + methodPath;
                         }
+                        if (methodPath.endsWith("/")) {
+                            methodPath = methodPath.substring(0, methodPath.length() - 1);
+                        }
                     } else {
                         methodPath = "";
                     }

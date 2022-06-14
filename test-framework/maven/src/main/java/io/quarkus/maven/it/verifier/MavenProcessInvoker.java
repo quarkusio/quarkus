@@ -48,7 +48,7 @@ public class MavenProcessInvoker extends DefaultInvoker {
 
         File workingDirectory = getWorkingDirectory();
         if (workingDirectory != null) {
-            cliBuilder.setWorkingDirectory(getWorkingDirectory());
+            cliBuilder.setBaseDirectory(getWorkingDirectory());
         }
 
         request.setBatchMode(true);

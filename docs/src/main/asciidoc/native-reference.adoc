@@ -267,22 +267,11 @@ These reports are some of the most useful resources when encountering issues wit
 
 === Call Tree Reports
 
-`call_tree` text file report is one of the default reports generated when the `-Dquarkus.native.enable-reports` option is passed in.
-This is useful for getting an approximation on why a method/class is included in the binary.
-However, the text format makes it very difficult to read and can take up a lot of space.
-
-Since Mandrel 21.3.0.0, the call tree is also reported as a group of CSV files.
-The CSV output can be enabled by adding `-H:PrintAnalysisCallTreeType=CSV` to the additional native arguments. E.g.
-
-[source,bash,subs=attributes+]
-----
-./mvnw package -DskipTests -Dnative \
-    -Dquarkus.native.enable-reports \
-    -Dquarkus.native.additional-build-args=-H:PrintAnalysisCallTreeType=CSV
-----
-
-These can in turn be imported into a graph database, such as Neo4j,
+`call_tree` csv file reports are some of the default reports generated when the `-Dquarkus.native.enable-reports` option is passed in.
+These csv files can be imported into a graph database, such as Neo4j,
 to inspect them more easily and run queries against the call tree.
+This is useful for getting an approximation on why a method/class is included in the binary.
+
 Let’s see this in action.
 
 First, start a Neo4j instance:

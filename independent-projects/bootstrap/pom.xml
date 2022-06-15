@@ -41,7 +41,6 @@
         <assertj.version>3.23.1</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
-        <jsoup.version>1.14.2</jsoup.version> <!-- wagon-http dependency -->
         <junit.jupiter.version>5.8.2</junit.jupiter.version>
         <maven-core.version>3.8.6</maven-core.version><!-- Keep in sync with sisu.version -->
         <sisu.version>0.3.5</sisu.version><!-- Keep in sync with maven-core.version -->

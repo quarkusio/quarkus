@@ -775,8 +775,7 @@ Next, generate a flame graph using the data captured via `perf record`:
 
 [source,bash]
 ----
-perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl > out.perf-folded
-${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
+perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl | ${FG_HOME}/flamegraph.pl > flamegraph.svg
 ----
 
 The flame graph is an svg file that a web browser, such as Firefox, can easily display.
@@ -840,8 +839,7 @@ Run the curl command once again, stop the binary, generate the flamegraphs and o
 
 [source,bash]
 ----
-perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl > out.perf-folded
-${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
+perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl | ${FG_HOME}/flamegraph.pl > flamegraph.svg
 ----
 
 The flamegraph now shows where the bottleneck is.
@@ -948,8 +946,7 @@ Make and open a flamegraph:
 
 [source,bash]
 ----
-perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl > out.perf-folded
-${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
+perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl | ${FG_HOME}/flamegraph.pl > flamegraph.svg
 ----
 
 image::native-reference-multi-flamegraph-separate-threads.svg[Muti-thread perf flamegraph with separate threads]
@@ -977,8 +974,7 @@ in order to make all threads have the same name. E.g.
 
 [source,bash]
 ----
-perf script | sed -E "s/thread-[0-9]*/thread/" | ${FG_HOME}/stackcollapse-perf.pl > out.perf-folded
-${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
+perf script | sed -E "s/thread-[0-9]*/thread/" | ${FG_HOME}/stackcollapse-perf.pl | ${FG_HOME}/flamegraph.pl > flamegraph.svg
 ----
 
 image::native-reference-multi-flamegraph-joined-threads.svg[Muti-thread perf flamegraph with joined threads]

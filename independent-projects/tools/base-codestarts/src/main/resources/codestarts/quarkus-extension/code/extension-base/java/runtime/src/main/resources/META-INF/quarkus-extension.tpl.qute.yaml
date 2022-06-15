@@ -3,7 +3,7 @@ name: {extension.name}
 metadata:
 #  keywords:
 #    - {extension.id}
-#  guide: ...
+#  guide: {extension.guide ?: '...'}
 #  categories:
 #    - "miscellaneous"
 #  status: "preview"

@@ -45,6 +45,9 @@
     <modules>
         <module>deployment</module>
         <module>runtime</module>
+        {#if has-docs-module}
+        <module>docs</module>
+        {/if}
     </modules>
 {#if quarkus.bom}
 

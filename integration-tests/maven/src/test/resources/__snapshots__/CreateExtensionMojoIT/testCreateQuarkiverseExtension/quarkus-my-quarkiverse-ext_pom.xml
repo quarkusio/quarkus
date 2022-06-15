@@ -15,6 +15,7 @@
   <modules>
     <module>deployment</module>
     <module>runtime</module>
+    <module>docs</module>
   </modules>
   <properties>
     <compiler-plugin.version>3.8.1</compiler-plugin.version>

@@ -825,7 +825,7 @@ include::{generated-dir}/config/quarkus-package-pkg-package-config.adoc[opts=opt
 
 By default, Quarkus tests in JVM mode are run using the `test` configuration profile. If you are not familiar with Quarkus
 configuration profiles, everything you need to know is explained in the
-xref:config.adoc#configuration-profiles[Configuration Profiles Documentation].
+xref:config-reference.adoc#profiles[Configuration Profiles Documentation].
 
 It is however possible to use a custom configuration profile for your tests with the Maven Surefire and Maven Failsafe
 configurations shown below. This can be useful if you need for example to run some tests using a specific database which is not

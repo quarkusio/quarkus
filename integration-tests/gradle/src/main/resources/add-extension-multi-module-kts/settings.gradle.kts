@@ -1,7 +1,11 @@
 pluginManagement {
     val quarkusPluginVersion: String by settings
     repositories {
-        mavenLocal()
+        mavenLocal {
+            content {
+                includeGroupByRegex("io.quarkus.*")
+            }
+        }
         mavenCentral()
         gradlePluginPortal()
     }

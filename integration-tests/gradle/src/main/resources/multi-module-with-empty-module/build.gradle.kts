@@ -9,7 +9,11 @@ allprojects {
   version = "1.0.0-SNAPSHOT"
 
   repositories {
-    mavenLocal()
+    mavenLocal {
+      content {
+        includeGroupByRegex("io.quarkus.*")
+      }
+    }
     mavenCentral()
   }
 

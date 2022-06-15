@@ -3,7 +3,11 @@ plugins {
 }
 
 repositories {
-    mavenLocal()
+    mavenLocal {
+        content {
+            includeGroupByRegex 'io.quarkus.*'
+        }
+    }
     mavenCentral()
 }
 

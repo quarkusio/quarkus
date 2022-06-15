@@ -1,6 +1,10 @@
 buildscript {
     repositories {
-        mavenLocal()
+        mavenLocal {
+            content {
+                includeGroupByRegex 'io.quarkus.*'
+            }
+        }
         mavenCentral()
         gradlePluginPortal()
     }
@@ -18,7 +22,11 @@ subprojects {
     apply plugin: 'java'
 
     repositories {
-        mavenLocal()
+        mavenLocal {
+            content {
+                includeGroupByRegex 'io.quarkus.*'
+            }
+        }
         mavenCentral()
     }
 }

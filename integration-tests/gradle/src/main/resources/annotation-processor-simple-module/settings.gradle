@@ -1,6 +1,10 @@
 pluginManagement {
     repositories {
-        mavenLocal()
+        mavenLocal {
+            content {
+                includeGroupByRegex 'io.quarkus.*'
+            }
+        }
         mavenCentral()
         gradlePluginPortal()
     }

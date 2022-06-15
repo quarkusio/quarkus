@@ -4,6 +4,11 @@ plugins {
 }
 
 repositories {
-    mavenLocal()
+    mavenLocal {
+        content {
+            includeGroup 'org.acme' // for dependencies built in this test
+            includeGroupByRegex 'io.quarkus.*'
+        }
+    }
     mavenCentral()
 }

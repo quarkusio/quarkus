@@ -52,6 +52,12 @@ public class HibernateSearchElasticsearchDevServicesEnabledImplicitlyTest {
                 .statusCode(200)
                 .body(is(context.devServicesProperties().get("quarkus.hibernate-search-orm.elasticsearch.hosts")));
 
+        RestAssured.when().get("/test/dev-services/schema-management-strategy").then()
+                .statusCode(200)
+                // If the value is drop-and-create, this would indicate we're using the %test profile:
+                // that would be a bug in this test (see the Profile class above).
+                .body(is("drop-and-create-and-drop"));
+
         RestAssured.when().get("/test/dev-services/count").then()
                 .statusCode(200)
                 .body(is("0"));

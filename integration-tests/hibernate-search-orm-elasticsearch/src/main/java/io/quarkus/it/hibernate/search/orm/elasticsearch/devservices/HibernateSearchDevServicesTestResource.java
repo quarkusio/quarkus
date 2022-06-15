@@ -12,6 +12,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.search.mapper.orm.schema.management.SchemaManagementStrategyName;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 
 @Path("/test/dev-services")
@@ -32,6 +33,15 @@ public class HibernateSearchDevServicesTestResource {
     @SuppressWarnings("unchecked")
     public String hosts() {
         return ((List<String>) sessionFactory.getProperties().get("hibernate.search.backend.hosts")).iterator().next();
+    }
+
+    @GET
+    @Path("/schema-management-strategy")
+    @Transactional
+    public String schemaManagementStrategy() {
+        var strategy = ((SchemaManagementStrategyName) sessionFactory.getProperties()
+                .get("hibernate.search.schema_management.strategy"));
+        return strategy == null ? null : strategy.externalRepresentation();
     }
 
     @PUT

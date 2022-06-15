@@ -107,14 +107,10 @@ implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-reactive-pg-client</artifactId>
     </dependency>
-   <!-- Use these if you are using RESTEasy Reactive Jackson -->
+   <!-- Use this if you are using RESTEasy Reactive Jackson for serialization -->
     <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy-reactive-links</artifactId>
     </dependency>
 </dependencies>
 ----
@@ -137,25 +133,17 @@ implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
     <artifactId>quarkus-mongodb-rest-data-panache</artifactId>
 </dependency>
 
-<!-- Use these if you are using RESTEasy Reactive -->
+<!-- Use this if you are using RESTEasy Reactive -->
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
 </dependency>
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive-links</artifactId>
-</dependency>
 
-<!-- Use these if you are going to use RESTEasy Classic -->
+<!-- Use this if you are going to use RESTEasy Classic -->
 <!--
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-resteasy-jackson</artifactId>
-</dependency>
-<dependency>
-    <groupId>org.jboss.resteasy</groupId>
-    <artifactId>resteasy-links</artifactId>
 </dependency>
 -->
 ----
@@ -165,13 +153,11 @@ implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
 ----
 implementation("io.quarkus:quarkus-mongodb-rest-data-panache")
 
-// Use these if you are using RESTEasy Reactive
+// Use this if you are using RESTEasy Reactive
 implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
-implementation("io.quarkus:quarkus-resteasy-reactive-links")
 
-// Use these if you are going to use RESTEasy Classic
+// Use this if you are going to use RESTEasy Classic
 // implementation("io.quarkus:quarkus-resteasy-jackson")
-// implementation("io.quarkus:resteasy-links")
 ----
 
 * Implement the Panache entities and/or repositories as explained in the xref:mongodb-panache.adoc[MongoDB with Panache guide].

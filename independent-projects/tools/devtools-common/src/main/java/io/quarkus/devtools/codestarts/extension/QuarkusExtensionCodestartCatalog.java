@@ -26,6 +26,7 @@ public final class QuarkusExtensionCodestartCatalog extends GenericCodestartCata
         EXTENSION_ID("extension.id"),
         EXTENSION_NAME("extension.name"),
         EXTENSION_DESCRIPTION("extension.description"),
+        EXTENSION_GUIDE("extension.guide"),
         GROUP_ID("group-id"),
         VERSION("version"),
         PACKAGE_NAME("package-name"),

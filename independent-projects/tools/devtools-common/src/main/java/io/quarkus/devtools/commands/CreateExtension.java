@@ -53,6 +53,7 @@ public class CreateExtension {
     public static final String DEFAULT_QUARKIVERSE_PARENT_ARTIFACT_ID = "quarkiverse-parent";
     public static final String DEFAULT_QUARKIVERSE_PARENT_VERSION = "9";
     public static final String DEFAULT_QUARKIVERSE_NAMESPACE_ID = "quarkus-";
+    public static final String DEFAULT_QUARKIVERSE_GUIDE_URL = "https://quarkiverse.github.io/quarkiverse-docs/%s/dev/";
 
     private static final String DEFAULT_SUREFIRE_PLUGIN_VERSION = "3.0.0-M7";
     private static final String DEFAULT_COMPILER_PLUGIN_VERSION = "3.8.1";
@@ -206,7 +207,8 @@ public class CreateExtension {
         final LayoutType layoutType = detectLayoutType(baseModel, data.getStringValue(GROUP_ID).orElse(null));
 
         data.putIfAbsent(NAMESPACE_ID, getDefaultNamespaceId(layoutType));
-        ensureRequiredStringData(EXTENSION_ID, resolveExtensionId());
+        String resolvedExtensionId = resolveExtensionId();
+        ensureRequiredStringData(EXTENSION_ID, resolvedExtensionId);
         data.putIfAbsent(EXTENSION_NAME, capitalize(extensionId));
         data.putIfAbsent(NAMESPACE_NAME, computeDefaultNamespaceName(data.getRequiredStringValue(NAMESPACE_ID)));
         data.putIfAbsent(CLASS_NAME_BASE, toCapCamelCase(extensionId));
@@ -242,6 +244,8 @@ public class CreateExtension {
                 data.putIfAbsent(QUARKUS_BOM_ARTIFACT_ID, DEFAULT_BOM_ARTIFACT_ID);
                 data.putIfAbsent(QUARKUS_BOM_VERSION, DEFAULT_BOM_VERSION);
                 data.putIfAbsent(MAVEN_COMPILER_PLUGIN_VERSION, DEFAULT_COMPILER_PLUGIN_VERSION);
+                data.putIfAbsent(EXTENSION_GUIDE,
+                        String.format(DEFAULT_QUARKIVERSE_GUIDE_URL, resolvedExtensionId));
                 ensureRequiredStringData(QUARKUS_VERSION);
                 // TODO: Support Quarkiverse multi extensions repo
                 builder.addCodestart(QuarkusExtensionCodestartCatalog.Code.QUARKIVERSE.key());

@@ -22,4 +22,5 @@ public class NativeOrNativeSourcesBuild implements BooleanSupplier {
         return packageConfig.type.equalsIgnoreCase(PackageConfig.NATIVE)
                 || packageConfig.type.equalsIgnoreCase(PackageConfig.NATIVE_SOURCES);
     }
+
 }

@@ -75,7 +75,7 @@ public class NativeImageBuildStep {
     private static final String MOVED_TRUST_STORE_NAME = "trustStore";
     public static final String APP_SOURCES = "app-sources";
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuildGraal22_2OrLater.class)
     void addExportsToNativeImage(BuildProducer<JPMSExportBuildItem> exports) {
         // Needed by io.quarkus.runtime.ResourceHelper.registerResources
         exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk"));

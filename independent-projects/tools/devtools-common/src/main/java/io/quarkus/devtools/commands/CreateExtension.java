@@ -202,7 +202,7 @@ public class CreateExtension {
 
         data.putIfAbsent(NAMESPACE_ID, getDefaultNamespaceId(layoutType));
         ensureRequiredStringData(EXTENSION_ID, resolveExtensionId());
-        data.putIfAbsent(EXTENSION_NAME, toCapWords(extensionId));
+        data.putIfAbsent(EXTENSION_NAME, capitalize(extensionId));
         data.putIfAbsent(NAMESPACE_NAME, computeDefaultNamespaceName(data.getRequiredStringValue(NAMESPACE_ID)));
         data.putIfAbsent(CLASS_NAME_BASE, toCapCamelCase(extensionId));
 
@@ -314,7 +314,7 @@ public class CreateExtension {
         if (isEmpty(namespaceId)) {
             return "";
         }
-        return toCapWords(namespaceId) + " - ";
+        return capitalize(namespaceId) + " - ";
     }
 
     public static Model resolveModel(Path dir) throws QuarkusCommandException {
@@ -439,7 +439,12 @@ public class CreateExtension {
         return sb.toString();
     }
 
-    static String toCapWords(String name) {
+    static String capitalize(String name) {
+        // do not capitalize if the string already contains upper case characters
+        if (hasUpperCaseCharacter(name)) {
+            return name;
+        }
+
         final StringBuilder sb = new StringBuilder(name.length());
         for (String segment : name.split("[.\\-]+")) {
             if (sb.length() > 0) {
@@ -451,6 +456,15 @@ public class CreateExtension {
             }
         }
         return sb.toString();
+    }
+
+    public static boolean hasUpperCaseCharacter(String s) {
+        for (int i = 0; i < s.length(); i++) {
+            if (Character.isUpperCase(s.charAt(i))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static class EnhancedDataMap extends HashMap<String, Object> {

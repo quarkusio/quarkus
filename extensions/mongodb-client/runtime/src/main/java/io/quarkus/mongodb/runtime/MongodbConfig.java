@@ -11,8 +11,19 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot(name = MongodbConfig.CONFIG_NAME, phase = ConfigPhase.RUN_TIME)
 public class MongodbConfig {
-
     public static final String CONFIG_NAME = "mongodb";
+    @Deprecated
+    public static final String NATIVE_DNS_LOG_ACTIVITY = "native.dns.log-activity";
+    public static final String DNS_LOG_ACTIVITY = "dns.log-activity";
+    @Deprecated
+    public static final String NATIVE_DNS_SERVER_HOST = "native.dns.server-host";
+    public static final String DNS_SERVER_HOST = "dns.server-host";
+    @Deprecated
+    public static final String NATIVE_DNS_SERVER_PORT = "native.dns.server-port";
+    public static final String DNS_SERVER_PORT = "dns.server-port";
+    @Deprecated
+    public static final String NATIVE_DNS_LOOKUP_TIMEOUT = "native.dns.lookup-timeout";
+    public static final String DNS_LOOKUP_TIMEOUT = "dns.lookup-timeout";
 
     /**
      * The default mongo client connection.
@@ -52,7 +63,10 @@ public class MongodbConfig {
      *
      * <strong>IMPORTANT:</strong> The resolution may be different in JVM mode using the default (JNDI-based) DNS resolver,
      * and in native mode. This feature is experimental.
+     *
+     * @deprecated This resolver is always used
      */
+    @Deprecated
     @ConfigItem(name = "native.dns.use-vertx-dns-resolver", defaultValue = "false")
     public boolean useVertxDnsResolverInNativeMode;
 
@@ -60,28 +74,64 @@ public class MongodbConfig {
      * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS server.
      * If the server is not set, it tries to read the first {@code nameserver} from {@code /etc/resolv.conf} (if the
      * file exists), otherwise fallback to the default.
+     *
+     * @deprecated this property has been deprecated in favor of {@link #dnsServer}
      */
-    @ConfigItem(name = "native.dns.server-host")
+    @Deprecated
+    @ConfigItem(name = NATIVE_DNS_SERVER_HOST)
     public Optional<String> dnsServerInNativeMode;
 
     /**
-     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS server port.
-     * If not set, uses the system DNS resolver.
+     * This property configures the DNS server. If the server is not set, it tries to read the first {@code nameserver} from
+     * {@code /etc /resolv.conf} (if the file exists), otherwise fallback to the default.
      */
-    @ConfigItem(name = "native.dns.server-port", defaultValue = "53")
+    @ConfigItem(name = DNS_SERVER_HOST)
+    public Optional<String> dnsServer;
+
+    /**
+     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS server port.
+     *
+     * @deprecated this property has been deprecated in favor of {@link #dnsServerPort}
+     */
+    @Deprecated
+    @ConfigItem(name = NATIVE_DNS_SERVER_PORT, defaultValue = "53")
     public OptionalInt dnsServerPortInNativeMode;
+    /**
+     * This property configures the DNS server port.
+     */
+    @ConfigItem(name = DNS_SERVER_PORT, defaultValue = "53")
+    public OptionalInt dnsServerPort;
+
+    /**
+     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS lookup timeout
+     * duration.
+     *
+     * @deprecated this property has been deprecated in favor of {@link #dnsLookupTimeout}
+     */
+    @Deprecated
+    @ConfigItem(name = NATIVE_DNS_LOOKUP_TIMEOUT, defaultValue = "5s")
+    public Duration dnsLookupTimeoutInNativeMode;
 
     /**
      * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS lookup timeout
      * duration.
      */
-    @ConfigItem(name = "native.dns.lookup-timeout", defaultValue = "5s")
-    public Duration dnsLookupTimeoutInNativeMode;
+    @ConfigItem(name = DNS_LOOKUP_TIMEOUT, defaultValue = "5s")
+    public Duration dnsLookupTimeout;
 
     /**
      * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property enables the logging ot the
      * DNS lookup. It can be useful to understand why the lookup fails.
+     *
+     * @deprecated this property has been deprecated in favor of {@link #dnsLookupLogActivity}
      */
-    @ConfigItem(name = "native.dns.log-activity", defaultValue = "false")
+    @Deprecated
+    @ConfigItem(name = NATIVE_DNS_LOG_ACTIVITY, defaultValue = "false")
     public Optional<Boolean> dnsLookupLogActivityInNativeMode;
+
+    /**
+     * This property enables the logging ot the DNS lookup. It can be useful to understand why the lookup fails.
+     */
+    @ConfigItem(name = DNS_LOG_ACTIVITY, defaultValue = "false")
+    public Optional<Boolean> dnsLookupLogActivity;
 }

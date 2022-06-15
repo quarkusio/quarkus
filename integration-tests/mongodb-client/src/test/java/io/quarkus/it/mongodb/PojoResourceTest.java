@@ -5,6 +5,8 @@ import static org.hamcrest.CoreMatchers.is;
 
 import java.util.Optional;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -13,11 +15,23 @@ import io.quarkus.it.mongodb.pojo.Pojo;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.mongodb.MongoTestResource;
+import io.restassured.RestAssured;
+import io.restassured.response.Response;
 
 @QuarkusTest
 @QuarkusTestResource(MongoTestResource.class)
 @DisabledOnOs(OS.WINDOWS)
 public class PojoResourceTest {
+
+    @BeforeEach
+    public void clearCollection() {
+        Response response = RestAssured
+                .given()
+                .delete("/pojos")
+                .andReturn();
+        Assertions.assertEquals(200, response.statusCode());
+    }
+
     @Test
     public void testPojoEndpoint() {
         Pojo pojo = new Pojo();

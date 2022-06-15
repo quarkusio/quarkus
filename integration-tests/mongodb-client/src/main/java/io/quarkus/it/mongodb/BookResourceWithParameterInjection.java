@@ -6,11 +6,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
+
+import org.bson.Document;
 
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
@@ -31,6 +34,12 @@ public class BookResourceWithParameterInjection {
 
     private MongoCollection<Book> getCollection() {
         return client.getDatabase("books").getCollection("books-with-parameter-injection", Book.class);
+    }
+
+    @DELETE
+    public Response clearCollection() {
+        getCollection().deleteMany(new Document());
+        return Response.ok().build();
     }
 
     @GET

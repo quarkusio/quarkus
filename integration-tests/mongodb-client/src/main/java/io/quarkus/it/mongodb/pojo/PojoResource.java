@@ -9,12 +9,15 @@ import java.util.List;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
+import org.bson.Document;
 
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
@@ -32,6 +35,12 @@ public class PojoResource {
 
     private MongoCollection<Pojo> getCollection() {
         return client.getDatabase("books").getCollection("pojo", Pojo.class);
+    }
+
+    @DELETE
+    public Response clearCollection() {
+        getCollection().deleteMany(new Document());
+        return Response.ok().build();
     }
 
     @GET

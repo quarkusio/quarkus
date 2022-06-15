@@ -9,6 +9,8 @@ import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 
+import org.bson.Document;
+
 import com.mongodb.WriteConcern;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
@@ -27,6 +29,12 @@ public class BookResource {
 
     private MongoCollection<Book> getCollection() {
         return client.getDatabase("books").getCollection("my-collection", Book.class);
+    }
+
+    @DELETE
+    public Response clearBooks() {
+        getCollection().deleteMany(new Document());
+        return Response.ok().build();
     }
 
     @GET

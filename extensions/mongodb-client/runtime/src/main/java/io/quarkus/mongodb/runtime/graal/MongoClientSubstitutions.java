@@ -1,36 +1,33 @@
 package io.quarkus.mongodb.runtime.graal;
 
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLContext;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-
-import com.mongodb.*;
-import com.mongodb.connection.*;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientException;
+import com.mongodb.MongoCompressor;
+import com.mongodb.ServerAddress;
+import com.mongodb.UnixServerAddress;
+import com.mongodb.connection.BufferProvider;
+import com.mongodb.connection.SocketSettings;
+import com.mongodb.connection.SocketStreamFactory;
+import com.mongodb.connection.SslSettings;
+import com.mongodb.connection.Stream;
 import com.mongodb.internal.connection.InternalStreamConnection;
 import com.mongodb.internal.connection.ServerAddressHelper;
 import com.mongodb.internal.connection.SocketStream;
 import com.mongodb.internal.connection.UnixSocketChannelStream;
-import com.mongodb.internal.dns.DefaultDnsResolver;
 import com.mongodb.lang.Nullable;
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-
-import io.quarkus.mongodb.runtime.dns.DnsClientProducer;
-import io.vertx.mutiny.core.dns.DnsClient;
-import io.vertx.mutiny.core.dns.SrvRecord;
 
 public final class MongoClientSubstitutions {
 }
@@ -141,114 +138,6 @@ final class ServerAddressHelperSubstitution {
         }
     }
 
-}
-
-@TargetClass(DefaultDnsResolver.class)
-final class DefaultDnsResolverSubstitution {
-
-    /*
-     * The format of SRV record is
-     * priority weight port target.
-     * e.g.
-     * 0 5 5060 example.com.
-     * The priority and weight are ignored, and we just concatenate the host (after removing the ending '.') and port with a
-     * ':' in between, as expected by ServerAddress.
-     * It's required that the srvHost has at least three parts (e.g. foo.bar.baz) and that all the resolved hosts have a
-     * parent
-     * domain equal to the domain of the srvHost.
-     */
-    @Substitute
-    public List<String> resolveHostFromSrvRecords(String srvHost, String srvServiceName) {
-        Config config = ConfigProvider.getConfig();
-        if (!config.getOptionalValue(DnsClientProducer.FLAG, Boolean.class).orElse(false)) {
-            throw new MongoConfigurationException(
-                    "'mongo+srv://' is not supported in native. You can set 'quarkus.mongodb.native.dns.use-vertx-dns-resolver' "
-                            +
-                            "to `true` to use an alternative DNS resolver.");
-        }
-        DnsClient dnsClient = DnsClientProducer.createDnsClient();
-        String srvHostDomain = srvHost.substring(srvHost.indexOf('.') + 1);
-        List<String> srvHostDomainParts = asList(srvHostDomain.split("\\."));
-        List<String> hosts = new ArrayList<>();
-        Duration timeout = config.getOptionalValue(DnsClientProducer.LOOKUP_TIMEOUT, Duration.class)
-                .orElse(Duration.ofSeconds(5));
-        String resourceName = "_" + srvServiceName + "._tcp." + srvHost;
-        try {
-            List<SrvRecord> srvRecords = dnsClient.resolveSRV(resourceName).await().atMost(timeout);
-
-            if (srvRecords.isEmpty()) {
-                throw new MongoConfigurationException("No SRV records available for host " + resourceName);
-            }
-            for (SrvRecord srvRecord : srvRecords) {
-                String resolvedHost = srvRecord.target().endsWith(".")
-                        ? srvRecord.target().substring(0, srvRecord.target().length() - 1)
-                        : srvRecord.target();
-                String resolvedHostDomain = resolvedHost.substring(resolvedHost.indexOf('.') + 1);
-                if (!sameParentDomain(srvHostDomainParts, resolvedHostDomain)) {
-                    throw new MongoConfigurationException(
-                            format("The SRV host name '%s' resolved to a host '%s 'that is not in a sub-domain of the SRV host.",
-                                    srvHost, resolvedHost));
-                }
-                hosts.add(resolvedHost + ":" + srvRecord.port());
-            }
-        } catch (Throwable e) {
-            throw new MongoConfigurationException("Unable to look up SRV record for host " + srvHost, e);
-        }
-
-        return hosts;
-    }
-
-    @Substitute
-    private static boolean sameParentDomain(final List<String> srvHostDomainParts, final String resolvedHostDomain) {
-        List<String> resolvedHostDomainParts = asList(resolvedHostDomain.split("\\."));
-        if (srvHostDomainParts.size() > resolvedHostDomainParts.size()) {
-            return false;
-        }
-        return resolvedHostDomainParts
-                .subList(resolvedHostDomainParts.size() - srvHostDomainParts.size(), resolvedHostDomainParts.size())
-                .equals(srvHostDomainParts);
-    }
-
-    /*
-     * A TXT record is just a string
-     * We require each to be one or more query parameters for a MongoDB connection string.
-     * Here we concatenate TXT records together with a '&' separator as required by connection strings
-     */
-    @Substitute
-    public String resolveAdditionalQueryParametersFromTxtRecords(final String host) {
-        Config config = ConfigProvider.getConfig();
-        if (!config.getOptionalValue(DnsClientProducer.FLAG, Boolean.class).orElse(false)) {
-            throw new MongoConfigurationException(
-                    "'mongo+srv://' is not supported in native. You can set 'quarkus.mongodb.native.dns.use-vertx-dns-resolver' "
-                            +
-                            "to `true` to use an alternative DNS resolver.");
-        }
-        DnsClient dnsClient = DnsClientProducer.createDnsClient();
-        List<String> txtRecordEnumeration;
-        String additionalQueryParameters = "";
-
-        try {
-            Duration timeout = config.getOptionalValue(DnsClientProducer.LOOKUP_TIMEOUT, Duration.class)
-                    .orElse(Duration.ofSeconds(5));
-            txtRecordEnumeration = dnsClient.resolveTXT(host).await().atMost(timeout);
-
-            for (String txtRecord : txtRecordEnumeration) {
-                // Remove all space characters, as the DNS resolver for TXT records inserts a space character
-                // between each character-string in a single TXT record.  That whitespace is spurious in
-                // this context and must be removed
-                additionalQueryParameters = txtRecord.replaceAll("\\s", "");
-
-                if (txtRecordEnumeration.size() > 1) {
-                    throw new MongoConfigurationException(format(
-                            "Multiple TXT records found for host '%s'.  Only one is permitted",
-                            host));
-                }
-            }
-            return additionalQueryParameters;
-        } catch (Throwable e) {
-            throw new MongoConfigurationException("Unable to look up TXT record for host " + host, e);
-        }
-    }
 }
 
 //TODO: move to a dedicated jna extension that will simply collect JNA substitutions

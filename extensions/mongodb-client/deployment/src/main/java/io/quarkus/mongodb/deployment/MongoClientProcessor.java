@@ -30,6 +30,7 @@ import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import com.mongodb.client.model.changestream.UpdateDescription;
 import com.mongodb.event.CommandListener;
 import com.mongodb.event.ConnectionPoolListener;
+import com.mongodb.spi.dns.DnsClientProvider;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -47,11 +48,11 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.annotations.Weak;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
-import io.quarkus.deployment.builditem.AllowJNDIBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -64,6 +65,8 @@ import io.quarkus.mongodb.runtime.MongoClientSupport;
 import io.quarkus.mongodb.runtime.MongoClients;
 import io.quarkus.mongodb.runtime.MongoServiceBindingConverter;
 import io.quarkus.mongodb.runtime.MongodbConfig;
+import io.quarkus.mongodb.runtime.dns.MongoDnsClient;
+import io.quarkus.mongodb.runtime.dns.MongoDnsClientProvider;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
@@ -75,12 +78,6 @@ public class MongoClientProcessor {
     private static final DotName REACTIVE_MONGO_CLIENT = DotName.createSimple(ReactiveMongoClient.class.getName());
 
     private static final String SERVICE_BINDING_INTERFACE_NAME = "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter";
-
-    @BuildStep
-    AllowJNDIBuildItem enableJndi() {
-        //unfortunately mongo+srv protocol needs JNDI
-        return new AllowJNDIBuildItem();
-    }
 
     @BuildStep
     AdditionalIndexedClassesBuildItem includeBsonTypesToIndex() {
@@ -97,6 +94,18 @@ public class MongoClientProcessor {
                 "org.bson.types.ObjectId",
                 "org.bson.types.StringRangeSet",
                 "org.bson.types.Symbol");
+    }
+
+    @BuildStep
+    AdditionalIndexedClassesBuildItem includeDnsTypesToIndex() {
+        return new AdditionalIndexedClassesBuildItem(
+                MongoDnsClientProvider.class.getName(),
+                MongoDnsClient.class.getName());
+    }
+
+    @BuildStep
+    public void registerDnsProvider(BuildProducer<NativeImageResourceBuildItem> nativeProducer) {
+        nativeProducer.produce(new NativeImageResourceBuildItem("META-INF/services/" + DnsClientProvider.class.getName()));
     }
 
     @BuildStep

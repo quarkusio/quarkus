@@ -173,7 +173,7 @@ import io.vertx.ext.web.RoutingContext;
 
 public class ResteasyReactiveProcessor {
 
-    private static final int REST_ROUTE_ORDER_OFFSET = 100;
+    private static final int REST_ROUTE_ORDER_OFFSET = 500;
 
     private static final String QUARKUS_INIT_CLASS = "io.quarkus.rest.runtime.__QuarkusInit";
 

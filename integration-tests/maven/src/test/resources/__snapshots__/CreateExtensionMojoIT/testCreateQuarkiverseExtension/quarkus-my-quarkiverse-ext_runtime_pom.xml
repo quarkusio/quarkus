@@ -9,6 +9,7 @@
   </parent>
   <artifactId>quarkus-my-quarkiverse-ext</artifactId>
   <name>Quarkus - My Quarkiverse extension - Runtime</name>
+  <description>My Quarkiverse extension description</description>
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>

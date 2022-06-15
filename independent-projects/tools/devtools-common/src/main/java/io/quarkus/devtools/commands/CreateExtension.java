@@ -89,6 +89,11 @@ public class CreateExtension {
         return this;
     }
 
+    public CreateExtension extensionDescription(String description) {
+        data.putIfNonEmptyString(EXTENSION_DESCRIPTION, description);
+        return this;
+    }
+
     public CreateExtension version(String version) {
         data.putIfNonEmptyString(VERSION, version);
         return this;

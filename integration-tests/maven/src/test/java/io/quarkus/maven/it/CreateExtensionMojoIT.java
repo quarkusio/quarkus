@@ -95,6 +95,7 @@ public class CreateExtensionMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("extensionId", "my-quarkiverse-ext");
         properties.put("quarkusVersion", "2.10.5.Final");
         properties.put("extensionName", "My Quarkiverse extension");
+        properties.put("extensionDescription", "My Quarkiverse extension description");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isZero();

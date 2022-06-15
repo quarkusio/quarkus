@@ -117,6 +117,15 @@ public class CreateExtensionMojo extends AbstractMojo {
     String extensionName;
 
     /**
+     * The {@code extensionDescription} of the runtime module.
+     * <br />
+     * <br />
+     * This description is used on https://code.quarkus.io/.
+     */
+    @Parameter(property = "extensionDescription")
+    String extensionDescription;
+
+    /**
      * A prefix common to all extension names in the current source tree.
      * <br />
      * <br />
@@ -222,6 +231,7 @@ public class CreateExtensionMojo extends AbstractMojo {
         final CreateExtension createExtension = new CreateExtension(basedir.toPath())
                 .extensionId(extensionId)
                 .extensionName(extensionName)
+                .extensionDescription(extensionDescription)
                 .groupId(groupId)
                 .version(version)
                 .packageName(packageName)

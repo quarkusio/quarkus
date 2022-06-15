@@ -13,6 +13,10 @@ public class ExtensionNameGenerationGroup {
     @CommandLine.Option(paramLabel = "EXTENSION-NAME", names = { "--extension-name" }, description = "Extension name")
     String extensionName;
 
+    @CommandLine.Option(paramLabel = "EXTENSION-DESCRIPTION", names = {
+            "--extension-description" }, description = "Extension description")
+    String extensionDescription;
+
     @CommandLine.Option(paramLabel = "NAMESPACE-NAME", names = {
             "--namespace-name" }, description = "A common prefix for all module names")
     String namespaceName;
@@ -31,6 +35,10 @@ public class ExtensionNameGenerationGroup {
         return extensionName;
     }
 
+    public String extensionDescription() {
+        return extensionDescription;
+    }
+
     public String getNamespaceId() {
         return namespaceId;
     }
@@ -43,6 +51,7 @@ public class ExtensionNameGenerationGroup {
     public String toString() {
         return "ExtensionNameGenerationGroup ["
                 + "extensionName=" + extensionName
+                + ", extensionDescription=" + extensionDescription
                 + ", namespaceId=" + namespaceId
                 + ", namespaceName=" + namespaceName + "]";
     }

@@ -3,8 +3,6 @@ quarkus-my-quarki-ext/
 quarkus-my-quarki-ext/.github/
 quarkus-my-quarki-ext/.github/dependabot.yml
 quarkus-my-quarki-ext/.github/project.yml
-quarkus-my-quarki-ext/.github/release/
-quarkus-my-quarki-ext/.github/release/maven-settings.xml.gpg
 quarkus-my-quarki-ext/.github/workflows/
 quarkus-my-quarki-ext/.github/workflows/build.yml
 quarkus-my-quarki-ext/.github/workflows/pre-release.yml

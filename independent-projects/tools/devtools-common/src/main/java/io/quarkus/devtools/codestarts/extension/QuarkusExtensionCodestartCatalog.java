@@ -43,6 +43,7 @@ public final class QuarkusExtensionCodestartCatalog extends GenericCodestartCata
         IT_PARENT_ARTIFACT_ID("it-parent.artifact-id"),
         IT_PARENT_VERSION("it-parent.version"),
         IT_PARENT_RELATIVE_PATH("it-parent.relative-path"),
+        MAVEN_QUARKUS_EXTENSION_PLUGIN("maven.quarkus-extension-plugin"),
         MAVEN_COMPILER_PLUGIN_VERSION("maven.compiler-plugin-version");
 
         private final String key;

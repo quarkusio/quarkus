@@ -495,7 +495,7 @@ WARNING: Do not use `quarkus.hibernate-orm.database.generation` `drop-and-create
 
 
 These approaches become really powerful when combined with Quarkus configuration profiles.
-You can define different xref:config.adoc#configuration-profiles[configuration profiles]
+You can define different xref:config-reference.adoc#profiles[configuration profiles]
 to select different behaviors depending on your environment.
 This is great because you can define different combinations of Hibernate ORM properties matching the development style you currently need.
 

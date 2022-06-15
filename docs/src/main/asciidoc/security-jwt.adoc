@@ -316,7 +316,7 @@ nQIDAQAB
 
 === Generating a JWT
 
-Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the JWT generation API provided by `smallrye-jwt` (see xref:smallrye-jwt-build.adoc[Generate JWT tokens with SmallRye JWT] for more information).
+Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the JWT generation API provided by `smallrye-jwt` (see xref:security-jwt-build.adoc[Generate JWT tokens with SmallRye JWT] for more information).
 
 Take the code from the following listing and place into `security-jwt-quickstart/src/test/java/org/acme/security/jwt/GenerateToken.java`:
 
@@ -353,7 +353,7 @@ in order for the token to be accepted as valid.
 <2> The `upn` claim is defined by the {mp-jwt} spec as preferred claim to use for the
 `Principal` seen via the container security APIs.
 <3> The `group` claim provides the groups and top-level roles associated with the JWT bearer.
-<4> The `birthday` claim. It can be considered to be a sensitive claim so you may want to consider encrypting the claims, see xref:smallrye-jwt-build.adoc[Generate JWT tokens with SmallRye JWT].
+<4> The `birthday` claim. It can be considered to be a sensitive claim so you may want to consider encrypting the claims, see xref:security-jwt-build.adoc[Generate JWT tokens with SmallRye JWT].
 
 Note for this code to work we need the content of the RSA private key that corresponds to the public key we have in the TokenSecuredResource application. Take the following PEM content and place it into `security-jwt-quickstart/src/test/resources/privateKey.pem`:
 
@@ -741,7 +741,7 @@ If this is the only key property which is set then the incoming token is expecte
 If either `mp.jwt.verify.publickey` or `mp.jwt.verify.publickey.location` verification properties are also set then the incoming token is expected to contain
 the encrypted inner-signed token.
 
-See xref:smallrye-jwt-build.adoc[Generate JWT tokens with SmallRye JWT] and learn how to generate the encrypted or inner-signed and then encrypted tokens fast.
+See xref:security-jwt-build.adoc[Generate JWT tokens with SmallRye JWT] and learn how to generate the encrypted or inner-signed and then encrypted tokens fast.
 
 === Custom Factories
 
@@ -817,7 +817,7 @@ mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
 [[integration-testing-public-key]]
 ==== Local Public Key
 
-You can use the same approach as described in the xref:security-openid-connect#integration-testing.adoc[OpenID Connect Bearer Token Integration testing] `Local Public Key` section but only change the `application.properties` to use MP JWT configuration properties instead:
+You can use the same approach as described in the xref:security-openid-connect.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] `Local Public Key` section but only change the `application.properties` to use MP JWT configuration properties instead:
 
 [source, properties]
 ----

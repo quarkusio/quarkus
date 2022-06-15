@@ -92,7 +92,7 @@ Extensions must register these bean definitions at build time.
 
 ==== Beans backed by classes
 
-An extension can produce an <<cdi-reference.adoc#additional_beans,`AdditionalBeanBuildItem`>> to instruct the container to read a bean definition from a class as if it was part of the original application:
+An extension can produce an xref:cdi-integration.adoc#additional_bean_build_item[`AdditionalBeanBuildItem`] to instruct the container to read a bean definition from a class as if it was part of the original application:
 
 .Bean Class Registered by `AdditionalBeanBuildItem`
 [source%nowrap,java]

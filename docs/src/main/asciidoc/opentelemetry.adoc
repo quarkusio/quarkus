@@ -323,7 +323,7 @@ of the entity that is producing telemetry, it adds attributes to the exported tr
 
 You can add attributes by setting the `resource-attributes` tracer config that is described in the <<configuration-reference>>.
 Since this property can be overridden at runtime, the OpenTelemetry extension will pick up its value following the order of precedence that
-is described in the xref:config-reference.adoc#configuration_sources[Quarkus Configuration Reference].
+is described in the xref:config-reference.adoc#configuration-sources[Quarkus Configuration Reference].
 
 If by any means you need to use a custom resource or one that is provided by one of the https://github.com/open-telemetry/opentelemetry-java/tree/main/sdk-extensions[OpenTelemetry SDK Extensions]
 you can create multiple resource producers. The OpenTelemetry extension will detect the `Resource` CDI beans and will merge them when configuring the tracer producer.

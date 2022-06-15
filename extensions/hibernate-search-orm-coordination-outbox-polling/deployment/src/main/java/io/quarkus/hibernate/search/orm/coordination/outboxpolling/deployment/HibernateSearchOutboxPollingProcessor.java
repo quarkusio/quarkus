@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.search.orm.coordination.outboxpolling.deployment;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.hibernate.search.mapper.orm.coordination.outboxpolling.cfg.HibernateOrmMapperOutboxPollingSettings;
 import org.hibernate.search.mapper.orm.coordination.outboxpolling.mapping.spi.HibernateOrmMapperOutboxPollingClasses;
@@ -45,8 +46,7 @@ class HibernateSearchOutboxPollingProcessor {
             List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<HibernateSearchIntegrationStaticConfiguredBuildItem> staticConfigured) {
         for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit : configuredPersistenceUnits) {
-            if (!configuredPersistenceUnit.getBuildTimeConfig().coordination.strategy
-                    .equals(HibernateOrmMapperOutboxPollingSettings.COORDINATION_STRATEGY_NAME)) {
+            if (!isUsingOutboxPolling(configuredPersistenceUnit)) {
                 continue;
             }
             String puName = configuredPersistenceUnit.getPersistenceUnitName();
@@ -65,8 +65,7 @@ class HibernateSearchOutboxPollingProcessor {
             List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<HibernateSearchIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
         for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit : configuredPersistenceUnits) {
-            if (!configuredPersistenceUnit.getBuildTimeConfig().coordination.strategy
-                    .equals(HibernateOrmMapperOutboxPollingSettings.COORDINATION_STRATEGY_NAME)) {
+            if (!isUsingOutboxPolling(configuredPersistenceUnit)) {
                 continue;
             }
             String puName = configuredPersistenceUnit.getPersistenceUnitName();
@@ -74,6 +73,12 @@ class HibernateSearchOutboxPollingProcessor {
                     HIBERNATE_SEARCH_ORM_COORDINATION_OUTBOX_POLLING, puName,
                     recorder.createRuntimeInitListener(runtimeConfig, puName)));
         }
+    }
+
+    private boolean isUsingOutboxPolling(HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem persistenceUnit) {
+        Optional<String> configuredStrategy = persistenceUnit.getBuildTimeConfig().coordination.strategy;
+        return configuredStrategy.isPresent()
+                && configuredStrategy.get().equals(HibernateOrmMapperOutboxPollingSettings.COORDINATION_STRATEGY_NAME);
     }
 
 }

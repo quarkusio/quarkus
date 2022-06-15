@@ -331,6 +331,14 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * link:{hibernate-search-doc-prefix}#mapper-orm-indexing-automatic-synchronization[this section of the reference documentation]
          * for more information.
          *
+         * [NOTE]
+         * ====
+         * Instead of setting this configuration property,
+         * you can simply annotate your custom `AutomaticIndexingSynchronizationStrategy` implementation with `@SearchExtension`
+         * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
+         * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
+         * ====
+         *
          * @asciidoclet
          */
         // @formatter:on

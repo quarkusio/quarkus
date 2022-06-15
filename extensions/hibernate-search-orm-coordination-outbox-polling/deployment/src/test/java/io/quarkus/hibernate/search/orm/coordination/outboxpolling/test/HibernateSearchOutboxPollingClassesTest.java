@@ -27,7 +27,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.deployment.index.IndexingUtil;
-import io.quarkus.hibernate.search.orm.coordination.outboxpolling.HibernateSearchOutboxPollingClasses;
+import io.quarkus.hibernate.search.orm.coordination.outboxpolling.deployment.HibernateSearchOutboxPollingClasses;
 
 /**
  * Tests that hardcoded lists of classes stay up-to-date.

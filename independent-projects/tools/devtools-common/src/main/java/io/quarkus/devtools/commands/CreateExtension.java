@@ -206,7 +206,8 @@ public class CreateExtension {
         final Model baseModel = resolveModel(baseDir);
         final LayoutType layoutType = detectLayoutType(baseModel, data.getStringValue(GROUP_ID).orElse(null));
 
-        data.putIfAbsent(NAMESPACE_ID, getDefaultNamespaceId(layoutType));
+        String namespaceId = getDefaultNamespaceId(layoutType);
+        data.putIfAbsent(NAMESPACE_ID, namespaceId);
         String resolvedExtensionId = resolveExtensionId();
         ensureRequiredStringData(EXTENSION_ID, resolvedExtensionId);
         data.putIfAbsent(EXTENSION_NAME, capitalize(extensionId));
@@ -247,6 +248,8 @@ public class CreateExtension {
                 data.putIfAbsent(EXTENSION_GUIDE,
                         String.format(DEFAULT_QUARKIVERSE_GUIDE_URL, resolvedExtensionId));
                 ensureRequiredStringData(QUARKUS_VERSION);
+                data.putIfAbsent(HAS_DOCS_MODULE, true);
+                data.putIfAbsent(DOC_TITLE, capitalize(namespaceId) + " " + data.getRequiredStringValue(EXTENSION_NAME));
                 // TODO: Support Quarkiverse multi extensions repo
                 builder.addCodestart(QuarkusExtensionCodestartCatalog.Code.QUARKIVERSE.key());
                 builder.addCodestart(QuarkusExtensionCodestartCatalog.Tooling.GIT.key());

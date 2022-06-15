@@ -70,6 +70,13 @@ quarkus-my-quarkiverse-ext/runtime/
 quarkus-my-quarkiverse-ext/runtime/pom.xml
 quarkus-my-quarkiverse-ext/runtime/src/
 quarkus-my-quarkiverse-ext/runtime/src/main/
+quarkus-my-quarkiverse-ext/runtime/src/main/java/
+quarkus-my-quarkiverse-ext/runtime/src/main/java/io/
+quarkus-my-quarkiverse-ext/runtime/src/main/java/io/quarkiverse/
+quarkus-my-quarkiverse-ext/runtime/src/main/java/io/quarkiverse/my/
+quarkus-my-quarkiverse-ext/runtime/src/main/java/io/quarkiverse/my/quarkiverse/
+quarkus-my-quarkiverse-ext/runtime/src/main/java/io/quarkiverse/my/quarkiverse/ext/
+quarkus-my-quarkiverse-ext/runtime/src/main/java/io/quarkiverse/my/quarkiverse/ext/runtime/
 quarkus-my-quarkiverse-ext/runtime/src/main/resources/
 quarkus-my-quarkiverse-ext/runtime/src/main/resources/META-INF/
 quarkus-my-quarkiverse-ext/runtime/src/main/resources/META-INF/quarkus-extension.yaml

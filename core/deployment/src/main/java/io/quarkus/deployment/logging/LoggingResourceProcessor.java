@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,6 +55,7 @@ import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.LogCategoryMinLevelDefaultsBuildItem;
 import io.quarkus.deployment.builditem.LogConsoleFormatBuildItem;
 import io.quarkus.deployment.builditem.LogFileFormatBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
@@ -75,6 +77,7 @@ import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
+import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.dev.console.CurrentAppExceptionHighlighter;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.gizmo.AnnotationCreator;
@@ -92,6 +95,7 @@ import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.console.ConsoleRuntimeConfig;
 import io.quarkus.runtime.logging.CategoryBuildTimeConfig;
 import io.quarkus.runtime.logging.CleanupFilterConfig;
+import io.quarkus.runtime.logging.InheritableLevel;
 import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.runtime.logging.LogCleanupFilterElement;
 import io.quarkus.runtime.logging.LogConfig;
@@ -121,13 +125,19 @@ public final class LoggingResourceProcessor {
 
     @BuildStep
     void setUpDefaultLevels(List<LogCategoryBuildItem> categories,
-            Consumer<RunTimeConfigurationDefaultBuildItem> configOutput) {
+            Consumer<RunTimeConfigurationDefaultBuildItem> configOutput,
+            Consumer<LogCategoryMinLevelDefaultsBuildItem> minLevelDefaultsOutput) {
+        Map<String, InheritableLevel> minLevelDefaults = new HashMap<>();
         for (LogCategoryBuildItem category : categories) {
             configOutput.accept(
                     new RunTimeConfigurationDefaultBuildItem(
                             "quarkus.log.category.\"" + category.getCategory() + "\".level",
                             category.getLevel().toString()));
+            if (category.isSetMinLevelDefault()) {
+                minLevelDefaults.put(category.getCategory(), InheritableLevel.of(category.getLevel()));
+            }
         }
+        minLevelDefaultsOutput.accept(new LogCategoryMinLevelDefaultsBuildItem(minLevelDefaults));
     }
 
     @BuildStep
@@ -167,7 +177,9 @@ public final class LoggingResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    LoggingSetupBuildItem setupLoggingRuntimeInit(LoggingSetupRecorder recorder, LogConfig log, LogBuildTimeConfig buildLog,
+    LoggingSetupBuildItem setupLoggingRuntimeInit(RecorderContext context, LoggingSetupRecorder recorder, LogConfig log,
+            LogBuildTimeConfig buildLog,
+            LogCategoryMinLevelDefaultsBuildItem categoryMinLevelDefaults,
             Optional<WebSocketLogHandlerBuildItem> logStreamHandlerBuildItem,
             List<LogHandlerBuildItem> handlerBuildItems,
             List<NamedLogHandlersBuildItem> namedHandlerBuildItems,
@@ -205,8 +217,10 @@ public final class LoggingResourceProcessor {
 
             List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters = fileFormatItems.stream()
                     .map(LogFileFormatBuildItem::getFormatterValue).collect(Collectors.toList());
-            recorder.initializeLogging(log, buildLog, alwaysEnableLogStream, devUiLogHandler, handlers,
-                    namedHandlers,
+            context.registerSubstitution(InheritableLevel.ActualLevel.class, String.class, InheritableLevel.Substitution.class);
+            context.registerSubstitution(InheritableLevel.Inherited.class, String.class, InheritableLevel.Substitution.class);
+            recorder.initializeLogging(log, buildLog, categoryMinLevelDefaults.content, alwaysEnableLogStream,
+                    devUiLogHandler, handlers, namedHandlers,
                     consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList()),
                     possibleFileFormatters,
                     possibleSupplier, launchModeBuildItem.getLaunchMode());
@@ -222,8 +236,8 @@ public final class LoggingResourceProcessor {
             }
             ConsoleRuntimeConfig crc = new ConsoleRuntimeConfig();
             ConfigInstantiator.handleObject(crc);
-            LoggingSetupRecorder.initializeBuildTimeLogging(logConfig, buildLog, crc, possibleFileFormatters,
-                    launchModeBuildItem.getLaunchMode());
+            LoggingSetupRecorder.initializeBuildTimeLogging(logConfig, buildLog, categoryMinLevelDefaults.content,
+                    crc, possibleFileFormatters, launchModeBuildItem.getLaunchMode());
             ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(new Runnable() {
                 @Override
                 public void run() {
@@ -320,18 +334,29 @@ public final class LoggingResourceProcessor {
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void setUpMinLevelLogging(LogBuildTimeConfig log,
+            LogCategoryMinLevelDefaultsBuildItem categoryMinLevelDefaults,
             final BuildProducer<GeneratedClassBuildItem> generatedTraceLogger) {
         ClassOutput output = new GeneratedClassGizmoAdaptor(generatedTraceLogger, false);
-        if (log.categories.isEmpty() || allMinLevelInfoOrHigher(log.minLevel.intValue(), log.categories)) {
+        if (allRootMinLevelOrHigher(log.minLevel.intValue(), log.categories, categoryMinLevelDefaults.content)) {
             generateDefaultLoggers(log.minLevel, output);
         } else {
-            generateCategoryMinLevelLoggers(log.categories, log.minLevel, output);
+            generateCategoryMinLevelLoggers(log.categories, categoryMinLevelDefaults.content, log.minLevel, output);
         }
     }
 
-    private static boolean allMinLevelInfoOrHigher(int minLogLevel, Map<String, CategoryBuildTimeConfig> categories) {
-        return categories.values().stream()
-                .allMatch(categoryConfig -> categoryConfig.minLevel.getLevel().intValue() >= minLogLevel);
+    private static boolean allRootMinLevelOrHigher(int rootMinLogLevel,
+            Map<String, CategoryBuildTimeConfig> categories,
+            Map<String, InheritableLevel> categoryMinLevelDefaults) {
+        Set<String> allConfiguredCategoryNames = new LinkedHashSet<>(categories.keySet());
+        allConfiguredCategoryNames.addAll(categoryMinLevelDefaults.keySet());
+        for (String categoryName : allConfiguredCategoryNames) {
+            InheritableLevel categoryMinLevel = LoggingSetupRecorder.getLogLevelNoInheritance(categoryName, categories,
+                    CategoryBuildTimeConfig::getMinLevel, categoryMinLevelDefaults);
+            if (!categoryMinLevel.isInherited() && categoryMinLevel.getLevel().intValue() < rootMinLogLevel) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static void generateDefaultLoggers(Level minLevel, ClassOutput output) {
@@ -340,9 +365,10 @@ public final class LoggingResourceProcessor {
         generateLogManagerLogger(output, LoggingResourceProcessor.generateMinLevelDefault(minLevel.getName()));
     }
 
-    private static void generateCategoryMinLevelLoggers(Map<String, CategoryBuildTimeConfig> categories, Level rootMinLevel,
+    private static void generateCategoryMinLevelLoggers(Map<String, CategoryBuildTimeConfig> categories,
+            Map<String, InheritableLevel> categoryMinLevelDefaults, Level rootMinLevel,
             ClassOutput output) {
-        generateMinLevelCompute(categories, rootMinLevel, output);
+        generateMinLevelCompute(categories, categoryMinLevelDefaults, rootMinLevel, output);
         generateDefaultLoggerNode(output);
         generateLogManagerLogger(output, LoggingResourceProcessor::generateMinLevelCheckCategory);
     }
@@ -353,7 +379,8 @@ public final class LoggingResourceProcessor {
         return method.ifTrue(method.invokeStaticMethod(IS_MIN_LEVEL_ENABLED, levelIntValue, nameAlias));
     }
 
-    private static void generateMinLevelCompute(Map<String, CategoryBuildTimeConfig> categories, Level rootMinLevel,
+    private static void generateMinLevelCompute(Map<String, CategoryBuildTimeConfig> categories,
+            Map<String, InheritableLevel> categoryMinLevelDefaults, Level rootMinLevel,
             ClassOutput output) {
         try (ClassCreator cc = ClassCreator.builder().setFinal(true)
                 .className(MIN_LEVEL_COMPUTE_CLASS_NAME)
@@ -369,7 +396,9 @@ public final class LoggingResourceProcessor {
                 for (Map.Entry<String, CategoryBuildTimeConfig> entry : categories.entrySet()) {
                     final String category = entry.getKey();
                     final int categoryLevelIntValue = LoggingSetupRecorder
-                            .getLogLevel(category, categories, CategoryBuildTimeConfig::getMinLevel, rootMinLevel).intValue();
+                            .getLogLevel(category, categories, CategoryBuildTimeConfig::getMinLevel, categoryMinLevelDefaults,
+                                    rootMinLevel)
+                            .intValue();
 
                     ResultHandle equalsResult = current.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(Object.class, "equals", boolean.class, Object.class),

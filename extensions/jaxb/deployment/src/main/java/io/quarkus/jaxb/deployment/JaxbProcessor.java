@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -49,9 +50,12 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -62,6 +66,8 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.jaxb.runtime.JaxbContextConfigRecorder;
+import io.quarkus.jaxb.runtime.JaxbContextProducer;
 
 class JaxbProcessor {
 
@@ -174,8 +180,10 @@ class JaxbProcessor {
             BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem) {
+            BuildProducer<JaxbClassesToBeBoundBuildItem> classesToBeBoundProducer,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem) throws ClassNotFoundException {
 
+        List<String> classesToBeBound = new ArrayList<>();
         IndexView index = combinedIndexBuildItem.getIndex();
 
         // Register classes for reflection based on JAXB annotations
@@ -185,8 +193,9 @@ class JaxbProcessor {
             for (AnnotationInstance jaxbRootAnnotationInstance : index
                     .getAnnotations(jaxbRootAnnotation)) {
                 if (jaxbRootAnnotationInstance.target().kind() == Kind.CLASS) {
-                    addReflectiveClass(reflectiveClass, true, true,
-                            jaxbRootAnnotationInstance.target().asClass().name().toString());
+                    String className = jaxbRootAnnotationInstance.target().asClass().name().toString();
+                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
+                    classesToBeBound.add(className);
                     jaxbRootAnnotationsDetected = true;
                 }
             }
@@ -199,8 +208,11 @@ class JaxbProcessor {
         // Register package-infos for reflection
         for (AnnotationInstance xmlSchemaInstance : index.getAnnotations(XML_SCHEMA)) {
             if (xmlSchemaInstance.target().kind() == Kind.CLASS) {
-                reflectiveClass.produce(
-                        new ReflectiveClassBuildItem(false, false, xmlSchemaInstance.target().asClass().name().toString()));
+                String className = xmlSchemaInstance.target().asClass().name().toString();
+
+                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, className));
+
+                classesToBeBound.add(className);
             }
         }
 
@@ -236,8 +248,10 @@ class JaxbProcessor {
         }
 
         for (JaxbFileRootBuildItem i : fileRoots) {
-            iterateResources(applicationArchivesBuildItem, i.getFileRoot(), resource, reflectiveClass);
+            iterateResources(applicationArchivesBuildItem, i.getFileRoot(), resource, reflectiveClass, classesToBeBound);
         }
+
+        classesToBeBoundProducer.produce(new JaxbClassesToBeBoundBuildItem(classesToBeBound));
     }
 
     @BuildStep
@@ -250,9 +264,9 @@ class JaxbProcessor {
     @BuildStep
     void registerClasses(
             BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageProps,
-            BuildProducer<ServiceProviderBuildItem> providerItem, final BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            final BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
-
+            BuildProducer<ServiceProviderBuildItem> providerItem,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
         addReflectiveClass(reflectiveClass, true, false, "com.sun.xml.bind.v2.ContextFactory");
         addReflectiveClass(reflectiveClass, true, false, "com.sun.xml.internal.bind.v2.ContextFactory");
 
@@ -275,8 +289,23 @@ class JaxbProcessor {
                 .produce(new ServiceProviderBuildItem(JAXBContext.class.getName(), "com.sun.xml.bind.v2.ContextFactory"));
     }
 
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void setupJaxbContextConfig(List<JaxbClassesToBeBoundBuildItem> classesToBeBoundBuildItems,
+            JaxbContextConfigRecorder jaxbContextConfig) {
+        for (JaxbClassesToBeBoundBuildItem classesToBeBoundBuildItem : classesToBeBoundBuildItems) {
+            jaxbContextConfig.addClassesToBeBound(classesToBeBoundBuildItem.getClasses());
+        }
+    }
+
+    @BuildStep
+    void registerProduces(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans.produce(new AdditionalBeanBuildItem(JaxbContextProducer.class));
+    }
+
     private void handleJaxbFile(Path p, BuildProducer<NativeImageResourceBuildItem> resource,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            List<String> classesToBeBound) {
         try {
             String path = p.toAbsolutePath().toString().substring(1);
             String pkg = p.toAbsolutePath().getParent().toString().substring(1)
@@ -289,9 +318,10 @@ class JaxbProcessor {
                 if (!line.isEmpty() && !line.startsWith("#")) {
                     String clazz = pkg + line;
                     Class<?> cl = Class.forName(clazz, false, Thread.currentThread().getContextClassLoader());
+                    classesToBeBound.add(clazz);
 
                     while (cl != Object.class) {
-                        addReflectiveClass(reflectiveClass, true, true, cl.getName());
+                        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, cl));
                         cl = cl.getSuperclass();
                     }
                 }
@@ -302,7 +332,8 @@ class JaxbProcessor {
     }
 
     private void iterateResources(ApplicationArchivesBuildItem applicationArchivesBuildItem, String path,
-            BuildProducer<NativeImageResourceBuildItem> resource, BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+            BuildProducer<NativeImageResourceBuildItem> resource, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            List<String> classesToBeBound) {
         for (ApplicationArchive archive : applicationArchivesBuildItem.getAllApplicationArchives()) {
             archive.accept(tree -> {
                 var arch = tree.getPath(path);
@@ -310,7 +341,7 @@ class JaxbProcessor {
                     JaxbProcessor.safeWalk(arch)
                             .filter(Files::isRegularFile)
                             .filter(p -> p.getFileName().toString().equals("jaxb.index"))
-                            .forEach(p1 -> handleJaxbFile(p1, resource, reflectiveClass));
+                            .forEach(p1 -> handleJaxbFile(p1, resource, reflectiveClass, classesToBeBound));
                 }
             });
         }

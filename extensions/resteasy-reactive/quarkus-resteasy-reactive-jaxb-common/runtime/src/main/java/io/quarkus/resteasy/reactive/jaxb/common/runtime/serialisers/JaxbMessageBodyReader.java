@@ -5,10 +5,14 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
+import javax.inject.Inject;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.xml.bind.JAXB;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.transform.stream.StreamSource;
 
 import org.jboss.resteasy.reactive.common.util.StreamUtil;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
@@ -16,6 +20,9 @@ import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 public class JaxbMessageBodyReader implements ServerMessageBodyReader<Object> {
+
+    @Inject
+    Unmarshaller unmarshaller;
 
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
@@ -52,12 +59,21 @@ public class JaxbMessageBodyReader implements ServerMessageBodyReader<Object> {
                 || (mediaType.isWildcardSubtype() && (mediaType.isWildcardType() || isCorrectMediaType));
     }
 
+    protected Object unmarshal(InputStream entityStream, Class<Object> type) {
+        try {
+            JAXBElement<Object> item = unmarshaller.unmarshal(new StreamSource(entityStream), type);
+            return item.getValue();
+        } catch (JAXBException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private Object doReadFrom(Class<Object> type, Type genericType, InputStream entityStream) throws IOException {
         if (isInputStreamEmpty(entityStream)) {
             return null;
         }
 
-        return JAXB.unmarshal(entityStream, type);
+        return unmarshal(entityStream, type);
     }
 
     private boolean isInputStreamEmpty(InputStream entityStream) throws IOException {

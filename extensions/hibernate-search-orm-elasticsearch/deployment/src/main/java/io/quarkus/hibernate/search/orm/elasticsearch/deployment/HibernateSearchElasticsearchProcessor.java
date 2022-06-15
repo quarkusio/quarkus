@@ -1,6 +1,6 @@
-package io.quarkus.hibernate.search.orm.elasticsearch;
+package io.quarkus.hibernate.search.orm.elasticsearch.deployment;
 
-import static io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchClasses.INDEXED;
+import static io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchClasses.INDEXED;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

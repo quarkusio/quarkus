@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.search.orm.elasticsearch;
+package io.quarkus.hibernate.search.orm.elasticsearch.deployment;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit;

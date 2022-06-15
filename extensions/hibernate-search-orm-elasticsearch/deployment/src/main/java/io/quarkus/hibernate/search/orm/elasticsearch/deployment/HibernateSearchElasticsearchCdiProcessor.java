@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.search.orm.elasticsearch;
+package io.quarkus.hibernate.search.orm.elasticsearch.deployment;
 
 import java.util.List;
 import java.util.function.Supplier;

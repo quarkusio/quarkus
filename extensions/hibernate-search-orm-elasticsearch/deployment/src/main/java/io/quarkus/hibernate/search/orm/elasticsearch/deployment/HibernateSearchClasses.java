@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.search.orm.elasticsearch;
+package io.quarkus.hibernate.search.orm.elasticsearch.deployment;
 
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.jboss.jandex.DotName;

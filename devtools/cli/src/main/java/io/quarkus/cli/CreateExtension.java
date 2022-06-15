@@ -109,6 +109,7 @@ public class CreateExtension extends BaseCreateCommand {
                             .groupId(gav.getGroupId())
                             .version(gav.getVersion())
                             .extensionName(nameGeneration.getExtensionName())
+                            .extensionDescription(nameGeneration.extensionDescription())
                             .namespaceId(nameGeneration.getNamespaceId())
                             .namespaceName(nameGeneration.getNamespaceName())
                             .packageName(nameGeneration.getPackageName())

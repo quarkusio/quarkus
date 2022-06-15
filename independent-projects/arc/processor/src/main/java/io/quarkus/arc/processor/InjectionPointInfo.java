@@ -116,7 +116,7 @@ public class InjectionPointInfo {
         resolvedBean.set(bean);
     }
 
-    BeanInfo getResolvedBean() {
+    public BeanInfo getResolvedBean() {
         return resolvedBean.get();
     }
 

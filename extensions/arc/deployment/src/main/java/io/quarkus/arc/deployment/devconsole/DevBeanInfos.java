@@ -2,7 +2,9 @@ package io.quarkus.arc.deployment.devconsole;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DevBeanInfos {
 
@@ -13,6 +15,7 @@ public class DevBeanInfos {
     private final List<DevInterceptorInfo> removedInterceptors;
     private final List<DevDecoratorInfo> decorators;
     private final List<DevDecoratorInfo> removedDecorators;
+    private final Map<String, DependecyGraph> dependencyGraphs;
 
     public DevBeanInfos() {
         beans = new ArrayList<>();
@@ -22,6 +25,7 @@ public class DevBeanInfos {
         removedInterceptors = new ArrayList<>();
         decorators = new ArrayList<>();
         removedDecorators = new ArrayList<>();
+        dependencyGraphs = new HashMap<>();
     }
 
     public List<DevBeanInfo> getRemovedBeans() {
@@ -52,6 +56,15 @@ public class DevBeanInfos {
         return removedDecorators;
     }
 
+    public DevBeanInfo getBean(String id) {
+        for (DevBeanInfo bean : beans) {
+            if (bean.getId().equals(id)) {
+                return bean;
+            }
+        }
+        return null;
+    }
+
     public DevInterceptorInfo getInterceptor(String id) {
         for (DevInterceptorInfo interceptor : interceptors) {
             if (interceptor.getId().equals(id)) {
@@ -59,6 +72,10 @@ public class DevBeanInfos {
             }
         }
         return null;
+    }
+
+    public DependecyGraph getDependencyGraph(String beanId) {
+        return dependencyGraphs.get(beanId);
     }
 
     public int getRemovedComponents() {
@@ -91,6 +108,10 @@ public class DevBeanInfos {
 
     void addRemovedDecorator(DevDecoratorInfo decorator) {
         removedDecorators.add(decorator);
+    }
+
+    void addDependencyGraph(String beanId, DependecyGraph graph) {
+        dependencyGraphs.put(beanId, graph);
     }
 
     void sort() {

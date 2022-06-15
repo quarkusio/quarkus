@@ -170,7 +170,6 @@ class AwtProcessor {
                 "sun.java2d.loops.FillRect",
                 "sun.java2d.loops.FillSpans",
                 "sun.java2d.loops.GraphicsPrimitive",
-                "sun.java2d.loops.GraphicsPrimitive[]",
                 "sun.java2d.loops.GraphicsPrimitiveMgr",
                 "sun.java2d.loops.MaskBlit",
                 "sun.java2d.loops.MaskFill",

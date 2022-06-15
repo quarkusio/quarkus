@@ -22,6 +22,7 @@ import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 
 import org.jboss.logging.Logger;
+import org.jboss.tm.XAResourceRecoveryRegistry;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.AgroalPoolInterceptor;
@@ -72,6 +73,7 @@ public class DataSources {
     private final DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig;
     private final DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig;
     private final TransactionManager transactionManager;
+    private final XAResourceRecoveryRegistry xaResourceRecoveryRegistry;
     private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;
     private final DataSourceSupport dataSourceSupport;
     private final Instance<AgroalPoolInterceptor> agroalPoolInterceptors;
@@ -82,6 +84,7 @@ public class DataSources {
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig, DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
             DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig,
             TransactionManager transactionManager,
+            XAResourceRecoveryRegistry xaResourceRecoveryRegistry,
             TransactionSynchronizationRegistry transactionSynchronizationRegistry, DataSourceSupport dataSourceSupport,
             @Any Instance<AgroalPoolInterceptor> agroalPoolInterceptors) {
         this.dataSourcesBuildTimeConfig = dataSourcesBuildTimeConfig;
@@ -89,6 +92,7 @@ public class DataSources {
         this.dataSourcesJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig;
         this.dataSourcesJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig;
         this.transactionManager = transactionManager;
+        this.xaResourceRecoveryRegistry = xaResourceRecoveryRegistry;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
         this.dataSourceSupport = dataSourceSupport;
         this.agroalPoolInterceptors = agroalPoolInterceptors;
@@ -268,7 +272,10 @@ public class DataSources {
 
         if (dataSourceJdbcBuildTimeConfig.transactions != io.quarkus.agroal.runtime.TransactionIntegration.DISABLED) {
             TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
-                    transactionSynchronizationRegistry);
+                    transactionSynchronizationRegistry, null, false,
+                    dataSourceJdbcBuildTimeConfig.transactions == io.quarkus.agroal.runtime.TransactionIntegration.XA
+                            ? xaResourceRecoveryRegistry
+                            : null);
             poolConfiguration.transactionIntegration(txIntegration);
         }
 
@@ -287,12 +294,14 @@ public class DataSources {
 
         // Authentication
         if (dataSourceRuntimeConfig.username.isPresent()) {
+            NamePrincipal username = new NamePrincipal(dataSourceRuntimeConfig.username.get());
             connectionFactoryConfiguration
-                    .principal(new NamePrincipal(dataSourceRuntimeConfig.username.get()));
+                    .principal(username).recoveryPrincipal(username);
         }
         if (dataSourceRuntimeConfig.password.isPresent()) {
+            SimplePassword password = new SimplePassword(dataSourceRuntimeConfig.password.get());
             connectionFactoryConfiguration
-                    .credential(new SimplePassword(dataSourceRuntimeConfig.password.get()));
+                    .credential(password).recoveryCredential(password);
         }
 
         // credentials provider

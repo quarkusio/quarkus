@@ -173,6 +173,8 @@ import io.vertx.ext.web.RoutingContext;
 
 public class ResteasyReactiveProcessor {
 
+    private static final int REST_ROUTE_ORDER_OFFSET = 100;
+
     private static final String QUARKUS_INIT_CLASS = "io.quarkus.rest.runtime.__QuarkusInit";
 
     private static final Logger log = Logger.getLogger("io.quarkus.resteasy.reactive.server");
@@ -871,13 +873,14 @@ public class ResteasyReactiveProcessor {
                 .produce(new ResteasyReactiveDeploymentInfoBuildItem(deploymentInfo));
 
         boolean servletPresent = false;
-        int orderAdd = 1;
+        int order = VertxHttpRecorder.AFTER_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET;
         if (capabilities.isPresent("io.quarkus.servlet")) {
             //if servlet is present we run RR before the default route
             //otherwise we run after it
-            orderAdd = -1;
+            order = VertxHttpRecorder.BEFORE_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET;
             servletPresent = true;
         }
+
         RuntimeValue<Deployment> deployment = recorder.createDeployment(deploymentInfo,
                 beanContainerBuildItem.getValue(), shutdownContext, vertxConfig,
                 requestContextFactoryBuildItem.map(RequestContextFactoryBuildItem::getFactory).orElse(null),
@@ -891,7 +894,7 @@ public class ResteasyReactiveProcessor {
 
             // Exact match for resources matched to the root path
             routes.produce(RouteBuildItem.builder()
-                    .orderedRoute(deploymentPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + orderAdd).handler(handler).build());
+                    .orderedRoute(deploymentPath, order).handler(handler).build());
             String matchPath = deploymentPath;
             if (matchPath.endsWith("/")) {
                 matchPath += "*";
@@ -900,7 +903,7 @@ public class ResteasyReactiveProcessor {
             }
             // Match paths that begin with the deployment path
             routes.produce(
-                    RouteBuildItem.builder().orderedRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + orderAdd)
+                    RouteBuildItem.builder().orderedRoute(matchPath, order)
                             .handler(handler).build());
         }
     }

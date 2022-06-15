@@ -14,7 +14,7 @@ This document describes how to test Quarkus Security.
 
 You can use xref:security-properties.adoc[quarkus-elytron-security-properties-file] for testing security. This supports both embedding user info in `application.properties` and standalone properties files.
 
-For example, the following configuration will allow for configuring the users in both the production where OAuth2 is required and development modes using xref:config.adoc#configuration-profiles[Configuration Profiles].
+For example, the following configuration will allow for configuring the users in both the production where OAuth2 is required and development modes using xref:config-reference.adoc#profiles[Configuration Profiles].
 
 [source,properties]
 ----
@@ -105,7 +105,7 @@ for example by setting `quarkus.http.auth.basic=true` or `%test.quarkus.http.aut
 == Use Wiremock for Integration Testing
 
 You can also use Wiremock to mock the authorization OAuth2 and OIDC services: 
-See xref:security-oauth2#integration-testing.adoc[OAuth2 Integration testing], xref:security-openid-connect.adoc#integration-testing-wiremock[OpenID Connect Bearer Token Integration testing], xref:security-openid-connect-web-authentication.adoc#integration-testing-wiremock[OpenID Connect Authorization Code Flow Integration testing] and xref:security-jwt.adoc#integration-testing-wiremock[SmallRye JWT Integration testing] for more details.
+See xref:security-oauth2.adoc#integration-testing[OAuth2 Integration testing], xref:security-openid-connect.adoc#integration-testing-wiremock[OpenID Connect Bearer Token Integration testing], xref:security-openid-connect-web-authentication.adoc#integration-testing-wiremock[OpenID Connect Authorization Code Flow Integration testing] and xref:security-jwt.adoc#integration-testing-wiremock[SmallRye JWT Integration testing] for more details.
 
 == References
 

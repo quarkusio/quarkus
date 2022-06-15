@@ -252,7 +252,7 @@ See xref:security-customization.adoc[Security Customization] for more informatio
 
 == Secure connections with SSL
 
-See the xref:http-reference#adoc[Supporting secure connections with SSL] guide for more information.
+See the xref:http-reference.adoc#ssl[Supporting secure connections with SSL] guide for more information.
 
 == Cross-Origin Resource Sharing
 

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.ServiceConfigurationError;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
@@ -14,6 +15,23 @@ import com.oracle.svm.core.annotate.TargetClass;
 @SuppressWarnings("unused")
 @TargetClass(className = "io.grpc.ServiceProviders")
 final class Target_io_grpc_ServiceProviders { // NOSONAR
+
+    @Substitute
+    static boolean isAndroid(ClassLoader cl) {
+        return false;
+    }
+
+    @Substitute
+    private static <T> T createForHardCoded(Class<T> klass, Class<?> rawClass) {
+        try {
+            return rawClass.asSubclass(klass).getConstructor().newInstance();
+        } catch (NoSuchMethodException | ClassCastException e) {
+            return null;
+        } catch (Throwable t) {
+            throw new ServiceConfigurationError(
+                    String.format("Provider %s could not be instantiated %s", rawClass.getName(), t), t);
+        }
+    }
 
     @Substitute
     public static <T> List<T> loadAll(

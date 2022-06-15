@@ -11,6 +11,7 @@ metadata:
   - "web"
   - "serialization"
   status: "stable"
+  guide: "https://quarkus.io/guides/resteasy#links"
   codestart:
     name: "resteasy"
     languages:

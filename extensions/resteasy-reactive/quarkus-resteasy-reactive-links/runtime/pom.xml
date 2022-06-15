@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-resteasy-reactive-links</artifactId>
     <name>Quarkus - RESTEasy Reactive - Links - Runtime</name>
-    <description>Quarkus RESTEast Reactive resource linking support</description>
+    <description>Web Links support for RESTEasy Reactive. Inject web links into response HTTP headers by annotating your endpoint resources.</description>
 
     <dependencies>
         <dependency>

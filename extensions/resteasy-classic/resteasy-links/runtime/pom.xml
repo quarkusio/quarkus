@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-resteasy-links</artifactId>
     <name>Quarkus - RESTEasy - Links - Runtime</name>
-    <description>Links support for RESTEasy Classic</description>
+    <description>Web Links support for RESTEasy Classic. Inject web links into response HTTP headers by annotating your endpoint resources.</description>
 
     <dependencies>
         <dependency>

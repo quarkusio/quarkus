@@ -312,7 +312,7 @@ public class ExtensionMethodGenerator {
                         // Last param is varargs
                         Type varargsParam = params.get(lastIdx).type;
                         ResultHandle componentType = tryCatch
-                                .loadClassFromTCCL(varargsParam.asArrayType().component().name().toString());
+                                .loadClass(varargsParam.asArrayType().component().name().toString());
                         ResultHandle varargsResults = tryCatch.invokeVirtualMethod(
                                 Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
                                 evaluatedParamsHandle, tryCatch.load(evaluated.size()), componentType);
@@ -357,7 +357,7 @@ public class ExtensionMethodGenerator {
         // Test base object class
         ResultHandle baseClass = appliesTo.invokeVirtualMethod(Descriptors.GET_CLASS, base);
         // Perform autoboxing for primitives
-        ResultHandle testClass = appliesTo.loadClassFromTCCL(box(params.getFirst(ParamKind.BASE).type).name().toString());
+        ResultHandle testClass = appliesTo.loadClass(box(params.getFirst(ParamKind.BASE).type).name().toString());
         ResultHandle baseClassTest = appliesTo.invokeVirtualMethod(Descriptors.IS_ASSIGNABLE_FROM, testClass,
                 baseClass);
         BytecodeCreator baseNotAssignable = appliesTo.ifTrue(baseClassTest).falseBranch();
@@ -557,7 +557,7 @@ public class ExtensionMethodGenerator {
                                 // Last param is varargs
                                 Type varargsParam = params.get(lastIdx).type;
                                 ResultHandle componentType = tryCatch
-                                        .loadClassFromTCCL(varargsParam.asArrayType().component().name().toString());
+                                        .loadClass(varargsParam.asArrayType().component().name().toString());
                                 ResultHandle varargsResults = tryCatch.invokeVirtualMethod(
                                         Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
                                         whenEvaluatedParams, tryCatch.load(evaluated.size()), componentType);

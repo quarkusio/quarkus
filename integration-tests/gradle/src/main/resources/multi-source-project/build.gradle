@@ -6,7 +6,6 @@ plugins {
 }
 
 repositories {
-    mavenCentral()
     // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
     if (System.properties.containsKey('maven.repo.local')) {
         maven {
@@ -15,6 +14,7 @@ repositories {
     } else {
         mavenLocal()
     }
+    mavenCentral()
 }
 
 dependencies {

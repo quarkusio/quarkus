@@ -4,7 +4,6 @@ plugins {
 }
 
 repositories {
-    mavenCentral()
     if (System.properties.containsKey('maven.repo.local')) {
         maven {
             url System.properties.get('maven.repo.local')
@@ -12,6 +11,7 @@ repositories {
     } else {
         mavenLocal()
     }
+    mavenCentral()
 }
 
 dependencies {

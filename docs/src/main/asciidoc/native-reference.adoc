@@ -275,6 +275,7 @@ docker cp mytest:/work/application path/on/host/
 From there, you can either inspect the executable directly or use a tools container like above.
 ====
 
+[[native-reports]]
 == Native Reports
 
 Optionally, the native build process can generate reports that show what goes into the binary:
@@ -714,6 +715,7 @@ hellomandrel
 
 Additional information on which classes are initialized and why can be obtained by passing in the `-H:+PrintClassInitialization` flag via `-Dquarkus.native.additional-build-args`.
 
+[[profiling]]
 == Profile Runtime Behaviour
 
 === Single Thread
@@ -1048,6 +1050,7 @@ image::native-reference-multi-flamegraph-joined-threads.svg[Muti-thread perf fla
 When you open the flamegraph, you will see all threads' work collapsed into a single area.
 Then, you can clearly see that there's some locking that could affect performance.
 
+[[debug-info]]
 == Debugging Native Crashes
 
 One of the drawbacks of using native executables is that they cannot be debugged using the standard Java debuggers,
@@ -1640,3 +1643,14 @@ you might not be able to use `perf`,
 so JFR is the only way to gather any information in this situation.
 As JFR support for native expands,
 the ability to detect root causes of performance issues directly in production will improve.
+
+=== What information helps most debug issues that happen either at build-time or run-time?
+
+To fix classpath, class initialization or forbidden API errors at build time it's best to use <<native-reports,build time reports>> to understand the closed world universe.
+A complete picture of the universe, along with the relationships between the different classes and methods will help uncover and fix most of the issues.
+
+To fix runtime native specific errors,
+it's best to have <<debug-info,debug info builds>> of the native executables around,
+so that `gdb` can be hooked up quickly to debug the issue.
+If you also add local symbols to the debug info builds,
+you will obtain precise <<profiling,profiling information>> as well.

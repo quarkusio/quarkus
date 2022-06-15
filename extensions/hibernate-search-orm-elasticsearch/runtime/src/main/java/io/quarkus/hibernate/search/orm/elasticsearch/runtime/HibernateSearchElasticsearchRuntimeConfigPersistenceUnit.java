@@ -380,7 +380,7 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          *
          * For indexes that already exist, do nothing: assume that their schema matches Hibernate Search's expectations.
          *
-         * !create-or-validate (**default**)
+         * !create-or-validate (**default** unless using dev services)
          * !For indexes that do not exist, create them along with their schema.
          *
          * For indexes that already exist, validate that their schema matches Hibernate Search's expectations.
@@ -402,7 +402,7 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          *
          * For indexes that already exist, drop them, then create them along with their schema.
          *
-         * !drop-and-create-and-drop
+         * !drop-and-create-and-drop (**default** when using dev services)
          * !For indexes that do not exist, create them along with their schema.
          *
          * For indexes that already exist, drop them, then create them along with their schema.
@@ -416,7 +416,7 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigItem(defaultValue = "create-or-validate")
+        @ConfigItem(defaultValue = "create-or-validate", defaultValueDocumentation = "drop-and-create-and-drop when using dev services; create-or-validate otherwise")
         SchemaManagementStrategyName strategy;
 
     }

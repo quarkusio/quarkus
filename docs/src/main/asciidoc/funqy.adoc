@@ -15,7 +15,7 @@ It is also usable as a standalone service.
 Because Funqy is an abstraction that spans multiple different cloud/function providers
 and protocols it has to be a very simple API and thus, might not have all the features you are used
 to in other remoting abstractions.  A nice side effect though is that Funqy is as optimized and
-as small as possible.  This means that because Funqy sacrifices a little bit on flexibility, you'll
+as small as possible.  This means that because Funqy sacrifices a little on flexibility, you'll
 get a framework that has little to no overhead.
 
 == Funqy Basics
@@ -90,7 +90,7 @@ public class GreetingFunction {
 
 == Function Names
 
-The function name defaults to the method name and is case sensitive.  If you want your function referenced by a different name,
+The function name defaults to the method name and is case-sensitive.  If you want your function referenced by a different name,
 parameterize the `@Funq` annotation as follows:
 
 [source, java]
@@ -139,7 +139,7 @@ public class GreetingFunction {
 
 The Funqy API will usually not allow you to inject or use abstractions that
 are specific to a protocol (i.e. HTTP) or function API (i.e. AWS Lambda).  There are
-exceptions to the rule though and you may be able to inject
+exceptions to the rule though, and you may be able to inject
 contextual information that is specific to the environment you are deploying in.
 
 NOTE: We do not recommend injecting contextual information specific to a runtime.  Keep your functions portable.

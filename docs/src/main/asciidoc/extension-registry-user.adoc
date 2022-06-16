@@ -58,7 +58,7 @@ That means, if, for example, a matching Maven repository mirror was applied to t
 
 ==== Overriding the default registry Maven repository configuration
 
-The default registry Maven repository configuration can actually be overriden in the user `settings.xml` by simply adding the desired `<repository>` configuration with the `registry.quarkus.io` as its `<id>` value. If such a repository configuration is found in the user `settings.xml`, the dev tools will use it in place of the default <<registry.quarkus.io.maven.repo,registry.quarkus.io>> Maven repository configuration shown above.
+The default registry Maven repository configuration can actually be overridden in the user `settings.xml` by simply adding the desired `<repository>` configuration with the `registry.quarkus.io` as its `<id>` value. If such a repository configuration is found in the user `settings.xml`, the dev tools will use it in place of the default <<registry.quarkus.io.maven.repo,registry.quarkus.io>> Maven repository configuration shown above.
 
 == Quarkus Extension Registry Client Configuration
 
@@ -75,7 +75,7 @@ When the Quarkus dev tools are launched, a search for the registry client config
 
 === Configuring multiple registries
 
-The <<registry.quarkus.io,registry.quarkus.io>> is the default Quarkus community extension registry but it is not meant to be always the only registry. Other organizations may find it useful to create their own Quarkus extension registries to provide their own https://quarkus.io/guides/platform[Quarkus platforms] and/or individual (non-platform) Quarkus extensions. Users wishing to enable custom Quarkus extension registries in their environment would need to add them to the registry client configuration file.
+The <<registry.quarkus.io,registry.quarkus.io>> is the default Quarkus community extension registry, but it is not meant to be always the only registry. Other organizations may find it useful to create their own Quarkus extension registries to provide their own https://quarkus.io/guides/platform[Quarkus platforms] and/or individual (non-platform) Quarkus extensions. Users wishing to enable custom Quarkus extension registries in their environment would need to add them to the registry client configuration file.
 
 The registry client configuration file is a simple YAML file which contains a list of registries, for example:
 
@@ -100,7 +100,7 @@ registries:
 
 === Adjusting the registry cache update policy
 
-Usually, a Quarkus extension registry will be implemented as a Maven snapshot repository. The platform and extension catalogs resolved from the registry as Maven artifacts will be cached in the user's local Maven repository. The platform and extension catalogs are actually `SNAPSHOT` artifacts that are periodically checked for updates by the registry client. The default registry interval to check for updates matches the default value of the Maven's `updatePolicy` for https://maven.apache.org/settings.html#repositories[snapshot repositories] and is `daily`. This default can be override in the registry configuration, for example:
+Usually, a Quarkus extension registry will be implemented as a Maven snapshot repository. The platform and extension catalogs resolved from the registry as Maven artifacts will be cached in the user's local Maven repository. The platform and extension catalogs are actually `SNAPSHOT` artifacts that are periodically checked for updates by the registry client. The default registry interval to check for updates matches the default value of the Maven's `updatePolicy` for https://maven.apache.org/settings.html#repositories[snapshot repositories] and is `daily`. This default can be overridden in the registry configuration, for example:
 
 [source,yaml]
 ----

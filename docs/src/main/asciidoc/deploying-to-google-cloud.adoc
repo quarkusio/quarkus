@@ -31,7 +31,7 @@ or download an {quickstarts-archive-url}[archive]. The solution is located in th
 
 == Login to Google Cloud
 
-Login to Google Cloud is necessary for deploying the application and it can be done as follows:
+Login to Google Cloud is necessary for deploying the application. It can be done as follows:
 
 [source, subs=attributes+]
 ----
@@ -54,7 +54,7 @@ follow the specific guides for more information on how to develop, package and d
 
 We will only cover the Java 11 runtime as the Java 8 runtime uses its own Servlet engine which is not compatible with Quarkus.
 
-First of all, make sure to have an App Engine environment initialized for your Google Cloud project, if not, initialize one via `gcloud app create --project=[YOUR_PROJECT_ID]`.
+First, make sure to have an App Engine environment initialized for your Google Cloud project, if not, initialize one via `gcloud app create --project=[YOUR_PROJECT_ID]`.
 
 Then, you will need to create a `src/main/appengine/app.yaml` file, let's keep it minimalistic with only the selected engine:
 
@@ -215,7 +215,7 @@ Finally, use Cloud Run to launch your application.
 gcloud run deploy --image gcr.io/PROJECT-ID/helloworld --platform managed
 ----
 
-Cloud run will ask you questions on the service name, the region and whether or not unauthenticated calls are allowed.
+Cloud run will ask you questions on the service name, the region and whether unauthenticated calls are allowed.
 After you answer to these questions, it will deploy your application.
 
 When the deployment is done, the output will display the URL to access your application.

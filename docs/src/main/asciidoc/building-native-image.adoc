@@ -36,7 +36,7 @@ when compared with Oracle GraalVM CE/EE.
 
 * Mandrel is built slightly differently to Oracle GraalVM CE, using the standard OpenJDK project.
 This means that it does not profit from a few small enhancements that Oracle have added to the version of OpenJDK used to build their own GraalVM downloads.
-This enhancements are omitted because upstream OpenJDK does not manage them, and cannot vouch for.
+These enhancements are omitted because upstream OpenJDK does not manage them, and cannot vouch for.
 This is particularly important when it comes to conformance and security.
 
 * Mandrel is recommended for building native executables that target Linux containerized environments.
@@ -362,8 +362,8 @@ include::{includes}/devtools/build-native-container.adoc[]
 
 [TIP]
 ====
-By default Quarkus automatically detects the container runtime.
-If you want to explicitely select the container runtime, you can do it with:
+By default, Quarkus automatically detects the container runtime.
+If you want to explicitly select the container runtime, you can do it with:
 
 For Docker:
 
@@ -438,7 +438,7 @@ When using a local GraalVM installation, the native executable targets your loca
 However, as a container may not use the same _executable_ format as the one produced by your operating system,
 we will instruct the Maven build to produce an executable by leveraging a container runtime (as described in <<#container-runtime,this section>>):
 
-The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
+The produced executable will be a 64-bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a container.
 The project generation has provided a `Dockerfile.native-micro` in the `src/main/docker` directory with the following content:
 
@@ -684,7 +684,7 @@ More details on xref:./upx.adoc[UPX Compression documentation].
 In certain circumstances, you may want to build the native image in a separate step.
 For example, in a CI/CD pipeline, you may want to have one step to generate the source that will be used for the native image generation and another step to use these sources to actually build the native executable.
 For this use case, you can set the `quarkus.package.type=native-sources`.
-This will execute the java compilation as if you would have started native compilation (`-Pnative`), but stops before triggering the actual call to GraalVM's `native-image`.
+This will execute the java compilation as if you had started native compilation (`-Pnative`), but stops before triggering the actual call to GraalVM's `native-image`.
 
 [source,bash]
 ----

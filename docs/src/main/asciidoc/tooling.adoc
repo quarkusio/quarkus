@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-Quarkus comes with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application. In addition there are plugins and extensions to all major IDEs.
+Quarkus comes with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application. In addition, there are plugins and extensions to all major IDEs.
 
 In this guide, we will explore:
 
@@ -19,7 +19,7 @@ In this guide, we will explore:
 * how to enable live reload
 * how to develop your application in your IDE
 * how to compile your application natively
-* how to setup Quarkus tools in xref:ide-tooling.adoc[Visual Studio Code, Eclipse IDE, Eclipse Che and IntelliJ] 
+* how to set up Quarkus tools in xref:ide-tooling.adoc[Visual Studio Code, Eclipse IDE, Eclipse Che and IntelliJ IDEA]
 
 [[build-tool]]
 == Choosing your build tool

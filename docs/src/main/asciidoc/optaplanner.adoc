@@ -357,7 +357,7 @@ to avoid common pitfalls.
 == Define the constraints and calculate the score
 
 A _score_ represents the quality of a specific solution.
-The higher the better.
+The higher, the better.
 OptaPlanner looks for the best solution, which is the solution with the highest score found in the available time.
 It might be the _optimal_ solution.
 
@@ -555,7 +555,7 @@ public class TimeTable {
 ----
 
 The `TimeTable` class has an `@PlanningSolution` annotation,
-so OptaPlanner knows that this class contains all of the input and output data.
+so OptaPlanner knows that this class contains all the input and output data.
 
 Specifically, this class is the input of the problem:
 
@@ -661,7 +661,7 @@ Create the `src/main/resources/application.properties` file:
 
 [source,properties]
 ----
-# The solver runs only for 5 seconds to avoid a HTTP timeout in this simple implementation.
+# The solver runs only for 5 seconds to avoid an HTTP timeout in this simple implementation.
 # It's recommended to run for at least 5 minutes ("5m") otherwise.
 quarkus.optaplanner.solver.termination.spent-limit=5s
 ----

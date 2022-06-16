@@ -148,7 +148,7 @@ mode run `mvn quarkus:test`.
 
 NOTE: The Dev UI is not available when running in continuous testing mode, as this is provided by dev mode.
 
-== Multi Module Projects
+== Multi-module Projects
 
 Note that continuous testing supports multi-module projects, so tests in modules other than the application can still
 be run when files are changed. The modules that are run can be controlled using config as listed below.

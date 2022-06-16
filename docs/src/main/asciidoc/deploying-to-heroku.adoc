@@ -28,7 +28,7 @@ include::{includes}/prerequisites.adoc[]
 
 Heroku is a platform as a service (PaaS) that enables developers to build, run, and operate applications entirely in the cloud.
 It supports several languages like Java, Ruby, Node.js, Scala, Clojure, Python, PHP, and Go.
-In addition it offers a container registry that can be used to deploy prebuilt container images.
+In addition, it offers a container registry that can be used to deploy prebuilt container images.
 
 Heroku can be used in different ways to run a Quarkus application:
 
@@ -49,7 +49,7 @@ Make sure you have the getting-started application at hand, or clone the Git rep
 or download an {quickstarts-archive-url}[archive]. The solution is located in the `getting-started` directory.
 
 Heroku can react on changes in your repository, run CI and redeploy your application when your code changes.
-Therefore we start with a valid repository already.
+Therefore, we start with a valid repository already.
 
 Also, make sure your Heroku CLI is working:
 

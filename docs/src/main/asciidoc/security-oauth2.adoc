@@ -119,7 +119,7 @@ public class TokenSecuredResource {
 ----
 <1> `@PermitAll` indicates that the given endpoint is accessible by any caller, authenticated or not.
 <2> Here we inject the JAX-RS `SecurityContext` to inspect the security state of the call.
-<3> Here we obtain the current request user/caller `Principal`. For an unsecured call this will be null, so we build the user name by checking `caller` against null.
+<3> Here we obtain the current request user/caller `Principal`. For an unsecured call this will be null, so we build the username by checking `caller` against null.
 <4> The reply we build up makes use of the caller name, the `isSecure()` and `getAuthenticationScheme()` states of the request `SecurityContext`.
 
 
@@ -155,7 +155,7 @@ hello + anonymous, isSecure: false, authScheme: null
 
 We have not provided any token in our request, so we would not expect that there is any security state seen by the endpoint, and the response is consistent with that:
 
-* user name is anonymous
+* username is anonymous
 * `isSecure` is false as https is not used
 * `authScheme` is null
 
@@ -207,7 +207,7 @@ public class TokenSecuredResource {
 }
 ----
 <1> This new endpoint will be located at `/secured/roles-allowed`
-<2> `@RolesAllowed` indicates that the given endpoint is accessible by a caller if they have either a "Echoer" or "Subscriber" role assigned.
+<2> `@RolesAllowed` indicates that the given endpoint is accessible by a caller if they have either an "Echoer" or a "Subscriber" role assigned.
 
 After you make this addition to your `TokenSecuredResource`, try `curl -v http://127.0.0.1:8080/secured/roles-allowed; echo` to attempt to access the new endpoint. Your output should be:
 
@@ -232,7 +232,7 @@ $ curl -v http://127.0.0.1:8080/secured/roles-allowed; echo
 Not authorized
 ----
 
-Excellent, we have not provided any OAuth2 token in the request, so we should not be able to access the endpoint, and we were not. Instead we received an HTTP 401 Unauthorized error. We need to obtain and pass in a valid OAuth2 token to access that endpoint. There are two steps to this, 1) configuring our {extension-name} extension with information on how to validate the token, and 2) generating a matching token with the appropriate claims.
+Excellent, we have not provided any OAuth2 token in the request, so we should not be able to access the endpoint, and we were not. Instead, we received an HTTP 401 Unauthorized error. We need to obtain and pass in a valid OAuth2 token to access that endpoint. There are two steps to this, 1) configuring our {extension-name} extension with information on how to validate the token, and 2) generating a matching token with the appropriate claims.
 
 === Generating a token
 
@@ -325,7 +325,7 @@ $ ./target/security-oauth2-quickstart-runner
 If you don't want to use a real OAuth2 authorization server for your integration tests, you can use the
 xref:security-properties.adoc[Properties based security] extension for your test, or mock an authorization server using Wiremock.
 
-First of all, Wiremock needs to be added as a test dependency. For a Maven project that would happen like so:
+First, Wiremock needs to be added as a test dependency. For a Maven project that would happen like so:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml

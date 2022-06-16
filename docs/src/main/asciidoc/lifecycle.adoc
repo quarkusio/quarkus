@@ -43,7 +43,7 @@ It generates:
 
 == The main method
 
-By default Quarkus will automatically generate a main method, that will bootstrap Quarkus and then just wait for
+By default, Quarkus will automatically generate a main method, that will bootstrap Quarkus and then just wait for
 shutdown to be initiated. Let's provide our own main method:
 [source,java]
 ----
@@ -239,7 +239,7 @@ or by invoking the static method `io.quarkus.runtime.LaunchMode.current()`.
 == Graceful Shutdown
 
 Quarkus includes support for graceful shutdown, this allows Quarkus to wait for running requests to finish, up
-till a set timeout. By default this is disabled, however you can configure this by setting the `quarkus.shutdown.timeout`
+till a set timeout. By default, this is disabled, however you can configure this by setting the `quarkus.shutdown.timeout`
 config property. When this is set shutdown will not happen until all running requests have completed, or until
 this timeout has elapsed. This config property is a duration, and can be set using the standard
 `java.time.Duration` format, if only a number is specified it is interpreted as seconds.

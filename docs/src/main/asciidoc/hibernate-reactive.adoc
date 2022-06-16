@@ -171,7 +171,7 @@ This is useful to have a data set ready for your tests or demos.
 
 There are various optional properties useful to refine your session factory or guide Quarkus' guesses.
 
-When no properties are set, Quarkus can typically infer everything it needs to setup Hibernate Reactive
+When no properties are set, Quarkus can typically infer everything it needs to set up Hibernate Reactive
 and will have it use the default datasource.
 
 The configuration properties listed here allow you to override such defaults, and customize and tune various aspects.

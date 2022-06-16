@@ -142,7 +142,7 @@ and the Cloud Event response.  In this example the `annotatedChain` function wil
 by the `annotated` Cloud Event type and the response will be mapped to a `lastChainLink` type
 and `annotated` Cloud Event source.
 
-So, if look at all the functions defined within `SimpleFunctionChain` you'll notice that one function triggers the next.
+So, if you look at all the functions defined within `SimpleFunctionChain` you'll notice that one function triggers the next.
 The last function that is triggered is `lastChainLink`.
 
 [source, java]
@@ -230,7 +230,7 @@ Again, make sure to replace `yourAccountName` with your docker or quay account n
 == Deploy to Kubernetes/OpenShift
 
 The first step is to set up the broker in our namespace.
-Following is an example command from the the Knative cli.
+Following is an example command from the Knative cli.
 
 [source, yaml]
 ----
@@ -316,7 +316,7 @@ kubectl apply -n knativetutorial -f src/main/k8s/lastChainLink-trigger.yaml
 == Run the demo
 
 You'll need two different terminal windows.  One to do a curl request to the Broker, the other to watch the pod log
-files so you can see the messages flowing through the Funqy function event chain.
+files, so you can see the messages flowing through the Funqy function event chain.
 
 Make sure you have the `stern` tool installed.  See the Knative Tutorial setup for information on that.  Run stern
 to look for logs outputted by our Funqy deployment
@@ -336,7 +336,7 @@ kubectl get broker default -o jsonpath='{.status.address.url}'
 This will provide you a URL similar to e.g.: `http://broker-ingress.knative-eventing.svc.cluster.local/knativetutorial/default`. Remember this URL.
 
 Next thing we need to do is ssh into our Kubernetes cluster so that we can send a curl request to our broker.
-Following command will create a simple OS pod so we can curl into our functions.
+The following command will create a simple OS pod so we can curl into our functions.
 
 [source,bash]
 ----

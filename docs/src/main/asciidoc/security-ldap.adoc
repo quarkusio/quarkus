@@ -26,7 +26,7 @@ The `/api/public` endpoint can be accessed anonymously.
 The `/api/admin` endpoint is protected with RBAC (Role-Based Access Control) where only users granted with the `adminRole` role can access. At this endpoint, we use the `@RolesAllowed` annotation to declaratively enforce the access constraint.
 The `/api/users/me` endpoint is also protected with RBAC (Role-Based Access Control) where only users granted with the `standardRole` role can access. As a response, it returns a JSON document with details about the user.
 
-WARNING: By default Quarkus will restrict the use of JNDI within an application, as a precaution to try and mitigate any future vulnerabilities similar to log4shell. Because LDAP based auth requires JNDI
+WARNING: By default, Quarkus will restrict the use of JNDI within an application, as a precaution to try and mitigate any future vulnerabilities similar to Log4Shell. Because LDAP based auth requires JNDI
 this protection will be automatically disabled.
 
 == Solution
@@ -124,7 +124,7 @@ public class AdminResource {
 ----
 
 Finally, let's consider the `/api/users/me` endpoint. As you can see from the source code below, we are trusting only users with the `standardRole` role.
-We are using `SecurityContext` to get access to the current authenticated Principal and we return the user's name. This information is loaded from the LDAP server.
+We are using `SecurityContext` to get access to the current authenticated Principal, and we return the user's name. This information is loaded from the LDAP server.
 
 [source,java]
 ----
@@ -191,7 +191,7 @@ Content-Type: text/plain;charset=UTF-8
 public%
 ----
 
-Now, let's try a to hit a protected resource anonymously.
+Now, let's try to hit a protected resource anonymously.
 
 [source,shell]
 ----

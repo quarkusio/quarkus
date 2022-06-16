@@ -11,7 +11,7 @@ This guide demonstrates how your Quarkus application can authorize a bearer toke
 
 The `quarkus-keycloak-authorization` extension is based on `quarkus-oidc` and provides a policy enforcer that enforces access to protected resources based on permissions managed by Keycloak and currently can only be used with the Quarkus xref:security-openid-connect.adoc[OIDC service applications].
 It provides a flexible and dynamic authorization capability based on Resource-Based Access Control.
-In other words, instead of explicitly enforcing access based on some specific access control mechanism (e.g.: RBAC), you just check whether or not a request is allowed to access a resource based on its name, identifier or URI.
+In other words, instead of explicitly enforcing access based on some specific access control mechanism (e.g.: RBAC), you just check whether a request is allowed to access a resource based on its name, identifier or URI.
 
 By externalizing authorization from your application, you are allowed to protect your applications using different access control mechanisms as well as avoid re-deploying your application every time your security requirements change, where Keycloak will be acting as a centralized authorization service from where your protected resources and their associated permissions are managed.
 
@@ -230,7 +230,7 @@ xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will l
 
 Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[/q/dev] and click on a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
 
-You will be asked to login into a `Single Page Application` provided by `OpenID Connect Dev UI`:
+You will be asked to log in into a `Single Page Application` provided by `OpenID Connect Dev UI`:
 
  * Login as `alice` (password: `alice`) who only has a `User Permission` to access the `/api/users/me` resource
  ** accessing `/api/admin` will return `403`
@@ -326,7 +326,7 @@ export access_token=$(\
 
 == Checking Permissions Programmatically
 
-In some cases, you may want to programmatically check whether or not a request is granted to access a protected resource. By 
+In some cases, you may want to programmatically check whether a request is granted to access a protected resource. By
 injecting a `SecurityIdentity` instance in your beans, you are allowed to check permissions as follows:
 
 [source,java]
@@ -368,7 +368,7 @@ public class ProtectedResource {
 }
 ----
 
-Note: If you want to use the `AuthzClient` directly make sure to to set `quarkus.keycloak.policy-enforcer.enable=true` otherwise there is no Bean available for injection.
+Note: If you want to use the `AuthzClient` directly make sure to set `quarkus.keycloak.policy-enforcer.enable=true` otherwise there is no Bean available for injection.
 
 == Mapping Protected Resources
 
@@ -403,7 +403,7 @@ quarkus.keycloak.policy-enforcer.paths.1.enforcement-mode=DISABLED
 
 is no longer required.
 
-If you'd like to block an access to the public resource to anonymous users then you can create an enforcing Keycloak Authorization Policy:
+If you'd like to block access to the public resource to anonymous users then you can create an enforcing Keycloak Authorization Policy:
 
 [source,properties]
 ----
@@ -411,7 +411,7 @@ quarkus.keycloak.policy-enforcer.paths.1.path=/api/public-enforcing
 quarkus.keycloak.policy-enforcer.paths.1.enforcement-mode=ENFORCING
 ----
 
-Note only the default tenant configuration applies when controlling an anonymous access to the public resource is required.
+Note only the default tenant configuration applies when controlling anonymous access to the public resource is required.
 
 == Multi-Tenancy
 

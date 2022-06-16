@@ -35,7 +35,7 @@ If you are not in one of these cases, the compression fails.
 [IMPORTANT]
 .upx is cross-platform.
 ====
-`upx` can compress executables using a different architecture and OS than your host machine. For example, `upx` on a MacOS X machine can compress a Linux 64bits executables.
+`upx` can compress executables using a different architecture and OS than your host machine. For example, `upx` on a macOS machine can compress a Linux 64-bits executables.
 ====
 
 == Configuring the UPX compression

@@ -28,7 +28,7 @@ store it or remember it, will use a hardware token that will generate a proof of
 service or website. This can be done by asking users to press their thumb on their phone, or pressing a button
 on a https://www.yubico.com[YubiKey] on a computer.
 
-So, when you register your user, you use your browser to enter your user information (user name, your name, etc…)
+So, when you register your user, you use your browser to enter your user information (username, your name, etc…)
 and instead of typing a password to identify yourself, you click a button which will invoke the WebAuthn browser
 API which will ask you to do something (press a button, use your fingerprint). Then, your browser will generate
 a proof of identity which you can send to your service instead of a password.
@@ -43,7 +43,7 @@ and it will keep generating the same private/public keys for the same target ser
 So, when you register, you send (mostly) a public key instead of a password, and the service stores that information
 as WebAuthn credentials for your new user account, and this is what will identify you later.
 
-Then, when you need to login to that service, instead of typing your password (which doesn't exist, remember?),
+Then, when you need to log in to that service, instead of typing your password (which doesn't exist, remember?),
 you press a button on the login form, and the browser will ask you to do something, and then it will send
 a signature to your service instead of a password. That signature requires the private key that is derived from
 your authenticator hardware and the target service, and so when your service receives it, it can verify that it
@@ -52,7 +52,7 @@ corresponds to the signature of the public key you stored as credentials.
 So, to recap: registration sends a generated public key instead of a password, and login sends a signature for
 that public key, allowing you to verify that the user is who they were when they registered.
 
-In practice, it's a little bit more complex, because there needs to be a handshake with the server before you
+In practice, it's a little more complex, because there needs to be a handshake with the server before you
 can use the hardware authenticator (ask for a challenge and other things), so there are always two calls to your
 service: one before login or registration, before calling the hardware authenticator, and then the normal
 login or registration.
@@ -69,7 +69,7 @@ In this example, we build a very simple microservice which offers four endpoints
 * `/api/admin`
 
 The `/api/public` endpoint can be accessed anonymously.
-The `/api/public/me` endpoint can be accessed anonymously and returns the current user name if there is one, or `<not logged in>` if not.
+The `/api/public/me` endpoint can be accessed anonymously and returns the current username if there is one, or `<not logged in>` if not.
 The `/api/admin` endpoint is protected with RBAC (Role-Based Access Control) where only users granted with the `admin` role can access. At this endpoint, we use the `@RolesAllowed` annotation to declaratively enforce the access constraint.
 The `/api/users/me` endpoint is also protected with RBAC (Role-Based Access Control) where only users granted with the `user` role can access. As a response, it returns a JSON document with details about the user.
 
@@ -386,18 +386,18 @@ public class User extends PanacheEntity {
 }
 ----
 
-==== A note about user names and credential IDs
+==== A note about usernames and credential IDs
 
-WebAuthn relies on a combination of user names (unique per user) and credential IDs (unique per authenticator device).
+WebAuthn relies on a combination of usernames (unique per user) and credential IDs (unique per authenticator device).
 
 The reasons why there are two such identifiers, and why they are not unique keys for the credentials themselves are:
 
-- A single user can have more than one authenticator device, which means a single user name can map to multiple credential IDs,
+- A single user can have more than one authenticator device, which means a single username can map to multiple credential IDs,
   all of which identify the same user.
 - An authenticator device may be shared by multiple users, because a single person may want multiple user accounts with different
-  user names, all of which having the same authenticator device. So a single credential ID may be used by multiple different users.
+  usernames, all of which having the same authenticator device. So a single credential ID may be used by multiple different users.
 
-The combination of user name and credential ID should be a unicity constraint for your credentials table, though.
+The combination of username and credential ID should be a unicity constraint for your credentials table, though.
 
 === Exposing your entities to Quarkus WebAuthn
 
@@ -654,7 +654,7 @@ image::webauthn-1.png[role="thumb"]
 The current user is displayed on the left, and you can use the top menu to try accessing the public API, which
 should work, while the user and admin APIs will fail and redirect you to the current page.
 
-Start by registering your WebAuthn credentials by entering a user name, first and last names on the `Register`
+Start by registering your WebAuthn credentials by entering a username, first and last names on the `Register`
 form on the right, then pressing the `Register` button:
 
 image::webauthn-2.png[role="thumb"]
@@ -667,11 +667,11 @@ You will then be logged in, and can check that the user API is now accessible:
 
 image::webauthn-4.png[role="thumb"]
 
-At this stage you can `Logout` and enter your user name in the `Login` form:
+At this stage you can `Logout` and enter your username in the `Login` form:
 
 image::webauthn-5.png[role="thumb"]
 
-Then press the `Login` button and you will be logged in:
+Then press the `Login` button, and you will be logged in:
 
 image::webauthn-4.png[role="thumb"]
 
@@ -1290,7 +1290,7 @@ public class TestUserProvider extends MyWebAuthnSetup {
     @Override
     public Uni<Void> updateOrStoreWebAuthnCredentials(Authenticator authenticator) {
         // delegate the scooby user to the manual endpoint, because if we do it here it will be
-        // created/udated twice
+        // created/updated twice
         if(authenticator.getUserName().equals("scooby"))
             return Uni.createFrom().nullItem();
         return super.updateOrStoreWebAuthnCredentials(authenticator);

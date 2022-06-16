@@ -264,8 +264,8 @@ Check the full list of events on https://smallrye.io/smallrye-mutiny/getting-sta
 |transform | `onItem().transform(Function<I, O> function);` | Transform the event into another event using a synchronous function.
 The downstream receives the result of the function (or a failure if the transformation failed).
 |transformToUni | `onItem().transformToUni(Function<I, Uni<O>> function);` | Transform the event into another event using an asynchronous function. The downstream receives the item emitted by the produced Uni (or a failure if the transformation failed). If the produced Uni emits a failure, that failure is passed to the downstream.
-|invoke | `onItem().invoke(Consumer<I> consumer)` | Invokes the synchronous consumer. This is particularly convenient to execute side-effects actions. The downstream receives the original event, or a failure if the consumer throws an exception
-| call | `onItem().call(Function<I, Uni<?>>)` | Invokes the asynchronous function. This is particularly convenient to execute asynchronous side-effect actions.The downstream receives the original event, or a failure if the consumer throws an exception or if the produced Uni emits a failure.
+|invoke | `onItem().invoke(Consumer<I> consumer)` | Invokes the synchronous consumer. This is particularly convenient to execute side effects actions. The downstream receives the original event, or a failure if the consumer throws an exception
+| call | `onItem().call(Function<I, Uni<?>>)` | Invokes the asynchronous function. This is particularly convenient to execute asynchronous side effect actions.The downstream receives the original event, or a failure if the consumer throws an exception or if the produced Uni emits a failure.
 | fail | `onItem().failWith(Function<I, Throwable>)` | Emits a failure when it receives the event.
 | complete (Multi only) | `onItem().complete()` | Emits the completion event when it receives the event.
 |===

@@ -90,7 +90,7 @@ include::{includes}/devtools/dev.adoc[]
 
 :!devtools-wrapped:
 
-All of the health REST endpoints return a simple JSON object with two fields:
+All `health` REST endpoints return a simple JSON object with two fields:
 
 * `status` -- the overall result of all the health check procedures
 * `checks` -- an array of individual checks
@@ -279,7 +279,7 @@ public class DatabaseConnectionHealthCheck implements HealthCheck {
 }
 ----
 
-NOTE: Until now we used a simplified method of building a `HealthCheckResponse`
+NOTE: Until now, we used a simplified method of building a `HealthCheckResponse`
 through the `HealthCheckResponse#up(String)` (there is also
 `HealthCheckResponse#down(String)`) which will directly build the response object.
 From now on, we utilize the full builder capabilities provided by the
@@ -355,7 +355,7 @@ error along with the health check response.
 
 == Context propagation into the health check invocations
 
-For the perfomance reasons the context (e.g., CDI or security context) is not propagated into each health check invocation. However, if you need to enable this functionality you can set the config property `quarkus.smallrye-health.context-propagation=true` to allow the context propagation into every health check call.
+For performance reasons, the context (e.g., CDI or security context) is not propagated into each health check invocation. However, if you need to enable this functionality you can set the config property `quarkus.smallrye-health.context-propagation=true` to allow the context propagation into every health check call.
 
 == Reactive health checks
 
@@ -412,7 +412,7 @@ image:health-ui-screenshot01.png[alt=Health UI]
 == Conclusion
 
 SmallRye Health provides a way for your application to distribute information
-about its healthiness state to state whether or not it is able to function properly. 
+about its healthiness state to state whether it is able to function properly.
 Liveness checks are utilized to tell whether the application should be restarted and 
 readiness checks are used to tell whether the application is able to process requests. 
 

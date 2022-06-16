@@ -632,7 +632,7 @@ Setting up a mock HTTP server, against which tests are run, is a common testing 
 Examples of such servers are link:http://wiremock.org/[Wiremock] and link:https://docs.hoverfly.io/projects/hoverfly-java/en/latest/index.html[Hoverfly].
 In this section we'll demonstrate how Wiremock can be leveraged for testing the `ExtensionsService` which was developed above.
 
-First of all, Wiremock needs to be added as a test dependency. For a Maven project that would happen like so:
+First, Wiremock needs to be added as a test dependency. For a Maven project that would happen like so:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml

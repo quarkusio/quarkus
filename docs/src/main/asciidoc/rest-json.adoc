@@ -171,7 +171,7 @@ public class FruitResource {
 }
 ----
 
-The implementation is pretty straightforward and you just need to define your endpoints using the JAX-RS annotations.
+The implementation is pretty straightforward, and you just need to define your endpoints using the JAX-RS annotations.
 
 The `Fruit` objects will be automatically serialized/deserialized by https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] or https://github.com/FasterXML/jackson[Jackson],
 depending on the extension you chose when initializing the project.
@@ -193,7 +193,7 @@ In Quarkus, the default Jackson `ObjectMapper` obtained via CDI (and consumed by
 (by disabling the `DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES` feature).
 
 You can restore the default behavior of Jackson by setting `quarkus.jackson.fail-on-unknown-properties=true` in your `application.properties`
-or on a per class basis via `@JsonIgnoreProperties(ignoreUnknown = false)`.
+or on a per-class basis via `@JsonIgnoreProperties(ignoreUnknown = false)`.
 
 Furthermore, the `ObjectMapper` is configured to format dates and time in ISO-8601
 (by disabling the `SerializationFeature.WRITE_DATES_AS_TIMESTAMPS` feature).
@@ -450,7 +450,7 @@ Now let's add a simple web page to display our list of legumes.
 In the `src/main/resources/META-INF/resources` directory, add a `legumes.html` file with the content from this
 {quickstarts-blob-url}/rest-json-quickstart/src/main/resources/META-INF/resources/legumes.html[legumes.html] file in it.
 
-Open a browser to http://localhost:8080/legumes.html and you will see our list of legumes.
+Open a browser to http://localhost:8080/legumes.html, and you will see our list of legumes.
 
 The interesting part starts when running the application as a native executable:
 
@@ -467,7 +467,7 @@ include::{includes}/devtools/build-native.adoc[]
 No legumes there.
 
 As mentioned above, the issue is that Quarkus was not able to determine the `Legume` class will require some reflection by analyzing the REST endpoints.
-The JSON serialization library tries to get the list of fields of `Legume` and gets an empty list so it does not serialize the fields' data.
+The JSON serialization library tries to get the list of fields of `Legume` and gets an empty list, so it does not serialize the fields' data.
 
 [NOTE]
 ====

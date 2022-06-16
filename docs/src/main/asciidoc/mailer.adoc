@@ -175,7 +175,7 @@ html body:
 == Configuring the mailer
 
 It's time to configure the mailer to not simulate the sending of the emails.
-The Quarkus mailer is using SMTP, so make sure you have access to a SMTP server.
+The Quarkus mailer is using SMTP, so make sure you have access to an SMTP server.
 
 In the `src/main/resources/application.properties` file, you need to configure the host, port, username, password as well as the other configuration aspect.
 Note that the password can also be configured using system properties and environment variables.

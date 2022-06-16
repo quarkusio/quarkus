@@ -179,7 +179,7 @@ One may also combine multiple native build options by separating with a comma, e
 [TIP]
 ====
 Remember that if an argument for `-Dquarkus.native.additional-build-args` includes the `,` symbol,
-it needs to be escaped to be processed correcly, e.g. `\\,`.
+it needs to be escaped to be processed correctly, e.g. `\\,`.
 ====
 
 == Inspecting Native Executables
@@ -245,7 +245,7 @@ strings ./target/debugging-native-1.0.0-SNAPSHOT-runner | grep core.VM
 ----
 
 Finally, using `readelf` we can inspect different sections of the binary.
-For example, we can see how the heap and text sections take most of binary:
+For example, we can see how the heap and text sections take most of the binary:
 
 [source,bash]
 ----
@@ -652,7 +652,7 @@ Trace: Object was reached by
 ----
 
 The error messages point to the code in the example,
-but it can be suprising that a reference to `DnsClient` appears.
+but it can be surprising that a reference to `DnsClient` appears.
 Why is that?
 The key is in what happens inside `KeyPairGenerator.initialize()` method call.
 It uses `JCAUtil.getSecureRandom()` which is why this is problematic,
@@ -778,7 +778,7 @@ Next, generate a flame graph using the data captured via `perf record`:
 perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl | ${FG_HOME}/flamegraph.pl > flamegraph.svg
 ----
 
-The flame graph is an svg file that a web browser, such as Firefox, can easily display.
+The flame graph is a svg file that a web browser, such as Firefox, can easily display.
 After the above two commands complete one can open `flamegraph.svg` in their browser:
 
 image::native-reference-perf-flamegraph-no-symbols.svg[Perf flamegraph without symbols]
@@ -850,7 +850,7 @@ image::native-reference-perf-flamegraph-symbols.svg[Perf flamegraph with symbols
 
 === Multi-Thread
 
-Multi-threaded programs might require special attention when trying to understand their runtime behaviour.
+Multithreaded programs might require special attention when trying to understand their runtime behaviour.
 To demonstrate this, add this `MulticastResource` code to your project
 (example courtesy of link:https://github.com/apangin/java-profiling-presentation/blob/master/src/demo6/DatagramTest.java[Andrei Pangin's Java Profiling presentation]):
 
@@ -1023,7 +1023,7 @@ public class CrashResource {
 ----
 
 This code will try to copy 256 bytes from address `0x0` to `0x80` resulting in a Segmentation Fault.
-To verify this compile and run the example application:
+To verify this, compile and run the example application:
 
 [source,bash,subs=attributes+]
 ----
@@ -1260,7 +1260,7 @@ Note, however, that despite being able to get a backtrace we can still not list 
 ----
 
 This is because `gdb` is not aware of the location of the source files.
-We are running the executable outside of the target directory.
+We are running the executable outside the target directory.
 To fix this we can either rerun `gdb` from the target directory or,
 run `directory target/debugging-native-1.0.0-SNAPSHOT-native-image-source-jar/sources` e.g.:
 
@@ -1311,7 +1311,7 @@ so it has to do more work to complete the analysis step.
 
 === Why is runtime performance of a native executable inferior compared to JVM mode?
 
-As with most things in life there are some trade offs involved when choosing native compilation over JVM mode.
+As with most things in life there are some trade-offs involved when choosing native compilation over JVM mode.
 So depending on the application the runtime performance of a native application might be slower compared to JVM mode,
 though that’s not always the case.
 
@@ -1415,7 +1415,7 @@ Although Mandrel can generate debug symbols and these contain a fair amount of i
 including what is a pointer field vs a primitive field, this information cannot be used as is to detect memory leaks or find dominator objects.
 This is because it has no idea what constitutes a root pointer nor how to recursively trace pointers from those roots.
 
-=== Can I build and run this examples outside of a container in Linux?
+=== Can I build and run this examples outside a container in Linux?
 
 Yes you can.
 In fact, debugging native executables on a Linux bare metal box offers the best possible experience.
@@ -1480,7 +1480,7 @@ perf report --stdio -F+srcline
 ----
 
 The performance penalty of preserving the frame pointer is due to using the extra register for stack walking,
-particularly in `x86_64` compared to `aarch64` where there are less registers available.
+particularly in `x86_64` compared to `aarch64` where there are fewer registers available.
 Using this extra register reduces the number of registers that are available for other work,
 which can lead to performance penalties.
 

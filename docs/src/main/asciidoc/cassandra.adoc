@@ -118,7 +118,7 @@ Note also the special return type of the `findAll` method,
 link:https://docs.datastax.com/en/drivers/java/latest/com/datastax/oss/driver/api/core/PagingIterable.html[`PagingIterable`]:
 it's the base type of result sets returned by the driver.
 
-Finally, let's create the a Mapper interface:
+Finally, let's create the Mapper interface:
 
 [source,java]
 ----
@@ -410,7 +410,7 @@ TIP:  If you are not familiar with Mutiny, please check xref:mutiny-primer.adoc[
 
 Let's rewrite our application using reactive programming with Mutiny.
 
-First, let's to declare another DAO interface that works in a reactive way:
+First, let's declare another DAO interface that works in a reactive way:
 
 [source,java]
 ----
@@ -645,7 +645,7 @@ Remove any dependency to Micrometer from your pom.xml, then add the following on
 === Enabling Cassandra Metrics
 
 Even when metrics are enabled in your application, the Cassandra client will not report any metrics,
-unless you opt-in for this feature. So your next step is to enable Cassandra metrics in your
+unless you opt in for this feature. So your next step is to enable Cassandra metrics in your
 `application.properties` file.
 
 [source,properties]

@@ -78,9 +78,9 @@ quarkus.infinispan-client.client-intelligence=BASIC
 
 To use the Infinispan client extension, you need at least one running instance of Infinispan Server.
 
-Check out our 5 minute https://infinispan.org/get-started/[Getting stated with Infinispan] tutorial to run Infinispan Server locally.
+Check out our 5-minute https://infinispan.org/get-started/[Getting stated with Infinispan] tutorial to run Infinispan Server locally.
 
-Infinispan Server also enables authentication and security authorization by default so you need to create a user with permissions.
+Infinispan Server also enables authentication and security authorization by default, so you need to create a user with permissions.
 
 * If you run the Infinispan Server image, pass the `USER="admin"` and `PASS="password"` parameters.
 * If you run the bare metal distribution, use the Command Line Interface (CLI) as follows:
@@ -109,8 +109,8 @@ You must configure authentication in the `hotrod-client.properties` file if you 
 
 == Serialization (Key Value types support)
 
-By default the client will support keys and values of the following types: byte[],
-primitive wrappers (eg. Integer, Long, Double etc.), String, Date and Instant. User types require
+By default, the client will support keys and values of the following types: byte[],
+primitive wrappers (e.g. Integer, Long, Double), String, Date and Instant. User types require
 some additional steps that are detailed here. Let's say we have the following user classes:
 
 .Author.java
@@ -398,10 +398,10 @@ NOTE: The above produced Marshaller method MUST return `MessageMarshaller` witho
 
 As you saw above we support the user injecting Marshaller configuration. You can do the inverse with
 the Infinispan client extension providing injection for `RemoteCacheManager` and `RemoteCache` objects.
-There is one global `RemoteCacheManager` that takes all of the configuration
+There is one global `RemoteCacheManager` that takes all the configuration
 parameters setup in the above sections.
 
-It is very simple to inject these components. All you need to do is to add the Inject annotation to
+It is very simple to inject these components. All you need to do is to add the `@Inject` annotation to
 the field, constructor or method. In the below code we utilize field and constructor injection.
 
 .SomeClass.java
@@ -431,7 +431,7 @@ You need to register the generated Protobuf schemas with Infinispan Server to pe
 You can check the schemas that exist under the `Schemas` tab by logging into
 Infinispan Console at `http://localhost:11222`
 
-By default Protobuf schemas generated this way will be registered by this extension when the client first connects.
+By default, Protobuf schemas generated this way will be registered by this extension when the client first connects.
 However, it might be required to handle the registration manually as a schema may evolve over time when used in
 production, so you can disable this from occurring by configuring the
 `quarkus.infinispan-client.use-schema-registration` to `false`.
@@ -465,7 +465,7 @@ Infinispan also has a notion of counters and the Quarkus Infinispan client suppo
 the box.
 
 The Quarkus Infinispan client extension allows for Dependency Injection
-of the `CounterManager` directly. All you need to do is annotate your field, constructor or method
+of the `CounterManager` directly. All you need to do is annotate your field, constructor or method,
 and you get it with no fuss. You can then use counters as you would normally.
 
 [source,java]
@@ -496,7 +496,7 @@ at xref:native-and-ssl.adoc[Using SSL With Native Executables].
 == Additional Features
 
 The Infinispan Client has additional features that were not mentioned here. This means this
-feature was not tested in a Quarkus environment and they may or may not work. Please let us
+feature was not tested in a Quarkus environment, and they may or may not work. Please let us
 know if you need these added!
 
 [[dev-services]]
@@ -536,7 +536,7 @@ You can set the port by configuring the `quarkus.infinispan-client.devservices.p
 
 == Testing helpers
 
-To start a Infinispan Server for your unit tests, Quarkus provides one `QuarkusTestResourceLifecycleManager` that relies on link:https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#junit-testing[Infinispan Server Test Container].
+To start an Infinispan Server for your unit tests, Quarkus provides one `QuarkusTestResourceLifecycleManager` that relies on link:https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#junit-testing[Infinispan Server Test Container].
 
 - `io.quarkus.test.infinispan.client.InfinispanTestResource` will start a single instance on port 11222 with user 'admin' and password 'password'.
 

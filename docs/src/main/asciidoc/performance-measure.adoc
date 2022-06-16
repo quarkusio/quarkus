@@ -14,7 +14,7 @@ This guide covers:
 * which additional flags will Quarkus apply to native-image by default
 
 All of our tests are run on the same hardware for a given batch.
-It goes without saying but it's better when you say it.
+It goes without saying, but it's better when you say it.
 
 == How do we measure memory usage
 
@@ -48,7 +48,7 @@ It is important to measure the whole memory to see the impact of a Cloud Native 
 It is particularly true of container environments which will kill a process based on its full RSS memory usage.
 
 Likewise, don't fall into the trap of only measuring private memory which is what the process uses that is not shareable with other processes.
-While private memory might be useful in a environment deploying many different applications (and thus sharing memory a lot),
+While private memory might be useful in an environment deploying many different applications (and thus sharing memory a lot),
 it is very misleading in environments like Kubernetes/OpenShift.
 
 === Measuring Memory Correctly on Docker
@@ -225,7 +225,7 @@ We prefer listing services explicitly as it produces better optimised binaries. 
 
 === Better default for Garbage Collection implementation
 
-The default in GraalVM seems meant to optimise for short lived processes.
+The default in GraalVM seems meant to optimise for short-lived processes.
 
 Quarkus defaults to server applications, so we switch to a better default by setting
  `-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime`.
@@ -234,10 +234,10 @@ Quarkus defaults to server applications, so we switch to a better default by set
 
 This section is provided as high level guidance, but can't presume to be comprehensive as some flags are controlled
  dynamically by the extensions, the platform you're building on, configuration details, your code and possibly
- a combination of any of these.
+ a combination of these.
 
 Generally speaking the ones listed here are those most likely to affect performance metrics, but in the right
-circumstances one could observe non negligible impact from the other flags too.
+circumstances one could observe non-negligible impact from the other flags too.
 
 If you're to investigate some differences in detail make sure to check what Quarkus is invoking exactly: when the build
 plugin is producing a native image, the full command lines are logged.

@@ -324,7 +324,7 @@ quarkus.mailer.password=YOURGENERATEDAPPLICATIONPASSWORD
 [NOTE]
 ====
 The `quarkus.mailer.auth-methods` configuration option is needed for the Quarkus mailer to support password authentication with Gmail.
-By default both the mailer and Gmail default to `XOAUTH2` which requires registering an application, getting tokens, etc.
+By default, both the mailer and Gmail default to `XOAUTH2` which requires registering an application, getting tokens, etc.
 ====
 
 == Using SSL with native executables
@@ -368,7 +368,7 @@ quarkus.mailer.trust-store.password=secret # the trust store password if any
 quarkus.mailer.trust-store.type=JKS # the type of trust store if it can't be deduced from the file extension
 ----
 
-Quarkus mailer supports JKS, PCKS#12 and PEM trust stores.
+Quarkus mailer supports JKS, PKCS#12 and PEM trust stores.
 For PEM, you can configure multiple files.
 For JKS and PCKS#12, you can configure the password if any.
 

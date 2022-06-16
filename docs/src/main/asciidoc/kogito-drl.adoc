@@ -84,7 +84,7 @@ implementation("org.kie.kogito:kogito-quarkus-rules")
 == Writing the application
 
 Let's start from the application domain model.
-This application will approve Loan Applications so we have a class with all the details of the wanted Loan:
+This application will approve Loan Applications, so we have a class with all the details of the wanted Loan:
 
 [source,java]
 ----

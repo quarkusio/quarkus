@@ -132,7 +132,7 @@ personRepository.delete(person);
 val allPersons = personRepository.listAll()
 
 // finding a specific person by ID
-// here we build a new ObjectId but you can also retrieve it from the existing entity after being persisted
+// here we build a new ObjectId, but you can also retrieve it from the existing entity after being persisted
 ObjectId personId = new ObjectId(idAsString);
 person = personRepository.findById(personId) ?: throw Exception("No person with that ID")
 

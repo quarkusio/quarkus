@@ -41,7 +41,7 @@ The operation of compiling Java bytecode into a native system-specific machine c
   ** The build time corresponds to all the actions you apply to your Java source files to convert them into something runnable (class files, jar/war, native images).
   Usually this stage is composed by the compilation, annotation processing, bytecode generation, etc. At this point, everything is under the developer's scope and control.
   ** The runtime is all the actions that happen when you execute your application.
-  It's obviously focused on starting your business-oriented actions but it relies on a lot of technical actions like loading libraries and configuration files, scanning the application's classpath, configuring the dependency injection, setting up your Object-Relational Mapping, instantiating your REST controllers, etc.
+  It's obviously focused on starting your business-oriented actions, but it relies on a lot of technical actions like loading libraries and configuration files, scanning the application's classpath, configuring the dependency injection, setting up your Object-Relational Mapping, instantiating your REST controllers, etc.
 
 Usually, Java frameworks do their bootstrapping during the runtime before actually starting the application "Business oriented layer". During bootstrap, frameworks dynamically collect metadata by scanning the classpath to find configurations, entity definitions, dependency injection binding, etc. in order to instantiate proper objects through reflection. The main consequences are:
 
@@ -394,12 +394,12 @@ The key points are:
 
 Quarkus does not provide any way to initialize a Gradle project for extensions yet.
 
-As mentionned before, an extension is composed of two modules:
+As mentioned before, an extension is composed of two modules:
 
 * `runtime`
 * `deployment`
 
-We are going to create a Gradle multi module project with those two modules. Here is a simple `settings.gradle` example file:
+We are going to create a Gradle multi-module project with those two modules. Here is a simple `settings.gradle` example file:
 
 [source, groovy]
 ----
@@ -551,7 +551,7 @@ public class GreetingExtensionServlet extends HttpServlet { // <1>
 === Deploying the Greeting feature
 
 Quarkus magic relies on bytecode generation at build time rather than waiting for the runtime code evaluation, that's the role of your extension's `deployment` module.
-Calm down, we know, bytecode is hard and you don't want to do it manually, Quarkus proposes a high level API to make your life easier.
+Calm down, we know, bytecode is hard and you don't want to do it manually. Quarkus proposes a high level API to make your life easier.
 Thanks to basic concepts, you will describe the items to produce/consume and the corresponding steps in order to generate the bytecode to produce during the deployment time.
 
 The `io.quarkus.builder.item.BuildItem` concept represents object instances you will produce or consume (and at some point convert into bytecode) thanks to methods annotated with `@io.quarkus.deployment.annotations.BuildStep` which describe your extension's deployment tasks.
@@ -722,7 +722,7 @@ public class GreetingExtensionTest {
 ----
 
 <1> We register a Junit Extension which will start a Quarkus application with the Greeting extension.
-<2> We verify the application has a `greeting` endpoint responding to a HTTP GET request with a OK status (200) and a plain text body containing `Hello`
+<2> We verify the application has a `greeting` endpoint responding to an HTTP GET request with an OK status (200) and a plain text body containing `Hello`
 
 Time to test and install to our local maven repository!
 

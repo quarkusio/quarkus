@@ -35,7 +35,7 @@ Add the following dependency:
 
 === Token Endpoint Configuration
 
-By default the token endpoint address is discovered by adding a `/.well-known/openid-configuration` path to the configured `quarkus.oidc-client.auth-server-url`.
+By default, the token endpoint address is discovered by adding a `/.well-known/openid-configuration` path to the configured `quarkus.oidc-client.auth-server-url`.
 
 For example, given this Keycloak URL:
 
@@ -46,7 +46,7 @@ quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus
 
 `OidcClient` will discover that the token endpoint URL is `http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens`.
 
-Alternatively, if the discovery endpoint is not available or you would like to save on the discovery endpoint roundtrip, you can disable the discovery and configure the token endpoint address with a relative path value, for example:
+Alternatively, if the discovery endpoint is not available or you would like to save on the discovery endpoint round-trip, you can disable the discovery and configure the token endpoint address with a relative path value, for example:
 
 [source, properties]
 ----
@@ -112,7 +112,7 @@ It can be further customized using a `quarkus.oidc-client.grant-options.password
 
 `OidcClient` can also help with acquiring the tokens using the grants which require some extra input parameters which can not be captured in the configuration. These grants are `refresh token` (with the external refresh token), `token exchange` and `authorization code`.
 
-Using the `refresh_token` grant which uses an out of band refresh token to acquire a new set of tokens will be required if the existing refresh token has been posted to the current Quarkus endpoint for it to acquire the access token. In this case `OidcClient` needs to be configured as follows:
+Using the `refresh_token` grant which uses an out-of-band refresh token to acquire a new set of tokens will be required if the existing refresh token has been posted to the current Quarkus endpoint for it to acquire the access token. In this case `OidcClient` needs to be configured as follows:
 
 [source,properties]
 ----
@@ -379,7 +379,7 @@ Note it will also bring `io.quarkus:quarkus-oidc-client`.
 
 It works similarly to the way `OidcClientRequestFilter` does (see <<oidc-client-filter, Use OidcClient in MicroProfile RestClient client filter>>) - it uses `OidcClient` to acquire the access token, refresh it if needed, and set it as an HTTP `Authorization` `Bearer` scheme value. The difference is that it works with xref:rest-client-reactive.adoc[Reactive RestClient] and implements a non-blocking client filter which does not block the current IO thread when acquiring or refreshing the tokens.
 
-`OidcClientRequestReactiveFilter` delays an initial token acquisition until it is executed to avoid blocking an IO thread and it currently can only be registered with `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotation:
+`OidcClientRequestReactiveFilter` delays an initial token acquisition until it is executed to avoid blocking an IO thread, and it currently can only be registered with `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotation:
 
 [source,java]
 ----
@@ -863,7 +863,7 @@ quarkus.oidc-client.grant-options.exchange.audience=quarkus-app-exchange
 quarkus.oidc-token-propagation.exchange-token=true
 ----
 
-Note `AccessTokenRequestFilter` will use `OidcClient` to exchange the current token and you can use `quarkus.oidc-client.grant-options.exchange` to set the additional exchange properties expected by your OpenID Connect Provider.
+Note `AccessTokenRequestFilter` will use `OidcClient` to exchange the current token, and you can use `quarkus.oidc-client.grant-options.exchange` to set the additional exchange properties expected by your OpenID Connect Provider.
 
 `AccessTokenRequestFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-token-propagation.client-name` configuration property.
 
@@ -949,7 +949,7 @@ Add the following Maven Dependency:
 The `quarkus-oidc-token-propagation-reactive` extension provides `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter` which can be used to propagate the current `Bearer` or `Authorization Code Flow` access tokens.
 
 The `quarkus-oidc-token-propagation-reactive` extension (as opposed to the non-reactive `quarkus-oidc-token-propagation` extension) does not currently support the exchanging or resigning the tokens before the propagation.
-However these features may be added in the future.
+However, these features may be added in the future.
 
 == References
 

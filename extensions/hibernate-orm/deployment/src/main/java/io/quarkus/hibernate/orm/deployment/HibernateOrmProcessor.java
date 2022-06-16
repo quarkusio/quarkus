@@ -314,7 +314,7 @@ public final class HibernateOrmProcessor {
 
             Optional<String> ds = entry.getValue().datasource;
             if (ds.isEmpty()) {
-                dsName = "quarkus.datasource.jdbc.url";
+                dsName = "quarkus.datasource.username";
             } else {
                 dsName = "quarkus.datasource." + ds.get() + ".username";
             }

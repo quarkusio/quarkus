@@ -5,6 +5,7 @@ import java.util.List;
 
 import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanProcessor;
+import io.quarkus.arc.processor.BeanResolver;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -31,6 +32,15 @@ public final class ValidationPhaseBuildItem extends SimpleBuildItem {
 
     public BeanDeploymentValidator.ValidationContext getContext() {
         return context;
+    }
+
+    /**
+     * The bean resolver can be used to apply the type-safe resolution rules.
+     *
+     * @return the bean resolver
+     */
+    public BeanResolver getBeanResolver() {
+        return beanProcessor.getBeanDeployment().getBeanResolver();
     }
 
     BeanProcessor getBeanProcessor() {

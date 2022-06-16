@@ -137,6 +137,7 @@
         <webjar.codemirror.version>5.62.2</webjar.codemirror.version>
         <!-- we don't add mermaid as a dependency as it brings a ton of things we don't use -->
         <webjar.mermaid.version>8.9.1</webjar.mermaid.version>
+        <webjar.d3js.version>6.6.0</webjar.d3js.version>
 
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.14.6</revapi-maven-plugin.version>
@@ -314,6 +315,11 @@
                 <groupId>org.webjars</groupId>
                 <artifactId>codemirror</artifactId>
                 <version>${webjar.codemirror.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars</groupId>
+                <artifactId>d3js</artifactId>
+                <version>${webjar.d3js.version}</version>
             </dependency>
 
             <dependency>

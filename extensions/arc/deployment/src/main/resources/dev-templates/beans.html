@@ -48,12 +48,13 @@
       <th scope="col">Bean</th>
       <th scope="col">Kind</th>
       <th scope="col">Associated Interceptors</th>
+      <th scope="col">Actions</th>
     </tr>
    </thead>
    <tbody>
     {#for bean in info:devBeanInfos.beans}
     <tr>
-      <td>{bean_count}.</td>
+      <td>{bean_count}</td>
       <td>
        {#display-bean bean/}
       </td>
@@ -68,6 +69,11 @@
          {/set}
        {/for}
        </ul>
+      </td>
+      <td>
+        {#if !info:devBeanInfos.getDependencyGraph(bean.id).links.empty}
+        <a class="btn btn-primary btn-sm" href="beanDependencyGraph?beanId={bean.id}" role="button" title="Show dependency graph"><i class="fa-solid fa-diagram-project"></i></a>
+        {/if}
       </td>
     {/for}
    </tbody>

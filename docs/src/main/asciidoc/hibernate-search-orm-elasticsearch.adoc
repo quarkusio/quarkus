@@ -544,12 +544,14 @@ quarkus.ssl.native=false <1>
 
 quarkus.datasource.db-kind=postgresql <2>
 
-quarkus.hibernate-orm.database.generation=drop-and-create <3>
+%dev.quarkus.hibernate-orm.database.generation=drop-and-create <3>
+%test.quarkus.hibernate-orm.database.generation=drop-and-create <3>
 quarkus.hibernate-orm.sql-load-script=import.sql <4>
 
 quarkus.hibernate-search-orm.elasticsearch.version=7 <5>
 quarkus.hibernate-search-orm.elasticsearch.analysis.configurer=bean:myAnalysisConfigurer <6>
-quarkus.hibernate-search-orm.schema-management.strategy=drop-and-create <7>
+%dev.quarkus.hibernate-search-orm.schema-management.strategy=drop-and-create <7>
+%test.quarkus.hibernate-search-orm.schema-management.strategy=drop-and-create <7>
 quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy=sync <8>
 
 %prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost/quarkus_test <9>
@@ -559,14 +561,14 @@ quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy=sync <8
 ----
 <1> We won't use SSL, so we disable it to have a more compact native executable.
 <2> Let's create a PostgreSQL datasource.
-<3> We will drop and recreate the schema every time we start the application.
-<4> We load some initial data.
+<3> In dev mode and in tests, we will drop and recreate the schema on startup.
+<4> We load some initial data on startup.
 <5> We need to tell Hibernate Search about the version of Elasticsearch we will use.
 It is important because there are significant differences between Elasticsearch mapping syntax depending on the version.
 Since the mapping is created at build time to reduce startup time, Hibernate Search cannot connect to the cluster to automatically detect the version.
 Note that, for OpenSearch, you need to prefix the version with `opensearch:`; see <<opensearch>>.
 <6> We point to the custom `AnalysisConfigurer` which defines the configuration of our analyzers and normalizers.
-<7> Obviously, this is not for production: we drop and recreate the index every time we start the application.
+<7> In dev mode and in tests, we will drop and recreate the index on startup.
 <8> This means that we wait for the entities to be searchable before considering a write complete.
 On a production setup, the `write-sync` default will provide better performance.
 Using `sync` is especially important when testing as you need the entities to be searchable immediately.
@@ -690,7 +692,6 @@ quarkus.hibernate-orm.dialect=org.hibernate.dialect.H2Dialect
 
 quarkus.hibernate-search-orm.elasticsearch.hosts=es1.mycompany.com:9200
 quarkus.hibernate-search-orm.elasticsearch.version=7
-quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy=write-sync
 ----
 
 Using a map based approach, it is also possible to configure named persistence units:
@@ -711,11 +712,9 @@ quarkus.hibernate-orm."inventory".packages=org.acme.model.inventory
 
 quarkus.hibernate-search-orm."users".elasticsearch.hosts=es1.mycompany.com:9200 <5>
 quarkus.hibernate-search-orm."users".elasticsearch.version=7
-quarkus.hibernate-search-orm."users".automatic-indexing.synchronization.strategy=write-sync
 
 quarkus.hibernate-search-orm."inventory".elasticsearch.hosts=es2.mycompany.com:9200 <6>
 quarkus.hibernate-search-orm."inventory".elasticsearch.version=7
-quarkus.hibernate-search-orm."inventory".automatic-indexing.synchronization.strategy=write-sync
 ----
 <1> Define a datasource named `users`.
 <2> Define a datasource named `inventory`.

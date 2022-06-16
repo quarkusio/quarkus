@@ -218,7 +218,7 @@ public class ConfigDescriptionBuildStep {
             typeAndValues.addAllowedValue(Level.WARNING.getName());
         }
 
-        // Map all primatives
+        // Map all primitives
         if (name.equals("int")) {
             name = Integer.class.getName();
         } else if (name.equals("boolean")) {

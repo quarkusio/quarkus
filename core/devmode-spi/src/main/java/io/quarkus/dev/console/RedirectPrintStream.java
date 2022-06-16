@@ -29,7 +29,7 @@ public class RedirectPrintStream extends PrintStream {
         write(new byte[] { (byte) b });
     }
 
-    //@Overide
+    //@Override
     public void write(byte[] buf) {
         write(buf, 0, buf.length);
     }

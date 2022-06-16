@@ -225,7 +225,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                         public void handleChanges(Collection<FileChangeEvent> changes) {
                             //sometimes changes come through as two events
                             //which can cause problems for our CI tests
-                            //and cause unessesary runs.
+                            //and cause unnecessary runs.
                             //we add a half second delay for CI tests, to make sure this does not cause
                             //problems
                             try {

@@ -428,7 +428,7 @@ public class TestSupport implements TestController {
      * values will not be applied until a dev mode restart happens.
      * <p>
      * We also can't apply this as part of the test startup, as by then it is too
-     * late, and the filters have already been resloved.
+     * late, and the filters have already been resolved.
      * <p>
      * We manually check for application.properties changes and apply them.
      */

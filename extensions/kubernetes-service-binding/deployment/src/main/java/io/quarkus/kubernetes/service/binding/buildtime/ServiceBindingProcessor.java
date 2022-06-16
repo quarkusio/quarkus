@@ -147,8 +147,8 @@ public class ServiceBindingProcessor {
                     () -> getDefaultQualifiedKind(defaultsLookupKey).map(ServiceBindingProcessor::apiVersion).orElse(""));
             String kind = provided.kind
                     .orElseGet(() -> getDefaultQualifiedKind(defaultsLookupKey).map(ServiceBindingProcessor::kind)
-                            .orElseThrow(() -> new IllegalStateException("Failed to determing bindable service kind.")));
-            //When a service is partically or fully configured, use the configured binding or fallback to the application name and service id combination.
+                            .orElseThrow(() -> new IllegalStateException("Failed to determine bindable service kind.")));
+            //When a service is partially or fully configured, use the configured binding or fallback to the application name and service id combination.
             return Optional
                     .of(new ServiceBindingRequirementBuildItem(provided.binding.orElse(applicationName + "-" + serviceId),
                             apiVersion, kind, provided.name.orElse(resourceName)));

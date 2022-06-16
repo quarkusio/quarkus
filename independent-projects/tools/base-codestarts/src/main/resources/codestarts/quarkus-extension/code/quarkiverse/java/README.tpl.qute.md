@@ -1,4 +1,6 @@
-# {namespace.name}{extension.name}
+# {doc-title}
+
+[![Version](https://img.shields.io/maven-central/v/{group-id}/{namespace.id}{extension.id}?logo=apache-maven&style=flat-square)](https://search.maven.org/artifact/{group-id}/{namespace.id}{extension.id})
 
 ## Welcome to Quarkiverse!
 

@@ -87,7 +87,7 @@ If you need to configure Keycloak programmatically then consider using https://w
 
 `quarkus-oidc-client` extension provides `OidcClient` for acquiring and refreshing access tokens from OpenID Connect and OAuth2 providers which support `client-credentials`, `password` and `refresh_token` token grants.
 
-`quarkus-oidc-client-filter` extension depends on the `quarkus-oidc-client` extension and provides JAX-RS `OidcClientRequestFilter` which sets the access token acquired by `OidcClient` as an HTTP `Authorization` header's  `Bearer` scheme value. This filter can be registered with MP RestClient implementations injected into the current Quarkus endpoint but it is not related to the authentication requirements of this service endpoint. For example, it can be a public endpoint or it can be protected with MTLS - the important point is that this Quarkus endpoint does not have to be protected itself with the Quarkus OpenID Connect adapter.
+`quarkus-oidc-client-filter` extension depends on the `quarkus-oidc-client` extension and provides JAX-RS `OidcClientRequestFilter` which sets the access token acquired by `OidcClient` as an HTTP `Authorization` header's  `Bearer` scheme value. This filter can be registered with MP RestClient implementations injected into the current Quarkus endpoint, but it is not related to the authentication requirements of this service endpoint. For example, it can be a public endpoint, or it can be protected with MTLS - the important point is that this Quarkus endpoint does not have to be protected itself with the Quarkus OpenID Connect adapter.
 
 `quarkus-oidc-token-propagation` extension depends on the `quarkus-oidc` extension and provides JAX-RS `TokenCredentialRequestFilter` which sets the OpenID Connect Bearer or Authorization Code Flow access token as an HTTP `Authorization` header's  `Bearer` scheme value. This filter can be registered with MP RestClient implementations injected into the current Quarkus endpoint and the Quarkus endpoint must be protected itself with the Quarkus OpenID Connect adapter. This filter can be used to propagate the access token to the downstream services.
 
@@ -100,7 +100,7 @@ See the xref:security-openid-connect-client.adoc[OpenID Connect and Token Propag
 
 It provides an alternative to `quarkus-oidc` Bearer Token Authentication Mechanism. It can currently verify only `JWT` tokens using the PEM keys or refreshable `JWK` key set.
 
-Additionally it provides `JWT Generation API` for creating `signed`, `inner-signed` and/or `encrypted` `JWT` tokens with ease.
+Additionally, it provides `JWT Generation API` for creating `signed`, `inner-signed` and/or `encrypted` `JWT` tokens with ease.
 
 See the xref:security-jwt.adoc[Using SmallRye JWT] guide for more information.
 
@@ -129,9 +129,9 @@ If you have Bearer tokens in a JWT format then all these 3 extensions can be use
 
 `quarkus-smallrye-jwt` can handle locally not only signed but also inner-signed-and-encrypted or only encrypted tokens. In fact `quarkus-oidc` and `quarkus-elytron-security-oauth2` can verify such tokens too but only by treating them as opaque tokens and verifying them via the remote introspection.
 
-`quarkus-elytron-security-oauth2` is the best choice if you need a light weight library for the remote introspection of either opaque or JWT tokens.
+`quarkus-elytron-security-oauth2` is the best choice if you need a lightweight library for the remote introspection of either opaque or JWT tokens.
 
-Note that a choice of using the opaque versus JWT token format is often driven by the architectural considerations. Opaque tokens are usually much shorter than JWT tokens but they require maintaining most of the token associated state in the provider database - the opaque tokens are effectively the database pointers. JWT tokens are significantly longer than the opaque tokens - but the providers are effectively delegating storing most of the token associated state to the client by storing it as the token claims and either signing and/or encrypting them.
+Note that a choice of using the opaque versus JWT token format is often driven by the architectural considerations. Opaque tokens are usually much shorter than JWT tokens, but they require maintaining most of the token associated state in the provider database - the opaque tokens are effectively the database pointers. JWT tokens are significantly longer than the opaque tokens - but the providers are effectively delegating storing most of the token associated state to the client by storing it as the token claims and either signing and/or encrypting them.
 
 Below is a summary of the options.
 
@@ -204,7 +204,7 @@ Please see the xref:security-ldap.adoc[Authenticate with LDAP] guide for more in
 Some extensions such as `OIDC`, `OAuth2`, `SmallRye JWT`, `LDAP` have the inlined `IdentityProvider` implementations which are specific to the supported authentication flow.
 For example, `quarkus-oidc` uses its own `IdentityProvider` to convert a token to `SecurityIdentity`. 
 
-If you use `Basic` or `Form` HTTP-based authentication then you have to add an `IdentityProvider` which can convert a user name and password to `SecurityIdentity`.
+If you use `Basic` or `Form` HTTP-based authentication then you have to add an `IdentityProvider` which can convert a username and password to `SecurityIdentity`.
 
 See xref:security-jpa.adoc[JPA IdentityProvider] and xref:security-jdbc.adoc[JDBC IdentityProvider] for more information.
 You can also use xref:security-testing.adoc#configuring-user-information[User Properties IdentityProvider] for testing.

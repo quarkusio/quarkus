@@ -387,7 +387,7 @@ To disable health reporting, set the `health-enabled` attribute for the channel 
 
 On the inbound side (receiving messages from RabbitMQ), the check verifies that the receiver is connected to the broker.
 
-On the outbound side (sending records to RabbitMQ), the check verifies that the sender is not disconnected from the broker; the sender _may_ still be in an initiliased state (connection not yet attempted), but this is regarded as live/ready.
+On the outbound side (sending records to RabbitMQ), the check verifies that the sender is not disconnected from the broker; the sender _may_ still be in an initialised state (connection not yet attempted), but this is regarded as live/ready.
 
 Note that a message processing failures nacks the message, which is then handled by the `failure-strategy`.
 It's the responsibility of the `failure-strategy` to report the failure and influence the outcome of the checks.
@@ -493,7 +493,7 @@ Type: _int_ | false | `5672`
 
 | [.no-hyphens]#*ssl*#
 
-[.no-hyphens]#_(rabbitmq-ssl)_# | Whether or not the connection should use SSL
+[.no-hyphens]#_(rabbitmq-ssl)_# | Whether the connection should use SSL
 
 Type: _boolean_ | false | `false`
 
@@ -553,7 +553,7 @@ Type: _int_ | false | `10`
 
 Type: _int_ | false | `5000`
 
-| [.no-hyphens]#*user*# | The AMQP user name to use when connecting to the broker
+| [.no-hyphens]#*user*# | The AMQP username to use when connecting to the broker
 
 Type: _string_ | false | `guest`
 
@@ -788,7 +788,7 @@ Type: _int_ | false | `60`
 
 | [.no-hyphens]#*ssl*#
 
-[.no-hyphens]#_(rabbitmq-ssl)_# | Whether or not the connection should use SSL
+[.no-hyphens]#_(rabbitmq-ssl)_# | Whether the connection should use SSL
 
 Type: _boolean_ | false | `false`
 
@@ -828,7 +828,7 @@ Type: _string_ | false |
 
 Type: _boolean_ | false | `false`
 
-| [.no-hyphens]#*user*# | The AMQP user name to use when connecting to the broker
+| [.no-hyphens]#*user*# | The AMQP username to use when connecting to the broker
 
 Type: _string_ | false | `guest`
 

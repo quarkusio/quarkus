@@ -11,11 +11,11 @@ Quarkus allows different beans to interact using asynchronous events, thus promo
 The messages are sent to _virtual addresses_.
 It offers 3 types of delivery mechanism:
 
-- point-to-point - send the message, one consumer receives it. If several consumers listen to the address, a round robin is applied;
+- point-to-point - send the message, one consumer receives it. If several consumers listen to the address, a round-robin is applied;
 - publish/subscribe - publish a message, all the consumers listening to the address are receiving the message;
 - request/reply - send the message and expect a response. The receiver can respond to the message in an asynchronous-fashion
 
-All these delivery mechanism are non-blocking, and are providing one of the fundamental brick to build reactive applications.
+All these delivery mechanisms are non-blocking, and are providing one of the fundamental brick to build reactive applications.
 
 NOTE: The asynchronous message passing feature allows replying to messages which is not supported by Reactive Messaging.
 However, it is limited to single-event behavior (no stream) and to local messages.

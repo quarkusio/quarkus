@@ -22,7 +22,7 @@ Each Quarkus platform is defined with a few artifacts.
 
 Each Quarkus Platform is expected to provide a Maven BOM artifact that
 
-* imports a chosen version of `io.quarkus:quarkus-bom` (the platform BOM may be flattened at the end but it has to be based on some version of `io.quarkus:quarkus-bom`)
+* imports a chosen version of `io.quarkus:quarkus-bom` (the platform BOM may be flattened at the end, but it has to be based on some version of `io.quarkus:quarkus-bom`)
 * includes all the Quarkus extension artifacts (the runtime and the deployment ones) the platform consists of
 * includes all the necessary third-party artifacts that align the transitive dependency versions of the platform extensions to guarantee compatibility between them
 * includes the <<platform-descriptor,platform JSON descriptor>> artifact
@@ -49,7 +49,7 @@ As a string it will look like `<platform-bom-groupId>:<platform-bom-artifactId>-
 E.g. the coordinates of the descriptor for the Quarkus BOM `io.quarkus.platform:quarkus-bom::pom:1.2.3` will be `io.quarkus.platform:quarkus-bom-quarkus-platform-descriptor:1.2.3:json:1.2.3`.
 And for a custom Quarkus platform defined with BOM `org.acme:acme-bom::pom:555` it will be `org.acme:acme-bom-quarkus-platform-descriptor:555:json:555`.
 
-The classifier matching the version of the platform may look confusing at first. But this is what turns the descriptor into a true "fingerprint" of the platform. In both Maven and Gradle, the effective set of the dependency version constraints (or the managed dependencies) is obtained by merging all the imported BOMs and version constraints specified individually in the current project and also its parent(s). The artifact `classifier` is a part of the dependency ID, which could be expressed as `groupId:artifactId:classifier:type`. Which means that if a project imports a couple of BOMs, e.g. `org.apple:apple-bom::pom:1.0` and `org.orange:orange-bom::pom:1.0`, and each of these two BOMs imports a different version `io.quarkus.platform:quarkus-bom::pom`, the Quarkus tools will be able to detect this fact and make the user aware of it, since it *might* not be a safe combination. If the descriptor artifact didn't include the classifer containing the version of the platform then the tools wouldn't be able to detect a potentially incompatible mix of different versions of the same platform in the same project.
+The classifier matching the version of the platform may look confusing at first. But this is what turns the descriptor into a true "fingerprint" of the platform. In both Maven and Gradle, the effective set of the dependency version constraints (or the managed dependencies) is obtained by merging all the imported BOMs and version constraints specified individually in the current project and also its parent(s). The artifact `classifier` is a part of the dependency ID, which could be expressed as `groupId:artifactId:classifier:type`. Which means that if a project imports a couple of BOMs, e.g. `org.apple:apple-bom::pom:1.0` and `org.orange:orange-bom::pom:1.0`, and each of these two BOMs imports a different version `io.quarkus.platform:quarkus-bom::pom`, the Quarkus tools will be able to detect this fact and make the user aware of it, since it *might* not be a safe combination. If the descriptor artifact didn't include the classifier containing the version of the platform then the tools wouldn't be able to detect a potentially incompatible mix of different versions of the same platform in the same project.
 
 The platform descriptor will normally be generated using a Maven plugin, e.g.
 
@@ -88,7 +88,7 @@ The platform descriptor will normally be generated using a Maven plugin, e.g.
 [[platform-properties]]
 === Quarkus Platform Properties
 
-A Quarkus platform may provide its own default values for some of the configuration options.
+A Quarkus platform may provide its own default values for some configuration options.
 
 Quarkus is using https://github.com/smallrye/smallrye-config[SmallRye Config] for wiring application configuration. A Quarkus platform may be used as another source of configuration in the hierarchy of the configuration sources dominated by the application's `application.properties`.
 

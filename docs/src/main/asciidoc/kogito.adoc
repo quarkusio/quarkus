@@ -179,7 +179,7 @@ then
 end
 ----
 
-This is really a simple rule that marks a person who is older that 18 years as an adult.
+This is really a simple rule that marks a person who is older than 18 years as an adult.
 
 This example rule uses Rule Units, a new concept introduced in Kogito that helps users to encapsulate the set of rules and the facts against which those rules will be matched. The facts inserted will be inserted into a `DataStore`, a type-safe entry point. To make everything work, we need to define both the RuleUnit and the DataStore, by creating a new class `PersonUnit` inside `src/main/java/org/acme/kogito` directory:
 
@@ -214,7 +214,7 @@ public class PersonUnit implements RuleUnitData {
 }
 ----
 
-Finally we create a business process that will make use of this rule and some other
+Finally, we create a business process that will make use of this rule and some other
 activities to approve a given person. Using new item wizard (File -> New -> Other -> BPMN2 Model)
 create `persons.bpmn` inside `src/main/resources/org/acme/kogito` folder of the generated project.
 
@@ -237,19 +237,19 @@ To model this process yourself, just follow these steps (start event should be a
 
 * define a process variable with name `person` of type `org.acme.kogito.model.Person`
 * drag the Tasks -> Business Rule Task from the palette and drop it next to start event, link it with start event
-** double click on the business rule task
-*** on tab I/O Parameters, set data input and output (map `person` process variable to input data with name `person` and same for data output)
-*** on tab Business Rule Task, set rule flow group to the FQCN value of the RuleUnit using the `unit:` prefix (`unit:org.acme.kogito.PersonUnit`)
+** double-click on the business rule task
+*** on the tab I/O Parameters, set data input and output (map `person` process variable to input data with name `person` and same for data output)
+*** on the tab Business Rule Task, set rule flow group to the FQCN value of the RuleUnit using the `unit:` prefix (`unit:org.acme.kogito.PersonUnit`)
 * drag the Gateways -> XOR gateway from the palette and drop it next to the business rule task, link it with rule task
 * drag the Tasks -> User Task from the palette and drop it next to the gateway, link it with gateway
-** double click on the user task
-*** on tak User Task, set task name to `ChildrenHandling`
-*** on tab I/O Parameters, set data input (map `person` process variable to input data with name `person`)
+** double-click on the user task
+*** on the tab User Task, set task name to `ChildrenHandling`
+*** on the tab I/O Parameters, set data input (map `person` process variable to input data with name `person`)
 * drag the End Events -> End from the palette and drop it next to the user task, link it with the user task
 * drag the End Events -> End from the palette and drop it next to the gateway, link it with the user task
-* double click on the gateway
-** on tab Gateway, set the diverging direction for the gateway
-** on tab Gateway, set conditions on sequence flow list
+* double-click on the gateway
+** on the tab Gateway, set the diverging direction for the gateway
+** on the tab Gateway, set conditions on sequence flow list
 *** -> going to end event `return person.isAdult() == true;` with language `Java`
 *** -> going to user task `return person.isAdult() == false;` with language `Java`
 * save the file
@@ -264,7 +264,7 @@ include::{includes}/devtools/dev.adoc[]
 
 === Running in JVM Mode
 
-When you're done playing with "dev-mode" you can run it as a standard Java application.
+When you're done playing with dev mode, you can run it as a standard Java application.
 
 First compile it:
 
@@ -326,7 +326,7 @@ curl -X GET http://localhost:8080/persons \
     -H 'accept: application/json'
 ----
 
-To verify the non adult case, send another request with the age set to less than 18
+To verify the non-adult case, send another request with the age set to less than 18
 
 [source,bash]
 ----
@@ -370,12 +370,12 @@ curl -X POST http://localhost:8080/persons/{uuid-1}/ChildrenHandling/{uuid-2} \
 == Enabling persistence
 
 Since 0.3.0 of Kogito, there is an option to enable persistence to preserve process instance state
-across application restarts. That supports long running process instances that can be resumed at any
+across application restarts. That supports long-running process instances that can be resumed at any
 point in time.
 
 === Prerequisites
 
-Kogito uses Infinispan as the persistence service so you need to have Infinispan server installed and running.
+Kogito uses Infinispan as the persistence service, so you need to have Infinispan server installed and running.
 Version of the Infinispan is aligned with Quarkus BOM so make sure the right version is installed.
 
 === Add dependencies to project

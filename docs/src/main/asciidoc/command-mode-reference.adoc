@@ -29,7 +29,7 @@ that exit.
 In this document the `QuarkusApplication` instance is referred to as the application main,
 and a class with a Java main method is the Java main.
 
-The simplest possible command mode application with access to Quarkus API's might appear as follows:
+The simplest possible command mode application with access to Quarkus APIs might appear as follows:
 
 [source,java]
 ----
@@ -53,16 +53,16 @@ public class HelloWorldMain implements QuarkusApplication {
 [sidebar]
 .Got a `ContextNotActiveException`?
 --
-A command mode application (like a CLI) is a bit different from say a HTTP service, there is a single call from the command line.
+A command mode application (like a CLI) is a bit different from say an HTTP service, there is a single call from the command line.
 So the notion of _request_ let alone multiple requests does not exist per se.
-Therefore request scope is not the default.
+Therefore, request scope is not the default.
 
 To get access to your application beans and services, be aware that a `@QuarkusMain` instance is an application scoped bean by default.
 It has access to singletons, application and dependent scoped beans.
 
 If you want to interact with beans that requires a request scope, simply add the `@ActivateRequestContext` annotation on your `run()` method.
 This let `run()` have access to methods like `listAll()` and `query*` methods on a Panache Entity.
-Without it you will eventually get a `ContextNotActiveException` when accessing such classes/beans.
+Without it, you will eventually get a `ContextNotActiveException` when accessing such classes/beans.
 --
 
 === Main method
@@ -99,7 +99,7 @@ The `@QuarkusMain` annotation takes an optional 'name' parameter, and this can b
 main to run using the `quarkus.package.main-class` build time configuration option. If you don't want
 to use annotations this can also be used to specify the fully qualified name of a main class.
 
-By default the `@QuarkusMain` with no name (i.e. the empty string) will be used, and if it is not present
+By default, the `@QuarkusMain` with no name (i.e. the empty string) will be used, and if it is not present
 and `quarkus.package.main-class` is not specified then Quarkus will automatically generate a main class
 that just runs the application.
 
@@ -119,12 +119,12 @@ Shutdown is always initiated by the application main thread returning. If you wa
 and then run like a normal application (i.e. not exit) then you should call `Quarkus.waitForExit` from the main
 thread (A non-command mode application is essentially just running an application that just calls `waitForExit`).
 
-If you want to shut down a running application and you are not in the main thread then you should call `Quarkus.asyncExit`
+If you want to shut down a running application and you are not in the main thread, then you should call `Quarkus.asyncExit`
 in order to unblock the main thread and initiate the shutdown process.
 
 === Development Mode
 
-Also for command mode applications the dev mode is supported.
+Also, for command mode applications, the dev mode is supported.
 When you start your application in dev mode, the command mode application is executed:
 
 include::{includes}/devtools/dev.adoc[]

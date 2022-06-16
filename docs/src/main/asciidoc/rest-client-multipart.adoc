@@ -58,7 +58,7 @@ We are assuming the payload is well-known before the request is sent, so we can 
 If the payload is unknown, you can also use the RESTEasy custom API instead. If that's the case, see the RESTEasy Multipart Providers link at the end of the guide.
 ====
 
-Our first order of business is to setup the model we will be using to define the `multipart/form-data` payload, in the form of a `MultipartBody` POJO.
+Our first order of business is to set up the model we will be using to define the `multipart/form-data` payload, in the form of a `MultipartBody` POJO.
 
 Create a `src/main/java/org/acme/rest/client/multipart/MultipartBody.java` file and set the following content:
 

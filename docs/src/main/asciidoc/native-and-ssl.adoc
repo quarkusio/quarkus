@@ -24,7 +24,7 @@ To complete this guide, you need:
 * GraalVM (Java 11) installed with `JAVA_HOME` and `GRAALVM_HOME` configured appropriately
 * Apache Maven {maven-version}
 
-This guide is based on the REST client guide so you should get this Maven project first.
+This guide is based on the REST client guide, so you should get this Maven project first.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
@@ -194,7 +194,7 @@ $ ls -lh target/rest-client-quickstart-1.0.0-SNAPSHOT-runner
 -rwxrwxr-x. 1 gandrian gandrian 35M Jun 11 13:06 target/rest-client-quickstart-1.0.0-SNAPSHOT-runner
 ----
 
-Yes, it is now **35 MB** whereas it used to be **46 MB**. SSL comes with a 11 MB overhead in native executable size.
+Yes, it is now **35 MB** whereas it used to be **46 MB**. SSL comes with an 11 MB overhead in native executable size.
 
 And there's more to it.
 
@@ -246,7 +246,7 @@ The easiest way to do so is by setting `quarkus.native.additional-build-args`. F
 quarkus.native.additional-build-args=-J-Djavax.net.ssl.trustStore=/tmp/mycerts,-J-Djavax.net.ssl.trustStorePassword=changeit
 ----
 
-will ensure that the certificates of `/tmp/mycerts` are baked into the native binary and used *in addition* to the default cacerts.
+will ensure that the certificates of `/tmp/mycerts` are baked into the native binary and used *in addition* to the default `cacerts`.
 The file containing the custom TrustStore does *not* (and probably should not) have to be present at runtime as its content has been baked into the native binary.
 
 === Run time configuration

@@ -25,7 +25,7 @@ GraalVM imposes a number of constraints and making your application a native exe
 By default, when building a native executable, GraalVM will not include any of the resources that are on the classpath into the native executable it creates.
 Resources that are meant to be part of the native executable need to be configured explicitly.
 
-Quarkus automatically includes the resources present in `META-INF/resources` (the web resources) but, outside of this directory, you are on your own.
+Quarkus automatically includes the resources present in `META-INF/resources` (the web resources) but, outside this directory, you are on your own.
 
 [WARNING]
 ====
@@ -53,7 +53,7 @@ will include:
 * all files in the `foo/` directory and its subdirectories except for files in `foo/private/` and its subdirectories,
 * all text files in the `bar/` directory and its subdirectories.
 
-If globs are not sufficiently precise for your use case and you need to rely on regular expressions or if you prefer relying on the GraalVM infrastructure,
+If globs are not sufficiently precise for your use case and you need to rely on regular expressions, or if you prefer relying on the GraalVM infrastructure,
 you can also create a `resources-config.json` (the most common location is within `src/main/resources`) JSON file defining which resources should be included:
 
 [source,json]
@@ -293,7 +293,7 @@ When using Maven, we could use the following configuration:
 By default, Quarkus initializes all classes at build time.
 
 There are cases where the initialization of certain classes is done in a static block needs to be postponed to runtime.
-Typically omitting such configuration would result in a runtime exception like the following:
+Typically, omitting such configuration would result in a runtime exception like the following:
 
 [source]
 ----

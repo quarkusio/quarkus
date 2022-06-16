@@ -15,7 +15,7 @@ Hibernate Reactive with Panache focuses on making your entities trivial and fun 
 
 == First: an example
 
-What we're doing in Panache is allow you to write your Hibernate Reactive entities like this:
+What we're doing in Panache allows you to write your Hibernate Reactive entities like this:
 
 [source,java]
 ----
@@ -453,7 +453,7 @@ All methods accepting a query string also accept the following simplified query 
 Uni<List<Person>> persons = Person.list("order by name,birth");
 ----
 
-But these methods also accept an optional `Sort` parameter, which allows your to abstract your sorting:
+But these methods also accept an optional `Sort` parameter, which allows you to abstract your sorting:
 
 [source,java]
 ----
@@ -653,7 +653,7 @@ you can use `Panache.withTransaction()` for the same effect. We recommend doing
 so at your application entry point boundaries like your REST endpoint controllers.
 
 NOTE: You cannot use `@Transactional` with Hibernate Reactive for your transactions: you must use `@ReactiveTransactional`,
-and your annotated method must return a `Uni` to be non-blocking. Otherwise it needs be called from a non-`VertxThread` thread
+and your annotated method must return a `Uni` to be non-blocking. Otherwise, it needs be called from a non-`VertxThread` thread
 and will become blocking.
 
 JPA batches changes you make to your entities and sends changes (it's called flush) at the end of the transaction or before a query.
@@ -1004,7 +1004,7 @@ then generate getters and setters for those fields, even if they don't actually 
 the fields.
 - Traditional EE patterns advise to split entity definition (the model) from the operations you can do on them
 (DAOs, Repositories), but really that requires an unnatural split between the state and its operations even though
-we would never do something like that for regular objects in the Object Oriented architecture, where state and methods
+we would never do something like that for regular objects in the Object-Oriented architecture, where state and methods
 are in the same class. Moreover, this requires two classes per entity, and requires injection of the DAO or Repository
 where you need to do entity operations, which breaks your edit flow and requires you to get out of the code you're
 writing to set up an injection point before coming back to use it.

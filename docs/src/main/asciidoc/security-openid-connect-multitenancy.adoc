@@ -151,7 +151,7 @@ From the implementation above, tenants are resolved from the request path so tha
 [NOTE]
 ===
 When a current tenant represents an OIDC `web-app` application, the current `io.vertx.ext.web.RoutingContext` will contain a `tenant-id` attribute by the time the custom tenant resolver has been called for all the requests completing the code authentication flow and the already authenticated requests, when either a tenant specific state or session cookie already exists.
-Therefore, when working with mulltiple OpenID Connect Providers, you only need a path specific check to resolve a tenant id if the `RoutingContext` does not have the `tenant-id` attribute set, for example:
+Therefore, when working with multiple OpenID Connect Providers, you only need a path specific check to resolve a tenant id if the `RoutingContext` does not have the `tenant-id` attribute set, for example:
 
 [source,java]
 ----
@@ -234,7 +234,7 @@ You can define multiple tenants in your configuration file, just make sure they 
 
 === Google OpenID Provider Configuration
 
-In order to set-up the `tenant-a` configuration to use Google OpenID Provider, you need to create a project as described https://developers.google.com/identity/protocols/OpenIDConnect[here].
+In order to set up the `tenant-a` configuration to use Google OpenID Provider, you need to create a project as described https://developers.google.com/identity/protocols/OpenIDConnect[here].
 
 Once you create the project and have your project's `client_id` and `client_secret`, you can try to configure a tenant as follows:
 
@@ -455,14 +455,14 @@ The `OidcTenantConfig` returned from this method is the same used to parse the `
 Several options are available for selecting the tenant configuration which should be used to secure the current HTTP request for both `service` and `web-app` OIDC applications, such as:
 
 - Check URL paths, for example, a `tenant-service` configuration has to be used for the "/service" paths, while a `tenant-manage` configuration - for the "/management" paths
-- Check HTTP headers, for example, with a URL path always being '/service', a header such as "Realm: service" or "Realm: management" can help selecting between the `tenant-service` and `tenant-manage` configurations
+- Check HTTP headers, for example, with a URL path always being '/service', a header such as "Realm: service" or "Realm: management" can help to select between the `tenant-service` and `tenant-manage` configurations
 - Check URL query parameters - it can work similarly to the way the headers are used to select the tenant configuration
 
 All these options can be easily implemented with the custom `TenantResolver` and `TenantConfigResolver` implementations for the OIDC `service` applications.
 
 However, due to an HTTP redirect required to complete the code authentication flow for the OIDC `web-app` applications, a custom HTTP cookie may be needed to select the same tenant configuration before and after this redirect request because:
 
-- URL path may not be the same after the redirect request if a single redirect URL has been registered in the OIDC Provider - the original request path can be restored but after the the tenant configuration is resolved
+- URL path may not be the same after the redirect request if a single redirect URL has been registered in the OIDC Provider - the original request path can be restored but after the tenant configuration is resolved
 - HTTP headers used during the original request are not available after the redirect
 - Custom URL query parameters are restored after the redirect but after the tenant configuration is resolved
 

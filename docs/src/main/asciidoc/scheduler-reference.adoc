@@ -274,7 +274,7 @@ class Jobs {
 }
 ----
 
-The main idea is to keep the the logic to skip the execution outside the scheduled business methods so that it can be reused and refactored easily.
+The main idea is to keep the logic to skip the execution outside the scheduled business methods so that it can be reused and refactored easily.
 
 TIP: A CDI event of type `io.quarkus.scheduler.SkippedExecution` is fired when an execution of a scheduled method is skipped.
 

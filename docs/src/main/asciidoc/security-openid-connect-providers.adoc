@@ -11,7 +11,7 @@ include::./attributes.adoc[]
 
 If you use xref:security-openid-connect-web-authentication.adoc[OpenID Connect Authorization Code Flow] to protect Quarkus endpoints then you need to configure Quarkus to tell it how to connect to OpenID Connect providers, how to authenticate to such providers, which scopes to use, etc.
 
-Sometimes you need to use the configuration to workaround the fact that some providers do not implement OpenID Connect completely or when they are in fact xref:security-openid-connect-web-authentication.adoc#oauth2[OAuth2 providers only].
+Sometimes you need to use the configuration to work around the fact that some providers do not implement OpenID Connect completely or when they are in fact xref:security-openid-connect-web-authentication.adoc#oauth2[OAuth2 providers only].
 
 The configuration of such providers can become complex, very technical and difficult to understand.
 
@@ -150,11 +150,11 @@ Go to https://developer.apple.com/account/resources/identifiers/list[Create a ne
 
 image::oidc-apple-1.png[role="thumb"]
 
-Dont touch anything, keep `App IDs` selected, and press `Continue`:
+Don't touch anything, keep `App IDs` selected, and press `Continue`:
 
 image::oidc-apple-2.png[role="thumb"]
 
-Dont touch anything, keep `App` selected, and press `Continue`:
+Don't touch anything, keep `App` selected, and press `Continue`:
 
 image::oidc-apple-3.png[role="thumb"]
 
@@ -272,7 +272,7 @@ Enter your `Redirect URIs` (set to `<host>/_renarde/security/oidc-success`) and 
 
 image::oidc-facebook-5.png[role="thumb"]
 
-Now go to `Settings > Basic` on the left hand menu, and write down your `App ID` and `App secret`:
+Now go to `Settings > Basic` on the left-hand menu, and write down your `App ID` and `App secret`:
 
 image::oidc-facebook-6.png[role="thumb"]
 

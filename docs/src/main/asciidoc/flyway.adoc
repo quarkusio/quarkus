@@ -140,7 +140,7 @@ public class MigrationService {
 ----
 <1> Inject the Flyway object if you want to use it directly
 
-TIP: In dev-mode Quarkus will automatically restart the application if
+TIP: In dev mode Quarkus will automatically restart the application if
 any of the existing migration scripts get modified. If you want to take
 advantage of this while developing and testing new migration scripts,
 you will want to set `%dev.quarkus.flyway.clean-at-start=true`, so that

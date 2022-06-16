@@ -22,7 +22,7 @@ The second application receives the _quote request_ and sends a _quote_ back.
 
 image::kafka-qs-architecture.png[alt=Architecture, align=center]
 
-The first application, the _producer_, will let the user request some quotes over a HTTP endpoint.
+The first application, the _producer_, will let the user request some quotes over an HTTP endpoint.
 For each quote request a random identifier is generated and returned to the user, to mark the quote request as _pending_.
 At the same time, the generated request id is sent over a Kafka topic `quote-requests`.
 

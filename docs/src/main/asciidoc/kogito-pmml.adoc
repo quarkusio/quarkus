@@ -33,7 +33,7 @@ make use of generated code to make certain predictions based on the data being p
 === PMML file
 
 The PMML file describes the prediction logic of our microservice.
-It should provide the actual model (Regression, Tree, Scorecard, Clustering, etc) needed to make the prediction.
+It should provide the actual model (Regression, Tree, Scorecard, Clustering, etc.) needed to make the prediction.
 
 === Prediction endpoints
 

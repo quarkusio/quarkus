@@ -45,7 +45,7 @@ include::{includes}/devtools/create-app.adoc[]
 
 == Login to Google Cloud
 
-Login to Google Cloud is necessary for deploying the application and it can be done as follows:
+Login to Google Cloud is necessary for deploying the application. It can be done as follows:
 
 [source,bash,subs=attributes+]
 ----
@@ -227,4 +227,4 @@ Your endpoints will be available on http://localhost:8080.
 == What's next?
 
 You can use our xref:funqy-gcp-functions.adoc[Google Cloud Functions Funqy binding] to use Funqy,
-a provider agnostic function as a service framework, that allow to deploy HTTP function or Background function to Google Cloud.
+a provider-agnostic function as a service framework, that allow to deploy HTTP function or Background function to Google Cloud.

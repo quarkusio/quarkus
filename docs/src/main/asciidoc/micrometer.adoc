@@ -230,7 +230,7 @@ of new time series.
 
 [NOTE]
 ====
-Label and tag can be used interchangably. You may also see "attribute" used in this context in some documentation.
+Label and tag can be used interchangeably. You may also see "attribute" used in this context in some documentation.
 The gist is each that each label or tag or attribute defines an additional bit of information associated with the
 single numerical measurement that helps you classify, group, or aggregate the measured value later. The Micrometer API
 uses `Tag` as the mechanism for specifying this additional data.

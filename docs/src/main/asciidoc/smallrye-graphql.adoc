@@ -282,7 +282,7 @@ NOTE: Experimental - not included in the MicroProfile specification
 GraphiQL UI is a great tool permitting easy interaction with your GraphQL APIs.
 
 The Quarkus `smallrye-graphql` extension ships with `GraphiQL` and enables it by default in `dev` and `test` modes,
-but it can also be explicitly configured for `production` mode as well.
+but it can also be explicitly configured for `production` mode as well, by setting the `quarkus.smallrye-graphql.ui.always-include` configuration property to `true`.
 
 GraphiQL can be accessed from http://localhost:8080/q/graphql-ui/ .
 

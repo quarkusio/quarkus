@@ -16,7 +16,7 @@ env:
   # Repo specific setting #
   #########################
 
-  ECOSYSTEM_CI_REPO_PATH: {namespace.id}{extension.id}
+  ECOSYSTEM_CI_REPO_PATH: quarkiverse-{extension.id}
 
 jobs:
   build:

@@ -222,16 +222,12 @@ public final class ImmutableList {
             this.elements = elements;
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public E get(int index) {
             if (index < 0 || index >= elements.length) {
                 throw indexOutOfBound(index, size());
             }
-            return getInternal(index);
-        }
-
-        @SuppressWarnings("unchecked")
-        E getInternal(int index) {
             return (E) elements[index];
         }
 
@@ -242,12 +238,17 @@ public final class ImmutableList {
 
         @Override
         public Iterator<E> iterator() {
-            return new Itr(elements.length);
+            return new Itr(elements.length, 0);
         }
 
         @Override
         public ListIterator<E> listIterator() {
-            return new Itr(elements.length);
+            return new Itr(elements.length, 0);
+        }
+
+        @Override
+        public ListIterator<E> listIterator(int index) {
+            return new Itr(elements.length, index);
         }
 
         @Override
@@ -292,19 +293,16 @@ public final class ImmutableList {
                 this.cursor = position;
             }
 
-            Itr(int size) {
-                this(size, 0);
-            }
-
             @Override
             public boolean hasNext() {
                 return cursor < size;
             }
 
+            @SuppressWarnings("unchecked")
             @Override
             public E next() {
                 if (hasNext()) {
-                    return getInternal(cursor++);
+                    return (E) elements[cursor++];
                 }
                 throw new NoSuchElementException();
             }
@@ -314,10 +312,11 @@ public final class ImmutableList {
                 return cursor > 0;
             }
 
+            @SuppressWarnings("unchecked")
             @Override
             public E previous() {
                 if (hasPrevious()) {
-                    return getInternal(--cursor);
+                    return (E) elements[--cursor];
                 }
                 throw new NoSuchElementException();
             }

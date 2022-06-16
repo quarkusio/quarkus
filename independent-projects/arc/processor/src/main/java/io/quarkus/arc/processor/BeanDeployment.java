@@ -1194,7 +1194,7 @@ public class BeanDeployment {
                 configurator.observedQualifiers,
                 Reception.ALWAYS, configurator.transactionPhase, configurator.isAsync, configurator.priority,
                 observerTransformers, buildContext,
-                jtaCapabilities, configurator.notifyConsumer));
+                jtaCapabilities, configurator.notifyConsumer, configurator.params));
     }
 
     static void processErrors(List<Throwable> errors) {

@@ -485,6 +485,9 @@ public class ObserverGenerator extends AbstractGenerator {
             constructor = observerCreator.getMethodCreator(Methods.INIT, "V");
             // Invoke super()
             constructor.invokeSpecialMethod(MethodDescriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
+
+            SyntheticComponentsUtil.addParamsFieldAndInit(observerCreator, constructor, observer.getParams(),
+                    annotationLiterals, observer.getBeanDeployment().getBeanArchiveIndex());
         } else {
             // Declaring provider and injection points
             // First collect all param types

@@ -129,11 +129,6 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
             return qualifiers;
         }
 
-        @Override
-        protected ExtendedBeanConfigurator self() {
-            return this;
-        }
-
         Supplier<?> getSupplier() {
             return supplier;
         }

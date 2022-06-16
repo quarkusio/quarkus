@@ -197,7 +197,7 @@ public interface FruitsRepository extends CrudRepository<Fruit, Long> {
 }
 ----
 
-The `FruitsRepository` above extends Spring Data's `org.springframework.data.repository.CrudRepository` which means that all of the latter's methods are
+The `FruitsRepository` above extends Spring Data's `org.springframework.data.repository.CrudRepository` which means that all the latter's methods are
 available to `FruitsRepository`.
 
 The `spring-data-jpa` extension will generate an implementation for this repository. Then the `spring-data-rest` extension will generate a REST CRUD resource for it.

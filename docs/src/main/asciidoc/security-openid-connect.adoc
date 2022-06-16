@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 
 This guide demonstrates how to use Quarkus OpenID Connect (OIDC) Extension to protect your JAX-RS applications using Bearer Token Authorization where Bearer Tokens are issued by OpenID Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org[Keycloak].
 
-Bearer Token Authorization is the process of authorizing HTTP requests based on the existence and validity of a Bearer Token which provides valuable information to determine the subject of the call as well as whether or not an HTTP resource can be accessed.
+Bearer Token Authorization is the process of authorizing HTTP requests based on the existence and validity of a Bearer Token which provides valuable information to determine the subject of the call as well as whether an HTTP resource can be accessed.
 
 Please read the xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications] guide if you need to authenticate and authorize the users using OpenID Connect Authorization Code Flow.
 
@@ -210,7 +210,7 @@ xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will l
 
 Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[/q/dev] and click on a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
 
-You will be asked to login into a `Single Page Application` provided by `OpenID Connect Dev UI`:
+You will be asked to log in into a `Single Page Application` provided by `OpenID Connect Dev UI`:
 
  * Login as `alice` (password: `alice`) who has a `user` role
  ** accessing `/api/admin` will return `403`
@@ -374,13 +374,13 @@ If the token is opaque (binary) then a `scope` property from the remote token in
 
 If UserInfo is the source of the roles then set `quarkus.oidc.authentication.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
 
-Additionally a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented xref:security.adoc#security-identity-customization[here].
+Additionally, a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented xref:security.adoc#security-identity-customization[here].
 
 [[token-verification-introspection]]
 === Token Verification And Introspection
 
 If the token is a JWT token then, by default, it will be verified with a `JsonWebKey` (JWK) key from a local `JsonWebKeySet` retrieved from the OpenID Connect Provider's JWK endpoint. The token's key identifier `kid` header value will be used to find the matching JWK key.
-If no matching `JWK` is available locally then `JsonWebKeySet` will be refreshed by fetching the current key set from the JWK endpoint. The `JsonWebKeySet` refresh can be repeated again only after the `quarkus.oidc.token.forced-jwk-refresh-interval` (default is 10 minutes) expires.
+If no matching `JWK` is available locally then `JsonWebKeySet` will be refreshed by fetching the current key set from the JWK endpoint. The `JsonWebKeySet` refresh can be repeated only after the `quarkus.oidc.token.forced-jwk-refresh-interval` (default is 10 minutes) expires.
 If no matching `JWK` is available after the refresh then the JWT token will be sent to the OpenID Connect Provider's token introspection endpoint.
 
 If the token is opaque (it can be a binary token or an encrypted JWT token) then it will always be sent to the OpenID Connect Provider's token introspection endpoint.
@@ -435,13 +435,13 @@ It can be activated and configured as follows:
 ----
 # 'max-size' is 0 by default so the cache can be activated by setting 'max-size' to a positive value.
 quarkus.oidc.token-cache.max-size=1000
-# 'time-to-live' specifies how long a cache entry can be valid for and will be used by a clean up timer.
+# 'time-to-live' specifies how long a cache entry can be valid for and will be used by a cleanup timer.
 quarkus.oidc.token-cache.time-to-live=3M
-# 'clean-up-timer-interval' is not set by default so the clean up timer can be activated by setting 'clean-up-timer-interval'.
+# 'clean-up-timer-interval' is not set by default so the cleanup timer can be activated by setting 'clean-up-timer-interval'.
 quarkus.oidc.token-cache.clean-up-timer-interval=1M
 ----
 
-The default cache uses a token as a key and each entry can have `TokenIntrospection` and/or `UserInfo`. It will only keep up to a `max-size` number of entries. If the cache is full when a new entry is to be added then an attempt will be made to find a space for it by removing a single expired entry. Additionally, the clean up timer, if activated, will periodically check for the expired entries and remove them.
+The default cache uses a token as a key and each entry can have `TokenIntrospection` and/or `UserInfo`. It will only keep up to a `max-size` number of entries. If the cache is full when a new entry is to be added then an attempt will be made to find a space for it by removing a single expired entry. Additionally, the cleanup timer, if activated, will periodically check for the expired entries and remove them.
 
 Please experiment with the default cache implementation or register a custom one.
 
@@ -493,7 +493,7 @@ Note it is also recommended to use `quarkus.oidc.token.audience` property to ver
 [[single-page-applications]]
 === Single Page Applications
 
-Single Page Application (SPA) typically uses `XMLHttpRequest`(XHR) and the Java Script utility code provided by the OpenID Connect provider to acquire a bearer token and use it
+Single Page Application (SPA) typically uses `XMLHttpRequest`(XHR) and the JavaScript utility code provided by the OpenID Connect provider to acquire a bearer token and use it
 to access Quarkus `service` applications.
 
 For example, here is how you can use `keycloak.js` to authenticate the users and refresh the expired tokens from the SPA:
@@ -546,9 +546,9 @@ If you plan to consume your OpenID Connect `service` application from a Single P
 
 OIDC `service` application needs to know OpenID Connect provider's token, `JsonWebKey` (JWK) set and possibly `UserInfo` and introspection endpoint addresses.
 
-By default they are discovered by adding a `/.well-known/openid-configuration` path to the configured `quarkus.oidc.auth-server-url`.
+By default, they are discovered by adding a `/.well-known/openid-configuration` path to the configured `quarkus.oidc.auth-server-url`.
 
-Alternatively, if the discovery endpoint is not available or you would like to save on the discovery endpoint roundtrip, you can disable the discovery and configure them with relative path values, for example:
+Alternatively, if the discovery endpoint is not available, or if you would like to save on the discovery endpoint round-trip, you can disable the discovery and configure them with relative path values, for example:
 
 [source, properties]
 ----
@@ -764,7 +764,7 @@ If a custom realm file has to be imported into Keycloak before running the tests
 quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 ----
 
-Finally write your test which will be executed in JVM mode:
+Finally, write your test which will be executed in JVM mode:
 
 [source,java]
 ----
@@ -1125,7 +1125,7 @@ If you work with other Openid Connect providers then please check your provider'
 This property is required if the `service` application is expected to introspect the tokens remotely - which is always the case for the opaque tokens.
 This property is optional if the local Json Web Key token verification only is used.
 
-Nonetheless, setting this property is encouraged even if the endpoint does not require an access to the remote introspection endpoint. The reasons behind it that `client-id`, if set, can be used to verify the token audience and will also be included in the logs when the token verification fails for the better traceability of the tokens issued to specific clients to be analyzed over a longer period of time.
+Nonetheless, setting this property is encouraged even if the endpoint does not require access to the remote introspection endpoint. The reasons behind it that `client-id`, if set, can be used to verify the token audience and will also be included in the logs when the token verification fails for the better traceability of the tokens issued to specific clients to be analyzed over a longer period of time.
 
 For example, if your OpenID Connect provider sets a token audience then the following configuration pattern is recommended:
 
@@ -1137,7 +1137,7 @@ quarkus.oidc.client-id=quarkus-app
 quarkus.oidc.token.audience=${quarkus.oidc.client-id}
 ----
 
-If you set `quarkus.oidc.client-id` but your endpoint does not require a remote access to one of OpenID Connect Provider endpoints (introspection, token acquisition, etc) then do not set a client secret with the `quarkus.oidc.credentials` or similar properties as it will not be used.
+If you set `quarkus.oidc.client-id` but your endpoint does not require remote access to one of OpenID Connect Provider endpoints (introspection, token acquisition, etc.) then do not set a client secret with the `quarkus.oidc.credentials` or similar properties as it will not be used.
 
 Note Quarkus `web-app` applications always require `quarkus.oidc.client-id` property.
 

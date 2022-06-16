@@ -176,7 +176,7 @@ Note that you can reference nested properties using the `.` (dot) separator as i
 == External application.yaml file
 
 The `application.yaml` file may also be placed in `config/application.yaml` to specialize the runtime configuration. The
-file has to be present in the root of the working directoryrelative to the Quarkus application runner:
+file has to be present in the root of the working directory relative to the Quarkus application runner:
 
 [source, text]
 ----

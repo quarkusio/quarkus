@@ -13,7 +13,7 @@ in native mode while also making it easier to work with.
 
 Having a Kubernetes Client extension in Quarkus is very useful in order to unlock the power of Kubernetes Operators.
 Kubernetes Operators are quickly emerging as a new class of Cloud Native applications.
-These applications essentially watch the Kubernetes API and react to changes on various resources and can be used to manage the lifecycle of all kinds of complex systems like databases, messaging systems and much much more.
+These applications essentially watch the Kubernetes API and react to changes on various resources and can be used to manage the lifecycle of all kinds of complex systems like databases, messaging systems and much more.
 Being able to write such operators in Java with the very low footprint that native images provide is a great match.
 
 == Configuration
@@ -388,7 +388,7 @@ the `openshift-client` extension, in a similar way. This leverages the dedicated
 openshift client, and provides access to `OpenShift` proprietary objects (e.g. `Route`, `ProjectRequest`, `BuildConfig` ...)
 
 Note that the configuration properties are shared with the `kubernetes-client` extension. In
-particular they have the same `quarkus.kubernetes-client` prefix.
+particular, they have the same `quarkus.kubernetes-client` prefix.
 
 Add the extension with:
 

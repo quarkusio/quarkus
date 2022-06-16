@@ -206,7 +206,7 @@ include::{generated-dir}/config/quarkus-grpc-config-group-config-grpc-client-con
 The `client-name` is the name set in the `@GrpcClient` or derived from the injection point if not explicitly defined.
 
 The following examples uses _hello_ as the client name.
-Don't forget to replace it with the name you used in in the `@GrpcClient` annotation.
+Don't forget to replace it with the name you used in the `@GrpcClient` annotation.
 
 === Enabling TLS
 

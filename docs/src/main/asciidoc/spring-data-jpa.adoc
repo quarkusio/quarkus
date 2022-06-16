@@ -178,7 +178,7 @@ public interface FruitRepository extends CrudRepository<Fruit, Long> {
 }
 ----
 
-The `FruitRepository` above extends Spring Data's `org.springframework.data.repository.CrudRepository` which means that all of the latter's methods are
+The `FruitRepository` above extends Spring Data's `org.springframework.data.repository.CrudRepository` which means that all the latter's methods are
 available to `FruitRepository`.
 Additionally `findByColor` is defined whose purpose is to return all Fruit entities that match the specified color.
 
@@ -390,14 +390,14 @@ include::{includes}/devtools/dev.adoc[]
 
 == Run the application as a native binary
 
-You can of course create a native executable following the instructions of the xref:building-native-image.adoc[this guide].
+You can of course create a native executable following the instructions of xref:building-native-image.adoc[this guide].
 
 == Supported Spring Data JPA functionalities
 
 Quarkus currently supports a subset of Spring Data JPA's features, namely the most useful and most commonly used features.
 
 An important part of this support is that all repository generation is done at build time thus ensuring that all supported features work correctly in native mode.
-Moreover, developers know at build time whether or not their repository method names can be converted to proper JPQL queries.
+Moreover, developers know at build time whether their repository method names can be converted to proper JPQL queries.
 This also means that if a method name indicates that a field should be used that is not part of the Entity, developers will get
 the relevant error at build time.
 
@@ -415,9 +415,9 @@ Interfaces that extend any of the following Spring Data repositories are automat
 * `org.springframework.data.jpa.repository.JpaRepository`
 
 The generated repositories are also registered as beans so they can be injected into any other bean.
-Furthermore the methods that update the database are automatically annotated with `@Transactional`.
+Furthermore, the methods that update the database are automatically annotated with `@Transactional`.
 
-==== Fine tuning of repository definition
+==== Fine-tuning of repository definition
 
 This allows user defined repository interfaces to cherry-pick methods from any of the supported Spring Data repository interfaces without having to extend those interfaces.
 This is particularly useful when for example a repository needs to use some methods from `CrudRepository` but it's undesirable to expose the full list of methods of said interface.
@@ -593,7 +593,7 @@ An extensive list of examples can be seen in the https://github.com/quarkusio/qu
 === What is currently unsupported
 
 * Methods of the `org.springframework.data.repository.query.QueryByExampleExecutor` interface - if any of these are invoked, a Runtime exception will be thrown.
-* QueryDSL support. No attempt will be made to generate implementations of any of the QueryDSL related repositories.
+* QueryDSL support. No attempt will be made to generate implementations of the QueryDSL related repositories.
 * Customizing the base repository for all repository interfaces in the code base.
 ** In Spring Data JPA this is done by registering a class that extends `org.springframework.data.jpa.repository.support.SimpleJpaRepository` however in Quarkus this class
 is not used at all (since all the necessary plumbing is done at build time). Similar support might be added to Quarkus in the future.

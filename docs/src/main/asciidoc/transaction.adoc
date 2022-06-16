@@ -37,8 +37,8 @@ implementation("io.quarkus:quarkus-narayana-jta")
 
 == Starting and stopping transactions: defining your boundaries
 
-You can define your transaction boundaries either declarativly with `@Transactional` or programmatically with `QuarkusTransaction`. You can also use
-the JTA `UserTransaction` API directly, however this is less user friendly than `QuarkusTransaction`.
+You can define your transaction boundaries either declaratively with `@Transactional` or programmatically with `QuarkusTransaction`. You can also use
+the JTA `UserTransaction` API directly, however this is less user-friendly than `QuarkusTransaction`.
 
 === Declarative approach
 
@@ -67,7 +67,7 @@ public class SantaClausService {
 ----
 
 <1> This annotation defines your transaction boundaries and will wrap this call within a transaction.
-<2> A `RuntimeException` crossing the transaction boundaries will rollback the transaction.
+<2> A `RuntimeException` crossing the transaction boundaries will roll back the transaction.
 
 `@Transactional` can be used to control transaction boundaries on any CDI bean at the method level or at the class level to ensure every method is transactional.
 That includes REST endpoints.
@@ -320,7 +320,7 @@ Wrong. +
 First off, just disable the transaction by marking your transaction boundary with `@Transactional(NOT_SUPPORTED)` (or `NEVER` or `SUPPORTS` depending on the semantic you want). +
 Second, it's again fairy tale that not using transaction is faster.
 The answer is, it depends on your DB and how many SQL SELECTs you are making.
-No transaction means the DB does have a single operation transaction context anyways. +
+No transaction means the DB does have a single operation transaction context anyway. +
 Third, when you do several SELECTs, it's better to wrap them in a single transaction because they will all be consistent with one another.
 Say your DB represents your car dashboard, you can see the number of kilometers remaining and the fuel gauge level.
 By reading it in one transaction, they will be consistent.
@@ -336,5 +336,5 @@ It's a mess because I don't know if my JPA persistence unit is using `JTA` or `R
 
 It's not a mess in Quarkus :)
 Resource-level was introduced to support JPA in a non managed environment.
-But Quarkus is both lean and a managed environment so we can safely always assume we are in JTA mode.
+But Quarkus is both lean and a managed environment, so we can safely always assume we are in JTA mode.
 The end result is that the difficulties of running Hibernate ORM + CDI + a transaction manager in Java SE mode are solved by Quarkus.

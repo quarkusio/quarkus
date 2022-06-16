@@ -126,7 +126,7 @@ public class AdminResource {
 ----
 
 Finally, let's consider the `/api/users/me` endpoint. As you can see from the source code below, we are trusting only users with the `user` role.
-We are using `SecurityContext` to get access to the current authenticated Principal and we return the user's name. This information is loaded from the database.
+We are using `SecurityContext` to get access to the current authenticated Principal, and we return the user's name. This information is loaded from the database.
 
 [source,java]
 ----
@@ -163,7 +163,7 @@ quarkus.datasource.password=quarkus
 quarkus.datasource.jdbc.url=jdbc:postgresql:elytron-security-jdbc
 ----
 
-In our context, we are using PostgreSQL as identity store and we initialize the database with users and roles.
+In our context, we are using PostgreSQL as identity store, and we initialize the database with users and roles.
 
 [source,sql]
 ----
@@ -180,7 +180,7 @@ INSERT INTO test_user (id, username, password, role) VALUES (2, 'user','user', '
 
 [NOTE]
 ====
-It is probably useless but we kindly remind you that you must not store clear-text passwords in production environment ;-).
+It is probably useless, but we kindly remind you that you must not store clear-text passwords in production environment ;-).
 The `elytron-security-jdbc` offers a built-in bcrypt password mapper.
 ====
 
@@ -200,7 +200,7 @@ The `elytron-security-jdbc` extension requires at least one principal query to a
 
 <1> We define a parameterized SQL statement (with exactly 1 parameter) which should return the user's password plus any additional information you want to load.
 <2> We  configure the password mapper with the position of the password field in the `SELECT` fields and other information like salt, hash encoding, etc.
-<3> We use `attribute-mappings` to bind the `SELECT` projection fields (ie. `u.role` here) to the target Principal representation attributes.
+<3> We use `attribute-mappings` to bind the `SELECT` projection fields (i.e. `u.role` here) to the target Principal representation attributes.
 
 [NOTE]
 ====
@@ -222,7 +222,7 @@ Content-Type: text/plain;charset=UTF-8
 public%
 ----
 
-Now, let's try a to hit a protected resource anonymously.
+Now, let's try to hit a protected resource anonymously.
 
 [source,shell]
 ----

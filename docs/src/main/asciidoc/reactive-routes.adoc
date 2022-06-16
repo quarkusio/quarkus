@@ -619,7 +619,7 @@ When returning an object or a `Uni`, you can also use the `@Valid` annotation:
 }
 ----
 
-If the item produced by the route does not pass the validation, it returns a HTTP 500 response.
+If the item produced by the route does not pass the validation, it returns an HTTP 500 response.
 If the request accepts JSON payload, the response follows the https://opensource.zalando.com/problem/constraint-violation/[Problem] format.
 
 Note that only `@Valid` is supported on the return type.
@@ -771,7 +771,7 @@ Also see xref:openapi-swaggerui.adoc[the OpenAPI Guide].
 === Adding MicroProfile OpenAPI Annotations
 
 You can use link:https://github.com/eclipse/microprofile-open-api[MicroProfile OpenAPI] to better document your schema, 
-example, adding header info, or specifying the return type on `void` methods might be usefull :
+example, adding header info, or specifying the return type on `void` methods might be useful :
 
 [source, java]
 ----
@@ -864,7 +864,7 @@ paths:
 
 === Using Swagger UI
 
-Swagger UI is included by default when running in `dev` or `test` mode, and can optionally added to `prod` mode.
+Swagger UI is included by default when running in `dev` or `test` mode, and can optionally be added to `prod` mode.
 See <<openapi-swaggerui.adoc#dev-mode,the Swagger UI>> Guide for more details.
 
 Navigate to link:http://localhost:8080/q/swagger-ui/[localhost:8080/q/swagger-ui/] and you will see the Swagger UI screen:

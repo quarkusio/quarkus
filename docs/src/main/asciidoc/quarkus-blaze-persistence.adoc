@@ -12,7 +12,7 @@ a|icon:lock[title=Fixed at build time] [[quarkus-blaze-persistence_quarkus.blaze
 
 [.description]
 --
-A boolean flag to make it possible to prepare all view template caches on startup. By default the eager loading of the view templates is disabled to have a better startup performance. Valid values for this property are `true` or `false`.
+A boolean flag to make it possible to prepare all view template caches on startup. By default, the eager loading of the view templates is disabled to have a better startup performance. Valid values for this property are `true` or `false`.
 --|boolean 
 |
 
@@ -21,7 +21,7 @@ a|icon:lock[title=Fixed at build time] [[quarkus-blaze-persistence_quarkus.blaze
 
 [.description]
 --
-An integer value that defines the default batch size for entity view attributes. By default the value is 1 and can be overridden either via `com.blazebit.persistence.view.BatchFetch#size()` or by setting this property via `com.blazebit.persistence.view.EntityViewSetting#setProperty`.
+An integer value that defines the default batch size for entity view attributes. By default, the value is 1 and can be overridden either via `com.blazebit.persistence.view.BatchFetch#size()` or by setting this property via `com.blazebit.persistence.view.EntityViewSetting#setProperty`.
 --|int 
 |
 
@@ -30,7 +30,7 @@ a|icon:lock[title=Fixed at build time] [[quarkus-blaze-persistence_quarkus.blaze
 
 [.description]
 --
-A mode specifying if correlation value, view root or embedded view batching is expected. By default the value is `values` and can be overridden by setting this property via `com.blazebit.persistence.view.EntityViewSetting#setProperty`. Valid values are  
+A mode specifying if correlation value, view root or embedded view batching is expected. By default, the value is `values` and can be overridden by setting this property via `com.blazebit.persistence.view.EntityViewSetting#setProperty`. Valid values are
  - `values` 
  - `view_roots` 
  - `embedding_views`
@@ -42,7 +42,7 @@ a|icon:lock[title=Fixed at build time] [[quarkus-blaze-persistence_quarkus.blaze
 
 [.description]
 --
-A boolean flag to make it possible to prepare the entity view updater cache on startup. By default the eager loading of entity view updates is disabled to have a better startup performance. Valid values for this property are `true` or `false`.
+A boolean flag to make it possible to prepare the entity view updater cache on startup. By default, the eager loading of entity view updates is disabled to have a better startup performance. Valid values for this property are `true` or `false`.
 --|boolean 
 |
 
@@ -51,7 +51,7 @@ a|icon:lock[title=Fixed at build time] [[quarkus-blaze-persistence_quarkus.blaze
 
 [.description]
 --
-A boolean flag to make it possible to disable the strict validation that disallows the use of an updatable entity view type for owned relationships. By default the use is disallowed i.e. the default value is `true`, but since there might be strange models out there, it possible to allow this. Valid values for this property are `true` or `false`.
+A boolean flag to make it possible to disable the strict validation that disallows the use of an updatable entity view type for owned relationships. By default, the use is disallowed i.e. the default value is `true`, but since there might be strange models out there, it is possible to allow this. Valid values for this property are `true` or `false`.
 --|boolean 
 |
 
@@ -60,7 +60,7 @@ a|icon:lock[title=Fixed at build time] [[quarkus-blaze-persistence_quarkus.blaze
 
 [.description]
 --
-A boolean flag to make it possible to disable the strict cascading check that disallows setting updatable or creatable entity views on non-cascading attributes before being associated with a cascading attribute. When disabled, it is possible, like in JPA, that the changes done to an updatable entity view are not flushed when it is not associated with an attribute that cascades updates. By default the use is enabled i.e. the default value is `true`. Valid values for this property are `true` or `false`.
+A boolean flag to make it possible to disable the strict cascading check that disallows setting updatable or creatable entity views on non-cascading attributes before being associated with a cascading attribute. When disabled, it is possible, like in JPA, that the changes done to an updatable entity view are not flushed when it is not associated with an attribute that cascades updates. By default, the use is enabled i.e. the default value is `true`. Valid values for this property are `true` or `false`.
 --|boolean 
 |
 
@@ -69,7 +69,7 @@ a|icon:lock[title=Fixed at build time] [[quarkus-blaze-persistence_quarkus.blaze
 
 [.description]
 --
-A boolean flag that allows to switch from warnings to boot time validation errors when invalid plural attribute setters are encountered while the strict cascading check is enabled. When `true`, a boot time validation error is thrown when encountering an invalid setter, otherwise just a warning. This configuration has no effect when the strict cascading check is disabled. By default the use is disabled i.e. the default value is `false`. Valid values for this property are `true` or `false`.
+A boolean flag that allows to switch from warnings to boot time validation errors when invalid plural attribute setters are encountered while the strict cascading check is enabled. When `true`, a boot time validation error is thrown when encountering an invalid setter, otherwise just a warning. This configuration has no effect when the strict cascading check is disabled. By default, the use is disabled i.e. the default value is `false`. Valid values for this property are `true` or `false`.
 --|boolean 
 |
 
@@ -78,7 +78,7 @@ a|icon:lock[title=Fixed at build time] [[quarkus-blaze-persistence_quarkus.blaze
 
 [.description]
 --
-A boolean flag that allows to specify if empty flat views should be created by default if not specified via `EmptyFlatViewCreation`. By default the creation of empty flat views is enabled i.e. the default value is `true`. Valid values for this property are `true` or `false`.
+A boolean flag that allows to specify if empty flat views should be created by default if not specified via `EmptyFlatViewCreation`. By default, the creation of empty flat views is enabled i.e. the default value is `true`. Valid values for this property are `true` or `false`.
 --|boolean 
 |
 

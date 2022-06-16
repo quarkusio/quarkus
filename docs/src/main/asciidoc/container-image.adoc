@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-Quarkus provides extensions for building (and pushing) container images. Currently it supports:
+Quarkus provides extensions for building (and pushing) container images. Currently, it supports:
 
 - <<#jib,Jib>>
 - <<#docker,Docker>>

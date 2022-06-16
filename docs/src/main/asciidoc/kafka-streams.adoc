@@ -910,7 +910,7 @@ public class GetWeatherStationDataResult {
 }
 ----
 
-Also the return type for `getMetaData()` must be defined
+Also, the return type for `getMetaData()` must be defined
 (`aggregator/src/main/java/org/acme/kafka/streams/aggregator/streams/PipelineMetadata.java`):
 
 [source, java]

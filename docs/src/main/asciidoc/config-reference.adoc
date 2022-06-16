@@ -177,8 +177,8 @@ other classes; for example:
 * JSR 310 `java.time.Duration`
 * JDK networking `java.net.SocketAddress`, `java.net.InetAddress`, etc.
 
-As you might expect, these converters are `org.eclipse.microprofile.config.spi.Converter` implementations. Therefore
-these converters comply with the Microprofile or custom implementation providers expression rules, like:
+As you might expect, these converters are `org.eclipse.microprofile.config.spi.Converter` implementations. Therefore,
+these converters comply with the Microprofile or custom implementation providers expression rules like:
 
 * Boolean values will be `true` in cases "true", "1", "YES", "Y" "ON". Otherwise, value will be interpreted as false
 * For float and double values the fractional digits must be separated by a dot `.`
@@ -480,7 +480,7 @@ becomes cumbersome and limited for more advanced cases.
 
 Indexed Properties provide a way to use indexes in config property names to map specific elements in a `Collection`
 type. Since the indexed element is part of the property name and not contained in the value, this can also be used to
-map complex object types as `Collectionª elements. Consider:
+map complex object types as `Collection` elements. Consider:
 
 .application.properties
 [source,properties]
@@ -496,7 +496,7 @@ The indexed property syntax uses the property name and square brackets `[ ] with
 
 A call to `Config#getValues("my.collection", String.class)`, will automatically create and convert a `List<String>`
 that contains the values `dog`, `cat` and `turtle`. A call to `Config#getValues("my.indexed.collection", String.class)`
-returns the exact same result. If the same property name exists in both froms (regular and indexed), the regular
+returns the exact same result. If the same property name exists in both forms (regular and indexed), the regular
 value has priority.
 
 The indexed property is sorted by their index before being added to the target `Collection`. Any gaps contained in the

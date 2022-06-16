@@ -36,7 +36,7 @@ For Apicurio Registry serde, that is:
 
 [source,properties]
 ----
-mp.messaging.connector.smallrye-kafka.apicurio.registry.url=... your Apicuio Registry URL...
+mp.messaging.connector.smallrye-kafka.apicurio.registry.url=... your Apicurio Registry URL...
 ----
 
 For Confluent Schema Registry serde, that is:

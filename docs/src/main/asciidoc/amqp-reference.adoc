@@ -466,7 +466,7 @@ On the inbound side (receiving messages from AMQP), the check verifies that the 
 On the outbound side (sending records to AMQP), the check verifies that the sender is attached to the broker.
 
 Note that a message processing failures nacks the message, which is then handled by the `failure-strategy`.
-It the responsibility of the `failure-strategy` to report the failure and influence the outcome of the checks.
+It is the responsibility of the `failure-strategy` to report the failure and influence the outcome of the checks.
 The `fail` failure strategy reports the failure, and so the check will report the fault.
 
 == Using RabbitMQ
@@ -677,7 +677,7 @@ Type: _string_ | false |
 
 | [.no-hyphens]#*cloud-events-insert-timestamp*#
 
-[.no-hyphens]#_(cloud-events-default-timestamp)_# | Whether or not the connector should insert automatically the `time` attribute into the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `time` attribute itself
+[.no-hyphens]#_(cloud-events-default-timestamp)_# | Whether the connector should insert automatically the `time` attribute into the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `time` attribute itself
 
 Type: _boolean_ | false | `true`
 
@@ -773,11 +773,11 @@ Type: _string_ | false |
 
 Type: _boolean_ | false | `true`
 
-| [.no-hyphens]#*ttl*# | The time-to-live of the send AMQP messages. 0 to disable the TTL
+| [.no-hyphens]#*ttl*# | The time-to-live of the sent AMQP messages. 0 to disable the TTL
 
 Type: _long_ | false | `0`
 
-| [.no-hyphens]#*use-anonymous-sender*# | Whether or not the connector should use an anonymous sender. Default value is `true` if the broker supports it, `false` otherwise. If not supported, it is not possible to dynamically change the destination address.
+| [.no-hyphens]#*use-anonymous-sender*# | Whether the connector should use an anonymous sender. Default value is `true` if the broker supports it, `false` otherwise. If not supported, it is not possible to dynamically change the destination address.
 
 Type: _boolean_ | false |
 

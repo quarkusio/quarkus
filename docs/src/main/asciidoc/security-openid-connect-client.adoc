@@ -38,7 +38,7 @@ In this example, we will build an application which consists of two JAX-RS resou
 * `/protected/user-name`
 * `/protected/admin-name`
 
-Both of these endpoints return the user name extracted from the incoming access token which was propagated to `ProtectedResource` from `FrontendResource`. The only difference between these endpoints is that calling `/protected/user-name` is only allowed if the current access token has a `user` role and calling `/protected/admin-name` is only allowed if the current access token has an `admin` role.
+Both of these endpoints return the username extracted from the incoming access token which was propagated to `ProtectedResource` from `FrontendResource`. The only difference between these endpoints is that calling `/protected/user-name` is only allowed if the current access token has a `user` role and calling `/protected/admin-name` is only allowed if the current access token has an `admin` role.
 
 == Solution
 
@@ -207,9 +207,9 @@ public interface ProtectedResourceTokenPropagationFilter {
 
 where `ProtectedResourceTokenPropagationFilter` will depend on `AccessTokenRequestReactiveFilter` to propagate the incoming, already existing tokens.
 
-Note that both `ProtectedResourceOidcClientFilter` and `ProtectedResourceTokenPropagationFilter` interfaces are identical - the reason behind it is that combining `OidcClientRequestReactiveFilter` and `AccessTokenRequestReactiveFilter` on the same REST Client will cause side-effects as both filters can interfere with other, for example, `OidcClientRequestReactiveFilter` may override the token propagated by `AccessTokenRequestReactiveFilter` or `AccessTokenRequestReactiveFilter` can fail if it is called when no token is available to propagate and `OidcClientRequestReactiveFilter` is expected to acquire a new token instead.
+Note that both `ProtectedResourceOidcClientFilter` and `ProtectedResourceTokenPropagationFilter` interfaces are identical - the reason behind it is that combining `OidcClientRequestReactiveFilter` and `AccessTokenRequestReactiveFilter` on the same REST Client will cause side effects as both filters can interfere with other, for example, `OidcClientRequestReactiveFilter` may override the token propagated by `AccessTokenRequestReactiveFilter` or `AccessTokenRequestReactiveFilter` can fail if it is called when no token is available to propagate and `OidcClientRequestReactiveFilter` is expected to acquire a new token instead.
 
-Now lets complete creating the application with adding `FrontendResource`:
+Now let's complete creating the application with adding `FrontendResource`:
 
 [source,java]
 ----
@@ -294,7 +294,7 @@ This exception mapper is only added to verify during the tests that `ProtectedRe
 
 == Configuring the application
 
-We have prepared the code, and now lets configure the application:
+We have prepared the code, and now let's configure the application:
 
 [source,properties]
 ----
@@ -364,7 +364,7 @@ xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will l
 
 Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[/q/dev] and click on a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
 
-You will be asked to login into a `Single Page Application` provided by `OpenID Connect Dev UI`:
+You will be asked to log in into a `Single Page Application` provided by `OpenID Connect Dev UI`:
 
  * Login as `alice` (password: `alice`) who has a `user` role
  ** accessing `/frontend/user-name-with-propagated-token` will return `200`
@@ -481,7 +481,7 @@ curl -v -X GET \
 will also return `200` status code and the name `admin`, as `admin` has both `user` and `admin` roles.
 
 
-Now lets check `FrontendResource` methods which do not propagate the existing tokens but use `OidcClient` to acquire and propagate the tokens. You have seen that `OidcClient` is configured to acquire teh tokens for the `alice` user, so:
+Now lets check `FrontendResource` methods which do not propagate the existing tokens but use `OidcClient` to acquire and propagate the tokens. You have seen that `OidcClient` is configured to acquire the tokens for the `alice` user, so:
 
 [source,bash]
 ----

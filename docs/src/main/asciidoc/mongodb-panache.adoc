@@ -199,7 +199,7 @@ person.delete();
 List<Person> allPersons = Person.listAll();
 
 // finding a specific person by ID
-// here we build a new ObjectId but you can also retrieve it from the existing entity after being persisted
+// here we build a new ObjectId, but you can also retrieve it from the existing entity after being persisted
 ObjectId personId = new ObjectId(idAsString);
 person = Person.findById(personId);
 
@@ -302,7 +302,7 @@ If you don't want to manage the ID by yourself, you can make your entity extends
 
 === Defining your repository
 
-When using Repositories, you can get the exact same convenient methods as wit the active record pattern, injected in your Repository,
+When using Repositories, you can get the exact same convenient methods as with the active record pattern, injected in your Repository,
 by making them implements `PanacheMongoRepository`:
 
 [source,java]
@@ -367,7 +367,7 @@ personRepository.delete(person);
 List<Person> allPersons = personRepository.listAll();
 
 // finding a specific person by ID
-// here we build a new ObjectId but you can also retrieve it from the existing entity after being persisted
+// here we build a new ObjectId, but you can also retrieve it from the existing entity after being persisted
 ObjectId personId = new ObjectId(idAsString);
 person = personRepository.findById(personId);
 
@@ -574,7 +574,7 @@ Here are some query examples:
 
 WARNING: MongoDB queries must be valid JSON documents,
 using the same field multiple times in a query is not allowed using PanacheQL as it would generate an invalid JSON
-(see link:https://github.com/quarkusio/quarkus/issues/12086[this issue on github]).
+(see link:https://github.com/quarkusio/quarkus/issues/12086[this issue on GitHub]).
 
 We also handle some basic date type transformations: all fields of type `Date`, `LocalDate`, `LocalDateTime` or `Instant` will be mapped to the
 link:https://docs.mongodb.com/manual/reference/bson-types/#date[BSON Date] using the `ISODate` type (UTC datetime).
@@ -915,7 +915,7 @@ Uni<Void> uni3 = person.delete();
 Uni<List<ReactivePerson>> allPersons = ReactivePerson.listAll();
 
 // finding a specific person by ID
-// here we build a new ObjectId but you can also retrieve it from the existing entity after being persisted
+// here we build a new ObjectId, but you can also retrieve it from the existing entity after being persisted
 ObjectId personId = new ObjectId(idAsString);
 Uni<ReactivePerson> personById = ReactivePerson.findById(personId);
 
@@ -1173,10 +1173,10 @@ then generate getters and setters for those fields, even if they don't actually 
 the fields.
 - Traditional EE patterns advise to split entity definition (the model) from the operations you can do on them
 (DAOs, Repositories), but really that requires an unnatural split between the state and its operations even though
-we would never do something like that for regular objects in the Object Oriented architecture, where state and methods are in the same class. Moreover, this requires two classes per entity, and requires injection of the DAO or Repository where you need to do entity operations, which breaks your edit flow and requires you to get out of the code you're writing to set up an injection point before coming back to use it.
+we would never do something like that for regular objects in the Object-Oriented architecture, where state and methods are in the same class. Moreover, this requires two classes per entity, and requires injection of the DAO or Repository where you need to do entity operations, which breaks your edit flow and requires you to get out of the code you're writing to set up an injection point before coming back to use it.
 - MongoDB queries are super powerful, but overly verbose for common operations, requiring you to write queries even
 when you don't need all the parts.
-- MongoDB queries are JSON based, so you will need some String manipulation or using the `Document` type and it will need a lot of boilerplate code.
+- MongoDB queries are JSON based, so you will need some String manipulation or using the `Document` type, and it will need a lot of boilerplate code.
 
 With Panache, we took an opinionated approach to tackle all these problems:
 

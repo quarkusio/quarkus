@@ -197,7 +197,7 @@ public class GoodbyeResource {
 === Top-level type-safe templates
 
 Naturally, if you want to declare templates at the top-level, directly in `/src/main/resources/templates/hello.txt`, for example,
-you can declare them in a toplevel (non-nested) `Templates` class:
+you can declare them in a top-level (non-nested) `Templates` class:
 
 .HelloResource.java
 [source,java]
@@ -424,7 +424,7 @@ In your `pom.xml` file, add:
 </dependency>
 ----
 
-Let's suppose the have a `SampleService` bean whose `get()` method returns a list of samples.
+Let's suppose we have a `SampleService` bean whose `get()` method returns a list of samples.
 
 .Sample.java
 [source,java]

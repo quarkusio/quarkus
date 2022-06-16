@@ -233,7 +233,7 @@ server.theHost=localhost
 server.thePort=8080
 ----
 
-The `@ConfigMapping` annotation support the following naming stategies:
+The `@ConfigMapping` annotation support the following naming strategies:
 
 - `KEBAB_CASE` (default) - The method name is derived by replacing case changes with a dash to map the configuration property.
 - `VERBATIM` - The method name is used as is to map the configuration property.
@@ -317,7 +317,7 @@ public interface Optionals {
 }
 ----
 
-In this case, the mapping won't fail if there are not configuration properties to match the mapping.
+In this case, the mapping won't fail if there is no configuration property to match the mapping.
 
 ==== `@WithConverter`
 
@@ -434,7 +434,7 @@ public interface Defaults {
 ----
 
 No configuration properties required. The `Defaults.foo()` will return the value `foo` and `Defaults.bar()` will return
-thevalue `bar`.
+the value `bar`.
 
 === Validation
 

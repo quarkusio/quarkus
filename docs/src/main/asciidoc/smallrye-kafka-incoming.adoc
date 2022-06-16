@@ -84,7 +84,7 @@ Type: _string_ | false |
 
 Type: _boolean_ | false | `false`
 
-| [.no-hyphens]#*retry*# | Whether or not the connection to the broker is re-attempted in case of failure
+| [.no-hyphens]#*retry*# | Whether the connection to the broker is re-attempted in case of failure
 
 Type: _boolean_ | false | `true`
 
@@ -132,7 +132,7 @@ Type: _string_ | false |
 
 Type: _int_ | false | `1`
 
-| [.no-hyphens]#*requests*# | When `partitions` is greater than 1, this attribute allows configuring how many records are requested by each consumers every time.
+| [.no-hyphens]#*requests*# | When `partitions` is greater than 1, this attribute allows configuring how many records are requested by each consumer every time.
 
 Type: _int_ | false | `128`
 
@@ -152,7 +152,7 @@ Type: _string_ | false |
 
 Type: _boolean_ | false | `true`
 
-| [.no-hyphens]#*graceful-shutdown*# | Whether or not a graceful shutdown should be attempted when the application terminates.
+| [.no-hyphens]#*graceful-shutdown*# | Whether a graceful shutdown should be attempted when the application terminates.
 
 Type: _boolean_ | false | `true`
 

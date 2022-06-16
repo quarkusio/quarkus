@@ -25,7 +25,7 @@ include::{includes}/prerequisites.adoc[]
 The application built in this guide simulates a simple backend for a gourmet coffee e-shop. It implements a REST
 endpoint providing information about coffee samples we have on store.
 
-Let's imagine, although it's not implemented as such, that some of the methods in our endpoint require communication
+Let's imagine, although it's not implemented as such, that some methods in our endpoint require communication
 to external services like a database or an external microservice, which introduces a factor of unreliability.
 
 == Solution
@@ -197,8 +197,8 @@ Why not check that our application works? Run the Quarkus development server wit
 
 include::{includes}/devtools/dev.adoc[]
 
-and open `http://localhost:8080/coffee` in your browser. Make couple of requests (remember, some of them we expect
-to fail). At least some of the requests should show us the list of our coffee samples in JSON, the rest will fail
+and open `http://localhost:8080/coffee` in your browser. Make a couple of requests (remember, some of them are expected
+to fail). At least some requests should show us the list of our coffee samples in JSON, the rest will fail
 with a `RuntimeException` thrown in `CoffeeResource#maybeFail()`.
 
 Congratulations, you've just made a working (although somewhat unreliable) Quarkus application!
@@ -231,7 +231,7 @@ You can hit refresh couple more times. Practically all requests should now be su
 method is still in fact failing in about 50 % of time, but every time it happens, the platform will automatically retry
 the call!
 
-To see that that the failures still happen, check the output of the development server. The log messages should be
+To see that the failures still happen, check the output of the development server. The log messages should be
 similar to these:
 
 [source]
@@ -289,7 +289,7 @@ is currently looking at. It's not a critical functionality, it's a nice-to-have.
 logic behind obtaining recommendations takes too long to execute, we would rather time out and render the UI without
 recommendations.
 
-Note that the timeout was configured to 250 ms, and a random artificial delay between 0 to 500 ms was introduced
+Note that the timeout was configured to 250 ms, and a random artificial delay between 0 and 500 ms was introduced
 into the `CoffeeResource#recommendations()` method.
 
 In your browser, go to `http://localhost:8080/coffee/2/recommendations` and hit refresh a couple of times.
@@ -421,7 +421,7 @@ going to alternate between two successful and two failed invocations.
 
 We also added a `@CircuitBreaker` annotation with `requestVolumeThreshold = 4`. `CircuitBreaker.failureRatio` is
 by default 0.5, and `CircuitBreaker.delay` is by default 5 seconds. That means that a circuit breaker will open
-when 2 of the last 4 invocations failed and it will stay open for 5 seconds.
+when 2 of the last 4 invocations failed, and it will stay open for 5 seconds.
 
 To test this out, do the following:
 
@@ -432,7 +432,7 @@ To test this out, do the following:
 4. Refresh a couple more times. Unless you waited too long, you should again see exception, but this time it's
    "CircuitBreakerOpenException: getAvailability". This exception indicates that the circuit breaker opened
    and the `CoffeeRepositoryService#getAvailability()` method is not being called anymore.
-5. Give it 5 seconds during which circuit breaker should close and you should be able to make two successful requests
+5. Give it 5 seconds during which circuit breaker should close, and you should be able to make two successful requests
    again.
 
 == Runtime configuration

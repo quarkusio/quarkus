@@ -39,7 +39,7 @@ Type: _string_ | false |
 
 | [.no-hyphens]#*cloud-events-insert-timestamp*#
 
-[.no-hyphens]#_(cloud-events-default-timestamp)_# | Whether or not the connector should insert automatically the `time` attribute into the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `time` attribute itself
+[.no-hyphens]#_(cloud-events-default-timestamp)_# | Whether the connector should insert automatically the `time` attribute into the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `time` attribute itself
 
 Type: _boolean_ | false | `true`
 

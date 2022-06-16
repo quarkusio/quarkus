@@ -90,7 +90,7 @@ following message "build: Add initial sources".
 == Packaging as a Native Image distribution
 
 Quarkus already knows how to create a native executable using GraalVM Native Image. The default setup will create a
-single executable file following a naming convention. However the JReleaser tool expects a distribution that is, a
+single executable file following a naming convention. However, the JReleaser tool expects a distribution that is, a
 conventional file structure packaged as a Zip or Tar file. The file structure must follow this layout:
 
 [source]
@@ -273,7 +273,7 @@ placed at `target/jreleaser/release/CHANGELOG.md` which at this point should loo
 5215200 build: Add initial sources
 ----
 
-Not very exicting. But we can change this by instructing JReleaser to format the changelog according to our own conventions. You
+Not very exciting, but we can change this by instructing JReleaser to format the changelog according to our own conventions. You
 can manually specify patterns to categorize commits however if you chose to follow Conventional Commits we can instruct JReleaser
 to do the same. Add the following to the JReleaser plugin configuration section:
 
@@ -473,9 +473,9 @@ For this to work we simply have to enable Homebrew in the JReleaser plugin confi
                 </distributions>
 ----
 
-One last thing, it's a good practice to publish Homebrew formulae for non-snapshot releases thus change the project's version
-from `1.0.0-SNAPSHOT` to say `1.0.0.Alpha1` or go directly with `1.0.0` as you feel like doing. One last commit and we're done,
-say "feat: Add Homebrew packager configuration" as commit message. Alright, we're finally ready, let's post a release!
+One last thing: it's a good practice to publish Homebrew formulae for non-snapshot releases thus change the project's version
+from `1.0.0-SNAPSHOT` to say `1.0.0.Alpha1` or go directly with `1.0.0` as you feel like doing. One last commit, and we're done:
+say `feat: Add Homebrew packager configuration` as commit message. Alright, we're finally ready, let's post a release!
 
 == Creating a release
 

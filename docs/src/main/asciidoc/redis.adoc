@@ -489,7 +489,7 @@ First, we will need to package it:
 
 include::{includes}/devtools/build.adoc[]
 
-NOTE: This command will start a Redis instance to execute the tests. Thus your Redis containers need to be stopped.
+NOTE: This command will start a Redis instance to execute the tests. Thus, your Redis containers need to be stopped.
 
 Then run it:
 

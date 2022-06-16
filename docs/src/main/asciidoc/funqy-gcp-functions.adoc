@@ -22,7 +22,7 @@ include::{includes}/prerequisites.adoc[]
 
 == Login to Google Cloud
 
-Login to Google Cloud is necessary for deploying the application and it can be done as follows:
+Login to Google Cloud is necessary for deploying the application. It can be done as follows:
 
 [source,bash,subs=attributes+]
 ----
@@ -46,7 +46,7 @@ include::{includes}/devtools/create-app.adoc[]
 
 == The Code
 
-There is nothing special about the code and more importantly nothing Google Cloud specific.  Funqy functions can be deployed to many different
+There is nothing special about the code and more importantly nothing Google Cloud specific.  Funqy functions can be deployed to many
 environments and Google Cloud Functions is one of them.
 
 [[choose]]
@@ -141,7 +141,7 @@ quarkus.funqy.export=helloPubSubWorld
 To build your application, you can package your application via `mvn clean package`.
 You will have a single JAR inside the `target/deployment` repository that contains your classes and all your dependencies in it.
 
-Then you will be able to use `gcloud` to deploy your function to Google Cloud, the `gcloud` command will be different depending from which event you want to be triggered.
+Then you will be able to use `gcloud` to deploy your function to Google Cloud. The `gcloud` command will be different depending on which event you want to trigger.
 
 [WARNING]
 ====
@@ -187,7 +187,7 @@ To trigger an event to this function, you can use the `gcloud functions call` co
 gcloud functions call quarkus-example-funky-pubsub --data '{"data":"Pub/Sub"}'
 ----
 
-The `--data '{"data":"Hello, Pub/Sub"}'` option allow to specify the message to be send to PubSub.
+The `--data '{"data":"Hello, Pub/Sub"}'` option allows you to specify the message to be sent to PubSub.
 
 === Background Functions - Cloud Storage
 

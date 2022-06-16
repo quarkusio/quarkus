@@ -99,7 +99,7 @@ public class ArcConfig {
      * Each element value is used to match an alternative bean class, an alternative stereotype annotation type or a bean class
      * that declares an alternative producer. If any value matches then the priority of {@link Integer#MAX_VALUE} is used for
      * the relevant bean. The priority declared via {@link javax.annotation.Priority} or
-     * {@link io.quarkus.arc.AlternativePriority} is overriden.
+     * {@link io.quarkus.arc.AlternativePriority} is overridden.
      */
     @ConfigItem
     public Optional<List<String>> selectedAlternatives;

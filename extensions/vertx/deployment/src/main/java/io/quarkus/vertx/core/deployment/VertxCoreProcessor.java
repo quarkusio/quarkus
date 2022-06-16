@@ -175,7 +175,7 @@ class VertxCoreProcessor {
     LogCategoryBuildItem preventLoggerContention() {
         //Prevent the Logging warning about the TCCL checks being disabled to be logged;
         //this is similar to #cleanupVertxWarnings but prevents it by changing the level:
-        // it takes advantage of the fact that there is a single other log in thi class,
+        // it takes advantage of the fact that there is a single other log in this class,
         // and it happens to be at error level.
         //This is more effective than the LogCleanupFilterBuildItem as we otherwise have
         //contention since this message could be logged very frequently.

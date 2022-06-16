@@ -948,7 +948,7 @@ public class ResteasyServerCommonProcessor {
     /**
      * @param allowedClasses the classes returned by the methods {@link Application#getClasses()} and
      *        {@link Application#getSingletons()} to keep.
-     * @param excludedClasses the classes that have been annotated wih unsuccessful build time conditions and that
+     * @param excludedClasses the classes that have been annotated with unsuccessful build time conditions and that
      *        need to be excluded from the list of providers.
      * @param jaxrsProvidersToRegisterBuildItem the initial {@code jaxrsProvidersToRegisterBuildItem} before being
      *        filtered

@@ -35,7 +35,7 @@ public class AsyncRequestFilterResource {
         //                || isAsync(preMatchFilter2)
         //                || isAsync(preMatchFilter3);
         //        if (async != ctx.isSuspended())
-        //            return Response.serverError().entity("Request suspention is wrong").build();
+        //            return Response.serverError().entity("Request suspension is wrong").build();
         return Response.ok("resource").build();
     }
 
@@ -55,7 +55,7 @@ public class AsyncRequestFilterResource {
         //                || isAsync(preMatchFilter2)
         //                || isAsync(preMatchFilter3);
         //        if (async != ctx.isSuspended())
-        //            throw new WebApplicationException(Response.serverError().entity("Request suspention is wrong").build());
+        //            throw new WebApplicationException(Response.serverError().entity("Request suspension is wrong").build());
         return "resource";
     }
 

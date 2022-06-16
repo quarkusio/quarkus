@@ -181,7 +181,7 @@ public class KnativeEventsBindingRecorder {
         FunctionConstructor.CONTAINER = beanContainer;
 
         // This needs to happen in start at RUNTIME so that
-        // mappings can be overriden by environment variables
+        // mappings can be overridden by environment variables
         FunctionInvoker defaultInvoker = null;
         if (funqyConfig.export.isPresent()) {
             defaultInvoker = FunctionRecorder.registry.matchInvoker(funqyConfig.export.get());

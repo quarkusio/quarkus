@@ -20,7 +20,7 @@ public class AutoScalingConfig {
 
     /**
      * The autoscaling metric to use.
-     * Possible values (concurency, rps, cpu).
+     * Possible values (concurrency, rps, cpu).
      *
      * @return The cpu metric or NONE if no metric has been selected.
      */

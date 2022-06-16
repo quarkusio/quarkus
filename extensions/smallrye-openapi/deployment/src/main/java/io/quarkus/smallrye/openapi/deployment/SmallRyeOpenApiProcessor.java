@@ -180,7 +180,7 @@ public class SmallRyeOpenApiProcessor {
             SmallRyeOpenApiConfig openApiConfig,
             LaunchModeBuildItem launchMode,
             OutputTargetBuildItem outputTargetBuildItem) throws IOException {
-        // Add any aditional directories if configured
+        // Add any additional directories if configured
         if (launchMode.getLaunchMode().isDevOrTest() && openApiConfig.additionalDocsDirectory.isPresent()) {
             List<Path> additionalStaticDocuments = openApiConfig.additionalDocsDirectory.get();
             for (Path path : additionalStaticDocuments) {
@@ -872,7 +872,7 @@ public class SmallRyeOpenApiProcessor {
         addStaticModelIfExist(results, ignorePatterns, Format.JSON, META_INF_OPENAPI_JSON);
         addStaticModelIfExist(results, ignorePatterns, Format.JSON, WEB_INF_CLASSES_META_INF_OPENAPI_JSON);
 
-        // Add any aditional directories if configured
+        // Add any additional directories if configured
         if (openApiConfig.additionalDocsDirectory.isPresent()) {
             List<Path> additionalStaticDocuments = openApiConfig.additionalDocsDirectory.get();
             for (Path path : additionalStaticDocuments) {

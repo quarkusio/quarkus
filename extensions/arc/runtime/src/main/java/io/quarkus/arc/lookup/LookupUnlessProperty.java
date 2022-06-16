@@ -12,7 +12,7 @@ import javax.enterprise.inject.Instance;
  * Indicates that a bean should only be obtained by programmatic lookup if the property does not match the provided value.
  * <p>
  * This annotation is repeatable. A bean will be included if all of the conditions defined by the {@link LookupUnlessProperty}
- * and {@link LookupIfProperty} annotations are satisifed.
+ * and {@link LookupIfProperty} annotations are satisfied.
  *
  * <pre>
  * <code>

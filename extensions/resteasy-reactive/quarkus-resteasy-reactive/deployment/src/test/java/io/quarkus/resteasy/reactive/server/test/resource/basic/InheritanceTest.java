@@ -24,7 +24,7 @@ import io.quarkus.test.QuarkusUnitTest;
 /**
  * @tpSubChapter Resource
  * @tpChapter Integration tests
- * @tpTestCaseDetails Tests annotation inheritence from interface.
+ * @tpTestCaseDetails Tests annotation inheritance from interface.
  * @tpSince RESTEasy 3.0.20
  */
 @DisplayName("Inheritance Test")

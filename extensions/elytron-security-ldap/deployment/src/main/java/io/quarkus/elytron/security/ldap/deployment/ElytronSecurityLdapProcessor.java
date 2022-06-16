@@ -28,7 +28,7 @@ class ElytronSecurityLdapProcessor {
 
     @BuildStep
     AllowJNDIBuildItem enableJndi() {
-        //unfortunatly we can't really use LDAP without JNDI
+        //unfortunately we can't really use LDAP without JNDI
         return new AllowJNDIBuildItem();
     }
 

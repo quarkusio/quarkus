@@ -68,7 +68,7 @@ public class DkimSignOptionsConfig {
     public OptionalInt bodyLimit;
 
     /**
-     * Configures to enable or disable signature sign timestmap.
+     * Configures to enable or disable signature sign timestamp.
      */
     @ConfigItem
     public Optional<Boolean> signatureTimestamp;

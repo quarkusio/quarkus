@@ -8,7 +8,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 /**
- * Test for continuos testing with OpenTelemetry
+ * Test for continuous testing with OpenTelemetry
  */
 @QuarkusTest
 public class TracerRouterUT {

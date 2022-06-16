@@ -1256,7 +1256,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                                             context.loadDeferred(out));
                                     for (DeferredParameter i : params) {
                                         //add the parameter
-                                        //TODO: this is not guareded against large collections, probably not an issue in practice
+                                        //TODO: this is not guarded against large collections, probably not an issue in practice
                                         method.invokeInterfaceMethod(COLLECTION_ADD, prop, context.loadDeferred(i));
                                     }
                                 }
@@ -1522,7 +1522,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             @Override
             void doPrepare(MethodContext context) {
                 //this is where the object construction happens
-                //first create the actial object
+                //first create the actual object
                 for (SerializationStep i : ctorSetupSteps) {
                     i.prepare(context);
                 }
@@ -2134,7 +2134,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
     }
 
     /**
-     * A group of instructions that will always be exectued in the same method
+     * A group of instructions that will always be executed in the same method
      */
     interface InstructionGroup {
         void write(MethodContext context, MethodCreator creator, ResultHandle array);

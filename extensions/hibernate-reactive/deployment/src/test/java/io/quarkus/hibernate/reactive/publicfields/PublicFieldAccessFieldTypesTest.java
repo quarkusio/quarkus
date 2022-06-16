@@ -52,7 +52,7 @@ public class PublicFieldAccessFieldTypesTest {
                 .chain(id -> sessionFactory.withTransaction((session, tx) -> session.find(MyEntity.class, id))),
                 loadedEntity -> notPassingAssertion(loadedEntity, delegate));
 
-        // Now again, but modify the entity and assert dirtyness was detected:
+        // Now again, but modify the entity and assert dirtiness was detected:
         asserter.assertThat(() -> sessionFactory.withTransaction((session, tx) -> {
             MyEntity entity = new MyEntity();
             return session.persist(entity).replaceWith(() -> entity.id);

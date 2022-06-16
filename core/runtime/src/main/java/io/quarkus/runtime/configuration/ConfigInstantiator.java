@@ -124,7 +124,7 @@ public class ConfigInstantiator {
                             field.set(o, value.get());
                         } else if (!configItem.defaultValue().equals(ConfigItem.NO_DEFAULT)) {
                             //the runtime config source handles default automatically
-                            //however this may not have actually been installed depending on where the failure occured
+                            //however this may not have actually been installed depending on where the failure occurred
                             field.set(o, conv.convert(configItem.defaultValue()));
                         }
                     } catch (NoSuchElementException ignored) {

@@ -459,7 +459,7 @@ public class JarResultBuildStep {
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                             throws IOException {
                         final String relativePath = toUri(root.relativize(file));
-                        //if this has been transfomed we do not copy it
+                        //if this has been transformed we do not copy it
                         // if it's a signature file (under the <jar>/META-INF directory),
                         // then we don't add it to the uber jar
                         if (isBlockOrSF(relativePath) &&

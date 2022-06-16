@@ -15,7 +15,7 @@ public class DevConsoleManager {
     private static volatile Object quarkusBootstrap;
     private static volatile boolean doingHttpInitiatedReload;
     /**
-     * Global map that can be used to share data betweeen the runtime and deployment side
+     * Global map that can be used to share data between the runtime and deployment side
      * to enable communication.
      * <p>
      * Key names should be namespaced.

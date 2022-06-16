@@ -32,9 +32,9 @@ public class KafkaDevServicesContinuousTestingWorkingAppPropsTestCase {
             });
 
     /**
-     * Similar to {@link KafkaDevServicesContinuousTestingTestCase} however it starts with application.properties configued
+     * Similar to {@link KafkaDevServicesContinuousTestingTestCase} however it starts with application.properties configured.
      *
-     * see https://github.com/quarkusio/quarkus/issues/19180
+     * See https://github.com/quarkusio/quarkus/issues/19180.
      */
     @Test
     public void testContinuousTestingScenario3() {

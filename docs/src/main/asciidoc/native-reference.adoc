@@ -267,22 +267,11 @@ These reports are some of the most useful resources when encountering issues wit
 
 === Call Tree Reports
 
-`call_tree` text file report is one of the default reports generated when the `-Dquarkus.native.enable-reports` option is passed in.
-This is useful for getting an approximation on why a method/class is included in the binary.
-However, the text format makes it very difficult to read and can take up a lot of space.
-
-Since Mandrel 21.3.0.0, the call tree is also reported as a group of CSV files.
-The CSV output can be enabled by adding `-H:PrintAnalysisCallTreeType=CSV` to the additional native arguments. E.g.
-
-[source,bash,subs=attributes+]
-----
-./mvnw package -DskipTests -Dnative \
-    -Dquarkus.native.enable-reports \
-    -Dquarkus.native.additional-build-args=-H:PrintAnalysisCallTreeType=CSV
-----
-
-These can in turn be imported into a graph database, such as Neo4j,
+`call_tree` csv file reports are some of the default reports generated when the `-Dquarkus.native.enable-reports` option is passed in.
+These csv files can be imported into a graph database, such as Neo4j,
 to inspect them more easily and run queries against the call tree.
+This is useful for getting an approximation on why a method/class is included in the binary.
+
 Let’s see this in action.
 
 First, start a Neo4j instance:
@@ -786,8 +775,7 @@ Next, generate a flame graph using the data captured via `perf record`:
 
 [source,bash]
 ----
-$ perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl > out.perf-folded
-$ ${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
+perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl | ${FG_HOME}/flamegraph.pl > flamegraph.svg
 ----
 
 The flame graph is an svg file that a web browser, such as Firefox, can easily display.
@@ -851,8 +839,7 @@ Run the curl command once again, stop the binary, generate the flamegraphs and o
 
 [source,bash]
 ----
-perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl > out.perf-folded
-${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
+perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl | ${FG_HOME}/flamegraph.pl > flamegraph.svg
 ----
 
 The flamegraph now shows where the bottleneck is.
@@ -959,8 +946,7 @@ Make and open a flamegraph:
 
 [source,bash]
 ----
-perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl > out.perf-folded
-${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
+perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl | ${FG_HOME}/flamegraph.pl > flamegraph.svg
 ----
 
 image::native-reference-multi-flamegraph-separate-threads.svg[Muti-thread perf flamegraph with separate threads]
@@ -988,8 +974,7 @@ in order to make all threads have the same name. E.g.
 
 [source,bash]
 ----
-perf script | sed -E "s/thread-[0-9]*/thread/" | ${FG_HOME}/stackcollapse-perf.pl > out.perf-folded
-${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
+perf script | sed -E "s/thread-[0-9]*/thread/" | ${FG_HOME}/stackcollapse-perf.pl | ${FG_HOME}/flamegraph.pl > flamegraph.svg
 ----
 
 image::native-reference-multi-flamegraph-joined-threads.svg[Muti-thread perf flamegraph with joined threads]
@@ -1071,7 +1056,7 @@ docker run -t -i --rm -v ${PWD}:/data -p 8080:8080 fedora-tools:v1 /bin/bash
 
 Then start the application in `gdb` and execute `run`.
 
-[source,bash]
+[source]
 ----
 gdb ./target/debugging-native-1.0.0-SNAPSHOT-runner
 ...
@@ -1098,7 +1083,7 @@ Thread 4 "ecutor-thread-0" received signal SIGSEGV, Segmentation fault.
 
 If we try to get more info about the backtrace that led to this crash we will see that there is not enough information available.
 
-[source,bash]
+[source]
 ----
 (gdb) bt
 #0  0x0000000000418b5e in ?? ()
@@ -1145,7 +1130,7 @@ com.oracle.svm.core.UnmanagedMemoryUtil::copyLongsBackward(org.graalvm.word.Poin
 We already see that `gdb` is able to tell us which method caused the crash and where it’s located in the source code.
 We can also get a backtrace of the call graph that led us to this state:
 
-[source,bash]
+[source]
 ----
 (gdb) bt
 #0  com.oracle.svm.core.UnmanagedMemoryUtil::copyLongsBackward(org.graalvm.word.Pointer *, org.graalvm.word.Pointer *, org.graalvm.word.UnsignedWord *) () at com/oracle/svm/core/UnmanagedMemoryUtil.java:169
@@ -1163,7 +1148,7 @@ Similarly, we can get a backtrace of the call graph of other threads.
 
 1. First, we can list the available threads with:
 +
-[source,bash]
+[source]
 ----
 (gdb) info threads
   Id   Target Id                                             Frame 
@@ -1177,7 +1162,7 @@ Similarly, we can get a backtrace of the call graph of other threads.
 +
 2. select the thread we want to inspect, e.g. thread 1:
 +
-[source,bash]
+[source]
 ----
 (gdb) thread 1
 [Switching to thread 1 (Thread 0x7ffff7a58d00 (LWP 1028851))]
@@ -1187,7 +1172,7 @@ Similarly, we can get a backtrace of the call graph of other threads.
 +
 3. and, finally, print the stack trace:
 +
-[source,bash]
+[source]
 ----
 (gdb) bt
 #0  __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x2cd7adc) at futex-internal.c:57
@@ -1218,7 +1203,7 @@ Similarly, we can get a backtrace of the call graph of other threads.
 
 Alternatively, we can list the backtraces of all threads with a single command:
 
-[source,bash]
+[source]
 ----
 (gdb) thread apply all backtrace
 
@@ -1268,7 +1253,7 @@ Thread 20 (Thread 0x7fffc9ffb640 (LWP 1028870) "tloop-thread-13"):
 
 Note, however, that despite being able to get a backtrace we can still not list the source code at point with the `list` command.
 
-[source,bash]
+[source]
 ----
 (gdb) list
 164    in com/oracle/svm/core/UnmanagedMemoryUtil.java
@@ -1279,7 +1264,7 @@ We are running the executable outside of the target directory.
 To fix this we can either rerun `gdb` from the target directory or,
 run `directory target/debugging-native-1.0.0-SNAPSHOT-native-image-source-jar/sources` e.g.:
 
-[source,bash]
+[source]
 ----
 (gdb) directory target/debugging-native-1.0.0-SNAPSHOT-native-image-source-jar/sources
 Source directories searched: /data/target/debugging-native-1.0.0-SNAPSHOT-native-image-source-jar/sources:$cdir:$cwd

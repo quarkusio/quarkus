@@ -482,7 +482,7 @@ TIP: The use of `@MultipartForm` is actually unnecessary as RESTEasy Reactive ca
 
 WARNING: When handling file uploads, it is very important to move the file to permanent storage (like a database, a dedicated file system or a cloud storage) in your code that handles the POJO.
 Otherwise, the file will no longer be accessible when the request terminates.
-Moreoever if `quarkus.http.body.delete-uploaded-files-on-end` is set to true, Quarkus will delete the uploaded file when the HTTP response is sent. If the setting is disabled,
+Moreover, if `quarkus.http.body.delete-uploaded-files-on-end` is set to true, Quarkus will delete the uploaded file when the HTTP response is sent. If the setting is disabled,
 the file will reside on the file system of the server (in the directory defined by the `quarkus.http.body.uploads-directory` configuration option), but as the uploaded files are saved
 with a UUID file name and no additional metadata is saved, these files are essentially a random dump of files.
 
@@ -528,7 +528,13 @@ public class Endpoint {
 }
 ----
 
-WARNING: For the time being, returning Multipart data is limited to be blocking endpoints. 
+WARNING: For the time being, returning Multipart data is limited to be blocking endpoints.
+
+==== Handling malformed input
+
+As part of reading the multipart body, RESTEasy Reactive invokes the proper MessageBodyReaderlink:{jaxrsapi}/javax/ws/rs/ext/MessageBodyReader.html[`MessageBodyReader`] for each part of the request.
+If an `IOException` occurs for one of these parts (for example if Jackson was unable to deserialize a JSON part), then a `org.jboss.resteasy.reactive.server.multipart.MultipartPartReadingException` is thrown.
+If this exception is not handled by the application as mentioned in <<exception-mapping>>, an HTTP 400 response is returned by default.
 
 === Returning a response body
 

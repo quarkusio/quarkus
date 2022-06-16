@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.MediaType;
@@ -23,6 +22,7 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.core.multipart.FormData.FormValue;
 import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
+import org.jboss.resteasy.reactive.server.multipart.MultipartPartReadingException;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 
 /**
@@ -78,7 +78,7 @@ public final class MultipartSupport {
                     } catch (IOException e) {
                         log.error("Unable to convert value provided for attribute '" + attributeName
                                 + "' of the multipart request into type '" + type.getName() + "'", e);
-                        throw new InternalServerErrorException(e);
+                        throw new MultipartPartReadingException(e);
                     } finally {
                         context.setInputStream(originalInputStream);
                     }
@@ -94,7 +94,7 @@ public final class MultipartSupport {
                     } catch (IOException e) {
                         log.error("Unable to convert value provided for attribute '" + attributeName
                                 + "' of the multipart request into type '" + type.getName() + "'", e);
-                        throw new InternalServerErrorException(e);
+                        throw new MultipartPartReadingException(e);
                     }
                 }
             }

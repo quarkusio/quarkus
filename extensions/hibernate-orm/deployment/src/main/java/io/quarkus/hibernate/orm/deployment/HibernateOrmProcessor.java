@@ -94,7 +94,7 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderConstantDefinitionBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -102,7 +102,6 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
@@ -266,11 +265,10 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep(onlyIfNot = IsNormal.class)
-    void devServicesAutoGenerateByDefault(DevServicesLauncherConfigResultBuildItem devServicesResult,
-            List<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItems,
+    void devServicesAutoGenerateByDefault(List<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItems,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             HibernateOrmConfig config,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfigurationDefaultBuildItemBuildProducer) {
+            BuildProducer<DevServicesAdditionalConfigBuildItem> devServicesAdditionalConfigProducer) {
         Set<String> managedSources = schemaReadyBuildItems.stream().map(JdbcDataSourceSchemaReadyBuildItem::getDatasourceNames)
                 .collect(HashSet::new, Collection::addAll, Collection::addAll);
 
@@ -283,18 +281,17 @@ public final class HibernateOrmProcessor {
                 propertyKeyIndicatingDataSourceConfigured = "quarkus.datasource." + dataSourceName.get() + ".username";
             }
 
-            if (!ConfigUtils.isPropertyPresent(propertyKeyIndicatingDataSourceConfigured)) {
-                if (devServicesResult.getConfig().containsKey(propertyKeyIndicatingDataSourceConfigured)
-                        && !managedSources.contains(dataSourceName.orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME))) {
-                    String databaseGenerationPropertyKey = HibernateOrmRuntimeConfig.puPropertyKey(entry.getKey(),
-                            "database.generation");
-                    if (!ConfigUtils.isPropertyPresent(databaseGenerationPropertyKey)) {
-                        String forcedValue = "drop-and-create";
-                        LOG.infof("Setting %s=%s to initialize Dev Services managed database", databaseGenerationPropertyKey,
-                                forcedValue);
-                        runTimeConfigurationDefaultBuildItemBuildProducer
-                                .produce(new RunTimeConfigurationDefaultBuildItem(databaseGenerationPropertyKey, forcedValue));
-                    }
+            if (!managedSources.contains(dataSourceName.orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME))) {
+                String databaseGenerationPropertyKey = HibernateOrmRuntimeConfig.puPropertyKey(entry.getKey(),
+                        "database.generation");
+                if (!ConfigUtils.isPropertyPresent(propertyKeyIndicatingDataSourceConfigured)
+                        && !ConfigUtils.isPropertyPresent(databaseGenerationPropertyKey)) {
+                    String forcedValue = "drop-and-create";
+                    devServicesAdditionalConfigProducer
+                            .produce(new DevServicesAdditionalConfigBuildItem(propertyKeyIndicatingDataSourceConfigured,
+                                    databaseGenerationPropertyKey, forcedValue,
+                                    () -> LOG.infof("Setting %s=%s to initialize Dev Services managed database",
+                                            databaseGenerationPropertyKey, forcedValue)));
                 }
             }
         }

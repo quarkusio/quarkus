@@ -88,7 +88,7 @@ public final class ArtifactInfoUtil {
                 // This can happen if you run an example app in dev mode
                 // and this app is part of a multi-module project which also declares the extension
                 // Just try to locate the pom.properties file in the target/maven-archiver directory
-                // Note that this hack will not work if addMavenDescriptor=false or if the pomPropertiesFile is overriden
+                // Note that this hack will not work if addMavenDescriptor=false or if the pomPropertiesFile is overridden
                 Path location = Paths.get(codeLocation.toURI());
                 while (!isDeploymentTargetClasses(location) && location.getParent() != null) {
                     location = location.getParent();

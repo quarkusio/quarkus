@@ -94,7 +94,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
         }
         if (containerBuildRequested) {
             //TODO: this is a bit ugly
-            //we don't nessesarily need these artifacts
+            //we don't necessarily need these artifacts
             //but if we include them it does mean that you can auto create docker images
             //and deploy to kube etc
             //for an ordinary build with no native and no docker this is a waste

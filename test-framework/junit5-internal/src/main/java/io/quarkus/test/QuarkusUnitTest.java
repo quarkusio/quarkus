@@ -266,7 +266,7 @@ public class QuarkusUnitTest
     /**
      * If this test should use a single ClassLoader to load all the classes.
      *
-     * This is sometimes nessesary when testing Quarkus itself, and we want the test classes
+     * This is sometimes necessary when testing Quarkus itself, and we want the test classes
      * and Quarkus classes to be in the same CL.
      *
      */

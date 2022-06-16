@@ -1,1 +1,1 @@
-* xref:index.adoc[{doc-title}]
+* xref:index.adoc[{extension.full-name}]

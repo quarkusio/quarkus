@@ -1,4 +1,4 @@
-= {doc-title}
+= {extension.full-name}
 
 include::./includes/attributes.adoc[]
 

@@ -14,8 +14,8 @@
     </parent>
 {/if}
     <artifactId>{namespace.id}{extension.id}-integration-tests</artifactId>
-{#if extension.name}
-<name>{namespace.name}{extension.name} - Integration Tests</name>
+{#if extension.full-name}
+<name>{extension.full-name} - Integration Tests</name>
 {/if}
 
     <properties>

@@ -11,8 +11,8 @@
     </parent>
 
     <artifactId>{namespace.id}{extension.id}-docs</artifactId>
-    {#if extension.name}
-    <name>{namespace.name}{extension.name} - Documentation</name>
+    {#if extension.full-name}
+    <name>{extension.full-name} - Documentation</name>
     {/if}
 
     <dependencies>

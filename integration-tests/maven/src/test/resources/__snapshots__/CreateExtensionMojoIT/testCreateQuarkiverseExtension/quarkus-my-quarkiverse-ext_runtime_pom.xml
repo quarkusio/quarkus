@@ -8,7 +8,7 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>quarkus-my-quarkiverse-ext</artifactId>
-  <name>Quarkus - My Quarkiverse extension - Runtime</name>
+  <name>Quarkus My Quarkiverse extension - Runtime</name>
   <description>My Quarkiverse extension description</description>
   <dependencies>
     <dependency>

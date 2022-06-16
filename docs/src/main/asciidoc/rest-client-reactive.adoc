@@ -134,6 +134,48 @@ The `getById` method above is a blocking call. It should not be invoked on the e
 The <<async-support>> section describes how to make non-blocking calls.
 ====
 
+=== Query Parameters
+
+The easiest way to specify a query parameter is to annotate a client method parameter with the `@QueryParam` or the `@RestQuery`.
+The `@RestQuery` is equivalent of the `@QueryParam`, but with optional name. Additionally, it can be also used to pass query parameters
+as a `Map`, which is convenient if parameters are not known in advance.
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.reactive.RestQuery;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MultivaluedMap;
+import java.util.Map;
+import java.util.Set;
+
+@Path("/extensions")
+@RegisterRestClient(configKey = "extensions-api")
+public interface ExtensionsService {
+
+    @GET
+    Set<Extension> getById(@QueryParam("id") Integer id);
+
+    @GET
+    Set<Extension> getByName(@RestQuery String name); <1>
+
+    @GET
+    Set<Extension> getByFilter(@RestQuery Map<String, String> filter); <2>
+
+    @GET
+    Set<Extension> getByFilters(@RestQuery MultivaluedMap<String, String> filters); <3>
+
+}
+----
+<1> Request query will include parameter with key `name`
+<2> Each `Map` entry represents exactly one query parameter
+<3> `MultivaluedMap` allows you to send array values
+
 === Path Parameters
 
 If the GET request requires path parameters you can leverage the `@PathParam("parameter-name")` annotation instead of

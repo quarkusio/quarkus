@@ -1668,7 +1668,7 @@ public class JaxrsClientReactiveProcessor {
                 return methodCreator.invokeStaticMethod(
                         MethodDescriptor.ofMethod(String.class, "valueOf", String.class, long.class), fieldValue);
             default:
-                throw new IllegalArgumentException("Unsupported primitive type in mulitpart form field: "
+                throw new IllegalArgumentException("Unsupported primitive type in multipart form field: "
                         + field.declaringClass().name() + "." + field.name());
         }
     }

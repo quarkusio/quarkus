@@ -30,7 +30,7 @@ class PrometheusMetricsRegistryTest {
     @Test
     @Order(2)
     void testUnknownUrl() {
-        when().get("/messsage/notfound").then().statusCode(404);
+        when().get("/message/notfound").then().statusCode(404);
     }
 
     @Test

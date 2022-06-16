@@ -34,7 +34,7 @@ public final class StatusEmitterInvoker extends DelegateInvoker {
     public CompletionStage<Void> invoke(ScheduledExecution execution) throws Exception {
         return delegate.invoke(execution).whenComplete((v, t) -> {
             if (t != null) {
-                LOG.errorf(t, "Error occured while executing task for trigger %s", execution.getTrigger());
+                LOG.errorf(t, "Error occurred while executing task for trigger %s", execution.getTrigger());
                 FailedExecution failed = new FailedExecution(execution, t);
                 failedEvent.fireAsync(failed);
                 failedEvent.fire(failed);

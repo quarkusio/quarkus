@@ -48,7 +48,7 @@ public class TestRecorder {
     }
 
     /**
-     * Passes the public ket to the PublicKeyProducer for injection into CDI beans at runtime
+     * Passes the public key to the PublicKeyProducer for injection into CDI beans at runtime
      *
      * @param publicKey - public key
      * @param beanContainer - CDI bean container

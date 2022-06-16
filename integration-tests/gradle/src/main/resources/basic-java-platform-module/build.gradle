@@ -1,11 +1,9 @@
 buildscript {
      repositories {
-          if (System.properties.containsKey('maven.repo.local')) {
-               maven {
-                    url System.properties.get('maven.repo.local')
-               }
-          } else {
-               mavenLocal()
+          mavenLocal {
+              content {
+                  includeGroupByRegex 'io.quarkus.*'
+              }
           }
           mavenCentral()
      }
@@ -18,13 +16,11 @@ allprojects {
 
 subprojects{
      repositories {
-          mavenCentral()
-          if (System.properties.containsKey('maven.repo.local')) {
-               maven {
-                    url System.properties.get('maven.repo.local')
-               }
-          } else {
-               mavenLocal()
+          mavenLocal {
+              content {
+                  includeGroupByRegex 'io.quarkus.*'
+              }
           }
+          mavenCentral()
      }
 }

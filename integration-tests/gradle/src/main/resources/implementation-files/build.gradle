@@ -1,12 +1,9 @@
 buildscript {
     repositories {
-        // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
-        if (System.properties.containsKey('maven.repo.local')) {
-            maven {
-                url System.properties.get('maven.repo.local')
+        mavenLocal {
+            content {
+                includeGroupByRegex 'io.quarkus.*'
             }
-        } else {
-            mavenLocal()
         }
         mavenCentral()
         gradlePluginPortal()
@@ -30,13 +27,10 @@ subprojects {
     }
 
     repositories {
-        // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
-        if (System.properties.containsKey('maven.repo.local')) {
-            maven {
-                url System.properties.get('maven.repo.local')
+        mavenLocal {
+            content {
+                includeGroupByRegex 'io.quarkus.*'
             }
-        } else {
-            mavenLocal()
         }
         mavenCentral()
     }

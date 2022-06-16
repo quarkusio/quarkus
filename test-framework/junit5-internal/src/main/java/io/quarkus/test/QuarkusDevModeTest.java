@@ -60,7 +60,7 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
 /**
  * A test extension for testing Quarkus development mode in extensions. Intended for use by extension developers
  * testing their extension functionality in dev mode. Unlike {@link QuarkusUnitTest} this will test against
- * a clean deployment for each test method. This is nessesary to prevent undefined behaviour by making sure the
+ * a clean deployment for each test method. This is necessary to prevent undefined behaviour by making sure the
  * deployment starts in a clean state for each test.
  * <p>
  * <p>
@@ -588,7 +588,7 @@ public class QuarkusDevModeTest
     private void sleepForFileChanges(Path path, long oldTime) {
         try {
             //we avoid modifying the file twice
-            //this can cause intermittent failures in the continous testing tests
+            //this can cause intermittent failures in the continuous testing tests
             long fm = modTime(path);
             if (fm > oldTime) {
                 return;

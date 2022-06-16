@@ -12,6 +12,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,6 +24,7 @@ import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
@@ -72,6 +74,12 @@ public class NativeImageBuildStep {
     private static final String TRUST_STORE_SYSTEM_PROPERTY_MARKER = "-Djavax.net.ssl.trustStore=";
     private static final String MOVED_TRUST_STORE_NAME = "trustStore";
     public static final String APP_SOURCES = "app-sources";
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuildGraal22_2OrLater.class)
+    void addExportsToNativeImage(BuildProducer<JPMSExportBuildItem> exports) {
+        // Needed by io.quarkus.runtime.ResourceHelper.registerResources
+        exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk"));
+    }
 
     @BuildStep(onlyIf = NativeBuild.class)
     ArtifactResultBuildItem result(NativeImageBuildItem image) {
@@ -807,7 +815,8 @@ public class NativeImageBuildStep {
                 }
 
                 if (jpmsExports != null) {
-                    for (JPMSExportBuildItem jpmsExport : jpmsExports) {
+                    HashSet<JPMSExportBuildItem> deduplicatedJpmsExport = new HashSet<>(jpmsExports);
+                    for (JPMSExportBuildItem jpmsExport : deduplicatedJpmsExport) {
                         nativeImageArgs.add(
                                 "-J--add-exports=" + jpmsExport.getModule() + "/" + jpmsExport.getPackage() + "=ALL-UNNAMED");
                     }

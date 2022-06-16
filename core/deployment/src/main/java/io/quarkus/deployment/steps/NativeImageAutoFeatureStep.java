@@ -26,6 +26,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ForceNonWeakReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.LambdaCapturingTypeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -40,6 +41,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuil
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuildGraal22_2OrLater;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -116,8 +118,22 @@ public class NativeImageAutoFeatureStep {
                 sb.toString().getBytes(StandardCharsets.UTF_8));
     }
 
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuildGraal22_2OrLater.class)
+    JPMSExportBuildItem addExportsToNativeImage(List<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses) {
+        // required in order to access com.oracle.svm.core.jni.JNIRuntimeAccess
+        if (jniRuntimeAccessibleClasses != null && !jniRuntimeAccessibleClasses.isEmpty()) {
+            return new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jni");
+        }
+        return null;
+    }
+
+    private boolean graalVM22_2OrLater() {
+        return Version.getCurrent().isSnapshot() || Version.getCurrent().compareTo(22, 2) >= 0;
+    }
+
     @BuildStep
     void generateFeature(BuildProducer<GeneratedNativeImageClassBuildItem> nativeImageClass,
+            BuildProducer<JPMSExportBuildItem> exports,
             List<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems,
             List<RuntimeInitializedPackageBuildItem> runtimeInitializedPackageBuildItems,
             List<RuntimeReinitializedClassBuildItem> runtimeReinitializedClassBuildItems,
@@ -239,6 +255,11 @@ public class NativeImageAutoFeatureStep {
         }
 
         if (!proxies.isEmpty()) {
+            if (graalVM22_2OrLater()) {
+                // Needed to access DYNAMIC_PROXY_REGISTRY
+                exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk.proxy"));
+            }
+
             ResultHandle proxySupportClass = overallCatch.loadClassFromTCCL(DYNAMIC_PROXY_REGISTRY);
             ResultHandle proxySupport = overallCatch.invokeStaticMethod(
                     IMAGE_SINGLETONS_LOOKUP,
@@ -259,6 +280,11 @@ public class NativeImageAutoFeatureStep {
 
         /* Resource includes and excludes */
         if (!resourcePatterns.isEmpty()) {
+            if (graalVM22_2OrLater()) {
+                // Needed to access LOOKUP_METHOD
+                exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.base", "com.oracle.svm.util"));
+            }
+
             ResultHandle resourcesRegistrySingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
                     overallCatch.loadClassFromTCCL("com.oracle.svm.core.configure.ResourcesRegistry"));
             TryBlock tc = overallCatch.tryBlock();
@@ -316,6 +342,12 @@ public class NativeImageAutoFeatureStep {
         }
 
         if (!resourceBundles.isEmpty()) {
+            if (graalVM22_2OrLater()) {
+                // Needed to access LOCALIZATION_FEATURE
+                exports.produce(
+                        new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk.localization"));
+            }
+
             AssignableResultHandle registerMethod = overallCatch.createVariable(Method.class);
             AssignableResultHandle locClass = overallCatch.createVariable(Class.class);
             TryBlock locTryBlock = overallCatch.tryBlock();
@@ -474,6 +506,10 @@ public class NativeImageAutoFeatureStep {
 
             if (entry.getValue().serialization) {
                 if (registerSerializationMethod == null) {
+                    if (graalVM22_2OrLater()) {
+                        // Needed by createRegisterSerializationForClassMethod to access LOOKUP_METHOD
+                        exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.base", "com.oracle.svm.util"));
+                    }
                     registerSerializationMethod = createRegisterSerializationForClassMethod(file);
                 }
 

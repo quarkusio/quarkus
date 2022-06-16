@@ -25,6 +25,7 @@ public final class QuarkusExtensionCodestartCatalog extends GenericCodestartCata
         NAMESPACE_NAME("namespace.name"),
         EXTENSION_ID("extension.id"),
         EXTENSION_NAME("extension.name"),
+        EXTENSION_FULL_NAME("extension.full-name"),
         EXTENSION_DESCRIPTION("extension.description"),
         EXTENSION_GUIDE("extension.guide"),
         GROUP_ID("group-id"),
@@ -47,8 +48,7 @@ public final class QuarkusExtensionCodestartCatalog extends GenericCodestartCata
         IT_PARENT_RELATIVE_PATH("it-parent.relative-path"),
         MAVEN_QUARKUS_EXTENSION_PLUGIN("maven.quarkus-extension-plugin"),
         MAVEN_COMPILER_PLUGIN_VERSION("maven.compiler-plugin-version"),
-        HAS_DOCS_MODULE("has-docs-module"),
-        DOC_TITLE("doc-title");
+        HAS_DOCS_MODULE("has-docs-module");
 
         private final String key;
 

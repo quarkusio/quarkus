@@ -208,11 +208,14 @@ public class CreateExtension {
 
         String namespaceId = getDefaultNamespaceId(layoutType);
         data.putIfAbsent(NAMESPACE_ID, namespaceId);
+        String namespaceName = computeDefaultNamespaceName(data.getRequiredStringValue(NAMESPACE_ID));
         String resolvedExtensionId = resolveExtensionId();
         ensureRequiredStringData(EXTENSION_ID, resolvedExtensionId);
         data.putIfAbsent(EXTENSION_NAME, capitalize(extensionId));
-        data.putIfAbsent(NAMESPACE_NAME, computeDefaultNamespaceName(data.getRequiredStringValue(NAMESPACE_ID)));
+        data.putIfAbsent(NAMESPACE_NAME, namespaceName);
         data.putIfAbsent(CLASS_NAME_BASE, toCapCamelCase(extensionId));
+        data.put(EXTENSION_FULL_NAME,
+                data.getRequiredStringValue(NAMESPACE_NAME) + data.getRequiredStringValue(EXTENSION_NAME));
 
         final String runtimeArtifactId = getRuntimeArtifactIdFromData();
 
@@ -249,7 +252,10 @@ public class CreateExtension {
                         String.format(DEFAULT_QUARKIVERSE_GUIDE_URL, resolvedExtensionId));
                 ensureRequiredStringData(QUARKUS_VERSION);
                 data.putIfAbsent(HAS_DOCS_MODULE, true);
-                data.putIfAbsent(DOC_TITLE, capitalize(namespaceId) + " " + data.getRequiredStringValue(EXTENSION_NAME));
+                data.put(EXTENSION_FULL_NAME,
+                        capitalize(data.getRequiredStringValue(NAMESPACE_ID)) + " "
+                                + data.getRequiredStringValue(EXTENSION_NAME));
+
                 // TODO: Support Quarkiverse multi extensions repo
                 builder.addCodestart(QuarkusExtensionCodestartCatalog.Code.QUARKIVERSE.key());
                 builder.addCodestart(QuarkusExtensionCodestartCatalog.Tooling.GIT.key());
@@ -488,6 +494,10 @@ public class CreateExtension {
 
         public void putIfAbsent(QuarkusExtensionData dataKey, Object value) {
             this.putIfAbsent(dataKey.key(), value);
+        }
+
+        public void put(QuarkusExtensionData dataKey, Object value) {
+            this.put(dataKey.key(), value);
         }
 
         public void putIfNonEmptyString(QuarkusExtensionData dataKey, String value) {

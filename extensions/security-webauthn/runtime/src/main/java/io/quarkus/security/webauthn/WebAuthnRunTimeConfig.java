@@ -71,7 +71,7 @@ public class WebAuthnRunTimeConfig {
      * <li>{@code CROSS_PLATFORM} - The Authenticator can roam across devices (e.g.: USB Authenticator)</li>
      * </ul>
      *
-     * For security reasons your application may choose to restrict to a specific attachment mode. If ommited, then
+     * For security reasons your application may choose to restrict to a specific attachment mode. If omitted, then
      * any mode is permitted.
      */
     @ConfigItem
@@ -117,7 +117,7 @@ public class WebAuthnRunTimeConfig {
      *
      * <ul>
      * <li>{@code NONE} - no attestation data is sent with registration</li>
-     * <li>{@code INDIRECT} - attestation data is sent with registration, yelding annomymized data by a trusted
+     * <li>{@code INDIRECT} - attestation data is sent with registration, yielding annomymized data by a trusted
      * CA</li>
      * <li>{@code DIRECT} - attestation data is sent with registration</li>
      * <li>{@code ENTERPRISE} - no attestation data is sent with registration. The device AAGUID is returned
@@ -158,7 +158,7 @@ public class WebAuthnRunTimeConfig {
 
     /**
      * Root certificates for attestation verification of authenticators. These are the root certificates from Google,
-     * Apple and FIDO Alliance. Certificates can be overriden, for example, when they are about to expire.
+     * Apple and FIDO Alliance. Certificates can be overridden, for example, when they are about to expire.
      */
     //private Map<String, X509Certificate> rootCertificates;
 

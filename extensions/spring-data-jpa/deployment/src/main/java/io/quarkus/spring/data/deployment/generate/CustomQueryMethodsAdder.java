@@ -504,7 +504,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                     // Use field names in the query-declared order
                     List<String> queryNames = queryMethod.getValue();
 
-                    // Object[] is the only paramter: values are in column/declared order
+                    // Object[] is the only parameter: values are in column/declared order
                     ResultHandle array = convert.getMethodParam(0);
 
                     for (int i = 0; i < queryNames.size(); i++) {

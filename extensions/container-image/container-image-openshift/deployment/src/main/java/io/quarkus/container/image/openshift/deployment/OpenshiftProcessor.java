@@ -137,7 +137,7 @@ public class OpenshiftProcessor {
 
         if (config.buildStrategy == BuildStrategy.BINARY) {
             // Jar directory priorities:
-            // 1. explictly specified by the user.
+            // 1. explicitly specified by the user.
             // 2. detected via OpenshiftBaseJavaImage
             // 3. fallback value
             String jarDirectory = config.jarDirectory
@@ -192,7 +192,7 @@ public class OpenshiftProcessor {
             builderImageProducer.produce(new BaseImageInfoBuildItem(config.baseNativeImage));
             Optional<OpenshiftBaseNativeImage> baseImage = OpenshiftBaseNativeImage.findMatching(config.baseNativeImage);
             // Native binary directory priorities:
-            // 1. explictly specified by the user.
+            // 1. explicitly specified by the user.
             // 2. detected via OpenshiftBaseNativeImage
             // 3. fallback value
             String nativeBinaryDirectory = config.nativeBinaryDirectory

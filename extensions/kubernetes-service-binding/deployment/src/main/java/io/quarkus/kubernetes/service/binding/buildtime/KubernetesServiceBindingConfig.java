@@ -11,7 +11,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class KubernetesServiceBindingConfig {
 
     /**
-     * A list of explictly configured services.
+     * A list of explicitly configured services.
      * The configured value will be used in order to generate the `ServiceBindig` resource (in case that kubernetes resource
      * generation is enabled).
      */

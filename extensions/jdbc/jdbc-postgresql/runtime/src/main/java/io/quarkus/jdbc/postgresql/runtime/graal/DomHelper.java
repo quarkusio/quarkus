@@ -32,7 +32,7 @@ public final class DomHelper {
     }
 
     // This is only ever invoked if field domResult got initialized; which in turn
-    // is only possible if setResult(Class) is reacheable.
+    // is only possible if setResult(Class) is reachable.
     public static String maybeProcessAsDomResult(DOMResult domResult, BaseConnection conn) throws SQLException {
         try {
             return (String) DomHelper.class.getMethod(obfuscatedMethodName(), DOMResult.class, BaseConnection.class)

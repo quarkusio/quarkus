@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  * via the {#code enableIfMissing} property.
  * <p>
  * This annotation is repeatable. A bean will only be enabled if all of the conditions defined by the
- * {@link UnlessBuildProperty} annotations are satisifed.
+ * {@link UnlessBuildProperty} annotations are satisfied.
  */
 @Repeatable(UnlessBuildProperty.List.class)
 @Retention(RetentionPolicy.RUNTIME)

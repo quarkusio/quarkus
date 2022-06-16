@@ -48,7 +48,7 @@ public final class MultipartSupport {
                 if (fileUploadsForName != null) {
                     for (FormData.FormValue fileUpload : fileUploadsForName) {
                         if (fileUpload.isFileItem()) {
-                            log.debug("Attribute '" + attributeName
+                            log.warn("Attribute '" + attributeName
                                     + "' of the multipart request is a file and therefore its value is not set. To obtain the contents of the file, use type '"
                                     + FileUpload.class + "' as the field type.");
                             break;
@@ -76,7 +76,8 @@ public final class MultipartSupport {
                         context.setInputStream(formAttributeValueToInputStream(value));
                         return serverMessageBodyReader.readFrom(type, genericType, mediaType, context);
                     } catch (IOException e) {
-                        log.debug("Error occurred during deserialization of input", e);
+                        log.error("Unable to convert value provided for attribute '" + attributeName
+                                + "' of the multipart request into type '" + type.getName() + "'", e);
                         throw new InternalServerErrorException(e);
                     } finally {
                         context.setInputStream(originalInputStream);
@@ -91,7 +92,8 @@ public final class MultipartSupport {
                                 context.getHttpHeaders().getRequestHeaders(),
                                 formAttributeValueToInputStream(value));
                     } catch (IOException e) {
-                        log.debug("Error occurred during deserialization of input", e);
+                        log.error("Unable to convert value provided for attribute '" + attributeName
+                                + "' of the multipart request into type '" + type.getName() + "'", e);
                         throw new InternalServerErrorException(e);
                     }
                 }

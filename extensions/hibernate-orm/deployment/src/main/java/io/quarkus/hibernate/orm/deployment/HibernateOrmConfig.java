@@ -2,7 +2,9 @@ package io.quarkus.hibernate.orm.deployment;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -61,6 +63,15 @@ public class HibernateOrmConfig {
                 log.isAnyPropertySet() ||
                 statistics.isPresent() ||
                 metricsEnabled;
+    }
+
+    public Map<String, HibernateOrmConfigPersistenceUnit> getAllPersistenceUnitConfigsAsMap() {
+        Map<String, HibernateOrmConfigPersistenceUnit> map = new TreeMap<>();
+        if (defaultPersistenceUnit != null) {
+            map.put(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, defaultPersistenceUnit);
+        }
+        map.putAll(persistenceUnits);
+        return map;
     }
 
     @ConfigGroup

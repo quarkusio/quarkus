@@ -28,7 +28,6 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -203,13 +202,8 @@ public final class HibernateOrmProcessor {
     @BuildStep
     void includeArchivesHostingEntityPackagesInIndex(HibernateOrmConfig hibernateOrmConfig,
             BuildProducer<AdditionalApplicationArchiveMarkerBuildItem> additionalApplicationArchiveMarkers) {
-        if (hibernateOrmConfig.defaultPersistenceUnit.packages.isPresent()) {
-            for (String pakkage : hibernateOrmConfig.defaultPersistenceUnit.packages.get()) {
-                additionalApplicationArchiveMarkers
-                        .produce(new AdditionalApplicationArchiveMarkerBuildItem(pakkage.replace('.', '/')));
-            }
-        }
-        for (HibernateOrmConfigPersistenceUnit persistenceUnit : hibernateOrmConfig.persistenceUnits.values()) {
+        for (HibernateOrmConfigPersistenceUnit persistenceUnit : hibernateOrmConfig.getAllPersistenceUnitConfigsAsMap()
+                .values()) {
             if (persistenceUnit.packages.isPresent()) {
                 for (String pakkage : persistenceUnit.packages.get()) {
                     additionalApplicationArchiveMarkers
@@ -229,24 +223,9 @@ public final class HibernateOrmProcessor {
                 new HibernateOrmDevConsoleCreateDDLSupplier(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME), this.getClass(),
                 curateOutcomeBuildItem);
         runtimeInfoProducer.produce(devConsoleRuntimeTemplateInfoBuildItem);
-        if (config.defaultPersistenceUnit.datasource.isEmpty()) {
-            handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer,
-                    PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, DataSourceUtil.DEFAULT_DATASOURCE_NAME,
-                    curateOutcomeBuildItem);
-        } else {
-            handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer,
-                    PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, config.defaultPersistenceUnit.datasource.get(),
-                    curateOutcomeBuildItem);
-        }
-        for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.persistenceUnits.entrySet()) {
-
-            if (entry.getValue().datasource.isEmpty()) {
-                handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer, entry.getKey(),
-                        DataSourceUtil.DEFAULT_DATASOURCE_NAME, curateOutcomeBuildItem);
-            } else {
-                handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer, entry.getKey(),
-                        entry.getValue().datasource.get(), curateOutcomeBuildItem);
-            }
+        for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.getAllPersistenceUnitConfigsAsMap().entrySet()) {
+            handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer, entry.getKey(),
+                    entry.getValue().datasource.orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME), curateOutcomeBuildItem);
         }
     }
 
@@ -272,46 +251,24 @@ public final class HibernateOrmProcessor {
     @Consume(ServiceStartBuildItem.class)
     @BuildStep(onlyIf = IsDevelopment.class)
     void warnOfSchemaProblems(HibernateOrmConfig config, HibernateOrmRecorder recorder) {
-        if (config.defaultPersistenceUnit.validateInDevMode) {
-            recorder.doValidation(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
-        }
-        for (var e : config.persistenceUnits.entrySet()) {
+        for (var e : config.getAllPersistenceUnitConfigsAsMap().entrySet()) {
             if (e.getValue().validateInDevMode) {
                 recorder.doValidation(e.getKey());
             }
         }
-
     }
 
     @BuildStep(onlyIfNot = IsNormal.class)
     void devServicesAutoGenerateByDefault(DevServicesLauncherConfigResultBuildItem devServicesResult,
             List<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItems,
+            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             HibernateOrmConfig config,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfigurationDefaultBuildItemBuildProducer) {
         Set<String> managedSources = schemaReadyBuildItems.stream().map(JdbcDataSourceSchemaReadyBuildItem::getDatasourceNames)
                 .collect(HashSet::new, Collection::addAll, Collection::addAll);
 
-        String dsName;
-        if (config.defaultPersistenceUnit.datasource.isEmpty()) {
-            dsName = "quarkus.datasource.username";
-        } else {
-            dsName = "quarkus.datasource." + config.defaultPersistenceUnit.datasource.get() + ".username";
-        }
-
-        if (!ConfigUtils.isPropertyPresent(dsName)) {
-            if (devServicesResult.getConfig().containsKey(dsName)
-                    && !managedSources.contains(DataSourceUtil.DEFAULT_DATASOURCE_NAME)) {
-                if (!ConfigUtils.isPropertyPresent("quarkus.hibernate-orm.database.generation")) {
-                    LOG.info(
-                            "Setting quarkus.hibernate-orm.database.generation=drop-and-create to initialize Dev Services managed database");
-                    runTimeConfigurationDefaultBuildItemBuildProducer.produce(new RunTimeConfigurationDefaultBuildItem(
-                            "quarkus.hibernate-orm.database.generation", "drop-and-create"));
-                }
-            }
-        }
-
-        for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.persistenceUnits.entrySet()) {
-
+        for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.getAllPersistenceUnitConfigsAsMap().entrySet()) {
+            String dsName;
             Optional<String> ds = entry.getValue().datasource;
             if (ds.isEmpty()) {
                 dsName = "quarkus.datasource.username";
@@ -322,7 +279,7 @@ public final class HibernateOrmProcessor {
             if (!ConfigUtils.isPropertyPresent(dsName)) {
                 if (devServicesResult.getConfig().containsKey(dsName)
                         && !managedSources.contains(ds.orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME))) {
-                    String propertyName = "quarkus.hibernate-orm." + entry.getKey() + ".database.generation";
+                    String propertyName = HibernateOrmRuntimeConfig.puPropertyKey(entry.getKey(), "database.generation");
                     if (!ConfigUtils.isPropertyPresent(propertyName)) {
                         LOG.info("Setting " + propertyName + "=drop-and-create to initialize Dev Services managed database");
                         runTimeConfigurationDefaultBuildItemBuildProducer
@@ -484,13 +441,8 @@ public final class HibernateOrmProcessor {
     public void contributeQuarkusConfigToJpaModel(
             BuildProducer<JpaModelPersistenceUnitContributionBuildItem> jpaModelPuContributions,
             HibernateOrmConfig hibernateOrmConfig) {
-        Map<String, HibernateOrmConfigPersistenceUnit> persistenceUnitConfigs = new TreeMap<>();
-        if (hibernateOrmConfig.defaultPersistenceUnit != null) {
-            persistenceUnitConfigs.put(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
-                    hibernateOrmConfig.defaultPersistenceUnit);
-        }
-        persistenceUnitConfigs.putAll(hibernateOrmConfig.persistenceUnits);
-        for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : persistenceUnitConfigs.entrySet()) {
+        for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : hibernateOrmConfig.getAllPersistenceUnitConfigsAsMap()
+                .entrySet()) {
             String name = entry.getKey();
             HibernateOrmConfigPersistenceUnit config = entry.getValue();
             jpaModelPuContributions.produce(new JpaModelPersistenceUnitContributionBuildItem(
@@ -1453,11 +1405,8 @@ public final class HibernateOrmProcessor {
     }
 
     private static boolean hasPackagesInQuarkusConfig(HibernateOrmConfig hibernateOrmConfig) {
-        if (hibernateOrmConfig.defaultPersistenceUnit.packages.isPresent()) {
-            return true;
-        }
-
-        for (HibernateOrmConfigPersistenceUnit persistenceUnitConfig : hibernateOrmConfig.persistenceUnits.values()) {
+        for (HibernateOrmConfigPersistenceUnit persistenceUnitConfig : hibernateOrmConfig.getAllPersistenceUnitConfigsAsMap()
+                .values()) {
             if (persistenceUnitConfig.packages.isPresent()) {
                 return true;
             }

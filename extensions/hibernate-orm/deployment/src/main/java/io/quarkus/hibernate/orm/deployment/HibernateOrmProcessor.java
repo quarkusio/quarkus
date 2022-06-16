@@ -321,7 +321,7 @@ public final class HibernateOrmProcessor {
 
             if (!ConfigUtils.isPropertyPresent(dsName)) {
                 if (devServicesResult.getConfig().containsKey(dsName)
-                        && !managedSources.contains(ds.isEmpty() ? DataSourceUtil.DEFAULT_DATASOURCE_NAME : ds)) {
+                        && !managedSources.contains(ds.orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME))) {
                     String propertyName = "quarkus.hibernate-orm." + entry.getKey() + ".database.generation";
                     if (!ConfigUtils.isPropertyPresent(propertyName)) {
                         LOG.info("Setting " + propertyName + "=drop-and-create to initialize Dev Services managed database");

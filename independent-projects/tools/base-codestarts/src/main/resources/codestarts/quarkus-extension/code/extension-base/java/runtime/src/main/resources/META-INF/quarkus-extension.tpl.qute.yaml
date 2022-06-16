@@ -1,5 +1,5 @@
 name: {extension.name}
-#description: Do something useful.
+#description: {extension.description ?: 'Do something useful.'}
 metadata:
 #  keywords:
 #    - {extension.id}

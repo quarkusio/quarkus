@@ -34,7 +34,7 @@ class QuarkusTransactionImpl {
             case SUSPEND_EXISTING:
                 return callSuspendExisting(options, task);
         }
-        throw new IllegalArgumentException("Unkown semantic");
+        throw new IllegalArgumentException("Unknown semantic");
     }
 
     private static <T> T callSuspendExisting(RunOptions options, Callable<T> task) {

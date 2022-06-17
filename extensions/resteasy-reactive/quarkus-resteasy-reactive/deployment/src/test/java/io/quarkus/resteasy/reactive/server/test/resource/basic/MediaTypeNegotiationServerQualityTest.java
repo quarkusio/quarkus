@@ -38,7 +38,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MediaTypeNegotiationServerQualityTest {
 
     @Produces({ "application/*;qs=0.7", "text/*;qs=0.9" })
-    @DisplayName("Custom Message Body Writter")
+    @DisplayName("Custom Message Body Writer")
     @Provider
     public static class CustomMessageBodyWriter implements MessageBodyWriter<Object> {
 

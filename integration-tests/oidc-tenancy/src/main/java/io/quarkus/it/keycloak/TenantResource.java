@@ -176,7 +176,7 @@ public class TenantResource {
             // expected because an ID token must not be available
         }
         if (name != null) {
-            throw new OIDCException("Only the access token can be availabe with the 'service' application type");
+            throw new OIDCException("Only the access token can be available with the 'service' application type");
         }
         name = accessToken.getName();
         // The test is set up to use 'upn' for the 'web-app' application type

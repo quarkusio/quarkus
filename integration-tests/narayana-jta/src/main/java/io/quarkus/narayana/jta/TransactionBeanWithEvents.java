@@ -92,8 +92,8 @@ public class TransactionBeanWithEvents {
             final BeanManager beanManager) throws SystemException {
         Transaction tx = tm.getTransaction();
         if (tx == null) {
-            log.error("@Intialized expects an active transaction");
-            throw new IllegalStateException("@Intialized expects an active transaction");
+            log.error("@Initialized expects an active transaction");
+            throw new IllegalStateException("@Initialized expects an active transaction");
         }
         if (tx.getStatus() != Status.STATUS_ACTIVE) {
             log.error("@Initialized expects transaction is Status.STATUS_ACTIVE");
@@ -111,8 +111,9 @@ public class TransactionBeanWithEvents {
             throw new IllegalStateException("Context on @Initialized has to be active");
         }
         if (!(event instanceof Transaction)) {
-            log.error("@Intialized scope expects event payload being the " + Transaction.class.getName());
-            throw new IllegalStateException("@Intialized scope expects event payload being the " + Transaction.class.getName());
+            log.error("@Initialized scope expects event payload being the " + Transaction.class.getName());
+            throw new IllegalStateException(
+                    "@Initialized scope expects event payload being the " + Transaction.class.getName());
         }
 
         initializedCount++;
@@ -137,8 +138,9 @@ public class TransactionBeanWithEvents {
             throw new IllegalStateException("Context on @BeforeDestroyed has to be active");
         }
         if (!(event instanceof Transaction)) {
-            log.error("@Intialized scope expects event payload being the " + Transaction.class.getName());
-            throw new IllegalStateException("@Intialized scope expects event payload being the " + Transaction.class.getName());
+            log.error("@Initialized scope expects event payload being the " + Transaction.class.getName());
+            throw new IllegalStateException(
+                    "@Initialized scope expects event payload being the " + Transaction.class.getName());
         }
 
         beforeDestroyedCount++;

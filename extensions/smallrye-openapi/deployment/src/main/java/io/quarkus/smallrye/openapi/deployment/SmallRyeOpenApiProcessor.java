@@ -883,7 +883,7 @@ public class SmallRyeOpenApiProcessor {
                         addStaticModelIfExist(results, ignorePatterns, possibleModelFile);
                     }
                 } catch (IOException ioe) {
-                    throw new UncheckedIOException("An error occured while processing " + path, ioe);
+                    throw new UncheckedIOException("An error occurred while processing " + path, ioe);
                 }
             }
         }
@@ -921,7 +921,8 @@ public class SmallRyeOpenApiProcessor {
                             results.add(new Result(format, new ByteArrayInputStream(contents)));
                         }
                     } catch (IOException ex) {
-                        throw new UncheckedIOException("An error occured while processing " + urlAsString + " for " + path, ex);
+                        throw new UncheckedIOException("An error occurred while processing " + urlAsString + " for " + path,
+                                ex);
                     }
                 }
             }

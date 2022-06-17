@@ -583,7 +583,7 @@ Here are a few recommendation guidelines:
 - describe the function over the technology
 - use an action / verb to start the sentence
 - do not conjugate the action verb (`Connect foo`, not `Connects foo` nor `Connecting foo`)
-- connectors (JDBC / reactive) etc tend to start with Connect
+- connectors (JDBC / reactive) etc. tend to start with Connect
 - do not mention `Quarkus`
 - do not mention `extension`
 - avoid repeating the extension name

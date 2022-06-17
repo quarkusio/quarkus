@@ -20,7 +20,7 @@ The first thing is that, while being a committer,
 you can't really commit directly to the main repository:
 you need at least one review by your peers.
 
-Thus the need for a pull request.
+Thus, the need for a pull request.
 
 So you are more like a merger than a committer
 and you might merge more PRs from others than your own work.
@@ -38,7 +38,7 @@ While not absolute, here is some advice:
   If the PR is very large or is a new extension, better let it
   bake for a few days.
 * We do _merge commits_ so please ask the author to properly squash the commits before merging (when it makes sense).
-  The idea is to have proper semantic commits. Several commits is not a problem as long as they have a proper semantic.
+  The idea is to have proper semantic commits. Several commits are not a problem as long as they have a proper semantic.
   If the author is not familiar with Git or not available, you can also (carefully)
   https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/committing-changes-to-a-pull-request-branch-created-from-a-fork[do it for them]
   as long as you both agreed on it.
@@ -105,7 +105,7 @@ And, in any case, we should avoid upgrading these dependencies after the CR1 whe
 [[backward-compatibility]]
 == Backward Compatibility
 
-Quarkus evolves very fast and we decided we could break backward compatibility as long as:
+Quarkus evolves very fast, and we decided we could break backward compatibility as long as:
 
 * It is worth it.
 * We try to support the previous behavior for a while - if it doesn't have a prohibitive cost,
@@ -134,7 +134,7 @@ If your commit message was too long and GitHub automatically cut
 the title, it is helpful if you can take the time to move the cut
 part where it belongs to have a full title.
 
-Titles are included in the Release notes so they are important.
+Titles are included in the Release notes, so they are important.
 
 A good title would look like: `Fix off by one issue in Quartz extension` or
 `Introduce Hibernate Reactive extension`.
@@ -199,7 +199,7 @@ release a couple of weeks after.
 Every time we do a major release (e.g. `2.7.0.Final`), we create a release branch (e.g. `2.7`) to host
 the commits for these bugfix releases.
 
-All the pull requests are merged in the `main` branch so they are applied to the new feature 
+All the pull requests are merged in the `main` branch, so they are applied to the new feature
 release of Quarkus.
 They won't be integrated in the previous version branch.
 
@@ -242,5 +242,5 @@ Obviously, critical bugs are not good candidates :).
 
 Take a deep breath and don't worry, it happens.
 
-Just ping `@quarkusio/committerhelp` on GitHub or `@committerhelp` on Zulip
+Just ping `@quarkusio/committerhelp` on GitHub or `@committerhelp` on Zulip,
 and we will find a solution.

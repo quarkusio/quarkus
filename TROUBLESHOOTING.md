@@ -4,7 +4,7 @@ Performance is at the heart of Quarkus.
 
 If you are facing performance issues (runtime or startup issues), and would like to discuss them with the Quarkus Team,
 you are more than welcome on our [mailing list](https://groups.google.com/d/forum/quarkus-dev),
-[Zulip chat](https://quarkusio.zulipchat.com) or [Github issue tracker](https://github.com/quarkusio/quarkus/issues).
+[Zulip chat](https://quarkusio.zulipchat.com) or [GitHub issue tracker](https://github.com/quarkusio/quarkus/issues).
 
 To help us troubleshoot your issues, we will need some performance insights from your application.
 
@@ -77,7 +77,7 @@ To start CPU profiling, execute the following command:
 
 `-b 4000000` is used to increase the frame buffer size as the default is often too small.
 
-To end profiling and gather the results you can launch the same command with the `stop` subcommand, this will tells you if the buffer frame was too small.    
+To end profiling and gather the results you can launch the same command with the `stop` subcommand, this will tell you if the buffer frame was too small.    
 The output is a text file that is not really usable, so let's use our preferred performance representation: the  flame graph.
 
 ```shell script

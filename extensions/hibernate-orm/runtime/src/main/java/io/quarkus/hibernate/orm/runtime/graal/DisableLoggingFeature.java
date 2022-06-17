@@ -7,13 +7,10 @@ import java.util.logging.Logger;
 
 import org.graalvm.nativeimage.hosted.Feature;
 
-import com.oracle.svm.core.annotate.AutomaticFeature;
-
 /**
  * Disables logging during the analysis phase
  */
-@AutomaticFeature
-public class DisableLoggingAutoFeature implements Feature {
+public class DisableLoggingFeature implements Feature {
 
     private static final String[] CATEGORIES = {
             "org.hibernate.Version",

@@ -2,10 +2,13 @@ package io.quarkus.awt.deployment;
 
 import static io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem.Os.WINDOWS;
 
+import io.quarkus.awt.runtime.graal.AwtFeature;
+import io.quarkus.awt.runtime.graal.DarwinAwtFeature;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeMinimalJavaVersionBuildItem;
@@ -19,6 +22,12 @@ class AwtProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.AWT);
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void nativeImageFeatures(BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures) {
+        nativeImageFeatures.produce(new NativeImageFeatureBuildItem(AwtFeature.class));
+        nativeImageFeatures.produce(new NativeImageFeatureBuildItem(DarwinAwtFeature.class));
     }
 
     @BuildStep(onlyIf = NativeBuild.class)

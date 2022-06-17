@@ -32,11 +32,14 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.deployment.ServletContextAttributeBuildItem;
+import io.quarkus.websockets.client.runtime.DisableLoggingFeature;
 import io.quarkus.websockets.client.runtime.WebsocketCoreRecorder;
 import io.undertow.websockets.DefaultContainerConfigurator;
 import io.undertow.websockets.ServerWebSocketContainer;
@@ -48,6 +51,11 @@ public class WebsocketClientProcessor {
     private static final DotName CLIENT_ENDPOINT = DotName.createSimple(ClientEndpoint.class.getName());
     private static final DotName SERVER_APPLICATION_CONFIG = DotName.createSimple(ServerApplicationConfig.class.getName());
     private static final DotName ENDPOINT = DotName.createSimple(Endpoint.class.getName());
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    NativeImageFeatureBuildItem nativeImageFeature() {
+        return new NativeImageFeatureBuildItem(DisableLoggingFeature.class);
+    }
 
     @BuildStep
     void holdConfig(BuildProducer<FeatureBuildItem> feature) {

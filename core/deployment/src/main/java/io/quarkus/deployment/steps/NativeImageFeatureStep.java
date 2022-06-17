@@ -54,9 +54,9 @@ import io.quarkus.runtime.ResourceHelper;
 import io.quarkus.runtime.graal.ResourcesFeature;
 import io.quarkus.runtime.graal.WeakReflection;
 
-public class NativeImageAutoFeatureStep {
+public class NativeImageFeatureStep {
 
-    private static final String GRAAL_AUTOFEATURE = "io.quarkus.runner.AutoFeature";
+    public static final String GRAAL_FEATURE = "io.quarkus.runner.Feature";
     private static final MethodDescriptor VERSION_CURRENT = ofMethod(Version.class, "getCurrent", Version.class);
     private static final MethodDescriptor VERSION_COMPARE_TO = ofMethod(Version.class, "compareTo", int.class, int[].class);
 
@@ -153,9 +153,8 @@ public class NativeImageAutoFeatureStep {
             public void write(String s, byte[] bytes) {
                 nativeImageClass.produce(new GeneratedNativeImageClassBuildItem(s, bytes));
             }
-        }, GRAAL_AUTOFEATURE, null,
+        }, GRAAL_FEATURE, null,
                 Object.class.getName(), Feature.class.getName());
-        file.addAnnotation("com.oracle.svm.core.annotate.AutomaticFeature");
 
         MethodCreator duringSetup = file.getMethodCreator("duringSetup", "V", DURING_SETUP_ACCESS);
         // Register Lambda Capturing Types
@@ -206,7 +205,7 @@ public class NativeImageAutoFeatureStep {
                 overallCatch.load("Quarkus build time init default"));
 
         if (!runtimeInitializedClassBuildItems.isEmpty()) {
-            ResultHandle thisClass = overallCatch.loadClassFromTCCL(GRAAL_AUTOFEATURE);
+            ResultHandle thisClass = overallCatch.loadClassFromTCCL(GRAAL_FEATURE);
             ResultHandle cl = overallCatch.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class),
                     thisClass);
             ResultHandle classes = overallCatch.newArray(Class.class,
@@ -238,7 +237,7 @@ public class NativeImageAutoFeatureStep {
 
         // hack in reinitialization of process info classes
         if (!runtimeReinitializedClassBuildItems.isEmpty()) {
-            ResultHandle thisClass = overallCatch.loadClassFromTCCL(GRAAL_AUTOFEATURE);
+            ResultHandle thisClass = overallCatch.loadClassFromTCCL(GRAAL_FEATURE);
             ResultHandle cl = overallCatch.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class),
                     thisClass);
             ResultHandle quarkus = overallCatch.load("Quarkus");

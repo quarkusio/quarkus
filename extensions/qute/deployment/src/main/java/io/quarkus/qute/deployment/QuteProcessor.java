@@ -1078,10 +1078,12 @@ public class QuteProcessor {
     private void produceExtensionMethod(IndexView index, BuildProducer<TemplateExtensionMethodBuildItem> extensionMethods,
             MethodInfo method, AnnotationInstance extensionAnnotation) {
         // Analyze matchName and priority so that it could be used during validation
+        byte matchers = 0;
         String matchName = null;
         AnnotationValue matchNameValue = extensionAnnotation.value(ExtensionMethodGenerator.MATCH_NAME);
         if (matchNameValue != null) {
             matchName = matchNameValue.asString();
+            matchers++;
         }
         if (matchName == null) {
             matchName = method.name();
@@ -1100,8 +1102,23 @@ public class QuteProcessor {
         AnnotationValue matchRegexValue = extensionAnnotation.value(ExtensionMethodGenerator.MATCH_REGEX);
         if (matchRegexValue != null) {
             matchRegex = matchRegexValue.asString();
+            matchers++;
         }
-        extensionMethods.produce(new TemplateExtensionMethodBuildItem(method, matchName, matchRegex,
+        List<String> matchNames = new ArrayList<>();
+        AnnotationValue matchNamesValue = extensionAnnotation.value(ExtensionMethodGenerator.MATCH_NAMES);
+        if (matchNamesValue != null) {
+            matchers++;
+            for (String name : matchNamesValue.asStringArray()) {
+                matchNames.add(name);
+            }
+        }
+
+        if (matchers > 1) {
+            LOGGER.warnf("Ignoring superfluous matching conditions defined on %s declared on: %s", extensionAnnotation,
+                    extensionAnnotation.target());
+        }
+
+        extensionMethods.produce(new TemplateExtensionMethodBuildItem(method, matchName, matchNames, matchRegex,
                 namespace.isEmpty() ? method.parameters().get(0) : null, priority, namespace));
     }
 
@@ -1289,7 +1306,7 @@ public class QuteProcessor {
             } else {
                 // Generate ValueResolver per extension method
                 extensionMethodGenerator.generate(templateExtension.getMethod(), templateExtension.getMatchName(),
-                        templateExtension.getMatchRegex(), templateExtension.getPriority());
+                        templateExtension.getMatchNames(), templateExtension.getMatchRegex(), templateExtension.getPriority());
             }
         }
 
@@ -1308,7 +1325,8 @@ public class QuteProcessor {
                                     nsEntry.getKey(), priorityEntry.getKey())) {
                         try (ResolveCreator resolveCreator = namespaceResolverCreator.implementResolve()) {
                             for (TemplateExtensionMethodBuildItem method : priorityEntry.getValue()) {
-                                resolveCreator.addMethod(method.getMethod(), method.getMatchName(), method.getMatchRegex());
+                                resolveCreator.addMethod(method.getMethod(), method.getMatchName(), method.getMatchNames(),
+                                        method.getMatchRegex());
                             }
                         }
                     }

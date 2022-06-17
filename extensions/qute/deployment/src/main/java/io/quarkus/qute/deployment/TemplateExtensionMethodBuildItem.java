@@ -1,5 +1,6 @@
 package io.quarkus.qute.deployment;
 
+import java.util.List;
 import java.util.regex.Pattern;
 
 import org.jboss.jandex.ClassInfo;
@@ -21,6 +22,7 @@ public final class TemplateExtensionMethodBuildItem extends MultiBuildItem {
 
     private final MethodInfo method;
     private final String matchName;
+    private final List<String> matchNames;
     private final String matchRegex;
     private final Pattern matchPattern;
     private final Type matchType;
@@ -30,14 +32,22 @@ public final class TemplateExtensionMethodBuildItem extends MultiBuildItem {
 
     public TemplateExtensionMethodBuildItem(MethodInfo method, String matchName, String matchRegex, Type matchType,
             int priority, String namespace) {
+        this(method, matchName, List.of(), matchRegex, matchType, priority, namespace);
+    }
+
+    public TemplateExtensionMethodBuildItem(MethodInfo method, String matchName, List<String> matchNames, String matchRegex,
+            Type matchType,
+            int priority, String namespace) {
         this.method = method;
         this.matchName = matchName;
+        this.matchNames = List.copyOf(matchNames);
         this.matchRegex = matchRegex;
         this.matchType = matchType;
         this.priority = priority;
         this.namespace = (namespace != null && !namespace.isEmpty()) ? Namespaces.requireValid(namespace) : namespace;
         this.matchPattern = (matchRegex == null || matchRegex.isEmpty()) ? null : Pattern.compile(matchRegex);
-        this.params = new ExtensionMethodGenerator.Parameters(method, matchPattern != null || matchesAny(), hasNamespace());
+        this.params = new ExtensionMethodGenerator.Parameters(method,
+                matchPattern != null || !matchNames.isEmpty() || matchesAny(), hasNamespace());
     }
 
     public MethodInfo getMethod() {
@@ -46,6 +56,10 @@ public final class TemplateExtensionMethodBuildItem extends MultiBuildItem {
 
     public String getMatchName() {
         return matchName;
+    }
+
+    public List<String> getMatchNames() {
+        return matchNames;
     }
 
     public String getMatchRegex() {
@@ -72,7 +86,10 @@ public final class TemplateExtensionMethodBuildItem extends MultiBuildItem {
         if (matchPattern != null) {
             return matchPattern.matcher(name).matches();
         }
-        return matchesAny() ? true : matchName.equals(name);
+        if (matchNames.isEmpty()) {
+            return matchesAny() ? true : matchName.equals(name);
+        }
+        return matchNames.contains(name);
     }
 
     boolean matchesAny() {

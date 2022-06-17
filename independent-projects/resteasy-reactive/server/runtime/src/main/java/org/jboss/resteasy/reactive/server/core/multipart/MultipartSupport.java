@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.MediaType;
@@ -23,6 +22,7 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.core.multipart.FormData.FormValue;
 import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
+import org.jboss.resteasy.reactive.server.multipart.MultipartPartReadingException;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 
 /**
@@ -48,7 +48,7 @@ public final class MultipartSupport {
                 if (fileUploadsForName != null) {
                     for (FormData.FormValue fileUpload : fileUploadsForName) {
                         if (fileUpload.isFileItem()) {
-                            log.debug("Attribute '" + attributeName
+                            log.warn("Attribute '" + attributeName
                                     + "' of the multipart request is a file and therefore its value is not set. To obtain the contents of the file, use type '"
                                     + FileUpload.class + "' as the field type.");
                             break;
@@ -76,8 +76,9 @@ public final class MultipartSupport {
                         context.setInputStream(formAttributeValueToInputStream(value));
                         return serverMessageBodyReader.readFrom(type, genericType, mediaType, context);
                     } catch (IOException e) {
-                        log.debug("Error occurred during deserialization of input", e);
-                        throw new InternalServerErrorException(e);
+                        log.error("Unable to convert value provided for attribute '" + attributeName
+                                + "' of the multipart request into type '" + type.getName() + "'", e);
+                        throw new MultipartPartReadingException(e);
                     } finally {
                         context.setInputStream(originalInputStream);
                     }
@@ -91,8 +92,9 @@ public final class MultipartSupport {
                                 context.getHttpHeaders().getRequestHeaders(),
                                 formAttributeValueToInputStream(value));
                     } catch (IOException e) {
-                        log.debug("Error occurred during deserialization of input", e);
-                        throw new InternalServerErrorException(e);
+                        log.error("Unable to convert value provided for attribute '" + attributeName
+                                + "' of the multipart request into type '" + type.getName() + "'", e);
+                        throw new MultipartPartReadingException(e);
                     }
                 }
             }

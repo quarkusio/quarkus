@@ -11,6 +11,7 @@
             {service.name}
           </div>
           <div class="card-body">
+                {#if service.containerInfo}
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item">
                         <i class="fas fa-box-open" data-toggle="tooltip" data-placement="top" title="Container"></i> {service.containerInfo.getShortId()} {service.containerInfo.formatNames()}
@@ -26,6 +27,7 @@
                     </li>
                 </ul>
                 <hr/>
+                {/if}
                 <h5 class="card-title">Config</h5>
                 <code class="h-100">
                 {#for config in service.configs}

@@ -50,7 +50,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-context-propagation</artifactId>
             <exclusions>
-                <!-- By default we check if resteasy is present and don't register this provider
+                <!-- By default, we check if resteasy is present and don't register this provider
                 however the TCK builds the context manually in some cases which does not take this
                 into account so we need to either exclude this or include RESTeasy
 

@@ -1,29 +1,5 @@
 {#include main fluid=true}
-  {#style}
-   .annotation {
-     color: gray;
-     font-style: italic;
-   }
-   span.larger-badge {
-     font-size: 0.9em;
-   }
-   span.app-class {
-     cursor:pointer;
-     color:blue;
-     text-decoration:underline;
-   }
-   .legend-root {
-     color: red; 
-   }
-   ul.legend {
-     padding: 0px;
-   }
-   ul.legend li {
-      list-style: none;
-   }
-   
-  {/style}
-
+  
   {#script}
   // Bean dependency graph built with d3.js
   // Based on https://observablehq.com/@d3/mobile-patent-suits 
@@ -153,18 +129,28 @@
   {#title}Bean Dependency Graph{/title}
   {#body}
   {#set bean=info:devBeanInfos.getBean(currentRequest.getParam('beanId'))}
-  <h1>Bean Dependency Graph: {bean.description}</h1>
   
-  <ul class="legend">
-    <li><i class="fas fa-circle fa-xl legend-root"></i> root</li>
-    <li><i class="fa fa-long-arrow-right fa-xl legend-direct-dependency"></i> direct dependencies</li>
-    <li><i class="fa fa-long-arrow-right fa-xl legend-direct-dependent"></i> direct dependents</li>
-    <li><i class="fa fa-long-arrow-right fa-xl legend-dependency"></i> dependencies</li>
-    <li><i class="fa fa-long-arrow-right fa-xl legend-lookup"></i> potential dependency - programmatic lookup</li>
-    <li><i class="fa fa-long-arrow-right fa-xl legend-producer"></i> declaring bean of a producer</li>
-  </ul>
   
-  <svg id="beanDepGraph_area" style="border:1px solid silver;"></svg>
+    <div class="row">
+        <div class="col text-center">
+            <span class="text-secondary h4">{bean.description}</span>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-auto">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><i class="fas fa-circle text-danger fa-sm legend-root"></i> root</li>
+                <li class="list-group-item"><i class="fa fa-long-arrow-right fa-sm legend-direct-dependency"></i> direct dependencies</li>
+                <li class="list-group-item"><i class="fa fa-long-arrow-right fa-sm legend-direct-dependent"></i> direct dependents</li>
+                <li class="list-group-item"><i class="fa fa-long-arrow-right fa-sm legend-dependency"></i> dependencies</li>
+                <li class="list-group-item"><i class="fa fa-long-arrow-right fa-sm legend-producer"></i> declaring bean of a producer</li>
+                <li class="list-group-item"><i class="fa fa-long-arrow-right fa-sm legend-lookup"></i> potential dependency <br/> &nbsp;<small class="text-muted">programmatic lookup</small></li>
+            </ul>
+        </div>
+        <div class="col">
+            <svg id="beanDepGraph_area" class="w-100 h-90"></svg>
+        </div>
+    </div>
   
   {/set}
   {/body}

@@ -7,8 +7,8 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class NamingConfig {
 
     /**
-     * By default Quarkus will install a non functional JNDI initial context, to help
-     * mitigate against log4shell style attacks.
+     * By default, Quarkus will install a non-functional JNDI initial context, to help
+     * mitigate against Log4Shell style attacks.
      *
      * If your application does need to use JNDI you can change this flag.
      */

@@ -12,7 +12,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class LogBuildTimeConfig {
 
     /**
-     * Whether or not logging metrics are published in case a metrics extension is present.
+     * Whether logging metrics are published in case a metrics extension is present.
      */
     @ConfigItem(name = "metrics.enabled", defaultValue = "false")
     public boolean metricsEnabled;

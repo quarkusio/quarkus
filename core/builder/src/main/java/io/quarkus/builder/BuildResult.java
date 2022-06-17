@@ -67,7 +67,7 @@ public final class BuildResult {
     }
 
     /**
-     * Consume all of the values produced for the named item.
+     * Consume all the values produced for the named item.
      *
      * @param type the item element type (must not be {@code null})
      * @return the produced items (may be empty, will not be {@code null})

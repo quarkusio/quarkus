@@ -8,7 +8,7 @@ import org.graalvm.nativeimage.ImageInfo;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
- * Native image system properties are not automatically propagated to runtime any more
+ * Native image system properties are not automatically propagated to runtime anymore.
  */
 @Recorder
 public class NativeImageRuntimePropertiesRecorder {

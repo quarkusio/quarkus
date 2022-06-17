@@ -116,9 +116,9 @@ public class AugmentActionImpl implements AugmentAction {
                 devModeType = null;
                 break;
             case REMOTE_DEV_CLIENT:
-                //this seems a bit counter intuitive, but the remote dev client just keeps a production
-                //app up to date and ships it to the remote side, this allows the remote side to be fully up
-                //to date even if the process is restarted
+                //this seems a bit counterintuitive, but the remote dev client just keeps a production
+                //app up to date and ships it to the remote side, this allows the remote side to be fully
+                //up-to-date even if the process is restarted
                 launchMode = LaunchMode.NORMAL;
                 devModeType = DevModeType.REMOTE_LOCAL_SIDE;
                 break;

@@ -257,7 +257,7 @@ public final class ConfigUtils {
      * Checks if a property is present in the current Configuration.
      * <p>
      * Because the sources may not expose the property directly in {@link ConfigSource#getPropertyNames()}, we cannot
-     * reliable determine if the property is present in the properties list. The property needs to be retrieved to make
+     * reliably determine if the property is present in the properties list. The property needs to be retrieved to make
      * sure it exists. Also, if the value is an expression, we want to ignore expansion, because this is not relevant
      * for the check and the expansion value may not be available at this point.
      * <p>

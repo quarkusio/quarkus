@@ -9,7 +9,7 @@ import org.wildfly.common.annotation.NotNull;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 
 /**
- * Service providers for this interfaces are triggered during generate-sources phase of build of Quarkus applications
+ * Service providers for this interface are triggered during generate-sources phase of build of Quarkus applications
  */
 public interface CodeGenProvider {
     /**

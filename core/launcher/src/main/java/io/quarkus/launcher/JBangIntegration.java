@@ -82,7 +82,7 @@ public class JBangIntegration {
                         protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
                             if (name.startsWith("org.") && !(name.startsWith("org.xml.") || name.startsWith("org.w3c.")
                                     || name.startsWith("org.jboss."))) {
-                                //jbang has some but not all of the maven resolver classes we need on its
+                                //jbang has some but not all the maven resolver classes we need on its
                                 //class path. These all start with org. so we filter them out to make sure
                                 //we get a complete class path
                                 throw new ClassNotFoundException();
@@ -94,7 +94,7 @@ public class JBangIntegration {
                         public URL getResource(String name) {
                             if (name.startsWith("org/") && !(name.startsWith("org/xml/") || name.startsWith("org/w3c/")
                                     || name.startsWith("org/jboss/"))) {
-                                //jbang has some but not all of the maven resolver classes we need on its
+                                //jbang has some but not all the maven resolver classes we need on its
                                 //class path. These all start with org. so we filter them out to make sure
                                 //we get a complete class path
                                 return null;
@@ -106,7 +106,7 @@ public class JBangIntegration {
                         public Enumeration<URL> getResources(String name) throws IOException {
                             if (name.startsWith("org/") && !(name.startsWith("org/xml/") || name.startsWith("org/w3c/")
                                     || name.startsWith("org/jboss/"))) {
-                                //jbang has some but not all of the maven resolver classes we need on its
+                                //jbang has some but not all the maven resolver classes we need on its
                                 //class path. These all start with org. so we filter them out to make sure
                                 //we get a complete class path
                                 return Collections.emptyEnumeration();

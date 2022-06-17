@@ -474,7 +474,7 @@ class ConfigDoItemFinder {
 
         // make sure that the config section is added  if it is to be shown or when scanning parent configuration group
         // priory to scanning configuration roots. This is useful as we get indication of whether the config items are part
-        // of a configuration section (i.e configuration group) we are current scanning.
+        // of a configuration section (i.e. configuration group) we are current scanning.
         if (configSection.isShowSection() || !generateSeparateConfigGroupDocs) {
             final ConfigDocItem configDocItem = new ConfigDocItem();
             configDocItem.setConfigDocSection(configSection);

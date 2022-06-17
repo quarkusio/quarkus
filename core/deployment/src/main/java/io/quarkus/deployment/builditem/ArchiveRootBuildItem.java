@@ -135,7 +135,7 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
 
     /**
      * Collection of path representing the archive's root directories. If there is a JAR among the paths
-     * (returned by {@link #getResolvedPaths()} this method will return the path to the root of the mounted
+     * (returned by {@link #getResolvedPaths()}) this method will return the path to the root of the mounted
      * {@link java.nio.file.ZipFileSystem}
      * instead.
      *
@@ -150,7 +150,7 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
 
     /**
      * Collection of path representing the archive's root directories. If there is a JAR among the paths
-     * (returned by {@link #getResolvedPaths()} this method will return the path to the root of the mounted
+     * (returned by {@link #getResolvedPaths()}) this method will return the path to the root of the mounted
      * {@link java.nio.file.ZipFileSystem}
      * instead.
      *

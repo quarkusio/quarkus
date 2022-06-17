@@ -475,7 +475,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
         //to get around this we break the code up into multiple methods, however this is not as simple as it sounds
         //because it is not just the number of invocations that can be a problem but also the size of collections
-        //we need to account for both collections with a large number or items, and recorders with a large
+        //we need to account for both collections with a large number of items, and recorders with a large
         //number of invocations.
 
         //we solve this by breaking up all serialized state into a global array, that is passed between methods

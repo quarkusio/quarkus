@@ -12,7 +12,7 @@ public class BootstrapConfig {
 
     /**
      * If set to true, the workspace initialization will be based on the effective POMs
-     * (i.e. properly interpolated, including support for profiles, etc) instead of the raw ones.
+     * (i.e. properly interpolated, including support for profiles) instead of the raw ones.
      */
     @ConfigItem(defaultValue = "false")
     boolean effectiveModelBuilder;

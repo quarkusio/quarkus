@@ -261,7 +261,9 @@ If the provider metadata discovery has been successful then, after you open the 
 
 image::dev-ui-oidc-devconsole-card.png[alt=Generic Dev UI OpenID Connect Card,role="center"]
 
-Follow the link, and you will be able to log in to your provider, get the tokens and test the application. The experience will be the same as described in the <<keycloak-authorization-code-grant,Authorization Code Grant for Keycloak>> section, where `Dev Services for Keycloak` container has been started, especially if you work with Keycloak (please also pay attention to a `redirect_uri` note in that section).
+Follow the link, and you will be able to log in to your provider, get the tokens and test the application. The experience will be the same as described in the <<keycloak-authorization-code-grant,Authorization Code Grant for Keycloak>> section, where `Dev Services for Keycloak` container has been started, especially if you work with Keycloak.
+
+You will most likely need to configure your OpenId Connect provider to support redirecting back to the `Dev Console`. Add `http://localhost:8080/q/dev/io.quarkus.quarkus-oidc/provider` as one of the supported redirect and logout URLs.
 
 If you work with other providers then a Dev UI experience described in the <<keycloak-authorization-code-grant,Authorization Code Grant for Keycloak>> section might differ slightly. For example, an access token may not be in a JWT format, so it won't be possible to show its internal content, though all providers should return an ID Token as JWT.
 

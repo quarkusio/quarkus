@@ -16,11 +16,13 @@ class ExpressionNode implements TemplateNode, Function<Object, CompletionStage<R
     final ExpressionImpl expression;
     private final Engine engine;
     private final boolean traceLevel;
+    private final boolean hasEngineResultMappers;
 
     ExpressionNode(ExpressionImpl expression, Engine engine) {
         this.expression = expression;
         this.engine = engine;
         this.traceLevel = LOG.isTraceEnabled();
+        this.hasEngineResultMappers = !engine.getResultMappers().isEmpty();
     }
 
     @Override
@@ -70,7 +72,7 @@ class ExpressionNode implements TemplateNode, Function<Object, CompletionStage<R
     }
 
     boolean hasEngineResultMappers() {
-        return !engine.getResultMappers().isEmpty();
+        return hasEngineResultMappers;
     }
 
     String mapResult(Object result) {

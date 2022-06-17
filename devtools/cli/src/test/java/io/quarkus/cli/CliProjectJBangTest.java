@@ -173,7 +173,7 @@ public class CliProjectJBangTest {
                 "-e", "-B", "--verbose",
                 "--java", "11");
 
-        // We don't need to retest this, just need to make sure all of the arguments were passed through
+        // We don't need to retest this, just need to make sure all the arguments were passed through
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path javaMain = valdiateJBangSourcePackage(project, ""); // no package name
@@ -189,7 +189,7 @@ public class CliProjectJBangTest {
                 "-e", "-B", "--verbose",
                 "--java", "17");
 
-        // We don't need to retest this, just need to make sure all of the arguments were passed through
+        // We don't need to retest this, just need to make sure all the arguments were passed through
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path javaMain = valdiateJBangSourcePackage(project, ""); // no package name

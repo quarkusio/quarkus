@@ -349,7 +349,7 @@ public class CliProjectGradleTest {
                 "--output-directory=" + nested,
                 "silly:my-project:0.1.0");
 
-        // We don't need to retest this, just need to make sure all of the arguments were passed through
+        // We don't need to retest this, just need to make sure all the arguments were passed through
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Assertions.assertTrue(result.stdout.contains("Creating an app"),
@@ -377,7 +377,7 @@ public class CliProjectGradleTest {
                 "-e", "-B", "--verbose",
                 "--java", "11");
 
-        // We don't need to retest this, just need to make sure all of the arguments were passed through
+        // We don't need to retest this, just need to make sure all the arguments were passed through
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path buildGradle = project.resolve("build.gradle");
@@ -392,7 +392,7 @@ public class CliProjectGradleTest {
                 "-e", "-B", "--verbose",
                 "--java", "17");
 
-        // We don't need to retest this, just need to make sure all of the arguments were passed through
+        // We don't need to retest this, just need to make sure all the arguments were passed through
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path buildGradle = project.resolve("build.gradle");

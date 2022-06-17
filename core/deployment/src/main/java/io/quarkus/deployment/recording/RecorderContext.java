@@ -23,10 +23,10 @@ public interface RecorderContext {
     <T> void registerNonDefaultConstructor(Constructor<T> constructor, Function<T, List<Object>> parameters);
 
     /**
-     * Registers a substitution to allow objects that are not serialisable to bytecode to be substituted for an object
+     * Registers a substitution to allow objects that are not serializable to bytecode to be substituted for an object
      * that is.
      *
-     * @param from The class of the non serializable object
+     * @param from The class of the non-serializable object
      * @param to The class to serialize to
      * @param substitution The subclass of {@link ObjectSubstitution} that performs the substitution
      */

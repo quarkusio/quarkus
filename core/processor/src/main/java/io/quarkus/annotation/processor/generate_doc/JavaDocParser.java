@@ -132,8 +132,8 @@ final class JavaDocParser {
     }
 
     private String handleEolInAsciidoc(Javadoc javadoc) {
-        // it's Asciidoc so we just pass through
-        // it also uses platform specific EOL so we need to convert them back to \n
+        // it's Asciidoc, so we just pass through
+        // it also uses platform specific EOL, so we need to convert them back to \n
         String asciidoc = javadoc.getDescription().toText();
         asciidoc = REPLACE_WINDOWS_EOL.matcher(asciidoc).replaceAll("\n");
         asciidoc = REPLACE_MACOS_EOL.matcher(asciidoc).replaceAll("\n");

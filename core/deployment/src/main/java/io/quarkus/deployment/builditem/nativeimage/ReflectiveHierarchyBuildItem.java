@@ -25,7 +25,7 @@ import io.quarkus.builder.item.MultiBuildItem;
  * <p>
  * - Superclasses
  * - Component types of collections
- * - Types used in bean properties if (if method reflection is enabled)
+ * - Types used in bean properties (if method reflection is enabled)
  * - Field types (if field reflection is enabled)
  * <p>
  * This discovery is applied recursively, so any additional types that are registered will also have their dependencies

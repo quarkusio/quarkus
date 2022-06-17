@@ -53,7 +53,7 @@ import io.quarkus.gizmo.Gizmo;
 /**
  * processor that instruments test and application classes to trace the code path that is in use during a test run.
  * <p>
- * This allows for fine grained running of tests when a file changes.
+ * This allows for fine-grained running of tests when a file changes.
  */
 public class TestTracingProcessor {
 

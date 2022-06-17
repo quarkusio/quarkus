@@ -35,7 +35,8 @@ public class LocalesBuildTimeConfig {
      * <p>
      * For instance, the Hibernate Validator extension makes use of it.
      * <p>
-     * Native-image build uses this property to derive user.language and user.country for the application's runtime.
+     * Native-image build uses this property to derive {@code user.language} and {@code user.country} for the application's
+     * runtime.
      */
     @ConfigItem(defaultValue = DEFAULT_LANGUAGE + "-" + DEFAULT_COUNTRY, defaultValueDocumentation = "Build system locale")
     public Locale defaultLocale;

@@ -12,7 +12,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 /**
  * WARNING: This is not normal quarkus config, this is only read from application.properties.
  * <p>
- * This is because it is needed before any of the config infrastructure is setup.
+ * This is because it is needed before any of the config infrastructure is set up.
  */
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class ClassLoadingConfig {

@@ -11,9 +11,9 @@ import io.quarkus.builder.item.SimpleBuildItem;
  * Build Item that can be used to queue shutdown tasks that are run when the {@link io.quarkus.bootstrap.app.CuratedApplication}
  * is closed.
  * <p>
- * For production applications this will be at the end of the maven/gradle build, for dev mode applications this will be
- * when dev mode shuts down, for tests it will generally be at the end of the test run, however for continuous testing this
- * will be when the outer dev mode process shuts down. For unit style tests this will generally be the end of the test.
+ * For production applications, this will be at the end of the maven/gradle build. For dev mode applications, this will be
+ * when dev mode shuts down. For tests, it will generally be at the end of the test run. However, for continuous testing this
+ * will be when the outer dev mode process shuts down. For unit style tests, this will usually be the end of the test.
  */
 public final class CuratedApplicationShutdownBuildItem extends SimpleBuildItem {
 

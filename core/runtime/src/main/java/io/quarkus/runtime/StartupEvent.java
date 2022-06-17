@@ -4,7 +4,7 @@ package io.quarkus.runtime;
  * Event class that is fired on startup.
  *
  * This is fired on main method execution after all startup code has run,
- * so can be used to start threads etc in native image mode
+ * so can be used to start threads etc. in native image mode
  *
  * This event is observed as follows:
  *

@@ -79,7 +79,7 @@ public class BannerProcessor {
     }
 
     /**
-     * @return an entry containing the text of the banner as the key and whether or not the default banner is being used as the
+     * @return an entry containing the text of the banner as the key and whether the default banner is being used as the
      *         value. The default banner is used as a last report
      */
     private Map.Entry<URL, Boolean> getBanner(BannerConfig config) throws IOException {

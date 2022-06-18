@@ -50,7 +50,7 @@ public class AeshConsole extends QuarkusConsole {
      * <p>
      * Data must be added to this, before it is written out by {@link #deadlockSafeWrite()}
      * <p>
-     * Because Aesh can log deadlocks are possible on windows if a write fails, unless care
+     * Because Aesh can log deadlocks are possible on Windows if a write fails, unless care
      * is taken.
      */
     private final LinkedBlockingDeque<String> writeQueue = new LinkedBlockingDeque<>();

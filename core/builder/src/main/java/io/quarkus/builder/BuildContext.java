@@ -48,7 +48,7 @@ public final class BuildContext {
     }
 
     /**
-     * Produce the given item. If the {@code type} refers to a item which is declared with multiplicity, then this
+     * Produce the given item. If the {@code type} refers to an item which is declared with multiplicity, then this
      * method can be called more than once for the given {@code type}, otherwise it must be called no more than once.
      *
      * @param item the item value (must not be {@code null})
@@ -74,7 +74,7 @@ public final class BuildContext {
     }
 
     /**
-     * Produce the given item. If the {@code type} refers to a item which is declared with multiplicity, then this
+     * Produce the given item. If the {@code type} refers to an item which is declared with multiplicity, then this
      * method can be called more than once for the given {@code type}, otherwise it must be called no more than once.
      *
      * @param type the item type (must not be {@code null})
@@ -113,7 +113,7 @@ public final class BuildContext {
     }
 
     /**
-     * Consume all of the values produced for the named item. If the
+     * Consume all the values produced for the named item. If the
      * item type implements {@link Comparable}, it will be sorted by natural order before return. The returned list
      * is a mutable copy.
      *
@@ -139,7 +139,7 @@ public final class BuildContext {
     }
 
     /**
-     * Consume all of the values produced for the named item, re-sorting it according
+     * Consume all the values produced for the named item, re-sorting it according
      * to the given comparator. The returned list is a mutable copy.
      *
      * @param type the item element type (must not be {@code null})
@@ -155,7 +155,7 @@ public final class BuildContext {
     }
 
     /**
-     * Determine if a item was produced and is therefore available to be {@linkplain #consume(Class) consumed}.
+     * Determine if an item was produced and is therefore available to be {@linkplain #consume(Class) consumed}.
      *
      * @param type the item type (must not be {@code null})
      * @return {@code true} if the item was produced and is available, {@code false} if it was not or if this deployer does
@@ -169,7 +169,7 @@ public final class BuildContext {
     }
 
     /**
-     * Determine if a item will be consumed in this build. If a item is not consumed, then build steps are not
+     * Determine if an item will be consumed in this build. If an item is not consumed, then build steps are not
      * required to produce it.
      *
      * @param type the item type (must not be {@code null})

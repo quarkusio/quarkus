@@ -41,7 +41,7 @@ public class PackageConfig {
     public ManifestConfig manifest;
 
     /**
-     * The entry point of the application. This can either be a a fully qualified name of a standard Java
+     * The entry point of the application. This can either be a fully qualified name of a standard Java
      * class with a main method, or {@link io.quarkus.runtime.QuarkusApplication}.
      * <p>
      * If your application has main classes annotated with {@link io.quarkus.runtime.annotations.QuarkusMain}
@@ -108,7 +108,7 @@ public class PackageConfig {
     public Optional<String> outputName;
 
     /**
-     * Whether to automate the creation of AppCDS. This has not effect when a native binary is needed and will be ignored in
+     * Whether to automate the creation of AppCDS. This has no effect when a native binary is needed and will be ignored in
      * that case.
      * Furthermore, this option only works for Java 11+ and is considered experimental for the time being.
      * Finally, care must be taken to use the same exact JVM version when building and running the application.
@@ -118,7 +118,7 @@ public class PackageConfig {
 
     /**
      * When AppCDS generation is enabled, if this property is set, then the JVM used to generate the AppCDS file
-     * will be the JVM present in the container image. The builder image is expected to have have the 'java' binary
+     * will be the JVM present in the container image. The builder image is expected to have the 'java' binary
      * on its PATH.
      * This flag is useful when the JVM to be used at runtime is not the same exact JVM version as the one used to build
      * the jar.

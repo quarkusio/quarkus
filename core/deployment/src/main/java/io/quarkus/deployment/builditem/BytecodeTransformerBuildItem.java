@@ -12,7 +12,7 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
 
     /**
      * If this is true it means the class should be loaded eagerly by a thread pool in dev mode
-     * on multi threaded systems.
+     * on multithreaded systems.
      * <p>
      * Transformation is expensive, so doing it this way can speed up boot time.
      */

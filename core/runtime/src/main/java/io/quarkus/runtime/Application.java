@@ -44,7 +44,7 @@ public abstract class Application implements Closeable {
     private static volatile Application currentApplication;
 
     /**
-     * Embedded applications don't setup or modify logging, and don't provide start/
+     * Embedded applications don't set up or modify logging, and don't provide start/
      * stop notifications to the {@link ApplicationStateNotification}.
      */
     private final boolean auxilaryApplication;

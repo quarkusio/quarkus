@@ -9,7 +9,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * A marker indicating a user friendly documentation key for the {@link java.util.Map} type.
+ * A marker indicating a user-friendly documentation key for the {@link java.util.Map} type.
  */
 @Documented
 @Retention(SOURCE)

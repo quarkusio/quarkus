@@ -23,7 +23,7 @@ import io.quarkus.maven.components.Prompter;
 
 /**
  * Creates the base of a
- * <a href="https://quarkus.io/guides/writing-extensions">Quarkus Extension</a> in different layout depending of the options and
+ * <a href="https://quarkus.io/guides/writing-extensions">Quarkus Extension</a> in different layout depending on the options and
  * environment.
  * <br />
  * <br />
@@ -120,7 +120,7 @@ public class CreateExtensionMojo extends AbstractMojo {
      * A prefix common to all extension names in the current source tree.
      * <br />
      * <br />
-     * Default: "quarkus-" in quarkus Quarkus Core and Quarkiverse else ""
+     * Default: "quarkus-" in Quarkus Core and Quarkiverse else ""
      */
     @Parameter(property = "namespaceName")
     String namespaceName;

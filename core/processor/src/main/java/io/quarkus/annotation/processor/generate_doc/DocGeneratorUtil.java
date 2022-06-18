@@ -330,7 +330,7 @@ public class DocGeneratorUtil {
                         break;
                     }
                     if (i > 3 && Constants.CONFIG.equals(subgroup)) {
-                        // this is a bit dark magic but we have config packages as valid extension names
+                        // this is a bit dark magic, but we have config packages as valid extension names
                         // and config packages where the configuration is stored
                         break;
                     }
@@ -497,7 +497,7 @@ public class DocGeneratorUtil {
      * Sort docs keys. The sorted list will contain the properties in the following order
      * - 1. Map config items as last elements of the generated docs.
      * - 2. Build time properties will come first.
-     * - 3. Otherwise respect source code declaration order.
+     * - 3. Otherwise, respect source code declaration order.
      * - 4. Elements within a configuration section will appear at the end of the generated doc while preserving described in
      * 1-4.
      */

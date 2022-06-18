@@ -1,6 +1,6 @@
 Below is the list of maintainers for each Quarkus extension hosted in the main repository.
 
-If you think some information is outdated, either provide a pull request or send an email to the `quarkus-dev` mailing list.
+If you think some information is outdated, either provide a pull request or email the `quarkus-dev` mailing list.
 
 [cols=2*,options="header"]
 |===

@@ -197,7 +197,7 @@ public class BaseCreateCommand implements Callable<Integer> {
      *
      * @param buildTool The build tool the project should use (maven, gradle, jbang)
      * @param targetVersion The target quarkus version
-     * @param properties Additional properties that should be used whiel creating the properties
+     * @param properties Additional properties that should be used while creating the properties
      * @param extensions requested extensions
      * @return Quarkus command invocation that can be printed (dry-run) or run to create the project
      * @throws RegistryResolutionException

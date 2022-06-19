@@ -15,7 +15,7 @@ import io.quarkus.redis.client.reactive.ReactiveRedisClient;
 import io.smallrye.mutiny.Uni;
 import io.vertx.redis.client.Response;
 
-@Path("/quarkus-redis-parameter-injection")
+@Path("/quarkus-redis-parameter-injection-legacy")
 @ApplicationScoped
 public class RedisWithParameterInjectionResource {
     private RedisClient redisClient;

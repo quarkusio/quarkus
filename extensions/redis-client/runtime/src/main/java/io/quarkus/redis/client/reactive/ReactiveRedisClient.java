@@ -1,12 +1,10 @@
 package io.quarkus.redis.client.reactive;
 
-import static io.quarkus.redis.client.runtime.RedisClientUtil.DEFAULT_CLIENT;
+import static io.quarkus.redis.client.runtime.VertxRedisClientFactory.DEFAULT_CLIENT;
 
 import java.util.List;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.redis.client.RedisClient;
-import io.quarkus.redis.client.runtime.RedisClientsProducer;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
 
@@ -15,7 +13,11 @@ import io.vertx.mutiny.redis.client.Response;
  *
  * For more information about how each individual command visit
  * the <a href="https://redis.io/commands">Redis Commands Page</a>
+ *
+ * @deprecated Use {@link io.vertx.mutiny.redis.client.RedisAPI} or
+ *             {@link io.quarkus.redis.datasource.api.ReactiveRedisDataSource} instead.
  */
+@Deprecated
 public interface ReactiveRedisClient {
     /**
      * Creates the {@link RedisClient} using the default redis client configuration
@@ -32,8 +34,7 @@ public interface ReactiveRedisClient {
      * @return {@link ReactiveRedisClient} - the named reactive redis client
      */
     static ReactiveRedisClient createClient(String name) {
-        RedisClientsProducer redisClientsProducer = Arc.container().instance(RedisClientsProducer.class).get();
-        return redisClientsProducer.getReactiveRedisClient(name);
+        throw new UnsupportedOperationException("The Reactive Redis Client must be injected");
     }
 
     void close();

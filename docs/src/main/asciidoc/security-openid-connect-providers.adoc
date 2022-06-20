@@ -127,7 +127,7 @@ Click on `Add` in that dialog without changing anything:
 
 image::oidc-microsoft-6.png[role="thumb"]
 
-On the resulting page, copy your `Secret ID`:
+On the resulting page, copy your `Secret Value`:
 
 image::oidc-microsoft-7.png[role="thumb"]
 

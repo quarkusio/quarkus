@@ -88,17 +88,17 @@ public class CliCreateExtensionTest {
         validateBasicIdentifiers(projectPom,
                 "io.quarkiverse.custom",
                 "quarkus-custom-parent",
-                CreateExtension.DEFAULT_VERSION);
+                CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
 
         Path runtimePom = project.resolve("runtime/pom.xml");
         validateBasicIdentifiers(runtimePom, // <parent> pom
                 "io.quarkiverse.custom",
                 "quarkus-custom-parent",
-                CreateExtension.DEFAULT_VERSION);
+                CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
         validateBasicIdentifiers(runtimePom,
                 "io.quarkiverse.custom",
                 "quarkus-custom",
-                CreateExtension.DEFAULT_VERSION);
+                CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
         Path quarkusExtension = project.resolve("runtime/src/main/resources/META-INF/quarkus-extension.yaml");
         Assertions.assertTrue(quarkusExtension.toFile().exists(),
                 "quarkus-extension.yaml should exist: " + quarkusExtension.toAbsolutePath().toString());
@@ -107,11 +107,11 @@ public class CliCreateExtensionTest {
         validateBasicIdentifiers(deploymentPom, // <parent> pom
                 "io.quarkiverse.custom",
                 "quarkus-custom-parent",
-                CreateExtension.DEFAULT_VERSION);
+                CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
         validateBasicIdentifiers(deploymentPom,
                 "io.quarkiverse.custom",
                 "quarkus-custom-deployment",
-                CreateExtension.DEFAULT_VERSION);
+                CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
         CliDriver.valdiateGeneratedSourcePackage(project.resolve("deployment"), "io/quarkiverse/custom/deployment");
         CliDriver.valdiateGeneratedTestPackage(project.resolve("deployment"), "io/quarkiverse/custom/test");
 
@@ -119,11 +119,11 @@ public class CliCreateExtensionTest {
         validateBasicIdentifiers(itPom, // <parent> pom
                 "io.quarkiverse.custom",
                 "quarkus-custom-parent",
-                CreateExtension.DEFAULT_VERSION);
+                CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
         validateBasicIdentifiers(itPom,
                 "io.quarkiverse.custom",
                 "quarkus-custom-integration-tests",
-                CreateExtension.DEFAULT_VERSION);
+                CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
         CliDriver.valdiateGeneratedSourcePackage(project.resolve("integration-tests"), "io/quarkiverse/custom/it");
         CliDriver.valdiateGeneratedTestPackage(project.resolve("integration-tests"), "io/quarkiverse/custom/it");
     }

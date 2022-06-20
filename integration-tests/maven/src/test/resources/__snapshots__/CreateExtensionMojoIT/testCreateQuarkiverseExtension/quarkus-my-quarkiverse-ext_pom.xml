@@ -9,7 +9,7 @@
   </parent>
   <groupId>io.quarkiverse.my-quarkiverse-ext</groupId>
   <artifactId>quarkus-my-quarkiverse-ext-parent</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>999-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Quarkus My Quarkiverse extension - Parent</name>
   <modules>

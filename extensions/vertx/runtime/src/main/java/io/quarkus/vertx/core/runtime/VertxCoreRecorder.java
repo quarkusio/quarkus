@@ -546,14 +546,15 @@ public class VertxCoreRecorder {
 
             @Override
             public void runWith(Runnable task, Object context) {
-                if (context != null) {
+                ContextInternal currentContext = (ContextInternal) Vertx.currentContext();
+                if (context != null && context != currentContext) {
                     // Only do context handling if it's non-null
                     final ContextInternal vertxContext = (ContextInternal) context;
                     vertxContext.beginDispatch();
                     try {
                         task.run();
                     } finally {
-                        vertxContext.endDispatch(null);
+                        vertxContext.endDispatch(currentContext);
                     }
                 } else {
                     task.run();

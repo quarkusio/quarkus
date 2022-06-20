@@ -12,7 +12,6 @@
 
     <artifactId>quarkus-narayana-lra</artifactId>
     <name>Quarkus - Narayana LRA Participant - Runtime</name>
-    <description>Coordinate Long Running Actions (LRA)</description>
 
     <dependencies>
         <dependency>

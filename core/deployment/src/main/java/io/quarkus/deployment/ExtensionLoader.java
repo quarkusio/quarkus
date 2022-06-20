@@ -24,7 +24,6 @@ import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -40,7 +39,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -99,7 +97,6 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
-import io.quarkus.runtime.util.HashUtil;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.KeyMap;
 import io.smallrye.config.KeyMapBackedConfigSource;
@@ -529,8 +526,6 @@ public final class ExtensionLoader {
 
         // now iterate the methods
         final List<Method> methods = getMethods(clazz);
-        final Map<String, List<Method>> nameToMethods = methods.stream().collect(Collectors.groupingBy(m -> m.getName()));
-
         for (Method method : methods) {
             final BuildStep buildStep = method.getAnnotation(BuildStep.class);
             if (buildStep == null) {
@@ -884,16 +879,6 @@ public final class ExtensionLoader {
                     .andThen(buildStepBuilder -> buildStepBuilder.buildIf(finalAddStep));
             final BiConsumer<BuildContext, Object> finalStepInstanceSetup = stepInstanceSetup;
             final String name = clazz.getName() + "#" + method.getName();
-            final String stepId;
-            List<Method> methodsWithName = nameToMethods.get(method.getName());
-            if (methodsWithName.size() > 1) {
-                // Append the sha1 of the parameter types to resolve the ambiguity
-                stepId = name + "_" + HashUtil.sha1(Arrays.toString(method.getParameterTypes()));
-                loadLog.debugf("Build steps with ambiguous name detected: %s, using discriminator suffix for step id: %s", name,
-                        stepId);
-            } else {
-                stepId = name;
-            }
 
             chainConfig = chainConfig
                     .andThen(bcb -> {
@@ -978,11 +963,6 @@ public final class ExtensionLoader {
                                     }
 
                                 }
-                            }
-
-                            @Override
-                            public String getId() {
-                                return stepId;
                             }
 
                             public String toString() {

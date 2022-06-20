@@ -18,10 +18,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
@@ -67,7 +63,6 @@ import io.quarkus.vertx.http.deployment.WebsocketSubProtocolsBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
-import io.smallrye.graphql.api.AdaptWith;
 import io.smallrye.graphql.api.Entry;
 import io.smallrye.graphql.cdi.config.ConfigKey;
 import io.smallrye.graphql.cdi.config.MicroProfileConfig;
@@ -150,8 +145,7 @@ public class SmallRyeGraphQLProcessor {
     }
 
     @BuildStep
-    void additionalBean(Capabilities capabilities, CombinedIndexBuildItem combinedIndex,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
+    void additionalBean(Capabilities capabilities, BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
 
         additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(GraphQLProducer.class)
@@ -159,14 +153,6 @@ public class SmallRyeGraphQLProcessor {
         if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
             additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
                     .addBeanClass(SmallRyeGraphQLLocaleResolver.class)
-                    .setUnremovable().build());
-        }
-
-        // Make sure the adapters does not get removed
-        Set<String> adapterClasses = getAllAdapterClasses(combinedIndex.getIndex());
-        for (String adapterClass : adapterClasses) {
-            additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
-                    .addBeanClass(adapterClass)
                     .setUnremovable().build());
         }
     }
@@ -193,7 +179,7 @@ public class SmallRyeGraphQLProcessor {
     }
 
     @BuildStep
-    SmallRyeGraphQLModifiedClasesBuildItem createIndex(TransformedClassesBuildItem transformedClassesBuildItem) {
+    SmallRyeGraphQLIndexBuildItem createIndex(TransformedClassesBuildItem transformedClassesBuildItem) {
         Map<String, byte[]> modifiedClasses = new HashMap<>();
         Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar = transformedClassesBuildItem
                 .getTransformedClassesByJar();
@@ -205,14 +191,20 @@ public class SmallRyeGraphQLProcessor {
                 modifiedClasses.put(transformedClass.getClassName(), transformedClass.getData());
             }
         }
-        return new SmallRyeGraphQLModifiedClasesBuildItem(modifiedClasses);
+        return new SmallRyeGraphQLIndexBuildItem(modifiedClasses);
     }
 
+    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    void buildFinalIndex(
-            BuildProducer<SmallRyeGraphQLFinalIndexBuildItem> smallRyeGraphQLFinalIndexProducer,
+    void buildExecutionService(
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyProducer,
+            BuildProducer<SmallRyeGraphQLInitializedBuildItem> graphQLInitializedProducer,
+            SmallRyeGraphQLRecorder recorder,
+            SmallRyeGraphQLIndexBuildItem graphQLIndexBuildItem,
+            BeanContainerBuildItem beanContainer,
             CombinedIndexBuildItem combinedIndex,
-            SmallRyeGraphQLModifiedClasesBuildItem graphQLIndexBuildItem) {
+            SmallRyeGraphQLConfig graphQLConfig) {
 
         Indexer indexer = new Indexer();
         Map<String, byte[]> modifiedClases = graphQLIndexBuildItem.getModifiedClases();
@@ -236,21 +228,7 @@ public class SmallRyeGraphQLProcessor {
 
         OverridableIndex overridableIndex = OverridableIndex.create(combinedIndex.getIndex(), indexer.complete());
 
-        smallRyeGraphQLFinalIndexProducer.produce(new SmallRyeGraphQLFinalIndexBuildItem(overridableIndex));
-    }
-
-    @Record(ExecutionTime.STATIC_INIT)
-    @BuildStep
-    void buildExecutionService(
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyProducer,
-            BuildProducer<SmallRyeGraphQLInitializedBuildItem> graphQLInitializedProducer,
-            SmallRyeGraphQLRecorder recorder,
-            SmallRyeGraphQLFinalIndexBuildItem graphQLFinalIndexBuildItem,
-            BeanContainerBuildItem beanContainer,
-            SmallRyeGraphQLConfig graphQLConfig) {
-
-        Schema schema = SchemaBuilder.build(graphQLFinalIndexBuildItem.getFinalIndex(), graphQLConfig.autoNameStrategy);
+        Schema schema = SchemaBuilder.build(overridableIndex, graphQLConfig.autoNameStrategy);
 
         RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema);
         graphQLInitializedProducer.produce(new SmallRyeGraphQLInitializedBuildItem(initialized));
@@ -356,29 +334,6 @@ public class SmallRyeGraphQLProcessor {
 
         routeProducer.produce(requestBuilder.build());
 
-    }
-
-    private Set<String> getAllAdapterClasses(IndexView index) {
-        Set<String> adapterClasses = new HashSet<>();
-        adapterClasses.addAll(getAdapterClasses(index, DotName.createSimple(AdaptWith.class.getName())));
-        adapterClasses.addAll(
-                getAdapterClasses(index, DotName.createSimple("jakarta.json.bind.annotation.JsonbTypeAdapter")));
-        adapterClasses.addAll(
-                getAdapterClasses(index, DotName.createSimple("javax.json.bind.annotation.JsonbTypeAdapter")));
-        return adapterClasses;
-    }
-
-    private Set<String> getAdapterClasses(IndexView index, DotName adapterClass) {
-        Set<String> adapterClasses = new HashSet<>();
-        Collection<AnnotationInstance> adaptWithAnnotations = index.getAnnotations(adapterClass);
-        for (AnnotationInstance adaptWithAnnotation : adaptWithAnnotations) {
-            AnnotationValue annotationValue = adaptWithAnnotation.value();
-            if (annotationValue != null) {
-                org.jboss.jandex.Type classType = annotationValue.asClass();
-                adapterClasses.add(classType.name().toString());
-            }
-        }
-        return adapterClasses;
     }
 
     private boolean shouldRunBlockingRoute(SmallRyeGraphQLConfig graphQLConfig) {
@@ -623,7 +578,6 @@ public class SmallRyeGraphQLProcessor {
 
             String graphQLPath = httpRootPath.resolvePath(graphQLConfig.rootPath);
             String graphQLUiPath = nonApplicationRootPathBuildItem.resolvePath(graphQLConfig.ui.rootPath);
-            String devUiPath = nonApplicationRootPathBuildItem.resolvePath("dev");
 
             webJarBuildProducer.produce(
                     WebJarBuildItem.builder().artifactKey(GRAPHQL_UI_WEBJAR_ARTIFACT_KEY) //
@@ -638,7 +592,7 @@ public class SmallRyeGraphQLProcessor {
                                         content = updateUrl(content, graphQLUiPath,
                                                 UI_LINE_TO_UPDATE,
                                                 UI_LINE_FORMAT);
-                                        content = updateUrl(content, getLogoUrl(launchMode, devUiPath, graphQLUiPath),
+                                        content = updateUrl(content, graphQLUiPath,
                                                 LOGO_LINE_TO_UPDATE,
                                                 LOGO_LINE_FORMAT);
 
@@ -690,14 +644,6 @@ public class SmallRyeGraphQLProcessor {
                     .build());
 
         }
-    }
-
-    // In dev mode, when you click on the logo, you should go to Dev UI
-    private String getLogoUrl(LaunchModeBuildItem launchMode, String devUIValue, String defaultValue) {
-        if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
-            return devUIValue;
-        }
-        return defaultValue;
     }
 
     private static boolean shouldInclude(LaunchModeBuildItem launchMode, SmallRyeGraphQLConfig graphQLConfig) {

@@ -12,7 +12,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -68,7 +67,7 @@ public class ConfigEditorProcessor {
         for (ConfigDescriptionBuildItem item : configDescriptionBuildItems) {
             configDescriptions.add(
                     new ConfigDescription(item.getPropertyName(),
-                            cleanUpAsciiDocIfNecessary(item.getDocs()),
+                            item.getDocs(),
                             item.getDefaultValue(),
                             isSetByDevServices(devServicesLauncherConfig, item.getPropertyName()),
                             item.getValueTypeName(),
@@ -128,20 +127,6 @@ public class ConfigEditorProcessor {
             }
         }));
 
-    }
-
-    private String cleanUpAsciiDocIfNecessary(String docs) {
-        if (docs == null || !docs.toLowerCase(Locale.ROOT).contains("@asciidoclet")) {
-            return docs;
-        }
-        // TODO #26199 Ideally we'd use a proper AsciiDoc renderer, but for now we'll just clean it up a bit.
-        return docs.replace("@asciidoclet", "")
-                // Avoid problems with links.
-                .replace("<<", "&lt;&lt;")
-                .replace(">>", "&gt;&gt;")
-                // Try to render line breaks... kind of.
-                .replace("\n\n", "<p>")
-                .replace("\n", "<br>");
     }
 
     @BuildStep

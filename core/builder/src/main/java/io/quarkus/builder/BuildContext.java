@@ -2,14 +2,12 @@ package io.quarkus.builder;
 
 import static io.quarkus.builder.Execution.*;
 
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.wildfly.common.Assert;
@@ -268,14 +266,12 @@ public final class BuildContext {
         final Execution execution = this.execution;
         final StepInfo stepInfo = this.stepInfo;
         final BuildStep buildStep = stepInfo.getBuildStep();
-        final long start = System.nanoTime();
-        final LocalTime started = LocalTime.now();
-        final Thread currentThread = Thread.currentThread();
+        final long start = System.currentTimeMillis();
         log.tracef("Starting step \"%s\"", buildStep);
         try {
             if (!execution.isErrorReported()) {
                 running = true;
-                ClassLoader old = currentThread.getContextClassLoader();
+                ClassLoader old = Thread.currentThread().getContextClassLoader();
                 try {
                     Thread.currentThread().setContextClassLoader(classLoader);
                     buildStep.execute(this);
@@ -285,13 +281,11 @@ public final class BuildContext {
                     execution.setErrorReported();
                 } finally {
                     running = false;
-                    currentThread.setContextClassLoader(old);
+                    Thread.currentThread().setContextClassLoader(old);
                 }
             }
         } finally {
-            long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-            execution.getMetrics().buildStepFinished(buildStep.getId(), currentThread.getName(), started, duration);
-            log.tracef("Finished step \"%s\" in %s ms", buildStep, duration);
+            log.tracef("Finished step \"%s\" in %s ms", buildStep, System.currentTimeMillis() - start);
             execution.removeBuildContext(stepInfo, this);
         }
         final Set<StepInfo> dependents = stepInfo.getDependents();

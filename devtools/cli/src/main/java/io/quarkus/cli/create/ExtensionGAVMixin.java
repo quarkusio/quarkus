@@ -8,15 +8,16 @@ import picocli.CommandLine;
 
 public class ExtensionGAVMixin {
     static final String DEFAULT_EXTENSION_ID = "custom";
-    static final String EXAMPLE_GAV = "io.quarkiverse.custom:"
-            + DEFAULT_EXTENSION_ID;
+    static final String DEFAULT_GAV = "io.quarkiverse.custom:"
+            + DEFAULT_EXTENSION_ID + ":"
+            + CreateExtension.DEFAULT_VERSION;
 
     String groupId = null;
     String extensionId = null;
-    String version = null;
+    String version = CreateExtension.DEFAULT_VERSION;
 
     @CommandLine.Parameters(arity = "0..1", paramLabel = "[GROUP-ID:]EXTENSION-ID[:VERSION]", description = "Quarkus extension project identifiers%n"
-            + "  " + EXAMPLE_GAV + "%n"
+            + "  " + DEFAULT_GAV + "%n"
             + "  Examples:%n"
             + "     my-extension%n"
             + "     my.group:my-extension%n"

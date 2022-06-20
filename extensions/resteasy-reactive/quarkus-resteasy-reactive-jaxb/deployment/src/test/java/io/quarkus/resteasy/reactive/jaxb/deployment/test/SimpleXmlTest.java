@@ -22,6 +22,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -31,6 +32,7 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.smallrye.common.annotation.NonBlocking;
 
+@Disabled("flaky: sometimes the class ModelWithoutAnnotation is not registered in the JAXB context")
 public class SimpleXmlTest {
 
     @RegisterExtension

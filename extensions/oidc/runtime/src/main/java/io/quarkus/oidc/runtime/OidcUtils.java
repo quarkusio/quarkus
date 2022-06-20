@@ -115,7 +115,7 @@ public final class OidcUtils {
         if (rolesConfig.getRoleClaimPath().isPresent()) {
             List<String> roles = new LinkedList<>();
             for (String roleClaimPath : rolesConfig.getRoleClaimPath().get()) {
-                roles.addAll(findClaimWithRoles(rolesConfig, roleClaimPath.trim(), json));
+                roles.addAll(findClaimWithRoles(rolesConfig, roleClaimPath, json));
             }
             return roles;
         }

@@ -1,8 +1,7 @@
 package io.quarkus.builder;
 
 import static java.lang.Math.max;
-import static java.util.concurrent.locks.LockSupport.park;
-import static java.util.concurrent.locks.LockSupport.unpark;
+import static java.util.concurrent.locks.LockSupport.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,7 +19,6 @@ import org.jboss.threads.JBossThreadFactory;
 
 import io.quarkus.builder.diag.Diagnostic;
 import io.quarkus.builder.item.BuildItem;
-import io.quarkus.builder.metrics.BuildMetrics;
 
 /**
  */
@@ -40,8 +38,6 @@ final class Execution {
     private final AtomicInteger lastStepCount = new AtomicInteger();
     private volatile Thread runningThread;
     private volatile boolean done;
-
-    private final BuildMetrics metrics;
 
     static {
         try {
@@ -66,8 +62,6 @@ final class Execution {
         lastStepCount.set(builder.getChain().getEndStepCount());
         if (lastStepCount.get() == 0)
             done = true;
-
-        metrics = new BuildMetrics(buildTargetName);
     }
 
     List<Diagnostic> getDiagnostics() {
@@ -84,9 +78,7 @@ final class Execution {
 
     BuildResult run() throws BuildException {
         final long start = System.nanoTime();
-        metrics.buildStarted();
         runningThread = Thread.currentThread();
-
         // run the build
         final List<StepInfo> startSteps = chain.getStartSteps();
         for (StepInfo startStep : startSteps) {
@@ -132,9 +124,8 @@ final class Execution {
         }
         if (lastStepCount.get() > 0)
             throw new BuildException("Extra steps left over", Collections.emptyList());
-
         return new BuildResult(singles, multis, finalIds, Collections.unmodifiableList(diagnostics),
-                max(0, System.nanoTime() - start), metrics);
+                max(0, System.nanoTime() - start));
     }
 
     EnhancedQueueExecutor getExecutor() {
@@ -163,10 +154,6 @@ final class Execution {
 
     BuildChain getBuildChain() {
         return chain;
-    }
-
-    BuildMetrics getMetrics() {
-        return metrics;
     }
 
     void depFinished() {

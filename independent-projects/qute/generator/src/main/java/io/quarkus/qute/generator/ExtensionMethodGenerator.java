@@ -65,7 +65,6 @@ public class ExtensionMethodGenerator {
     public static final String NAMESPACE_SUFFIX = "_Namespace" + SUFFIX;
 
     public static final String MATCH_NAME = "matchName";
-    public static final String MATCH_NAMES = "matchNames";
     public static final String MATCH_REGEX = "matchRegex";
     public static final String PRIORITY = "priority";
     public static final String NAMESPACE = "namespace";
@@ -100,7 +99,7 @@ public class ExtensionMethodGenerator {
         }
     }
 
-    public void generate(MethodInfo method, String matchName, List<String> matchNames, String matchRegex, Integer priority) {
+    public void generate(MethodInfo method, String matchName, String matchRegex, Integer priority) {
 
         AnnotationInstance extensionAnnotation = method.annotation(TEMPLATE_EXTENSION);
         List<Type> parameters = method.parameters();
@@ -121,17 +120,6 @@ public class ExtensionMethodGenerator {
             matchName = method.name();
         }
 
-        if (matchNames == null && extensionAnnotation != null) {
-            // No explicit name defined, try annotation
-            AnnotationValue matchNamesValue = extensionAnnotation.value(MATCH_NAMES);
-            if (matchNamesValue != null) {
-                matchNames = new ArrayList<>();
-                for (String name : matchNamesValue.asStringArray()) {
-                    matchNames.add(name);
-                }
-            }
-        }
-
         if (priority == null && extensionAnnotation != null) {
             // No explicit priority set, try annotation
             AnnotationValue priorityValue = extensionAnnotation.value(PRIORITY);
@@ -150,7 +138,7 @@ public class ExtensionMethodGenerator {
             }
         }
 
-        if (matchRegex != null || !matchNames.isEmpty() || matchName.equals(TemplateExtension.ANY)) {
+        if (matchRegex != null || matchName.equals(TemplateExtension.ANY)) {
             // A string parameter is needed to match the name
             if (parameters.size() < 2 || !parameters.get(1).name().equals(DotNames.STRING)) {
                 throw new TemplateException(
@@ -190,10 +178,9 @@ public class ExtensionMethodGenerator {
 
         implementGetPriority(valueResolver, priority);
 
-        Parameters params = new Parameters(method,
-                patternField != null || !matchNames.isEmpty() || matchName.equals(TemplateExtension.ANY), false);
-        implementAppliesTo(valueResolver, method, matchName, matchNames, patternField, params);
-        implementResolve(valueResolver, declaringClass, method, matchName, matchNames, patternField, params);
+        Parameters params = new Parameters(method, patternField != null || matchName.equals(TemplateExtension.ANY), false);
+        implementAppliesTo(valueResolver, method, matchName, patternField, params);
+        implementResolve(valueResolver, declaringClass, method, matchName, patternField, params);
 
         valueResolver.close();
     }
@@ -215,13 +202,13 @@ public class ExtensionMethodGenerator {
     }
 
     private void implementResolve(ClassCreator valueResolver, ClassInfo declaringClass, MethodInfo method, String matchName,
-            List<String> matchNames, FieldDescriptor patternField, Parameters params) {
+            FieldDescriptor patternField, Parameters params) {
         MethodCreator resolve = valueResolver.getMethodCreator("resolve", CompletionStage.class, EvalContext.class)
                 .setModifiers(ACC_PUBLIC);
 
         ResultHandle evalContext = resolve.getMethodParam(0);
         ResultHandle base = resolve.invokeInterfaceMethod(Descriptors.GET_BASE, evalContext);
-        boolean isNameParamRequired = patternField != null || !matchNames.isEmpty() || matchName.equals(TemplateExtension.ANY);
+        boolean matchAnyOrRegex = patternField != null || matchName.equals(TemplateExtension.ANY);
         boolean returnsCompletionStage = method.returnType().kind() != Kind.PRIMITIVE && ValueResolverGenerator
                 .hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
 
@@ -268,7 +255,7 @@ public class ExtensionMethodGenerator {
             AssignableResultHandle whenBase = whenComplete.createVariable(Object.class);
             whenComplete.assign(whenBase, base);
             AssignableResultHandle whenName = null;
-            if (isNameParamRequired) {
+            if (matchAnyOrRegex) {
                 whenName = whenComplete.createVariable(String.class);
                 whenComplete.assign(whenName, name);
             }
@@ -354,12 +341,12 @@ public class ExtensionMethodGenerator {
         resolve.returnValue(ret);
     }
 
-    private void implementAppliesTo(ClassCreator valueResolver, MethodInfo method, String matchName, List<String> matchNames,
+    private void implementAppliesTo(ClassCreator valueResolver, MethodInfo method, String matchName,
             FieldDescriptor patternField, Parameters params) {
         MethodCreator appliesTo = valueResolver.getMethodCreator("appliesTo", boolean.class, EvalContext.class)
                 .setModifiers(ACC_PUBLIC);
 
-        boolean matchAny = patternField == null && matchNames.isEmpty() && matchName.equals(TemplateExtension.ANY);
+        boolean matchAny = patternField == null && matchName.equals(TemplateExtension.ANY);
         boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
         ResultHandle evalContext = appliesTo.getMethodParam(0);
         ResultHandle base = appliesTo.invokeInterfaceMethod(Descriptors.GET_BASE, evalContext);
@@ -387,19 +374,10 @@ public class ExtensionMethodGenerator {
                 BytecodeCreator nameNotMatched = appliesTo
                         .ifFalse(appliesTo.invokeVirtualMethod(Descriptors.MATCHER_MATCHES, matcher)).trueBranch();
                 nameNotMatched.returnValue(appliesTo.load(false));
-            } else if (!matchNames.isEmpty()) {
-                // Any of the name matches
-                BytecodeCreator namesMatch = appliesTo.createScope();
-                for (String match : matchNames) {
-                    ResultHandle nameTest = namesMatch.invokeVirtualMethod(Descriptors.EQUALS, name,
-                            namesMatch.load(match));
-                    namesMatch.ifTrue(nameTest).trueBranch().breakScope(namesMatch);
-                }
-                namesMatch.returnValue(namesMatch.load(false));
             } else {
                 ResultHandle nameTest = appliesTo.invokeVirtualMethod(Descriptors.EQUALS, name,
                         appliesTo.load(matchName));
-                BytecodeCreator nameNotMatched = appliesTo.ifFalse(nameTest).trueBranch();
+                BytecodeCreator nameNotMatched = appliesTo.ifTrue(nameTest).falseBranch();
                 nameNotMatched.returnValue(nameNotMatched.load(false));
             }
         }
@@ -478,7 +456,7 @@ public class ExtensionMethodGenerator {
                 this.constructor.invokeSpecialMethod(Descriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
             }
 
-            public void addMethod(MethodInfo method, String matchName, List<String> matchNames, String matchRegex) {
+            public void addMethod(MethodInfo method, String matchName, String matchRegex) {
                 FieldDescriptor patternField = null;
                 if (matchRegex != null && !matchRegex.isEmpty()) {
                     patternField = namespaceResolver.getFieldCreator(PATTERN + "_" + sha1(method.toString()), Pattern.class)
@@ -487,12 +465,13 @@ public class ExtensionMethodGenerator {
                             constructor.invokeStaticMethod(Descriptors.PATTERN_COMPILE, constructor.load(matchRegex)));
                 }
 
-                boolean isNameParamRequired = patternField != null || !matchNames.isEmpty()
-                        || matchName.equals(TemplateExtension.ANY);
-                Parameters params = new Parameters(method, isNameParamRequired, true);
+                boolean matchAnyOrRegex = patternField != null || matchName.equals(TemplateExtension.ANY);
+                Parameters params = new Parameters(method, matchAnyOrRegex, true);
 
                 BytecodeCreator matchScope = createNamespaceExtensionMatchScope(resolve, method, params.evaluated().size(),
-                        matchName, matchNames, patternField, name, paramsHandle, paramsCount);
+                        matchName,
+                        patternField, name,
+                        paramsHandle, paramsCount);
 
                 if (!params.needsEvaluation()) {
                     ResultHandle[] args = new ResultHandle[params.size()];
@@ -523,7 +502,7 @@ public class ExtensionMethodGenerator {
                             whenCompleteFun.getInstance());
                     BytecodeCreator whenComplete = whenCompleteFun.getBytecode();
                     AssignableResultHandle whenName = null;
-                    if (isNameParamRequired) {
+                    if (matchAnyOrRegex) {
                         whenName = whenComplete.createVariable(String.class);
                         whenComplete.assign(whenName, name);
                     }
@@ -613,11 +592,10 @@ public class ExtensionMethodGenerator {
     }
 
     private BytecodeCreator createNamespaceExtensionMatchScope(BytecodeCreator bytecodeCreator, MethodInfo method,
-            int realParamSize, String matchName, List<String> matchNames, FieldDescriptor patternField, ResultHandle name,
-            ResultHandle params,
+            int realParamSize, String matchName, FieldDescriptor patternField, ResultHandle name, ResultHandle params,
             ResultHandle paramsCount) {
 
-        boolean matchAny = patternField == null && matchNames.isEmpty() && matchName.equals(TemplateExtension.ANY);
+        boolean matchAny = patternField == null && matchName.equals(TemplateExtension.ANY);
         boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
 
         BytecodeCreator matchScope = bytecodeCreator.createScope();
@@ -628,15 +606,6 @@ public class ExtensionMethodGenerator {
                 ResultHandle matcher = matchScope.invokeVirtualMethod(Descriptors.PATTERN_MATCHER, pattern, name);
                 matchScope.ifFalse(matchScope.invokeVirtualMethod(Descriptors.MATCHER_MATCHES, matcher)).trueBranch()
                         .breakScope(matchScope);
-            } else if (!matchNames.isEmpty()) {
-                // Any of the name matches
-                BytecodeCreator namesMatch = matchScope.createScope();
-                for (String match : matchNames) {
-                    ResultHandle nameTest = namesMatch.invokeVirtualMethod(Descriptors.EQUALS, name,
-                            namesMatch.load(match));
-                    namesMatch.ifTrue(nameTest).trueBranch().breakScope(namesMatch);
-                }
-                namesMatch.breakScope(matchScope);
             } else {
                 matchScope.ifTrue(matchScope.invokeVirtualMethod(Descriptors.EQUALS,
                         matchScope.load(matchName),
@@ -705,7 +674,7 @@ public class ExtensionMethodGenerator {
 
         final List<Param> params;
 
-        public Parameters(MethodInfo method, boolean isNameParameterRequired, boolean hasNamespace) {
+        public Parameters(MethodInfo method, boolean matchAnyOrRegex, boolean hasNamespace) {
             List<Type> parameters = method.parameters();
             Map<Integer, String> attributeParamNames = new HashMap<>();
             for (AnnotationInstance annotation : method.annotations()) {
@@ -730,7 +699,7 @@ public class ExtensionMethodGenerator {
                     indexed++;
                     if (hasNamespace) {
                         // Namespace and matches any or regex - first indexed param is the name
-                        if (isNameParameterRequired) {
+                        if (matchAnyOrRegex) {
                             params.add(new Param(method.parameterName(i), parameters.get(i), i, ParamKind.NAME));
                         } else {
                             params.add(new Param(method.parameterName(i), parameters.get(i), i, ParamKind.EVAL));
@@ -739,7 +708,7 @@ public class ExtensionMethodGenerator {
                         // No namespace but matches any or regex
                         params.add(new Param(method.parameterName(i), parameters.get(i), i, ParamKind.BASE));
                     }
-                } else if (indexed == 1 && !hasNamespace && isNameParameterRequired) {
+                } else if (indexed == 1 && !hasNamespace && matchAnyOrRegex) {
                     indexed++;
                     params.add(new Param(method.parameterName(i), parameters.get(i), i, ParamKind.NAME));
                 } else {
@@ -749,7 +718,7 @@ public class ExtensionMethodGenerator {
             }
             this.params = params;
 
-            if (isNameParameterRequired) {
+            if (matchAnyOrRegex) {
                 Param nameParam = getFirst(ParamKind.NAME);
                 if (nameParam == null || !nameParam.type.name().equals(DotNames.STRING)) {
                     throw new TemplateException(

@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
@@ -46,7 +45,7 @@ public class JaxbContextProducer {
     }
 
     @DefaultBean
-    @RequestScoped
+    @Singleton
     @Produces
     public Marshaller marshaller(JAXBContext jaxbContext, Instance<JaxbContextCustomizer> customizers) {
         try {
@@ -63,7 +62,7 @@ public class JaxbContextProducer {
     }
 
     @DefaultBean
-    @RequestScoped
+    @Singleton
     @Produces
     public Unmarshaller unmarshaller(JAXBContext jaxbContext, Instance<JaxbContextCustomizer> customizers) {
         try {

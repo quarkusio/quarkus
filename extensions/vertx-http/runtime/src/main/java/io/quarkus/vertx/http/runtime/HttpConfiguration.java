@@ -92,6 +92,12 @@ public class HttpConfiguration {
     public ServerSslConfig ssl;
 
     /**
+     * If this is true vertx will handle 100-continue requests
+     */
+    @ConfigItem(defaultValue = "false", name = "handle-100-continue-automatically")
+    public boolean handle100ContinueAutomatically;
+
+    /**
      * The number if IO threads used to perform IO. This will be automatically set to a reasonable value based on
      * the number of CPU cores if it is not provided. If this is set to a higher value than the number of Vert.x event
      * loops then it will be capped at the number of event loops.

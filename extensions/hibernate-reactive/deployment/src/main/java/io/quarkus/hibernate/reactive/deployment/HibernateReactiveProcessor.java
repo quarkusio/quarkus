@@ -148,9 +148,8 @@ public final class HibernateReactiveProcessor {
                 curateOutcomeBuildItem);
         if (dbKindOptional.isPresent()) {
             final String dbKind = dbKindOptional.get();
-            HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit;
             ParsedPersistenceXmlDescriptor reactivePU = generateReactivePersistenceUnit(
-                    hibernateOrmConfig, persistenceUnitConfig, jpaModel,
+                    hibernateOrmConfig, jpaModel,
                     dbKind, applicationArchivesBuildItem, launchMode.getLaunchMode(),
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems);
 
@@ -160,7 +159,6 @@ public final class HibernateReactiveProcessor {
             // - we don't support Hibernate Envers with Hibernate Reactive
             persistenceUnitDescriptors.produce(new PersistenceUnitDescriptorBuildItem(reactivePU,
                     jpaModel.getXmlMappings(reactivePU.getName()),
-                    persistenceUnitConfig.unsupportedProperties,
                     true, false));
         }
 
@@ -199,7 +197,6 @@ public final class HibernateReactiveProcessor {
      */
     private static ParsedPersistenceXmlDescriptor generateReactivePersistenceUnit(
             HibernateOrmConfig hibernateOrmConfig,
-            HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
             JpaModelBuildItem jpaModel,
             String dbKind,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
@@ -208,6 +205,9 @@ public final class HibernateReactiveProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems) {
+
+        HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit;
+
         //we have no persistence.xml so we will create a default one
         String persistenceUnitConfigName = PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 

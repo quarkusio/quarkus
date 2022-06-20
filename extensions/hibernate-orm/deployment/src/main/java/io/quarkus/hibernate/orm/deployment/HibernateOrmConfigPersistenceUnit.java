@@ -2,7 +2,6 @@ package io.quarkus.hibernate.orm.deployment;
 
 import java.nio.charset.Charset;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -12,7 +11,6 @@ import java.util.Set;
 
 import org.hibernate.engine.query.spi.QueryPlanCache;
 
-import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -235,10 +233,6 @@ public class HibernateOrmConfigPersistenceUnit {
     @ConfigItem(defaultValue = "true")
     public boolean validateInDevMode;
 
-    @ConfigItem(generateDocumentation = false)
-    @ConfigDocMapKey("full-property-key")
-    public Map<String, String> unsupportedProperties = new HashMap<>();
-
     public boolean isAnyPropertySet() {
         return datasource.isPresent() ||
                 packages.isPresent() ||
@@ -257,8 +251,7 @@ public class HibernateOrmConfigPersistenceUnit {
                 multitenant.isPresent() ||
                 multitenantSchemaDatasource.isPresent() ||
                 fetch.isAnyPropertySet() ||
-                discriminator.isAnyPropertySet() ||
-                !unsupportedProperties.isEmpty();
+                discriminator.isAnyPropertySet();
     }
 
     @ConfigGroup

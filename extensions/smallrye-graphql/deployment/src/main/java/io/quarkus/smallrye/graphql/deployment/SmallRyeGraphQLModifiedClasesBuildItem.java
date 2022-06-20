@@ -4,11 +4,11 @@ import java.util.Map;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
-final class SmallRyeGraphQLIndexBuildItem extends SimpleBuildItem {
+final class SmallRyeGraphQLModifiedClasesBuildItem extends SimpleBuildItem {
 
     private final Map<String, byte[]> modifiedClases;
 
-    public SmallRyeGraphQLIndexBuildItem(Map<String, byte[]> modifiedClases) {
+    public SmallRyeGraphQLModifiedClasesBuildItem(Map<String, byte[]> modifiedClases) {
         this.modifiedClases = modifiedClases;
     }
 

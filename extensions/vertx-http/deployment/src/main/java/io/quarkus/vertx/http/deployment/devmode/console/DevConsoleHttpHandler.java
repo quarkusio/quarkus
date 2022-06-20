@@ -33,7 +33,7 @@ import io.quarkus.vertx.http.runtime.QuarkusHttpHeaders;
  * The idea here is to dispatch the DevConsoleRequest into the Netty event loop that powers the Dev Vert.x instance.
  *
  * Although this is loaded by the Augmentation ClassLoader at build time,
- * it however works because all of the classes part its signature are loaded by the System ClassLoader
+ * it however works because all the classes part its signature are loaded by the System ClassLoader
  * which is the same for build steps and runtime code (DevConsoleRequest is a part of the devmode-spi which
  * is a parent first dependency thus also loaded by the System ClassLoader).
  */

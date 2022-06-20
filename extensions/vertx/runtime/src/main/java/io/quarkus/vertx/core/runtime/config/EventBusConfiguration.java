@@ -89,13 +89,13 @@ public class EventBusConfiguration {
     public Duration reconnectInterval;
 
     /**
-     * Whether or not to reuse the address.
+     * Whether to reuse the address.
      */
     @ConfigItem(defaultValue = "true")
     public boolean reuseAddress;
 
     /**
-     * Whether or not to reuse the port.
+     * Whether to reuse the port.
      */
     @ConfigItem
     public boolean reusePort;
@@ -119,7 +119,7 @@ public class EventBusConfiguration {
     public boolean ssl;
 
     /**
-     * Whether or not to keep the TCP connection opened (keep-alive).
+     * Whether to keep the TCP connection opened (keep-alive).
      */
     @ConfigItem
     public boolean tcpKeepAlive;

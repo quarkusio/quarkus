@@ -16,7 +16,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * Liquibase needs a datasource to work.
- * This tests assures, that an error occurs, as soon as a named liquibase configuration points to an missing datasource.
+ * This tests assures, that an error occurs, as soon as a named liquibase configuration points to a missing datasource.
  */
 public class LiquibaseExtensionConfigMissingNamedDataSourceTest {
 

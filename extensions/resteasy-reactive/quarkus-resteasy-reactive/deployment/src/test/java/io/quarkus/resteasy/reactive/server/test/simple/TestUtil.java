@@ -55,8 +55,8 @@ public class TestUtil {
     /**
      * Finish preparing war deployment and deploy it.
      *
-     * Add classes in @resources to deployment. Also all sub-classes of classes in @resources are added to deployment.
-     * But only classes in @resources (not sub-classes of classes in @resources) can be used as resources
+     * Add classes in @resources to deployment. Also, all subclasses of classes in @resources are added to deployment.
+     * But only classes in @resources (not subclasses of classes in @resources) can be used as resources
      * (getClasses function of TestApplication class return only classes in @resources).
      *
      * @param resources classes used in deployment as resources
@@ -69,8 +69,8 @@ public class TestUtil {
     /**
      * Finish preparing war deployment and deploy it.
      *
-     * Add classes in @resources to deployment. Also all sub-classes of classes in @resources are added to deployment.
-     * But only classes in @resources (not sub-classes of classes in @resources) can be used as resources
+     * Add classes in @resources to deployment. Also, all subclasses of classes in @resources are added to deployment.
+     * But only classes in @resources (not subclasses of classes in @resources) can be used as resources
      * (getClasses function of TestApplication class return only classes in @resources).
      *
      * @param singletons classes used in deployment as singletons

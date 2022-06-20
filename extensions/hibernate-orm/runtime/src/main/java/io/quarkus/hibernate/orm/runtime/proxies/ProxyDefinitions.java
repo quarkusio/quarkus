@@ -28,7 +28,7 @@ import net.bytebuddy.ClassFileVersion;
  * class is meant to be created at build time and hold onto those class definitions.
  *
  * Implementors of a custom {@link org.hibernate.bytecode.spi.ProxyFactoryFactory} are
- * then able to lookup such class definitions at runtime to create new instances of the
+ * then able to look up such class definitions at runtime to create new instances of the
  * required enhanced proxies.
  *
  * Failure to generate such a proxy is not critical, but it implies that Hibernate ORM
@@ -39,7 +39,7 @@ import net.bytebuddy.ClassFileVersion;
  * Default constructors are required beyond proxy generation, so a lack of such a constructor
  * will have us abort the bootstrap process with a critical error.
  * On the other hand, having the entities marked as "final" is handled gracefully, as we
- * can simply fallback to not use the enhanced proxy for the specific entity, and because
+ * can simply fall back to not use the enhanced proxy for the specific entity, and because
  * it's a common case when writing entities in Kotlin.
  */
 public final class ProxyDefinitions {

@@ -120,7 +120,7 @@ public @interface Scheduled {
 
     /**
      * Defines a period after which the trigger should start. It's an alternative to {@link #delay()}. If {@link #delay()} is
-     * set to a value greater then zero the value of {@link #delayed()} is ignored.
+     * set to a value greater than zero the value of {@link #delayed()} is ignored.
      * <p>
      * The value is parsed with {@link Duration#parse(CharSequence)}. However, if an expression starts with a digit, "PT" prefix
      * is added automatically, so for example, {@code 15s} can be used instead of {@code PT15S} and is parsed as "15 seconds".

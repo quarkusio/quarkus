@@ -51,7 +51,7 @@ public class KubernetesConfigProcessor {
     }
 
     // done in order to ensure that http logs aren't shown by default which happens because of the interplay between
-    // not yet setup logging (as the bootstrap config runs before logging is setup) and the configuration
+    // not yet setup logging (as the bootstrap config runs before logging is set up) and the configuration
     // of the okhttp3.logging.HttpLoggingInterceptor by io.fabric8.kubernetes.client.utils.HttpClientUtils
     @BuildStep
     public void produceLoggingCategories(BuildProducer<LogCategoryBuildItem> categories) {

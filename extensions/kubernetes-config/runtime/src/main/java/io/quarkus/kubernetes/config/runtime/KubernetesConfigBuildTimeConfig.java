@@ -7,7 +7,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(name = "kubernetes-config", phase = ConfigPhase.BUILD_TIME)
 public class KubernetesConfigBuildTimeConfig {
     /**
-     * Whether or not configuration can be read from secrets.
+     * Whether configuration can be read from secrets.
      * If set to {@code true}, Kubernetes resources allowing access to secrets (role and role binding) will be generated.
      */
     @ConfigItem(name = "secrets.enabled", defaultValue = "false")

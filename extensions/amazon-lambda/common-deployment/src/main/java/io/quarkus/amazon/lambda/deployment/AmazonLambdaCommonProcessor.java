@@ -42,7 +42,7 @@ public final class AmazonLambdaCommonProcessor {
             LaunchModeBuildItem launchModeBuildItem) {
         LaunchMode mode = launchModeBuildItem.getLaunchMode();
         if (mode.isDevOrTest()) {
-            return; // just in case we're on windows.
+            return; // just in case we're on Windows.
         }
         systemProperty.produce(new SystemPropertyBuildItem("java.io.tmpdir", "/tmp"));
         systemProperty.produce(new SystemPropertyBuildItem("vertx.cacheDirBase", "/tmp/vertx"));

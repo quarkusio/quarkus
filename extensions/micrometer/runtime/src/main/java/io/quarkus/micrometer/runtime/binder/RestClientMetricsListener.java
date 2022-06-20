@@ -40,9 +40,9 @@ public class RestClientMetricsListener implements RestClientListener {
             return;
         }
         if (prepClientMetrics()) {
-            // This must run AFTER the OpenTelmetry client request filter
+            // This must run AFTER the OpenTelemetry client request filter
             builder.register(this.clientRequestFilter, Priorities.HEADER_DECORATOR + 1);
-            // This must run Before the OpenTelmetry client response filter
+            // This must run Before the OpenTelemetry client response filter
             builder.register(this.clientResponseFilter, Priorities.HEADER_DECORATOR + 1);
         }
     }

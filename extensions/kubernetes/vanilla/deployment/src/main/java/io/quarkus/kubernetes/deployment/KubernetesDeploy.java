@@ -26,11 +26,10 @@ public class KubernetesDeploy {
     }
 
     /**
-     * @return {@code true} iff @{code quarkus.kubernetes.deploy=true} AND the target Kubernetes API server is reachable
+     * @return {@code true} if @{code quarkus.kubernetes.deploy=true} AND the target Kubernetes API server is reachable,
+     *         {@code false} otherwise
      *
-     *         It follows that this can only return {@code false} if the if @{code quarkus.kubernetes.deploy=false}
-     *
-     * @throws RuntimeException if communication to the Kubernetes API server errored
+     * @throws RuntimeException if there was an error while communicating with the Kubernetes API server
      */
     public boolean check() {
         Result result = doCheck();
@@ -43,11 +42,8 @@ public class KubernetesDeploy {
     }
 
     /**
-     * @return {@code true} iff @{code quarkus.kubernetes.deploy=true} AND the target Kubernetes API server is reachable
-     *
-     *         Never throws an exception even in the face of a communication error with the API server, just returns
-     *         {@code false}
-     *         in that case
+     * @return {@code true} if @{code quarkus.kubernetes.deploy=true} AND the target Kubernetes API server is reachable
+     *         {@code false} otherwise or if there was an error while communicating with the Kubernetes API server
      */
     public boolean checkSilently() {
         return doCheck().isAllowed();

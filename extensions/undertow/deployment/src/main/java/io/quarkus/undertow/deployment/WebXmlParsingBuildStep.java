@@ -102,7 +102,7 @@ public class WebXmlParsingBuildStep {
             //merge in any web fragments
             //at the moment this is fairly simplistic, as it does not handle all the ordering and metadata complete bits
             //of the spec. I am not sure how important this is, and it is very complex and does not 100% map to the quarkus
-            //deployment model. If there is demand for it we can look at adding it later
+            //deployment model. If there is demand for it, we can look at adding it later
 
             WebCommonMetaDataMerger.augment(result, webFragment, null, false);
         }

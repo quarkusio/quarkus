@@ -231,7 +231,7 @@ class AgroalProcessor {
                     .setRuntimeInit()
                     .unremovable()
                     // pass the runtime config into the recorder to ensure that the DataSource related beans
-                    // are created after runtime configuration has been setup
+                    // are created after runtime configuration has been set up
                     .supplier(recorder.agroalDataSourceSupplier(dataSourceName, dataSourcesRuntimeConfig));
 
             if (entry.getValue().isDefault) {

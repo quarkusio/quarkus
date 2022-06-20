@@ -35,7 +35,7 @@ public class Sort {
          */
         Ascending,
         /**
-         * Sort in descending order (opposite from the default).
+         * Sort in descending order (opposite to the default).
          */
         Descending;
     }

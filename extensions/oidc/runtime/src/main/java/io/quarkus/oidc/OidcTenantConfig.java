@@ -542,7 +542,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * If this property is set to 'true' then the original request URI which was used before
          * the authentication will be restored after the user has been redirected back to the application.
          *
-         * Note if `redirectPath` property is not set the the original request URI will be restored even if this property is
+         * Note if `redirectPath` property is not set, the original request URI will be restored even if this property is
          * disabled.
          */
         @ConfigItem(defaultValue = "false")
@@ -561,7 +561,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * 'error_description'
          * parameters, instead of the expected authorization 'code'.
          *
-         * If this property is set then the user will be redirected to the endpoint which can return a user friendly
+         * If this property is set then the user will be redirected to the endpoint which can return a user-friendly
          * error description page. It has to start from a forward slash and will be appended to the request URI's host and port.
          * For example, if it is set as '/error' and the current request URI is
          * 'https://localhost:8080/callback?error=invalid_scope'
@@ -935,7 +935,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * must have a valid ('exp') expiry claim value. The only exception where setting this property relaxes the requirement
          * is when a logout token is sent with a back-channel logout request since the current
          * OpenId Connect Back-Channel specification does not explicitly require the logout tokens to contain an 'exp' claim.
-         * However even if the current logout token is allowed to have no 'exp' claim, the `exp` claim will be still verified
+         * However, even if the current logout token is allowed to have no 'exp' claim, the `exp` claim will be still verified
          * if the logout token contains it.
          */
         @ConfigItem

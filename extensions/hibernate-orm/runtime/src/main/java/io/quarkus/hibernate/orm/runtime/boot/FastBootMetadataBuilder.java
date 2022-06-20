@@ -155,7 +155,7 @@ public class FastBootMetadataBuilder {
          * initializes the EnversService and produces some additional mapping documents.
          * 4. After that point the EnversService appears to be fully functional.
          *
-         * The following trick uses the aforementioned steps to setup the EnversService and then turns it into
+         * The following trick uses the aforementioned steps to set up the EnversService and then turns it into
          * a ProvidedService so that it is not necessary to repeat all these complex steps during the reactivation
          * of the destroyed service registry in PreconfiguredServiceRegistryBuilder.
          *
@@ -239,7 +239,7 @@ public class FastBootMetadataBuilder {
 
         cfg.put("hibernate.temp.use_jdbc_metadata_defaults", "false");
 
-        //This shouldn't be encouraged but sometimes it's really useful - and it used to be the default
+        //This shouldn't be encouraged, but sometimes it's really useful - and it used to be the default
         //in Hibernate ORM before the JPA spec would require to change this.
         //At this time of transitioning we'll only expose it as a global system property, so to allow usage
         //for special circumstances and yet not encourage this.

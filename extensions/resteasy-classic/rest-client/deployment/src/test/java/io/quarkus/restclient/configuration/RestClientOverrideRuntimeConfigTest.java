@@ -59,7 +59,7 @@ public class RestClientOverrideRuntimeConfigTest {
                 .getConfigValue("quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url");
         assertEquals(mpValue.getValue(), quarkusValue.getValue());
         assertEquals(RestClientRunTimeConfigSource.class.getName(), quarkusValue.getConfigSourceName());
-        // The MP name has priority over the Quarkus one, so it is the name we get (even when we lookup the quarkus one)
+        // The MP name has priority over the Quarkus one, so it is the name we get (even when we look up the quarkus one)
         assertEquals(mpValue.getName(), "io.quarkus.restclient.configuration.EchoClient/mp-rest/url");
         assertEquals(quarkusValue.getName(), "io.quarkus.restclient.configuration.EchoClient/mp-rest/url");
 

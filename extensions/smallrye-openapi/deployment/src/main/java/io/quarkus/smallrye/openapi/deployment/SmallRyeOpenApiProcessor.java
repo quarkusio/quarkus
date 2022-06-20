@@ -358,7 +358,7 @@ public class SmallRyeOpenApiProcessor {
         // Auto add a security from security extension(s)
         if (!config.securityScheme.isPresent() && securityInformationBuildItems != null
                 && !securityInformationBuildItems.isEmpty()) {
-            // This needs to be a filter in runtime as the config we use to auto configure is in runtime
+            // This needs to be a filter in runtime as the config we use to autoconfigure is in runtime
             for (SecurityInformationBuildItem securityInformationBuildItem : securityInformationBuildItems) {
                 SecurityInformationBuildItem.SecurityModel securityModel = securityInformationBuildItem.getSecurityModel();
                 switch (securityModel) {
@@ -945,7 +945,7 @@ public class SmallRyeOpenApiProcessor {
     private List<String> getResourceFiles(Path resourcePath, Path target) throws IOException {
         final String resourceName = ClassPathUtils.toResourceName(resourcePath);
         List<String> filenames = new ArrayList<>();
-        // Here we are resolving the resource dir relative to the classes dir and if it does not exist, we fallback to locating the resource dir on the classpath.
+        // Here we are resolving the resource dir relative to the classes dir and if it does not exist, we fall back to locating the resource dir on the classpath.
         // Although the classes dir should already be on the classpath.
         // In a QuarkusUnitTest the module's classes dir and the test application root could be different directories, is this code here for that reason?
         final Path targetResourceDir = target == null ? null : target.resolve("classes").resolve(resourcePath);
@@ -1008,7 +1008,7 @@ public class SmallRyeOpenApiProcessor {
         OpenApiDocument document = prepareOpenApiDocument(staticModel, annotationModel, openAPIBuildItems);
 
         document.filter(filter(openApiConfig)); // This usually happens at runtime, so when storing we want to filter here too.
-        // By default also add the auto generated server
+        // By default, also add the auto generated server
         OASFilter autoServerFilter = getAutoServerFilter(smallRyeOpenApiConfig, true);
         if (autoServerFilter != null) {
             document.filter(autoServerFilter);

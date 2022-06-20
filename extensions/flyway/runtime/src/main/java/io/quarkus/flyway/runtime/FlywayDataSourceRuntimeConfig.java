@@ -53,7 +53,7 @@ public final class FlywayDataSourceRuntimeConfig {
 
     /**
      * The name of Flyway's schema history table.
-     * By default (single-schema mode) the schema history table is placed in the default schema for the connection provided by
+     * By default (single-schema mode), the schema history table is placed in the default schema for the connection provided by
      * the datasource.
      * When the flyway.schemas property is set (multi-schema mode), the schema history table is placed in the first schema of
      * the list.

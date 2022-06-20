@@ -463,7 +463,7 @@ public class QuteProcessor {
 
             @Override
             public void beforeParsing(ParserHelper parserHelper) {
-                // The template id may be the full path, e.g. "items.html" or a path without the suffic, e.g. "items"
+                // The template id may be the full path, e.g. "items.html" or a path without the suffix, e.g. "items"
                 String templateId = parserHelper.getTemplateId();
 
                 if (filePaths.contains(templateId)) {

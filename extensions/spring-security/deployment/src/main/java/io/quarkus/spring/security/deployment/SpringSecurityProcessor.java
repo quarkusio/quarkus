@@ -80,7 +80,7 @@ class SpringSecurityProcessor {
 
         Set<MethodInfo> methodsWithSecurityAnnotation = new HashSet<>();
 
-        // first first go through the list of annotated methods
+        // first go through the list of annotated methods
         for (AnnotationInstance instance : index.getIndex().getAnnotations(DotNames.SPRING_SECURED)) {
             if (instance.value() == null) {
                 continue;
@@ -178,7 +178,7 @@ class SpringSecurityProcessor {
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
         Map<MethodInfo, AnnotationInstance> result = new HashMap<>();
 
-        // first first go through the list of annotated methods
+        // first go through the list of annotated methods
         for (AnnotationInstance instance : index.getIndex().getAnnotations(DotNames.SPRING_PRE_AUTHORIZE)) {
             if (instance.value() == null) {
                 continue;
@@ -264,7 +264,7 @@ class SpringSecurityProcessor {
     }
 
     /**
-     * The generation needs to be done in it's own build step otherwise we can end up with build cycle errors
+     * The generation needs to be done in its own build step otherwise we can end up with build cycle errors
      */
     @BuildStep
     void generateNecessarySupportClasses(CombinedIndexBuildItem index,
@@ -288,7 +288,7 @@ class SpringSecurityProcessor {
             }
 
             /*
-             * this is essentially the same loop as in addSpringPreAuthorizeSecurityCheck but only deals with cases where
+             * this is essentially the same loop as in addSpringPreAuthorizeSecurityCheck but only deals with cases
              * where beans need to be generated
              */
             for (String part : parts) {
@@ -367,7 +367,7 @@ class SpringSecurityProcessor {
             String value = instance.value().asString().trim();
 
             /*
-             * TODO: this serves fine for most purposes but a full blown solution will need a proper parser
+             * TODO: this serves fine for most purposes but a full-blown solution will need a proper parser
              */
 
             boolean containsAnd = false;

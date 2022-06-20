@@ -50,7 +50,7 @@ public class HttpAuthenticator {
                 }
             }
             // Add mechanism if there is a provider with matching credential type
-            // If the mechanism has no credential types, just add it anyways
+            // If the mechanism has no credential types, just add it anyway
             if (found || mechanism.getCredentialTypes().isEmpty()) {
                 mechanisms.add(mechanism);
             }

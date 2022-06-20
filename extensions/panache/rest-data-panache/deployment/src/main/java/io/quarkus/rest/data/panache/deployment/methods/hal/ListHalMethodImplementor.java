@@ -51,7 +51,7 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
      * Generate HAL JAX-RS GET method.
      *
      * The RESTEasy Classic version exposes {@link RestDataResource#list(Page, Sort)} via HAL JAX-RS method.
-     * Generated pseudo-code with enabled pagination is shown below. If pagination is disabled pageIndex and pageSize
+     * Generated pseudocode with enabled pagination is shown below. If pagination is disabled pageIndex and pageSize
      * query parameters are skipped and null {@link Page} instance is used.
      *
      * <pre>

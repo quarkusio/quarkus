@@ -80,7 +80,7 @@ public class ProviderClientRegistrationTest {
         assertEquals("Hello Foo", client.hello());
     }
 
-    // The Client needs to be deployed with the Quarkus app, so it inherits all of the RESTEasy configuration.
+    // The Client needs to be deployed with the Quarkus app, so it inherits all the RESTEasy configuration.
     @ApplicationScoped
     public static class ClientBean {
         private WebTarget webTarget;

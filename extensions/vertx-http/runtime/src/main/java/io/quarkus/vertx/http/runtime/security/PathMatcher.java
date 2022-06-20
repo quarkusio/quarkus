@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Handler that dispatches to a given handler based of a prefix match of the path.
  * <p>
- * This only matches a single level of a request, e.g if you have a request that takes the form:
+ * This only matches a single level of a request, e.g. if you have a request that takes the form:
  * <p>
  * /foo/bar
  * <p>

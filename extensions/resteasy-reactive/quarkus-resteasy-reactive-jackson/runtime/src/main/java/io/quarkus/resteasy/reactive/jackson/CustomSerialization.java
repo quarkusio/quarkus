@@ -32,7 +32,7 @@ public @interface CustomSerialization {
      * method.
      *
      * The class MUST contain a no-args constructor and it is advisable that it contains no state that is updated outside
-     * of its constructor.
+     * its constructor.
      * Furthermore, the {@code ObjectMapper} should NEVER be changed any way as it is the global ObjectMapper that is
      * accessible to the entire Quarkus application.
      */

@@ -72,7 +72,7 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
         @Override
         public void visitEnd() {
             super.visitEnd();
-            final ClassWriter writer = (ClassWriter) this.cv; //safe cast: cv is the the ClassWriter instance we passed to the super constructor
+            final ClassWriter writer = (ClassWriter) this.cv; //safe cast: cv is the ClassWriter instance we passed to the super constructor
             //We need to convert the nice Visitor chain into a plain byte array to adapt to the Hibernate ORM
             //enhancement API:
             final byte[] inputBytes = writer.toByteArray();

@@ -183,7 +183,7 @@ final class FormDataOutputMapperGenerator {
                         formAttrName = formParamValue.asString();
                     }
 
-                    // TODO: not sure this is correct, but it seems to be what RESTEasy does and it also makes most sense in the context of a POJO
+                    // TODO: not sure if this is correct, but it seems to be what RESTEasy does and it also makes most sense in the context of a POJO
                     String partType = MediaType.TEXT_PLAIN;
                     AnnotationInstance partTypeInstance = field.annotation(ResteasyReactiveDotNames.PART_TYPE_NAME);
                     if (partTypeInstance != null) {

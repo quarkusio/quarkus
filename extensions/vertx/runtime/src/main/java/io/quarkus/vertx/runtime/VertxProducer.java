@@ -51,7 +51,7 @@ public class VertxProducer {
 
     /**
      * Undeploy verticles backed by contextual instances of {@link ApplicationScoped} beans before the application context is
-     * destroyed. Otherwise Vertx may attempt to stop the verticles after the CDI container is shut down.
+     * destroyed. Otherwise, Vertx may attempt to stop the verticles after the CDI container is shut down.
      *
      * @param event
      * @param beanManager

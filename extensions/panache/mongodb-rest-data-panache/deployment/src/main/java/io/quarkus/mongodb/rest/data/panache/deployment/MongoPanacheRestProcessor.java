@@ -157,7 +157,7 @@ class MongoPanacheRestProcessor {
 
     /**
      * Annotate Mongo entity ID fields with a RESTEasy links annotation.
-     * Otherwise RESTEasy will not be able to generate links that use ID as path parameter.
+     * Otherwise, RESTEasy will not be able to generate links that use ID as path parameter.
      */
     private BytecodeTransformerBuildItem getEntityIdAnnotationTransformer(String entityClassName, String idFieldName) {
         return new BytecodeTransformerBuildItem(entityClassName,

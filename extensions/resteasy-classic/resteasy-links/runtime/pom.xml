@@ -24,7 +24,7 @@
             <artifactId>resteasy-links</artifactId>
             <exclusions>
                 <!--
-                jakarta.el:jakara.el-api is coming from CDI
+                jakarta.el:jakarta.el-api is coming from CDI
                 we don't add it as a dependency to avoid having to define a version in the BOM
                 -->
                 <exclusion>

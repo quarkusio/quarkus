@@ -1463,7 +1463,7 @@ public class VertxHttpRecorder {
                 }
             };
             if (entry.getKey().equals(".*")) {
-                //bit of a hack to make sure the pattern .* is evaluated last
+                //a bit of a hack to make sure the pattern .* is evaluated last
                 last = biFunction;
             } else {
                 functions.add(biFunction);

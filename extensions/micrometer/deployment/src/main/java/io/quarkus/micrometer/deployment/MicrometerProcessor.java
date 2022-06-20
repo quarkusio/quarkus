@@ -76,7 +76,7 @@ public class MicrometerProcessor {
     MicrometerConfig mConfig;
 
     /**
-     * config objects are beans, but they are not unremoveable by default
+     * config objects are beans, but they are not unremovable by default
      */
     @BuildStep
     UnremovableBeanBuildItem mpConfigAsBean() {

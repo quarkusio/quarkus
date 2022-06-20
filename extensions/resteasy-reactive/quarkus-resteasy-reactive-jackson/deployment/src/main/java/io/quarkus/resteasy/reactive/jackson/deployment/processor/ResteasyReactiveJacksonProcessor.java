@@ -116,7 +116,7 @@ public class ResteasyReactiveJacksonProcessor {
                 .addBeanClass(BasicServerJacksonMessageBodyWriter.class)
                 // This will not be needed in most cases, but it will not be involved in serialization
                 // just because it's a bean.
-                // Whether or not it is used in RESTEasy Reactive is determined elsewhere
+                // Whether it is used in RESTEasy Reactive is determined elsewhere
                 .addBeanClass(FullyFeaturedServerJacksonMessageBodyWriter.class)
                 .setUnremovable().build();
     }

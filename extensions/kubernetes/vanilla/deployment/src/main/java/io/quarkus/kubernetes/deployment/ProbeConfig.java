@@ -15,7 +15,7 @@ public class ProbeConfig {
      * needs to be set
      *
      * Assuming the container port has been set (as per above comment), if
-     * execAction or tcpSocketAction are not set, an http probe will be used
+     * execAction or tcpSocketAction are not set, an HTTP probe will be used
      * automatically even if no path is set (which will result in the root path
      * being used)
      */

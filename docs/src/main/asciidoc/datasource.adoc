@@ -178,6 +178,10 @@ Quarkus provides driver extensions for:
 * Oracle - `jdbc-oracle`
 * PostgreSQL - `jdbc-postgresql`
 
+Some other JDBC extensions can be found in the Quarkiverse such as:
+
+* SQLite: https://github.com/quarkiverse/quarkus-jdbc-sqlite[Project homepage] - https://quarkiverse.github.io/quarkiverse-docs/quarkus-jdbc-sqlite/dev/index.html[Documentation]
+
 See <<other-databases>> if you want to use a JDBC driver for another database.
 
 [NOTE]

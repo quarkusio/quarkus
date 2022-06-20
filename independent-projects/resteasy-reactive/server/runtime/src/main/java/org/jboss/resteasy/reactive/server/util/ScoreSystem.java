@@ -91,15 +91,23 @@ public class ScoreSystem {
         public static Diagnostic ResourcePerRequest = new Diagnostic("New resource instance for every request", 0);
 
         public static Diagnostic WriterBuildTime(MessageBodyWriter<?> buildTimeWriter) {
-            return new Diagnostic("Single writer set at build time: " + buildTimeWriter, 90);
+            return new Diagnostic("Single writer set at build time: " + buildTimeWriter.getClass().getName(), 90);
         }
 
         public static Diagnostic WriterBuildTimeDirect(MessageBodyWriter<?> buildTimeWriter) {
-            return new Diagnostic("Single direct writer set at build time: " + buildTimeWriter, 100);
+            return new Diagnostic("Single direct writer set at build time: " + buildTimeWriter.getClass().getName(), 100);
         }
 
         public static Diagnostic WriterBuildTimeMultiple(List<MessageBodyWriter<?>> buildTimeWriters) {
-            return new Diagnostic("Multiple writers set at build time: " + buildTimeWriters, 50);
+            return new Diagnostic("Multiple writers set at build time: [" + getClassNames(buildTimeWriters) + "]", 50);
+        }
+
+        private static String getClassNames(List<MessageBodyWriter<?>> buildTimeWriters) {
+            List<String> classNames = new ArrayList<>(buildTimeWriters.size());
+            for (MessageBodyWriter<?> buildTimeWriter : buildTimeWriters) {
+                classNames.add(buildTimeWriter.getClass().getName());
+            }
+            return String.join(", ", classNames);
         }
 
         public static Diagnostic WriterRunTime = new Diagnostic("Run time writers required", 0);

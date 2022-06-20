@@ -20,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jaxb-common</artifactId>
+            <artifactId>quarkus-jaxb</artifactId>
         </dependency>
     </dependencies>
 

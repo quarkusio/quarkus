@@ -34,6 +34,14 @@ public class AdminResource {
         return "granted:" + identity.getRoles();
     }
 
+    @Path("bearer-role-claim-path")
+    @GET
+    @RolesAllowed("custom")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String adminCustomRolePath() {
+        return "granted:" + identity.getRoles();
+    }
+
     @Path("bearer-key-without-kid-thumbprint")
     @GET
     @RolesAllowed("admin")

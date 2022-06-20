@@ -59,6 +59,7 @@ import io.undertow.httpcore.UndertowOptions;
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.api.NotificationReceiver;
 import io.undertow.security.api.SecurityNotification;
+import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.DefaultExchangeHandler;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
@@ -164,7 +165,7 @@ public class UndertowDeploymentRecorder {
     public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
             LaunchMode launchMode, ShutdownContext context, String mountPoint, String defaultCharset,
             String requestCharacterEncoding, String responseCharacterEncoding, boolean proactiveAuth,
-            List<String> welcomeFiles) {
+            List<String> welcomeFiles, final boolean hasSecurityCapability) {
         DeploymentInfo d = new DeploymentInfo();
         d.setDefaultRequestEncoding(requestCharacterEncoding);
         d.setDefaultResponseEncoding(responseCharacterEncoding);
@@ -230,6 +231,10 @@ public class UndertowDeploymentRecorder {
             d.setAuthenticationMode(AuthenticationMode.PRO_ACTIVE);
         } else {
             d.setAuthenticationMode(AuthenticationMode.CONSTRAINT_DRIVEN);
+        }
+        if (hasSecurityCapability) {
+            //Fixes NPE at io.undertow.security.impl.SecurityContextImpl.login(SecurityContextImpl.java:198)
+            d.setIdentityManager(CDI.current().select(IdentityManager.class).get());
         }
         return new RuntimeValue<>(d);
     }

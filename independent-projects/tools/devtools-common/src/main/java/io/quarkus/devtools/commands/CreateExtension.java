@@ -44,6 +44,7 @@ public class CreateExtension {
     public static final String DEFAULT_BOM_ARTIFACT_ID = "quarkus-bom";
     public static final String DEFAULT_BOM_VERSION = "${quarkus.version}";
     public static final String DEFAULT_VERSION = "1.0.0-SNAPSHOT";
+    public static final String DEFAULT_QUARKIVERSE_VERSION = "999-SNAPSHOT";
 
     public static final String DEFAULT_CORE_NAMESPACE_ID = "quarkus-";
 
@@ -220,27 +221,29 @@ public class CreateExtension {
         final String runtimeArtifactId = getRuntimeArtifactIdFromData();
 
         ensureRequiredStringData(GROUP_ID, resolveGroupId(baseModel));
-        ensureRequiredStringData(VERSION, resolveVersion(baseModel));
         ensureRequiredStringData(PACKAGE_NAME,
                 resolveExtensionPackage(data.getRequiredStringValue(GROUP_ID), extensionId));
 
         final String groupId = data.getRequiredStringValue(GROUP_ID);
+        final String defaultVersion;
         final Model itTestModel;
         String extensionDirName = runtimeArtifactId;
         switch (layoutType) {
             case QUARKUS_CORE:
             case OTHER_PLATFORM:
+                defaultVersion = DEFAULT_VERSION;
                 extensionDirName = extensionId;
                 final Model extensionsParentModel = readPom(workingDir.resolve(extensionsRelativeDir));
                 data.putIfAbsent(PROPERTIES_FROM_PARENT, true);
                 ensureRequiredStringData(PARENT_GROUP_ID, resolveGroupId(extensionsParentModel));
                 ensureRequiredStringData(PARENT_ARTIFACT_ID, resolveArtifactId(extensionsParentModel));
-                ensureRequiredStringData(PARENT_VERSION, resolveVersion(extensionsParentModel));
+                ensureRequiredStringData(PARENT_VERSION, resolveVersion(extensionsParentModel, defaultVersion));
 
                 data.putIfAbsent(PARENT_RELATIVE_PATH, "../pom.xml");
                 itTestModel = readPom(workingDir.resolve(itTestRelativeDir));
                 break;
             case QUARKIVERSE:
+                defaultVersion = DEFAULT_QUARKIVERSE_VERSION;
                 data.putIfAbsent(PARENT_GROUP_ID, DEFAULT_QUARKIVERSE_PARENT_GROUP_ID);
                 data.putIfAbsent(PARENT_ARTIFACT_ID, DEFAULT_QUARKIVERSE_PARENT_ARTIFACT_ID);
                 data.putIfAbsent(PARENT_VERSION, DEFAULT_QUARKIVERSE_PARENT_VERSION);
@@ -259,9 +262,10 @@ public class CreateExtension {
                 // TODO: Support Quarkiverse multi extensions repo
                 builder.addCodestart(QuarkusExtensionCodestartCatalog.Code.QUARKIVERSE.key());
                 builder.addCodestart(QuarkusExtensionCodestartCatalog.Tooling.GIT.key());
-                itTestModel = getStandaloneTempModel(workingDir, runtimeArtifactId);
+                itTestModel = getStandaloneTempModel(workingDir, runtimeArtifactId, defaultVersion);
                 break;
             default:
+                defaultVersion = DEFAULT_VERSION;
                 data.putIfAbsent(QUARKUS_BOM_GROUP_ID, DEFAULT_BOM_GROUP_ID);
                 data.putIfAbsent(QUARKUS_BOM_ARTIFACT_ID, DEFAULT_BOM_ARTIFACT_ID);
                 data.putIfAbsent(QUARKUS_BOM_VERSION, DEFAULT_BOM_VERSION);
@@ -270,13 +274,15 @@ public class CreateExtension {
                 ensureRequiredStringData(QUARKUS_VERSION);
 
                 // In standalone mode, the base pom is used as parent for integration tests
-                itTestModel = getStandaloneTempModel(workingDir, runtimeArtifactId);
+                itTestModel = getStandaloneTempModel(workingDir, runtimeArtifactId, defaultVersion);
                 break;
         }
 
+        ensureRequiredStringData(VERSION, resolveVersion(baseModel, defaultVersion));
+
         ensureRequiredStringData(IT_PARENT_GROUP_ID, resolveGroupId(itTestModel));
         ensureRequiredStringData(IT_PARENT_ARTIFACT_ID, resolveArtifactId(itTestModel));
-        ensureRequiredStringData(IT_PARENT_VERSION, resolveVersion(itTestModel));
+        ensureRequiredStringData(IT_PARENT_VERSION, resolveVersion(itTestModel, defaultVersion));
         ensureRequiredStringData(IT_PARENT_RELATIVE_PATH, "../pom.xml");
 
         final Optional<String> quarkusVersion = data.getStringValue(QUARKUS_VERSION);
@@ -348,11 +354,11 @@ public class CreateExtension {
         }
     }
 
-    private Model getStandaloneTempModel(Path workingDir, String runtimeArtifactId) {
+    private Model getStandaloneTempModel(Path workingDir, String runtimeArtifactId, String defaultVersion) {
         final Model model = new Model();
         model.setGroupId(data.getRequiredStringValue(GROUP_ID));
         model.setArtifactId(runtimeArtifactId + "-parent");
-        model.setVersion(data.getStringValue(VERSION).orElse(DEFAULT_VERSION));
+        model.setVersion(data.getStringValue(VERSION).orElse(defaultVersion));
         model.setPomFile(workingDir.resolve("pom.xml").toFile());
         return model;
     }
@@ -438,12 +444,12 @@ public class CreateExtension {
                 : null;
     }
 
-    static String resolveVersion(Model basePom) {
+    static String resolveVersion(Model basePom, String defaultVersion) {
         return basePom != null ? basePom.getVersion() != null ? basePom.getVersion()
                 : basePom.getParent() != null && basePom.getParent().getVersion() != null
                         ? basePom.getParent().getVersion()
-                        : DEFAULT_VERSION
-                : DEFAULT_VERSION;
+                        : defaultVersion
+                : defaultVersion;
     }
 
     static String toCapCamelCase(String name) {

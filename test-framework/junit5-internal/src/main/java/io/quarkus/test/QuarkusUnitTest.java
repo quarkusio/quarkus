@@ -19,6 +19,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -112,6 +113,7 @@ public class QuarkusUnitTest
     private Timer timeoutTimer;
     private volatile TimerTask timeoutTask;
     private Properties customApplicationProperties;
+    private Map<String, String> customRuntimeApplicationProperties;
     private Runnable beforeAllCustomizer;
     private Runnable afterAllCustomizer;
     private CuratedApplication curatedApplication;
@@ -631,7 +633,11 @@ public class QuarkusUnitTest
 
                 StartupActionImpl startupAction = new AugmentActionImpl(curatedApplication, customizers, classLoadListeners)
                         .createInitialRuntimeApplication();
-                startupAction.overrideConfig(testResourceManager.getConfigProperties());
+                Map<String, String> overriddenConfig = new HashMap<>(testResourceManager.getConfigProperties());
+                if (customRuntimeApplicationProperties != null) {
+                    overriddenConfig.putAll(customRuntimeApplicationProperties);
+                }
+                startupAction.overrideConfig(overriddenConfig);
                 runningQuarkusApplication = startupAction
                         .run(commandLineParameters);
                 //we restore the CL at the end of the test
@@ -812,6 +818,14 @@ public class QuarkusUnitTest
             customApplicationProperties = new Properties();
         }
         customApplicationProperties.put(propertyKey, propertyValue);
+        return this;
+    }
+
+    public QuarkusUnitTest overrideRuntimeConfigKey(final String propertyKey, final String propertyValue) {
+        if (customRuntimeApplicationProperties == null) {
+            customRuntimeApplicationProperties = new HashMap<>();
+        }
+        customRuntimeApplicationProperties.put(propertyKey, propertyValue);
         return this;
     }
 

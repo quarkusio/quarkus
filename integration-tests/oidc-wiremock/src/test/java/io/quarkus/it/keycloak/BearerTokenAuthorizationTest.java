@@ -58,6 +58,23 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testAccessAdminResourceWithCustomRolePathForbidden() {
+        RestAssured.given().auth().oauth2(getAccessTokenWithCustomRolePath("admin", Set.of("admin")))
+                .when().get("/api/admin/bearer-role-claim-path")
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    public void testAccessAdminResourceWithCustomRolePath() {
+        RestAssured.given().auth().oauth2(getAccessTokenWithCustomRolePath("admin", Set.of("custom")))
+                .when().get("/api/admin/bearer-role-claim-path")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("custom"));
+    }
+
+    @Test
     public void testAccessAdminResourceWithoutKidAndThumbprint() {
         RestAssured.given().auth().oauth2(getAccessTokenWithoutKidAndThumbprint("admin", Set.of("admin")))
                 .when().get("/api/admin/bearer-no-introspection")
@@ -174,6 +191,14 @@ public class BearerTokenAuthorizationTest {
     private String getAccessToken(String userName, Set<String> groups) {
         return Jwt.preferredUserName(userName)
                 .groups(groups)
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .sign();
+    }
+
+    private String getAccessTokenWithCustomRolePath(String userName, Set<String> groups) {
+        return Jwt.preferredUserName(userName)
+                .claim("https://roles.example.com", groups)
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
                 .sign();

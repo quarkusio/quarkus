@@ -1,9 +1,9 @@
 name: {extension.name}
-#description: {extension.name} ...
+#description: {extension.description ?: 'Do something useful.'}
 metadata:
 #  keywords:
 #    - {extension.id}
-#  guide: ...
+#  guide: {extension.guide ?: '...'}
 #  categories:
 #    - "miscellaneous"
 #  status: "preview"

@@ -11,8 +11,11 @@
     </parent>
 
     <artifactId>{namespace.id}{extension.id}</artifactId>
-    {#if extension.name}
-    <name>{namespace.name}{extension.name} - Runtime</name>
+    {#if extension.full-name}
+    <name>{extension.full-name} - Runtime</name>
+    {/if}
+    {#if extension.description}
+    <description>{extension.description}</description>
     {/if}
 
     <dependencies>

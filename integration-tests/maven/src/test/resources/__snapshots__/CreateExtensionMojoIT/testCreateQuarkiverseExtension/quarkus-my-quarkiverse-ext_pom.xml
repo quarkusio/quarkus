@@ -7,14 +7,15 @@
     <artifactId>quarkiverse-parent</artifactId>
     <version>9</version>
   </parent>
-  <groupId>io.quarkiverse.my-quarki-ext</groupId>
-  <artifactId>quarkus-my-quarki-ext-parent</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <groupId>io.quarkiverse.my-quarkiverse-ext</groupId>
+  <artifactId>quarkus-my-quarkiverse-ext-parent</artifactId>
+  <version>999-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>Quarkus - My Quarki Ext - Parent</name>
+  <name>Quarkus My Quarkiverse extension - Parent</name>
   <modules>
     <module>deployment</module>
     <module>runtime</module>
+    <module>docs</module>
   </modules>
   <properties>
     <compiler-plugin.version>3.8.1</compiler-plugin.version>

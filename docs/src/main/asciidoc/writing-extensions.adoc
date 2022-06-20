@@ -497,10 +497,13 @@ git clone https://github.com/quarkusio/quarkus.git
 cd quarkus
 mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
     -DextensionId=my-ext \
-    -Dname="My Extension"
+    -DextensionName="My Extension" \
+    -DextensionDescription="Do something useful."
 ----
 
-NOTE: by default, the `groupId`, `version`, `quarkusVersion`, `namespaceId`, and `namespaceName` will be consistent with other Quarkus core extensions.
+NOTE: By default, the `groupId`, `version`, `quarkusVersion`, `namespaceId`, and `namespaceName` will be consistent with other Quarkus core extensions.
+
+TIP: The extension description is important as it is displayed on https://code.quarkus.io/, when listing extensions with the Quarkus CLI, etc.
 
 The above sequence of commands does the following:
 

@@ -3,6 +3,7 @@ package io.quarkus.qute;
 import io.quarkus.qute.Parser.StringReader;
 import io.quarkus.qute.TemplateInstance.Initializer;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
+import io.quarkus.qute.trace.TraceListener;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -36,6 +37,7 @@ class EngineImpl implements Engine {
     final boolean removeStandaloneLines;
     private final long timeout;
     private final boolean useAsyncTimeout;
+    private TraceManager traceManager;
 
     EngineImpl(EngineBuilder builder) {
         this.sectionHelperFactories = Map.copyOf(builder.sectionHelperFactories);
@@ -182,4 +184,34 @@ class EngineImpl implements Engine {
                         reader);
     }
 
+    /**
+     * Returns true if there are trace listeners and false otherwise.
+     *
+     * @return true if there are trace listeners and false otherwise.
+     */
+    @Override
+    public boolean hasTraceListeners() {
+        return traceManager != null;
+    }
+
+    @Override
+    public TraceManager getTraceManager() {
+        if (traceManager == null) {
+            traceManager = new TraceManager();
+        }
+        return traceManager;
+    }
+
+    @Override
+    public void addTraceListener(TraceListener listener) {
+        getTraceManager().addTraceListener(listener);
+    }
+
+    @Override
+    public void removeTraceListener(TraceListener listener) {
+        if (traceManager == null) {
+            return;
+        }
+        getTraceManager().removeTraceListener(listener);
+    }
 }

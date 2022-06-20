@@ -5575,6 +5575,11 @@
                 <artifactId>qute-generator</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus.qute</groupId>
+                <artifactId>qute-debug</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Buildpacks Container Extension -->
             <dependency>

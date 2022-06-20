@@ -7,6 +7,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -52,6 +53,7 @@ import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.ValueResolvers;
 import io.quarkus.qute.Variant;
+import io.quarkus.qute.debug.server.RemoteDebuggerServer;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
@@ -80,6 +82,7 @@ public class EngineProducer {
     private final Locale defaultLocale;
     private final Charset defaultCharset;
     private final ArcContainer container;
+    private RemoteDebuggerServer debugger;
 
     public EngineProducer(QuteContext context, QuteConfig config, QuteRuntimeConfig runtimeConfig,
             Event<EngineBuilder> builderReady, Event<Engine> engineReady, ContentTypes contentTypes,
@@ -232,6 +235,19 @@ public class EngineProducer {
         builder.useAsyncTimeout(runtimeConfig.useAsyncTimeout);
 
         engine = builder.build();
+        // Create Qute debugger of needed
+        // String quteDebugPort = System.getProperty("quteDebugPort");
+        // if (quteDebugPort != null) {
+        // int port = Integer.valueOf(quteDebugPort);
+        try {
+            debugger = RemoteDebuggerServer.createDebugger();
+            if (debugger != null) {
+                debugger.track(engine);
+            }
+        } catch (RemoteException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
 
         // Load discovered template files
         Map<String, List<Template>> discovered = new HashMap<>();
@@ -283,6 +299,10 @@ public class EngineProducer {
     void onShutdown(@Observes ShutdownEvent event) {
         // Make sure to clear the Qute cache
         Qute.clearCache();
+        // Terminate debugger if it exists
+        if (debugger != null) {
+            debugger.terminate();
+        }
     }
 
     String getBasePath() {

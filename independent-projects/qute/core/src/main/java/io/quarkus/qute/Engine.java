@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import io.quarkus.qute.trace.TraceListener;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -162,4 +163,16 @@ public interface Engine extends ErrorInitializer {
      */
     public boolean useAsyncTimeout();
 
+    /**
+     * Returns true if there are trace listeners and false otherwise.
+     *
+     * @return true if there are trace listeners and false otherwise.
+     */
+    public boolean hasTraceListeners();
+
+    public TraceManager getTraceManager();
+
+    public void addTraceListener(TraceListener listener);
+
+    public void removeTraceListener(TraceListener listener);
 }

@@ -623,6 +623,7 @@ public class SmallRyeGraphQLProcessor {
 
             String graphQLPath = httpRootPath.resolvePath(graphQLConfig.rootPath);
             String graphQLUiPath = nonApplicationRootPathBuildItem.resolvePath(graphQLConfig.ui.rootPath);
+            String devUiPath = nonApplicationRootPathBuildItem.resolvePath("dev");
 
             webJarBuildProducer.produce(
                     WebJarBuildItem.builder().artifactKey(GRAPHQL_UI_WEBJAR_ARTIFACT_KEY) //
@@ -637,7 +638,7 @@ public class SmallRyeGraphQLProcessor {
                                         content = updateUrl(content, graphQLUiPath,
                                                 UI_LINE_TO_UPDATE,
                                                 UI_LINE_FORMAT);
-                                        content = updateUrl(content, graphQLUiPath,
+                                        content = updateUrl(content, getLogoUrl(launchMode, devUiPath, graphQLUiPath),
                                                 LOGO_LINE_TO_UPDATE,
                                                 LOGO_LINE_FORMAT);
 
@@ -689,6 +690,14 @@ public class SmallRyeGraphQLProcessor {
                     .build());
 
         }
+    }
+
+    // In dev mode, when you click on the logo, you should go to Dev UI
+    private String getLogoUrl(LaunchModeBuildItem launchMode, String devUIValue, String defaultValue) {
+        if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
+            return devUIValue;
+        }
+        return defaultValue;
     }
 
     private static boolean shouldInclude(LaunchModeBuildItem launchMode, SmallRyeGraphQLConfig graphQLConfig) {

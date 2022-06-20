@@ -26,7 +26,7 @@ import java.util.stream.Stream
 interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
     /**
      * Persist the given entity in the database.
-     * This will set it's ID field if not already set.
+     * This will set its ID field if not already set.
      *
      * @param entity the entity to insert.
      * @see [persist]
@@ -42,7 +42,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
     fun update(entity: Entity): Uni<Entity> = INSTANCE.update(entity).map { entity }
 
     /**
-     * Persist the given entity in the database or update it if it already exist.
+     * Persist the given entity in the database or update it if it already exists.
      *
      * @param entity the entity to update.
      * @see [persistOrUpdate]
@@ -167,7 +167,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
     fun find(query: Document): ReactivePanacheQuery<Entity> = throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      *
      * @param query a [Document] query
      * @param sort the [Document] sort
@@ -307,7 +307,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
     fun list(query: Document): Uni<List<Entity>> = throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for `find(query, sort).list()`.
      *
      * @param query a [Document] query
@@ -450,7 +450,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
     fun stream(query: Document): Multi<Entity> = throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for `find(query, sort).stream()`.
      *
      * @param query a [Document] query

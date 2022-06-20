@@ -52,7 +52,7 @@ public class HibernateOrmConfig {
     public Optional<Boolean> logSessionMetrics;
 
     /**
-     * Whether or not metrics are published if a metrics extension is enabled.
+     * Whether metrics are published if a metrics extension is enabled.
      */
     @ConfigItem(name = "metrics.enabled")
     public boolean metricsEnabled;

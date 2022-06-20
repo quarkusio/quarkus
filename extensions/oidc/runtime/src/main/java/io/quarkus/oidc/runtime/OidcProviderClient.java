@@ -128,7 +128,7 @@ public class OidcProviderClient implements Closeable {
             formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
         }
         LOG.debugf("Get token on: %s params: %s headers: %s", metadata.getTokenUri(), formBody, request.headers());
-        // Retry up to three times with a one second delay between the retries if the connection is closed.
+        // Retry up to three times with a one-second delay between the retries if the connection is closed.
         Uni<HttpResponse<Buffer>> response = request.sendBuffer(OidcCommonUtils.encodeForm(formBody))
                 .onFailure(ConnectException.class)
                 .retry()

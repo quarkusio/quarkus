@@ -11,7 +11,7 @@ import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.spring.security.runtime.interceptor.accessor.StringPropertyAccessor;
 
 /**
- * Instances of this classes are created in order to check if the value of property of method parameter
+ * Instances of these classes are created in order to check if the value of property of method parameter
  * inside a Spring Security expression matches the principal name
  *
  * Access to the property of the object is performed by delegating to a purpose generated

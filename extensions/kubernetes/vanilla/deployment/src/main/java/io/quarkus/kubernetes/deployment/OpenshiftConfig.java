@@ -58,7 +58,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     /**
      * The kind of the deployment resource to use.
-     * Supported values are 'Deployment' and 'DeploymentConfig' defaulting to the later.
+     * Supported values are 'Deployment' and 'DeploymentConfig' defaulting to the latter.
      */
     @ConfigItem
     Optional<DeploymentResourceKind> deploymentKind;
@@ -71,7 +71,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     /**
      * The name of the application. This value will be used for naming Kubernetes
-     * resources like: - Deployment - Service and so on ...
+     * resources like: 'Deployment', 'Service' and so on...
      */
     @ConfigItem(defaultValue = "${quarkus.container-image.name}")
     Optional<String> name;
@@ -502,7 +502,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
     Optional<String> appSecret;
 
     /**
-     * If set, the config amp will mounted to the application container and its contents will be used for application
+     * If set, the config amp will be mounted to the application container and its contents will be used for application
      * configuration.
      */
     @ConfigItem

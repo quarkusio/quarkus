@@ -47,7 +47,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     }
 
     /**
-     * Called when an http server response is pushed.
+     * Called when an HTTP server response is pushed.
      *
      * @param socketMetric a Map for socket metric context or null
      * @param method the pushed response method
@@ -84,7 +84,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     }
 
     /**
-     * Called when an http server request begins. Vert.x will invoke
+     * Called when an HTTP server request begins. Vert.x will invoke
      * {@link #responseEnd} when the response has ended or {@link #requestReset} if
      * the request/response has failed before.
      *
@@ -128,7 +128,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     }
 
     /**
-     * Called when an http server response has ended.
+     * Called when an HTTP server response has ended.
      *
      * @param requestMetric a RequestMetricContext or null
      * @param response the http server response

@@ -108,7 +108,7 @@ public class SseParserTest {
         testParser(Arrays.asList("data:f", "oo\n\n"),
                 Collections.singletonList(new InboundSseEventImpl(null, null)
                         .setData("foo")));
-        // one event in two buffers within a utf-8 char
+        // one event in two buffers within a UTF-8 char
         testParserWithBytes(
                 Arrays.asList(new byte[] { 'd', 'a', 't', 'a', ':', (byte) 0b11000010 },
                         new byte[] { (byte) 0b10100010, '\n', '\n' }),
@@ -169,7 +169,7 @@ public class SseParserTest {
         for (byte[] event : events) {
             parser.handle(Buffer.buffer(event));
         }
-        // this is really synchronous, so we can't timeout
+        // this is really synchronous, so we can't time out
         try {
             latch.await(1, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {

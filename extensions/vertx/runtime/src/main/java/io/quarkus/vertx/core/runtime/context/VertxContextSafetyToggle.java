@@ -16,7 +16,7 @@ import io.vertx.core.Vertx;
  * request; Quarkus RestEasy Reactive will mark such contexts as
  * safe. Other extensions should follow a similar pattern when they
  * are setting up a new context which is safe to be used for the purposes
- * of a local context guaranteeing sequential use, non concurrent access
+ * of a local context guaranteeing sequential use, non-concurrent access
  * and scoped to the current reactive chain as a convenience to not
  * have to pass a "context" object along explicitly.
  * In other cases it might be useful to explicitly mark the current

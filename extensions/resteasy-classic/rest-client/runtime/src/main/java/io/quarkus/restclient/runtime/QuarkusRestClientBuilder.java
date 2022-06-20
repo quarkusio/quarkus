@@ -368,7 +368,7 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
     }
 
     /**
-     * Determines whether or not to default to using the URLConnection instead of the Apache HTTP Client.
+     * Determines whether to default to using the URLConnection instead of the Apache HTTP Client.
      * If the {@code org.jboss.resteasy.microprofile.defaultToURLConnectionHttpClient} system property is {@code true},
      * then this method returns {@code true}. In all other cases it returns {@code false}
      */

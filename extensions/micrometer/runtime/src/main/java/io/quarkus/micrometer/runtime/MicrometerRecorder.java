@@ -125,7 +125,7 @@ public class MicrometerRecorder {
             new FileDescriptorMetrics().bindTo(Metrics.globalRegistry);
         }
 
-        // Discover and bind MeterBinders (includes annotated gauges, etc)
+        // Discover and bind MeterBinders (includes annotated gauges, etc.)
         // This must be done at runtime. If done before backend registries are
         // configured, some measurements may be missed.
         Instance<MeterBinder> allBinders = beanManager.createInstance()

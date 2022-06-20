@@ -620,7 +620,7 @@ public class ResteasyReactiveProcessor {
                 if (endpoints.isPresent()) {
                     subResourceClasses.add(endpoints.get());
                 }
-                //we need to also look for all sub classes and interfaces
+                //we need to also look for all subclasses and interfaces
                 //they may have type variables that need to be handled
                 toScan.addAll(index.getKnownDirectImplementors(classInfo.name()));
                 toScan.addAll(index.getKnownDirectSubclasses(classInfo.name()));

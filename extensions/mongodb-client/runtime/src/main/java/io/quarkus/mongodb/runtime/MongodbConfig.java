@@ -50,7 +50,7 @@ public class MongodbConfig {
      * The default DNS resolver used to handle {@code mongo+srv://} urls cannot be used in a native executable.
      * This option enables a fallback to use Vert.x to resolve the server names instead of JNDI.
      *
-     * <strong>IMPORTANT:</strong> The resolution may be different in JVM mode (using the default (JNDI-based) DNS resolver,
+     * <strong>IMPORTANT:</strong> The resolution may be different in JVM mode using the default (JNDI-based) DNS resolver,
      * and in native mode. This feature is experimental.
      */
     @ConfigItem(name = "native.dns.use-vertx-dns-resolver", defaultValue = "false")

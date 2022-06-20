@@ -28,7 +28,7 @@ public class CheckedTemplateRequireTypeSafeTest {
                                     + "{inject:fool.getJoke(null)} "
                                     + "{inject:fool.getJoke(identifier)} "
                                     + "{#each name.chars.iterator}"
-                                    // {it_index} is not considered an error because the binding is registered by the loop section !}
+                                    // {it_index} is not considered an error because the binding is registered by the loop section !
                                     + "{it_index}."
                                     // however, {index} is an error
                                     + "{index}"

@@ -52,7 +52,7 @@ public class ApicurioRegistryDevServicesBuildTimeConfig {
      * This property is used when {@code shared} is set to {@code true}.
      * In this case, before starting a container, Dev Services for Apicurio Registry looks for a container with the
      * {@code quarkus-dev-service-apicurio-registry} label
-     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise it
+     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise, it
      * starts a new container with the {@code quarkus-dev-service-apicurio-registry} label set to the specified value.
      * <p>
      * This property is used when you need multiple shared Apicurio Registry instances.

@@ -44,7 +44,7 @@ public class WebSocketLogHandler extends ExtHandler {
     public void addSession(String id, ServerWebSocket session) {
         SESSIONS.put(id, session);
 
-        // Polulate history
+        // Populate history
         if (hasHistory()) {
             List<ExtLogRecord> history = getHistory();
             for (ExtLogRecord lr : history) {

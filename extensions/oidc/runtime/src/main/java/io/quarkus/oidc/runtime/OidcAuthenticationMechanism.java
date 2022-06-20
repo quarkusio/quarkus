@@ -124,7 +124,7 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
             context.put(OidcUtils.TENANT_ID_ATTRIBUTE, OidcUtils.DEFAULT_TENANT_ID);
         } else {
             String suffix = cookieName.substring(cookiePrefix.length() + 1);
-            // It can be either a tenant_id or tenand_id and cookie suffix property, example, q_session_github or q_session_github_test
+            // It can be either a tenant_id, or a tenant_id and cookie suffix property, example, q_session_github or q_session_github_test
             int index = suffix.indexOf("_");
             String tenantId = index == -1 ? suffix : suffix.substring(0, index);
             context.put(OidcUtils.TENANT_ID_ATTRIBUTE, tenantId);

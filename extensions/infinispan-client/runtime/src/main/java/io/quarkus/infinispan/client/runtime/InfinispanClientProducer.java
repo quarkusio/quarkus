@@ -256,7 +256,7 @@ public class InfinispanClientProducer {
             FileDescriptorSource fds = (FileDescriptorSource) beanManager.getReference(bean, FileDescriptorSource.class,
                     ctx);
             serializationContext.registerProtoFiles(fds);
-            // Register all of the fds so they can be queried
+            // Register all the fds so they can be queried
             for (Map.Entry<String, char[]> fdEntry : fds.getFileDescriptors().entrySet()) {
                 properties.put(PROTOBUF_FILE_PREFIX + fdEntry.getKey(), new String(fdEntry.getValue()));
             }

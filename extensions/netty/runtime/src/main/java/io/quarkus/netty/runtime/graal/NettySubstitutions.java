@@ -346,7 +346,7 @@ final class Target_io_netty_bootstrap_AbstractBootstrap {
                 // channel can be null if newChannel crashed (eg SocketException("too many open files"))
                 channel.unsafe().closeForcibly();
             }
-            // as the Channel is not registered yet we need to force the usage of the GlobalEventExecutor
+            // as the Channel is not registered yet, we need to force the usage of the GlobalEventExecutor
             return new DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE).setFailure(t);
         }
 
@@ -496,8 +496,8 @@ final class Target_io_netty_buffer_EmptyByteBuf {
 
 }
 
-// We need to delete this class but we let GraalVM dead code elimination do it for us.
-// Otherwise it causes a problem when --report-unsupported-elements-at-runtime is enabled:
+// We need to delete this class, but we let GraalVM dead code elimination do it for us.
+// Otherwise, it causes a problem when --report-unsupported-elements-at-runtime is enabled:
 // when trying to delete the class, GraalVM throws a java.lang.NoClassDefFoundError: Lcom/aayushatharva/brotli4j/decoder/DecoderJNI$Wrapper;
 // While we recommend not using this option, some extensions out there are using it.
 //@TargetClass(className = "io.netty.handler.codec.compression.BrotliDecoder")

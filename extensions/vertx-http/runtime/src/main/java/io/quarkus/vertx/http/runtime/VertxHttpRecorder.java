@@ -126,7 +126,7 @@ public class VertxHttpRecorder {
     /** Order mark for route with priority over the default route (add an offset from this mark) **/
     public static final int BEFORE_DEFAULT_ROUTE_ORDER_MARK = 1_000;
 
-    /** Default route order (i.e Static Resources, Servlet) **/
+    /** Default route order (i.e. Static Resources, Servlet) **/
     public static final int DEFAULT_ROUTE_ORDER = 10_000;
 
     /** Order mark for route without priority over the default route (add an offset from this mark) **/
@@ -1469,7 +1469,7 @@ public class VertxHttpRecorder {
                 }
             };
             if (entry.getKey().equals(".*")) {
-                //bit of a hack to make sure the pattern .* is evaluated last
+                //a bit of a hack to make sure the pattern .* is evaluated last
                 last = biFunction;
             } else {
                 functions.add(biFunction);

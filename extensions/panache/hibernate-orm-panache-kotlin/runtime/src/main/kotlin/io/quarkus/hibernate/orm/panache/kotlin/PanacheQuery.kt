@@ -156,7 +156,7 @@ interface PanacheQuery<Entity: Any> {
      * WARNING: setting filters can only be done on the underlying Hibernate [Session] and so this
      * will modify the session's filters for the duration of obtaining the results (not while building
      * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
-     * preserve filters enabled on the session outside of this API.
+     * preserve filters enabled on the session outside this API.
      *
      * @param filterName The name of the filter to enable
      * @param parameters The set of parameters for the filter, if the filter requires parameters
@@ -172,7 +172,7 @@ interface PanacheQuery<Entity: Any> {
      * WARNING: setting filters can only be done on the underlying Hibernate [Session] and so this
      * will modify the session's filters for the duration of obtaining the results (not while building
      * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
-     * preserve filters enabled on the session outside of this API.
+     * preserve filters enabled on the session outside this API.
      *
      * @param filterName The name of the filter to enable
      * @param parameters The set of parameters for the filter, if the filter requires parameters
@@ -188,7 +188,7 @@ interface PanacheQuery<Entity: Any> {
      * WARNING: setting filters can only be done on the underlying Hibernate [Session] and so this
      * will modify the session's filters for the duration of obtaining the results (not while building
      * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
-     * preserve filters enabled on the session outside of this API.
+     * preserve filters enabled on the session outside this API.
      *
      * @param filterName The name of the filter to enable
      * @return this query, modified

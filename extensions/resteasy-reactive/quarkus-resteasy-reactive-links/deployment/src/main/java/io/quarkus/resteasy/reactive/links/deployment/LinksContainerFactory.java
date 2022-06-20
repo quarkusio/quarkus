@@ -39,7 +39,7 @@ final class LinksContainerFactory {
     private static final String ADD = "add";
 
     /**
-     * Find the resource methods that are marked with a {@link RestLink} annotations and add them to a links container.
+     * Find the resource methods that are marked with a {@link RestLink} annotations and add them to a {@link LinksContainer}.
      */
     LinksContainer getLinksContainer(List<ResteasyReactiveResourceMethodEntriesBuildItem.Entry> entries, IndexView index) {
         LinksContainer linksContainer = new LinksContainer();

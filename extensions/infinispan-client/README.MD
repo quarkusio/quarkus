@@ -2,7 +2,7 @@
 
 ## Status
 
-The RemoteCache by default only supports byte[] key and values. However a user can plug in a Marshaller to workaround
+The RemoteCache by default only supports byte[] key and values. However, a user can plug in a Marshaller to work around
 that. Please see the next few sections about features that currently work and those that don't
 
 ## Things that work
@@ -60,7 +60,7 @@ that the programmatic way via @Produces will overwrite any same named files (ie.
 ### CDI
 
 RemoteCache and RemoteCacheManager can both be injected via @Inject. The former allows named cache injection by
-adding the Remote annotation, specifying the name of the cache. Currently the RemoteCacheManager is configured via the
+adding the Remote annotation, specifying the name of the cache. Currently, the RemoteCacheManager is configured via the
 hotrod-client.properties and/or microprofile-config.properties (with micro profile config replacing properties if both
 are present).
 

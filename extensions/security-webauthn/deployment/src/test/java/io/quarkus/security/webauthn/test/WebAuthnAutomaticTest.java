@@ -55,7 +55,7 @@ public abstract class WebAuthnAutomaticTest {
 
         // reset cookies for the login phase
         cookieFilter = new CookieFilter();
-        // now try to login
+        // now try to log in
         challenge = WebAuthnEndpointHelper.invokeLogin("stef", cookieFilter);
         JsonObject login = hardwareKey.makeLoginJson(challenge);
 

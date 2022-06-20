@@ -10,12 +10,12 @@ import io.vertx.core.Promise;
 public class BlockingHelper {
 
     public static boolean blockingShouldExecuteNonBlocking(Operation operation, Context vc) {
-        // Rule is that by default this should execute blocking except if marked as non blocking)
+        // Rule is that by default this should execute blocking except if marked as non-blocking)
         return operation.getExecute().equals(Execute.NON_BLOCKING);
     }
 
     public static boolean nonBlockingShouldExecuteBlocking(Operation operation, Context vc) {
-        // Rule is that by default this should execute non-blocking except if marked as blocking)
+        // Rule is that by default this should execute non-blocking except if marked as blocking
         return operation.getExecute().equals(Execute.BLOCKING) && vc.isEventLoopContext();
     }
 

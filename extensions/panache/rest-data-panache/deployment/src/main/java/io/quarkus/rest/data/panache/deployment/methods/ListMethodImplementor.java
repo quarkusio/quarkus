@@ -51,7 +51,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
      * Generate JAX-RS GET method.
      *
      * The RESTEasy Classic version exposes {@link RestDataResource#list(Page, Sort)}
-     * and the generated pseudo-code with enabled pagination is shown below. If pagination is disabled pageIndex and pageSize
+     * and the generated pseudocode with enabled pagination is shown below. If pagination is disabled pageIndex and pageSize
      * query parameters are skipped and null {@link Page} instance is used.
      *
      * <pre>

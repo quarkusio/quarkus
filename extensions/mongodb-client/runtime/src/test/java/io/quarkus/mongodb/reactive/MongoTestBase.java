@@ -97,7 +97,7 @@ public class MongoTestBase {
         try {
             return doGetExecutable(config);
         } catch (Exception e) {
-            // sometimes the download process can timeout so just sleep and try again
+            // sometimes the download process can time out so just sleep and try again
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException ignored) {

@@ -400,8 +400,8 @@ public class UndertowDeploymentRecorder {
 
                 exchange.setUndertowOptions(undertowOptionMap);
 
-                //we eagerly dispatch to the exector, as Undertow needs to be blocking anyway
-                //its actually possible to be on a different IO thread at this point which confuses Undertow
+                //we eagerly dispatch to the executor, as Undertow needs to be blocking anyway
+                //it's actually possible to be on a different IO thread at this point which confuses Undertow
                 //see https://github.com/quarkusio/quarkus/issues/7782
                 if (BlockingOperationControl.isBlockingAllowed()) {
                     defaultHandler.handle(exchange);

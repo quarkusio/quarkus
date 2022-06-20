@@ -28,7 +28,7 @@
             <artifactId>mssql-jdbc</artifactId>
         </dependency>
         <!--
-            adal4j isn't used directly but you need to have it around for compilation to succeed.
+            adal4j isn't used directly, but you need to have it around for compilation to succeed.
         -->
         <dependency>
             <groupId>com.microsoft.azure</groupId>

@@ -24,7 +24,7 @@ public class WebAuthnRunTimeConfig {
     /**
      * The origin of the application. The origin is basically protocol, host and port.
      *
-     * If your are calling WebAuthn API while your application is located at {@code https://example.com/login},
+     * If you are calling WebAuthn API while your application is located at {@code https://example.com/login},
      * then origin will be {@code https://example.com}.
      *
      * If you are calling from {@code http://localhost:2823/test}, then the origin will be
@@ -42,7 +42,7 @@ public class WebAuthnRunTimeConfig {
      * hardening reasons.
      *
      * By default, all transports should be allowed. If your application is to be used by mobile phone users,
-     * you may want to restrict only the {@code INTERNAL} authenticatior to be allowed.
+     * you may want to restrict only the {@code INTERNAL} authenticator to be allowed.
      *
      * Permitted values are:
      *
@@ -99,7 +99,7 @@ public class WebAuthnRunTimeConfig {
     public Optional<UserVerification> userVerification;
 
     /**
-     * Non negative User Verification timeout. Authentication must occur within the timeout, this will prevent the user
+     * Non-negative User Verification timeout. Authentication must occur within the timeout, this will prevent the user
      * browser from being blocked with a pop-up required user verification, and the whole ceremony must be completed
      * within the timeout period. After the timeout, any previously issued challenge is automatically invalidated.
      */
@@ -117,7 +117,7 @@ public class WebAuthnRunTimeConfig {
      *
      * <ul>
      * <li>{@code NONE} - no attestation data is sent with registration</li>
-     * <li>{@code INDIRECT} - attestation data is sent with registration, yielding annomymized data by a trusted
+     * <li>{@code INDIRECT} - attestation data is sent with registration, yielding anonymized data by a trusted
      * CA</li>
      * <li>{@code DIRECT} - attestation data is sent with registration</li>
      * <li>{@code ENTERPRISE} - no attestation data is sent with registration. The device AAGUID is returned
@@ -211,8 +211,8 @@ public class WebAuthnRunTimeConfig {
      * is when the cookie is 9m old then the actual timeout will happen 21m after the last request, as the timeout
      * is only refreshed when a new cookie is generated.
      *
-     * In other words no timeout is tracked on the server side; the timestamp is encoded and encrypted in the cookie
-     * itself and it is decrypted and parsed with each request.
+     * In other words, no timeout is tracked on the server side; the timestamp is encoded and encrypted in the cookie
+     * itself, and it is decrypted and parsed with each request.
      */
     @ConfigItem(defaultValue = "PT1M")
     public Duration newCookieInterval;

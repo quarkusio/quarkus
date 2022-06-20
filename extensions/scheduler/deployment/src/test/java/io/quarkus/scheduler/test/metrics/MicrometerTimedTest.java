@@ -59,8 +59,8 @@ public class MicrometerTimedTest {
                     .tag("exception", "none")
                     .timer();
             assertNotNull(timer1);
-            //the count is updated after the method is called
-            //so we need to use Awaitility as the metric may not be up to date immediately
+            //the count is updated after the method is called,
+            //so we need to use Awaitility as the metric may not be up-to-date immediately
             Awaitility.await().pollInterval(10, TimeUnit.MILLISECONDS)
                     .atMost(2, TimeUnit.SECONDS)
                     .untilAsserted(() -> assertTrue(timer1.count() > 0, "Count=" + timer1.count()));

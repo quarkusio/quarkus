@@ -1,0 +1,35 @@
+{#include main fluid=true}
+{#style}
+.nav-item {
+padding: .5rem .3rem;
+}
+{/style}
+{#title}Kubernetes Manifests{/title}
+{#body}
+<table class="table table-striped">
+    <thead class="thead-dark">
+    <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Content</th>
+    </tr>
+    </thead>
+    <tbody>
+    {#for manifest in info:holder.manifests.orEmpty}
+    <tr>
+        <td>
+            {manifest.name}
+        </td>
+        <td>
+            <div class="text">
+            <pre>
+{manifest.content}
+            </pre>
+            </div>
+
+        </td>
+    </tr>
+    {/for}
+    </tbody>
+</table>
+{/body}
+{/include}

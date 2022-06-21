@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-apicurio-registry-avro</artifactId>
     <name>Quarkus - Apicurio Registry - Avro - Runtime</name>
+    <description>Use Apicurio as Avro schema registry</description>
 
     <dependencies>
         <dependency>

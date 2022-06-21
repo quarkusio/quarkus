@@ -11,7 +11,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-reactive-kotlin-serialization</artifactId>
-    <name>Quarkus - RestEasy Reactive Kotlin Serialization - Runtime</name>
+    <name>Quarkus - RESTEasy Reactive - Kotlin Serialization - Runtime</name>
+    <description>Kotlin Serialization support for RESTEasy Reactive. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.</description>
 
     <dependencies>
         <dependency>

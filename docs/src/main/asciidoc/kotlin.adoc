@@ -315,7 +315,25 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 <1> The Kotlin plugin version needs to be specified.
 <2> The all-open configuration required, as per Maven guide above
 
+=== Overriding the Quarkus BOM Kotlin version (Gradle)
 
+If you want to use a different version than the one specified by Quarkus' BOM in your application (for example, to try pre-release features or for compatibility reasons), you can do so by using the `strictly {}` version modifier in your Gradle dependencies. For instance:
+
+[source,kotlin]
+----
+plugins {
+    id("io.quarkus")
+    kotlin("jvm") version "1.7.0-Beta"
+    kotlin("plugin.allopen") version "1.7.0-Beta"
+}
+
+configurations.all {
+    resolutionStrategy {
+        force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.7.0-Beta"
+        force "org.jetbrains.kotlin:kotlin-reflect:1.7.0-Beta"
+    }
+}
+----
 
 == Live reload
 

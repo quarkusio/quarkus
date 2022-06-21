@@ -55,15 +55,15 @@ public class SimpleGeneratorTest {
         MethodInfo extensionMethod = index.getClassByName(DotName.createSimple(MyService.class.getName())).method(
                 "getDummy", Type.create(myServiceClazz.name(), Kind.CLASS), PrimitiveType.INT,
                 Type.create(DotName.createSimple(String.class.getName()), Kind.CLASS));
-        extensionMethodGenerator.generate(extensionMethod, null, null, null);
+        extensionMethodGenerator.generate(extensionMethod, null, List.of(), null, null);
         extensionMethod = index.getClassByName(DotName.createSimple(MyService.class.getName())).method(
                 "getDummy", Type.create(myServiceClazz.name(), Kind.CLASS), PrimitiveType.INT,
                 PrimitiveType.LONG);
-        extensionMethodGenerator.generate(extensionMethod, null, null, null);
+        extensionMethodGenerator.generate(extensionMethod, null, List.of(), null, null);
         extensionMethod = index.getClassByName(DotName.createSimple(MyService.class.getName())).method(
                 "getDummyVarargs", Type.create(myServiceClazz.name(), Kind.CLASS), PrimitiveType.INT,
                 Type.create(DotName.createSimple("[L" + String.class.getName() + ";"), Kind.ARRAY));
-        extensionMethodGenerator.generate(extensionMethod, null, null, null);
+        extensionMethodGenerator.generate(extensionMethod, null, List.of(), null, null);
         generatedTypes.addAll(extensionMethodGenerator.getGeneratedTypes());
     }
 

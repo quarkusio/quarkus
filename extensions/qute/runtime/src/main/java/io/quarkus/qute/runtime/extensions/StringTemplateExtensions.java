@@ -20,7 +20,7 @@ public class StringTemplateExtensions {
      * @param args
      * @return the formatted value
      */
-    @TemplateExtension(matchRegex = "fmt|format", priority = 2)
+    @TemplateExtension(matchNames = { "fmt", "format" }, priority = 2)
     static String fmtInstance(String format, String ignoredPropertyName, Object... args) {
         return String.format(format, args);
     }
@@ -35,7 +35,7 @@ public class StringTemplateExtensions {
      * @param args
      * @return the formatted value
      */
-    @TemplateExtension(matchRegex = "fmt|format", priority = 3)
+    @TemplateExtension(matchNames = { "fmt", "format" }, priority = 3)
     static String fmtInstance(String format, String ignoredPropertyName, Locale locale, Object... args) {
         return String.format(locale, format, args);
     }
@@ -48,7 +48,7 @@ public class StringTemplateExtensions {
      * @param args
      * @return the formatted value
      */
-    @TemplateExtension(namespace = STR, matchRegex = "fmt|format", priority = 2)
+    @TemplateExtension(namespace = STR, matchNames = { "fmt", "format" }, priority = 2)
     static String fmt(String ignoredPropertyName, String format, Object... args) {
         return String.format(format, args);
     }
@@ -62,7 +62,7 @@ public class StringTemplateExtensions {
      * @param args
      * @return the formatted value
      */
-    @TemplateExtension(namespace = STR, matchRegex = "fmt|format", priority = 3)
+    @TemplateExtension(namespace = STR, matchNames = { "fmt", "format" }, priority = 3)
     static String fmt(String ignoredPropertyName, Locale locale, String format, Object... args) {
         return String.format(locale, format, args);
     }

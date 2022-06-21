@@ -28,34 +28,60 @@ import java.lang.annotation.Target;
  * <pre>
  * {@literal @}TemplateExtension
  * static BigDecimal discountedPrice(Item item) {
- *    // this method matches {item.discountedPrice} iff "item" resolves to an object assignable to "Item"
+ *    // this method matches {item.discountedPrice} if "item" resolves to an object assignable to "Item"
  *    return item.getPrice().multiply(new BigDecimal("0.9"));
  * }
  * </pre>
  *
- * By default, the method name is used to match the property name. However, it is possible to specify the matching name with
+ * <h2>Matching by name</h2>
+ *
+ * By default, the method name is used to match the expression property/method name. However, it is possible to specify the
+ * matching name with
  * {@link #matchName()}.
  *
  * <pre>
  * {@literal @}TemplateExtension(matchName = "discounted")
  * static BigDecimal discountedPrice(Item item) {
- *    // this method matches {item.discounted} iff "item" resolves to an object assignable to "Item"
+ *    // this method matches {item.discounted} if "item" resolves to an object assignable to "Item"
  *    return item.getPrice().multiply(new BigDecimal("0.9"));
  * }
  * </pre>
  *
- * A special constant - {@link #ANY} - may be used to specify that the extension method matches any name.
- * It is also possible to match the name against a regular expression specified in {@link #matchRegex()}. In both cases, an
- * additional string method parameter must be used to pass the property name. If both {@link #matchName()} and
- * {@link #matchRegex()} are set the regular expression is used for matching.
+ * A special constant - {@link #ANY} - can be used to specify that the extension method matches any name. In this case, an
+ * additional string method parameter must be used to pass the property name.
  *
  * <pre>
  * {@literal @}TemplateExtension(matchName = "*")
  * static String itemProperty(Item item, String name) {
- *    // this method matches {item.foo} iff "item" resolves to an object assignable to "Item"
- *    // the value of the "name" parameter is "foo"
+ *    // this method matches {item.foo} if "item" resolves to an object assignable to "Item"
+ *    // the value of the "name" argument is "foo"
  * }
  * </pre>
+ *
+ * It is also possible to match the name against a regular expression specified in {@link #matchRegex()}.
+ * Again, an additional string method parameter must be used to pass the property name.
+ *
+ * <pre>
+ * {@literal @}TemplateExtension(matchRegex = "foo|bar")
+ * static String itemProperty(Item item, String name) {
+ *    // this method matches {item.foo} and {item.bar} if "item" resolves to an object assignable to "Item"
+ *    // the value of the "name" argument is "foo" or "bar"
+ * }
+ * </pre>
+ *
+ * Finally, {@link #matchNames()} can be used to specify a collection of matching names. An
+ * additional string method parameter is mandatory as well.
+ *
+ * <pre>
+ * {@literal @}TemplateExtension(matchNames = {"foo", "bar"})
+ * static String itemProperty(Item item, String name) {
+ *    // this method matches {item.foo} and {item.bar} if "item" resolves to an object assignable to "Item"
+ *    // the value of the "name" argument is "foo" or "bar"
+ * }
+ * </pre>
+ *
+ * Superfluous matching conditions are ignored. The conditions sorted by priority in descending order are:
+ * {@link #matchRegex()}, {@link #matchNames()} and {@link #matchName()}.
  */
 @Retention(RUNTIME)
 @Target({ METHOD, TYPE })
@@ -81,6 +107,12 @@ public @interface TemplateExtension {
      * @return the name is used to match the property name
      */
     String matchName() default METHOD_NAME;
+
+    /**
+     *
+     * @return the list of names used to match the property name
+     */
+    String[] matchNames() default {};
 
     /**
      *

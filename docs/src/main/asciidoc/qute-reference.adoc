@@ -1552,12 +1552,9 @@ A template extension method:
 
 If there is no namespace defined the class of the first parameter that is not annotated with `@TemplateAttribute` is used to match the base object. Otherwise, the namespace is used to match an expression.
 
-The method name is used to match the property name by default. 
-However, it is possible to specify the matching name with `TemplateExtension#matchName()`.
-A special constant - `TemplateExtension#ANY` - may be used to specify that the extension method matches any name.
-It is also possible to match the name against a regular expression specified in `TemplateExtension#matchRegex()`.
-In both cases, an additional string method parameter must be used to pass the property name.
-If both `matchName()` and `matchRegex()` are set the regular expression is used for matching.
+==== Matching by Name
+
+The method name is used to match the property name by default.
 
 .Extension Method Example
 [source,java]
@@ -1590,6 +1587,61 @@ This template extension method makes it possible to render the following templat
 {item.discountedPrice} <1>
 ----
 <1> `item` is resolved to an instance of `org.acme.Item`.
+
+However, it is possible to specify the matching name with `matchName()`.
+
+.`TemplateExtension#matchName()` Example
+[source,java]
+----
+@TemplateExtension(matchName = "discounted")
+static BigDecimal discountedPrice(Item item) {
+   // this method matches {item.discounted} if "item" resolves to an object assignable to "Item"
+   return item.getPrice().multiply(new BigDecimal("0.9"));
+}
+----
+
+A special constant - `TemplateExtension#ANY`/`*` - can be used to specify that the extension method matches any name.
+
+.`TemplateExtension#ANY` Example
+[source,java]
+----
+@TemplateExtension(matchName = "*")
+static String itemProperty(Item item, String name) { <1>
+   // this method matches {item.foo} if "item" resolves to an object assignable to "Item"
+   // the value of the "name" argument is "foo"
+}
+----
+<1> A additional string method parameter is used to pass the actual property name.
+
+It's also possible to match the name against a regular expression specified in `matchRegex()`.
+
+.`TemplateExtension#matchRegex()` Example
+[source,java]
+----
+@TemplateExtension(matchRegex = "foo|bar")
+static String itemProperty(Item item, String name) { <1>
+   // this method matches {item.foo} and {item.bar} if "item" resolves to an object assignable to "Item"
+   // the value of the "name" argument is "foo" or "bar"
+}
+----
+<1> A additional string method parameter is used to pass the actual property name.
+
+Finally, `matchNames()` can be used to specify a collection of matching names. 
+An additional string method parameter is mandatory as well.
+
+
+.`TemplateExtension#matchNames()` Example
+[source,java]
+----
+@TemplateExtension(matchNames = {"foo", "bar"})
+static String itemProperty(Item item, String name) {
+   // this method matches {item.foo} and {item.bar} if "item" resolves to an object assignable to "Item"
+   // the value of the "name" argument is "foo" or "bar"
+}
+----
+
+NOTE: Superfluous matching conditions are ignored. The conditions sorted by priority in descending order are:
+`matchRegex()`, `matchNames()` and `matchName()`.
 
 ==== Method Parameters
 

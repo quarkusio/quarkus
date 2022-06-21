@@ -115,6 +115,14 @@ Executing that will produce additional output lines like this:
 # Printing native-library information to: /project/reports/native_library_info_20220223_100925.txt
 ----
 
+[NOTE]
+====
+Note that `/project` is a folder within the container that is building the native executable.
+So, this is not a folder that you will find in the host environment.
+`/project` folder is mapped to `target/debugging-native-1.0.0-SNAPSHOT-native-image-source-jar`,
+so you will find the files under the `reports` folder in that directory.
+====
+
 The target info file contains information such as the target platform,
 the toolchain used to compile the executable,
 and the C library in use:
@@ -252,6 +260,22 @@ For example, we can see how the heap and text sections take most of the binary:
 readelf -SW ./target/debugging-native-1.0.0-SNAPSHOT-runner
 ----
 
+[NOTE]
+====
+Runtime containers produced by Quarkus to run native executables will not include the tools mentioned above.
+To explore a native executable within a runtime container,
+it's best to run the container itself and then `docker cp` the executable locally, e.g.:
+
+[source,bash]
+----
+docker run -i --rm --name=mytest -p 8080:8080 test/debugging-native:1.0.0-SNAPSHOT
+docker cp mytest:/work/application path/on/host/
+----
+
+From there, you can either inspect the executable directly or use a tools container like above.
+====
+
+[[native-reports]]
 == Native Reports
 
 Optionally, the native build process can generate reports that show what goes into the binary:
@@ -425,7 +449,7 @@ For example, methods that directly call a method can be located via:
 
 [source,cypher]
 ----
-match (m:Method) <- [*1..1] - (o) where m.name = "hello" return *
+match (m:Method) <- [*1..1] - (o) where m.name = "hello" and m.type =~ ".*GreetingResource" return *
 ----
 
 Then you can look for direct calls at depth of 2,
@@ -433,7 +457,7 @@ so you’d search for methods that call methods that call into the target method
 
 [source,cypher]
 ----
-match (m:Method) <- [*1..2] - (o) where m.name = "hello" return *
+match (m:Method) <- [*1..2] - (o) where m.name = "hello" and m.type =~ ".*GreetingResource" return *
 ----
 
 You can continue going up layers,
@@ -444,7 +468,7 @@ When that happens, you can alternatively run the queries directly against the cy
 [source,bash]
 ----
 docker exec testneo4j bin/cypher-shell -u neo4j -p ${NEO_PASS} \
-  "match (m:Method) <- [*1..10] - (o) where m.name = 'hello' return *"
+  "match (m:Method) <- [*1..10] - (o) where m.name = 'hello' and m.type =~ '.*GreetingResource' return *"
 ----
 
 For further information, check out this
@@ -465,6 +489,12 @@ These are called expert options and you can learn more about them by running:
 ----
 docker run quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor} --expert-options-all
 ----
+
+[WARNING]
+====
+These expert options are not considered part of the GraalVM native image API,
+so they might change anytime.
+====
 
 To use these expert options, add them comma separated to the `-Dquarkus.native.additional-build-args` parameter.
 
@@ -660,9 +690,21 @@ but sometimes the tracing options can show some stack traces that do not represe
 The best option is to dig through the source code and use tracing output for guidance but not as full truth.
 
 Moving the `KEY_PAIR_GEN.initialize(1024);` call to the run-time executed method `encryptDecrypt` is enough to solve this particular issue.
+Rebuild the application and verify that encrypt/decrypt endpoint works as expected by sending any message and check if the reply is the same as the incoming message:
+
+[source,bash,subs=attributes+]
+----
+$ ./mvnw package -DskipTests -Dnative
+...
+$ docker run -i --rm -p 8080:8080 test/debugging-native:1.0.0-SNAPSHOT
+...
+$ curl -w '\n' http://localhost:8080/encrypt-decrypt/hellomandrel
+hellomandrel
+----
 
 Additional information on which classes are initialized and why can be obtained by passing in the `-H:+PrintClassInitialization` flag via `-Dquarkus.native.additional-build-args`.
 
+[[profiling]]
 == Profile Runtime Behaviour
 
 === Single Thread
@@ -755,6 +797,17 @@ Then, from inside the tools container we execute:
 ----
 perf record -F 1009 -g -a ./target/debugging-native-1.0.0-SNAPSHOT-runner
 ----
+
+[INFO]
+====
+The `perf record` command above takes `1009` samples per second.
+Increasing this value means more samples are gathered,
+which can end up affecting the runtime performance.
+This also increases the amount of data generated.
+The more data generated, the longer it takes to process it,
+but the more precision you get on what the application is doing.
+So, finding the right value is a balancing act.
+====
 
 While `perf record` is running, open another window and access the endpoint:
 
@@ -982,6 +1035,7 @@ image::native-reference-multi-flamegraph-joined-threads.svg[Muti-thread perf fla
 When you open the flamegraph, you will see all threads' work collapsed into a single area.
 Then, you can clearly see that there's some locking that could affect performance.
 
+[[debug-info]]
 == Debugging Native Crashes
 
 One of the drawbacks of using native executables is that they cannot be debugged using the standard Java debuggers,
@@ -1309,6 +1363,25 @@ For example, when registering types and methods for reflection access,
 the analysis can’t easily see what’s behind those types or methods,
 so it has to do more work to complete the analysis step.
 
+=== I get an `OutOfMemoryError` (OOME) building native executables, what can I do?
+
+Building native executables is not only time consuming, but it also takes a fair amount of memory.
+For example, building a sample native Quarkus JPA application such as the Hibernate quickstart,
+may use 6GB to 8GB resident set size in memory.
+A big chunk of this memory is Java heap,
+but extra memory is required for other aspects of the JVM that runs the native building process.
+It is still possible to build such applications in environments that have total memory close to the limits,
+but to do that it is necessary to shrink the maximum heap size of the GraalVM native image process.
+To do that, set a maximum heap size using the `quarkus.native.native-image-xmx` property.
+For example, we can instruct GraalVM to use 5GB of maximum heap size by passing in
+`-Dquarkus.native.native-image-xmx=5g` in the command line.
+
+Building native executables this way might have the side effect of requiring more time to complete.
+This is due to garbage collection having to work harder for native image generation to have free space to do its job.
+
+Note that typical applications are likely bigger than quickstarts,
+so the memory requirements will also likely be higher.
+
 === Why is runtime performance of a native executable inferior compared to JVM mode?
 
 As with most things in life there are some trade-offs involved when choosing native compilation over JVM mode.
@@ -1405,15 +1478,9 @@ $ ./target/debugging-native-1.0.0-SNAPSHOT-runner -XX:PrintFlags=
 
 === Can I get a heap dump of a native executable? e.g. if it runs out of memory
 
-Unfortunately generating heap dumps in hprof format,
-which can be opened by tools such as VisualVM or Eclipse MAT,
-can only be achieved with
-https://www.graalvm.org/reference-manual/native-image/NativeImageHeapdump[GraalVM Enterprise Edition].
-Mandrel, which is based on the GraalVM Community Edition, does not have this capability.
-
-Although Mandrel can generate debug symbols and these contain a fair amount of information about object layouts,
-including what is a pointer field vs a primitive field, this information cannot be used as is to detect memory leaks or find dominator objects.
-This is because it has no idea what constitutes a root pointer nor how to recursively trace pointers from those roots.
+Starting with GraalVM 22.2.0 it will be possible to heap dumps upon request,
+e.g. `kill -SIGUSR1 <pid>`.
+Support for dumping the heap dump upon an out of memory error will follow up.
 
 === Can I build and run this examples outside a container in Linux?
 
@@ -1550,3 +1617,25 @@ Once the image is compiled, enable and start JFR via runtime flags: `-XX:+Flight
 ----
 
 For more details on using JFR, see https://www.graalvm.org/reference-manual/native-image/JFR[here].
+
+=== How can we troubleshoot performance problems only reproducible in production?
+
+In this situation, switching to JVM mode would be the best thing to try first.
+If the performance issues continue after switching to JVM mode,
+you can use more established and mature tooling to figure out the root cause.
+If the performance issue is limited to native mode only,
+you might not be able to use `perf`,
+so JFR is the only way to gather any information in this situation.
+As JFR support for native expands,
+the ability to detect root causes of performance issues directly in production will improve.
+
+=== What information helps most debug issues that happen either at build-time or run-time?
+
+To fix classpath, class initialization or forbidden API errors at build time it's best to use <<native-reports,build time reports>> to understand the closed world universe.
+A complete picture of the universe, along with the relationships between the different classes and methods will help uncover and fix most of the issues.
+
+To fix runtime native specific errors,
+it's best to have <<debug-info,debug info builds>> of the native executables around,
+so that `gdb` can be hooked up quickly to debug the issue.
+If you also add local symbols to the debug info builds,
+you will obtain precise <<profiling,profiling information>> as well.

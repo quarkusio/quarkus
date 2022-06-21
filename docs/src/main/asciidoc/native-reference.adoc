@@ -809,7 +809,7 @@ Then, from inside the tools container we execute:
 perf record -F 1009 -g -a ./target/debugging-native-1.0.0-SNAPSHOT-runner
 ----
 
-[INFO]
+[NOTE]
 ====
 The `perf record` command above takes `1009` samples per second.
 Increasing this value means more samples are gathered,

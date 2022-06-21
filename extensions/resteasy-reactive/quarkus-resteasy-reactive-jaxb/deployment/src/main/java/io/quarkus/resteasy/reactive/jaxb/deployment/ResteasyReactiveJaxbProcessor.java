@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import javax.ws.rs.Priorities;
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -20,6 +22,7 @@ import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -28,13 +31,35 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.jaxb.deployment.JaxbClassesToBeBoundBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.JaxRsResourceIndexBuildItem;
+import io.quarkus.resteasy.reactive.jaxb.runtime.serialisers.ServerJaxbMessageBodyReader;
+import io.quarkus.resteasy.reactive.jaxb.runtime.serialisers.ServerJaxbMessageBodyWriter;
 import io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveResourceMethodEntriesBuildItem;
+import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
+import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 
 public class ResteasyReactiveJaxbProcessor {
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(Feature.RESTEASY_REACTIVE_JAXB));
+    }
+
+    @BuildStep
+    void additionalProviders(BuildProducer<AdditionalBeanBuildItem> additionalBean,
+            BuildProducer<MessageBodyReaderBuildItem> additionalReaders,
+            BuildProducer<MessageBodyWriterBuildItem> additionalWriters) {
+        // make these beans to they can get instantiated with the Quarkus CDI
+        additionalBean.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(ServerJaxbMessageBodyReader.class.getName())
+                .addBeanClass(ServerJaxbMessageBodyWriter.class.getName())
+                .setUnremovable().build());
+
+        additionalReaders
+                .produce(new MessageBodyReaderBuildItem(ServerJaxbMessageBodyReader.class.getName(), Object.class.getName(),
+                        List.of(MediaType.APPLICATION_XML, MediaType.TEXT_XML), RuntimeType.SERVER, true, Priorities.USER));
+        additionalWriters
+                .produce(new MessageBodyWriterBuildItem(ServerJaxbMessageBodyWriter.class.getName(), Object.class.getName(),
+                        List.of(MediaType.APPLICATION_XML, MediaType.TEXT_XML), RuntimeType.SERVER, true, Priorities.USER));
     }
 
     @BuildStep

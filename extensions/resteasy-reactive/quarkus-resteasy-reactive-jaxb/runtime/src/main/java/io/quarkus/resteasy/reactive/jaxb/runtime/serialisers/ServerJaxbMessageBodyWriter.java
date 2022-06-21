@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.jaxb.common.runtime.serialisers;
+package io.quarkus.resteasy.reactive.jaxb.runtime.serialisers;
 
 import java.beans.Introspector;
 import java.io.IOException;
@@ -23,7 +23,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 import io.vertx.core.MultiMap;
 
-public class JaxbMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
+public class ServerJaxbMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
     @Inject
     Marshaller marshaller;

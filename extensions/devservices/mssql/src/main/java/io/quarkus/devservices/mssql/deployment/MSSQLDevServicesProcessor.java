@@ -37,7 +37,12 @@ public class MSSQLDevServicesProcessor {
                         containerConfig.getFixedExposedPort(),
                         !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
-                container.withPassword(password.orElse(DEFAULT_DATABASE_STRONG_PASSWORD))
+
+                String effectivePassword = containerConfig.getPassword()
+                        .orElse(password.orElse(DEFAULT_DATABASE_STRONG_PASSWORD));
+
+                // Defining the database name and the username is not supported by this container yet
+                container.withPassword(effectivePassword)
                         .withReuse(true);
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);

@@ -46,9 +46,14 @@ public class PostgresqlDevServicesProcessor {
                         containerConfig.getFixedExposedPort(),
                         !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
-                container.withUsername(username.orElse(DEFAULT_DATABASE_USERNAME))
-                        .withPassword(password.orElse(DEFAULT_DATABASE_PASSWORD))
-                        .withDatabaseName(datasourceName.orElse(DEFAULT_DATABASE_NAME))
+
+                String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
+                String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
+                String effectiveDbName = containerConfig.getDbName().orElse(datasourceName.orElse(DEFAULT_DATABASE_NAME));
+
+                container.withUsername(effectiveUsername)
+                        .withPassword(effectivePassword)
+                        .withDatabaseName(effectiveDbName)
                         .withReuse(true);
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);

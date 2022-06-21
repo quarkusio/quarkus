@@ -59,4 +59,21 @@ public class DevServicesBuildTimeConfig {
     @ConfigItem
     public Optional<String> command;
 
+    /**
+     * The name of the database to use if this Dev Service supports overriding it.
+     */
+    @ConfigItem
+    public Optional<String> dbName;
+
+    /**
+     * The username to use if this Dev Service supports overriding it.
+     */
+    @ConfigItem
+    public Optional<String> username;
+
+    /**
+     * The password to use if this Dev Service supports overriding it.
+     */
+    @ConfigItem
+    public Optional<String> password;
 }

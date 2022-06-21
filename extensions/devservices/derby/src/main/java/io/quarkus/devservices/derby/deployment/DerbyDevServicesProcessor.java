@@ -1,5 +1,7 @@
 package io.quarkus.devservices.derby.deployment;
 
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_NAME;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -36,6 +38,9 @@ public class DerbyDevServicesProcessor {
                     int port = containerConfig.getFixedExposedPort().isPresent()
                             ? containerConfig.getFixedExposedPort().getAsInt()
                             : 1527 + (launchMode == LaunchMode.TEST ? 0 : 1);
+
+                    String effectiveDbName = containerConfig.getDbName().orElse(datasourceName.orElse(DEFAULT_DATABASE_NAME));
+
                     NetworkServerControl server = new NetworkServerControl(InetAddress.getByName("localhost"), port);
                     server.start(new PrintWriter(System.out));
                     for (int i = 1; i <= NUMBER_OF_PINGS; i++) {
@@ -65,7 +70,7 @@ public class DerbyDevServicesProcessor {
                         additionalArgs.append(i.getValue());
                     }
                     return new RunningDevServicesDatasource(null,
-                            "jdbc:derby://localhost:" + port + "/memory:" + datasourceName.orElse("quarkus") + ";create=true"
+                            "jdbc:derby://localhost:" + port + "/memory:" + effectiveDbName + ";create=true"
                                     + additionalArgs.toString(),
                             null,
                             null,

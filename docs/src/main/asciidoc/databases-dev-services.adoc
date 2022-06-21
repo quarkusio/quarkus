@@ -85,13 +85,13 @@ Login credentials are the same for most databases, except when the database requ
 |Database |Username |Password |Database name
 
 |PostgreSQL, MariaDB, MySQL, IBM Db2, H2
-|quarkus
-|quarkus
-|quarkus
+|`quarkus` for the default datasource or name of the datasource
+|`quarkus`
+|`quarkus`
 
 |Microsoft SQL Server
-|SA
-|Quarkuspassword1
+|`SA`
+|`Quarkus123`
 |
 
 |===
@@ -100,6 +100,15 @@ Login credentials are the same for most databases, except when the database requ
 ====
 The Microsoft SQL Server Testcontainer doesn't support defining the username or database name.
 It also requires a strong password.
+====
+
+[TIP]
+====
+For databases supporting it
+(i.e. all of them except Microsoft SQL Server for which it is only possible to override the password),
+you can override the database name, username and password used by the Dev Service.
+
+See <<configuration-reference>> for more information.
 ====
 
 Keep in mind that, except if configured otherwise (see below), a Dev Service runs on a random port.
@@ -134,6 +143,8 @@ quarkus.datasource."datasource-name".devservices.port=<your fixed port> <2>
 <1> Fixed port for the default datasource.
 <2> Fixed port for a named datasource.
 
+
+[[configuration-reference]]
 == Configuration Reference
 
 Dev Services for Databases support the following configuration options:

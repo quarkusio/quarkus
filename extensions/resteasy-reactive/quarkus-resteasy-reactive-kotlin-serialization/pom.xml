@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-reactive-kotlin-serialization-parent</artifactId>
-    <name>Quarkus - RestEasy Reactive Kotlin Serialization</name>
+    <name>Quarkus - RESTEasy Reactive - Kotlin Serialization</name>
     <packaging>pom</packaging>
 
     <modules>

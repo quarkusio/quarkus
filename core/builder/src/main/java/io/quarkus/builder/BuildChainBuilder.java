@@ -266,7 +266,7 @@ public final class BuildChainBuilder {
                         writer.newLine();
                         writer.write("    { rank = same; ");
                         for (StepInfo startStep : startSteps) {
-                            writer.write(quoteString(startStep.getBuildStep().toString()));
+                            writer.write(quoteString(startStep.getBuildStep().getId()));
                             writer.write("; ");
                         }
                         writer.write("};");
@@ -274,7 +274,7 @@ public final class BuildChainBuilder {
                         writer.write("    { rank = same; ");
                         for (StepInfo endStep : endSteps) {
                             if (!startSteps.contains(endStep)) {
-                                writer.write(quoteString(endStep.getBuildStep().toString()));
+                                writer.write(quoteString(endStep.getBuildStep().getId()));
                                 writer.write("; ");
                             }
                         }
@@ -299,11 +299,11 @@ public final class BuildChainBuilder {
     private static void writeStep(final BufferedWriter writer, final HashSet<StepInfo> printed, final StepInfo step)
             throws IOException {
         if (printed.add(step)) {
-            final String currentStepName = quoteString(step.getBuildStep().toString());
+            final String currentStepName = quoteString(step.getBuildStep().getId());
             final Set<StepInfo> dependents = step.getDependents();
             if (!dependents.isEmpty()) {
                 for (StepInfo dependent : dependents) {
-                    final String dependentName = quoteString(dependent.getBuildStep().toString());
+                    final String dependentName = quoteString(dependent.getBuildStep().getId());
                     writer.write("    ");
                     writer.write(dependentName);
                     writer.write(" -> ");

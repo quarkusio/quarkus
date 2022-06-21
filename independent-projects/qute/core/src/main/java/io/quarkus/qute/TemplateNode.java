@@ -26,6 +26,7 @@ public interface TemplateNode {
     }
 
     /**
+     * Returns the parameter declarations defined in this template node.
      *
      * @return a list of param declarations
      */

@@ -152,7 +152,7 @@ public interface Template {
 
     /**
      *
-     * @return an immutable list of parameter declarations
+     * @return an immutable list of all parameter declarations defined in the template
      */
     List<ParameterDeclaration> getParameterDeclarations();
 

@@ -440,6 +440,16 @@ public class OidcUtilsTest {
     }
 
     @Test
+    public void testTokenWithCustomNamespacedRolesWithSpaces() throws Exception {
+        OidcTenantConfig.Roles rolesCfg = OidcTenantConfig.Roles
+                .fromClaimPath(Collections.singletonList(" application_card/embedded/\"https://custom/roles\" "));
+        List<String> roles = OidcUtils.findRoles(null, rolesCfg, read(getClass().getResourceAsStream("/tokenCustomPath.json")));
+        assertEquals(2, roles.size());
+        assertTrue(roles.contains("r3"));
+        assertTrue(roles.contains("r4"));
+    }
+
+    @Test
     public void testTokenWithScope() throws Exception {
         OidcTenantConfig.Roles rolesCfg = OidcTenantConfig.Roles.fromClaimPath(Collections.singletonList("scope"));
         List<String> roles = OidcUtils.findRoles(null, rolesCfg, read(getClass().getResourceAsStream("/tokenScope.json")));

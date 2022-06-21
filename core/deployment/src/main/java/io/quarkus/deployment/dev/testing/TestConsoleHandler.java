@@ -217,6 +217,7 @@ public class TestConsoleHandler implements TestListener {
                 } else {
                     currentlyFailing = true;
                     //TODO: this should not use the logger, it should print a nicer status
+                    //first print the full failures
                     log.error(statusHeader("TEST REPORT #" + results.getId()));
                     for (Map.Entry<String, TestClassResult> classEntry : results.getCurrentFailing().entrySet()) {
                         for (TestResult test : classEntry.getValue().getFailing()) {
@@ -227,6 +228,36 @@ public class TestConsoleHandler implements TestListener {
                             }
                         }
                     }
+                    //then print the summary
+                    StringBuilder summary = new StringBuilder(statusFooter(RED + "Summary:") + "\n");
+                    for (Map.Entry<String, TestClassResult> classEntry : results.getCurrentFailing().entrySet()) {
+                        for (TestResult test : classEntry.getValue().getFailing()) {
+                            if (test.isReportable()) {
+                                StackTraceElement testclass = null;
+                                for (var i : test.getTestExecutionResult().getThrowable().get().getStackTrace()) {
+                                    if (i.getClassName().equals(test.testClass)) {
+                                        testclass = i;
+                                        break;
+                                    }
+                                }
+
+                                if (summary.charAt(summary.length() - 1) != '\n') {
+                                    summary.append("\n");
+                                }
+                                if (testclass != null) {
+                                    summary.append(testclass.getClassName() + "#" + testclass.getMethodName() + "("
+                                            + testclass.getFileName() + ":" + testclass.getLineNumber() + ") ");
+                                }
+                                summary.append(RED
+                                        + test.getDisplayName() + RESET
+                                        + " " + test.getTestExecutionResult().getThrowable().get().getMessage());
+                            }
+                        }
+                    }
+                    while (summary.charAt(summary.length() - 1) == '\n') {
+                        summary.setLength(summary.length() - 1);
+                    }
+                    log.error(summary.toString());
                     log.error(
                             statusFooter(RED + results.getCurrentFailedCount() + " "
                                     + pluralize("TEST", "TESTS", results.getCurrentFailedCount()) + " FAILED"));

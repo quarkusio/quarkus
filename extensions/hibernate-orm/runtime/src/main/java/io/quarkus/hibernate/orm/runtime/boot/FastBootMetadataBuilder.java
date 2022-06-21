@@ -138,6 +138,20 @@ public class FastBootMetadataBuilder {
 
         // Build the "standard" service registry
         ssrBuilder.applySettings(buildTimeSettings.getSettings());
+        // We don't add unsupported properties to mergedSettings/buildTimeSettings,
+        // so that we can more easily differentiate between
+        // properties coming from Quarkus and "unsupported" properties
+        // on startup (see io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider.buildRuntimeSettings)
+        for (Map.Entry<String, String> entry : puDefinition.getQuarkusConfigUnsupportedProperties().entrySet()) {
+            var key = entry.getKey();
+            if (buildTimeSettings.get(key) != null) {
+                // Ignore properties that were already set by Quarkus;
+                // we'll log a warning about those on startup.
+                // (see io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider.buildRuntimeSettings)
+                continue;
+            }
+            ssrBuilder.applySetting(key, entry.getValue());
+        }
         this.standardServiceRegistry = ssrBuilder.build();
         registerIdentifierGenerators(standardServiceRegistry);
 

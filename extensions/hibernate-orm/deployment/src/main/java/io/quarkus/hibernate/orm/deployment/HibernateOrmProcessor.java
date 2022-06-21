@@ -405,6 +405,7 @@ public final class HibernateOrmProcessor {
                                     .getProperties().getProperty(AvailableSettings.MULTI_TENANT))),
                             null,
                             jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
+                            Collections.emptyMap(),
                             false,
                             true));
         }
@@ -1198,6 +1199,7 @@ public final class HibernateOrmProcessor {
                         multiTenancyStrategy,
                         persistenceUnitConfig.multitenantSchemaDatasource.orElse(null),
                         xmlMappings,
+                        persistenceUnitConfig.unsupportedProperties,
                         false, false));
     }
 

@@ -21,6 +21,7 @@ import io.vertx.mutiny.core.Vertx;
 @ApplicationScoped
 public class VerticleDeployer {
     public static final String REQUEST_ID_HEADER = "x-request-id";
+    public static final String MDC_KEY = "requestId";
     public static final int VERTICLE_PORT = 8097;
 
     @Inject
@@ -54,17 +55,18 @@ public class VerticleDeployer {
                     .requestHandler(req -> {
                         String requestId = req.getHeader(REQUEST_ID_HEADER);
 
-                        MDC.put("requestId", requestId);
-                        LOGGER.info("Received HTTP request ### " + requestId);
+                        MDC.put(MDC_KEY, requestId);
+                        LOGGER.info("Received HTTP request ### " + MDC.get(MDC_KEY));
 
                         vertx.setTimer(50, l -> {
-                            LOGGER.info("Timer fired ### " + requestId);
+                            LOGGER.info("Timer fired ### " + MDC.get(MDC_KEY));
                             vertx.executeBlocking(fut -> {
-                                LOGGER.info("Blocking task executed ### " + requestId);
+                                LOGGER.info("Blocking task executed ### " + MDC.get(MDC_KEY));
                                 fut.complete();
                             }, false, bar -> request.send(rar -> {
-                                LOGGER.info("Received Web Client response ### " + requestId);
-                                req.response().end();
+                                String value = (String) MDC.get(MDC_KEY);
+                                LOGGER.info("Received Web Client response ### " + value);
+                                req.response().end(value);
                             }));
                         });
                     })

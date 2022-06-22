@@ -43,6 +43,10 @@
             <artifactId>quarkus-mutiny</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-latebound-mdc-provider</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-mutiny-vertx-core</artifactId>
         </dependency>
@@ -85,6 +89,12 @@
                         <provides>io.quarkus.vertx</provides>
                         <provides>io.quarkus.vertx.core</provides>
                     </capabilities>
+                    <parentFirstArtifacts>
+                        <parentFirstArtifact>io.quarkus:quarkus-vertx-latebound-mdc-provider</parentFirstArtifact>
+                    </parentFirstArtifacts>
+                    <runnerParentFirstArtifacts>
+                        <runnerParentFirstArtifact>io.quarkus:quarkus-vertx-latebound-mdc-provider</runnerParentFirstArtifact>
+                    </runnerParentFirstArtifacts>
                 </configuration>
             </plugin>
             <plugin>

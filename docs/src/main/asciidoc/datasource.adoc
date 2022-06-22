@@ -473,7 +473,7 @@ You can override this by setting the `transactions` configuration property - see
 
 When using Dev Services the default datasource will always be created, but to specify a named datasource you need to have
 at least one build time property so Quarkus knows to create the datasource. You will usually either specify
-the `db-kind` property, or explicitly enable DevDb: `quarkus.datasource."name".devservices.enabled=true`.
+the `db-kind` property, or explicitly enable Dev Services: `quarkus.datasource."name".devservices.enabled=true`.
 
 [[in-memory-databases]]
 == Testing with in-memory databases

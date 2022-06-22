@@ -1,5 +1,7 @@
 package io.quarkus.devservices.mssql.deployment;
 
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_STRONG_PASSWORD;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +37,12 @@ public class MSSQLDevServicesProcessor {
                         containerConfig.getFixedExposedPort(),
                         !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
-                container.withPassword(password.orElse("Quarkuspassword1"))
+
+                String effectivePassword = containerConfig.getPassword()
+                        .orElse(password.orElse(DEFAULT_DATABASE_STRONG_PASSWORD));
+
+                // Defining the database name and the username is not supported by this container yet
+                container.withPassword(effectivePassword)
                         .withReuse(true);
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);

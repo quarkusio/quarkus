@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-When testing or running in dev mode Quarkus can provide you with a zero config database out of the box, a feature we refer to as Dev Services.
+When testing or running in dev mode Quarkus can provide you with a zero-config database out of the box, a feature we refer to as Dev Services.
 Depending on your database type you may need Docker installed in order to use this feature.
 Dev Services is supported for the following databases:
 
@@ -75,8 +75,78 @@ quarkus.datasource.devservices.container-properties.TC_MY_CNF=testcontainers/mys
 
 This support is database specific and needs to be implemented in each dev service specifically.
 
+== Connect To Database Run as a Dev Service
+
+You can connect to a database running as a Dev Service as you would do with any database running inside a Docker container.
+
+Login credentials are the same for most databases, except when the database requirements don't allow it:
+
+|===
+|Database |Username |Password |Database name
+
+|PostgreSQL, MariaDB, MySQL, IBM Db2, H2
+|`quarkus` for the default datasource or name of the datasource
+|`quarkus`
+|`quarkus`
+
+|Microsoft SQL Server
+|`SA`
+|`Quarkus123`
+|
+
+|===
+
+[NOTE]
+====
+The Microsoft SQL Server Testcontainer doesn't support defining the username or database name.
+It also requires a strong password.
+====
+
+[TIP]
+====
+For databases supporting it
+(i.e. all of them except Microsoft SQL Server for which it is only possible to override the password),
+you can override the database name, username and password used by the Dev Service.
+
+See <<configuration-reference>> for more information.
+====
+
+Keep in mind that, except if configured otherwise (see below), a Dev Service runs on a random port.
+For instance, when you run PostgreSQL as a Dev Service and have `psql` installed on the host, you can connect via:
+
+[source, bash]
+----
+psql -h localhost -p <random port> -U quarkus
+----
+
+The random port can be found with `docker ps`
+
+[source, bash]
+----
+docker ps
+
+# returns something like this:
+
+CONTAINER ID   IMAGE           [..]    PORTS                                         [..]
+b826e3a168c4   postgres:14.2   [..]    0.0.0.0:49174->5432/tcp, :::49174->5432/tcp   [..] <1>
+----
+<1> The random port is `49174`.
+
+You can require a fixed port for a database Dev Service using:
+
+[source,properties]
+----
+quarkus.datasource.devservices.port=<your fixed port> <1>
+
+quarkus.datasource."datasource-name".devservices.port=<your fixed port> <2>
+----
+<1> Fixed port for the default datasource.
+<2> Fixed port for a named datasource.
+
+
+[[configuration-reference]]
 == Configuration Reference
 
-Datasource Dev Services support the following config options:
+Dev Services for Databases support the following configuration options:
 
 include::{generated-dir}/config/quarkus-datasource-config-group-dev-services-build-time-config.adoc[opts=optional,leveloffset=+1]

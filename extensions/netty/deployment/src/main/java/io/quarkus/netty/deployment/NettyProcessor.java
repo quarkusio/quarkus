@@ -112,7 +112,9 @@ class NettyProcessor {
             builder
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.HttpObjectEncoder")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.extensions.compression.DeflateDecoder")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder");
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdOptions")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.compression.BrotliOptions");
         } else {
             log.debug("Not registering Netty HTTP classes as they were not found");
         }

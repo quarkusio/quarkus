@@ -59,14 +59,17 @@ public class KotlinCreateMavenProjectIT extends QuarkusPlatformAwareMojoTestBase
                 .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
                         && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
                         && d.getScope().equalsIgnoreCase("import")
-                        && d.getType().equalsIgnoreCase("pom"))).isTrue();
+                        && d.getType().equalsIgnoreCase("pom")))
+                .isTrue();
 
         assertThat(
                 model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")
-                        && d.getVersion() == null)).isTrue();
+                        && d.getVersion() == null))
+                .isTrue();
         assertThat(
                 model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-kotlin")
-                        && d.getVersion() == null)).isTrue();
+                        && d.getVersion() == null))
+                .isTrue();
 
         assertThat(model.getProfiles()).hasSize(1);
         assertThat(model.getProfiles().get(0).getId()).isEqualTo("native");

@@ -117,9 +117,9 @@ public class CreateJBangMojo extends AbstractMojo {
                 .build();
         final CreateJBangProject createJBangProject = new CreateJBangProject(QuarkusProject.of(projectDirPath, catalog,
                 codestartsResourceLoader, log, BuildTool.MAVEN))
-                        .extensions(extensions)
-                        .javaTarget(javaVersion)
-                        .setValue("noJBangWrapper", noJBangWrapper);
+                .extensions(extensions)
+                .javaTarget(javaVersion)
+                .setValue("noJBangWrapper", noJBangWrapper);
 
         boolean success;
 

@@ -46,7 +46,7 @@ public class AppModelGradleResolver implements AppModelResolver {
                     new GACTV(appArtifact.getGroupId(), appArtifact.getArtifactId(),
                             appArtifact.getClassifier(), appArtifact.getType(),
                             "[" + appArtifact.getVersion() + "," + upToVersion + (inclusive ? "]" : ")")))
-                                    .getVersion();
+                    .getVersion();
         } catch (AppModelResolverException e) {
             return null;
         }
@@ -58,7 +58,8 @@ public class AppModelGradleResolver implements AppModelResolver {
         try {
             return resolveArtifact(
                     new GACTV(appArtifact.getGroupId(), appArtifact.getArtifactId(),
-                            appArtifact.getClassifier(), appArtifact.getType(), range)).getVersion();
+                            appArtifact.getClassifier(), appArtifact.getType(), range))
+                    .getVersion();
         } catch (AppModelResolverException e) {
             return null;
         }

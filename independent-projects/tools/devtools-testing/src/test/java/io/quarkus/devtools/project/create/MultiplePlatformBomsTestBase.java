@@ -98,22 +98,22 @@ public abstract class MultiplePlatformBomsTestBase {
             throws Exception {
         return new CreateProject(
                 quarkusVersion == null ? getQuarkusProject(projectDir) : getQuarkusProject(projectDir, quarkusVersion))
-                        .groupId("org.acme")
-                        .artifactId("acme-app")
-                        .version("0.0.1-SNAPSHOT")
-                        .extensions(new HashSet<>(extensions))
-                        .execute();
+                .groupId("org.acme")
+                .artifactId("acme-app")
+                .version("0.0.1-SNAPSHOT")
+                .extensions(new HashSet<>(extensions))
+                .execute();
     }
 
     protected QuarkusCommandOutcome createProject(Path projectDir, PlatformStreamCoords stream, List<String> extensions)
             throws Exception {
         return new CreateProject(
                 getQuarkusProject(projectDir, stream))
-                        .groupId("org.acme")
-                        .artifactId("acme-app")
-                        .version("0.0.1-SNAPSHOT")
-                        .extensions(new HashSet<>(extensions))
-                        .execute();
+                .groupId("org.acme")
+                .artifactId("acme-app")
+                .version("0.0.1-SNAPSHOT")
+                .extensions(new HashSet<>(extensions))
+                .execute();
     }
 
     protected List<ArtifactCoords> toPlatformExtensionCoords(String... artifactIds) {

@@ -142,7 +142,7 @@ public class LocalWorkspaceDiscoveryTest {
             module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
                     .setEffectiveModelBuilder(true)
                     .setCurrentProject(moduleDir.toString()))
-                            .getCurrentProject();
+                    .getCurrentProject();
         } finally {
             if (originalBaseDir == null) {
                 System.clearProperty(topLevelBaseDirProp);
@@ -172,7 +172,7 @@ public class LocalWorkspaceDiscoveryTest {
         final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
                 .setEffectiveModelBuilder(true)
                 .setCurrentProject(moduleDir.toString()))
-                        .getCurrentProject();
+                .getCurrentProject();
         final LocalWorkspace ws = module1.getWorkspace();
 
         assertNotNull(ws.getProject("org.acme", "quarkus-quickstart-multimodule-parent"));
@@ -193,7 +193,7 @@ public class LocalWorkspaceDiscoveryTest {
 
         final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
                 .setCurrentProject(moduleDir.toString()))
-                        .getCurrentProject();
+                .getCurrentProject();
         final LocalWorkspace ws = module1.getWorkspace();
 
         final LocalProject wsModule1 = ws.getProject("org.acme", "module1");
@@ -216,7 +216,7 @@ public class LocalWorkspaceDiscoveryTest {
         final LocalWorkspace ws = new BootstrapMavenContext(BootstrapMavenContext.config()
                 .setRootProjectDir(rootProjectDir)
                 .setCurrentProject(nestedProjectDir.toString()))
-                        .getWorkspace();
+                .getWorkspace();
 
         assertNotNull(ws.getProject("org.acme", "nested-project-module1"));
         assertNotNull(ws.getProject("org.acme", "nested-project-parent"));
@@ -236,7 +236,7 @@ public class LocalWorkspaceDiscoveryTest {
 
         final LocalWorkspace ws = new BootstrapMavenContext(BootstrapMavenContext.config()
                 .setCurrentProject(nestedProjectDir.toString()))
-                        .getWorkspace();
+                .getWorkspace();
 
         assertNotNull(ws.getProject("org.acme", "module3"));
         assertNotNull(ws.getProject("org.acme", "module2"));

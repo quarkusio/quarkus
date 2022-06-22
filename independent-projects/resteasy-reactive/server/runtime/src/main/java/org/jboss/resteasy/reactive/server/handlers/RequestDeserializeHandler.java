@@ -71,7 +71,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
                                     type, genericType, effectiveRequestType, reader, requestContext.getInputStream(),
                                     interceptors,
                                     serialisers)
-                                            .proceed();
+                                    .proceed();
                         }
                     } catch (NoContentException e) {
                         throw new BadRequestException(e);

@@ -124,7 +124,7 @@
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <docker-maven-plugin.version>0.40.0</docker-maven-plugin.version>
-        <formatter-maven-plugin.version>2.18.0</formatter-maven-plugin.version>
+        <formatter-maven-plugin.version>2.19.0</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.6.2</impsort-maven-plugin.version>
         <maven-invoker-plugin.version>3.2.2</maven-invoker-plugin.version>
         <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>

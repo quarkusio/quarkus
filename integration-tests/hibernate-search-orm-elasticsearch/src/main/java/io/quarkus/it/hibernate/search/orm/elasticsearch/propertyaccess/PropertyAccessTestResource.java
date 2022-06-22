@@ -41,7 +41,7 @@ public class PropertyAccessTestResource {
                 .where(f -> f.match().field("property")
                         .matching(value))
                 .fetchAllHits())
-                        .isEmpty());
+                .isEmpty());
 
         // While indexing, HSearch will read the entity property by calling a synthetic getter
         inTransaction(() -> entityManager.persist(new PrivateFieldAccessEntity(id, value)));
@@ -50,7 +50,7 @@ public class PropertyAccessTestResource {
                 .where(f -> f.match().field("property")
                         .matching(value))
                 .fetchAllHits())
-                        .hasSize(1));
+                .hasSize(1));
 
         return "OK";
     }
@@ -66,7 +66,7 @@ public class PropertyAccessTestResource {
                 .where(f -> f.match().field("property")
                         .matching(value))
                 .fetchAllHits())
-                        .isEmpty());
+                .isEmpty());
 
         inTransaction(() -> entityManager.persist(new PrivateFieldAccessEntity(id, value)));
 
@@ -76,14 +76,14 @@ public class PropertyAccessTestResource {
                     .where(f -> f.match().field("otherProperty")
                             .matching(value))
                     .fetchAllHits())
-                            .isEmpty();
+                    .isEmpty();
 
             // but "property" has.
             assertThat(searchSession.search(PrivateFieldAccessEntity.class)
                     .where(f -> f.match().field("property")
                             .matching(value))
                     .fetchAllHits())
-                            .hasSize(1);
+                    .hasSize(1);
         });
 
         // While indexing, HSearch will read the entity property by calling a synthetic getter,
@@ -110,14 +110,14 @@ public class PropertyAccessTestResource {
                     .where(f -> f.match().field("otherProperty")
                             .matching(value))
                     .fetchAllHits())
-                            .hasSize(1);
+                    .hasSize(1);
 
             // and "property" still has a value, proving that it was lazily initialized upon indexing.
             assertThat(searchSession.search(PrivateFieldAccessEntity.class)
                     .where(f -> f.match().field("property")
                             .matching(value))
                     .fetchAllHits())
-                            .hasSize(1);
+                    .hasSize(1);
         });
 
         return "OK";
@@ -134,7 +134,7 @@ public class PropertyAccessTestResource {
                 .where(f -> f.match().field("property")
                         .matching(value))
                 .fetchAllHits())
-                        .isEmpty());
+                .isEmpty());
 
         // While indexing, HSearch will read the entity property through its getter method
         inTransaction(() -> entityManager.persist(new MethodAccessEntity(id, value)));
@@ -143,7 +143,7 @@ public class PropertyAccessTestResource {
                 .where(f -> f.match().field("property")
                         .matching(value))
                 .fetchAllHits())
-                        .hasSize(1));
+                .hasSize(1));
 
         return "OK";
     }
@@ -161,12 +161,12 @@ public class PropertyAccessTestResource {
                     .where(f -> f.match().field("property")
                             .matching(value1))
                     .fetchAllHits())
-                            .isEmpty();
+                    .isEmpty();
             assertThat(searchSession.search(TransientMethodAccessEntity.class)
                     .where(f -> f.match().field("property")
                             .matching(value2))
                     .fetchAllHits())
-                            .isEmpty();
+                    .isEmpty();
         });
 
         // While indexing, HSearch will read the (@Transient) entity property through its getter method
@@ -177,12 +177,12 @@ public class PropertyAccessTestResource {
                     .where(f -> f.match().field("property")
                             .matching(value1))
                     .fetchAllHits())
-                            .hasSize(1);
+                    .hasSize(1);
             assertThat(searchSession.search(TransientMethodAccessEntity.class)
                     .where(f -> f.match().field("property")
                             .matching(value2))
                     .fetchAllHits())
-                            .hasSize(1);
+                    .hasSize(1);
         });
 
         return "OK";

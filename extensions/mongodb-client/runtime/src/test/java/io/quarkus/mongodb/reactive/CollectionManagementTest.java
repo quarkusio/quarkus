@@ -190,7 +190,7 @@ class CollectionManagementTest extends MongoTestBase {
         assertThat(collection.listIndexes().collect().asList().await().indefinitely()).hasSize(3);
         assertThat(
                 collection.listIndexes().collect().asList().await().indefinitely())
-                        .hasSize(3);
+                .hasSize(3);
 
         collection.dropIndex(i).await().indefinitely();
         assertThat(collection.listIndexes().collect().asList().await().indefinitely()).hasSize(2);
@@ -493,14 +493,14 @@ class CollectionManagementTest extends MongoTestBase {
         assertThat(collection.find(Document.class).collect().asList().await().indefinitely()).hasSize(4);
         assertThat(collection.find(Document.class, new FindOptions().skip(1)).collect().asList().await()
                 .indefinitely())
-                        .hasSize(3);
+                .hasSize(3);
         assertThat(collection.find(Document.class).collect().asList()
                 .await().indefinitely()).hasSize(4);
 
         assertThat(collection.find(eq("type", "heroes")).collect().asList().await().indefinitely()).hasSize(2);
         assertThat(
                 collection.find(eq("type", "heroes"), new FindOptions()).collect().asList().await().indefinitely())
-                        .hasSize(2);
+                .hasSize(2);
         assertThat(collection.find(eq("type", "heroes")).collect().asList()
                 .await().indefinitely()).hasSize(2);
 

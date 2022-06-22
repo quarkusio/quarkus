@@ -395,7 +395,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
         return getSession().chain(session -> bindParameters(
                 session.createQuery(PanacheJpaUtil.createDeleteQuery(entityClass, query, paramCount(params))), params)
-                        .executeUpdate().map(Integer::longValue));
+                .executeUpdate().map(Integer::longValue));
     }
 
     public Uni<Long> delete(Class<?> entityClass, String query, Map<String, Object> params) {
@@ -409,7 +409,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
         return getSession().chain(session -> bindParameters(
                 session.createQuery(PanacheJpaUtil.createDeleteQuery(entityClass, query, paramCount(params))), params)
-                        .executeUpdate().map(Integer::longValue));
+                .executeUpdate().map(Integer::longValue));
     }
 
     public Uni<Long> delete(Class<?> entityClass, String query, Parameters params) {

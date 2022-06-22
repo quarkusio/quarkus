@@ -937,10 +937,10 @@ public class ResteasyServerCommonProcessor {
             // Only keep the annotation if a concrete implementation or a sub class has been included
             return (Modifier.isInterface(classInfo.flags()) ? index.getAllKnownImplementors(classInfo.name())
                     : index.getAllKnownSubclasses(classInfo.name()))
-                            .stream()
-                            .filter(clazz -> !Modifier.isAbstract(clazz.flags()))
-                            .map(Objects::toString)
-                            .anyMatch(allowedClasses::contains);
+                    .stream()
+                    .filter(clazz -> !Modifier.isAbstract(clazz.flags()))
+                    .map(Objects::toString)
+                    .anyMatch(allowedClasses::contains);
         }
         return allowedClasses.contains(className);
     }

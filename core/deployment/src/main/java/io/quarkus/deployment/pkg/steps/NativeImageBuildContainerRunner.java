@@ -100,9 +100,9 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
                 try {
                     Process removeProcess = new ProcessBuilder(
                             List.of(containerRuntime.getExecutableName(), "rm", "-f", containerName))
-                                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                                    .redirectError(ProcessBuilder.Redirect.DISCARD)
-                                    .start();
+                            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                            .redirectError(ProcessBuilder.Redirect.DISCARD)
+                            .start();
                     removeProcess.waitFor(2, TimeUnit.SECONDS);
                 } catch (IOException | InterruptedException e) {
                     log.debug("Unable to stop running container", e);

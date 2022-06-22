@@ -401,7 +401,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
                 getEntityManager(entityClass)
                         .createQuery(PanacheJpaUtil.createDeleteQuery(entityClass, query, paramCount(params))),
                 params)
-                        .executeUpdate();
+                .executeUpdate();
     }
 
     public long delete(Class<?> entityClass, String query, Map<String, Object> params) {
@@ -415,7 +415,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
                 getEntityManager(entityClass)
                         .createQuery(PanacheJpaUtil.createDeleteQuery(entityClass, query, paramCount(params))),
                 params)
-                        .executeUpdate();
+                .executeUpdate();
     }
 
     public long delete(Class<?> entityClass, String query, Parameters params) {

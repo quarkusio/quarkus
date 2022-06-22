@@ -52,9 +52,9 @@ class HibernateSearchOutboxPollingProcessor {
             String puName = configuredPersistenceUnit.getPersistenceUnitName();
             staticConfigured.produce(new HibernateSearchIntegrationStaticConfiguredBuildItem(
                     HIBERNATE_SEARCH_ORM_COORDINATION_OUTBOX_POLLING, puName, null)
-                            // Additional entities such as Agent and OutboxEvent are defined through XML
-                            // (because there's no other way).
-                            .setXmlMappingRequired(true));
+                    // Additional entities such as Agent and OutboxEvent are defined through XML
+                    // (because there's no other way).
+                    .setXmlMappingRequired(true));
         }
     }
 

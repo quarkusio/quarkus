@@ -561,7 +561,7 @@ public class BeanGenerator extends AbstractGenerator {
         initConstructor(classOutput, beanCreator, bean, injectionPointToProviderField, interceptorToProviderField,
                 decoratorToProviderSupplierField,
                 annotationLiterals, reflectionRegistration)
-                        .returnValue(null);
+                .returnValue(null);
     }
 
     protected MethodCreator initConstructor(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean,

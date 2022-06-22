@@ -60,14 +60,17 @@ public class ScalaCreateMavenProjectIT extends QuarkusPlatformAwareMojoTestBase 
                 .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
                         && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
                         && d.getScope().equals("import")
-                        && d.getType().equals("pom"))).isTrue();
+                        && d.getType().equals("pom")))
+                .isTrue();
 
         assertThat(
                 model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equals("quarkus-resteasy")
-                        && d.getVersion() == null)).isTrue();
+                        && d.getVersion() == null))
+                .isTrue();
         assertThat(
                 model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equals("quarkus-scala")
-                        && d.getVersion() == null)).isTrue();
+                        && d.getVersion() == null))
+                .isTrue();
 
         assertThat(model.getProfiles()).hasSize(1);
         assertThat(model.getProfiles().get(0).getId()).isEqualTo("native");

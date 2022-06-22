@@ -49,9 +49,9 @@ public class SinglePersistenceUnitsCdiTest {
         inTransaction(() -> assertThat(defaultPUSession.search(DefaultPUEntity.class)
                 .where(f -> f.matchAll())
                 .fetchHits(20))
-                        .hasSize(1)
-                        .element(0)
-                        .returns(entity.getId(), DefaultPUEntity::getId));
+                .hasSize(1)
+                .element(0)
+                .returns(entity.getId(), DefaultPUEntity::getId));
     }
 
     private void inTransaction(Runnable runnable) {

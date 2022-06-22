@@ -1,4 +1,4 @@
-package io.quarkus.builder.metrics;
+package io.quarkus.builder;
 
 import java.io.IOException;
 import java.util.ArrayList;

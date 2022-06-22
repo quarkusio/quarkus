@@ -72,6 +72,11 @@
             <artifactId>d3js</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>chartjs</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -312,6 +317,19 @@
                                     <overWrite>true</overWrite>
                                     <outputDirectory>${project.build.directory}/classes/dev-static/js/</outputDirectory>
                                     <includes>**/d3.min.js</includes>
+                                    <fileMappers>
+                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
+                                    </fileMappers>
+                                </artifactItem>
+                                <!-- chart.js -->
+                                <artifactItem>
+                                    <groupId>org.webjars</groupId>
+                                    <artifactId>chartjs</artifactId>
+                                    <version>${webjar.chartjs.version}</version>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/classes/dev-static/js/</outputDirectory>
+                                    <includes>**/chart.min.js</includes>
                                     <fileMappers>
                                         <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
                                     </fileMappers>

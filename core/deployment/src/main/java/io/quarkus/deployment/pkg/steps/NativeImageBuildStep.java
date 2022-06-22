@@ -876,8 +876,8 @@ public class NativeImageBuildStep {
 
                 for (ExcludeConfigBuildItem excludeConfig : excludeConfigs) {
                     nativeImageArgs.add("--exclude-config");
-                    nativeImageArgs.add(excludeConfig.getJarFile());
-                    nativeImageArgs.add(excludeConfig.getResourceName());
+                    nativeImageArgs.add('"' + excludeConfig.getJarFile() + '"');
+                    nativeImageArgs.add('"' + excludeConfig.getResourceName() + '"');
                 }
 
                 // Work around https://github.com/quarkusio/quarkus/issues/21372

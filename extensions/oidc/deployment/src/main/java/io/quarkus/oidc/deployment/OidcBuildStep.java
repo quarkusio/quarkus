@@ -1,6 +1,5 @@
 package io.quarkus.oidc.deployment;
 
-import java.util.Collection;
 import java.util.function.BooleanSupplier;
 
 import javax.inject.Singleton;
@@ -9,20 +8,19 @@ import org.eclipse.microprofile.jwt.Claim;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.SynthesisFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
-import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
-import io.quarkus.arc.processor.BuildExtension;
-import io.quarkus.arc.processor.ObserverInfo;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.TokenIntrospectionCache;
@@ -128,16 +126,16 @@ public class OidcBuildStep {
                 .done();
     }
 
+    // Note that DefaultTenantConfigResolver injects quarkus.http.proxy.enable-forwarded-prefix
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @BuildStep(onlyIf = IsEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    public ValidationErrorBuildItem findSecurityEventObservers(
+    public void findSecurityEventObservers(
             OidcRecorder recorder,
-            ValidationPhaseBuildItem validationPhase) {
-        Collection<ObserverInfo> observers = validationPhase.getContext().get(BuildExtension.Key.OBSERVERS);
-        boolean isSecurityEventObserved = observers.stream()
+            SynthesisFinishedBuildItem synthesisFinished) {
+        boolean isSecurityEventObserved = synthesisFinished.getObservers().stream()
                 .anyMatch(observer -> observer.asObserver().getObservedType().name().equals(DOTNAME_SECURITY_EVENT));
         recorder.setSecurityEventObserved(isSecurityEventObserved);
-        return new ValidationErrorBuildItem();
     }
 
     public static class IsEnabled implements BooleanSupplier {

@@ -624,7 +624,6 @@ Defaults for the different parts are as follows:
 
 The https://jdbc.postgresql.org/documentation/head/connect.html[official documentation] go into more detail and list optional parameters as well.
 
-:no-duration-note: true
 
 [[reactive-configuration]]
 == Reactive Datasource Configuration Reference

@@ -3,12 +3,13 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>io.quarkiverse.my-quarki-ext</groupId>
-    <artifactId>quarkus-my-quarki-ext-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <groupId>io.quarkiverse.my-quarkiverse-ext</groupId>
+    <artifactId>quarkus-my-quarkiverse-ext-parent</artifactId>
+    <version>999-SNAPSHOT</version>
   </parent>
-  <artifactId>quarkus-my-quarki-ext</artifactId>
-  <name>Quarkus - My Quarki Ext - Runtime</name>
+  <artifactId>quarkus-my-quarkiverse-ext</artifactId>
+  <name>Quarkus My Quarkiverse extension - Runtime</name>
+  <description>My Quarkiverse extension description</description>
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>

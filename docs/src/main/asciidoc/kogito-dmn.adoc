@@ -130,9 +130,9 @@ image:kogito-DMN-guide-screenshot-DT.png[alt=DMN Decision Table definition]
 
 To author the DMN model yourself, just follow these steps:
 
-* drag an InputData node from the palette, name it `Age` and assign it type `number` using the Properties panel.
-* drag an InputData node from the palette, name it `Previous incidents?` and assign it type `boolean` using the Properties panel.
-* drag a Decision node from the palette, name it `Base price` and assign it type `number` using the Properties panel.
+* drag an InputData node from the palette, name it `Age` and assign it the type `number` using the Properties panel.
+* drag an InputData node from the palette, name it `Previous incidents?` and assign it the type `boolean` using the Properties panel.
+* drag a Decision node from the palette, name it `Base price` and assign it the type `number` using the Properties panel.
 * establish an `InformationRequirement` edge from `Age` to `Base price` nodes, by using the node palette by mouse overing near the element in the graph.
 * establish an `InformationRequirement` edge from `Previous incidents?` to `Base price` nodes, by using the node palette by mouse overing near the element in the graph.
 * select the Edit decision logic option for the node `Base price`.

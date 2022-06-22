@@ -164,7 +164,7 @@ public class GreetingController {
 }
 ----
 
-The easiest way to setup users and roles for our example is to use the `security-properties-file` extension. This extension essentially allows users and roles to be defined in the main Quarkus configuration file - `application.properties`.
+The easiest way to set up users and roles for our example is to use the `security-properties-file` extension. This extension essentially allows users and roles to be defined in the main Quarkus configuration file - `application.properties`.
 For more information about this extension check xref:security-properties.adoc[the associated guide].
 An example configuration would be the following:
 
@@ -288,7 +288,7 @@ public class Roles {
 
 hasAnyRole::
 
-In the same fashion as `hasRole`, users can use `hasAnyRole`  to check if the logged in user has any of the specified roles.
+In the same fashion as `hasRole`, users can use `hasAnyRole`  to check if the logged-in user has any of the specified roles.
 +
 Some examples are: `@PreAuthorize("hasAnyRole('admin')")`, `@PreAuthorize("hasAnyRole(@roles.USER, 'view')")`
 
@@ -298,12 +298,12 @@ of the class that are not annotated with any other Spring Security annotation wi
 denyAll:: Adding `@PreAuthorize("denyAll()")` to a method will ensure that that method is not accessible by any user. Adding it to a class will ensure that all public methods
 of the class that are not annotated with any other Spring Security annotation will not be accessible to any user.
 
-isAnonymous:: When annotating a bean method with `@PreAuthorize("isAnonymous()")` the method will only be accessible if the current user is anonymous - i.e. a non logged in user.
+isAnonymous:: When annotating a bean method with `@PreAuthorize("isAnonymous()")` the method will only be accessible if the current user is anonymous - i.e. a non logged-in user.
 
-isAuthenticated:: When annotating a bean method with `@PreAuthorize("isAuthenticated()")` the method will only be accessible if the current user is a logged in user. Essentially the
+isAuthenticated:: When annotating a bean method with `@PreAuthorize("isAuthenticated()")` the method will only be accessible if the current user is a logged-in user. Essentially the
 method is only unavailable for anonymous users.
 
-#paramName == authentication.principal.username:: This syntax allows users to check if a parameter (or a field of the parameter) of the secured method is equal to the logged in username.
+#paramName == authentication.principal.username:: This syntax allows users to check if a parameter (or a field of the parameter) of the secured method is equal to the logged-in username.
 +
 Examples of this use case are:
 +
@@ -336,12 +336,12 @@ public class MyComponent {
     }
 }
 ----
-<1> `doSomething` can be executed if the current logged in user is the same as the `username` method parameter
-<2> `doSomethingElse` can be executed if the current logged in user is the same as the `name` field of `person` method parameter
+<1> `doSomething` can be executed if the current logged-in user is the same as the `username` method parameter
+<2> `doSomethingElse` can be executed if the current logged-in user is the same as the `name` field of `person` method parameter
 +
 TIP: the use of `authentication.` is optional, so using `principal.username` has the same result.
 
-#paramName != authentication.principal.username:: This is similar to the previous expression with the difference being that the method parameter must be different than the logged in username.
+#paramName != authentication.principal.username:: This is similar to the previous expression with the difference being that the method parameter must be different from the logged-in username.
 
 @beanName.method():: This syntax allows developers to specify that the execution of method of a specific bean will determine if the current user can access the secured method.
 +
@@ -381,7 +381,7 @@ Note that for the `check` method the parameter types must match what is specifie
 
 ===== Combining expressions
 
-The `@PreAuthorize` annotations allows for the combination of expressions using logical `AND` / `OR`. Currently there is a limitation where only a single
+The `@PreAuthorize` annotations allows for the combination of expressions using logical `AND` / `OR`. Currently, there is a limitation where only a single
 logical operation can be used (meaning mixing `AND` and `OR` isn't allowed).
 
 Some examples of allowed expressions are:
@@ -411,7 +411,7 @@ Also to be noted that currently parentheses are not supported and expressions ar
 
 Please note that the Spring support in Quarkus does not start a Spring Application Context nor are any Spring infrastructure classes run.
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
-What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover Spring infrastructure
+What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover, Spring infrastructure
 classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for example) will not be executed.
 
 == Conversion Table

@@ -148,7 +148,7 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
     }
 
     /**
-     * @return a immutable {@link List} of provider class names
+     * @return an immutable {@link List} of provider class names
      */
     public List<String> providers() {
         return providers;

@@ -46,8 +46,8 @@ The database Dev Services will be enabled when a reactive or JDBC datasource ext
 and the database URL has not been configured. More information can be found at the
 xref:databases-dev-services.adoc[Databases Dev Services Guide].
 
-Quarkus provides Dev Services for all databases it supports. Most of these are run in a container, with the
-exception of H2 and Derby which are run in process. Dev Services are supported for both JDBC and reactive drivers.
+Quarkus provides Dev Services for all databases it supports. Most of these are run in a container, except
+H2 and Derby which are run in-process. Dev Services are supported for both JDBC and reactive drivers.
 
 Those relational databases that are running in a container are started using Testcontainers and support "reusable instances";
 this implies that if you add the property `testcontainers.reuse.enable=true` in your Testcontainers configuration file,

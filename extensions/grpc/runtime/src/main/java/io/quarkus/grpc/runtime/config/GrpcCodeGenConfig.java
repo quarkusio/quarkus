@@ -16,7 +16,7 @@ public class GrpcCodeGenConfig {
      * Applicable values:
      * <ul>
      * <li><i>none</i> - default - don't scan dependencies</li>
-     * <li>a comma seperated list of <i>groupId:artifactId</i> coordinates to scan</li>
+     * <li>a comma separated list of <i>groupId:artifactId</i> coordinates to scan</li>
      * <li><i>all</i> - scan all dependencies</li>
      * </ul>
      */
@@ -29,7 +29,7 @@ public class GrpcCodeGenConfig {
      * Applicable values:
      * <ul>
      * <li><i>none</i> - default - don't scan dependencies</li>
-     * <li>a comma seperated list of <i>groupId:artifactId</i> coordinates to scan</li>
+     * <li>a comma separated list of <i>groupId:artifactId</i> coordinates to scan</li>
      * <li><i>all</i> - scan all dependencies</li>
      * </ul>
      *

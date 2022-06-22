@@ -51,6 +51,18 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <configuration>
+                    <removedResources>
+                        <artifact>
+                            <key>org.jboss.narayana.rts:narayana-lra</key>
+                            <resources>META-INF/services/javax.ws.rs.client.ClientBuilder</resources>
+                        </artifact>
+                        <artifact>
+                            <key>org.jboss.narayana.rts:lra-client</key>
+                            <resources>META-INF/services/javax.ws.rs.client.ClientBuilder</resources>
+                        </artifact>
+                    </removedResources>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

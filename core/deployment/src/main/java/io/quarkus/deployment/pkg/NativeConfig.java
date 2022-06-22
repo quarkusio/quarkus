@@ -96,9 +96,9 @@ public class NativeConfig {
     public Optional<String> userCountry;
 
     /**
-     * Defines the file encoding as in -Dfile.encoding=...
+     * Defines the file encoding as in {@code -Dfile.encoding=...}.
      *
-     * Native image runtime uses the host's (i.e. build time) value of file.encoding
+     * Native image runtime uses the host's (i.e. build time) value of {@code file.encoding}
      * system property. We intentionally default this to UTF-8 to avoid platform specific
      * defaults to be picked up which can then result in inconsistent behavior in the
      * generated native executable.

@@ -34,9 +34,9 @@ Edit the `pom.xml` file to add the Quarkus gRPC extension dependency (just under
 </dependency>
 ----
 
-By default the `quarkus-grpc` extension relies on the reactive programming model.
+By default, the `quarkus-grpc` extension relies on the reactive programming model.
 In this guide we will follow a reactive approach.
-Under the dependencies section of your `pom.xml` file, make sure you have the RESTEasy Reactive dependency:
+Under the `dependencies` section of your `pom.xml` file, make sure you have the RESTEasy Reactive dependency:
 
 [source,xml]
 ----

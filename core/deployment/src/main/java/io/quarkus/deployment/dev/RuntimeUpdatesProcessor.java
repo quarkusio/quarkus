@@ -225,7 +225,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                         public void handleChanges(Collection<FileChangeEvent> changes) {
                             //sometimes changes come through as two events
                             //which can cause problems for our CI tests
-                            //and cause unessesary runs.
+                            //and cause unnecessary runs.
                             //we add a half second delay for CI tests, to make sure this does not cause
                             //problems
                             try {
@@ -518,7 +518,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             }
 
             //if there is a deployment problem we always restart on scan
-            //this is because we can't setup the config file watches
+            //this is because we can't set up the config file watches
             //in an ideal world we would just check every resource file for changes, however as everything is already
             //all broken we just assume the reason that they have refreshed is because they have fixed something
             //trying to watch all resource files is complex and this is likely a good enough solution for what is already an edge case
@@ -879,7 +879,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     .filter(Files::exists)
                     .filter(Files::isReadable)
                     .collect(Collectors.toList());
-            //copy all modified non hot deployment files over
+            //copy all modified non-hot deployment files over
             if (doCopy) {
                 final Set<Path> seen = new HashSet<>(moduleResources);
                 try {

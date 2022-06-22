@@ -54,7 +54,7 @@ public class FlywayH2TestCustomizer {
         requireNonNull(initSqlFile, "Flyway-H2: init-sql must be specified!");
         final String url = buildDbURL();
         try {
-            System.out.println("[INFO] Custom H2 Intializing DB: " + url);
+            System.out.println("[INFO] Custom H2 Initializing DB: " + url);
             RunScript.execute(
                     url,
                     "sa",

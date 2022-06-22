@@ -110,7 +110,12 @@ class FlywayProcessor {
         Collection<String> applicationMigrations = applicationMigrationsToDs.values().stream().collect(HashSet::new,
                 AbstractCollection::addAll, HashSet::addAll);
         for (String applicationMigration : applicationMigrations) {
-            hotDeploymentProducer.produce(new HotDeploymentWatchedFileBuildItem(applicationMigration));
+            Location applicationMigrationLocation = new Location(applicationMigration);
+            String applicationMigrationPath = applicationMigrationLocation.getPath();
+
+            if (applicationMigrationPath != null) {
+                hotDeploymentProducer.produce(new HotDeploymentWatchedFileBuildItem(applicationMigrationPath));
+            }
         }
         recorder.setApplicationMigrationFiles(applicationMigrations);
 

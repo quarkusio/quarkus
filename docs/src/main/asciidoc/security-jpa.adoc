@@ -127,7 +127,7 @@ public class AdminResource {
 ----
 
 Finally, let's consider the `/api/users/me` endpoint. As you can see from the source code below, we are trusting only users with the `user` role.
-We are using `SecurityContext` to get access to the current authenticated Principal and we return the user's name. This information is loaded from the database.
+We are using `SecurityContext` to get access to the current authenticated Principal, and we return the user's name. This information is loaded from the database.
 
 [source,java]
 ----
@@ -183,7 +183,7 @@ public class User extends PanacheEntity {
     
     /**
      * Adds a new user in the database
-     * @param username the user name
+     * @param username the username
      * @param password the unencrypted password (it will be encrypted with bcrypt)
      * @param role the comma-separated roles
      */
@@ -201,7 +201,7 @@ public class User extends PanacheEntity {
 The `security-jpa` extension is only initialized if there is a single entity annotated with `@UserDefinition`.
 
 <1> This annotation must be present on a single entity. It can be a regular Hibernate ORM entity or a Hibernate ORM with Panache entity as in this example.
-<2> This indicates the field used for the user name.
+<2> This indicates the field used for the username.
 <3> This indicates the field used for the password. This defaults to using bcrypt hashed passwords, but you can also configure it for clear text passwords or custom passwords.
 <4> This indicates the comma-separated list of roles added to the target Principal representation attributes.
 <5> This method allows us to add users while hashing the password with the proper bcrypt hash.
@@ -221,7 +221,7 @@ quarkus.hibernate-orm.database.generation=drop-and-create
 ----
 
 In our context, we are using PostgreSQL as identity store. The database schema is created by Hibernate ORM automatically
-on startup (change this in production) and we initialize the database with users and roles in the `Startup` class:
+on startup (change this in production), and we initialize the database with users and roles in the `Startup` class:
 
 [source,java]
 ----
@@ -248,7 +248,7 @@ public class Startup {
 
 [NOTE]
 ====
-It is probably useless but we kindly remind you that you must not store clear-text passwords in production environments ;-).
+It is probably useless, but we kindly remind you that you must not store clear-text passwords in production environments ;-).
 As a result, the `security-jpa` defaults to using bcrypt-hashed passwords.
 ====
 
@@ -276,7 +276,7 @@ Content-Type: text/plain;charset=UTF-8
 public%
 ----
 
-Now, let's try a to hit a protected resource anonymously.
+Now, let's try to hit a protected resource anonymously.
 
 [source,shell]
 ----

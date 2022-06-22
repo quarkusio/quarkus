@@ -168,7 +168,7 @@ For example with a configuration like:
 
 [source,properties]
 ----
-quarkus.container-image.group=quarkus #optional, default to the system user name
+quarkus.container-image.group=quarkus #optional, default to the system username
 quarkus.container-image.name=demo-app #optional, defaults to the application name
 quarkus.container-image.tag=1.0       #optional, defaults to the application version
 ----
@@ -177,7 +177,7 @@ The image that will be used in the generated manifests will be `quarkus/demo-app
 
 === Namespace
 
-By default Quarkus omits the namespace in the generated manifests, rather than enforce the `default` namespace. That means that you can apply the manifest to your chosen namespace when using `kubectl`, which in the example below is `test`:
+By default, Quarkus omits the namespace in the generated manifests, rather than enforce the `default` namespace. That means that you can apply the manifest to your chosen namespace when using `kubectl`, which in the example below is `test`:
 
 [source,bash]
 ----
@@ -426,7 +426,7 @@ Similarly, two redundant definitions, e.g. defining an injection from the same s
 [#env-vars-backwards]
 ===== Backwards compatibility
 
-Previous versions of the Kubernetes extension supported a different syntax to add environment variables.The older syntax is still supported but is deprecated and it's advised that you migrate to the new syntax.
+Previous versions of the Kubernetes extension supported a different syntax to add environment variables. The older syntax is still supported but is deprecated, and it's advised that you migrate to the new syntax.
 
 .Old vs. new syntax
 |====
@@ -475,7 +475,7 @@ quarkus.kubernetes.config-map-volumes.my-volume.config-map-name=my-secret
 
 ==== Passing application configuration
 
-Quarkus supports passing configuration from external locations (via Smallrye Config). This usually requires setting an additional environment variable or system propertiy.
+Quarkus supports passing configuration from external locations (via Smallrye Config). This usually requires setting an additional environment variable or system property.
 When you need to use a secret or a config map for the purpose of application configuration, you need to:
 
 - define a volume
@@ -609,7 +609,7 @@ Applications that are deployed to Kubernetes and need to access the API server w
 implementation("io.quarkus:quarkus-kubernetes-client")
 ----
 
-To access the API server from within a Kubernetes cluster, some RBAC related resources are required (e.g. a ServiceAccount, a RoleBinding etc.).
+To access the API server from within a Kubernetes cluster, some RBAC related resources are required (e.g. a ServiceAccount, a RoleBinding).
 So, when the `kubernetes-client` extension is present, the `kubernetes` extension is going to create those resources automatically, so that application will be granted the `view` role.
 If more roles are required, they will have to be added manually.
 
@@ -639,7 +639,7 @@ implementation("io.quarkus:quarkus-minikube")
 ----
 
 The purpose of this extension is to generate Kubernetes manifests (`minikube.yaml` and `minikube.json`) that are tailored to Minikube.
-This extension assumes a couple things:
+This extension assumes a couple of things:
 
 * Users won't be using an image registry and will instead make their container image accessible to the Kubernetes cluster by building it directly
 into Minikube's Docker daemon. To use Minikube's Docker daemon you must first execute:
@@ -667,7 +667,7 @@ NOTE: If the assumptions the Minikube extension makes don't fit your workflow, n
 and apply those to your Minikube cluster.
 
 === Deploying to Kind
-https://kind.sigs.k8s.io/[Kind] is an other popular tool used as a Kubernetes cluster for development purposes. To make the deployment to Kind
+https://kind.sigs.k8s.io/[Kind] is another popular tool used as a Kubernetes cluster for development purposes. To make the deployment to Kind
 experience as frictionless as possible, Quarkus provides the `quarkus-kind` extension. This extension can be added to a project like so:
 
 [source,xml]
@@ -763,7 +763,7 @@ For instance, if your cluster API endpoint uses a self-signed SSL Certificate yo
 quarkus.kubernetes-client.trust-certs=true
 ----
 
-The full list of the Kuberneters client configuration properties is provided below.
+The full list of the Kubernetes client configuration properties is provided below.
 
 include::{generated-dir}/config/quarkus-kubernetes-client.adoc[opts=optional, leveloffset=+1]
 
@@ -1002,7 +1002,7 @@ These manifests can be deployed as is to a running cluster, using `kubectl`:
 kubectl apply -f target/kubernetes/openshift.json
 ----
 
-OpenShift users might want to use `oc` rather than `kubectl`:
+OpenShift's users might want to use `oc` rather than `kubectl`:
 
 [source,bash]
 ----
@@ -1169,16 +1169,16 @@ The generated service can be customized using the following properties:
 |====
 | Property        | Type    | Description | Default Value
 | revision-name   | String  | A specific revision to which to send this portion of traffic                                    |
-| tag             | String  | Expose a dedicated url for referncing this target                                               |
+| tag             | String  | Expose a dedicated url for referencing this target                                              |
 | latest-revision | Boolean | Optionally provided to indicate that the latest revision should be used for this traffic target | false 
-| percent         | Logn    | Indicates the percent of traffic that is be routed to this revision                             | 100
+| percent         | Logn    | Indicates the percent of traffic that is being routed to this revision                          | 100
 |====
 
 .AutoScalingConfig
 |====
 | Property                      | Type    | Description | Default Value
 | auto-scaler-class             | String  | The auto-scaler class. Possible values: `kpa` for Knative Pod Autoscaler, `hpa` for Horizontal Pod Autoscaler | kpa
-| metric                        | String  | The autoscaling metric to use. Possible values (concurency, rps, cpu)                     | 
+| metric                        | String  | The autoscaling metric to use. Possible values (concurrency, rps, cpu)                    | 
 | target                        | int     | This value specifies the autoscaling target                                               |  
 | container-concurrency         | int     | The exact amount of requests allowed to the replica at a time                             | 
 | target-utilization-percentage | int     | This value specifies a percentage of the target to actually be targeted by the autoscaler |  
@@ -1221,7 +1221,7 @@ The properties for configuring `docker` and `s2i` are also deprecated in favor o
 
 ==== Config group arrays
 
-Properties referring to config group arrays (e.g. `kubernetes.labels[0]`, `kubernetes.env-vars[0]` etc) have been converted to maps, to align with the rest of the Quarkus ecosystem.
+Properties referring to config group arrays (e.g. `kubernetes.labels[0]`, `kubernetes.env-vars[0]` etc) have been converted to Maps to align with the rest of the Quarkus ecosystem.
 
 The code below demonstrates the change in `labels` config:
 
@@ -1297,14 +1297,14 @@ Finally, all you need to do is to configure your favorite IDE to attach the java
 
 == Using existing resources
 
-Sometimes it's desirable to either provide additional resources (e.g. a ConfigMap, a Secret, a Deployment for a database etc) or provide custom ones that will be used as a `base` for the generation process.
+Sometimes it's desirable to either provide additional resources (e.g. a ConfigMap, a Secret, a Deployment for a database) or provide custom ones that will be used as a `base` for the generation process.
 Those resources can be added under `src/main/kubernetes` directory and can be named after the target environment (e.g. kubernetes.json, openshift.json, knative.json, or the yml equivalents). The correlation between provided and generated files is done by file name.
 So, a `kubernetes.json`/`kubernetes.yml` file added in `src/main/kubernetes` will only affect the generated `kubernetes.json`/`kubernetes.yml`. An `openshift.json`/`openshift.yml` file added in `src/main/kubernetes` will only affect the generated `openshift.json`/`openshift.yml`. 
 A `knative.json`/`knative.yml` file added in `src/main/kubernetes` will only affect the generated `knative.json`/`knative.yml` and so on. The provided file may be either in json or yaml format and may contain one or more resources. These resources will end up in both generated formats (json and yaml). For example, a secret added in `src/main/kubernetes/kubernetes.yml` will be added to both the generated `kubernetes.yml` and `kubernetes.json`.
 
-Note: At the time of writing there is no mechanism in place that allows a one to many relationship between provided and generated files. Minikube is not an exception to the rule above, so if you want to customize the generated minikube manifests, the file placed under `src/main/kubernetes` will have to be named `minikube.json` or `minikube.yml` (naming it `kubernetes.yml` or `kubernetes.json` will result in having only the generated `kubernetes.yml` and `kubernetes.json` affected).
+Note: At the time of writing there is no mechanism in place that allows a one-to-many relationship between provided and generated files. Minikube is not an exception to the rule above, so if you want to customize the generated minikube manifests, the file placed under `src/main/kubernetes` will have to be named `minikube.json` or `minikube.yml` (naming it `kubernetes.yml` or `kubernetes.json` will result in having only the generated `kubernetes.yml` and `kubernetes.json` affected).
 
-Any resource found will be added in the generated manifests. Global modifications (e.g. labels, annotations etc) will also be applied to those resources.
+Any resource found will be added in the generated manifests. Global modifications (e.g. labels, annotations) will also be applied to those resources.
 If one of the provided resources has the same name as one of the generated ones, then the generated resource will be created on top of the provided resource, respecting existing content when possible (e.g. existing labels, annotations, environment variables, mounts, replicas etc).
 
 The name of the resource is determined by the application name and may be overridden by `quarkus.kubernetes.name`, `quarkus.openshift.name` and `quarkus.knative.name`.
@@ -1500,7 +1500,7 @@ quarkus.kubernetes-service-binding.services.db-demo.name=my-db
 
 * For a semi-automatic service binding demonstration, see link:https://developers.redhat.com/articles/2021/12/22/how-use-quarkus-service-binding-operator#create_the_quarkus_application[How to use Quarkus with the Service Binding Operator]
 
-* List of link:https://github.com/redhat-developer/service-binding-operator#known-bindable-operators[List of bindable Operators]
+* link:https://github.com/redhat-developer/service-binding-operator#known-bindable-operators[List of bindable Operators]
 
 
 === Automatic service binding
@@ -1528,7 +1528,7 @@ For traditional databases, automatic binding is initiated whenever a datasource 
 quarkus.datasource.db-kind=postgresql
 ----
 
-The previous configuration, combined with the presence of `quarkus-datasource`, `quarkus-jdbc-postgresql`, `quarkus-kubernetes`, and `quarkus-kubernetes-service-binding` properties in the application, results in the generation of the `ServiceBinding` resource for the the `postgresql` database type.
+The previous configuration, combined with the presence of `quarkus-datasource`, `quarkus-jdbc-postgresql`, `quarkus-kubernetes`, and `quarkus-kubernetes-service-binding` properties in the application, results in the generation of the `ServiceBinding` resource for the `postgresql` database type.
 
 By using the `apiVersion` and `kind` properties of the Operator resource, which matches the used `postgresql` Operator, the generated `ServiceBinding` resource binds the service or resource to the application.
 

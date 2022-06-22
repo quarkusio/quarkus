@@ -61,7 +61,7 @@ Instructions to build the image and run the container are written in those Docke
 
 By default, Quarkus tests in JVM mode are run using the `test` configuration profile. If you are not familiar with Quarkus
 configuration profiles, everything you need to know is explained in the
-xref:config.adoc#configuration-profiles[Configuration Profiles Documentation].
+xref:config-reference.adoc#profiles[Configuration Profiles Documentation].
 
 It is however possible to use a custom configuration profile for your tests with the Gradle build configuration shown below.
 This can be useful if you need for example to run some tests using a specific database which is not your default testing
@@ -269,7 +269,7 @@ When the application starts you should now see the following line in the logs: `
 
 NOTE: The remote side does not need to include Maven or any other development tools. The normal `fast-jar` Dockerfile
 that is generated with a new Quarkus application is all you need. If you are using bare metal launch the Quarkus runner
-jar, do not attempt to run normal devmode.
+jar, do not attempt to run normal dev mode.
 
 Now you need to connect your local agent to the remote host, using the `remote-dev` command:
 
@@ -330,11 +330,11 @@ include::{includes}/devtools/dev.adoc[]
 
 and enjoy a highly productive environment.
 
-**IntelliJ**
+**IntelliJ IDEA**
 
-In IntelliJ:
+In IntelliJ IDEA:
 
-1. From inside IntelliJ select `File -> New -> Project From Existing Sources...` or, if you are on the welcome dialog, select `Import project`.
+1. From inside IntelliJ IDEA select `File -> New -> Project From Existing Sources...` or, if you are on the welcome dialog, select `Import project`.
 2. Select the project root
 3. Select `Import project from external model` and `Gradle`
 4. Next a few times (review the different options if needed)
@@ -443,7 +443,7 @@ To create an executable that will run in a container, use the following:
 
 include::{includes}/devtools/build-native-container.adoc[]
 
-The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
+The produced executable will be a 64-bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
 Note that in this case the build itself runs in a Docker container too, so you don't need to have GraalVM installed locally.
 
@@ -549,7 +549,7 @@ The entries are relative to the root of the generated Uber-Jar. You can specify 
 By default, Quarkus will not discover CDI beans inside another module.
 
 The best way to enable CDI bean discovery for a module in a multi-module project would be to include a `META-INF/beans.xml` file,
-unless it is the main application module already configured with the quarkus-maven-plugin, in which case it will indexed automatically.
+unless it is the main application module already configured with the quarkus-maven-plugin, in which case it will be indexed automatically.
 
 Alternatively, there is some unofficial link:https://plugins.gradle.org/search?term=jandex[Gradle Jandex plugins] that can be used instead of the `META-INF/beans.xml` file.
 

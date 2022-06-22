@@ -606,7 +606,7 @@ public class ArcProcessor {
     @BuildStep(onlyIf = IsTest.class)
     public AdditionalBeanBuildItem testApplicationClassPredicateBean() {
         // We need to register the bean implementation for TestApplicationClassPredicate
-        // TestApplicationClassPredicate is used programatically in the ArC recorder when StartupEvent is fired
+        // TestApplicationClassPredicate is used programmatically in the ArC recorder when StartupEvent is fired
         return AdditionalBeanBuildItem.unremovableOf(PreloadedTestApplicationClassPredicate.class);
     }
 

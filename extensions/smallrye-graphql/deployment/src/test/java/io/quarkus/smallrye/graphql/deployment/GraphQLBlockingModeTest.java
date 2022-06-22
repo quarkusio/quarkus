@@ -24,7 +24,7 @@ import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
 /**
- * Testing the tread used.
+ * Testing the thread used.
  */
 public class GraphQLBlockingModeTest extends AbstractGraphQLTest {
 

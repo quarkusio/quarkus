@@ -367,7 +367,7 @@ curl localhost:8080/fruits/search?color=yellow
 
 Quarkus provides support for the Elasticsearch High Level REST Client but keep in mind that it comes with some caveats:
 
-- It drags a lot of dependencies - especially Lucene -, which doesn't fit well with Quarkus philosophy. The Elasticsearch team is aware of this issue and it might improve sometime in the future.
+- It drags a lot of dependencies - especially Lucene -, which doesn't fit well with Quarkus philosophy. The Elasticsearch team is aware of this issue, and it might improve sometime in the future.
 - It is tied to a certain version of the Elasticsearch server: you cannot use a High Level REST Client version 7 to access a server version 6.
 
 [WARNING]
@@ -385,7 +385,7 @@ Feel free to override the versions of the clients in your applications depending
 but be aware of https://www.elastic.co/blog/elastic-license-v2[the new licence of the High Level REST Client] for versions 7.11+:
 it is not Open Source and has several usage restrictions.
 
-We will eventually provide an extension for the new Open Source Java client but it will require changes in your applications
+We will eventually provide an extension for the new Open Source Java client, but it will require changes in your applications
 as it is an entirely new client.
 ====
 

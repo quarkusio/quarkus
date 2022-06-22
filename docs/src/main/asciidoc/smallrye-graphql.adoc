@@ -25,7 +25,7 @@ GraphQL is not a replacement for REST API specification but merely an
 alternative. Unlike REST, GraphQL API's have the ability to benefit the client by:
 
 Preventing Over-fetching and Under-fetching::
-    REST API's are server-driven fixed data responses that cannot be determined by
+    REST APIs are server-driven fixed data responses that cannot be determined by
     the client. Although the client does not require all the fields the client
     must retrieve all the data hence `Over-fetching`. A client may also require
     multiple REST API calls according to the first call (HATEOAS) to retrieve
@@ -93,7 +93,7 @@ implementation("io.quarkus:quarkus-smallrye-graphql")
 
 In this section we will start creating the GraphQL API.
 
-First, create the following entities representing a film from a galaxy far far away:
+First, create the following entities representing a film from a galaxy far, far away:
 
 [source,java]
 ----
@@ -282,7 +282,7 @@ NOTE: Experimental - not included in the MicroProfile specification
 GraphiQL UI is a great tool permitting easy interaction with your GraphQL APIs.
 
 The Quarkus `smallrye-graphql` extension ships with `GraphiQL` and enables it by default in `dev` and `test` modes,
-but it can also be explicitly configured for `production` mode as well.
+but it can also be explicitly configured for `production` mode as well, by setting the `quarkus.smallrye-graphql.ui.always-include` configuration property to `true`.
 
 GraphiQL can be accessed from http://localhost:8080/q/graphql-ui/ .
 
@@ -373,7 +373,7 @@ However, say our client requires both films with filmId `0` and `1`.
 In a REST API the client would have to make two calls to the API.
 Therefore, the client would be `Under-fetching`.
 
-In GraphQL it is possible to make multiple queries at once.
+In GraphQL, it is possible to make multiple queries at once.
 
 Enter the following into GraphiQL to retrieve two films:
 
@@ -567,7 +567,7 @@ Similar to the `createHero` mutation method we also retrieve the `name` and
 
 == Subscriptions
 
-Subscriptions allows you to subscribe to a query. It allows you to receive events and is using web sockets. 
+Subscriptions allow you to subscribe to a query. It allows you to receive events and is using web sockets.
 See the https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md[GraphQL over WebSocket Protocol] spec for more details.
 
 Example: We want to know when new Heroes are being created:
@@ -591,8 +591,8 @@ Example: We want to know when new Heroes are being created:
 
 ----
 
-<1> The `Multi` processor that will broadcast any new Heros
-<2> When adding a new Hero, also broadcast it
+<1> The `Multi` processor that will broadcast any new ``Hero``es
+<2> When adding a new `Hero`, also broadcast it
 <3> Make the stream available in the schema and as a WebSocket during runtime
 
 

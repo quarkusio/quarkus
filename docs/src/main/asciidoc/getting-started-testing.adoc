@@ -379,7 +379,7 @@ As mentioned above Quarkus tests are actually full CDI beans, and as such you ca
 normally. As an example, if you want a test method to run within the context of a transaction you can simply apply the
 `@Transactional` annotation to the method and the transaction interceptor will handle it.
 
-In addition to this you can also create your own test stereotypes. For example we could create a `@TransactionalQuarkusTest`
+In addition to this you can also create your own test stereotypes. For example, we could create a `@TransactionalQuarkusTest`
 as follows:
 
 [source,java]
@@ -462,7 +462,7 @@ WARNING: While it is possible to use JUnit Jupiter callback interfaces like `Bef
 == Testing Different Profiles
 
 So far in all our examples we only start Quarkus once for all tests. Before the first test is run Quarkus will boot,
-then all tests will run, then Quarkus will shutdown at the end. This makes for a very fast testing experience however
+then all tests will run, then Quarkus will shut down at the end. This makes for a very fast testing experience however
 it is a bit limited as you can't test different configurations.
 
 To get around this Quarkus supports the idea of a test profile. If a test has a different profile to the previously
@@ -472,10 +472,10 @@ a bit slower, as it adds a shutdown/startup cycle to the test time, but gives a 
 To reduce the amount of times Quarkus needs to restart, `io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer`
 is registered as a global `ClassOrderer` as described in the
 link:https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order-classes[JUnit 5 User Guide].
-The behavior of this orderer is configurable via `junit-platform.properties` (see the source code or javadoc for more details).
-It can also be disabled entirely by setting another orderer that is provided by JUnit 5 or even your own custom one. +
+The behavior of this `ClassOrderer` is configurable via `junit-platform.properties` (see the source code or javadoc for more details).
+It can also be disabled entirely by setting another `ClassOrderer` that is provided by JUnit 5 or even your own custom one. +
 Please note that as of JUnit 5.8.2 link:https://github.com/junit-team/junit5/issues/2794[only a single `junit-platform.properties` is picked up and a warning is logged if more than one is found].
-If you encounter such warnings, you can can get rid of them by removing the Quarkus-supplied `junit-platform.properties` from the classpath via an exclusion:
+If you encounter such warnings, you can get rid of them by removing the Quarkus-supplied `junit-platform.properties` from the classpath via an exclusion:
 [source,xml]
 ----
 <dependency>
@@ -752,7 +752,7 @@ public class MockExternalService extends ExternalService {
 It is important that the alternative be present in the `src/test/java` directory rather than `src/main/java`, as otherwise
 it will take effect all the time, not just when testing.
 
-Note that at present this approach does not work with native image testing, as this would required the test alternatives
+Note that at present this approach does not work with native image testing, as this would require the test alternatives
 to be baked into the native image.
 
 [[quarkus_mock]]
@@ -938,7 +938,7 @@ public class MockGreetingServiceTest {
 ----
 <1> Since we configured `greetingService` as a mock, the `GreetingResource` which uses the `GreetingService` bean, we get the mocked response instead of the response of the regular `GreetingService` bean
 
-By default the `@InjectMock` annotation can be used for any normal CDI scoped bean (e.g. `@ApplicationScoped`, `@RequestScoped`).
+By default, the `@InjectMock` annotation can be used for any normal CDI scoped bean (e.g. `@ApplicationScoped`, `@RequestScoped`).
 Mocking `@Singleton` beans can be performed by setting the `convertScopes` property to true (such as `@InjectMock(convertScopes = true`).
 This will convert the `@Singleton` bean to an `@ApplicationScoped` bean for the test.
 
@@ -1452,13 +1452,13 @@ The `settings.json` placed in the root of your project directory or in the works
 ]
 ----
 
-=== IntelliJ JUnit template
+=== IntelliJ IDEA JUnit template
 
-Nothing needed in IntelliJ because the IDE will pick the `systemPropertyVariables` from the surefire plugin configuration in `pom.xml`.
+Nothing needed in IntelliJ IDEA because the IDE will pick the `systemPropertyVariables` from the surefire plugin configuration in `pom.xml`.
 
 == Testing Dev Services
 
-By default tests should just work with xref:dev-services.adoc[Dev Services], however from some use cases you may need access to
+By default, tests should just work with xref:dev-services.adoc[Dev Services], however from some use cases you may need access to
 the automatically configured properties in your tests.
 
 You can do this with `io.quarkus.test.common.DevServicesContext`, which can be injected directly into any `@QuarkusTest`
@@ -1472,7 +1472,7 @@ have a field that implements `io.quarkus.test.common.DevServicesContext.ContextA
 a utility class.
 
 `QuarkusTestResourceLifecycleManager` implementations can also implement `ContextAware` to get access to these properties,
-which allows you to setup the resource before Quarkus starts (e.g. configure a KeyCloak instance, add data to a database etc).
+which allows you to set up the resource before Quarkus starts (e.g. configure a KeyCloak instance, add data to a database etc).
 
 
 [NOTE]

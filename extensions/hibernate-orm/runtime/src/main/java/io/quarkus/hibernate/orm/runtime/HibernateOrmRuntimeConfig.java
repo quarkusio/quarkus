@@ -25,6 +25,13 @@ public class HibernateOrmRuntimeConfig {
     @ConfigItem(name = ConfigItem.PARENT)
     public Map<String, HibernateOrmRuntimeConfigPersistenceUnit> persistenceUnits;
 
+    public static String puPropertyKey(String puName, String radical) {
+        String prefix = PersistenceUnitUtil.isDefaultPersistenceUnit(puName)
+                ? "quarkus.hibernate-orm."
+                : "quarkus.hibernate-orm.\"" + puName + "\".";
+        return prefix + radical;
+    }
+
     public boolean isAnyPropertySet() {
         return defaultPersistenceUnit.isAnyPropertySet() ||
                 !persistenceUnits.isEmpty();

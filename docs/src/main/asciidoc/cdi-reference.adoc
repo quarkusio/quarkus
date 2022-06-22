@@ -67,7 +67,7 @@ To generate the index just add the following to your `pom.xml`:
 </build>
 ----
 
-If you are are using gradle, you can apply the following plugin to your `build.gradle`:
+If you are using gradle, you can apply the following plugin to your `build.gradle`:
 
 [source,groovy]
 ----
@@ -299,7 +299,7 @@ class MyBeanStarter {
 }
 ----
 <1> The `AmazingService` is created during injection.
-<2> The `CoolService` is a normal scoped bean so we have to invoke a method upon the injected proxy to force the instantiation.
+<2> The `CoolService` is a normal scoped bean, so we have to invoke a method upon the injected proxy to force the instantiation.
 
 * Annotate the bean with `@io.quarkus.runtime.Startup` as described in xref:lifecycle.adoc#startup_annotation[Startup annotation]:
 +
@@ -377,7 +377,7 @@ public class MyCoolService {
 ----
 
 There is no need to declare dummy constructors for normal scoped bean in Quarkus - they are generated automatically.
-Also if there's only one constructor there is no need for `@Inject`.
+Also, if there's only one constructor there is no need for `@Inject`.
 
 [source,java]
 ----
@@ -494,7 +494,7 @@ public class TracerConfiguration {
 }
 ----
 
-The idea is that the extension auto-configures things for the user, eliminating a lot of boilerplate - we can just `@Inject` a `Tracer` wherever it is needed.
+The idea is that the extension autoconfigures things for the user, eliminating a lot of boilerplate - we can just `@Inject` a `Tracer` wherever it is needed.
 Now imagine that in our application we would like to utilize the configured `Tracer`, but we need to customize it a little, for example by providing a custom `Reporter`.
 The only thing that would be needed in our application would be something like the following:
 
@@ -521,7 +521,7 @@ Quarkus adds a capability that CDI currently does not support which is to condit
 via the `@io.quarkus.arc.profile.IfBuildProfile` and `@io.quarkus.arc.profile.UnlessBuildProfile` annotations.
 When used in conjunction with `@io.quarkus.arc.DefaultBean`, these annotations allow for the creation of different bean configurations for different build profiles.
 
-Imagine for instance that an application contains a bean named `Tracer`, which needs to be do nothing when in tests or dev-mode, but works in its normal capacity for the production artifact.
+Imagine for instance that an application contains a bean named `Tracer`, which needs to do nothing when in tests or in dev mode, but works in its normal capacity for the production artifact.
 An elegant way to create such beans is the following:
 
 [source,java]
@@ -543,7 +543,7 @@ public class TracerConfiguration {
 }
 ----
 
-If instead, it is required that the `Tracer` bean also works in dev-mode and only default to doing nothing for tests, then `@UnlessBuildProfile` would be ideal. The code would look like:
+If instead, it is required that the `Tracer` bean also works in dev mode and only default to doing nothing for tests, then `@UnlessBuildProfile` would be ideal. The code would look like:
 
 [source,java]
 ----
@@ -594,7 +594,7 @@ public class TracerConfiguration {
 }
 ----
 
-TIP: `@IfBuildProperty` and `@UnlessBuildProperty` are repeatable annotations, i.e. a bean will only be enabled if **all** of the conditions defined by these annotations are satisfied.
+TIP: `@IfBuildProperty` and `@UnlessBuildProperty` are repeatable annotations, i.e. a bean will only be enabled if **all** the conditions defined by these annotations are satisfied.
 
 If instead, it is required that the `RealTracer` bean is only used if the `some.tracer.enabled` property is not `false`, then `@UnlessBuildProperty` would be ideal. The code would look like:
 
@@ -811,7 +811,7 @@ In certain situations, it is practical to obtain a bean instance programmaticall
 However, according to the specification the `get()` method must identify the matching bean and obtain a contextual reference.
 As a consequence, a new instance of a  `@Dependent` bean is returned from each invocation of `get()`.
 Moreover, this instance is a dependent object of the injected `Instance`.
-This behavior is well-defined but it may lead to unexpected errors and memory leaks.
+This behavior is well-defined, but it may lead to unexpected errors and memory leaks.
 Therefore, Quarkus comes with the `io.quarkus.arc.WithCaching` annotation.
 An injected `Instance` annotated with this annotation will cache the result of the `Instance#get()` operation.
 The result is computed on the first call and the same value is returned for all subsequent calls, even for `@Dependent` beans.

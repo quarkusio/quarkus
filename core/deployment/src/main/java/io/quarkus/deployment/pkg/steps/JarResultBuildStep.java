@@ -92,16 +92,16 @@ import io.quarkus.paths.PathVisitor;
 /**
  * This build step builds both the thin jars and uber jars.
  *
- * The way this is built is a bit convoluted. In general we only want a single one built,
+ * The way this is built is a bit convoluted. In general, we only want a single one built,
  * as determined by the {@link PackageConfig} (unless the config explicitly asks for both of them)
  *
- * However we still need an extension to be able to ask for a specify one of these despite the config,
+ * However, we still need an extension to be able to ask for a specific one of these despite the config,
  * e.g. if a serverless environment needs an uberjar to build its deployment package then we need
  * to be able to provide this.
  *
  * To enable this we have two build steps that strongly produce the respective artifact type build
  * items, but not a {@link ArtifactResultBuildItem}. We then
- * have another two build steps that only run if they are configured too that consume these explicit
+ * have another two build steps that only run if they are configured to consume these explicit
  * build items and transform them into {@link ArtifactResultBuildItem}.
  */
 public class JarResultBuildStep {
@@ -459,7 +459,7 @@ public class JarResultBuildStep {
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                             throws IOException {
                         final String relativePath = toUri(root.relativize(file));
-                        //if this has been transfomed we do not copy it
+                        //if this has been transformed we do not copy it
                         // if it's a signature file (under the <jar>/META-INF directory),
                         // then we don't add it to the uber jar
                         if (isBlockOrSF(relativePath) &&
@@ -1267,7 +1267,7 @@ public class JarResultBuildStep {
      * So we first try to see if a manifest exists, and otherwise create a new one.
      *
      * <b>BEWARE</b> this method should be invoked after file copy from target/classes and so on.
-     * Otherwise this manifest manipulation will be useless.
+     * Otherwise, this manifest manipulation will be useless.
      */
     private void generateManifest(FileSystem runnerZipFs, final String classPath, PackageConfig config,
             ResolvedDependency appArtifact,

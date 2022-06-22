@@ -109,7 +109,7 @@ quarkus.http.auth.permission.public.policy=permit
 
 === Matching multiple paths: most specific method wins
 
-If a path is registered with multiple permission sets then any permission sets that specify a HTTP method will take
+If a path is registered with multiple permission sets then any permission sets that specify an HTTP method will take
 precedence and permissions sets without a method will not be considered (assuming of course the method matches). In this
 instance, the permission sets without methods will only come into effect if the request method does not match any of the
 sets with method permissions.

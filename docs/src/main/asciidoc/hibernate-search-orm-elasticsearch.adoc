@@ -374,7 +374,7 @@ This field is marked as sortable as our intention is to use it for sorting our a
 <3> The purpose of `@IndexedEmbedded` is to include the `Book` fields into the `Author` index.
 In this case, we just use the default configuration: all the fields of the associated `Book` entities are included in the index (i.e. the `title` field).
 The nice thing with `@IndexedEmbedded` is that it is able to automatically reindex an `Author` if one of its ``Book``s has been updated thanks to the bidirectional relation.
-`@IndexedEmbedded` also supports nested documents (using the `storage = NESTED` attribute) but we don't need it here.
+`@IndexedEmbedded` also supports nested documents (using the `storage = NESTED` attribute), but we don't need it here.
 You can also specify the fields you want to include in your parent index using the `includePaths` attribute if you don't want them all.
 
 == Analyzers and normalizers
@@ -388,7 +388,7 @@ The role of analyzers is to split the text into tokens (~ words) and filter them
 Normalizers are a special type of analyzers that keeps the input as a single token.
 It is especially useful for sorting or indexing keywords.
 
-There are a lot of bundled analyzers but you can also develop your own for your own specific purposes.
+There are a lot of bundled analyzers, but you can also develop your own for your own specific purposes.
 
 You can learn more about the Elasticsearch analysis framework in the https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis.html[Analysis section of the Elasticsearch documentation].
 
@@ -463,7 +463,7 @@ public class AnalysisConfigurer implements ElasticsearchAnalysisConfigurer {
 <2> This is a simple analyzer separating the words on spaces, removing any non-ASCII characters by its ASCII counterpart (and thus removing accents) and putting everything in lowercase.
 It is used in our examples for the author's names.
 <3> We are a bit more aggressive with this one and we include some stemming: we will be able to search for `mystery` and get a result even if the indexed input contains `mysteries`.
-It is definitely too aggressive for person names but it is perfect for the book titles.
+It is definitely too aggressive for person names, but it is perfect for the book titles.
 <4> Here is the normalizer used for sorting. Very similar to our first analyzer, except we don't tokenize the words as we want one and only one token.
 
 == Adding full text capabilities to our REST service
@@ -557,7 +557,7 @@ quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy=sync <8
 %prod.quarkus.datasource.password=quarkus_test
 %prod.hibernate-search-orm.elasticsearch.hosts=localhost:9200 <9>
 ----
-<1> We won't use SSL so we disable it to have a more compact native executable.
+<1> We won't use SSL, so we disable it to have a more compact native executable.
 <2> Let's create a PostgreSQL datasource.
 <3> We will drop and recreate the schema every time we start the application.
 <4> We load some initial data.
@@ -913,7 +913,7 @@ the Hibernate team publishes link:{hibernate-search-doc-prefix}[an extensive ref
 Hibernate Search supports both a Lucene backend and an Elasticsearch backend.
 
 In the context of Quarkus and to build microservices, we thought the latter would make more sense.
-Thus we focused our efforts on it.
+Thus, we focused our efforts on it.
 
 We don't have plans to support the Lucene backend in Quarkus for now.
 

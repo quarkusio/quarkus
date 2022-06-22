@@ -135,7 +135,7 @@
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
         <mutiny.version>1.5.0</mutiny.version>
         <kafka3.version>3.1.0</kafka3.version>
-        <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overriden by other imported BOMs in the platform -->
+        <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
         <snappy.version>1.1.8.4</snappy.version>
         <strimzi-test-container.version>0.100.0</strimzi-test-container.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
@@ -152,7 +152,7 @@
         <maven-invoker.version>3.1.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.0.10</jboss-logmanager.version>
-        <flyway.version>8.5.11</flyway.version>
+        <flyway.version>8.5.13</flyway.version>
         <yasson.version>1.0.11</yasson.version>
         <liquibase.version>4.11.0</liquibase.version>
         <snakeyaml.version>1.30</snakeyaml.version>

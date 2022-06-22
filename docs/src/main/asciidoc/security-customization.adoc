@@ -11,7 +11,7 @@ include::./attributes.adoc[]
 
 `io.quarkus:quarkus-security` module contains the core Quarkus security classes.
 
-In most cases, it does not have to be added directly to your project's build file as it is already provided by all of the security extensions.
+In most cases, it does not have to be added directly to your project's build file as it is already provided by all the security extensions.
 However, if you need to write your own custom security code (for example, register a <<jaxrs-security-context, Custom JAX-RS SecurityContext>>) or use <<bouncy-castle, BouncyCastle>> libraries, then please make sure it is included:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
@@ -80,7 +80,7 @@ If no credentials are provided then the mechanism specific challenge is created,
 
 So if `Basic` and `Authorization Code` mechanisms are combined then `401` will be returned if no credentials are provided and if `JWT` and `Authorization Code` mechanisms are combined then a redirect URL will be returned.
 
-In some cases such a default logic of selecting the challenge is exactly what is required by a given application but sometimes it may not meet the requirements. In such cases (or indeed in other similar cases where you'd like to change the order in which the mechanisms are asked to handle the current authentication or challenge request), you can create a custom mechanism and choose which mechanism should create a challenge, for example:
+In some cases such a default logic of selecting the challenge is exactly what is required by a given application, but sometimes it may not meet the requirements. In such cases (or indeed in other similar cases where you'd like to change the order in which the mechanisms are asked to handle the current authentication or challenge request), you can create a custom mechanism and choose which mechanism should create a challenge, for example:
 
 [source,java]
 ----

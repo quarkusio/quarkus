@@ -15,7 +15,7 @@ and a reactive style of interaction with the database.
 [NOTE]
 ====
 Hibernate Reactive works with the same annotations and most of the configuration described in the
-xref:quarkus-hibernate-orm.adoc[Hibernate ORM guide]. This guide will only focus on what's specific
+xref:hibernate-orm.adoc[Hibernate ORM guide]. This guide will only focus on what's specific
 for Hibernate Reactive.
 ====
 
@@ -171,7 +171,7 @@ This is useful to have a data set ready for your tests or demos.
 
 There are various optional properties useful to refine your session factory or guide Quarkus' guesses.
 
-When no properties are set, Quarkus can typically infer everything it needs to setup Hibernate Reactive
+When no properties are set, Quarkus can typically infer everything it needs to set up Hibernate Reactive
 and will have it use the default datasource.
 
 The configuration properties listed here allow you to override such defaults, and customize and tune various aspects.

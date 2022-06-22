@@ -154,13 +154,13 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             final boolean matches = persistenceUnitName == null
                     || persistenceUnit.getName().equals(persistenceUnitName);
             if (!matches) {
-                log.debugf("Excluding from consideration '%s' due to name mis-match", persistenceUnit.getName());
+                log.debugf("Excluding from consideration '%s' due to name mismatch", persistenceUnit.getName());
                 continue;
             }
 
             // See if we (Hibernate) are the persistence provider
             if (!isProvider(persistenceUnit)) {
-                log.debug("Excluding from consideration due to provider mis-match");
+                log.debug("Excluding from consideration due to provider mismatch");
                 continue;
             }
 
@@ -171,34 +171,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                         "Attempting to boot a blocking Hibernate ORM instance on a reactive RecordedState");
             }
             final PrevalidatedQuarkusMetadata metadata = recordedState.getMetadata();
-            final BuildTimeSettings buildTimeSettings = recordedState.getBuildTimeSettings();
-            final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
-            RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,
-                    integrationSettings);
-
-            Optional<String> dataSourceName = recordedState.getDataSource();
-            if (dataSourceName.isPresent()) {
-                // Inject the datasource
-                injectDataSource(persistenceUnitName, dataSourceName.get(), runtimeSettingsBuilder);
-            }
-
-            // Inject runtime configuration if the persistence unit was defined by Quarkus configuration
-            if (!recordedState.isFromPersistenceXml()) {
-                injectRuntimeConfiguration(persistenceUnitName, hibernateOrmRuntimeConfig, runtimeSettingsBuilder);
-            }
-
-            for (HibernateOrmIntegrationRuntimeDescriptor descriptor : integrationRuntimeDescriptors
-                    .getOrDefault(persistenceUnitName, Collections.emptyList())) {
-                Optional<HibernateOrmIntegrationRuntimeInitListener> listenerOptional = descriptor.getInitListener();
-                if (listenerOptional.isPresent()) {
-                    listenerOptional.get().contributeRuntimeProperties(runtimeSettingsBuilder::put);
-                }
-            }
-
-            // Allow detection of driver/database capabilities on runtime init (was disabled during static init)
-            runtimeSettingsBuilder.put("hibernate.temp.use_jdbc_metadata_defaults", "true");
-
-            RuntimeSettings runtimeSettings = runtimeSettingsBuilder.build();
+            RuntimeSettings runtimeSettings = buildRuntimeSettings(persistenceUnitName, recordedState);
 
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(runtimeSettings,
                     recordedState, persistenceUnitName);
@@ -216,6 +189,37 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
         log.debug("Found no matching persistence units");
         return null;
+    }
+
+    private RuntimeSettings buildRuntimeSettings(String persistenceUnitName, RecordedState recordedState) {
+        final BuildTimeSettings buildTimeSettings = recordedState.getBuildTimeSettings();
+        final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
+        Builder runtimeSettingsBuilder = new Builder(buildTimeSettings, integrationSettings);
+
+        Optional<String> dataSourceName = recordedState.getDataSource();
+        if (dataSourceName.isPresent()) {
+            // Inject the datasource
+            injectDataSource(persistenceUnitName, dataSourceName.get(), runtimeSettingsBuilder);
+        }
+
+        // Inject runtime configuration if the persistence unit was defined by Quarkus configuration
+        if (!recordedState.isFromPersistenceXml()) {
+            injectRuntimeConfiguration(persistenceUnitName, hibernateOrmRuntimeConfig, runtimeSettingsBuilder);
+        }
+
+        for (HibernateOrmIntegrationRuntimeDescriptor descriptor : integrationRuntimeDescriptors
+                .getOrDefault(persistenceUnitName, Collections.emptyList())) {
+            Optional<HibernateOrmIntegrationRuntimeInitListener> listenerOptional = descriptor.getInitListener();
+            if (listenerOptional.isPresent()) {
+                listenerOptional.get().contributeRuntimeProperties(runtimeSettingsBuilder::put);
+            }
+        }
+
+        // Allow detection of driver/database capabilities on runtime init (was disabled during static init)
+        runtimeSettingsBuilder.put("hibernate.temp.use_jdbc_metadata_defaults", "true");
+
+        RuntimeSettings runtimeSettings = runtimeSettingsBuilder.build();
+        return runtimeSettings;
     }
 
     private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(RuntimeSettings runtimeSettings, RecordedState rs,

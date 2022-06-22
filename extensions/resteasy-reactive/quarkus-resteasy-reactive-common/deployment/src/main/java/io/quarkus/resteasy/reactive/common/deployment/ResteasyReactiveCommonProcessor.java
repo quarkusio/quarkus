@@ -302,7 +302,7 @@ public class ResteasyReactiveCommonProcessor {
      * There are some MessageBodyReaders and MessageBodyWriters that are brought in transitively
      * by the inclusion of the extension like the 'quarkus-keycloak-admin-client'.
      * We need to make sure that these providers are not selected over the ones that our Quarkus extensions provide.
-     * To do that, we first need to make them built-in (as the spec mandates that non-build-in providers are choosen
+     * To do that, we first need to make them built-in (as the spec mandates that non-build-in providers are chosen
      * over built-in ones) and then we also need to change their priority
      */
     @BuildStep

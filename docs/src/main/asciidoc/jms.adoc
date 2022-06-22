@@ -76,7 +76,7 @@ implementation("org.amqphub.quarkus:quarkus-qpid-jms")
 === Starting the broker
 
 Then, we need an AMQP broker. In this case we will use an Apache ActiveMQ Artemis server.
-You can follow the instructions from the https://activemq.apache.org/components/artemis/[Apache Artemis web site] or start a broker via docker using the https://artemiscloud.io/[ArtemisCloud] container image:
+You can follow the instructions from the https://activemq.apache.org/components/artemis/[Apache Artemis website] or start a broker via docker using the https://artemiscloud.io/[ArtemisCloud] container image:
 
 [source,bash]
 ----

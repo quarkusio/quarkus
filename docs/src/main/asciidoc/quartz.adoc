@@ -414,7 +414,7 @@ You can also generate the native executable with:
 
 include::{includes}/devtools/build-native.adoc[]
 
-WARNING: It's the reponsibility of the deployer to clear/remove the previous state, i.e. stale jobs and triggers. Moreover, the applications that form the "Quartz cluster" should be identical, otherwise an unpredictable result may occur.
+WARNING: It's the responsibility of the deployer to clear/remove the previous state, i.e. stale jobs and triggers. Moreover, the applications that form the "Quartz cluster" should be identical, otherwise an unpredictable result may occur.
 
 [[quartz-register-plugin-listeners]]
 == Registering Plugin and Listeners

@@ -171,7 +171,7 @@ hello + anonymous, isHttps: false, authScheme: null, hasJWT: false
 We have not provided any JWT in our request, so we would not expect that there is any security state seen by the endpoint, and
 the response is consistent with that:
 
-* user name is anonymous
+* username is anonymous
 * isHttps is false as https is not used
 * authScheme is null
 * hasJWT is false
@@ -273,7 +273,7 @@ $ curl -v http://127.0.0.1:8080/secured/roles-allowed; echo
 Not authorized
 ----
 
-Excellent, we have not provided any JWT in the request, so we should not be able to access the endpoint, and we were not. Instead we received an HTTP 401 Unauthorized error. We need to obtain and pass in a valid JWT to access that endpoint. There are two steps to this, 1) configuring our {extension-name} extension with information on how to validate a JWT, and 2) generating a matching JWT with the appropriate claims.
+Excellent, we have not provided any JWT in the request, so we should not be able to access the endpoint, and we were not. Instead, we received an HTTP 401 Unauthorized error. We need to obtain and pass in a valid JWT to access that endpoint. There are two steps to this, 1) configuring our {extension-name} extension with information on how to validate a JWT, and 2) generating a matching JWT with the appropriate claims.
 
 === Configuring the {extension-name} Extension Security Information
 
@@ -295,7 +295,7 @@ quarkus.native.resources.includes=publicKey.pem #<3>
 
 The https://tools.ietf.org/html/rfc7519[JWT specification] defines various levels of security of JWTs that one can use.
 The {mp-jwt} specification requires that JWTs that are signed with the RSA-256 signature algorithm. This in
-turn requires a RSA public key pair. On the REST endpoint server side, you need to configure the location of the RSA public
+turn requires an RSA public key pair. On the REST endpoint server side, you need to configure the location of the RSA public
 key to use to verify the JWT sent along with requests. The `mp.jwt.verify.publickey.location=publicKey.pem` setting configured
 previously expects that the public key is available on the classpath as `publicKey.pem`. To accomplish this, copy the following
 content to a `security-jwt-quickstart/src/main/resources/publicKey.pem` file.
@@ -316,7 +316,7 @@ nQIDAQAB
 
 === Generating a JWT
 
-Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the JWT generation API provided by `smallrye-jwt` (see xref:smallrye-jwt-build.adoc[Generate JWT tokens with SmallRye JWT] for more information).
+Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the JWT generation API provided by `smallrye-jwt` (see xref:security-jwt-build.adoc[Generate JWT tokens with SmallRye JWT] for more information).
 
 Take the code from the following listing and place into `security-jwt-quickstart/src/test/java/org/acme/security/jwt/GenerateToken.java`:
 
@@ -353,7 +353,7 @@ in order for the token to be accepted as valid.
 <2> The `upn` claim is defined by the {mp-jwt} spec as preferred claim to use for the
 `Principal` seen via the container security APIs.
 <3> The `group` claim provides the groups and top-level roles associated with the JWT bearer.
-<4> The `birthday` claim. It can be considered to be a sensitive claim so you may want to consider encrypting the claims, see xref:smallrye-jwt-build.adoc[Generate JWT tokens with SmallRye JWT].
+<4> The `birthday` claim. It can be considered to be a sensitive claim, so you may want to consider encrypting the claims, see xref:security-jwt-build.adoc[Generate JWT tokens with SmallRye JWT].
 
 Note for this code to work we need the content of the RSA private key that corresponds to the public key we have in the TokenSecuredResource application. Take the following PEM content and place it into `security-jwt-quickstart/src/test/resources/privateKey.pem`:
 
@@ -605,7 +605,7 @@ $ ./target/security-jwt-quickstart-runner
 
 === Explore the Solution
 
-The solution repository located in the `security-jwt-quickstart` {quickstarts-tree-url}/security-jwt-quickstart[directory] contains all of the versions we have
+The solution repository located in the `security-jwt-quickstart` {quickstarts-tree-url}/security-jwt-quickstart[directory] contains all the versions we have
 worked through in this quickstart guide as well as some additional endpoints that illustrate subresources with injection
 of ``JsonWebToken``s and their claims into those using the CDI APIs. We suggest that you check out the quickstart solutions and
 explore the `security-jwt-quickstart` directory to learn more about the {extension-name} extension features.
@@ -654,7 +654,7 @@ precedence:
 
 === Dealing with the verification keys
 
-If you need to verify the token signature using the assymetric RSA or Elliptic Curve (EC) key then use the `mp.jwt.verify.publickey.location` property to refer to the local or remote verification key.
+If you need to verify the token signature using the asymmetric RSA or Elliptic Curve (EC) key then use the `mp.jwt.verify.publickey.location` property to refer to the local or remote verification key.
 
 Use `mp.jwt.verify.publickey.algorithm` to customize the verification algorithm (default is `RS256`), for example, set it to `ES256` when working with the EC keys.
 
@@ -741,7 +741,7 @@ If this is the only key property which is set then the incoming token is expecte
 If either `mp.jwt.verify.publickey` or `mp.jwt.verify.publickey.location` verification properties are also set then the incoming token is expected to contain
 the encrypted inner-signed token.
 
-See xref:smallrye-jwt-build.adoc[Generate JWT tokens with SmallRye JWT] and learn how to generate the encrypted or inner-signed and then encrypted tokens fast.
+See xref:security-jwt-build.adoc[Generate JWT tokens with SmallRye JWT] and learn how to generate the encrypted or inner-signed and then encrypted tokens fast.
 
 === Custom Factories
 
@@ -817,7 +817,7 @@ mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
 [[integration-testing-public-key]]
 ==== Local Public Key
 
-You can use the same approach as described in the xref:security-openid-connect#integration-testing.adoc[OpenID Connect Bearer Token Integration testing] `Local Public Key` section but only change the `application.properties` to use MP JWT configuration properties instead:
+You can use the same approach as described in the xref:security-openid-connect.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] `Local Public Key` section but only change the `application.properties` to use MP JWT configuration properties instead:
 
 [source, properties]
 ----
@@ -1010,7 +1010,7 @@ SmallRye JWT provides more properties which can be used to customize the token p
 |smallrye.jwt.claims.groups|none| This property can be used to set a default groups claim value when the current token has no standard or custom groups claim available.
 |smallrye.jwt.jwks.refresh-interval|60|JWK cache refresh interval in minutes. It will be ignored unless the `mp.jwt.verify.publickey.location` points to the HTTP or HTTPS URL based JWK set and no HTTP `Cache-Control` response header with a positive `max-age` parameter value is returned from a JWK HTTPS endpoint.
 |smallrye.jwt.jwks.forced-refresh-interval|30|Forced JWK cache refresh interval in minutes which is used to restrict the frequency of the forced refresh attempts which may happen when the token verification fails due to the cache having no JWK key with a `kid` property matching the current token's `kid` header. It will be ignored unless the `mp.jwt.verify.publickey.location` points to the HTTP or HTTPS URL based JWK set.
-|smallrye.jwt.expiration.grace|60|Expiration grace in seconds. By default an expired token will still be accepted if the current time is no more than 1 min after the token expiry time.
+|smallrye.jwt.expiration.grace|60|Expiration grace in seconds. By default, an expired token will still be accepted if the current time is no more than 1 min after the token expiry time.
 |smallrye.jwt.verify.aud|none|Comma separated list of the audiences that a token `aud` claim may contain. This property is deprecated - use `mp.jwt.verify.audiences`.
 |smallrye.jwt.required.claims|none|Comma separated list of the claims that a token must contain.
 |smallrye.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified. This property is deprecated - use 'mp.jwt.decrypt.key.location'.

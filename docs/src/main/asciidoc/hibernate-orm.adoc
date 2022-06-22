@@ -154,7 +154,7 @@ public class Gift {
 }
 ----
 
-To load SQL statements when Hibernate ORM starts, add an `import.sql` file to the root of your resources directory.
+To load SQL statements when Hibernate ORM starts, add an `import.sql` file to the root of your `resources` directory.
 This script can contain any SQL DML statements.
 Make sure to terminate each statement with a semicolon.
 
@@ -171,7 +171,7 @@ There are various optional properties useful to refine your `EntityManagerFactor
 
 There are no required properties, as long as a default datasource is configured.
 
-When no property is set, Quarkus can typically infer everything it needs to setup Hibernate ORM
+When no property is set, Quarkus can typically infer everything it needs to set up Hibernate ORM
 and will have it use the default datasource.
 
 The configuration properties listed here allow you to override such defaults, and customize and tune various aspects.
@@ -240,7 +240,7 @@ quarkus.hibernate-orm."inventory".packages=org.acme.model.inventory
 <2> Define a datasource named `inventory`.
 <3> Define a persistence unit called `users`.
 <4> Define the datasource used by the persistence unit.
-<5> This configuration property is important but we will discuss it a bit later.
+<5> This configuration property is important, but we will discuss it a bit later.
 <6> Define a persistence unit called `inventory` pointing to the `inventory` datasource.
 
 [NOTE]
@@ -471,7 +471,7 @@ your entity changes or any change to your `import.sql` is immediately picked up 
 
 [TIP]
 ====
-By default in `dev` and `test` modes, Hibernate ORM, upon boot, will read and execute the SQL statements in the `/import.sql` file (if present).
+By default, in `dev` and `test` modes, Hibernate ORM, upon boot, will read and execute the SQL statements in the `/import.sql` file (if present).
 You can change the file name by changing the property `quarkus.hibernate-orm.sql-load-script` in `application.properties`.
 ====
 
@@ -495,7 +495,7 @@ WARNING: Do not use `quarkus.hibernate-orm.database.generation` `drop-and-create
 
 
 These approaches become really powerful when combined with Quarkus configuration profiles.
-You can define different xref:config.adoc#configuration-profiles[configuration profiles]
+You can define different xref:config-reference.adoc#profiles[configuration profiles]
 to select different behaviors depending on your environment.
 This is great because you can define different combinations of Hibernate ORM properties matching the development style you currently need.
 
@@ -546,7 +546,7 @@ Add the following in your properties file.
 
 If you have the xref:flyway.adoc[Flyway extension] installed when running in development mode, Quarkus provides a simple way to turn
 your Hibernate ORM auto generated schema into a Flyway migration file. This is intended to make is easy to move from
-the early development phase, where Hibernate can be used to quickly setup the schema, to the production phase, where
+the early development phase, where Hibernate can be used to quickly set up the schema, to the production phase, where
 Flyway is used to manage schema changes.
 
 To use this feature simply open the Dev UI when the `quarkus-flyway` extension is installed and click in the `Datasources`
@@ -636,7 +636,7 @@ That's all! Caching technology is already integrated and enabled by default in Q
 
 Caches store the data in separate regions to isolate different portions of data; such regions are assigned a name, which is useful for configuring each region independently, or to monitor their statistics.
 
-By default entities are cached in regions named after their fully qualified name, e.g. `org.acme.Country`.
+By default, entities are cached in regions named after their fully qualified name, e.g. `org.acme.Country`.
 
 Collections are cached in regions named after the fully qualified name of their owner entity and collection field name, separated by `#` character, e.g. `org.acme.Country#cities`.
 
@@ -727,10 +727,10 @@ know what is being done.
 
 === Automatic build time enhancement
 
-Hibernate ORM can use build time enhanced entities; normally this is not mandatory but it's useful and will have your
+Hibernate ORM can use build time enhanced entities; normally this is not mandatory, but it's useful and will have your
 applications perform better.
 
-Typically you would need to adapt your build scripts to include the Hibernate Enhancement plugins; in Quarkus this is
+Typically, you would need to adapt your build scripts to include the Hibernate Enhancement plugins; in Quarkus this is
 not necessary as the enhancement step is integrated in the build and analysis of the Quarkus application.
 
 [WARNING]
@@ -750,7 +750,7 @@ All configuration is optional; for more details see xref:transaction.adoc[Using 
 
 Connection pool::
 Don't need to choose one either. Quarkus automatically includes the Agroal connection pool;
-configure your datasource as in the above examples and it will setup Hibernate ORM to use Agroal.
+configure your datasource as in the above examples and it will set up Hibernate ORM to use Agroal.
 More details about this connection pool can be found in xref:datasource.adoc[Quarkus - Datasources].
 
 Second Level Cache::
@@ -794,8 +794,8 @@ This is both a security precaution and an optimisation.
 === Other notable differences
 
 Format of `import.sql`::
-When importing a `import.sql` to setup your database, keep in mind that Quarkus reconfigures Hibernate ORM so to require a semicolon (';') to terminate each statement.
-The default in Hibernate is to have a statement per line, without requiring a terminator other than newline: remember to convert your scripts to use the ';' terminator character if you're reusing existing scripts.
+When importing a `import.sql` to set up your database, keep in mind that Quarkus reconfigures Hibernate ORM so to require a semicolon (`;`) to terminate each statement.
+The default in Hibernate is to have a statement per line, without requiring a terminator other than newline: remember to convert your scripts to use the `;` terminator character if you're reusing existing scripts.
 This is useful so to allow multi-line statements and human friendly formatting.
 
 == Simplifying Hibernate ORM with Panache
@@ -918,8 +918,8 @@ public class CustomTenantResolver implements TenantResolver {
 
 === Configuring the application
 
-In general it is not possible to use the Hibernate ORM database generation feature in conjunction with a multitenancy setup.
-Therefore you have to disable it and you need to make sure that the tables are created per schema. 
+In general, it is not possible to use the Hibernate ORM database generation feature in conjunction with a multitenancy setup.
+Therefore, you have to disable it, and you need to make sure that the tables are created per schema.
 The following setup will use the xref:flyway.adoc[Flyway] extension to achieve this goal.
 
 ==== SCHEMA approach

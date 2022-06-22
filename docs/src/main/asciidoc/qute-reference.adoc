@@ -20,7 +20,7 @@ Furthermore, Qute attempts to detect most of the template problems at build time
 
 In this guide, you will find an <<hello_world_example,introductory example>>, the description of the <<core_features,core features>> and <<quarkus_integration,Quarkus integration>> details.
 
-NOTE: Qute is primarily designed as a Quarkus extension. It is possible to use it as a "standalone" library too. However, in such case some of the features are not available. In general, any feature mentioned under the <<quarkus_integration>> section is missing. You can find more information about the limitations and possibilities in the <<standalone>> section.
+NOTE: Qute is primarily designed as a Quarkus extension. It is possible to use it as a "standalone" library too. However, in such case some features are not available. In general, any feature mentioned under the <<quarkus_integration>> section is missing. You can find more information about the limitations and possibilities in the <<standalone>> section.
 
 [[the_simplest_example]]
 == The Simplest Example
@@ -149,7 +149,7 @@ Unparsed Character Data::
 It is used to mark the content that should be rendered but _not parsed_.
 It starts with the sequence `{|`  and ends with the sequence `|}`: `{| <script>if(true){alert('Qute is cute!')};</script> |}`, and could be multi-line.
 +
-NOTE: Previously, unparsed character data had to start with `{[` and end with `]}`. This syntax is still supported but we encourage users to switch to the new syntax to avoid some common collisions with constructs from other languages.
+NOTE: Previously, unparsed character data had to start with `{[` and end with `]}`. This syntax is still supported, but we encourage users to switch to the new syntax to avoid some common collisions with constructs from other languages.
 
 [[identifiers]]
 === Identifiers and Tags
@@ -190,7 +190,7 @@ If it does not start with any of the above it is ignored by the parser.
 <4> Ignored: starts with `{`.
 <5> Ignored: starts with `"`.
 
-TIP: It is also possible to use escape sequences `\{` and `\}` to insert delimiters in the text. In fact, an escape sequence is usually only needed for the start delimiter, ie. `\\{foo}` will be rendered as `{foo}` (no parsing/evaluation will happen).
+TIP: It is also possible to use escape sequences `\{` and `\}` to insert delimiters in the text. In fact, an escape sequence is usually only needed for the start delimiter, i.e. `\\{foo}` will be rendered as `{foo}` (no parsing/evaluation will happen).
 
 === Removing Standalone Lines From the Template
 
@@ -278,7 +278,7 @@ Namespace expressions are resolved differently - see also <<expression_resolutio
 
 A part of an expression can be a _virtual method_ in which case the name can be followed by a list of comma-separated parameters in parentheses. 
 A parameter of a virtual method can be either a nested expression or a <<literals, literal>> value.
-We call these method _"virtual"_ because they does not have to be backed by a real Java method.
+We call these methods _"virtual"_ because they do not have to be backed by a real Java method.
 You can learn more about virtual methods in the <<virtual_methods,following section>>.
 
 .Virtual Method Example
@@ -415,7 +415,7 @@ NOTE: In fact, the operators are implemented as "virtual methods" that consume o
 
 You can iterate over elements of an array with the <<loop_section>>. 
 Moreover, it's also possible to get the length of the specified array and access the elements directly via an index value.
-Additionaly, you can access the first/last `n` elements via the `take(n)/takeLast(n)` methods.
+Additionally, you can access the first/last `n` elements via the `take(n)/takeLast(n)` methods.
 
 .Array Examples
 [source,html]
@@ -443,7 +443,7 @@ First two elements: {#each myArray.take(2)}{it}{/each} <5>
 
 For HTML and XML templates the `'`, `"`, `<`, `>`, `&` characters are escaped by default if a template variant is set.
 
-NOTE: In Quarkus, a variant is set automatically for templates located in the `src/main/resources/templates`. By default, the `java.net.URLConnection#getFileNameMap()` is used to determine the content type of a template file. The additional map of suffixes to content types can be set via `quarkus.qute.content-types`.
+NOTE: In Quarkus, a variant is set automatically for templates located in the `src/main/resources/templates`. By default, the `java.net.URLConnection#getFileNameMap()` is used to determine the content-type of a template file. The additional map of suffixes to content types can be set via `quarkus.qute.content-types`.
 
 If you need to render the unescaped value:
 
@@ -531,7 +531,7 @@ NOTE: In previous versions, only the `TemplateInstance#render()` method honored 
 ===== How to Identify a Problematic Part of the Template
 
 It's not easy to find the problematic part of a template when a timeout occurs.
-You can set the `TRACE` level for the logger `io.quarkus.qute.nodeResolve` and try analyze the log output afterwards.
+You can set the `TRACE` level for the logger `io.quarkus.qute.nodeResolve` and try to analyze the log output afterwards.
 
 .`application.properties` Example
 [source,properties]
@@ -1195,7 +1195,7 @@ engineBuilder.addParserHook(new ParserHook() {
     }
 });
 ----
-<1> Escape all occurences of `${`.
+<1> Escape all occurrences of `${`.
 
 [[strict_rendering]]
 ==== Strict Rendering
@@ -1412,7 +1412,7 @@ Note that sections can override names that would otherwise match a parameter dec
 <1> Validated against `org.acme.Foo`.
 <2> Not validated - `foo` is overridden in the loop section.
 
-A paramater declaration may specify the _default value_ after the key.
+A parameter declaration may specify the _default value_ after the key.
 The key and the default value are separated by an equals sign: `{@int age=10}`.
 The default value is used in the template if the parameter key resolves to `null` or is not found.
 
@@ -1550,7 +1550,7 @@ A template extension method:
 * must be static, 
 * must not return `void`.
 
-If there is no namespace defined the class of the first parameter that is not annotated with `@TemplateAttribute` is used to match the base object. Otherwise the namespace is used to match an expression.
+If there is no namespace defined the class of the first parameter that is not annotated with `@TemplateAttribute` is used to match the base object. Otherwise, the namespace is used to match an expression.
 
 The method name is used to match the property name by default. 
 However, it is possible to specify the matching name with `TemplateExtension#matchName()`.
@@ -1860,7 +1860,7 @@ public enum Status {
 ----
 <1> A name resolver with the namespace `Status` is generated automatically.
 
-NOTE: `@TemplateEnum` declared on a non-enum class is ignored. Also if an enum also declares the `@TemplateData` annotation then the `@TemplateEnum` annotation is ignored.
+NOTE: `@TemplateEnum` declared on a non-enum class is ignored. Also, if an enum also declares the `@TemplateData` annotation, then the `@TemplateEnum` annotation is ignored.
 
 .Template Accessing Enum Constants
 [source,html]
@@ -2223,7 +2223,7 @@ public class MyBean {
 <1> You can set a `Locale` instance or a locale tag string (IETF).
 
 
-NOTE: When using <<resteasy_integration,quarkus-resteasy-qute>> the `locale` attribute is derived from the the `Accept-Language` header if not set by a user.
+NOTE: When using <<resteasy_integration,quarkus-resteasy-qute>> the `locale` attribute is derived from the `Accept-Language` header if not set by a user.
 
 The `@Localized` qualifier can be used to inject a localized message bundle interface.
 
@@ -2292,7 +2292,7 @@ Qute is primarily designed as a Quarkus extension.
 However. it is possible to use it as a "standalone" library.
 In this case, some features are not available and some additional configuration is needed.
 
-Engine:: First of all, no managed `Engine` instance is available out of the box.
+Engine:: First, no managed `Engine` instance is available out of the box.
 You'll need to configure a new instance via `Engine.builder()`.
 
 Templates:: 

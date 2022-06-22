@@ -124,13 +124,13 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             final boolean matches = persistenceUnitName == null
                     || persistenceUnit.getName().equals(persistenceUnitName);
             if (!matches) {
-                log.debugf("Excluding from consideration '%s' due to name mis-match", persistenceUnit.getName());
+                log.debugf("Excluding from consideration '%s' due to name mismatch", persistenceUnit.getName());
                 continue;
             }
 
             // See if we (Hibernate) are the persistence provider
             if (!isProvider(persistenceUnit)) {
-                log.debug("Excluding from consideration due to provider mis-match");
+                log.debug("Excluding from consideration due to provider mismatch");
                 continue;
             }
 

@@ -35,7 +35,7 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
     @Override
     public Uni<Void> updateOrStoreWebAuthnCredentials(Authenticator authenticator) {
         // leave the scooby user to the manual endpoint, because if we do it here it will be
-        // created/udated twice
+        // created/updated twice
         if (authenticator.getUserName().equals("scooby"))
             return Uni.createFrom().nullItem();
         return User.findByUserName(authenticator.getUserName())

@@ -23,8 +23,8 @@
     <version>{version}</version>
 {/if}
     <artifactId>{namespace.id}{extension.id}-parent</artifactId>
-{#if extension.name}
-    <name>{namespace.name}{extension.name} - Parent</name>
+{#if extension.full-name}
+    <name>{extension.full-name} - Parent</name>
 {/if}
     <packaging>pom</packaging>
 
@@ -45,6 +45,9 @@
     <modules>
         <module>deployment</module>
         <module>runtime</module>
+        {#if has-docs-module}
+        <module>docs</module>
+        {/if}
     </modules>
 {#if quarkus.bom}
 

@@ -243,7 +243,7 @@ see <<uri-parameters,URI parameters>> for more information.
 
 |Query parameter
 |link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestQuery.html[`@RestQuery`]
-|The value of an https://tools.ietf.org/html/rfc3986#section-3.4[URI query parameter]
+|The value of a https://tools.ietf.org/html/rfc3986#section-3.4[URI query parameter]
 
 |Header
 |link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestHeader.html[`@RestHeader`]
@@ -1027,7 +1027,7 @@ Any user however that does not have the `admin` role will receive:
 ----
 
 NOTE: No additional configuration needs to be applied for this secure serialization to take place. However, users can use the `@io.quarkus.resteasy.reactive.jackson.EnableSecureSerialization` and `@io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization`
-annotation to opt-in or out for specific JAX-RS Resource classes or methods.
+annotation to opt in or out for specific JAX-RS Resource classes or methods.
 
 ===== @JsonView support
 
@@ -1413,7 +1413,7 @@ by default:
 
 This 'best guess' approach means that the majority of operations will run on the correct thread by default. If you are
 writing reactive code then your method will generally return one of these types, and will be executed on the IO thread.
-If you are writing blocking code your methods will generally return the result directly, and these will be run on a worker
+If you are writing blocking code your methods will usually return the result directly, and these will be run on a worker
 thread.
 
 You can override this behaviour using the
@@ -1811,7 +1811,7 @@ Now, whenever a REST method is invoked, the request will be logged into the cons
 
 [[readers-writers]]
 
-Whenever your endpoint methods return a object (of when they return a 
+Whenever your endpoint methods return an object (of when they return a
 link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse<?>`]
 or link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`] with
 an entity), RESTEasy Reactive will look for a way to map that into an HTTP response body.
@@ -2146,7 +2146,7 @@ public class Endpoint {
 
     @Path("{converter}/{constructor}/{primitive}/{valueOf}")
     @GET
-    public String convertions(Converter converter, Constructor constructor,
+    public String conversions(Converter converter, Constructor constructor,
                               int primitive, ValueOf valueOf, 
                               @RestQuery List<Constructor> list) {
         return converter + "/" + constructor + "/" + primitive 
@@ -2157,7 +2157,7 @@ public class Endpoint {
 
 ==== Handling dates
 
-RESTEasy Reactive supports the use of the implementations of `java.time.Temporal` (like `java.time.LocalDateTime`) as query, path or form params. Furthermore it provides the `@org.jboss.resteasy.reactive.DateFormat` annotation which can be used to
+RESTEasy Reactive supports the use of the implementations of `java.time.Temporal` (like `java.time.LocalDateTime`) as query, path or form params. Furthermore, it provides the `@org.jboss.resteasy.reactive.DateFormat` annotation which can be used to
 set a custom expected pattern (otherwise the JDK's default format for each type is used implicitly).
 
 === Preconditions
@@ -2289,7 +2289,7 @@ Content-Length: 0
 === Negotiation
 
 One of the main ideas of REST (https://tools.ietf.org/html/rfc7231#section-3.4[and HTTP]) is that
-your resource is independent from its representation, and
+your resource is independent of its representation, and
 that both the client and server are free to represent their resources in as many media types as
 they want. This allows the server to declare support for multiple representations and let the
 client declare which ones it supports and get served something appropriate.

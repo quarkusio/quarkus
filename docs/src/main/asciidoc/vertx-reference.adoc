@@ -827,7 +827,7 @@ To better understand, let's detail how the HTTP request/response has been handle
 5. Once the reply is received by the sender, the content is written to the HTTP response
 
 
-=== Bi-directional communication with browsers using SockJS
+=== Bidirectional communication with browsers using SockJS
 
 The SockJS bridge provided by Vert.x allows browser applications and Quarkus applications to communicate using the event bus.
 It connects both sides.
@@ -871,7 +871,7 @@ public class SockJsExample {
 ----
 
 This code configures the SockJS bridge to send all the messages targeting the `ticks` address to the connected browsers.
-More detailled explanations about the configuration can be found on https://vertx.io/docs/vertx-web/java/#_sockjs_event_bus_bridge[the Vert.x SockJS Bridge documentation].
+More detailed explanations about the configuration can be found on https://vertx.io/docs/vertx-web/java/#_sockjs_event_bus_bridge[the Vert.x SockJS Bridge documentation].
 
 The browser must use the `vertx-eventbus` JavaScript library to consume the message:
 
@@ -915,7 +915,7 @@ IMPORTANT: Native transports are not supported in GraalVM produced binaries.
 
 Vert.x is capable of using https://netty.io/wiki/native-transports.html[Netty's native transports], which offers
 performance improvements on specific platforms.To enable them, you must include the appropriate dependency for your
-platform. It's usually a good idea to have both to keep your application platform agnostic. Netty is smart enough
+platform. It's usually a good idea to have both to keep your application platform-agnostic. Netty is smart enough
 to use the correct one, that includes none at all on unsupported platforms:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
@@ -986,9 +986,9 @@ quarkus.http.tcp-cork=true
 quarkus.http.tcp-fast-open=true
 ----
 
-=== Native MacOS Transport
+=== Native macOS Transport
 
-On MacOS Sierra and above you can enable the following socket options:
+On macOS Sierra and above you can enable the following socket options:
 
 * SO_REUSEPORT
 ----

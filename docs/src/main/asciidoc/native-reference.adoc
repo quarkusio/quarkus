@@ -115,6 +115,14 @@ Executing that will produce additional output lines like this:
 # Printing native-library information to: /project/reports/native_library_info_20220223_100925.txt
 ----
 
+[NOTE]
+====
+Note that `/project` is a folder within the container that is building the native executable.
+So, this is not a folder that you will find in the host environment.
+`/project` folder is mapped to `target/debugging-native-1.0.0-SNAPSHOT-native-image-source-jar`,
+so you will find the files under the `reports` folder in that directory.
+====
+
 The target info file contains information such as the target platform,
 the toolchain used to compile the executable,
 and the C library in use:
@@ -179,7 +187,7 @@ One may also combine multiple native build options by separating with a comma, e
 [TIP]
 ====
 Remember that if an argument for `-Dquarkus.native.additional-build-args` includes the `,` symbol,
-it needs to be escaped to be processed correcly, e.g. `\\,`.
+it needs to be escaped to be processed correctly, e.g. `\\,`.
 ====
 
 == Inspecting Native Executables
@@ -245,13 +253,29 @@ strings ./target/debugging-native-1.0.0-SNAPSHOT-runner | grep core.VM
 ----
 
 Finally, using `readelf` we can inspect different sections of the binary.
-For example, we can see how the heap and text sections take most of binary:
+For example, we can see how the heap and text sections take most of the binary:
 
 [source,bash]
 ----
 readelf -SW ./target/debugging-native-1.0.0-SNAPSHOT-runner
 ----
 
+[NOTE]
+====
+Runtime containers produced by Quarkus to run native executables will not include the tools mentioned above.
+To explore a native executable within a runtime container,
+it's best to run the container itself and then `docker cp` the executable locally, e.g.:
+
+[source,bash]
+----
+docker run -i --rm --name=mytest -p 8080:8080 test/debugging-native:1.0.0-SNAPSHOT
+docker cp mytest:/work/application path/on/host/
+----
+
+From there, you can either inspect the executable directly or use a tools container like above.
+====
+
+[[native-reports]]
 == Native Reports
 
 Optionally, the native build process can generate reports that show what goes into the binary:
@@ -267,22 +291,11 @@ These reports are some of the most useful resources when encountering issues wit
 
 === Call Tree Reports
 
-`call_tree` text file report is one of the default reports generated when the `-Dquarkus.native.enable-reports` option is passed in.
-This is useful for getting an approximation on why a method/class is included in the binary.
-However, the text format makes it very difficult to read and can take up a lot of space.
-
-Since Mandrel 21.3.0.0, the call tree is also reported as a group of CSV files.
-The CSV output can be enabled by adding `-H:PrintAnalysisCallTreeType=CSV` to the additional native arguments. E.g.
-
-[source,bash,subs=attributes+]
-----
-./mvnw package -DskipTests -Dnative \
-    -Dquarkus.native.enable-reports \
-    -Dquarkus.native.additional-build-args=-H:PrintAnalysisCallTreeType=CSV
-----
-
-These can in turn be imported into a graph database, such as Neo4j,
+`call_tree` csv file reports are some of the default reports generated when the `-Dquarkus.native.enable-reports` option is passed in.
+These csv files can be imported into a graph database, such as Neo4j,
 to inspect them more easily and run queries against the call tree.
+This is useful for getting an approximation on why a method/class is included in the binary.
+
 Let’s see this in action.
 
 First, start a Neo4j instance:
@@ -436,7 +449,7 @@ For example, methods that directly call a method can be located via:
 
 [source,cypher]
 ----
-match (m:Method) <- [*1..1] - (o) where m.name = "hello" return *
+match (m:Method) <- [*1..1] - (o) where m.name = "hello" and m.type =~ ".*GreetingResource" return *
 ----
 
 Then you can look for direct calls at depth of 2,
@@ -444,7 +457,7 @@ so you’d search for methods that call methods that call into the target method
 
 [source,cypher]
 ----
-match (m:Method) <- [*1..2] - (o) where m.name = "hello" return *
+match (m:Method) <- [*1..2] - (o) where m.name = "hello" and m.type =~ ".*GreetingResource" return *
 ----
 
 You can continue going up layers,
@@ -455,7 +468,7 @@ When that happens, you can alternatively run the queries directly against the cy
 [source,bash]
 ----
 docker exec testneo4j bin/cypher-shell -u neo4j -p ${NEO_PASS} \
-  "match (m:Method) <- [*1..10] - (o) where m.name = 'hello' return *"
+  "match (m:Method) <- [*1..10] - (o) where m.name = 'hello' and m.type =~ '.*GreetingResource' return *"
 ----
 
 For further information, check out this
@@ -476,6 +489,12 @@ These are called expert options and you can learn more about them by running:
 ----
 docker run quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor} --expert-options-all
 ----
+
+[WARNING]
+====
+These expert options are not considered part of the GraalVM native image API,
+so they might change anytime.
+====
 
 To use these expert options, add them comma separated to the `-Dquarkus.native.additional-build-args` parameter.
 
@@ -663,7 +682,7 @@ Trace: Object was reached by
 ----
 
 The error messages point to the code in the example,
-but it can be suprising that a reference to `DnsClient` appears.
+but it can be surprising that a reference to `DnsClient` appears.
 Why is that?
 The key is in what happens inside `KeyPairGenerator.initialize()` method call.
 It uses `JCAUtil.getSecureRandom()` which is why this is problematic,
@@ -671,9 +690,21 @@ but sometimes the tracing options can show some stack traces that do not represe
 The best option is to dig through the source code and use tracing output for guidance but not as full truth.
 
 Moving the `KEY_PAIR_GEN.initialize(1024);` call to the run-time executed method `encryptDecrypt` is enough to solve this particular issue.
+Rebuild the application and verify that encrypt/decrypt endpoint works as expected by sending any message and check if the reply is the same as the incoming message:
+
+[source,bash,subs=attributes+]
+----
+$ ./mvnw package -DskipTests -Dnative
+...
+$ docker run -i --rm -p 8080:8080 test/debugging-native:1.0.0-SNAPSHOT
+...
+$ curl -w '\n' http://localhost:8080/encrypt-decrypt/hellomandrel
+hellomandrel
+----
 
 Additional information on which classes are initialized and why can be obtained by passing in the `-H:+PrintClassInitialization` flag via `-Dquarkus.native.additional-build-args`.
 
+[[profiling]]
 == Profile Runtime Behaviour
 
 === Single Thread
@@ -767,6 +798,17 @@ Then, from inside the tools container we execute:
 perf record -F 1009 -g -a ./target/debugging-native-1.0.0-SNAPSHOT-runner
 ----
 
+[NOTE]
+====
+The `perf record` command above takes `1009` samples per second.
+Increasing this value means more samples are gathered,
+which can end up affecting the runtime performance.
+This also increases the amount of data generated.
+The more data generated, the longer it takes to process it,
+but the more precision you get on what the application is doing.
+So, finding the right value is a balancing act.
+====
+
 While `perf record` is running, open another window and access the endpoint:
 
 [source,bash]
@@ -786,11 +828,10 @@ Next, generate a flame graph using the data captured via `perf record`:
 
 [source,bash]
 ----
-$ perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl > out.perf-folded
-$ ${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
+perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl | ${FG_HOME}/flamegraph.pl > flamegraph.svg
 ----
 
-The flame graph is an svg file that a web browser, such as Firefox, can easily display.
+The flame graph is a svg file that a web browser, such as Firefox, can easily display.
 After the above two commands complete one can open `flamegraph.svg` in their browser:
 
 image::native-reference-perf-flamegraph-no-symbols.svg[Perf flamegraph without symbols]
@@ -851,8 +892,7 @@ Run the curl command once again, stop the binary, generate the flamegraphs and o
 
 [source,bash]
 ----
-perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl > out.perf-folded
-${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
+perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl | ${FG_HOME}/flamegraph.pl > flamegraph.svg
 ----
 
 The flamegraph now shows where the bottleneck is.
@@ -863,7 +903,7 @@ image::native-reference-perf-flamegraph-symbols.svg[Perf flamegraph with symbols
 
 === Multi-Thread
 
-Multi-threaded programs might require special attention when trying to understand their runtime behaviour.
+Multithreaded programs might require special attention when trying to understand their runtime behaviour.
 To demonstrate this, add this `MulticastResource` code to your project
 (example courtesy of link:https://github.com/apangin/java-profiling-presentation/blob/master/src/demo6/DatagramTest.java[Andrei Pangin's Java Profiling presentation]):
 
@@ -959,8 +999,7 @@ Make and open a flamegraph:
 
 [source,bash]
 ----
-perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl > out.perf-folded
-${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
+perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl | ${FG_HOME}/flamegraph.pl > flamegraph.svg
 ----
 
 image::native-reference-multi-flamegraph-separate-threads.svg[Muti-thread perf flamegraph with separate threads]
@@ -988,8 +1027,7 @@ in order to make all threads have the same name. E.g.
 
 [source,bash]
 ----
-perf script | sed -E "s/thread-[0-9]*/thread/" | ${FG_HOME}/stackcollapse-perf.pl > out.perf-folded
-${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
+perf script | sed -E "s/thread-[0-9]*/thread/" | ${FG_HOME}/stackcollapse-perf.pl | ${FG_HOME}/flamegraph.pl > flamegraph.svg
 ----
 
 image::native-reference-multi-flamegraph-joined-threads.svg[Muti-thread perf flamegraph with joined threads]
@@ -997,6 +1035,7 @@ image::native-reference-multi-flamegraph-joined-threads.svg[Muti-thread perf fla
 When you open the flamegraph, you will see all threads' work collapsed into a single area.
 Then, you can clearly see that there's some locking that could affect performance.
 
+[[debug-info]]
 == Debugging Native Crashes
 
 One of the drawbacks of using native executables is that they cannot be debugged using the standard Java debuggers,
@@ -1038,7 +1077,7 @@ public class CrashResource {
 ----
 
 This code will try to copy 256 bytes from address `0x0` to `0x80` resulting in a Segmentation Fault.
-To verify this compile and run the example application:
+To verify this, compile and run the example application:
 
 [source,bash,subs=attributes+]
 ----
@@ -1071,7 +1110,7 @@ docker run -t -i --rm -v ${PWD}:/data -p 8080:8080 fedora-tools:v1 /bin/bash
 
 Then start the application in `gdb` and execute `run`.
 
-[source,bash]
+[source]
 ----
 gdb ./target/debugging-native-1.0.0-SNAPSHOT-runner
 ...
@@ -1098,7 +1137,7 @@ Thread 4 "ecutor-thread-0" received signal SIGSEGV, Segmentation fault.
 
 If we try to get more info about the backtrace that led to this crash we will see that there is not enough information available.
 
-[source,bash]
+[source]
 ----
 (gdb) bt
 #0  0x0000000000418b5e in ?? ()
@@ -1145,7 +1184,7 @@ com.oracle.svm.core.UnmanagedMemoryUtil::copyLongsBackward(org.graalvm.word.Poin
 We already see that `gdb` is able to tell us which method caused the crash and where it’s located in the source code.
 We can also get a backtrace of the call graph that led us to this state:
 
-[source,bash]
+[source]
 ----
 (gdb) bt
 #0  com.oracle.svm.core.UnmanagedMemoryUtil::copyLongsBackward(org.graalvm.word.Pointer *, org.graalvm.word.Pointer *, org.graalvm.word.UnsignedWord *) () at com/oracle/svm/core/UnmanagedMemoryUtil.java:169
@@ -1163,7 +1202,7 @@ Similarly, we can get a backtrace of the call graph of other threads.
 
 1. First, we can list the available threads with:
 +
-[source,bash]
+[source]
 ----
 (gdb) info threads
   Id   Target Id                                             Frame 
@@ -1177,7 +1216,7 @@ Similarly, we can get a backtrace of the call graph of other threads.
 +
 2. select the thread we want to inspect, e.g. thread 1:
 +
-[source,bash]
+[source]
 ----
 (gdb) thread 1
 [Switching to thread 1 (Thread 0x7ffff7a58d00 (LWP 1028851))]
@@ -1187,7 +1226,7 @@ Similarly, we can get a backtrace of the call graph of other threads.
 +
 3. and, finally, print the stack trace:
 +
-[source,bash]
+[source]
 ----
 (gdb) bt
 #0  __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x2cd7adc) at futex-internal.c:57
@@ -1218,7 +1257,7 @@ Similarly, we can get a backtrace of the call graph of other threads.
 
 Alternatively, we can list the backtraces of all threads with a single command:
 
-[source,bash]
+[source]
 ----
 (gdb) thread apply all backtrace
 
@@ -1268,18 +1307,18 @@ Thread 20 (Thread 0x7fffc9ffb640 (LWP 1028870) "tloop-thread-13"):
 
 Note, however, that despite being able to get a backtrace we can still not list the source code at point with the `list` command.
 
-[source,bash]
+[source]
 ----
 (gdb) list
 164    in com/oracle/svm/core/UnmanagedMemoryUtil.java
 ----
 
 This is because `gdb` is not aware of the location of the source files.
-We are running the executable outside of the target directory.
+We are running the executable outside the target directory.
 To fix this we can either rerun `gdb` from the target directory or,
 run `directory target/debugging-native-1.0.0-SNAPSHOT-native-image-source-jar/sources` e.g.:
 
-[source,bash]
+[source]
 ----
 (gdb) directory target/debugging-native-1.0.0-SNAPSHOT-native-image-source-jar/sources
 Source directories searched: /data/target/debugging-native-1.0.0-SNAPSHOT-native-image-source-jar/sources:$cdir:$cwd
@@ -1324,9 +1363,28 @@ For example, when registering types and methods for reflection access,
 the analysis can’t easily see what’s behind those types or methods,
 so it has to do more work to complete the analysis step.
 
+=== I get an `OutOfMemoryError` (OOME) building native executables, what can I do?
+
+Building native executables is not only time consuming, but it also takes a fair amount of memory.
+For example, building a sample native Quarkus JPA application such as the Hibernate quickstart,
+may use 6GB to 8GB resident set size in memory.
+A big chunk of this memory is Java heap,
+but extra memory is required for other aspects of the JVM that runs the native building process.
+It is still possible to build such applications in environments that have total memory close to the limits,
+but to do that it is necessary to shrink the maximum heap size of the GraalVM native image process.
+To do that, set a maximum heap size using the `quarkus.native.native-image-xmx` property.
+For example, we can instruct GraalVM to use 5GB of maximum heap size by passing in
+`-Dquarkus.native.native-image-xmx=5g` in the command line.
+
+Building native executables this way might have the side effect of requiring more time to complete.
+This is due to garbage collection having to work harder for native image generation to have free space to do its job.
+
+Note that typical applications are likely bigger than quickstarts,
+so the memory requirements will also likely be higher.
+
 === Why is runtime performance of a native executable inferior compared to JVM mode?
 
-As with most things in life there are some trade offs involved when choosing native compilation over JVM mode.
+As with most things in life there are some trade-offs involved when choosing native compilation over JVM mode.
 So depending on the application the runtime performance of a native application might be slower compared to JVM mode,
 though that’s not always the case.
 
@@ -1420,17 +1478,11 @@ $ ./target/debugging-native-1.0.0-SNAPSHOT-runner -XX:PrintFlags=
 
 === Can I get a heap dump of a native executable? e.g. if it runs out of memory
 
-Unfortunately generating heap dumps in hprof format,
-which can be opened by tools such as VisualVM or Eclipse MAT,
-can only be achieved with
-https://www.graalvm.org/reference-manual/native-image/NativeImageHeapdump[GraalVM Enterprise Edition].
-Mandrel, which is based on the GraalVM Community Edition, does not have this capability.
+Starting with GraalVM 22.2.0 it will be possible to heap dumps upon request,
+e.g. `kill -SIGUSR1 <pid>`.
+Support for dumping the heap dump upon an out of memory error will follow up.
 
-Although Mandrel can generate debug symbols and these contain a fair amount of information about object layouts,
-including what is a pointer field vs a primitive field, this information cannot be used as is to detect memory leaks or find dominator objects.
-This is because it has no idea what constitutes a root pointer nor how to recursively trace pointers from those roots.
-
-=== Can I build and run this examples outside of a container in Linux?
+=== Can I build and run this examples outside a container in Linux?
 
 Yes you can.
 In fact, debugging native executables on a Linux bare metal box offers the best possible experience.
@@ -1495,7 +1547,7 @@ perf report --stdio -F+srcline
 ----
 
 The performance penalty of preserving the frame pointer is due to using the extra register for stack walking,
-particularly in `x86_64` compared to `aarch64` where there are less registers available.
+particularly in `x86_64` compared to `aarch64` where there are fewer registers available.
 Using this extra register reduces the number of registers that are available for other work,
 which can lead to performance penalties.
 
@@ -1565,3 +1617,25 @@ Once the image is compiled, enable and start JFR via runtime flags: `-XX:+Flight
 ----
 
 For more details on using JFR, see https://www.graalvm.org/reference-manual/native-image/JFR[here].
+
+=== How can we troubleshoot performance problems only reproducible in production?
+
+In this situation, switching to JVM mode would be the best thing to try first.
+If the performance issues continue after switching to JVM mode,
+you can use more established and mature tooling to figure out the root cause.
+If the performance issue is limited to native mode only,
+you might not be able to use `perf`,
+so JFR is the only way to gather any information in this situation.
+As JFR support for native expands,
+the ability to detect root causes of performance issues directly in production will improve.
+
+=== What information helps most debug issues that happen either at build-time or run-time?
+
+To fix classpath, class initialization or forbidden API errors at build time it's best to use <<native-reports,build time reports>> to understand the closed world universe.
+A complete picture of the universe, along with the relationships between the different classes and methods will help uncover and fix most of the issues.
+
+To fix runtime native specific errors,
+it's best to have <<debug-info,debug info builds>> of the native executables around,
+so that `gdb` can be hooked up quickly to debug the issue.
+If you also add local symbols to the debug info builds,
+you will obtain precise <<profiling,profiling information>> as well.

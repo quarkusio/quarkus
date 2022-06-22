@@ -21,7 +21,7 @@ public class ContinuousTestingSharedStateListener implements TestListener {
             ContinuousTestingSharedStateManager
                     .setLastState((s) -> {
                         if (s.getLastRun() > lastState.lastRun) {
-                            //small chance of race, next run already compled
+                            //small chance of race, next run already completed
                             return s.setRunning(true).build();
                         } else {
                             return s.setRunning(true)

@@ -112,7 +112,7 @@ quarkus.log.console.format=%d{HH:mm:ss} %-5p traceId=%X{traceId}, parentId=%X{pa
 ----
 
 <1> If the `quarkus.jaeger.service-name` property (or `JAEGER_SERVICE_NAME` environment variable) is not provided then a "no-op" tracer will be configured, resulting in no tracing data being reported to the backend.
-<2> Setup a sampler, that uses a constant sampling strategy.
+<2> Set up a sampler that uses a constant sampling strategy.
 <3> Sample all requests. Set sampler-param to somewhere between 0 and 1, e.g. 0.50, if you do not wish to sample all requests.
 <4> Add trace IDs into log message.
 

@@ -36,7 +36,7 @@ First, we need a new Kotlin project. This can be done using the following comman
 include::{includes}/devtools/create-app.adoc[]
 
 When adding `kotlin` to the extensions list, the Maven plugin will generate a project that is properly
-configured to work with Kotlin. Furthermore  the `org.acme.ReactiveGreetingResource` class is implemented as Kotlin source code (as is the case with the generated tests).
+configured to work with Kotlin. Furthermore,  the `org.acme.ReactiveGreetingResource` class is implemented as Kotlin source code (as is the case with the generated tests).
 The addition of `resteasy-reactive-jackson` in the extension list results in importing the RESTEasy Reactive and Jackson extensions.
 
 `ReactiveGreetingResource.kt` looks like this:
@@ -401,7 +401,7 @@ When using Kotlin data classes with `native-image` you may experience serializat
 com.fasterxml.jackson.databind.exc.InvalidDefinitionException: Cannot construct instance of `Address` (no Creators, like default construct, exist): cannot deserialize from Object value (no delegate- or property-based Creator)
 ----
 
-To ensure full-compability with `native-image`, it is recommended to apply the Jackson `@field:JsonProperty("fieldName")` annotation, and set a nullable default, as illustrated below. You can automate the generation of Kotlin data classes for your sample JSON using Intellij plugins (such as JSON to Kotlin Class), and easily enable the Jackson annotation and select nullable parameters as part of the auto-code generation.
+To ensure full-compatibility with `native-image`, it is recommended to apply the Jackson `@field:JsonProperty("fieldName")` annotation, and set a nullable default, as illustrated below. You can automate the generation of Kotlin data classes for your sample JSON using IntelliJ IDEA plugins (such as JSON to Kotlin Class), and easily enable the Jackson annotation and select nullable parameters as part of the auto-code generation.
 
 [source,kotlin]
 ----

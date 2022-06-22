@@ -24,7 +24,7 @@ Please also see xref:security-testing.adoc#configuring-user-information[Configur
 
 Quarkus provides form based authentication that works in a similar manner to traditional Servlet form based auth. Unlike
 traditional form authentication, the authenticated user is not stored in an HTTP session, as Quarkus does not provide
-clustered HTTP session support. Instead the authentication information is stored in an encrypted cookie, which can
+clustered HTTP session support. Instead, the authentication information is stored in an encrypted cookie, which can
 be read by all members of the cluster (provided they all share the same encryption key).
 
 The encryption key can be set using the `quarkus.http.auth.session.encryption-key` property, and it must be at least 16 characters
@@ -104,7 +104,7 @@ Please see the xref:security-customization.adoc#security-identity-customization[
 [[proactive-authentication]]
 == Proactive Authentication
 
-By default Quarkus does what we call proactive authentication. This means that if an incoming request has a
+By default, Quarkus does what we call proactive authentication. This means that if an incoming request has a
 credential then that request will always be authenticated (even if the target page does not require authentication).
 
 This means that requests with an invalid credential will always be rejected, even for public pages. You can change
@@ -116,7 +116,7 @@ current identity.
 
 Note that if proactive authentication is in use accessing the `SecurityIdentity` is a blocking operation. This is because
 authentication may not have happened yet, and accessing it may require calls to external systems such as databases that
-may block. For blocking applications this is no problem, however if you are have disabled authentication in a reactive
+may block. For blocking applications this is no problem, however if you have disabled authentication in a reactive
 application this will fail (as you cannot do blocking operations on the IO thread). To work around this you need to
 `@Inject` an instance of `io.quarkus.security.identity.CurrentIdentityAssociation`, and call the
 `Uni<SecurityIdentity> getDeferredIdentity();` method. You can then subscribe to the resulting `Uni` and will be notified
@@ -124,7 +124,7 @@ when authentication is complete and the identity is available.
 
 === How to customize authentication exception responses
 
-By default the authentication security constraints are enforced before the JAX-RS chain starts.
+By default, the authentication security constraints are enforced before the JAX-RS chain starts.
 Disabling the proactive authentication effectively shifts this process to the moment when the JAX-RS chain starts running thus making it possible to use JAX-RS `ExceptionMapper` to capture Quarkus Security authentication exceptions such as `io.quarkus.security.AuthenticationFailedException`, for example:
 
 [source,java]

@@ -164,10 +164,10 @@ public class FruitResource {
 
 == Database schema and seed data
 
-Before we implement the REST endpoint and data management code, we need to setup the database schema.
+Before we implement the REST endpoint and data management code, we need to set up the database schema.
 It would also be convenient to have some data inserted up-front.
 
-For production we would recommend to use something like the xref:flyway.adoc[Flyway database migration tool].
+For production, we would recommend to use something like the xref:flyway.adoc[Flyway database migration tool].
 But for development we can simply drop and create the tables on startup, and then insert a few fruits.
 
 [source,java]
@@ -658,7 +658,7 @@ This step depends on the database type.
 
 === PostgreSQL
 
-PostgresSQL domain socket paths have the following form: `<directory>/.s.PGSQL.<port>`
+PostgreSQL domain socket paths have the following form: `<directory>/.s.PGSQL.<port>`
 
 The database connection url must be configured so that:
 

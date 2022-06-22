@@ -35,7 +35,7 @@ include::{includes}/prerequisites.adoc[]
 [TIP]
 .Verify Maven is using the Java you expect
 ====
-If you have multiple JDK's installed it is not certain Maven will pick up the expected java
+If you have multiple JDK's installed, it is not certain Maven will pick up the expected java
 and you could end up with unexpected results.
 You can verify which JDK Maven uses by running `mvn --version`. 
 ====
@@ -472,7 +472,7 @@ NOTE: Before running the application, don't forget to stop the hot reload mode (
 [#banner]
 == Configuring the banner
 
-By default when a Quarkus application starts (in regular or dev mode), it will display an ASCII art banner. The banner can be disabled by setting `quarkus.banner.enabled=false` in `application.properties`,
+By default, when a Quarkus application starts (in regular or dev mode), it will display an ASCII art banner. The banner can be disabled by setting `quarkus.banner.enabled=false` in `application.properties`,
 by setting the `-Dquarkus.banner.enabled=false` Java System Property, or by setting the `QUARKUS_BANNER_ENABLED` environment variable to `false`.
 Furthermore, users can supply a custom banner by placing the banner file in `src/main/resources` and configuring `quarkus.banner.path=name-of-file` in `application.properties`.
 

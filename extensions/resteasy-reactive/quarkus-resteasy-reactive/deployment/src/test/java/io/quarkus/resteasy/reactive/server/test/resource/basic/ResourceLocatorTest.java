@@ -114,7 +114,7 @@ public class ResourceLocatorTest {
     }
 
     /**
-     * @tpTestDetails Two matching metods, one a resource locator, the other a resource method.
+     * @tpTestDetails Two matching methods, one a resource locator, the other a resource method.
      * @tpSince RESTEasy 3.0.20
      */
     @Test

@@ -40,7 +40,7 @@ import org.hibernate.type.spi.TypeConfiguration;
  * The goal is to run the {@link MetadataImpl#validate()} method
  * earlier than when it is normally performed, for two main reasons: further reduce
  * the work that is still necessary when performing a runtime boot, and to be
- * able to still use reflection as it's neccessary e.g. to validate enum fields.
+ * able to still use reflection as it's necessary e.g. to validate enum fields.
  *
  * We also make sure that methods {@link #getSessionFactoryBuilder()} and {@link #buildSessionFactory()}
  * are unavailable, as these would normally trigger an additional validation phase:

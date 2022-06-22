@@ -82,7 +82,7 @@ mp.messaging.incoming.prices.connector=smallrye-kafka <2>
 <1> Configure the broker location for the production profile. You can configure it globally or per channel using `mp.messaging.incoming.$channel.bootstrap.servers` property.
 In dev mode and when running tests, <<kafka-dev-services>> automatically starts a Kafka broker.
 When not provided this property defaults to `localhost:9092`.
-<2> Configure the connector to manage the prices channel. By default the topic name is same as the channel name. You can configure the topic attribute to override it.
+<2> Configure the connector to manage the prices channel. By default, the topic name is same as the channel name. You can configure the topic attribute to override it.
 
 NOTE: The `%prod` prefix indicates that the property is only used when the application runs in prod mode (so not in dev or test). Refer to the xref:config-reference.adoc#profiles[Profile documentation] for further details.
 
@@ -497,7 +497,7 @@ image::kafka-two-app-two-consumer-groups.png[alt=Architecture, width=60%, align=
 ====
 A common business requirement is to consume and process Kafka records in order.
 The Kafka broker preserves order of records inside a partition and not inside a topic.
-Therefore it is important to think about how records are partitioned inside a topic.
+Therefore, it is important to think about how records are partitioned inside a topic.
 The default partitioner uses record key hash to compute the partition for a record, or when the key is not defined, chooses a partition randomly per batch or records.
 
 During normal operation, a Kafka consumer preserves the order of records inside each partition assigned to it.
@@ -529,7 +529,7 @@ We also recommend applying the same logic when the application stops.
 
 Unlike the `ConsumerRebalanceListener` from Apache Kafka, the `io.smallrye.reactive.messaging.kafka.KafkaConsumerRebalanceListener` methods pass the Kafka Consumer and the set of topics/partitions.
 
-In the following example we set-up a consumer that always starts on messages from at most 10 minutes ago (or offset 0). 
+In the following example we set up a consumer that always starts on messages from at most 10 minutes ago (or offset 0).
 First we need to provide a bean that implements `io.smallrye.reactive.messaging.kafka.KafkaConsumerRebalanceListener` and is annotated with `io.smallrye.common.annotation.Identifier`.
 We then must configure our inbound connector to use this bean.
 
@@ -1398,7 +1398,7 @@ public class FruitProcessor {
 }
 ----
 
-To do this, we will need to setup JSON serialization with Jackson or JSON-B.
+To do this, we will need to set up JSON serialization with Jackson or JSON-B.
 
 NOTE: With JSON serialization correctly configured, you can also use `Publisher<Fruit>` and `Emitter<Fruit>`.
 
@@ -2599,7 +2599,7 @@ The result is omitted and returned as the HTTP response.
 In the previous example the database transaction (inner) will commit followed by the Kafka transaction (outer).
 If you wish to commit the Kafka transaction first and the database transaction second, you need to nest them in the reverse order.
 
-The next example demostrates that using the Hibernate Reactive API (without Panache):
+The next example demonstrates that using the Hibernate Reactive API (without Panache):
 
 [source, java]
 ----
@@ -2806,7 +2806,7 @@ mp.messaging.connector.smallrye-kafka.apicurio.auth.client.secret=${RHOAS_CLIENT
 If your Quarkus application is deployed on a Kubernetes or OpenShift cluster with link:https://github.com/redhat-developer/service-binding-operator[Service Binding Operator] and link:https://github.com/redhat-developer/app-services-operator/tree/main/docs[OpenShift Application Services] operators installed,
 configurations necessary to access Red Hat OpenShift Streams for Apache Kafka and Service Registry can be injected to the application using xref:deploying-to-kubernetes.adoc#service_binding[Kubernetes Service Binding].
 
-In order to setup the Service Binding, you need first to connect OpenShift managed services to your cluster.
+In order to set up the Service Binding, you need first to connect OpenShift managed services to your cluster.
 For an OpenShift cluster you can follow the instructions from link:https://github.com/redhat-developer/app-services-guides/tree/main/docs/registry/service-binding-registry#connecting-a-kafka-and-service-registry-instance-to-your-openshift-cluster[Connecting a Kafka and Service Registry instance to your OpenShift cluster].
 
 Once you've connected your cluster with the RHOAS Kafka and Service Registry instances, make sure you've granted necessary permissions to the newly created service account.

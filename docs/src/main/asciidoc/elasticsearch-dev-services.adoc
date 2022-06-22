@@ -18,7 +18,7 @@ Dev Services for Elasticsearch is automatically enabled unless:
 
 - `quarkus.devservices.enabled` is set to `false`.
 - `quarkus.elasticsearch.devservices.enabled` is set to `false`
-- the hosts property is configured, depending of the extension used it can be:
+- the hosts property is configured, depending on the extension used it can be:
     - `quarkus.elasticsearch.hosts`
     - `quarkus.hibernate-search-orm.elasticsearch.hosts`
 

@@ -180,7 +180,7 @@ public class SmallRyeOpenApiProcessor {
             SmallRyeOpenApiConfig openApiConfig,
             LaunchModeBuildItem launchMode,
             OutputTargetBuildItem outputTargetBuildItem) throws IOException {
-        // Add any aditional directories if configured
+        // Add any additional directories if configured
         if (launchMode.getLaunchMode().isDevOrTest() && openApiConfig.additionalDocsDirectory.isPresent()) {
             List<Path> additionalStaticDocuments = openApiConfig.additionalDocsDirectory.get();
             for (Path path : additionalStaticDocuments) {
@@ -872,7 +872,7 @@ public class SmallRyeOpenApiProcessor {
         addStaticModelIfExist(results, ignorePatterns, Format.JSON, META_INF_OPENAPI_JSON);
         addStaticModelIfExist(results, ignorePatterns, Format.JSON, WEB_INF_CLASSES_META_INF_OPENAPI_JSON);
 
-        // Add any aditional directories if configured
+        // Add any additional directories if configured
         if (openApiConfig.additionalDocsDirectory.isPresent()) {
             List<Path> additionalStaticDocuments = openApiConfig.additionalDocsDirectory.get();
             for (Path path : additionalStaticDocuments) {
@@ -883,7 +883,7 @@ public class SmallRyeOpenApiProcessor {
                         addStaticModelIfExist(results, ignorePatterns, possibleModelFile);
                     }
                 } catch (IOException ioe) {
-                    throw new UncheckedIOException("An error occured while processing " + path, ioe);
+                    throw new UncheckedIOException("An error occurred while processing " + path, ioe);
                 }
             }
         }
@@ -921,7 +921,8 @@ public class SmallRyeOpenApiProcessor {
                             results.add(new Result(format, new ByteArrayInputStream(contents)));
                         }
                     } catch (IOException ex) {
-                        throw new UncheckedIOException("An error occured while processing " + urlAsString + " for " + path, ex);
+                        throw new UncheckedIOException("An error occurred while processing " + urlAsString + " for " + path,
+                                ex);
                     }
                 }
             }

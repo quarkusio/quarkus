@@ -42,7 +42,7 @@ Let’s list the actions an extension performs:
 ** Most changes are pushed upstream to help the underlying library run on GraalVM
 ** Not all changes can be pushed upstream, extensions host Substrate VM substitutions - which is a form of code patching - so that libraries can run
 * Host Substrate VM code substitution to help dead code elimination based on the application needs
-** This is application dependant and cannot really be shared in the library itself
+** This is application dependent and cannot really be shared in the library itself
 ** For example, Quarkus optimizes the Hibernate code because it knows it only needs a specific connection pool and cache provider
 * Send metadata to GraalVM for example classes in need of reflection
 ** This information is not static per library (e.g. Hibernate) but the framework has the semantic knowledge and knows which classes need to have reflection (for example @Entity classes)
@@ -55,7 +55,7 @@ The more is done there, the smaller Quarkus applications using that extension wi
 === How to expose configuration
 
 Quarkus simplifies the most common usages.
-This means that its defaults might be different than the library it integrates.
+This means that its defaults might be different from the library it integrates.
 
 To make the simple experience easiest, unify the configuration in `application.properties` via SmallRye Config.
 Avoid library specific configuration files, or at least make them optional: e.g. `persistence.xml` for Hibernate ORM is optional.
@@ -92,7 +92,7 @@ Extensions must register these bean definitions at build time.
 
 ==== Beans backed by classes
 
-An extension can produce an <<cdi-reference.adoc#additional_beans,`AdditionalBeanBuildItem`>> to instruct the container to read a bean definition from a class as if it was part of the original application:
+An extension can produce an xref:cdi-integration.adoc#additional_bean_build_item[`AdditionalBeanBuildItem`] to instruct the container to read a bean definition from a class as if it was part of the original application:
 
 .Bean Class Registered by `AdditionalBeanBuildItem`
 [source%nowrap,java]
@@ -171,7 +171,7 @@ We'll cover a more robust solution in the <<synthetic_beans>>.
 
 ==== Default beans
 
-A very useful pattern of creating such beans but also giving application code the ability to easily override some of the beans with custom implementations, is to use
+A very useful pattern of creating such beans but also giving application code the ability to easily override some beans with custom implementations, is to use
 the `@DefaultBean` that Quarkus provides. 
 This is best explained with an example.
 
@@ -321,7 +321,7 @@ If possible, contribute these patches upstream, not in extensions.
 Second best is to write Substrate VM substitutions, which are patches applied during native image compilation.
 
 Get a framework running::
-A framework at runtime typically reads configuration, scan the classpath and classes for metadata (annotations, getters etc), build a metamodel on top of which it runs, find options via the service loader pattern, prepare invocation calls (reflection), proxy interfaces, etc. +
+A framework at runtime typically reads configuration, scan the classpath and classes for metadata (annotations, getters etc.), build a metamodel on top of which it runs, find options via the service loader pattern, prepare invocation calls (reflection), proxy interfaces, etc. +
 These operations should be done at build time and the metamodel be passed to the recorder DSL that will generate classes that will be executed at runtime and boot the framework.
 
 Get a CDI portable extension running::
@@ -497,10 +497,13 @@ git clone https://github.com/quarkusio/quarkus.git
 cd quarkus
 mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
     -DextensionId=my-ext \
-    -Dname="My Extension"
+    -DextensionName="My Extension" \
+    -DextensionDescription="Do something useful."
 ----
 
-NOTE: by default, the `groupId`, `version`, `quarkusVersion`, `namespaceId`, and `namespaceName` will be consistent with other Quarkus core extensions.
+NOTE: By default, the `groupId`, `version`, `quarkusVersion`, `namespaceId`, and `namespaceName` will be consistent with other Quarkus core extensions.
+
+TIP: The extension description is important as it is displayed on https://code.quarkus.io/, when listing extensions with the Quarkus CLI, etc.
 
 The above sequence of commands does the following:
 
@@ -713,7 +716,7 @@ public void produceServiceFiles(
     List<ServiceWriterBuildItem> items,
     BuildProducer<GeneratedResourceBuildItem> resourceProducer
 ) throws IOException {
-    // Aggregate all of the providers
+    // Aggregate all the providers
 
     Map<String, Set<String>> map = new HashMap<>();
     for (ServiceWriterBuildItem item : items) {
@@ -823,7 +826,7 @@ The types of values that can be injected include:
 - <<configuration-roots,Configuration root>> types
 - Template objects for <<bytecode-recording,bytecode recording>>
 
-WARNING: Objects which are injected into a build step method or its class _must not_ be used outside of that method's
+WARNING: Objects which are injected into a build step method or its class _must not_ be used outside that method's
 execution.
 
 NOTE: Injection is resolved at compile time via an annotation processor,
@@ -837,11 +840,11 @@ A build step may produce values for subsequent steps in several possible ways:
 - By returning a <<simple-build-items,simple build item>> or <<multi-build-items,multi build item>> instance
 - By returning a `List` of a multi build item class
 - By injecting a `BuildProducer` of a simple or multi build item class
-- By annotating the method with `@io.quarkus.deployment.annotations.Produce`, giving the class name of a
+- By annotating the method with `@io.quarkus.deployment.annotations.Produce`, giving the class name of an
 <<empty-build-items,empty build item>>
 
 If a simple build item is declared on a build step, it _must_ be produced during that build step, otherwise an error
-will result.  Build producers which are injected into steps _must not_ be used outside of that step.
+will result.  Build producers, which are injected into steps, _must not_ be used outside that step.
 
 Note that a `@BuildStep` method will only be called if it produces something that another consumer or the final output
 requires. If there is no consumer for a particular item then it will not be produced. What is required will depend on
@@ -857,11 +860,11 @@ A build step may consume values from previous steps in the following ways:
 - By injecting a <<simple-build-items,simple build item>>
 - By injecting an `Optional` of a simple build item class
 - By injecting a `List` of a <<multi-build-items,multi build item>> class
-- By annotating the method with `@io.quarkus.deployment.annotations.Consume`, giving the class name of a
+- By annotating the method with `@io.quarkus.deployment.annotations.Consume`, giving the class name of an
 <<empty-build-items,empty build item>>
 
 Normally it is an error for a step which is included to consume a simple build item that is not produced by any other
-step.  In this way, it is guaranteed that all of the declared values will be present and non-`null` when a step is run.
+step.  In this way, it is guaranteed that all the declared values will be present and non-`null` when a step is run.
 
 Sometimes a value isn't necessary for the build to complete, but might inform some behavior of the build step if it is
 present.  In this case, the value can be optionally injected.
@@ -973,7 +976,7 @@ The `Amazon Alexa` extension adds dependent libraries from the Alexa SDK that ar
     }
 ----
 
-With the artifacts added to the `Jandex` indexer, you can now search the index to identify classes implementing an interface, sub-classes of a specific class, or classes with a target annotation.
+With the artifacts added to the `Jandex` indexer, you can now search the index to identify classes implementing an interface, subclasses of a specific class, or classes with a target annotation.
 
 For example, the `Jackson` extension uses code like below to search for annotations used in JSON deserialization,
 and add them to the reflective hierarchy for `BUILD_TIME` analysis.
@@ -1007,7 +1010,7 @@ will result in the creation of the `build.dot` file in the project's root direct
 === Configuration
 
 Configuration in Quarkus is based on SmallRye Config, an implementation of the MicroProfile Config specification.
-All of the standard features of MP-Config are supported; in addition, there are several extensions which are made available
+All the standard features of MP-Config are supported; in addition, there are several extensions which are made available
 by the SmallRye Config project as well as by Quarkus itself.
 
 The value of these properties is configured in a `application.properties` file that follows the MicroProfile config format.
@@ -1120,7 +1123,7 @@ this change is complete.
 
 ===== Configuration Root Phases
 
-Configuration roots are strictly bound by configuration phase, and attempting to access a configuration root from outside of its corresponding phase will result in an error.
+Configuration roots are strictly bound by configuration phase, and attempting to access a configuration root from outside its corresponding phase will result in an error.
 A configuration root dictates when its contained keys are read from configuration, and when they are available to applications.  The phases defined by `io.quarkus.runtime.annotations.ConfigPhase` are as follows:
 
 [cols="<3m,^1,^1,^1,^1,<8",options="header"]
@@ -1162,7 +1165,7 @@ A configuration root dictates when its contained keys are read from configuratio
 
 |===
 
-For all cases other than the `BUILD_TIME` case, the configuration root class and all of the configuration groups and types contained therein must be located in, or reachable from, the extension's run time artifact.  Configuration roots of phase `BUILD_TIME` may be located in or reachable from either of the extension's run time or deployment artifacts.
+For all cases other than the `BUILD_TIME` case, the configuration root class and all the configuration groups and types contained therein must be located in, or reachable from, the extension's run time artifact.  Configuration roots of phase `BUILD_TIME` may be located in or reachable from either of the extension's run time or deployment artifacts.
 
 IMPORTANT: _Bootstrap_ configuration steps are executed during runtime-init *before* any of other runtime steps. This means that code executed as part of this step cannot access anything that gets initialized in runtime init steps (runtime synthetic CDI beans being one such example).
 
@@ -1264,7 +1267,7 @@ Since `format` is not defined in these properties, the default value from `@Conf
 
 ==== Enhanced conversion
 You can use enhanced conversion of a config item by using the `@ConvertWith` annotation which accepts a `Converter` class object.
-If the annotation is present on a config item, the implicit or custom built in converter in use will be overridden by the value provided.
+If the annotation is present on a config item, the implicit or custom-built in converter in use will be overridden by the value provided.
 To do, see the example below which converts `YES` or `NO` values to `boolean`.
 [source%nowrap,java]
 ----
@@ -1427,7 +1430,7 @@ public void helloBuildStep(HelloRecorder recorder) {
 ----
 
 When this build step is run nothing is printed to the console. This is because the `HelloRecorder` that is injected is
-actually a proxy that records all invocations. Instead if we run the resulting Quarkus program we will see 'Hello World'
+actually a proxy that records all invocations. Instead, if we run the resulting Quarkus program we will see 'Hello World'
 printed to the console.
 
 Methods on a recorder can return a value, which must be proxiable (if you want to return a non-proxiable item wrap it
@@ -1883,7 +1886,7 @@ static fields.
 
 ==== Triggering Live Reload
 
-Live reload is generally triggered by a HTTP request, however not all applications are HTTP applications and some extensions
+Live reload is generally triggered by an HTTP request, however not all applications are HTTP applications and some extensions
 may want to trigger live reload based on other events. To do this you need to implement `io.quarkus.dev.spi.HotReplacementSetup`
 in your runtime module, and add a `META-INF/services/io.quarkus.dev.spi.HotReplacementSetup` that lists your implementation.
 
@@ -2141,7 +2144,7 @@ A convenience feature that allows you to control most of the above features from
 Indicates that all charsets should be enabled in native image.
 
 `io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem`::
-A convenient way to tell Quarkus that the extension requires SSL and it should be enabled during native image build.
+A convenient way to tell Quarkus that the extension requires SSL, and it should be enabled during native image build.
 When using this feature, remember to add your extension to the list of extensions that offer SSL support automatically on the https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/native-and-ssl.adoc[native and ssl guide].
 
 === IDE support tips
@@ -2217,7 +2220,7 @@ Otherwise, Quarkus attempts to monitor the extension classes and this may result
 Remember to add `IndexDependencyBuildItem` artifacts to your `@BuildStep`.
 
 === Sample Test Extension
-We have an extension that is used to test for regressions in the extension processing. It is located in {quarkus-tree-url}/integration-tests/test-extension/extension directory. In this section we touch on some of the tasks an extension
+We have an extension that is used to test for regressions in the extension processing. It is located in {quarkus-tree-url}/integration-tests/test-extension/extension directory. In this section we touch on some tasks an extension
 author will typically need to perform using the test-extension code to illustrate how the task could be done.
 
 ==== Features and Capabilities
@@ -2251,7 +2254,7 @@ An extension should provide at most one feature and the name must be unique.
 If multiple extensions register a feature of the same name the build fails.
 
 The feature name should also map to a label in the extension's `devtools/common/src/main/filtered/extensions.json` entry so that
-the feature name displayed by the startup line matches a label that one can used to select the extension when creating a project
+the feature name displayed by the startup line matches a label that one can use to select the extension when creating a project
 using the Quarkus maven plugin as shown in this example taken from the xref:rest-json.adoc[Writing JSON REST Services] guide where the `resteasy-reactive-jackson` feature is referenced:
 
 [source,bash,subs=attributes+]
@@ -2348,7 +2351,7 @@ public class ConfiguredBean implements IConfigConsumer {
 ==== Parsing Config to Objects
 One of the main things an extension is likely to do is completely separate the configuration phase of behavior from the runtime phase. Frameworks often do parsing/load of configuration on startup that can be done during build time to both reduce the runtime dependencies on frameworks like xml parsers as well as reducing the startup time the parsing incurs.
 
-An example of parsing a XML config file using JAXB is shown in the `TestProcessor#parseServiceXmlConfig` method:
+An example of parsing an XML config file using JAXB is shown in the `TestProcessor#parseServiceXmlConfig` method:
 .Parsing an XML Configuration into Runtime XmlConfig Instance
 [source,java]
 ----
@@ -2376,7 +2379,7 @@ An example of parsing a XML config file using JAXB is shown in the `TestProcesso
 If there was no /config.xml resource available in the build environment, then a null `RuntimeServiceBuildItem` would be returned and no subsequent logic based on a `RuntimeServiceBuildItem` being produced would execute.
 ====
 
-Typically one is loading a configuration to create some runtime component/service as `parseServiceXmlConfig` is doing. We will come back to the rest of the behavior in `parseServiceXmlConfig` in the following <<Manage Non-CDI Service>> section.
+Typically, one is loading a configuration to create some runtime component/service as `parseServiceXmlConfig` is doing. We will come back to the rest of the behavior in `parseServiceXmlConfig` in the following <<Manage Non-CDI Service>> section.
 
 If for some reason you need to parse the config and use it in other build steps in an extension processor, you would need to create an `XmlConfigBuildItem` to pass the parsed XmlConfig instance around.
 
@@ -2574,7 +2577,7 @@ public class SomeBean {
 }
 ----
 <1> Observe a `StartupEvent` to be notified the runtime has started.
-<2> Observe a `ShutdownEvent` to be notified when the runtime is going to shutdown.
+<2> Observe a `ShutdownEvent` to be notified when the runtime is going to shut down.
 
 What is the relevance of startup and shutdown events for extension authors? We have already seen the use of a `ShutdownContext`
 to register a callback to perform shutdown tasks in the <<Starting a Service>> section. These shutdown tasks would be called
@@ -2919,7 +2922,7 @@ The configuration is an important part of each extension and therefore needs to 
 Each configuration property should have a proper Javadoc comment.
 
 While it is handy to have the documentation available when coding, this configuration documentation must also be available in the extension guides.
-The Quarkus build automatically generates the configuration documentation for you based on the Javadoc comments but you need to explicitly include it in your guide.
+The Quarkus build automatically generates the configuration documentation for you based on the Javadoc comments, but you need to explicitly include it in your guide.
 
 In this section, we will explain everything you need to know about the configuration reference documentation.
 
@@ -2959,7 +2962,7 @@ public Optional<String> dialect;
 ----
 
 This is the simple case: you just have to write Asciidoc and mark the comment with the `@asciidoclet` tag.
-This tag has two purposes: it is used as a marker for our generation tool but it is also used by the `javadoc` process for proper Javadoc generation.
+This tag has two purposes: it is used as a marker for our generation tool, but it is also used by the `javadoc` process for proper Javadoc generation.
 
 Now let's consider a more complicated example:
 
@@ -3020,7 +3023,7 @@ All the other types of blocks (source, admonitions...) are supported.
 [TIP]
 ====
 By default, the doc generator will use the hyphenated field name as the key of a `java.util.Map` configuration item.
-To override this default and have a user friendly key (independent of implementation details), you may use the `io.quarkus.runtime.annotations.ConfigDocMapKey` annotation.
+To override this default and have a user-friendly key (independent of implementation details), you may use the `io.quarkus.runtime.annotations.ConfigDocMapKey` annotation.
 See the following example,
 [source,java]
 ----

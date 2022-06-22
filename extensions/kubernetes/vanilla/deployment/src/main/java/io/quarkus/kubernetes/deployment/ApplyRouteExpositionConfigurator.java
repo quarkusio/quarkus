@@ -1,18 +1,18 @@
 package io.quarkus.kubernetes.deployment;
 
-import io.dekorate.kubernetes.config.BaseConfigFluent;
 import io.dekorate.kubernetes.config.Configurator;
+import io.dekorate.openshift.config.OpenshiftConfigFluent;
 
-public class ApplyExpositionConfigurator extends Configurator<BaseConfigFluent> {
+public class ApplyRouteExpositionConfigurator extends Configurator<OpenshiftConfigFluent> {
 
     private final ExpositionConfig expositionConfig;
 
-    public ApplyExpositionConfigurator(ExpositionConfig expositionConfig) {
+    public ApplyRouteExpositionConfigurator(ExpositionConfig expositionConfig) {
         this.expositionConfig = expositionConfig;
     }
 
     @Override
-    public void visit(BaseConfigFluent config) {
+    public void visit(OpenshiftConfigFluent config) {
         if (expositionConfig.expose) {
             config.withExpose(true);
             if (expositionConfig.host.isPresent()) {

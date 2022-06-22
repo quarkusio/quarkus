@@ -293,4 +293,146 @@ public class OpenTracingTestCase {
         Assertions.assertTrue(resourceSpanFound);
         Assertions.assertTrue(jdbcSpanFound);
     }
+
+    @Test
+    void testJdbcTracingPropertyEnabled() {
+        resetExporter();
+
+        given()
+                .contentType("application/json")
+                .when().get("tracingpropertyjdbc/tracingenabled")
+                .then()
+                .statusCode(200)
+                .body("message", equalTo("1"));
+
+        Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> getSpans().size() == 3);
+
+        boolean resourceSpanFound = false;
+        boolean jdbcSpanFound = false;
+        for (Map<String, Object> spanData : getSpans()) {
+            Assertions.assertNotNull(spanData);
+            Assertions.assertNotNull(spanData.get("spanId"));
+            Assertions.assertNotNull(spanData.get("traceId"));
+
+            if (spanData.get("operation_name")
+                    .equals("GET:io.quarkus.it.opentracing.TracingProperyJdbcResource.jdbcTracingEnabled")) {
+                Assertions.assertEquals(0, spanData.get("parent_spanId"));
+                Assertions.assertEquals("server", spanData.get("tag_span.kind"));
+                Assertions.assertEquals("jaxrs", spanData.get("tag_component"));
+                Assertions.assertEquals("GET", spanData.get("tag_http.method"));
+                Assertions.assertEquals("200", spanData.get("tag_http.status_code"));
+                resourceSpanFound = true;
+            } else if (spanData.get("operation_name").equals("Query")) {
+                Assertions.assertEquals("client", spanData.get("tag_span.kind"));
+                Assertions.assertEquals("java-jdbc", spanData.get("tag_component"));
+                Assertions.assertEquals("select 1", spanData.get("tag_db.statement"));
+                jdbcSpanFound = true;
+            }
+        }
+        Assertions.assertTrue(resourceSpanFound);
+        Assertions.assertTrue(jdbcSpanFound);
+    }
+
+    @Test
+    void testJdbcTracingPropertyDisabled() {
+        resetExporter();
+
+        given()
+                .contentType("application/json")
+                .when().get("tracingpropertyjdbc/tracingdisabled")
+                .then()
+                .statusCode(200)
+                .body("message", equalTo("1"));
+
+        Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> getSpans().size() == 1);
+
+        boolean resourceSpanFound = false;
+        for (Map<String, Object> spanData : getSpans()) {
+            Assertions.assertNotNull(spanData);
+            Assertions.assertNotNull(spanData.get("spanId"));
+            Assertions.assertNotNull(spanData.get("traceId"));
+
+            if (spanData.get("operation_name")
+                    .equals("GET:io.quarkus.it.opentracing.TracingProperyJdbcResource.jdbcTracingDisabled")) {
+                Assertions.assertEquals(0, spanData.get("parent_spanId"));
+                Assertions.assertEquals("server", spanData.get("tag_span.kind"));
+                Assertions.assertEquals("jaxrs", spanData.get("tag_component"));
+                Assertions.assertEquals("GET", spanData.get("tag_http.method"));
+                Assertions.assertEquals("200", spanData.get("tag_http.status_code"));
+                resourceSpanFound = true;
+            }
+        }
+        Assertions.assertTrue(resourceSpanFound);
+    }
+
+    @Test
+    void testJdbcTracingSpanOnly() {
+        resetExporter();
+
+        given()
+                .contentType("application/json")
+                .when().get("tracingpropertyjdbc/traceactivespanonly")
+                .then()
+                .statusCode(200)
+                .body("message", equalTo("1"));
+
+        Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> getSpans().size() == 2);
+
+        boolean resourceSpanFound = false;
+        boolean jdbcSpanFound = false;
+        for (Map<String, Object> spanData : getSpans()) {
+            Assertions.assertNotNull(spanData);
+            Assertions.assertNotNull(spanData.get("spanId"));
+            Assertions.assertNotNull(spanData.get("traceId"));
+
+            if (spanData.get("operation_name")
+                    .equals("GET:io.quarkus.it.opentracing.TracingProperyJdbcResource.traceActiveSpanOnly")) {
+                Assertions.assertEquals(0, spanData.get("parent_spanId"));
+                Assertions.assertEquals("server", spanData.get("tag_span.kind"));
+                Assertions.assertEquals("jaxrs", spanData.get("tag_component"));
+                Assertions.assertEquals("GET", spanData.get("tag_http.method"));
+                Assertions.assertEquals("200", spanData.get("tag_http.status_code"));
+                resourceSpanFound = true;
+            } else if (spanData.get("operation_name").equals("Query")) {
+                Assertions.assertEquals("client", spanData.get("tag_span.kind"));
+                Assertions.assertEquals("java-jdbc", spanData.get("tag_component"));
+                Assertions.assertEquals("select 1", spanData.get("tag_db.statement"));
+                jdbcSpanFound = true;
+            }
+        }
+        Assertions.assertTrue(resourceSpanFound);
+        Assertions.assertTrue(jdbcSpanFound);
+    }
+
+    @Test
+    void testJdbcTracingIgnoreSql() {
+        resetExporter();
+
+        given()
+                .contentType("application/json")
+                .when().get("tracingpropertyjdbc/traceignoresql")
+                .then()
+                .statusCode(200)
+                .body("message", equalTo("1"));
+
+        Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> getSpans().size() == 3);
+
+        boolean resourceSpanFound = false;
+        for (Map<String, Object> spanData : getSpans()) {
+            Assertions.assertNotNull(spanData);
+            Assertions.assertNotNull(spanData.get("spanId"));
+            Assertions.assertNotNull(spanData.get("traceId"));
+
+            if (spanData.get("operation_name")
+                    .equals("GET:io.quarkus.it.opentracing.TracingProperyJdbcResource.traceIgnoreSql")) {
+                Assertions.assertEquals(0, spanData.get("parent_spanId"));
+                Assertions.assertEquals("server", spanData.get("tag_span.kind"));
+                Assertions.assertEquals("jaxrs", spanData.get("tag_component"));
+                Assertions.assertEquals("GET", spanData.get("tag_http.method"));
+                Assertions.assertEquals("200", spanData.get("tag_http.status_code"));
+                resourceSpanFound = true;
+            }
+        }
+        Assertions.assertTrue(resourceSpanFound);
+    }
 }

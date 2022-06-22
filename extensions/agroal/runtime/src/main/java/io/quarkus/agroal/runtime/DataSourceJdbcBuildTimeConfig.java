@@ -37,4 +37,10 @@ public class DataSourceJdbcBuildTimeConfig {
      */
     @ConfigItem
     public Optional<Boolean> enableMetrics = Optional.empty();
+
+    /**
+     * Enable JDBC tracing. Disabled by default.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean tracing = false;
 }

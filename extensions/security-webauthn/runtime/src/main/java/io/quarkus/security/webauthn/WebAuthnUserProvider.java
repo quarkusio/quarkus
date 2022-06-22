@@ -14,10 +14,10 @@ import io.vertx.ext.auth.webauthn.Authenticator;
  */
 public interface WebAuthnUserProvider {
     /**
-     * Look up a WebAuthn credential by user name
+     * Look up a WebAuthn credential by username
      *
-     * @param userName the user name
-     * @return a list of credentials for this user name
+     * @param userName the username
+     * @return a list of credentials for this username
      */
     public Uni<List<Authenticator>> findWebAuthnCredentialsByUserName(String userName);
 
@@ -39,9 +39,9 @@ public interface WebAuthnUserProvider {
     public Uni<Void> updateOrStoreWebAuthnCredentials(Authenticator authenticator);
 
     /**
-     * Returns the set of roles for the given user name
+     * Returns the set of roles for the given username
      *
-     * @param userName the user name
+     * @param userName the username
      * @return the set of roles (defaults to an empty set)
      */
     public default Set<String> getRoles(String userName) {

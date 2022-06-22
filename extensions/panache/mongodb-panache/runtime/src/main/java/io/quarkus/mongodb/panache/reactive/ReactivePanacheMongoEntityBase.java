@@ -51,7 +51,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Persist this entity in the database or update it if it already exist.
+     * Persist this entity in the database or update it if it already exists.
      *
      * @see #persistOrUpdate(Iterable)
      * @see #persistOrUpdate(Stream)

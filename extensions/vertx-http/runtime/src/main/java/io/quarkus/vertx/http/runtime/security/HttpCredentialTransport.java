@@ -52,7 +52,7 @@ public class HttpCredentialTransport {
          */
         X509,
         /**
-         * Authorizatiob code, type target is the query 'code' parameter
+         * Authorization code, type target is the query 'code' parameter
          */
         AUTHORIZATION_CODE
     }

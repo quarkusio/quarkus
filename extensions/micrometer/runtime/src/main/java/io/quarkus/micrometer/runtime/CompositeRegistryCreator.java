@@ -10,7 +10,7 @@ import io.micrometer.core.instrument.Metrics;
 import io.quarkus.arc.AlternativePriority;
 
 /**
- * @return the single resolveable "root" MeterRegistry
+ * @return the single resolvable "root" MeterRegistry
  */
 public class CompositeRegistryCreator {
     @Produces

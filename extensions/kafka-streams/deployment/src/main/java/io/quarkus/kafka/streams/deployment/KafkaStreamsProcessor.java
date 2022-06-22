@@ -161,7 +161,7 @@ class KafkaStreamsProcessor {
                 .supplier(recorder.kafkaStreamsSupportSupplier(kafkaStreamsProperties))
                 .done());
 
-        // make the producer an unremoveable bean
+        // make the producer an unremovable bean
         additionalBeans
                 .produce(AdditionalBeanBuildItem.builder().addBeanClasses(KafkaStreamsProducer.class).setUnremovable().build());
     }

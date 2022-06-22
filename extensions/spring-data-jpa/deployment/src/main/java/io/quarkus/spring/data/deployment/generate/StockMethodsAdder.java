@@ -971,7 +971,7 @@ public class StockMethodsAdder {
     }
 
     // Spring Data allows users to add any of the methods of CrudRepository, PagingAndSortingRepository, JpaRepository
-    // to the their interface declaration without having to make their repository extend any of those
+    // to their interface declaration without having to make their repository extend any of those
     // this is done so users have the ability to add only what they need
     private Set<MethodInfo> stockMethodsAddedToInterface(ClassInfo repositoryToImplement) {
         Set<MethodInfo> result = new HashSet<>();

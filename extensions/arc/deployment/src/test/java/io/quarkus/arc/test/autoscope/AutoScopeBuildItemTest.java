@@ -33,7 +33,7 @@ public class AutoScopeBuildItemTest {
                             return clazz.name().toString().equals(SimpleBean.class.getName());
                         }).defaultScope(BuiltinScope.DEPENDENT)
                                 .scopeAlreadyAdded((scope, reason) -> {
-                                    // We cant's pass the state directly to AutoScopeBuildItemTest because it's loaded by a different classloader
+                                    // We can't pass the state directly to AutoScopeBuildItemTest because it's loaded by a different classloader
                                     Logger.getLogger("AutoScopeBuildItemTest").info(scope + ":" + reason);
                                 }).build());
                     }

@@ -95,7 +95,7 @@ public class MethodNameParser {
         // handle 'Top' and 'First'
         Integer topCount = null;
         int minFirstOrTopIndex = Math.min(indexOfOrMaxValue(methodName, "First"), indexOfOrMaxValue(methodName, "Top"));
-        // 'First' and 'Top' could be part of a field name, so we only conside them as part of a top query
+        // 'First' and 'Top' could be part of a field name, so we only consider them as part of a top query
         // if they are found before 'By'
         if (minFirstOrTopIndex < byIndex) {
             if (queryType != QueryType.SELECT) {

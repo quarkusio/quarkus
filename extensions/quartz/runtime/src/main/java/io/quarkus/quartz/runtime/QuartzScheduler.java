@@ -470,7 +470,7 @@ public class QuartzScheduler implements Scheduler {
     }
 
     /**
-     * Need to gracefully shutdown the scheduler making sure that all triggers have been
+     * Need to gracefully shut down the scheduler making sure that all triggers have been
      * released before datasource shutdown.
      *
      * @param event ignored

@@ -514,7 +514,7 @@ public class ResteasyCommonProcessor {
                 }
             }
 
-            // handle @PartType: we don't know if it's used for writing or reading so we register both
+            // handle @PartType: we don't know if it's used for writing or reading, so we register both
             for (AnnotationInstance partTypeAnnotation : index.getAnnotations(ResteasyDotNames.RESTEASY_PART_TYPE)) {
                 try {
                     MediaType partTypeMediaType = MediaType.valueOf(partTypeAnnotation.value().asString());
@@ -605,7 +605,7 @@ public class ResteasyCommonProcessor {
         //   if it is, then include a provider which can handle that element type.
         // - if no @SseElementType is present, check if the media type has the "element-type" parameter
         //   and if it does then include the provider which can handle that element-type
-        // - if neither of the above specifies an element-type then we by fallback to including text/plain
+        // - if neither of the above specifies an element-type then we fall back to including text/plain
         //   provider as a default
         if (matches(MediaType.SERVER_SENT_EVENTS_TYPE, mediaType)) {
             final Set<String> additionalProvidersToRegister = new HashSet<>();
@@ -623,7 +623,7 @@ public class ResteasyCommonProcessor {
             if (elementType != null) {
                 additionalProvidersToRegister.addAll(categorizedProviders.getPossible(MediaType.valueOf(elementType)));
             } else {
-                // add text/plain provider as a fallback default for SSE mediatype
+                // add text/plain provider as a fallback default for SSE media-type
                 additionalProvidersToRegister.addAll(categorizedProviders.getPossible(MediaType.TEXT_PLAIN_TYPE));
             }
             return additionalProvidersToRegister;
@@ -633,7 +633,7 @@ public class ResteasyCommonProcessor {
 
     /**
      * Compares the {@link MediaType#getType() type} and the {@link MediaType#getSubtype() subtype} to see if they are
-     * equal (case insensitive). If they are equal, then this method returns {@code true}, else returns {@code false}.
+     * equal (case-insensitive). If they are equal, then this method returns {@code true}, else returns {@code false}.
      * Unlike the {@link MediaType#equals(Object)}, this method doesn't take into account the {@link MediaType#getParameters()
      * parameters} during the equality check
      *

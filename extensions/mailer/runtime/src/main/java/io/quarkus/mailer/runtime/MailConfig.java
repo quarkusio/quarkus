@@ -171,7 +171,7 @@ public class MailConfig {
     public TrustStoreConfig truststore;
 
     /**
-     * Whether or not the mail should always been sent as multipart even if they don't have attachments.
+     * Whether the mail should always been sent as multipart even if they don't have attachments.
      * When sets to true, the mail message will be encoded as multipart even for simple mails without attachments.
      */
     @ConfigItem(defaultValue = "false")

@@ -99,7 +99,7 @@
                     </excludedArtifacts>
                     <parentFirstArtifacts>
                         <!--
-                        Sentry logging has a dependency on the Servlet API, so we load it parent first to
+                        Sentry logging has a dependency on the Servlet API, so we load its parent first to
                         prevent class loading problems.
 
                         see https://github.com/quarkusio/quarkus/issues/7407

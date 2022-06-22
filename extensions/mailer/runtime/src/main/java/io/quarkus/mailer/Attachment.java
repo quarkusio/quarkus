@@ -203,7 +203,7 @@ public class Attachment {
             return this;
         }
 
-        // And the fun begins, we cannot use fromArray on an byte[] as the boxing does not work
+        // And the fun begins, we cannot use fromArray on a byte[] as the boxing does not work
         // we cannot use Arrays.stream as it's limited to int, long and double...
         // so, let's use the good old method creating an iterator for the array. At least it avoids duplicating
         // the array.

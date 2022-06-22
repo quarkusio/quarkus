@@ -170,7 +170,7 @@ class SpringDIProcessorTest {
 
     /**
      * Do not add javax.inject.Singleton, as it is not spring-specific and Arc processor already handles it.
-     * Otherwise it would cause "declares multiple scope type annotations" error.
+     * Otherwise, it would cause "declares multiple scope type annotations" error.
      */
     @Test
     public void getAnnotationsToAddBeanMethodExplicitSingleton() {

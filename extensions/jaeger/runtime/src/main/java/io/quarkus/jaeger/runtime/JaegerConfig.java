@@ -119,7 +119,7 @@ public class JaegerConfig {
     public Boolean logTraceContext;
 
     /**
-     * Whether or not the registration of tracer as the global tracer should be disabled.
+     * Whether the registration of tracer as the global tracer should be disabled.
      * This setting should only be turned on in tests that need to install a mock tracer.
      */
     @ConfigItem(defaultValue = "false")

@@ -246,7 +246,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             return;
         }
 
-        // for now we only support one pool but this will change
+        // for now, we only support one pool but this will change
         InstanceHandle<Pool> poolHandle = Arc.container().instance(Pool.class);
         if (!poolHandle.isAvailable()) {
             throw new IllegalStateException("No pool has been defined for persistence unit " + persistenceUnitName);

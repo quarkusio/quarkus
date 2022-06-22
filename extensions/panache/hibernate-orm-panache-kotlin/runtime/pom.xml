@@ -100,7 +100,7 @@
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <executions>
-                    <!-- see profile futher down for kapt execution -->
+                    <!-- see profile further down for kapt execution -->
                     <execution>
                         <id>compile</id>
                         <phase>compile</phase>

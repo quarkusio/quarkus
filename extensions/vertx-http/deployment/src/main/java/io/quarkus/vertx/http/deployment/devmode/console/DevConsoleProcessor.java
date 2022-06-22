@@ -652,7 +652,7 @@ public class DevConsoleProcessor {
 
         Engine engine = builder.build();
 
-        // pre-load all templates
+        // preload all templates
         for (DevTemplatePathBuildItem devTemplatePath : devTemplatePaths) {
             if (!devTemplatePath.isTag()) {
                 engine.getTemplate(devTemplatePath.getPath());

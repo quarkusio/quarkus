@@ -24,7 +24,7 @@ import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 
-//TODO this class is only needed by the Spring Data JPA module and would be placed there it it weren't for a dev-mode classloader issue
+//TODO this class is only needed by the Spring Data JPA module and would not be placed there if it weren't for a dev-mode classloader issue
 // see https://github.com/quarkusio/quarkus/issues/6214
 public class AdditionalJpaOperations {
 
@@ -55,7 +55,7 @@ public class AdditionalJpaOperations {
 
     public static long deleteAllWithCascade(AbstractJpaOperations<?> jpaOperations, Class<?> entityClass) {
         EntityManager em = jpaOperations.getEntityManager();
-        //detecting the case where there are cascade-delete associations, and do the the bulk delete query otherwise.
+        //detecting the case where there are cascade-delete associations, and do the bulk delete query otherwise.
         if (deleteOnCascadeDetected(jpaOperations, entityClass)) {
             int count = 0;
             List<?> objects = jpaOperations.listAll(entityClass);

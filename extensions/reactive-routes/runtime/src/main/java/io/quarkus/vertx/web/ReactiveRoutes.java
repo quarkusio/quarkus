@@ -85,7 +85,7 @@ public class ReactiveRoutes {
     }
 
     /**
-     * Indicates the the given stream should be written as server-sent-event in the response.
+     * Indicates that the given stream should be written as server-sent-event in the response.
      * Returning a {@code multi} wrapped using this method produces a {@code text/event-stream} response. Each item
      * is written as an event in the response. The response automatically enables the chunked encoding and set the
      * content type.
@@ -125,9 +125,9 @@ public class ReactiveRoutes {
     }
 
     /**
-     * Indicates the the given stream should be written as a Json stream in the response.
+     * Indicates that the given stream should be written as a Json stream in the response.
      * Returning a {@code multi} wrapped using this method produces a {@code application/x-ndjson} response. Each item
-     * is written as an serialized json on a new line in the response. The response automatically enables the chunked
+     * is written as a serialized json on a new line in the response. The response automatically enables the chunked
      * encoding and set the content type.
      * <p>
      * If the item is a String, the content will be wrapped in quotes and written.
@@ -165,7 +165,7 @@ public class ReactiveRoutes {
     }
 
     /**
-     * Indicates the the given stream should be written as a <em>chunked</em> JSON array in the response.
+     * Indicates that the given stream should be written as a <em>chunked</em> JSON array in the response.
      * Returning a {@code multi} wrapped using this method produces a {@code application/json} response. Each item
      * is written as an JSON object in the response. The response automatically enables the chunked encoding and set the
      * content type.
@@ -201,7 +201,7 @@ public class ReactiveRoutes {
     }
 
     /**
-     * A class allowing to customized how the server sent events are written.
+     * A class allowing to customize how the server sent events are written.
      * <p>
      * The {@code data} section of the resulting event is the JSON representation of the result from {@link #data()}.
      * If {@link #event()} does not return {@code null}, the {@code event} section is written with the result as value.

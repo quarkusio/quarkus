@@ -55,7 +55,7 @@ public @interface ConfigProperties {
     NamingStrategy namingStrategy() default NamingStrategy.FROM_CONFIG;
 
     /**
-     * Whether or not to fail when a non-public field of a class doesn't have a corresponding setter
+     * Whether to fail when a non-public field of a class doesn't have a corresponding setter
      */
     boolean failOnMismatchingMember() default DEFAULT_FAIL_ON_MISMATCHING_MEMBER;
 

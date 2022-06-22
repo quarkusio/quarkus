@@ -391,7 +391,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     }
 
     /**
-     * An utility method to throw any exception as a {@link RuntimeException}.
+     * A utility method to throw any exception as a {@link RuntimeException}.
      * We may throw a checked exception (subtype of {@code Throwable} or {@code Exception}) as un-checked exception.
      * This considers the Java 8 inference rule that states that a {@code throws E} is inferred as {@code RuntimeException}.
      * <p>

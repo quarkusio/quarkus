@@ -31,7 +31,7 @@ public class ReadTimeoutTestCase {
         PostEndpoint.invoked = false;
 
         //make sure incomplete writes do not block threads
-        //and that incoplete data is not delivered to the endpoint
+        //and that incomplete data is not delivered to the endpoint
         Socket socket = new Socket(url.getHost(), url.getPort());
         socket.getOutputStream().write(
                 "POST /post HTTP/1.1\r\nHost: localhost\r\nContent-length:9\r\n\r\n12345".getBytes(StandardCharsets.UTF_8));
@@ -51,7 +51,7 @@ public class ReadTimeoutTestCase {
         PostEndpoint.invoked = false;
 
         //make sure incomplete writes do not block threads
-        //and that incoplete data is not delivered to the endpoint
+        //and that incomplete data is not delivered to the endpoint
         Socket socket = new Socket(url.getHost(), url.getPort());
         socket.getOutputStream().write(
                 "POST /post HTTP/1.1\r\nHost: localhost\r\nContent-length:9\r\n\r\n12345".getBytes(StandardCharsets.UTF_8));

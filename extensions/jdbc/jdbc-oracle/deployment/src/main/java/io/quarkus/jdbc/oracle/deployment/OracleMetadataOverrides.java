@@ -40,7 +40,7 @@ public final class OracleMetadataOverrides {
     /**
      * Should match the contents of {@literal reflect-config.json}
      *
-     * @param reflectiveClass builItem producer
+     * @param reflectiveClass buildItem producer
      */
     @BuildStep
     void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
@@ -75,7 +75,7 @@ public final class OracleMetadataOverrides {
         // runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.driver.OracleDriver"));
 
         // The Oracle driver's metadata hints to require java.sql.DriverManager to be initialized at runtime, but:
-        //  A) I disagree with the fact that a driver makes changes outside of its scope (java.sql in this case)
+        //  A) I disagree with the fact that a driver makes changes outside its scope (java.sql in this case)
         //  B) It does actually not compile if you have other JDBC drivers, as other implementations need this class initialized during build
         //  C) This metadata is expected to get improved in the next public release of the Oracle JDBC driver
         // runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("java.sql.DriverManager"));

@@ -294,7 +294,7 @@ public class HttpSecurityRecorder {
     }
 
     /**
-     * This handler resolves the identity, and will be mapped to the post location. Otherwise
+     * This handler resolves the identity, and will be mapped to the post location. Otherwise,
      * for lazy auth the post will not be evaluated if there is no security rule for the post location.
      */
     public Handler<RoutingContext> formAuthPostHandler() {

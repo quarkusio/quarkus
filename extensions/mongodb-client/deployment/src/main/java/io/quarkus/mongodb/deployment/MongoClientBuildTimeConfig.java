@@ -7,19 +7,19 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(name = "mongodb", phase = ConfigPhase.BUILD_TIME)
 public class MongoClientBuildTimeConfig {
     /**
-     * Whether or not an health check is published in case the smallrye-health extension is present.
+     * Whether a health check is published in case the smallrye-health extension is present.
      */
     @ConfigItem(name = "health.enabled", defaultValue = "true")
     public boolean healthEnabled;
 
     /**
-     * Whether or not metrics are published in case a metrics extension is present.
+     * Whether metrics are published in case a metrics extension is present.
      */
     @ConfigItem(name = "metrics.enabled")
     public boolean metricsEnabled;
 
     /**
-     * Whether or not tracing spans of driver commands are sent in case the smallrye-opentracing extension is present.
+     * Whether tracing spans of driver commands are sent in case the smallrye-opentracing extension is present.
      */
     @ConfigItem(name = "tracing.enabled")
     public boolean tracingEnabled;

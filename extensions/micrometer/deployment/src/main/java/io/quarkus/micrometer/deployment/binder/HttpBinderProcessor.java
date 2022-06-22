@@ -78,7 +78,7 @@ public class HttpBinderProcessor {
             createAdditionalBean(additionalBeans, HTTP_METER_FILTER_CONFIGURATION);
         }
 
-        // Other things use this bean to test whether or not http server/client metrics are enabled
+        // Other things use this bean to test whether http server/client metrics are enabled
         return SyntheticBeanBuildItem
                 .configure(HttpBinderConfiguration.class)
                 .scope(Singleton.class)

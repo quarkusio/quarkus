@@ -95,7 +95,7 @@ public class OpenshiftProcessor {
             DeploymentResourceKind deploymentResourceKind = openshiftConfig.getDeploymentResourceKind();
             if (deploymentResourceKind != DeploymentResourceKind.DeploymentConfig) {
                 if (openshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
-                    // Images stored in internal openshift registry use the following patttern:
+                    // Images stored in internal openshift registry use the following pattern:
                     // 'image-registry.openshift-image-registry.svc:5000/{{ project name}}/{{ image name }}: {{image version }}.
                     // So, we need warn users if group does not match currently selected project.
                     containerImageRegistry.produce(new FallbackContainerImageRegistryBuildItem(OPENSHIFT_INTERNAL_REGISTRY));

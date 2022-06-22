@@ -28,7 +28,7 @@ import io.quarkus.test.QuarkusUnitTest;
 /**
  * @tpSubChapter Resources
  * @tpChapter Integration tests
- * @tpTestCaseDetails Regression test for JBEAP-2847. DefaultTextPlain should be used, if produce annotation annotation is not
+ * @tpTestCaseDetails Regression test for JBEAP-2847. DefaultTextPlain should be used, if produce annotation is not
  *                    used in end-point.
  * @tpSince RESTEasy 3.0.16
  */

@@ -86,7 +86,7 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
             public void visitEnd() {
                 // Add the @JaxbTransient property to the field so that JAXB prefers the generated getter (otherwise JAXB complains about
                 // having a field and property both with the same name)
-                // JSONB will already use the getter so we're good
+                // JSONB will already use the getter, so we're good
                 // Note: we don't need to check if we already have @XmlTransient in the descriptors because if we did, we moved it to the getter
                 // so we can't have any duplicate
                 super.visitAnnotation(JAXB_TRANSIENT_SIGNATURE, true);

@@ -47,7 +47,7 @@ public class RunOptions {
      * This exception will still be propagated to the caller, so this method should not log or perform any other actions other
      * than determine what should happen to the current transaction.
      * <p>
-     * By default the exception is always rolled back.
+     * By default, the exception is always rolled back.
      *
      * @param handler The exception handler
      * @return This builder

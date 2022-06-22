@@ -86,7 +86,7 @@ public class DevServicesDatasourceProcessor {
                 for (RunningDevService database : databases) {
                     devServicesResultBuildItemBuildProducer.produce(database.toBuildItem());
                 }
-                // keep the previous behaviour of producing DevServicesDatasourceResultBuildItem only when the devservice first starts.
+                // keep the previous behaviour of producing DevServicesDatasourceResultBuildItem only when the devservices first starts.
                 return null;
             }
             for (Closeable i : databases) {

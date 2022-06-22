@@ -9,7 +9,7 @@ import io.vertx.ext.web.RoutingContext;
  * for OIDC Code AuthenticationMechanism to keep it as a session cookie.
  *
  * For example, default TokenStateManager concatenates all 3 tokens into a single String but does not persist it.
- * Custom TokenStateManager may choose to keep the tokens in the external storage (DB, file system, etc) and return
+ * Custom TokenStateManager may choose to keep the tokens in the external storage (DB, file system, etc.) and return
  * a reference to this storage.
  */
 public interface TokenStateManager {

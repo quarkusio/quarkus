@@ -18,7 +18,7 @@ import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.runtime.ObjectSubstitution;
 
 /**
- * This represent the fully specified configuration of a Persistence Unit,
+ * This represents the fully specified configuration of a Persistence Unit,
  * in a format which is compatible with the bytecode recorder.
  */
 public final class QuarkusPersistenceUnitDefinition {

@@ -36,16 +36,16 @@ import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
  *
  * Notes:
  *
- * The following pairs are equivallent:
+ * The following pairs are equivalent:
  *
- * quarkus.kubernetes-service-binding.services.prostresql-default.xxx=yyy
- * quarkus.kubernetes-service-binding.services.prostresql.xxx=yyy
+ * quarkus.kubernetes-service-binding.services.postgresql-default.xxx=yyy
+ * quarkus.kubernetes-service-binding.services.postgresql.xxx=yyy
  *
- * quarkus.kubernetes-service-binding.services.prostresql-persondb.xxx=yyy
+ * quarkus.kubernetes-service-binding.services.postgresql-persondb.xxx=yyy
  * quarkus.kubernetes-service-binding.services.persondb.xxx=yyy
  *
  * When service are auto bound the minimal from (e.g. persondb) will be used.
- * Users are still able to to tune things using the [kind]-[name] combo to avoid naming clashes.
+ * Users are still able to tune things using the [kind]-[name] combo to avoid naming clashes.
  *
  */
 public class ServiceBindingProcessor {
@@ -115,7 +115,7 @@ public class ServiceBindingProcessor {
      * @param applicationName The name of the application.
      * @param serviceId The key of the service.
      * @param config The config instance.
-     * @return The servicebinding requirement that corresponds to the matching entry, or empty if no service with serviceId was
+     * @return The service binding requirement that corresponds to the matching entry, or empty if no service with serviceId was
      *         found in config.
      */
     protected static Optional<ServiceBindingRequirementBuildItem> createRequirementFromConfig(String applicationName,
@@ -136,7 +136,7 @@ public class ServiceBindingProcessor {
      * @param serviceId The key of the service.
      * @param resourceName The name of the target resource.
      * @param config The config instance.
-     * @return The servicebinding requirement that corresponds to the matching entry, or empty if no service with serviceId was
+     * @return The service binding requirement that corresponds to the matching entry, or empty if no service with serviceId was
      *         found in config.
      */
     protected static Optional<ServiceBindingRequirementBuildItem> createRequirementFromConfig(String applicationName,
@@ -162,7 +162,7 @@ public class ServiceBindingProcessor {
      * @param applicationName The name of the application.
      * @param config The config instance.
      * @param qualifier The qualifier that will be converted to a requirement.
-     * @return The servicebinding requirement that corresponds to the config entry that matches the qualifier, or the defaults
+     * @return The service binding requirement that corresponds to the config entry that matches the qualifier, or the defaults
      *         for the qualifier. Returns empty if none of the above was found.
      */
     protected static Optional<ServiceBindingRequirementBuildItem> createRequirementFromQualifier(String applicationName,

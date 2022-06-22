@@ -306,7 +306,7 @@ class RestClientProcessor {
     // currently default methods on a rest-client interface
     // that is annotated with ClientHeaderParam
     // leads to NPEs (see https://github.com/quarkusio/quarkus/issues/10249)
-    // so lets warn users about its use
+    // so let's warn users about its use
     private void warnAboutNotWorkingFeaturesInNative(PackageConfig packageConfig, Map<DotName, ClassInfo> interfaces) {
         if (!packageConfig.type.equalsIgnoreCase(PackageConfig.NATIVE)) {
             return;

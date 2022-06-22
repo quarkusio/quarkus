@@ -107,7 +107,7 @@ public class SmallRyeMetricsProcessor {
         String path;
 
         /**
-         * Whether or not metrics published by Quarkus extensions should be enabled.
+         * Whether metrics published by Quarkus extensions should be enabled.
          */
         @ConfigItem(name = "extensions.enabled", defaultValue = "true")
         public boolean extensionsEnabled;
@@ -122,7 +122,7 @@ public class SmallRyeMetricsProcessor {
         public boolean micrometerCompatibility;
 
         /**
-         * Whether or not detailed JAX-RS metrics should be enabled.
+         * Whether detailed JAX-RS metrics should be enabled.
          * <p>
          * See <a href=
          * "https://github.com/eclipse/microprofile-metrics/blob/2.3.x/spec/src/main/asciidoc/required-metrics.adoc#optional-rest">MicroProfile

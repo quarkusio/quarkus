@@ -13,7 +13,7 @@ public class ReactiveMessagingKafkaBuildTimeConfig {
     public boolean serializerAutodetectionEnabled;
 
     /**
-     * Whether or not Kafka serializer/deserializer generation is enabled.
+     * Whether Kafka serializer/deserializer generation is enabled.
      * When no serializer/deserializer are found and not set, Quarkus generates a Jackson-based serde.
      */
     @ConfigItem(name = "serializer-generation.enabled", defaultValue = "true")

@@ -77,7 +77,7 @@ public class ElytronRecorder {
     }
 
     /**
-     * Called to add an additional realm to the {@linkplain SecurityDomain} being built
+     * Called to add a realm to the {@linkplain SecurityDomain} being built
      *
      * @param builder - runtime value for SecurityDomain.Builder created by
      *        {@linkplain #configureDomainBuilder(String, RuntimeValue)}

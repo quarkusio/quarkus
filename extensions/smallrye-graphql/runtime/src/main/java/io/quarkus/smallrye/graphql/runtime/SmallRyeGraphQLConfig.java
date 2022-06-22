@@ -21,19 +21,19 @@ public class SmallRyeGraphQLConfig {
     public String rootPath;
 
     /**
-     * Enable metrics. By default this is false. If set to true, a metrics extension is required.
+     * Enable metrics. By default, this is false. If set to true, a metrics extension is required.
      */
     @ConfigItem(name = "metrics.enabled")
     public Optional<Boolean> metricsEnabled;
 
     /**
-     * Enable tracing. By default this will be enabled if the tracing extension is added.
+     * Enable tracing. By default, this will be enabled if the tracing extension is added.
      */
     @ConfigItem(name = "tracing.enabled")
     public Optional<Boolean> tracingEnabled;
 
     /**
-     * Enable validation. By default this will be enabled if the Hibernate Validator extension is added.
+     * Enable validation. By default, this will be enabled if the Hibernate Validator extension is added.
      */
     @ConfigItem(name = "validation.enabled")
     public Optional<Boolean> validationEnabled;
@@ -70,7 +70,7 @@ public class SmallRyeGraphQLConfig {
 
     /**
      * List of extension fields that should be included in the error response.
-     * By default none will be included. Examples of valid values include
+     * By default, none will be included. Examples of valid values include
      * [exception,classification,code,description,validationErrorType,queryPath]
      */
     @ConfigItem
@@ -78,14 +78,14 @@ public class SmallRyeGraphQLConfig {
 
     /**
      * List of Runtime Exceptions class names that should show the error message.
-     * By default Runtime Exception messages will be hidden and a generic `Server Error` message will be returned.
+     * By default, Runtime Exception messages will be hidden and a generic `Server Error` message will be returned.
      */
     @ConfigItem
     public Optional<List<String>> showRuntimeExceptionMessage;
 
     /**
      * List of Checked Exceptions class names that should hide the error message.
-     * By default Checked Exception messages will show the exception message.
+     * By default, Checked Exception messages will show the exception message.
      */
     @ConfigItem
     public Optional<List<String>> hideCheckedExceptionMessage;

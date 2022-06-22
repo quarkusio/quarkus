@@ -206,7 +206,7 @@ public class SwaggerUiProcessor {
             options.put(Option.backHref, swaggerUiPath);
         }
 
-        // Only add the url if the user did not specified urls
+        // Only add the url if the user did not specify urls
         if (swaggerUiConfig.urls != null && !swaggerUiConfig.urls.isEmpty()) {
             urlsMap = swaggerUiConfig.urls;
         } else {

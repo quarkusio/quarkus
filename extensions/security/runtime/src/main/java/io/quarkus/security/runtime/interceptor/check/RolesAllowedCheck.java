@@ -41,7 +41,7 @@ public class RolesAllowedCheck implements SecurityCheck {
     }
 
     private static Collection<String> getCollectionForKey(String[] allowedRoles) {
-        if (allowedRoles.length == 0) { // shouldn't happen, but lets be on the safe side
+        if (allowedRoles.length == 0) { // shouldn't happen, but let's be on the safe side
             return Collections.emptyList();
         } else if (allowedRoles.length == 1) {
             return Collections.singletonList(allowedRoles[0]);

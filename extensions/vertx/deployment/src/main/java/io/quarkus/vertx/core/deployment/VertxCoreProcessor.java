@@ -321,7 +321,7 @@ class VertxCoreProcessor {
                     }
                     if (client) {
                         //for client mode we assume the debugger is always attached
-                        //this is how IDE's run tests etc, so the debugger is attached right from the start
+                        //this is how IDE's run tests etc., so the debugger is attached right from the start
                         //in this mode we will never print the blocked thread warnings
                         alwaysFilter = true;
                         break;

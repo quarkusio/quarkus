@@ -93,7 +93,7 @@ import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRuntimeConfig;
 import io.quarkus.smallrye.openapi.runtime.filter.AutoBasicSecurityFilter;
-import io.quarkus.smallrye.openapi.runtime.filter.AutoJWTSecurityFilter;
+import io.quarkus.smallrye.openapi.runtime.filter.AutoBearerTokenSecurityFilter;
 import io.quarkus.smallrye.openapi.runtime.filter.AutoUrl;
 import io.quarkus.smallrye.openapi.runtime.filter.OpenIDConnectSecurityFilter;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
@@ -356,18 +356,24 @@ public class SmallRyeOpenApiProcessor {
             SmallRyeOpenApiConfig config) {
 
         // Auto add a security from security extension(s)
-        if (!config.securityScheme.isPresent() && securityInformationBuildItems != null
+        if (config.securityScheme.isEmpty() && securityInformationBuildItems != null
                 && !securityInformationBuildItems.isEmpty()) {
             // This needs to be a filter in runtime as the config we use to autoconfigure is in runtime
             for (SecurityInformationBuildItem securityInformationBuildItem : securityInformationBuildItems) {
                 SecurityInformationBuildItem.SecurityModel securityModel = securityInformationBuildItem.getSecurityModel();
                 switch (securityModel) {
                     case jwt:
-                        return new AutoJWTSecurityFilter(
+                        return new AutoBearerTokenSecurityFilter(
                                 config.securitySchemeName,
                                 config.securitySchemeDescription,
                                 config.jwtSecuritySchemeValue,
                                 config.jwtBearerFormat);
+                    case oauth2:
+                        return new AutoBearerTokenSecurityFilter(
+                                config.securitySchemeName,
+                                config.securitySchemeDescription,
+                                config.oauth2SecuritySchemeValue,
+                                config.oauth2BearerFormat);
                     case basic:
                         return new AutoBasicSecurityFilter(
                                 config.securitySchemeName,

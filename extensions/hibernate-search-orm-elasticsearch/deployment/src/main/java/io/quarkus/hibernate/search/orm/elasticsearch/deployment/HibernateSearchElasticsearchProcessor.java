@@ -1,6 +1,9 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.deployment;
 
 import static io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchClasses.INDEXED;
+import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.backendPropertyKey;
+import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.elasticsearchVersionPropertyKey;
+import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.mapperPropertyKey;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,15 +25,18 @@ import org.hibernate.search.engine.reporting.FailureHandler;
 import org.hibernate.search.mapper.orm.automaticindexing.session.AutomaticIndexingSynchronizationStrategy;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.IndexView;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
@@ -54,11 +60,14 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElas
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRecorder;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.graal.DisableLoggingFeature;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
 class HibernateSearchElasticsearchProcessor {
 
     private static final String HIBERNATE_SEARCH_ELASTICSEARCH = "Hibernate Search ORM + Elasticsearch";
+
+    private static final Logger LOG = Logger.getLogger(HibernateSearchElasticsearchProcessor.class);
 
     HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig;
 
@@ -323,26 +332,6 @@ class HibernateSearchElasticsearchProcessor {
         hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(classpathFile));
     }
 
-    private static String elasticsearchVersionPropertyKey(String persistenceUnitName, String backendName) {
-        return backendPropertyKey(persistenceUnitName, backendName, null, "version");
-    }
-
-    private static String backendPropertyKey(String persistenceUnitName, String backendName, String indexName, String radical) {
-        StringBuilder keyBuilder = new StringBuilder("quarkus.hibernate-search-orm.");
-        if (!PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
-            keyBuilder.append(persistenceUnitName).append(".");
-        }
-        keyBuilder.append("elasticsearch.");
-        if (backendName != null) {
-            keyBuilder.append(backendName).append(".");
-        }
-        if (indexName != null) {
-            keyBuilder.append("indexes.").append(indexName).append(".");
-        }
-        keyBuilder.append(radical);
-        return keyBuilder.toString();
-    }
-
     private void registerReflectionForGson(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         String[] reflectiveClasses = GsonClasses.typesRequiringReflection().toArray(String[]::new);
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, reflectiveClasses));
@@ -354,7 +343,9 @@ class HibernateSearchElasticsearchProcessor {
         // If the version is not set, the default backend is not in use.
                 && buildTimeConfig.defaultPersistenceUnit.defaultBackend.version.isPresent()) {
             ElasticsearchVersion version = buildTimeConfig.defaultPersistenceUnit.defaultBackend.version.get();
-            return new DevservicesElasticsearchBuildItem("quarkus.hibernate-search-orm.elasticsearch.hosts",
+            String hostsPropertyKey = backendPropertyKey(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, null, null,
+                    "hosts");
+            return new DevservicesElasticsearchBuildItem(hostsPropertyKey,
                     version.versionString(),
                     DevservicesElasticsearchBuildItem.Distribution.valueOf(version.distribution().toString().toUpperCase()));
         } else {
@@ -363,4 +354,27 @@ class HibernateSearchElasticsearchProcessor {
             return null;
         }
     }
+
+    @BuildStep(onlyIfNot = IsNormal.class)
+    void devServicesDropAndCreateAndDropByDefault(
+            List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
+            BuildProducer<DevServicesAdditionalConfigBuildItem> devServicesAdditionalConfigProducer) {
+        for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit : configuredPersistenceUnits) {
+            String puName = configuredPersistenceUnit.getPersistenceUnitName();
+            String propertyKeyIndicatingHostsConfigured = backendPropertyKey(puName, null, null, "hosts");
+
+            if (!ConfigUtils.isPropertyPresent(propertyKeyIndicatingHostsConfigured)) {
+                String schemaManagementStrategyPropertyKey = mapperPropertyKey(puName, "schema-management.strategy");
+                if (!ConfigUtils.isPropertyPresent(schemaManagementStrategyPropertyKey)) {
+                    String forcedValue = "drop-and-create-and-drop";
+                    devServicesAdditionalConfigProducer
+                            .produce(new DevServicesAdditionalConfigBuildItem(propertyKeyIndicatingHostsConfigured,
+                                    schemaManagementStrategyPropertyKey, forcedValue,
+                                    () -> LOG.infof("Setting %s=%s to initialize Dev Services managed Elasticsearch server",
+                                            schemaManagementStrategyPropertyKey, forcedValue)));
+                }
+            }
+        }
+    }
+
 }

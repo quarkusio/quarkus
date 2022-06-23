@@ -28,7 +28,7 @@
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
 
         <!-- version.* properties are defined in jboss-parent and are overridden/updated here: -->
-        <version.enforcer.plugin>3.0.0-M3</version.enforcer.plugin>
+        <version.enforcer.plugin>3.1.0</version.enforcer.plugin>
         <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
         <version.exec.plugin>3.0.0</version.exec.plugin>
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>

@@ -8,6 +8,8 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.smallrye.mutiny.Uni;
@@ -16,12 +18,22 @@ import io.smallrye.mutiny.Uni;
 public class ReactiveResource {
     @Inject
     Tracer tracer;
+    @Inject
+    @RestClient
+    ReactiveRestClient client;
 
     @GET
     public Uni<String> helloGet(@QueryParam("name") String name) {
         Span span = tracer.spanBuilder("helloGet").startSpan();
         return Uni.createFrom().item("Hello " + name).onItem().delayIt().by(Duration.ofSeconds(2))
                 .eventually((Runnable) span::end);
+    }
+
+    @GET
+    @Path("/multiple")
+    public Uni<String> helloMultiple() {
+        return Uni.combine().all().unis(client.helloGet("Naruto"), client.helloGet("Goku"))
+                .combinedWith((s, s2) -> s + " and " + s2);
     }
 
     @POST

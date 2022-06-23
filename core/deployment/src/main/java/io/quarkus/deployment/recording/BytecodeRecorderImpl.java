@@ -1128,7 +1128,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
         if (param instanceof Map) {
             //map works the same as collection
             for (Map.Entry<?, ?> i : ((Map<?, ?>) param).entrySet()) {
-                DeferredParameter key = loadObjectInstance(i.getKey(), existing, i.getKey().getClass(), relaxedValidation);
+                DeferredParameter key = i.getKey() != null
+                        ? loadObjectInstance(i.getKey(), existing, i.getKey().getClass(), relaxedValidation)
+                        : loadObjectInstance(null, existing, Object.class, relaxedValidation);
                 DeferredParameter val = i.getValue() != null
                         ? loadObjectInstance(i.getValue(), existing, i.getValue().getClass(), relaxedValidation)
                         : loadObjectInstance(null, existing, Object.class, relaxedValidation);

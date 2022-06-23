@@ -40,8 +40,6 @@ public final class CompiledJavaVersionBuildItem extends SimpleBuildItem {
 
         final class Unknown implements JavaVersion {
 
-            public static final Unknown INSTANCE = new Unknown();
-
             Unknown() {
             }
 

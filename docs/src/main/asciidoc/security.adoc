@@ -11,6 +11,10 @@ Quarkus Security provides the architecture, multiple authentication and authoriz
 
 This document provides a brief overview of Quarkus Security and links to the individual guides.
 
+== Getting Started
+
+Please see the xref:security-getting-started.adoc[Getting Started With Security] guide for a quick walkthrough through Quarkus Security where you can learn how to use xref:security-built-in-authentication.adoc#basic-auth[Basic HTTP Authentication] mechanism and xref:security-jpa.adoc[JPA Identity Provider] to create `SecurityIdentity` and authorize a secure access to the endpoint with `Role Based Access Control`.
+
 == Architecture
 
 `HttpAuthenticationMechanism` is the main entry into Quarkus HTTP Security.
@@ -191,10 +195,6 @@ Below is a summary of the options.
 |No
 |===
 
-=== LDAP
-
-Please see the xref:security-ldap.adoc[Authenticate with LDAP] guide for more information about LDAP authentication mechanism.
-
 [[identity-providers]]
 == Identity Providers
 
@@ -205,7 +205,6 @@ For example, `quarkus-oidc` uses its own `IdentityProvider` to convert a token t
 
 If you use `Basic` or `Form` HTTP-based authentication then you have to add an `IdentityProvider` which can convert a username and password to `SecurityIdentity`.
 
-See xref:security-jpa.adoc[JPA IdentityProvider] and xref:security-jdbc.adoc[JDBC IdentityProvider] for more information.
 You can also use xref:security-testing.adoc#configuring-user-information[User Properties IdentityProvider] for testing.
 
 == Combining Authentication Mechanisms

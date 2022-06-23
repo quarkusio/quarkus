@@ -78,8 +78,9 @@ final public class Constants {
     private static final String DOCS_OUT_DIR = System.getProperty("quarkus.docsOutputDir",
             SYSTEM_PROPERTIES.getProperty("maven.multiModuleProjectDirectory", "."));
     public static final Path GENERATED_DOCS_PATH = Paths.get(DOCS_OUT_DIR + DOCS_SRC_MAIN_ASCIIDOC_GENERATED).toAbsolutePath();
-
-    public static final String DURATION_NOTE_ANCHOR = "duration-note-anchor";
+    public static final String SUMMARY_TABLE_ID_VARIABLE = "summaryTableId";
+    public static final String DURATION_NOTE_ANCHOR = String.format("duration-note-anchor-{%s}",
+            SUMMARY_TABLE_ID_VARIABLE);
     public static final String MEMORY_SIZE_NOTE_ANCHOR = "memory-size-note-anchor";
     public static final String MORE_INFO_ABOUT_TYPE_FORMAT = " link:#%s[icon:question-circle[], title=More information about the %s format]";
     public static final String DURATION_INFORMATION = String.format(Constants.MORE_INFO_ABOUT_TYPE_FORMAT,
@@ -93,7 +94,7 @@ final public class Constants {
             CONFIG_PHASE_BUILD_TIME_ILLUSTRATION);
 
     public static final String DURATION_FORMAT_NOTE = "\nifndef::no-duration-note[]\n[NOTE]" +
-            "\n[[" + DURATION_NOTE_ANCHOR + "]]\n" +
+            "\n[id='" + DURATION_NOTE_ANCHOR + "']\n" +
             ".About the Duration format\n" +
             "====\n" +
             "The format for durations uses the standard `java.time.Duration` format.\n" +

@@ -964,7 +964,6 @@ See link:{hibernate-search-doc-prefix}#configuration-bean-reference-parsing[this
 for more information.
 ====
 
-:no-duration-note: true
 
 [[configuration-reference-coordination-outbox-polling]]
 === Configuration of coordination with outbox polling

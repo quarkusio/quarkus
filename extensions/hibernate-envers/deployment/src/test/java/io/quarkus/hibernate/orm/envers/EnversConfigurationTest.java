@@ -46,7 +46,7 @@ public class EnversConfigurationTest {
     private AuditEntitiesConfiguration getAuditConfiguration() {
         return ((((SessionFactoryImplementor) emf
                 .unwrap(SessionFactoryImpl.class))
-                        .getServiceRegistry()).getParentServiceRegistry())
-                                .getService(EnversService.class).getAuditEntitiesConfiguration();
+                .getServiceRegistry()).getParentServiceRegistry())
+                .getService(EnversService.class).getAuditEntitiesConfiguration();
     }
 }

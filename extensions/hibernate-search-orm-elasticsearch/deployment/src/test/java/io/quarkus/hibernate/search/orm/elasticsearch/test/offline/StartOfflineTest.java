@@ -54,8 +54,8 @@ public class StartOfflineTest {
     public void testSearchAvailableButFailsSinceElasticsearchNotStarted() {
         assertThatThrownBy(() -> searchSession.search(IndexedEntity.class)
                 .where(f -> f.matchAll()).fetchHits(20))
-                        .isInstanceOf(SearchException.class)
-                        .hasMessageContaining("Elasticsearch request failed: Connection refused");
+                .isInstanceOf(SearchException.class)
+                .hasMessageContaining("Elasticsearch request failed: Connection refused");
     }
 
 }

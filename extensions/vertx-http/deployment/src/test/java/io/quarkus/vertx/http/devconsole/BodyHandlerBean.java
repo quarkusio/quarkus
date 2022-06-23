@@ -20,7 +20,7 @@ public class BodyHandlerBean {
         ConfigInstantiator.handleObject(httpConfiguration);
         Handler<RoutingContext> bodyHandler = new VertxHttpRecorder(new HttpBuildTimeConfig(),
                 new RuntimeValue<>(httpConfiguration))
-                        .createBodyHandler();
+                .createBodyHandler();
         router.route().order(Integer.MIN_VALUE + 1).handler(new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext routingContext) {

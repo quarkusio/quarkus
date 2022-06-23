@@ -1114,10 +1114,10 @@ public class JaxrsClientReactiveProcessor {
             for (ResourceMethod subMethod : method.getSubResourceMethods()) {
                 MethodInfo jandexSubMethod = getJavaMethod(subInterface, subMethod,
                         subMethod.getParameters(), index)
-                                .orElseThrow(() -> new RuntimeException(
-                                        "Failed to find matching java method for " + subMethod + " on "
-                                                + subInterface
-                                                + ". It may have unresolved parameter types (generics)"));
+                        .orElseThrow(() -> new RuntimeException(
+                                "Failed to find matching java method for " + subMethod + " on "
+                                        + subInterface
+                                        + ". It may have unresolved parameter types (generics)"));
                 subMethodIndex++;
 
                 boolean isSubResourceMethod = subMethod.getHttpMethod() == null;

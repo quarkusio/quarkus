@@ -101,7 +101,7 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
             // Keycloak-X does not have the `/auth` path segment by default.
             return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(),
                     (uri.getPath().startsWith("/auth") ? "/auth" : null), null, null)
-                            .toString();
+                    .toString();
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }

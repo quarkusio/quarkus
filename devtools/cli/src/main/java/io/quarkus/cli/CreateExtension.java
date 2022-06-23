@@ -105,22 +105,22 @@ public class CreateExtension extends BaseCreateCommand {
 
             final CreateExtensionCommandHandler createExtension = new io.quarkus.devtools.commands.CreateExtension(
                     outputDirectory())
-                            .extensionId(gav.getExtensionId())
-                            .groupId(gav.getGroupId())
-                            .version(gav.getVersion())
-                            .extensionName(nameGeneration.getExtensionName())
-                            .extensionDescription(nameGeneration.extensionDescription())
-                            .namespaceId(nameGeneration.getNamespaceId())
-                            .namespaceName(nameGeneration.getNamespaceName())
-                            .packageName(nameGeneration.getPackageName())
-                            .quarkusVersion(catalog.getQuarkusCoreVersion())
-                            .quarkusBomGroupId(quarkusBom.getGroupId())
-                            .quarkusBomArtifactId(quarkusBom.getArtifactId())
-                            .quarkusBomVersion(quarkusBom.getVersion())
-                            .withoutUnitTest(testGeneration.skipUnitTest())
-                            .withoutDevModeTest(testGeneration.skipDevModeTest())
-                            .withoutIntegrationTests(testGeneration.skipIntegrationTests())
-                            .prepare();
+                    .extensionId(gav.getExtensionId())
+                    .groupId(gav.getGroupId())
+                    .version(gav.getVersion())
+                    .extensionName(nameGeneration.getExtensionName())
+                    .extensionDescription(nameGeneration.extensionDescription())
+                    .namespaceId(nameGeneration.getNamespaceId())
+                    .namespaceName(nameGeneration.getNamespaceName())
+                    .packageName(nameGeneration.getPackageName())
+                    .quarkusVersion(catalog.getQuarkusCoreVersion())
+                    .quarkusBomGroupId(quarkusBom.getGroupId())
+                    .quarkusBomArtifactId(quarkusBom.getArtifactId())
+                    .quarkusBomVersion(quarkusBom.getVersion())
+                    .withoutUnitTest(testGeneration.skipUnitTest())
+                    .withoutDevModeTest(testGeneration.skipDevModeTest())
+                    .withoutIntegrationTests(testGeneration.skipIntegrationTests())
+                    .prepare();
 
             QuarkusCommandOutcome outcome = QuarkusCommandOutcome.success();
 

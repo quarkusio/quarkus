@@ -41,6 +41,6 @@ public abstract class AbstractEnversResource {
     public EnversService getEnversService() {
         return ((((SessionImpl) em.getDelegate()).getFactory().getServiceRegistry())
                 .getParentServiceRegistry())
-                        .getService(EnversService.class);
+                .getService(EnversService.class);
     }
 }

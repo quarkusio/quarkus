@@ -166,13 +166,13 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
         context.put("path", "/greeting");
         assertThat(new CreateProject(QuarkusProjectHelper.getProject(projectRoot.toPath(),
                 BuildTool.GRADLE))
-                        .groupId("com.acme.foo")
-                        .artifactId("foo")
-                        .version("1.0.0-SNAPSHOT")
-                        .packageName("org.acme.foo")
-                        .sourceType(sourceType)
-                        .doCreateProject(context))
-                                .withFailMessage("Project was not created")
-                                .isTrue();
+                .groupId("com.acme.foo")
+                .artifactId("foo")
+                .version("1.0.0-SNAPSHOT")
+                .packageName("org.acme.foo")
+                .sourceType(sourceType)
+                .doCreateProject(context))
+                .withFailMessage("Project was not created")
+                .isTrue();
     }
 }

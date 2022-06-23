@@ -403,7 +403,7 @@ public class JarRunnerIT extends MojoTestBase {
         // '-Xlog:class+path=info' will print diagnostic information that is useful for debugging if something goes wrong
         Process process = doLaunch(jar.getFileName(), output,
                 Arrays.asList("-XX:SharedArchiveFile=app-cds.jsa", "-Xshare:on", "-Xlog:class+path=info"))
-                        .directory(jar.getParent().toFile()).start();
+                .directory(jar.getParent().toFile()).start();
         try {
             // Wait until server up
             dumpFileContentOnFailure(() -> {

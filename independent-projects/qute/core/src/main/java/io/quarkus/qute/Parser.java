@@ -158,9 +158,9 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
                     }
                     throw error(code,
                             "unexpected non-text buffer at the end of the template - {reason}: {buffer}")
-                                    .argument("reason", reason)
-                                    .argument("buffer", buffer)
-                                    .build();
+                            .argument("reason", reason)
+                            .argument("buffer", buffer)
+                            .build();
                 }
             }
 
@@ -501,8 +501,8 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
             if (!name.isEmpty() && !block.getLabel().equals(name)) {
                 throw error(ParserError.SECTION_BLOCK_END_DOES_NOT_MATCH_START,
                         "section block end tag [{name}] does not match the start tag [{tagName}]")
-                                .argument("name", name)
-                                .argument("tagName", block.getLabel()).build();
+                        .argument("name", name)
+                        .argument("tagName", block.getLabel()).build();
             }
             section.endBlock();
         } else {
@@ -515,9 +515,9 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
             if (!name.isEmpty() && !section.helperName.equals(name)) {
                 throw error(ParserError.SECTION_END_DOES_NOT_MATCH_START,
                         "section end tag [{name}] does not match the start tag [{tag}]")
-                                .argument("name", name)
-                                .argument("tag", section.helperName)
-                                .build();
+                        .argument("name", name)
+                        .argument("tag", section.helperName)
+                        .build();
             }
             // Pop the section and its main block
             section = sectionStack.pop();
@@ -589,8 +589,8 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
             if (factory == null) {
                 throw error(ParserError.NO_SECTION_HELPER_FOUND,
                         "Parameter declaration with a default value requires a \\{#let} section helper to be present: {tag}")
-                                .argument("tag", tag)
-                                .build();
+                        .argument("tag", tag)
+                        .build();
             }
             SectionNode.Builder sectionNode = SectionNode
                     .builder("let", origin(0), this, this)
@@ -713,9 +713,9 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
         if (!undeclaredParams.isEmpty()) {
             throw error(ParserError.MANDATORY_SECTION_PARAMS_MISSING,
                     "mandatory section parameters not declared for {tag}: {undeclaredParams}")
-                            .argument("tag", tag)
-                            .argument("undeclaredParams", undeclaredParams)
-                            .build();
+                    .argument("tag", tag)
+                    .argument("undeclaredParams", undeclaredParams)
+                    .build();
         }
 
         for (Entry<String, String> e : params.entrySet()) {

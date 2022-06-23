@@ -319,11 +319,11 @@ public class ResteasyReactiveScanningProcessor {
                 additionalBeans.addBeanClass(generated.getDeclaringClassName());
                 ContainerRequestFilterBuildItem.Builder builder = new ContainerRequestFilterBuildItem.Builder(
                         generated.getGeneratedClassName())
-                                .setRegisterAsBean(false) // it has already been made a bean
-                                .setPriority(generated.getPriority())
-                                .setPreMatching(generated.isPreMatching())
-                                .setNonBlockingRequired(generated.isNonBlocking())
-                                .setReadBody(generated.isReadBody());
+                        .setRegisterAsBean(false) // it has already been made a bean
+                        .setPriority(generated.getPriority())
+                        .setPreMatching(generated.isPreMatching())
+                        .setNonBlockingRequired(generated.isNonBlocking())
+                        .setReadBody(generated.isReadBody());
                 if (!generated.getNameBindingNames().isEmpty()) {
                     builder.setNameBindingNames(generated.getNameBindingNames());
                 }
@@ -334,8 +334,8 @@ public class ResteasyReactiveScanningProcessor {
                 additionalBeans.addBeanClass(generated.getDeclaringClassName());
                 ContainerResponseFilterBuildItem.Builder builder = new ContainerResponseFilterBuildItem.Builder(
                         generated.getGeneratedClassName())
-                                .setRegisterAsBean(false)// it has already been made a bean
-                                .setPriority(generated.getPriority());
+                        .setRegisterAsBean(false)// it has already been made a bean
+                        .setPriority(generated.getPriority());
                 if (!generated.getNameBindingNames().isEmpty()) {
                     builder.setNameBindingNames(generated.getNameBindingNames());
                 }

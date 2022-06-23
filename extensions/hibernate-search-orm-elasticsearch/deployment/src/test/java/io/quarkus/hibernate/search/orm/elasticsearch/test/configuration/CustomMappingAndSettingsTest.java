@@ -85,7 +85,7 @@ public class CustomMappingAndSettingsTest {
                     .extension(ElasticsearchExtension.get())
                     .where(f -> f.fromJson("{'match': { 'name.ngram': { 'query': 'fubar' } } }"))
                     .fetchHits(20))
-                            .hasSize(1);
+                    .hasSize(1);
         });
     }
 }

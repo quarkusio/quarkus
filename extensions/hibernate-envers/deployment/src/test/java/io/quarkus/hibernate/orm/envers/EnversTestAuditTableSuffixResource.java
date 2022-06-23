@@ -26,7 +26,7 @@ public class EnversTestAuditTableSuffixResource {
     public String getAuditTableName() {
         AuditEntitiesConfiguration auditEntitiesConfiguration = ((((SessionImpl) em.getDelegate())
                 .getFactory().getServiceRegistry()).getParentServiceRegistry())
-                        .getService(EnversService.class).getAuditEntitiesConfiguration();
+                .getService(EnversService.class).getAuditEntitiesConfiguration();
 
         String calculatedAuditTableName = auditEntitiesConfiguration.getAuditTableName("entity", "table");
         String expectedAuditTableName = "table" + configuredSuffix;

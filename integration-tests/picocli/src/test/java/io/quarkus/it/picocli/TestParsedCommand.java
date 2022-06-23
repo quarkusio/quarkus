@@ -16,7 +16,7 @@ public class TestParsedCommand {
     @RegisterExtension
     static final QuarkusProdModeTest config = createConfig("hello-app", ParsedCommand.class,
             ConfigFromParseResult.class, ConfigProducer.class)
-                    .setCommandLineParameters("-p", "FromConfig");
+            .setCommandLineParameters("-p", "FromConfig");
 
     @Test
     public void simpleTest() {

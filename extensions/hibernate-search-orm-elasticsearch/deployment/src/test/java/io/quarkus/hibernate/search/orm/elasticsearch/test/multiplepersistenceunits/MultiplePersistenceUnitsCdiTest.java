@@ -83,9 +83,9 @@ public class MultiplePersistenceUnitsCdiTest {
         inTransaction(() -> assertThat(defaultPUSession.search(DefaultPUEntity.class)
                 .where(f -> f.matchAll())
                 .fetchHits(20))
-                        .hasSize(1)
-                        .element(0)
-                        .returns(entity.getId(), DefaultPUEntity::getId));
+                .hasSize(1)
+                .element(0)
+                .returns(entity.getId(), DefaultPUEntity::getId));
     }
 
     @Test
@@ -104,9 +104,9 @@ public class MultiplePersistenceUnitsCdiTest {
         inTransaction(() -> assertThat(pu1Session.search(PU1Entity.class)
                 .where(f -> f.matchAll())
                 .fetchHits(20))
-                        .hasSize(1)
-                        .element(0)
-                        .returns(entity.getId(), PU1Entity::getId));
+                .hasSize(1)
+                .element(0)
+                .returns(entity.getId(), PU1Entity::getId));
     }
 
     @Test
@@ -125,9 +125,9 @@ public class MultiplePersistenceUnitsCdiTest {
         inTransaction(() -> assertThat(pu2Session.search(PU2Entity.class)
                 .where(f -> f.matchAll())
                 .fetchHits(20))
-                        .hasSize(1)
-                        .element(0)
-                        .returns(entity.getId(), PU2Entity::getId));
+                .hasSize(1)
+                .element(0)
+                .returns(entity.getId(), PU2Entity::getId));
     }
 
     @Test

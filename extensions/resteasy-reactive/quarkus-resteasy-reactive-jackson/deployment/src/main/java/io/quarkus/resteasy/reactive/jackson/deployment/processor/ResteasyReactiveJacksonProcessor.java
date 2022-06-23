@@ -131,43 +131,43 @@ public class ResteasyReactiveJacksonProcessor {
                 .produce(
                         new MessageBodyReaderBuildItem.Builder(ServerJacksonMessageBodyReader.class.getName(),
                                 Object.class.getName())
-                                        .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                        .setBuiltin(true).build());
+                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
+                                .setBuiltin(true).build());
         additionalReaders
                 .produce(
                         new MessageBodyReaderBuildItem.Builder(VertxJsonArrayMessageBodyReader.class.getName(),
                                 JsonArray.class.getName())
-                                        .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                        .setBuiltin(true)
-                                        .build());
+                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
+                                .setBuiltin(true)
+                                .build());
         additionalReaders
                 .produce(
                         new MessageBodyReaderBuildItem.Builder(VertxJsonObjectMessageBodyReader.class.getName(),
                                 JsonObject.class.getName())
-                                        .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                        .setBuiltin(true)
-                                        .build());
+                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
+                                .setBuiltin(true)
+                                .build());
         additionalWriters
                 .produce(
                         new MessageBodyWriterBuildItem.Builder(
                                 getJacksonMessageBodyWriter(applicationNeedsSpecialJacksonFeatures), Object.class.getName())
-                                        .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                        .setBuiltin(true)
-                                        .build());
+                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
+                                .setBuiltin(true)
+                                .build());
         additionalWriters
                 .produce(
                         new MessageBodyWriterBuildItem.Builder(VertxJsonArrayMessageBodyWriter.class.getName(),
                                 JsonArray.class.getName())
-                                        .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                        .setBuiltin(true)
-                                        .build());
+                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
+                                .setBuiltin(true)
+                                .build());
         additionalWriters
                 .produce(
                         new MessageBodyWriterBuildItem.Builder(VertxJsonObjectMessageBodyWriter.class.getName(),
                                 JsonObject.class.getName())
-                                        .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                        .setBuiltin(true)
-                                        .build());
+                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
+                                .setBuiltin(true)
+                                .build());
     }
 
     private String getJacksonMessageBodyWriter(boolean applicationNeedsSpecialJacksonFeatures) {

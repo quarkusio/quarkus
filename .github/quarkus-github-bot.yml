@@ -369,6 +369,7 @@ triage:
         - independent-projects/bootstrap/
         - independent-projects/tools/
     - labels: [area/documentation]
+      notify: [ebullient, quarkusio/Documentation]
       directories:
         - docs/
     - labels: [area/infra-automation]

@@ -336,7 +336,7 @@ class HibernateSearchElasticsearchProcessor {
     private static String mapperPropertyKey(String persistenceUnitName, String radical) {
         StringBuilder keyBuilder = new StringBuilder("quarkus.hibernate-search-orm.");
         if (!PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
-            keyBuilder.append(persistenceUnitName).append(".");
+            keyBuilder.append("\"").append(persistenceUnitName).append("\".");
         }
         keyBuilder.append(radical);
         return keyBuilder.toString();
@@ -349,10 +349,10 @@ class HibernateSearchElasticsearchProcessor {
         }
         keyBuilder.append("elasticsearch.");
         if (backendName != null) {
-            keyBuilder.append(backendName).append(".");
+            keyBuilder.append("\"").append(backendName).append("\".");
         }
         if (indexName != null) {
-            keyBuilder.append("indexes.").append(indexName).append(".");
+            keyBuilder.append("indexes.\"").append(indexName).append("\".");
         }
         keyBuilder.append(radical);
         return keyBuilder.toString();

@@ -17,10 +17,7 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
 
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -109,16 +106,6 @@ public class OpenTelemetryReactiveClientTest {
 
         assertEquals(HTTP_OK, ((Map<?, ?>) client.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
         assertEquals(HttpMethod.POST.name(), ((Map<?, ?>) client.get("attributes")).get(HTTP_METHOD.getKey()));
-    }
-
-    @RegisterRestClient(configKey = "client")
-    @Path("/reactive")
-    interface ReactiveRestClient {
-        @GET
-        Uni<String> helloGet(@QueryParam("name") String name);
-
-        @POST
-        Uni<String> helloPost(String body);
     }
 
     private static List<Map<String, Object>> getSpans() {

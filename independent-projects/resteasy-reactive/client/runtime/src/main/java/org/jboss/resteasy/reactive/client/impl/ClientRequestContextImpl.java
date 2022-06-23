@@ -54,9 +54,10 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
         this.configuration = configuration;
         this.headersMap = new ClientRequestHeadersMap(); //restClientRequestContext.requestHeaders.getHeaders()
 
-        // Capture or create a duplicated context, and store it.
+        // Always create a duplicated context because each REST Client invocation must have its own context
+        // A separate context allows integrations like OTel to create a separate Span for each invocation (expected)
         Context current = client.vertx.getOrCreateContext();
-        this.context = VertxContext.getOrCreateDuplicatedContext(current);
+        this.context = VertxContext.createNewDuplicatedContext(current);
         restClientRequestContext.properties.put(VERTX_CONTEXT_PROPERTY, context);
     }
 

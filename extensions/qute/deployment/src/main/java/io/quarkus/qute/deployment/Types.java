@@ -180,6 +180,18 @@ public final class Types {
         return assignableInfo.isAssignableFrom(class2);
     }
 
+    static void indexHierarchy(ClassInfo classInfo, IndexView index) {
+        // Interfaces
+        for (DotName interfaceName : classInfo.interfaceNames()) {
+            index.getClassByName(interfaceName);
+        }
+        // Superclass
+        DotName superName = classInfo.superName();
+        if (superName != null && !superName.equals(DotNames.OBJECT)) {
+            indexHierarchy(index.getClassByName(superName), index);
+        }
+    }
+
     static Type box(Type type) {
         if (type.kind() == Kind.PRIMITIVE) {
             return box(type.asPrimitiveType().primitive());

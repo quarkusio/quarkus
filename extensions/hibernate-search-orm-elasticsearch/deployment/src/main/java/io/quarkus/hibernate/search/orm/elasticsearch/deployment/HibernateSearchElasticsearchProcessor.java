@@ -243,31 +243,26 @@ class HibernateSearchElasticsearchProcessor {
                 .getBuildTimeConfig();
 
         Set<String> propertyKeysWithNoVersion = new LinkedHashSet<>();
+        Map<String, ElasticsearchBackendBuildTimeConfig> backends = buildTimeConfig != null
+                ? buildTimeConfig.getAllBackendConfigsAsMap()
+                : Collections.emptyMap();
         if (configuredPersistenceUnit.isDefaultBackendUsed()) {
-            ElasticsearchBackendBuildTimeConfig backendConfig = buildTimeConfig != null ? buildTimeConfig.defaultBackend : null;
-            // we validate that the version is present for the default backend
+            ElasticsearchBackendBuildTimeConfig backendConfig = backends.get(null);
+            // we validate that the default backend is configured and the version is present
             if (backendConfig == null || !backendConfig.version.isPresent()) {
                 propertyKeysWithNoVersion.add(elasticsearchVersionPropertyKey(persistenceUnitName, null));
             }
-            if (backendConfig != null) {
-                // we register files referenced from the default backend configuration
-                registerClasspathFileFromBackendConfig(persistenceUnitName, null, backendConfig,
-                        applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
-            }
         }
 
-        // we validate that the version is present for all the named backends
-        Map<String, ElasticsearchBackendBuildTimeConfig> backends = buildTimeConfig != null
-                ? buildTimeConfig.namedBackends.backends
-                : Collections.emptyMap();
-        for (Entry<String, ElasticsearchBackendBuildTimeConfig> additionalBackendEntry : backends.entrySet()) {
-            String backendName = additionalBackendEntry.getKey();
-            ElasticsearchBackendBuildTimeConfig backendConfig = additionalBackendEntry.getValue();
+        // we validate that the version is present for all backends
+        for (Entry<String, ElasticsearchBackendBuildTimeConfig> entry : backends.entrySet()) {
+            String backendName = entry.getKey();
+            ElasticsearchBackendBuildTimeConfig backendConfig = entry.getValue();
             if (!backendConfig.version.isPresent()) {
                 propertyKeysWithNoVersion
                         .add(elasticsearchVersionPropertyKey(persistenceUnitName, backendName));
             }
-            // we register files referenced from named backends configuration
+            // we register files referenced from backends configuration
             registerClasspathFileFromBackendConfig(persistenceUnitName, backendName, backendConfig,
                     applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
         }

@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -25,7 +26,7 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
      */
     @ConfigItem(name = "elasticsearch")
     @ConfigDocSection
-    public ElasticsearchNamedBackendsBuildTimeConfig namedBackends;
+    ElasticsearchNamedBackendsBuildTimeConfig namedBackends;
 
     /**
      * A <<bean-reference-note-anchor,bean reference>> to a component
@@ -44,6 +45,17 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
      */
     @ConfigItem
     public CoordinationConfig coordination;
+
+    public Map<String, ElasticsearchBackendBuildTimeConfig> getAllBackendConfigsAsMap() {
+        Map<String, ElasticsearchBackendBuildTimeConfig> map = new LinkedHashMap<>();
+        if (defaultBackend != null) {
+            map.put(null, defaultBackend);
+        }
+        if (namedBackends != null) {
+            map.putAll(namedBackends.backends);
+        }
+        return map;
+    }
 
     @ConfigGroup
     public static class ElasticsearchNamedBackendsBuildTimeConfig {

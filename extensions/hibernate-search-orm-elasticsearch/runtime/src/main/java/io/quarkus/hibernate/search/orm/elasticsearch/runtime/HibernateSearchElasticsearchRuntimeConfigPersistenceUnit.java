@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,7 +40,7 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
      */
     @ConfigItem(name = "elasticsearch")
     @ConfigDocSection
-    public ElasticsearchNamedBackendsRuntimeConfig namedBackends;
+    ElasticsearchNamedBackendsRuntimeConfig namedBackends;
 
     /**
      * Configuration for automatic creation and validation of the Elasticsearch schema:
@@ -65,6 +66,17 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
      */
     @ConfigItem
     MultiTenancyConfig multiTenancy;
+
+    Map<String, ElasticsearchBackendRuntimeConfig> getAllBackendConfigsAsMap() {
+        Map<String, ElasticsearchBackendRuntimeConfig> map = new LinkedHashMap<>();
+        if (defaultBackend != null) {
+            map.put(null, defaultBackend);
+        }
+        if (namedBackends != null) {
+            map.putAll(namedBackends.backends);
+        }
+        return map;
+    }
 
     @ConfigGroup
     public static class ElasticsearchNamedBackendsRuntimeConfig {

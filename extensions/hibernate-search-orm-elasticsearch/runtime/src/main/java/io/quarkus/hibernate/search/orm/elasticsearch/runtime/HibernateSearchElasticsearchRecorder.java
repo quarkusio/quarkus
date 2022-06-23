@@ -156,9 +156,7 @@ public class HibernateSearchElasticsearchRecorder {
                     HibernateOrmMapperSettings.COORDINATION_STRATEGY,
                     buildTimeConfig.coordination.strategy);
 
-            contributeBackendBuildTimeProperties(propertyCollector, null, buildTimeConfig.defaultBackend);
-
-            for (Entry<String, ElasticsearchBackendBuildTimeConfig> backendEntry : buildTimeConfig.namedBackends.backends
+            for (Entry<String, ElasticsearchBackendBuildTimeConfig> backendEntry : buildTimeConfig.getAllBackendConfigsAsMap()
                     .entrySet()) {
                 contributeBackendBuildTimeProperties(propertyCollector, backendEntry.getKey(), backendEntry.getValue());
             }
@@ -262,10 +260,7 @@ public class HibernateSearchElasticsearchRecorder {
                     HibernateOrmMapperSettings.MULTI_TENANCY_TENANT_IDS,
                     runtimeConfig.multiTenancy.tenantIds);
 
-            contributeBackendRuntimeProperties(propertyCollector, null,
-                    runtimeConfig.defaultBackend);
-
-            for (Entry<String, ElasticsearchBackendRuntimeConfig> backendEntry : runtimeConfig.namedBackends.backends
+            for (Entry<String, ElasticsearchBackendRuntimeConfig> backendEntry : runtimeConfig.getAllBackendConfigsAsMap()
                     .entrySet()) {
                 contributeBackendRuntimeProperties(propertyCollector, backendEntry.getKey(), backendEntry.getValue());
             }

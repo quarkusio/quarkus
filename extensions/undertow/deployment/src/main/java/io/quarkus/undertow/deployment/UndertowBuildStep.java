@@ -107,6 +107,7 @@ import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.runtime.HttpSessionContext;
+import io.quarkus.undertow.runtime.QuarkusIdentityManager;
 import io.quarkus.undertow.runtime.ServletHttpSecurityPolicy;
 import io.quarkus.undertow.runtime.ServletProducer;
 import io.quarkus.undertow.runtime.ServletRuntimeConfig;
@@ -320,6 +321,19 @@ public class UndertowBuildStep {
         return new ServletContextPathBuildItem(contextPath);
     }
 
+    @BuildStep()
+    public void produceIdentityManager(final Capabilities capabilities,
+            final BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        if (!hasSecurityCapability(capabilities)) {
+            return;
+        }
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(QuarkusIdentityManager.class));
+    }
+
+    private boolean hasSecurityCapability(final Capabilities capabilities) {
+        return capabilities.isCapabilityWithPrefixPresent(Capability.SECURITY);
+    }
+
     @Record(STATIC_INIT)
     @BuildStep()
     public ServletDeploymentManagerBuildItem build(List<ServletBuildItem> servlets,
@@ -340,7 +354,8 @@ public class UndertowBuildStep {
             KnownPathsBuildItem knownPaths,
             HttpBuildTimeConfig httpBuildTimeConfig,
             HttpRootPathBuildItem httpRootPath,
-            ServletConfig servletConfig) throws Exception {
+            ServletConfig servletConfig,
+            final Capabilities capabilities) throws Exception {
 
         ObjectSubstitutionBuildItem.Holder holder = new ObjectSubstitutionBuildItem.Holder(ServletSecurityInfo.class,
                 ServletSecurityInfoProxy.class, ServletSecurityInfoSubstitution.class);
@@ -357,7 +372,8 @@ public class UndertowBuildStep {
                 launchMode.getLaunchMode(), shutdownContext, httpRootPath.relativePath(contextPath),
                 servletConfig.defaultCharset, webMetaData.getRequestCharacterEncoding(),
                 webMetaData.getResponseCharacterEncoding(), httpBuildTimeConfig.auth.proactive,
-                webMetaData.getWelcomeFileList() != null ? webMetaData.getWelcomeFileList().getWelcomeFiles() : null);
+                webMetaData.getWelcomeFileList() != null ? webMetaData.getWelcomeFileList().getWelcomeFiles() : null,
+                hasSecurityCapability(capabilities));
 
         if (webMetaData.getContextParams() != null) {
             for (ParamValueMetaData i : webMetaData.getContextParams()) {

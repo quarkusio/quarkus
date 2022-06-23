@@ -28,7 +28,8 @@
         <opentelemetry-alpha.version>1.13.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.8.0</jaeger.version>
         <quarkus-http.version>4.1.9</quarkus-http.version>
-        <micrometer.version>1.9.0</micrometer.version>
+        <micrometer.version>1.9.0</micrometer.version><!-- keep in sync with hdrhistogram -->
+        <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <microprofile-config-api.version>2.0.1</microprofile-config-api.version>
         <microprofile-metrics-api.version>3.0.1</microprofile-metrics-api.version>
@@ -61,6 +62,7 @@
         <jakarta.interceptor-api.version>1.2.5</jakarta.interceptor-api.version>
         <jakarta.json.version>1.1.6</jakarta.json.version>
         <jakarta.json.bind-api.version>1.0.2</jakarta.json.bind-api.version>
+        <jakarta.mail.version>1.6.7</jakarta.mail.version>
         <jakarta.persistence-api.version>2.2.3</jakarta.persistence-api.version>
         <jakarta.security.jacc-api.version>1.6.1</jakarta.security.jacc-api.version>
         <jakarta.security.auth.message-api.version>1.1.3</jakarta.security.auth.message-api.version>
@@ -161,7 +163,8 @@
         <mongo-crypt.version>1.4.0</mongo-crypt.version>
         <proton-j.version>0.33.10</proton-j.version>
         <javaparser.version>3.24.2</javaparser.version>
-        <okhttp.version>3.14.9</okhttp.version>
+        <okhttp.version>3.14.9</okhttp.version><!-- keep in sync with okio -->
+        <okio.version>1.17.2</okio.version><!-- keep in sync with okhttp -->
         <hibernate-quarkus-local-cache.version>0.1.1</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>3.3.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP7</quarkus-spring-api.version>
@@ -2885,7 +2888,12 @@
                 <version>${bytebuddy.version}</version>
             </dependency>
 
-            <!-- GRPC dependency -->
+            <!-- GRPC dependencies -->
+            <dependency>
+                <groupId>com.google.api.grpc</groupId>
+                <artifactId>proto-google-common-protos</artifactId>
+                <version>${proto-google-common-protos.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.google.code.findbugs</groupId>
                 <artifactId>jsr305</artifactId>
@@ -3744,6 +3752,11 @@
                 <version>${jakarta.annotation-api.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.sun.mail</groupId>
+                <artifactId>jakarta.mail</artifactId>
+                <version>${jakarta.mail.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>jakarta.persistence</groupId>
                 <artifactId>jakarta.persistence-api</artifactId>
                 <version>${jakarta.persistence-api.version}</version>
@@ -3913,6 +3926,11 @@
                 <groupId>com.squareup.okhttp3</groupId>
                 <artifactId>logging-interceptor</artifactId>
                 <version>${okhttp.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.squareup.okio</groupId>
+                <artifactId>okio</artifactId>
+                <version>${okio.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.mongodb</groupId>
@@ -4820,6 +4838,12 @@
                 <groupId>com.cronutils</groupId>
                 <artifactId>cron-utils</artifactId>
                 <version>${cronutils.version}</version>
+                <exclusions>
+                    <exclusion><!-- Remove once https://github.com/jmrozanec/cron-utils/pull/521 reaches us -->
+                        <groupId>org.javassist</groupId>
+                        <artifactId>javassist</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.quartz-scheduler</groupId>
@@ -5501,6 +5525,13 @@
                 <groupId>info.picocli</groupId>
                 <artifactId>picocli-codegen</artifactId>
                 <version>${picocli.version}</version>
+            </dependency>
+
+            <!-- Micrometer -->
+            <dependency>
+                <groupId>org.hdrhistogram</groupId>
+                <artifactId>HdrHistogram</artifactId>
+                <version>${hdrhistogram.version}</version>
             </dependency>
 
             <!-- Quarkus build related dependencies -->

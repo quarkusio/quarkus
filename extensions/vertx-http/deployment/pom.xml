@@ -248,6 +248,18 @@
                                     <version>${webjar.codemirror.version}</version>
                                     <type>jar</type>
                                     <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/classes/dev-static/codemirror/mode/yaml</outputDirectory>
+                                    <includes>**/mode/yaml/**.js</includes>
+                                    <fileMappers>
+                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
+                                    </fileMappers>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.webjars</groupId>
+                                    <artifactId>codemirror</artifactId>
+                                    <version>${webjar.codemirror.version}</version>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
                                     <outputDirectory>${project.build.directory}/classes/dev-static/codemirror/mode/javascript</outputDirectory>
                                     <includes>**/mode/javascript/**.js</includes>
                                     <fileMappers>

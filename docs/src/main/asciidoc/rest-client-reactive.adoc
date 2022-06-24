@@ -117,7 +117,7 @@ The purpose of the annotations in the code above is the following:
 
 * `@RegisterRestClient` allows Quarkus to know that this interface is meant to be available for
 CDI injection as a REST Client
-* `@Path`, `@GET` and `@PathParam` are the standard JAX-RS annotations used to define how to access the service
+* `@Path`, `@GET` and `@QueryParam` are the standard JAX-RS annotations used to define how to access the service
 
 [NOTE]
 ====

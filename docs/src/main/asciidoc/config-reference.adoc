@@ -366,6 +366,12 @@ Then
 * `quarkus.http.port` is 9090
 * `quarkus.http.ssl-port` is 9443
 
+[WARNING]
+====
+The configuration `quarkus.config.profile.parent` must be placed in the main `application.properties` file, passed as a system property, or passed as an environment variable.
+It does not work when the configuration is placed in the profile aware files. 
+====
+
 === Default Runtime Profile
 
 The default Quarkus runtime profile is set to the profile used to build the application:

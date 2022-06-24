@@ -605,7 +605,7 @@ public final class ExtensionLoader {
                         methodParamFns.add((bc, bri) -> bc.consume(buildItemClass));
                     } else if (isAnEmptyBuildItemConsumer(parameterType)) {
                         throw reportError(parameter,
-                                "Cannot consume an empty build item, use @Produce(class) on the build step method instead");
+                                "Cannot consume an empty build item, use @Consume(class) on the build step method instead");
                     } else if (isAnEmptyBuildItemProducer(parameterType)) {
                         throw reportError(parameter,
                                 "Cannot produce an empty build item, use @Produce(class) on the build step method instead");

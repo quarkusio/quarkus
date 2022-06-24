@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.deployment;
 
+import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_PEER_IP;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_PEER_PORT;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_TRANSPORT;
@@ -7,6 +8,7 @@ import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_G
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_METHOD;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_SERVICE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_SYSTEM;
+import static io.quarkus.opentelemetry.runtime.OpenTelemetryConfig.INSTRUMENTATION_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,7 +26,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.extension.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.grpc.GrpcClient;
@@ -67,10 +73,15 @@ public class GrpcOpenTelemetryTest {
                 .await().atMost(Duration.ofSeconds(5));
         assertEquals("Hello Naruto", response);
 
-        List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
-        assertEquals(2, spans.size());
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(3);
+        assertEquals(3, spans.size());
 
-        SpanData server = spans.get(0);
+        SpanData internal = spans.get(0);
+        assertEquals("span.internal", internal.getName());
+        assertEquals(INTERNAL, internal.getKind());
+        assertEquals("value", internal.getAttributes().get(AttributeKey.stringKey("grpc.internal")));
+
+        SpanData server = spans.get(1);
         assertEquals("helloworld.Greeter/SayHello", server.getName());
         assertEquals(SpanKind.SERVER, server.getKind());
         assertEquals("grpc", server.getAttributes().get(RPC_SYSTEM));
@@ -81,7 +92,7 @@ public class GrpcOpenTelemetryTest {
         assertNotNull(server.getAttributes().get(NET_PEER_PORT));
         assertEquals("ip_tcp", server.getAttributes().get(NET_TRANSPORT));
 
-        SpanData client = spans.get(1);
+        SpanData client = spans.get(2);
         assertEquals("helloworld.Greeter/SayHello", client.getName());
         assertEquals(SpanKind.CLIENT, client.getKind());
         assertEquals("grpc", client.getAttributes().get(RPC_SYSTEM));
@@ -89,6 +100,7 @@ public class GrpcOpenTelemetryTest {
         assertEquals("SayHello", client.getAttributes().get(RPC_METHOD));
         assertEquals(Status.Code.OK.value(), client.getAttributes().get(RPC_GRPC_STATUS_CODE));
 
+        assertEquals(internal.getTraceId(), server.getTraceId());
         assertEquals(server.getTraceId(), client.getTraceId());
     }
 
@@ -133,11 +145,12 @@ public class GrpcOpenTelemetryTest {
     void withCdi() {
         assertEquals("Hello Naruto", helloBean.hello("Naruto"));
 
-        List<SpanData> spans = spanExporter.getFinishedSpanItems(3);
-        assertEquals(3, spans.size());
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(4);
+        assertEquals(4, spans.size());
 
         assertEquals(spans.get(0).getTraceId(), spans.get(1).getTraceId());
         assertEquals(spans.get(0).getTraceId(), spans.get(2).getTraceId());
+        assertEquals(spans.get(0).getTraceId(), spans.get(3).getTraceId());
     }
 
     @GrpcService
@@ -148,6 +161,13 @@ public class GrpcOpenTelemetryTest {
                 responseObserver.onError(new RuntimeException());
                 return;
             }
+
+            Tracer tracer = GlobalOpenTelemetry.getTracer(INSTRUMENTATION_NAME);
+            Span span = tracer.spanBuilder("span.internal")
+                    .setSpanKind(INTERNAL)
+                    .setAttribute("grpc.internal", "value")
+                    .startSpan();
+            span.end();
 
             responseObserver.onNext(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
             responseObserver.onCompleted();

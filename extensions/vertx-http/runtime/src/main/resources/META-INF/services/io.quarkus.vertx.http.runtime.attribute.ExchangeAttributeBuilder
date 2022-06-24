@@ -28,3 +28,4 @@ io.quarkus.vertx.http.runtime.attribute.RemoteHostAttribute$Builder
 io.quarkus.vertx.http.runtime.attribute.RequestPathAttribute$Builder
 io.quarkus.vertx.http.runtime.attribute.NullAttribute$Builder
 io.quarkus.vertx.http.runtime.attribute.AllRequestHeadersAttribute$Builder
+io.quarkus.vertx.http.runtime.attribute.ExchangeDataAttribute$Builder

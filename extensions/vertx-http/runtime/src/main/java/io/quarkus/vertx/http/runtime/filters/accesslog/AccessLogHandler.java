@@ -84,6 +84,7 @@ import io.vertx.ext.web.RoutingContext;
  * <li><code>%{c,xxx}</code> for a specific cookie
  * <li><code>%{r,xxx}</code> xxx is an attribute in the ServletRequest
  * <li><code>%{s,xxx}</code> xxx is an attribute in the HttpSession
+ * <li><code>%{d,xxx}</code> xxx is a data item in the exchange</li>
  * </ul>
  *
  * @author Stuart Douglas

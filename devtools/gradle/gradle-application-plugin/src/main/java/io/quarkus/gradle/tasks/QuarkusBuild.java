@@ -11,8 +11,6 @@ import java.util.Properties;
 
 import javax.inject.Inject;
 
-import javax.inject.Inject;
-
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;

@@ -195,6 +195,30 @@ public class CliDriver {
         String stdout;
         String stderr;
 
+        public int getExitCode() {
+            return exitCode;
+        }
+
+        public String getStdout() {
+            return stdout;
+        }
+
+        public void setStdout(String stdout) {
+            this.stdout = stdout;
+        }
+
+        public String getStderr() {
+            return stderr;
+        }
+
+        public void setStderr(String stderr) {
+            this.stderr = stderr;
+        }
+
+        public void setExitCode(int exitCode) {
+            this.exitCode = exitCode;
+        }
+
         public void echoSystemOut() {
             System.out.println(stdout);
             System.out.println();

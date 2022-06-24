@@ -152,13 +152,19 @@ public class GradleRunner implements BuildSystemRunner {
 
     @Override
     public BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
+        return prepareAction("build", buildOptions, runMode, params);
+    }
+
+    @Override
+    public BuildCommandArgs prepareAction(String action, BuildOptions buildOptions, RunModeOption runMode,
+            List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         setGradleProperties(args, runMode.isBatchMode());
 
         if (buildOptions.clean) {
             args.add("clean");
         }
-        args.add("build");
+        args.add(action);
 
         if (buildOptions.buildNative) {
             args.add("-Dquarkus.package.type=native");

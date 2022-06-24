@@ -282,6 +282,14 @@ Commands:
     add                   Add a Quarkus extension registry
     remove                Remove a Quarkus extension registry
   version                 Display version information.
+  image                   Perform a container image operation.
+    build                 Build a container image.
+      docker              Build a container image using Docker.
+      buildpack           Build a container image using Buildpack.
+      jib                 Build a container image using Jib.
+      openshift           Build a container image using Openshift.
+    push                  Push a container image.
+  completion              bash/zsh completion:  source <(quarkus completion)
 ----
 
 [TIP]
@@ -556,3 +564,42 @@ alias q=quarkus
 # Add q to list of commands included in quarkus autocompletion
 complete -F _complete_quarkus q
 ----
+
+
+=== Image building and pushing
+
+The quarkus cli allows building container images without tampering with your project configuration (adding / removing container image extensions).
+To perform a build:
+
+[source, shell]
+----
+quarkus image build
+----
+
+The build command can be used directly, or a subcommand can be selected. The available subcommands are:
+
+- docker
+- buildpacks
+- jib
+- openshift
+
+Each subcommand corresponds to an image building tool supported by quarkus and gives access to specific configuration options.
+
+For example to use `buildpacks` instead of `docker` and set the builder image of choice:
+
+[source, shell]
+----
+quarkus image build buildpack --builder-image <<your builder image>>
+----
+
+
+==== Pushing
+
+Similar to `build` the `push` command works similarly. It allows allows for pushing images and exposes some basic options related to the target registry.
+
+[source, shell]
+----
+quarkus image push --registry=<<image registry>> --registry-username=<<registry username>> --registry-passowrd=<<registry password>>
+----
+
+Note: It's not recommended to pass username and password as command line arguments.

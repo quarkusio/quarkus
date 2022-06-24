@@ -7,17 +7,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
-import io.quarkus.cli.build.BuildSystemRunner;
 import picocli.CommandLine;
 import picocli.CommandLine.ParentCommand;
 
-@CommandLine.Command(name = "jib", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build/Push a container image using Jib.", description = "%n"
+@CommandLine.Command(name = "jib", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image using Jib.", description = "%n"
         + "This command will build or push a container image for the project, using Jib.", footer = "%n"
                 + "For example (using default values), it will create a container image using with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>'.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
-public class Jib extends BaseImageCommand implements Callable<Integer> {
+public class Jib extends BaseImageCommand {
 
     private static final String JIB = "jib";
     private static final String JIB_CONFIG_PREFIX = "quarkus.jib.";
@@ -37,7 +35,7 @@ public class Jib extends BaseImageCommand implements Callable<Integer> {
 
     private static final String USER = "user";
 
-    @CommandLine.Option(order = 7, names = { "--baseImage" }, description = "The base image to use.")
+    @CommandLine.Option(order = 7, names = { "--base-image" }, description = "The base image to use.")
     public Optional<String> baseImage;
 
     @CommandLine.Option(order = 8, names = {
@@ -80,7 +78,7 @@ public class Jib extends BaseImageCommand implements Callable<Integer> {
 
     @Override
     public void populateImageConfiguration(Map<String, String> properties) {
-        parent.populateImageConfiguration(properties);
+        super.populateImageConfiguration(properties);
         properties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, JIB);
         properties.put(QUARKUS_FORCED_EXTENSIONS, QUARKUS_CONTAINER_IMAGE_EXTENSION_KEY_PREFIX + JIB);
 
@@ -132,18 +130,16 @@ public class Jib extends BaseImageCommand implements Callable<Integer> {
             properties.put(JIB_CONFIG_PREFIX + IMAGE_ID_FILE, imageIdFile);
         }
 
+        if (buildOptions.offline) {
+            properties.put(JIB_CONFIG_PREFIX + OFFLINE_MODE, "true");
+        }
     }
 
     @Override
     public Integer call() throws Exception {
         try {
-            populateImageConfiguration(propertiesOptions.properties);
-            if (buildOptions.offline) {
-                propertiesOptions.properties.put(JIB_CONFIG_PREFIX + OFFLINE_MODE, "true");
-            }
-            BuildSystemRunner runner = getRunner();
-            BuildSystemRunner.BuildCommandArgs commandArgs = runner.prepareBuild(buildOptions, runMode, params);
-            return runner.run(commandArgs);
+            populateImageConfiguration(parent.getPropertiesOptions().properties);
+            return parent.call();
         } catch (Exception e) {
             return output.handleCommandException(e, "Unable to build image: " + e.getMessage());
         }

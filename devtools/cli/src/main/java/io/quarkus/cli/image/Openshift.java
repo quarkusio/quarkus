@@ -7,11 +7,10 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
-import io.quarkus.cli.build.BuildSystemRunner;
 import picocli.CommandLine;
 import picocli.CommandLine.ParentCommand;
 
-@CommandLine.Command(name = "openshift", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build/Push a container image using Openshift.", description = "%n"
+@CommandLine.Command(name = "openshift", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image using Openshift.", description = "%n"
         + "This command will build or push a container image for the project, using Openshift.", footer = "%n"
                 + "For example (using default values), it will create a container image in Openshift using the docker build strategy with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>'.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class Openshift extends BaseImageCommand implements Callable<Integer> {
@@ -36,7 +35,7 @@ public class Openshift extends BaseImageCommand implements Callable<Integer> {
     @CommandLine.Option(order = 7, names = { "--build-strategy" }, description = "The build strategy to use (docker or s2i).")
     public Optional<String> buildStrategy;
 
-    @CommandLine.Option(order = 8, names = { "--baseImage" }, description = "The base image to use.")
+    @CommandLine.Option(order = 8, names = { "--base-image" }, description = "The base image to use.")
     public Optional<String> baseImage = Optional.empty();
 
     @CommandLine.Option(order = 9, names = {
@@ -61,7 +60,7 @@ public class Openshift extends BaseImageCommand implements Callable<Integer> {
 
     @Override
     public void populateImageConfiguration(Map<String, String> properties) {
-        parent.populateImageConfiguration(properties);
+        super.populateImageConfiguration(properties);
         properties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, OPENSHIFT);
         properties.put(QUARKUS_FORCED_EXTENSIONS, QUARKUS_CONTAINER_IMAGE_EXTENSION_KEY_PREFIX + OPENSHIFT);
         properties.put(OPENSHIFT_CONFIG_PREFIX + BUILD_STRATEGY, buildStrategy.orElse("docker"));
@@ -93,10 +92,8 @@ public class Openshift extends BaseImageCommand implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
         try {
-            populateImageConfiguration(propertiesOptions.properties);
-            BuildSystemRunner runner = getRunner();
-            BuildSystemRunner.BuildCommandArgs commandArgs = runner.prepareBuild(buildOptions, runMode, params);
-            return runner.run(commandArgs);
+            populateImageConfiguration(parent.getPropertiesOptions().properties);
+            return parent.call();
         } catch (Exception e) {
             return output.handleCommandException(e, "Unable to build image: " + e.getMessage());
         }

@@ -13,15 +13,15 @@ public class ImageOptions {
 
     @CommandLine.Option(order = 4, names = {
             "--name" }, description = "The name part of the container image. Defaults to the ${project.artifactId}.")
-    public Optional<String> name;
+    public Optional<String> name = Optional.empty();
 
     @CommandLine.Option(order = 5, names = {
             "--tag" }, description = "The tag part of the container image. Defaults to the ${project.version}.")
-    public Optional<String> tag;
+    public Optional<String> tag = Optional.empty();
 
     @CommandLine.Option(order = 6, names = {
             "--registry" }, description = "The registry part of the container image. Empty by default.")
-    public Optional<String> registry;
+    public Optional<String> registry = Optional.empty();
 
     @Override
     public String toString() {

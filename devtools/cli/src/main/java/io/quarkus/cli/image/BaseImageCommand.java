@@ -3,14 +3,18 @@ package io.quarkus.cli.image;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.Callable;
 
 import io.quarkus.cli.build.BaseBuildCommand;
 import io.quarkus.cli.common.BuildOptions;
+import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 import picocli.CommandLine.Parameters;
 
-public class BaseImageCommand extends BaseBuildCommand {
+public class BaseImageCommand extends BaseBuildCommand implements Callable<Integer> {
 
     protected static final String QUARKUS_FORCED_EXTENSIONS = "quarkus.application.forced-extensions";
     protected static final String QUARKUS_CONTAINER_IMAGE_EXTENSION_KEY_PREFIX = "io.quarkus:quarkus-container-image-";
@@ -19,7 +23,10 @@ public class BaseImageCommand extends BaseBuildCommand {
     private static final String QUARKUS_CONTAINER_IMAGE_GROUP = "quarkus.container-image.group";
     private static final String QUARKUS_CONTAINER_IMAGE_NAME = "quarkus.container-image.name";
     private static final String QUARKUS_CONTAINER_IMAGE_TAG = "quarkus.container-image.tag";
-    private static final String QUARKUS_CONTAINER_IMAGE_REGISTRY = "quarkus.container-image.registry";
+    protected static final String QUARKUS_CONTAINER_IMAGE_REGISTRY = "quarkus.container-image.registry";
+
+    protected static final Map<BuildTool, String> ACTION_MAPPING = Map.of(BuildTool.MAVEN, "quarkus:image-build",
+            BuildTool.GRADLE, "imageBuild");
 
     @CommandLine.Mixin
     protected RunModeOption runMode;
@@ -35,8 +42,21 @@ public class BaseImageCommand extends BaseBuildCommand {
 
     public void populateImageConfiguration(Map<String, String> properties) {
         imageOptions.group.ifPresent(group -> properties.put(QUARKUS_CONTAINER_IMAGE_GROUP, group));
-        imageOptions.group.ifPresent(name -> properties.put(QUARKUS_CONTAINER_IMAGE_NAME, name));
-        imageOptions.group.ifPresent(tag -> properties.put(QUARKUS_CONTAINER_IMAGE_TAG, tag));
-        imageOptions.group.ifPresent(registry -> properties.put(QUARKUS_CONTAINER_IMAGE_REGISTRY, registry));
+        imageOptions.name.ifPresent(name -> properties.put(QUARKUS_CONTAINER_IMAGE_NAME, name));
+        imageOptions.tag.ifPresent(tag -> properties.put(QUARKUS_CONTAINER_IMAGE_TAG, tag));
+        imageOptions.registry.ifPresent(registry -> properties.put(QUARKUS_CONTAINER_IMAGE_REGISTRY, registry));
+    }
+
+    public Optional<String> getAction() {
+        return Optional.empty();
+    }
+
+    public PropertiesOptions getPropertiesOptions() {
+        return this.propertiesOptions;
+    }
+
+    @Override
+    public Integer call() throws Exception {
+        return 0;
     }
 }

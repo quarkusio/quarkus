@@ -1,21 +1,44 @@
 package io.quarkus.cli.image;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 
 import io.quarkus.cli.build.BuildSystemRunner;
+import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "push", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Push a container image.", description = "%n"
         + "This command will build and push a container image for the project.", footer = "%n", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class Push extends BaseImageCommand implements Callable<Integer> {
 
-    private static final String QUARKUS_CONTAINER_IMAGE_PUSH = "quarkus.container-image.push";
+    protected static final String QUARKUS_CONTAINER_IMAGE_EXTENSION = "io.quarkus:quarkus-container-image";
+    private static final Map<BuildTool, String> ACTION_MAPPING = Map.of(BuildTool.MAVEN, "quarkus:image-push",
+            BuildTool.GRADLE, "imagePush");
+
+    private static final String QUARKUS_CONTAINER_IMAGE_USERNAME = "quarkus.container-image.username";
+    private static final String QUARKUS_CONTAINER_IMAGE_PASSWORD = "quarkus.container-image.password";
+
+    @CommandLine.Option(order = 8, names = {
+            "--registry-username" }, description = "The image registry username.")
+    public Optional<String> registryUsername = Optional.empty();
+
+    @CommandLine.Option(order = 9, names = {
+            "--registry-password" }, description = "The image registry password.")
+    public Optional<String> registryPassword = Optional.empty();
 
     @Override
     public void populateImageConfiguration(Map<String, String> properties) {
         super.populateImageConfiguration(properties);
-        properties.put(QUARKUS_CONTAINER_IMAGE_PUSH, "true");
+        registryUsername.ifPresent(u -> properties.put(QUARKUS_CONTAINER_IMAGE_USERNAME, u));
+        registryPassword.ifPresent(p -> properties.put(QUARKUS_CONTAINER_IMAGE_PASSWORD, p));
+
+        properties.put(QUARKUS_FORCED_EXTENSIONS, QUARKUS_CONTAINER_IMAGE_EXTENSION);
+    }
+
+    @Override
+    public Optional<String> getAction() {
+        return Optional.ofNullable(ACTION_MAPPING.get(getRunner().getBuildTool()));
     }
 
     @Override
@@ -23,10 +46,13 @@ public class Push extends BaseImageCommand implements Callable<Integer> {
         try {
             populateImageConfiguration(propertiesOptions.properties);
             BuildSystemRunner runner = getRunner();
-            BuildSystemRunner.BuildCommandArgs commandArgs = runner.prepareBuild(buildOptions, runMode, params);
+
+            String action = getAction().orElseThrow(
+                    () -> new IllegalStateException("Unknown image push action for " + runner.getBuildTool().name()));
+            BuildSystemRunner.BuildCommandArgs commandArgs = runner.prepareAction(action, buildOptions, runMode, params);
             return runner.run(commandArgs);
         } catch (Exception e) {
-            return output.handleCommandException(e, "Unable to build image: " + e.getMessage());
+            return output.handleCommandException(e, "Unable to push image: " + e.getMessage());
         }
     }
 

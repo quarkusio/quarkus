@@ -86,6 +86,7 @@ public class BeanGenerator extends AbstractGenerator {
     protected final PrivateMembersCollector privateMembers;
     protected final Set<String> existingClasses;
     protected final Map<BeanInfo, String> beanToGeneratedName;
+    protected final Map<BeanInfo, String> beanToGeneratedBaseName;
     protected final Predicate<DotName> injectionPointAnnotationsPredicate;
     protected final List<Function<BeanInfo, Consumer<BytecodeCreator>>> suppressConditionGenerators;
 
@@ -102,6 +103,7 @@ public class BeanGenerator extends AbstractGenerator {
         this.beanToGeneratedName = beanToGeneratedName;
         this.injectionPointAnnotationsPredicate = injectionPointAnnotationsPredicate;
         this.suppressConditionGenerators = suppressConditionGenerators;
+        this.beanToGeneratedBaseName = new HashMap<>();
     }
 
     /**
@@ -128,8 +130,86 @@ public class BeanGenerator extends AbstractGenerator {
         }
     }
 
-    Collection<Resource> generateSyntheticBean(BeanInfo bean) {
+    /**
+     * Precompute the generated name for the given bean so that the {@link ComponentsProviderGenerator} can be executed before
+     * all beans metadata are generated.
+     *
+     * @param bean
+     */
+    void precomputeGeneratedName(BeanInfo bean) {
+        if (bean.isSynthetic()) {
+            generateSyntheticBeanName(bean);
+        } else if (bean.isProducerField()) {
+            generateProducerFieldBeanName(bean);
+        } else if (bean.isProducerMethod()) {
+            generateProducerMethodBeanName(bean);
+        } else if (bean.isClassBean()) {
+            generateClassBeanName(bean);
+        }
+    }
 
+    private void generateProducerFieldBeanName(BeanInfo bean) {
+        FieldInfo producerField = bean.getTarget().get().asField();
+        ClassInfo declaringClass = producerField.declaringClass();
+        String declaringClassBase;
+        if (declaringClass.enclosingClass() != null) {
+            declaringClassBase = DotNames.simpleName(declaringClass.enclosingClass()) + UNDERSCORE
+                    + DotNames.simpleName(declaringClass);
+        } else {
+            declaringClassBase = DotNames.simpleName(declaringClass);
+        }
+
+        String baseName = declaringClassBase + PRODUCER_FIELD_SUFFIX + UNDERSCORE + producerField.name();
+        this.beanToGeneratedBaseName.put(bean, baseName);
+        String targetPackage = DotNames.packageName(declaringClass.name());
+        String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
+        this.beanToGeneratedName.put(bean, generatedName);
+    }
+
+    private void generateProducerMethodBeanName(BeanInfo bean) {
+        MethodInfo producerMethod = bean.getTarget().get().asMethod();
+        ClassInfo declaringClass = producerMethod.declaringClass();
+        String declaringClassBase;
+        if (declaringClass.enclosingClass() != null) {
+            declaringClassBase = DotNames.simpleName(declaringClass.enclosingClass()) + UNDERSCORE
+                    + DotNames.simpleName(declaringClass);
+        } else {
+            declaringClassBase = DotNames.simpleName(declaringClass);
+        }
+
+        StringBuilder sigBuilder = new StringBuilder();
+        sigBuilder.append(producerMethod.name())
+                .append(UNDERSCORE)
+                .append(producerMethod.returnType().name().toString());
+
+        for (Type i : producerMethod.parameterTypes()) {
+            sigBuilder.append(i.name().toString());
+        }
+
+        String baseName = declaringClassBase + PRODUCER_METHOD_SUFFIX + UNDERSCORE + producerMethod.name() + UNDERSCORE
+                + Hashes.sha1(sigBuilder.toString());
+        this.beanToGeneratedBaseName.put(bean, baseName);
+        String targetPackage = DotNames.packageName(declaringClass.name());
+        String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
+        this.beanToGeneratedName.put(bean, generatedName);
+    }
+
+    private void generateClassBeanName(BeanInfo bean) {
+        ClassInfo beanClass = bean.getTarget().get().asClass();
+        String baseName;
+        if (beanClass.enclosingClass() != null) {
+            baseName = DotNames.simpleName(beanClass.enclosingClass()) + UNDERSCORE + DotNames.simpleName(beanClass);
+        } else {
+            baseName = DotNames.simpleName(beanClass);
+        }
+        this.beanToGeneratedBaseName.put(bean, baseName);
+        ProviderType providerType = new ProviderType(bean.getProviderType());
+        String targetPackage = DotNames.packageName(providerType.name());
+        String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
+        this.beanToGeneratedName.put(bean, generatedName);
+    }
+
+    private void generateSyntheticBeanName(BeanInfo bean) {
         StringBuilder baseNameBuilder = new StringBuilder();
         if (bean.getImplClazz().enclosingClass() != null) {
             baseNameBuilder.append(DotNames.simpleName(bean.getImplClazz().enclosingClass())).append(UNDERSCORE)
@@ -142,11 +222,16 @@ public class BeanGenerator extends AbstractGenerator {
         baseNameBuilder.append(UNDERSCORE);
         baseNameBuilder.append(SYNTHETIC_SUFFIX);
         String baseName = baseNameBuilder.toString();
+        this.beanToGeneratedBaseName.put(bean, baseName);
+        String targetPackage = bean.getTargetPackageName();
+        this.beanToGeneratedName.put(bean, generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX));
+    }
 
+    Collection<Resource> generateSyntheticBean(BeanInfo bean) {
         ProviderType providerType = new ProviderType(bean.getProviderType());
         String targetPackage = bean.getTargetPackageName();
-        String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
-        beanToGeneratedName.put(bean, generatedName);
+        String baseName = beanToGeneratedBaseName.get(bean);
+        String generatedName = beanToGeneratedName.get(bean);
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();
         }
@@ -224,17 +309,10 @@ public class BeanGenerator extends AbstractGenerator {
     }
 
     Collection<Resource> generateClassBean(BeanInfo bean, ClassInfo beanClass) {
-
-        String baseName;
-        if (beanClass.enclosingClass() != null) {
-            baseName = DotNames.simpleName(beanClass.enclosingClass()) + UNDERSCORE + DotNames.simpleName(beanClass);
-        } else {
-            baseName = DotNames.simpleName(beanClass);
-        }
         ProviderType providerType = new ProviderType(bean.getProviderType());
         String targetPackage = DotNames.packageName(providerType.name());
-        String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
-        beanToGeneratedName.put(bean, generatedName);
+        String generatedName = beanToGeneratedName.get(bean);
+        String baseName = beanToGeneratedBaseName.get(bean);
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();
         }
@@ -318,31 +396,12 @@ public class BeanGenerator extends AbstractGenerator {
     }
 
     Collection<Resource> generateProducerMethodBean(BeanInfo bean, MethodInfo producerMethod) {
-
         ClassInfo declaringClass = producerMethod.declaringClass();
-        String declaringClassBase;
-        if (declaringClass.enclosingClass() != null) {
-            declaringClassBase = DotNames.simpleName(declaringClass.enclosingClass()) + UNDERSCORE
-                    + DotNames.simpleName(declaringClass);
-        } else {
-            declaringClassBase = DotNames.simpleName(declaringClass);
-        }
-
         ProviderType providerType = new ProviderType(bean.getProviderType());
-        StringBuilder sigBuilder = new StringBuilder();
-        sigBuilder.append(producerMethod.name())
-                .append(UNDERSCORE)
-                .append(producerMethod.returnType().name().toString());
-
-        for (Type i : producerMethod.parameterTypes()) {
-            sigBuilder.append(i.name().toString());
-        }
-
-        String baseName = declaringClassBase + PRODUCER_METHOD_SUFFIX + UNDERSCORE + producerMethod.name() + UNDERSCORE
-                + Hashes.sha1(sigBuilder.toString());
+        String baseName = beanToGeneratedBaseName.get(bean);
         String targetPackage = DotNames.packageName(declaringClass.name());
-        String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
-        beanToGeneratedName.put(bean, generatedName);
+        String generatedName = beanToGeneratedName.get(bean);
+
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();
         }
@@ -422,21 +481,12 @@ public class BeanGenerator extends AbstractGenerator {
     }
 
     Collection<Resource> generateProducerFieldBean(BeanInfo bean, FieldInfo producerField) {
-
         ClassInfo declaringClass = producerField.declaringClass();
-        String declaringClassBase;
-        if (declaringClass.enclosingClass() != null) {
-            declaringClassBase = DotNames.simpleName(declaringClass.enclosingClass()) + UNDERSCORE
-                    + DotNames.simpleName(declaringClass);
-        } else {
-            declaringClassBase = DotNames.simpleName(declaringClass);
-        }
-
         ProviderType providerType = new ProviderType(bean.getProviderType());
-        String baseName = declaringClassBase + PRODUCER_FIELD_SUFFIX + UNDERSCORE + producerField.name();
+        String baseName = beanToGeneratedBaseName.get(bean);
         String targetPackage = DotNames.packageName(declaringClass.name());
-        String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
-        beanToGeneratedName.put(bean, generatedName);
+        String generatedName = beanToGeneratedName.get(bean);
+
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();
         }

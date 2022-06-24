@@ -8,6 +8,7 @@ import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.arc.processor.AnnotationLiteralProcessor.AnnotationLiteralClassInfo;
 import io.quarkus.arc.processor.AnnotationLiteralProcessor.CacheKey;
+import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldCreator;
@@ -19,6 +20,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import javax.enterprise.util.AnnotationLiteral;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.MethodInfo;
@@ -44,7 +48,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
      * @param existingClasses names of classes that already exist and should not be generated again
      * @return the generated classes, never {@code null}
      */
-    Collection<ResourceOutput.Resource> generate(ComputingCache<CacheKey, AnnotationLiteralClassInfo> cache,
+    Collection<Resource> generate(ComputingCache<CacheKey, AnnotationLiteralClassInfo> cache,
             Set<String> existingClasses) {
         List<ResourceOutput.Resource> resources = new ArrayList<>();
         cache.forEachExistingValue(literal -> {
@@ -53,6 +57,30 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
             resources.addAll(classOutput.getResources());
         });
         return resources;
+    }
+
+    /**
+     * Creator of an {@link AnnotationLiteralProcessor} must call this method at an appropriate point
+     * in time and write the result to an appropriate output. If not, the bytecode sequences generated
+     * using the {@code AnnotationLiteralProcessor} will refer to non-existing classes.
+     *
+     * @param existingClasses names of classes that already exist and should not be generated again
+     * @return the generated classes, never {@code null}
+     */
+    Collection<Future<Collection<Resource>>> generate(ComputingCache<CacheKey, AnnotationLiteralClassInfo> cache,
+            Set<String> existingClasses, ExecutorService executor) {
+        List<Future<Collection<Resource>>> futures = new ArrayList<>();
+        cache.forEachExistingValue(literal -> {
+            futures.add(executor.submit(new Callable<Collection<Resource>>() {
+                @Override
+                public Collection<Resource> call() throws Exception {
+                    ResourceClassOutput classOutput = new ResourceClassOutput(literal.isApplicationClass, generateSources);
+                    createAnnotationLiteralClass(classOutput, literal, existingClasses);
+                    return classOutput.getResources();
+                }
+            }));
+        });
+        return futures;
     }
 
     /**

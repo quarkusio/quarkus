@@ -172,36 +172,44 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         // - when a bean is processed the map entry is removed
         // - if we're stuck and the map is not empty ISE is thrown
         boolean stuck = false;
+        Predicate<BeanInfo> isNotDependencyPredicate = new Predicate<BeanInfo>() {
+            @Override
+            public boolean test(BeanInfo b) {
+                return !isDependency(b, beanToInjections);
+            }
+        };
+        Predicate<BeanInfo> isNormalScopedOrNotDependencyPredicate = new Predicate<BeanInfo>() {
+            @Override
+            public boolean test(BeanInfo b) {
+                return b.getScope().isNormal() || !isDependency(b, beanToInjections);
+            }
+        };
+        Predicate<BeanInfo> isNotProducerOrNormalScopedOrNotDependencyPredicate = new Predicate<BeanInfo>() {
+            @Override
+            public boolean test(BeanInfo b) {
+                // Try to process non-producer beans first, including declaring beans of producers
+                if (b.isProducerField() || b.isProducerMethod()) {
+                    return false;
+                }
+                return b.getScope().isNormal() || !isDependency(b, beanToInjections);
+            }
+        };
+
         while (!beanToInjections.isEmpty()) {
             if (stuck) {
-                throw new IllegalStateException("Circular dependencies not supported: \n" + beanToInjections.entrySet()
-                        .stream()
-                        .map(e -> "\t " + e.getKey() + " injected into: " + e.getValue()
-                                .stream()
-                                .map(b -> b.getBeanClass()
-                                        .toString())
-                                .collect(Collectors.joining(", ")))
-                        .collect(Collectors.joining("\n")));
+                throw circularDependenciesNotSupportedException(beanToInjections);
             }
             stuck = true;
             // First try to process beans that are not dependencies
             stuck = addBeans(beanAdder, beanToInjections, processed, beanIdToBeanHandle,
-                    beanToGeneratedName, b -> !isDependency(b, beanToInjections));
+                    beanToGeneratedName, isNotDependencyPredicate);
             if (stuck) {
                 // It seems we're stuck but we can try to process normal scoped beans that can prevent a circular dependency
                 stuck = addBeans(beanAdder, beanToInjections, processed, beanIdToBeanHandle,
-                        beanToGeneratedName,
-                        b -> {
-                            // Try to process non-producer beans first, including declaring beans of producers
-                            if (b.isProducerField() || b.isProducerMethod()) {
-                                return false;
-                            }
-                            return b.getScope().isNormal() || !isDependency(b, beanToInjections);
-                        });
+                        beanToGeneratedName, isNotProducerOrNormalScopedOrNotDependencyPredicate);
                 if (stuck) {
                     stuck = addBeans(beanAdder, beanToInjections, processed,
-                            beanIdToBeanHandle, beanToGeneratedName,
-                            b -> !isDependency(b, beanToInjections) || b.getScope().isNormal());
+                            beanIdToBeanHandle, beanToGeneratedName, isNormalScopedOrNotDependencyPredicate);
                 }
             }
         }
@@ -226,6 +234,21 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         beanAdder.close();
     }
 
+    private IllegalStateException circularDependenciesNotSupportedException(Map<BeanInfo, List<BeanInfo>> beanToInjections) {
+        StringBuilder msg = new StringBuilder("Circular dependencies not supported: \n");
+        for (Map.Entry<BeanInfo, List<BeanInfo>> e : beanToInjections.entrySet()) {
+            msg.append("\t ");
+            msg.append(e.getKey());
+            msg.append(" injected into: ");
+            msg.append(e.getValue()
+                    .stream()
+                    .map(BeanInfo::getBeanClass).map(Object::toString)
+                    .collect(Collectors.joining(", ")));
+            msg.append("\n");
+        }
+        return new IllegalStateException(msg.toString());
+    }
+
     private void processObservers(ClassCreator componentsProvider, MethodCreator getComponents, BeanDeployment beanDeployment,
             ResultHandle beanIdToBeanHandle, ResultHandle observersHandle, Map<ObserverInfo, String> observerToGeneratedName) {
         try (ObserverAdder observerAdder = new ObserverAdder(componentsProvider, getComponents, observerToGeneratedName,
@@ -248,30 +271,37 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
     }
 
     private Map<BeanInfo, List<BeanInfo>> initBeanToInjections(BeanDeployment beanDeployment) {
+        Function<BeanInfo, List<BeanInfo>> computeNewArrayFun = new Function<BeanInfo, List<BeanInfo>>() {
+
+            @Override
+            public List<BeanInfo> apply(BeanInfo b) {
+                return new ArrayList<>();
+            }
+        };
         Map<BeanInfo, List<BeanInfo>> beanToInjections = new HashMap<>();
         for (BeanInfo bean : beanDeployment.getBeans()) {
             if (bean.isProducerMethod() || bean.isProducerField()) {
-                beanToInjections.computeIfAbsent(bean.getDeclaringBean(), d -> new ArrayList<>()).add(bean);
+                beanToInjections.computeIfAbsent(bean.getDeclaringBean(), computeNewArrayFun).add(bean);
             }
             for (Injection injection : bean.getInjections()) {
                 for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
                     if (!BuiltinBean.resolvesTo(injectionPoint)) {
-                        beanToInjections.computeIfAbsent(injectionPoint.getResolvedBean(), d -> new ArrayList<>()).add(bean);
+                        beanToInjections.computeIfAbsent(injectionPoint.getResolvedBean(), computeNewArrayFun).add(bean);
                     }
                 }
             }
             if (bean.getDisposer() != null) {
                 for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
                     if (!BuiltinBean.resolvesTo(injectionPoint)) {
-                        beanToInjections.computeIfAbsent(injectionPoint.getResolvedBean(), d -> new ArrayList<>()).add(bean);
+                        beanToInjections.computeIfAbsent(injectionPoint.getResolvedBean(), computeNewArrayFun).add(bean);
                     }
                 }
             }
             for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
-                beanToInjections.computeIfAbsent(interceptor, d -> new ArrayList<>()).add(bean);
+                beanToInjections.computeIfAbsent(interceptor, computeNewArrayFun).add(bean);
             }
             for (DecoratorInfo decorator : bean.getBoundDecorators()) {
-                beanToInjections.computeIfAbsent(decorator, d -> new ArrayList<>()).add(bean);
+                beanToInjections.computeIfAbsent(decorator, computeNewArrayFun).add(bean);
             }
         }
         // Also process interceptor and decorator injection points
@@ -279,7 +309,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             for (Injection injection : interceptor.getInjections()) {
                 for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
                     if (!BuiltinBean.resolvesTo(injectionPoint)) {
-                        beanToInjections.computeIfAbsent(injectionPoint.getResolvedBean(), d -> new ArrayList<>())
+                        beanToInjections.computeIfAbsent(injectionPoint.getResolvedBean(), computeNewArrayFun)
                                 .add(interceptor);
                     }
                 }
@@ -289,7 +319,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             for (Injection injection : decorator.getInjections()) {
                 for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
                     if (!injectionPoint.isDelegate() && !BuiltinBean.resolvesTo(injectionPoint)) {
-                        beanToInjections.computeIfAbsent(injectionPoint.getResolvedBean(), d -> new ArrayList<>())
+                        beanToInjections.computeIfAbsent(injectionPoint.getResolvedBean(), computeNewArrayFun)
                                 .add(decorator);
                     }
                 }
@@ -392,7 +422,6 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
         private final ResultHandle removedBeansHandle;
         private final ResultHandle typeCacheHandle;
-        private final ClassOutput classOutput;
         private ResultHandle tccl;
         // Shared annotation literals for an individual addRemovedBeansX() method
         private final Map<AnnotationInstanceKey, ResultHandle> sharedQualifers;
@@ -404,7 +433,6 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             super(getComponentsMethod, componentsProvider);
             this.removedBeansHandle = removedBeansHandle;
             this.typeCacheHandle = typeCacheHandle;
-            this.classOutput = classOutput;
             this.sharedQualifers = new HashMap<>();
             this.typeCache = new MapTypeCache();
         }

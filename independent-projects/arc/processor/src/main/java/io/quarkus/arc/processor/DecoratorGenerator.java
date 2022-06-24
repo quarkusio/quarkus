@@ -50,18 +50,33 @@ public class DecoratorGenerator extends BeanGenerator {
     }
 
     /**
+     * Precompute the generated name for the given decorator so that the {@link ComponentsProviderGenerator} can be executed
+     * before all decorators metadata are generated.
      *
-     * @param decorator bean
-     * @return a collection of resources
+     * @param decorator
      */
-    Collection<Resource> generate(DecoratorInfo decorator) {
-
+    void precomputeGeneratedName(DecoratorInfo decorator) {
         ProviderType providerType = new ProviderType(decorator.getProviderType());
         ClassInfo decoratorClass = decorator.getTarget().get().asClass();
         String baseName = createBaseName(decoratorClass);
         String targetPackage = DotNames.packageName(providerType.name());
         String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
         beanToGeneratedName.put(decorator, generatedName);
+        beanToGeneratedBaseName.put(decorator, baseName);
+    }
+
+    /**
+     *
+     * @param decorator bean
+     * @return a collection of resources
+     */
+    Collection<Resource> generate(DecoratorInfo decorator) {
+        String baseName = beanToGeneratedBaseName.get(decorator);
+        String generatedName = beanToGeneratedName.get(decorator);
+        ProviderType providerType = new ProviderType(decorator.getProviderType());
+        String targetPackage = DotNames.packageName(providerType.name());
+        ClassInfo decoratorClass = decorator.getTarget().get().asClass();
+
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();
         }

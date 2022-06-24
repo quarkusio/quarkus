@@ -13,7 +13,7 @@ This document provides a brief overview of Quarkus Security and links to the ind
 
 == Getting Started
 
-Please see the xref:security-getting-started.adoc[Getting Started With Security] guide for a quick walkthrough through Quarkus Security where you can learn how to use xref:security-built-in-authentication.adoc#basic-auth[Basic HTTP Authentication] mechanism and xref:security-jpa.adoc[JPA Identity Provider] to create `SecurityIdentity` and authorize a secure access to the endpoint with `Role Based Access Control`.
+Please see the xref:security-getting-started.adoc[Getting Started With Security] guide for a quick walkthrough through Quarkus Security where you can learn how to use xref:security-built-in-authentication.adoc#basic-auth[Basic HTTP Authentication] mechanism and `JPA Identity Provider` to create `SecurityIdentity` and authorize a secure access to the endpoint with `Role Based Access Control`.
 
 == Architecture
 
@@ -200,10 +200,11 @@ Below is a summary of the options.
 
 `IdentityProvider` converts the authentication credentials provided by `HttpAuthenticationMechanism` to `SecurityIdentity`.
 
-Some extensions such as `OIDC`, `OAuth2`, `SmallRye JWT`, `LDAP` have the inlined `IdentityProvider` implementations which are specific to the supported authentication flow.
+Some extensions such as `OIDC`, `OAuth2`, `SmallRye JWT` have the inlined `IdentityProvider` implementations which are specific to the supported authentication flow.
 For example, `quarkus-oidc` uses its own `IdentityProvider` to convert a token to `SecurityIdentity`. 
 
 If you use `Basic` or `Form` HTTP-based authentication then you have to add an `IdentityProvider` which can convert a username and password to `SecurityIdentity`.
+See xref:security-getting-started.adoc[JPA IdentityProvider], xref:security-jdbc.adoc[JDBC IdentityProvider] and xref:security-ldap.adoc[LDAP IdentityProvider] for more information.
 
 You can also use xref:security-testing.adoc#configuring-user-information[User Properties IdentityProvider] for testing.
 

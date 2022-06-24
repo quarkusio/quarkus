@@ -22,5 +22,14 @@ public class TracerRouter {
                     .end();
             rc.response().end("Hello Tracer!");
         });
+
+        router.get("/hello/:name").handler(rc -> {
+            String name = rc.pathParam("name");
+            if (name.equals("Naruto")) {
+                rc.response().end("hello " + name);
+            } else {
+                rc.response().setStatusCode(404).end();
+            }
+        });
     }
 }

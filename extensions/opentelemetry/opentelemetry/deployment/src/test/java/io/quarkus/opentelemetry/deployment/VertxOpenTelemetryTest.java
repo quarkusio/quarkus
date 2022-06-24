@@ -4,11 +4,18 @@ import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_CLIENT_IP;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_FLAVOR;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_HOST;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_METHOD;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_ROUTE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_SCHEME;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_STATUS_CODE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_TARGET;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_USER_AGENT;
+import static io.restassured.RestAssured.given;
+import static io.vertx.core.http.HttpMethod.GET;
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static java.net.HttpURLConnection.HTTP_OK;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.stringContainsInOrder;
@@ -67,7 +74,7 @@ public class VertxOpenTelemetryTest {
 
         assertEquals("io.quarkus.vertx.opentelemetry", spans.get(0).getName());
         assertEquals("hello!", spans.get(0).getAttributes().get(stringKey("test.message")));
-        assertEquals(200, spans.get(1).getAttributes().get(HTTP_STATUS_CODE));
+        assertEquals(HTTP_OK, spans.get(1).getAttributes().get(HTTP_STATUS_CODE));
         assertEquals("1.1", spans.get(1).getAttributes().get(HTTP_FLAVOR));
         assertEquals("/tracer", spans.get(1).getAttributes().get(HTTP_TARGET));
         assertEquals("http", spans.get(1).getAttributes().get(HTTP_SCHEME));
@@ -91,12 +98,54 @@ public class VertxOpenTelemetryTest {
         assertEquals("io.quarkus.vertx.opentelemetry", spans.get(0).getName());
         assertEquals("hello!", spans.get(0).getAttributes().get(stringKey("test.message")));
         assertEquals("/tracer", spans.get(1).getName());
-        assertEquals(200, spans.get(1).getAttributes().get(HTTP_STATUS_CODE));
+        assertEquals(HTTP_OK, spans.get(1).getAttributes().get(HTTP_STATUS_CODE));
         assertEquals("1.1", spans.get(1).getAttributes().get(HTTP_FLAVOR));
         assertEquals("/tracer?id=1", spans.get(1).getAttributes().get(HTTP_TARGET));
         assertEquals("http", spans.get(1).getAttributes().get(HTTP_SCHEME));
         assertEquals("localhost:8081", spans.get(1).getAttributes().get(HTTP_HOST));
         assertEquals("127.0.0.1", spans.get(1).getAttributes().get(HTTP_CLIENT_IP));
         assertNotNull(spans.get(1).getAttributes().get(HTTP_USER_AGENT));
+    }
+
+    @Test
+    void spanPath() {
+        given()
+                .get("/hello/{name}", "Naruto")
+                .then()
+                .statusCode(HTTP_OK)
+                .body(equalTo("hello Naruto"));
+
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
+
+        assertEquals("/hello/:name", spans.get(0).getName());
+        assertEquals(HTTP_OK, spans.get(0).getAttributes().get(HTTP_STATUS_CODE));
+        assertEquals(GET.toString(), spans.get(0).getAttributes().get(HTTP_METHOD));
+        assertEquals("/hello/:name", spans.get(0).getAttributes().get(HTTP_ROUTE));
+    }
+
+    @Test
+    void notFound() {
+        RestAssured.when().get("/notFound").then().statusCode(404);
+
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
+
+        assertEquals("/*", spans.get(0).getName());
+        assertEquals("/*", spans.get(0).getAttributes().get(HTTP_ROUTE));
+        assertEquals(HTTP_NOT_FOUND, spans.get(0).getAttributes().get(HTTP_STATUS_CODE));
+    }
+
+    @Test
+    void notFoundPath() {
+        given()
+                .get("/hello/{name}", "Goku")
+                .then()
+                .statusCode(HTTP_NOT_FOUND);
+
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
+
+        assertEquals("/hello/:name", spans.get(0).getName());
+        assertEquals(HTTP_NOT_FOUND, spans.get(0).getAttributes().get(HTTP_STATUS_CODE));
+        assertEquals(GET.toString(), spans.get(0).getAttributes().get(HTTP_METHOD));
+        assertEquals("/hello/:name", spans.get(0).getAttributes().get(HTTP_ROUTE));
     }
 }

@@ -27,6 +27,9 @@ public class CategoryImpl implements Category {
 
     private CategoryImpl(Builder builder) {
         this.id = builder.id;
+        if (id == null) {
+            throw new IllegalArgumentException("id is missing for category named " + builder.name);
+        }
         this.name = builder.name;
         this.description = builder.description;
         this.metadata = JsonBuilder.toUnmodifiableMap(builder.metadata);

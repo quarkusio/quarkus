@@ -1973,6 +1973,8 @@ public class QuteProcessor {
 
         void autoExtractType() {
             if (clazz != null) {
+                // Make sure that hierarchy of the matching class is indexed
+                Types.indexHierarchy(clazz, index);
                 boolean hasCompletionStage = Types.isAssignableFrom(Names.COMPLETION_STAGE, clazz.name(), index,
                         assignableCache);
                 boolean hasUni = hasCompletionStage ? false

@@ -26,9 +26,6 @@ public class TracerRuntimeConfig {
      * Suppress non-application uris from trace collection.
      * This will suppress tracing of `/q` endpoints.
      * <p>
-     * Providing a custom {@code io.opentelemetry.sdk.trace.samplers.Sampler} CDI Bean
-     * will ignore this setting.
-     * <p>
      * Suppressing non-application uris is enabled by default.
      */
     @ConfigItem(defaultValue = "true")
@@ -36,9 +33,6 @@ public class TracerRuntimeConfig {
 
     /**
      * Include static resources from trace collection.
-     * <p>
-     * Providing a custom {@code io.opentelemetry.sdk.trace.samplers.Sampler} CDI Bean
-     * will ignore this setting.
      * <p>
      * Include static resources is disabled by default.
      */

@@ -255,11 +255,11 @@ public class PubSubCommandsTest extends DatasourceTestBase {
 
         subscriber.unsubscribe(channel);
 
+        awaitNoMoreActiveChannels();
+
         pubsub.publish(channel, new Person("leia", "skywalker"));
 
         Awaitility.await().pollDelay(Duration.ofMillis(10)).until(() -> people.size() == 1);
-
-        awaitNoMoreActiveChannels();
 
     }
 
@@ -296,6 +296,8 @@ public class PubSubCommandsTest extends DatasourceTestBase {
         Awaitility.await().pollDelay(Duration.ofMillis(10)).until(() -> people.size() > 2);
 
         subscriber.unsubscribe("bar");
+
+        awaitNoMoreActiveChannels();
     }
 
     @Test
@@ -308,6 +310,7 @@ public class PubSubCommandsTest extends DatasourceTestBase {
 
         subscriber.unsubscribe(channel + "*");
 
+        awaitNoMoreActiveChannels();
         pubsub.publish(channel + "1", new Person("leia", "skywalker"));
 
         Awaitility.await().pollDelay(Duration.ofMillis(10)).until(() -> people.size() == 1);
@@ -323,9 +326,12 @@ public class PubSubCommandsTest extends DatasourceTestBase {
 
         subscriber.unsubscribe();
 
+        awaitNoMoreActiveChannels();
+
         pubsub.publish(channel + "1", new Person("leia", "skywalker"));
 
         Awaitility.await().pollDelay(Duration.ofMillis(10)).until(() -> people.size() == 1);
+
     }
 
     @Test
@@ -342,6 +348,8 @@ public class PubSubCommandsTest extends DatasourceTestBase {
         pubsub.publish("bar4", new Person("luke", "skywalker"));
 
         subscriber.unsubscribe("bar*");
+
+        awaitNoMoreActiveChannels();
     }
 
     @Test
@@ -358,6 +366,8 @@ public class PubSubCommandsTest extends DatasourceTestBase {
         Assertions.assertThat(people).containsExactly(new Person(name, name));
 
         subscriber.unsubscribe();
+
+        awaitNoMoreActiveChannels();
     }
 
 }

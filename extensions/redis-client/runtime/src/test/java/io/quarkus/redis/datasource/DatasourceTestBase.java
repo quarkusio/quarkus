@@ -21,7 +21,7 @@ public class DatasourceTestBase {
 
     static GenericContainer<?> server = new GenericContainer<>(
             DockerImageName.parse("redis:7-alpine"))
-                    .withExposedPorts(6379);
+            .withExposedPorts(6379);
 
     @BeforeAll
     static void init() {

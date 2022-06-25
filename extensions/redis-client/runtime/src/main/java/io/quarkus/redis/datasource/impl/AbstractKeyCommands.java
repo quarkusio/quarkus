@@ -5,6 +5,8 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positive;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positiveOrZero;
+import static io.vertx.mutiny.redis.client.Command.EXPIRETIME;
+import static io.vertx.mutiny.redis.client.Command.PEXPIRETIME;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -27,10 +29,6 @@ import io.vertx.mutiny.redis.client.Response;
 class AbstractKeyCommands<K> extends AbstractRedisCommands {
 
     protected final Class<K> typeOfKey;
-
-    // TODO Remove after update to Vert.x 4.3
-    public static final Command EXPIRETIME = Command.create("expiretime");
-    public static final Command PEXPIRETIME = Command.create("pexpiretime");
 
     AbstractKeyCommands(RedisCommandExecutor redis, Class<K> k) {
         super(redis, new Marshaller(k));
@@ -240,12 +238,12 @@ class AbstractKeyCommands<K> extends AbstractRedisCommands {
         nonNull(newKey, "newKey");
         return execute(RedisCommand.of(Command.RENAME)
                 .put(marshaller.encode(key)).put(marshaller.encode(newKey)))
-                        .onFailure().transform(t -> {
-                            if (t.getMessage().equalsIgnoreCase("ERR no such key")) {
-                                return new NoSuchElementException(new String(marshaller.encode(key), StandardCharsets.UTF_8));
-                            }
-                            return t;
-                        });
+                .onFailure().transform(t -> {
+                    if (t.getMessage().equalsIgnoreCase("ERR no such key")) {
+                        return new NoSuchElementException(new String(marshaller.encode(key), StandardCharsets.UTF_8));
+                    }
+                    return t;
+                });
     }
 
     Uni<Response> _renamenx(K key, K newKey) {
@@ -253,12 +251,12 @@ class AbstractKeyCommands<K> extends AbstractRedisCommands {
         nonNull(newKey, "newKey");
         return execute(RedisCommand.of(Command.RENAMENX)
                 .put(marshaller.encode(key)).put(marshaller.encode(newKey)))
-                        .onFailure().transform(t -> {
-                            if (t.getMessage().equalsIgnoreCase("ERR no such key")) {
-                                return new NoSuchElementException(new String(marshaller.encode(key), StandardCharsets.UTF_8));
-                            }
-                            return t;
-                        });
+                .onFailure().transform(t -> {
+                    if (t.getMessage().equalsIgnoreCase("ERR no such key")) {
+                        return new NoSuchElementException(new String(marshaller.encode(key), StandardCharsets.UTF_8));
+                    }
+                    return t;
+                });
     }
 
     ReactiveCursor<Set<K>> scan() {

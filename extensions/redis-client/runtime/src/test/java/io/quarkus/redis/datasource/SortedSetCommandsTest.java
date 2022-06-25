@@ -183,7 +183,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
 
         assertThat(setOfPlaces.zadd(key, new ScoredValue<>(Place.crussol, 1.0), new ScoredValue<>(Place.grignan, 2.0),
                 new ScoredValue<>(Place.suze, 2.1)))
-                        .isEqualTo(3);
+                .isEqualTo(3);
 
         assertThat(setOfPlaces.zcount(key, ScoreRange.from(1.0, 3.0))).isEqualTo(3);
         assertThat(setOfPlaces.zcount(key, ScoreRange.from(1.0, 2.0))).isEqualTo(2);
@@ -534,7 +534,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         assertThat(
                 setOfPlaces.zrangestorebyscore("key1", key, new ScoreRange<>(2.0, true, 1.0, false),
                         new ZRangeArgs().rev().limit(0, 2)))
-                                .isEqualTo(1);
+                .isEqualTo(1);
         assertThat(setOfPlaces.zrange("key1", 0, 2)).isEqualTo(List.of(Place.grignan));
     }
 

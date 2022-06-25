@@ -345,7 +345,7 @@ public class GeoCommandsTest extends DatasourceTestBase {
 
         assertThatThrownBy(
                 () -> geo.georadius(key, VALENCE_LONGITUDE, VALENCE_LATITUDE, 5, GeoUnit.KM, (GeoRadiusStoreArgs<String>) null))
-                        .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

@@ -132,6 +132,7 @@ public interface RedisClient {
 
     Response hmset(List<String> args);
 
+    @Deprecated
     Response host(List<String> args);
 
     Response hscan(List<String> args);
@@ -220,6 +221,7 @@ public interface RedisClient {
 
     Response ping(List<String> args);
 
+    @Deprecated
     Response post(List<String> args);
 
     Response psetex(String arg0, String arg1, String arg2);

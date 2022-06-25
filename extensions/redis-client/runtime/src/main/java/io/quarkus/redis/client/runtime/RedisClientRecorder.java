@@ -152,7 +152,10 @@ public class RedisClientRecorder {
             @Override
             public RedisClient get() {
                 Duration timeout = getTimeoutForClient(name);
-                return new RedisClientImpl(RedisClientRecorder.this.getRedisAPI(name).get(), timeout);
+                return new RedisClientImpl(
+                        RedisClientRecorder.this.getRedisClient(name).get(),
+                        RedisClientRecorder.this.getRedisAPI(name).get(),
+                        timeout);
             }
         };
     }
@@ -171,7 +174,8 @@ public class RedisClientRecorder {
         return new Supplier<ReactiveRedisClient>() {
             @Override
             public ReactiveRedisClient get() {
-                return new ReactiveRedisClientImpl(RedisClientRecorder.this.getRedisAPI(name).get());
+                return new ReactiveRedisClientImpl(RedisClientRecorder.this.getRedisClient(name).get(),
+                        RedisClientRecorder.this.getRedisAPI(name).get());
             }
         };
     }

@@ -4,13 +4,14 @@ import java.util.List;
 
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.RedisAPI;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.mutiny.redis.client.*;
 
 class ReactiveRedisClientImpl implements ReactiveRedisClient {
     private final RedisAPI redisAPI;
+    private final Redis redis;
 
-    public ReactiveRedisClientImpl(RedisAPI redisAPI) {
+    public ReactiveRedisClientImpl(Redis redis, RedisAPI redisAPI) {
+        this.redis = redis;
         this.redisAPI = redisAPI;
     }
 
@@ -321,22 +322,22 @@ class ReactiveRedisClientImpl implements ReactiveRedisClient {
 
     @Override
     public Uni<Response> expire(String arg0, String arg1) {
-        return redisAPI.expire(arg0, arg1);
+        return redisAPI.expire(List.of(arg0, arg1));
     }
 
     @Override
     public Response expireAndAwait(String arg0, String arg1) {
-        return redisAPI.expireAndAwait(arg0, arg1);
+        return redisAPI.expireAndAwait(List.of(arg0, arg1));
     }
 
     @Override
     public Uni<Response> expireat(String arg0, String arg1) {
-        return redisAPI.expireat(arg0, arg1);
+        return redisAPI.expireat(List.of(arg0, arg1));
     }
 
     @Override
     public Response expireatAndAwait(String arg0, String arg1) {
-        return redisAPI.expireatAndAwait(arg0, arg1);
+        return redisAPI.expireatAndAwait(List.of(arg0, arg1));
     }
 
     @Override
@@ -581,12 +582,12 @@ class ReactiveRedisClientImpl implements ReactiveRedisClient {
 
     @Override
     public Uni<Response> host(List<String> args) {
-        return redisAPI.host(args);
+        return redis.send(Request.cmd(Command.create("host"), args.toArray(new String[0])));
     }
 
     @Override
     public Response hostAndAwait(List<String> args) {
-        return redisAPI.hostAndAwait(args);
+        return host(args).await().indefinitely();
     }
 
     @Override
@@ -941,22 +942,22 @@ class ReactiveRedisClientImpl implements ReactiveRedisClient {
 
     @Override
     public Uni<Response> pexpire(String arg0, String arg1) {
-        return redisAPI.pexpire(arg0, arg1);
+        return redisAPI.pexpire(List.of(arg0, arg1));
     }
 
     @Override
     public Response pexpireAndAwait(String arg0, String arg1) {
-        return redisAPI.pexpireAndAwait(arg0, arg1);
+        return redisAPI.pexpireAndAwait(List.of(arg0, arg1));
     }
 
     @Override
     public Uni<Response> pexpireat(String arg0, String arg1) {
-        return redisAPI.pexpireat(arg0, arg1);
+        return redisAPI.pexpireat(List.of(arg0, arg1));
     }
 
     @Override
     public Response pexpireatAndAwait(String arg0, String arg1) {
-        return redisAPI.pexpireatAndAwait(arg0, arg1);
+        return redisAPI.pexpireatAndAwait(List.of(arg0, arg1));
     }
 
     @Override
@@ -1021,12 +1022,12 @@ class ReactiveRedisClientImpl implements ReactiveRedisClient {
 
     @Override
     public Uni<Response> post(List<String> args) {
-        return redisAPI.post(args);
+        return redis.send(Request.cmd(Command.create("post"), args.toArray(new String[0])));
     }
 
     @Override
     public Response postAndAwait(List<String> args) {
-        return redisAPI.postAndAwait(args);
+        return post(args).await().indefinitely();
     }
 
     @Override
@@ -1801,12 +1802,12 @@ class ReactiveRedisClientImpl implements ReactiveRedisClient {
 
     @Override
     public Uni<Response> xsetid(String arg0, String arg1) {
-        return redisAPI.xsetid(arg0, arg1);
+        return redisAPI.xsetid(List.of(arg0, arg1));
     }
 
     @Override
     public Response xsetidAndAwait(String arg0, String arg1) {
-        return redisAPI.xsetidAndAwait(arg0, arg1);
+        return redisAPI.xsetidAndAwait(List.of(arg0, arg1));
     }
 
     @Override

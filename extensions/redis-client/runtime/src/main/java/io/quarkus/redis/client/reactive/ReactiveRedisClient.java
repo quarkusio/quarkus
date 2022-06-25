@@ -263,8 +263,10 @@ public interface ReactiveRedisClient {
 
     Response hmsetAndAwait(List<String> args);
 
+    @Deprecated
     Uni<Response> host(List<String> args);
 
+    @Deprecated
     Response hostAndAwait(List<String> args);
 
     Uni<Response> hscan(List<String> args);
@@ -439,8 +441,10 @@ public interface ReactiveRedisClient {
 
     Response pingAndAwait(List<String> args);
 
+    @Deprecated
     Uni<Response> post(List<String> args);
 
+    @Deprecated
     Response postAndAwait(List<String> args);
 
     Uni<Response> psetex(String arg0, String arg1, String arg2);

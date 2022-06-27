@@ -23,6 +23,7 @@ public class MultipartOutputResource {
 
     private static final long ONE_GIGA = 1024l * 1024l * 1024l * 1l;
     private final File TXT_FILE = new File("./src/test/resources/lorem.txt");
+    private final File XML_FILE = new File("./src/test/resources/test.xml");
 
     @GET
     @Path("/simple")
@@ -64,6 +65,35 @@ public class MultipartOutputResource {
         MultipartOutputFileResponse response = new MultipartOutputFileResponse();
         response.name = RESPONSE_NAME;
         response.file = TXT_FILE;
+        return response;
+    }
+
+    @GET
+    @Path("/with-multiple-file")
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    public MultipartOutputMultipleFileResponse multipleFile() {
+        MultipartOutputMultipleFileResponse response = new MultipartOutputMultipleFileResponse();
+        response.name = RESPONSE_NAME;
+        response.files = List.of(TXT_FILE, XML_FILE);
+        return response;
+    }
+
+    @GET
+    @Path("/with-single-file-download")
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    public MultipartOutputSingleFileDownloadResponse singleDownloadFile() {
+        MultipartOutputSingleFileDownloadResponse response = new MultipartOutputSingleFileDownloadResponse();
+        response.file = new PathFileDownload("one", XML_FILE);
+        return response;
+    }
+
+    @GET
+    @Path("/with-multiple-file-download")
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    public MultipartOutputMultipleFileDownloadResponse multipleDownloadFile() {
+        MultipartOutputMultipleFileDownloadResponse response = new MultipartOutputMultipleFileDownloadResponse();
+        response.name = RESPONSE_NAME;
+        response.files = List.of(new PathFileDownload(TXT_FILE), new PathFileDownload(XML_FILE));
         return response;
     }
 

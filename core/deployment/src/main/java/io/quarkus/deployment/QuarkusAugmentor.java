@@ -167,8 +167,8 @@ public class QuarkusAugmentor {
                 //test and dev mode already report the total startup time, no need to add noise to the logs
                 log.debug(message);
 
-                // Always dump the metrics in the dev mode
-                if (launchMode == LaunchMode.DEVELOPMENT) {
+                // Dump the metrics in the dev mode but not remote-dev (as it could cause issues with container permissions)
+                if ((launchMode == LaunchMode.DEVELOPMENT) && !LaunchMode.isRemoteDev()) {
                     buildResult.getMetrics().dumpTo(targetDir.resolve("build-metrics.json"));
                 }
             }

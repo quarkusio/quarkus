@@ -306,8 +306,7 @@ fi
 
 # - Infinispan uses the @javax.annotation.Generated annotation in code generation and it's not available
 # - Confluent registry client doesn't have a version supporting Jakarta packages
-# - gRPC protoc plugin generates classes with @javax.annotation.Generated
-./mvnw -B clean install -f integration-tests -DskipTests -DskipITs -pl '!:quarkus-integration-test-infinispan-client' -pl '!:quarkus-integration-test-kafka-avro' -pl '!:quarkus-integration-test-opentelemetry-grpc' -pl '!:quarkus-integration-test-grpc-tls' -pl '!:quarkus-integration-test-grpc-plain-text-gzip' -pl '!:quarkus-integration-test-grpc-plain-text-mutiny' -pl '!:quarkus-integration-test-grpc-mutual-auth' -pl '!:quarkus-integration-test-grpc-streaming' -pl '!:quarkus-integration-test-grpc-interceptors' -pl '!:quarkus-integration-test-grpc-proto-v2' -pl '!:quarkus-integration-test-grpc-hibernate' -pl '!:quarkus-integration-test-grpc-hibernate-reactive' -pl '!:quarkus-integration-test-grpc-external-proto-test' -pl '!:quarkus-integration-test-grpc-stork-response-time'
+./mvnw -B clean install -f integration-tests -DskipTests -DskipITs -pl '!:quarkus-integration-test-infinispan-client' -pl '!:quarkus-integration-test-kafka-avro'
 
 exit 0
 

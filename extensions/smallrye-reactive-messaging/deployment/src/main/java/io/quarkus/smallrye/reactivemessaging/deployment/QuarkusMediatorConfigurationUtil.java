@@ -49,18 +49,18 @@ public final class QuarkusMediatorConfigurationUtil {
         Class<?> returnTypeClass;
         MediatorConfigurationSupport.GenericTypeAssignable genericReturnTypeAssignable;
         if (isSuspendMethod) {
-            parameterTypeClasses = new Class[methodInfo.parameters().size() - 1];
-            for (int i = 0; i < methodInfo.parameters().size() - 1; i++) {
-                parameterTypeClasses[i] = load(methodInfo.parameters().get(i).name().toString(), cl);
+            parameterTypeClasses = new Class[methodInfo.parametersCount() - 1];
+            for (int i = 0; i < methodInfo.parametersCount() - 1; i++) {
+                parameterTypeClasses[i] = load(methodInfo.parameterType(i).name().toString(), cl);
             }
             // the generated invoker will always return a CompletionStage
             // TODO: avoid hard coding this and use an SPI to communicate the info with the invoker generation code
             returnTypeClass = CompletionStage.class;
             genericReturnTypeAssignable = new JandexGenericTypeAssignable(determineReturnTypeOfSuspendMethod(methodInfo), cl);
         } else {
-            parameterTypeClasses = new Class[methodInfo.parameters().size()];
-            for (int i = 0; i < methodInfo.parameters().size(); i++) {
-                parameterTypeClasses[i] = load(methodInfo.parameters().get(i).name().toString(), cl);
+            parameterTypeClasses = new Class[methodInfo.parametersCount()];
+            for (int i = 0; i < methodInfo.parametersCount(); i++) {
+                parameterTypeClasses[i] = load(methodInfo.parameterType(i).name().toString(), cl);
             }
             returnTypeClass = load(methodInfo.returnType().name().toString(), cl);
             genericReturnTypeAssignable = new ReturnTypeGenericTypeAssignable(methodInfo, cl);
@@ -70,7 +70,7 @@ public final class QuarkusMediatorConfigurationUtil {
         MediatorConfigurationSupport mediatorConfigurationSupport = new MediatorConfigurationSupport(
                 fullMethodName(methodInfo), returnTypeClass, parameterTypeClasses,
                 genericReturnTypeAssignable,
-                methodInfo.parameters().isEmpty() ? new AlwaysInvalidIndexGenericTypeAssignable()
+                methodInfo.parameterTypes().isEmpty() ? new AlwaysInvalidIndexGenericTypeAssignable()
                         : new MethodParamGenericTypeAssignable(methodInfo, 0, cl));
 
         if (strict) {
@@ -82,9 +82,9 @@ public final class QuarkusMediatorConfigurationUtil {
 
         String returnTypeName = returnTypeClass.getName();
         configuration.setReturnType(recorderContext.classProxy(returnTypeName));
-        Class<?>[] parameterTypes = new Class[methodInfo.parameters().size()];
-        for (int i = 0; i < methodInfo.parameters().size(); i++) {
-            parameterTypes[i] = recorderContext.classProxy(methodInfo.parameters().get(i).name().toString());
+        Class<?>[] parameterTypes = new Class[methodInfo.parametersCount()];
+        for (int i = 0; i < methodInfo.parametersCount(); i++) {
+            parameterTypes[i] = recorderContext.classProxy(methodInfo.parameterType(i).name().toString());
         }
         configuration.setParameterTypes(parameterTypes);
 
@@ -181,7 +181,7 @@ public final class QuarkusMediatorConfigurationUtil {
 
     // TODO: avoid hard coding CompletionStage handling
     private static Type determineReturnTypeOfSuspendMethod(MethodInfo methodInfo) {
-        Type lastParamType = methodInfo.parameters().get(methodInfo.parameters().size() - 1);
+        Type lastParamType = methodInfo.parameterType(methodInfo.parametersCount() - 1);
         if (lastParamType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
             throw new IllegalStateException("Something went wrong during parameter type resolution - expected "
                     + lastParamType + " to be a Continuation with a generic type");
@@ -363,7 +363,7 @@ public final class QuarkusMediatorConfigurationUtil {
         }
 
         private static Type getGenericParameterType(MethodInfo method, int paramIndex) {
-            List<Type> parameters = method.parameters();
+            List<Type> parameters = method.parameterTypes();
             if (parameters.size() < paramIndex + 1) {
                 throw new IllegalArgumentException("Method " + method + " only has " + parameters.size()
                         + " so parameter with index " + paramIndex + " cannot be retrieved");

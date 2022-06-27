@@ -88,7 +88,7 @@ public class ResteasyReactiveJaxbProcessor {
 
             // If consumes "application/xml" or "multipart/form-data", we register all the classes of the parameters
             if (consumesXml(resourceInfo) || consumesMultipart(resourceInfo)) {
-                for (Type parameter : methodInfo.parameters()) {
+                for (Type parameter : methodInfo.parameterTypes()) {
                     ClassInfo effectiveParameter = getEffectiveClassInfo(parameter, indexView);
                     if (effectiveParameter != null) {
                         classesInfo.add(effectiveParameter);

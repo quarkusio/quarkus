@@ -48,7 +48,7 @@ public class ResteasyReactiveVertxWebSocketIntegrationProcessor {
 
             @Override
             public boolean isMethodSignatureAsync(MethodInfo info) {
-                for (var param : info.parameters()) {
+                for (var param : info.parameterTypes()) {
                     if (param.name().equals(SERVER_WEB_SOCKET)) {
                         return true;
                     }

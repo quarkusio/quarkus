@@ -325,7 +325,7 @@ public class MessageBundleProcessor {
             if (messageBundleMethod != null) {
                 // All top-level expressions without a namespace should be mapped to a param
                 Set<String> usedParamNames = new HashSet<>();
-                Set<String> paramNames = IntStream.range(0, messageBundleMethod.getMethod().parameters().size())
+                Set<String> paramNames = IntStream.range(0, messageBundleMethod.getMethod().parametersCount())
                         .mapToObj(idx -> getParameterName(messageBundleMethod.getMethod(), idx)).collect(Collectors.toSet());
                 for (Expression expression : analysis.expressions) {
                     validateExpression(incorrectExpressions, messageBundleMethod, expression, paramNames, usedParamNames,
@@ -509,7 +509,7 @@ public class MessageBundleProcessor {
                         if (methodPart.isVirtualMethod()) {
                             // For virtual method validate the number of params first
                             List<Expression> params = methodPart.asVirtualMethod().getParameters();
-                            List<Type> methodParams = method.parameters();
+                            List<Type> methodParams = method.parameterTypes();
 
                             if (methodParams.size() != params.size()) {
                                 incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
@@ -671,7 +671,7 @@ public class MessageBundleProcessor {
                             AnnotationInstance messageAnnotation;
                             if (localizedInterface != null) {
                                 MethodInfo defaultBundleMethod = localizedInterface.method(method.name(),
-                                        method.parameters().toArray(new Type[] {}));
+                                        method.parameterTypes().toArray(new Type[] {}));
                                 if (defaultBundleMethod == null) {
                                     return true;
                                 }
@@ -802,7 +802,7 @@ public class MessageBundleProcessor {
             AnnotationInstance messageAnnotation;
             if (defaultBundleInterface != null) {
                 MethodInfo defaultBundleMethod = bundleInterfaceWrapper.method(method.name(),
-                        method.parameters().toArray(new Type[] {}));
+                        method.parameterTypes().toArray(new Type[] {}));
                 if (defaultBundleMethod == null) {
                     throw new MessageBundleException(
                             String.format("Default bundle method not found on %s: %s", bundleInterface, method));
@@ -837,7 +837,7 @@ public class MessageBundleProcessor {
             if (messageTemplate == null && defaultBundleInterface != null) {
                 // method is annotated with @Message without value() -> fallback to default locale
                 messageTemplate = getMessageAnnotationValue((defaultBundleInterface.method(method.name(),
-                        method.parameters().toArray(new Type[] {}))).annotation(Names.MESSAGE));
+                        method.parameterTypes().toArray(new Type[] {}))).annotation(Names.MESSAGE));
             }
 
             if (messageTemplate == null) {
@@ -874,7 +874,7 @@ public class MessageBundleProcessor {
                 // Create a template instance
                 ResultHandle templateInstance = bundleMethod
                         .invokeInterfaceMethod(io.quarkus.qute.deployment.Descriptors.TEMPLATE_INSTANCE, template);
-                List<Type> paramTypes = method.parameters();
+                List<Type> paramTypes = method.parameterTypes();
                 if (!paramTypes.isEmpty()) {
                     // Set data
                     int i = 0;
@@ -1050,12 +1050,12 @@ public class MessageBundleProcessor {
     private void addMessageMethod(MethodCreator resolve, String key, MethodInfo method, ResultHandle name,
             ResultHandle evaluatedParams,
             ResultHandle ret, String bundleClass) {
-        List<Type> methodParams = method.parameters();
+        List<Type> methodParams = method.parameterTypes();
 
         BytecodeCreator matched = resolve.ifTrue(resolve.invokeVirtualMethod(Descriptors.EQUALS,
                 resolve.load(key), name))
                 .trueBranch();
-        if (method.parameters().isEmpty()) {
+        if (method.parameterTypes().isEmpty()) {
             matched.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, ret,
                     matched.invokeInterfaceMethod(method, matched.getThis()));
             matched.returnValue(ret);

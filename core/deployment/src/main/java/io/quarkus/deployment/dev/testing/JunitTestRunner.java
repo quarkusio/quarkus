@@ -723,7 +723,7 @@ public class JunitTestRunner {
         Set<DotName> processed = new HashSet<>();
         processed.addAll(ret);
         for (ClassInfo clazz : index.getKnownClasses()) {
-            for (DotName annotation : clazz.annotations().keySet()) {
+            for (DotName annotation : clazz.annotationsMap().keySet()) {
                 if (processed.contains(annotation)) {
                     continue;
                 }

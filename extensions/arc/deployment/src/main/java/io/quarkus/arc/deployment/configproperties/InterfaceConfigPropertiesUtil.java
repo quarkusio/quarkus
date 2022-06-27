@@ -161,7 +161,7 @@ final class InterfaceConfigPropertiesUtil {
                             || Modifier.isPrivate(methodModifiers)) {
                         continue;
                     }
-                    if (!method.parameters().isEmpty()) {
+                    if (!method.parameterTypes().isEmpty()) {
                         throw new IllegalArgumentException("Method " + method.name() + " of interface " + ifaceDotName
                                 + " is not a getter method since it defined parameters");
                     }

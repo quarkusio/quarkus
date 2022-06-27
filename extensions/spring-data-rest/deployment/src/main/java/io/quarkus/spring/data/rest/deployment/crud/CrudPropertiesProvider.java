@@ -24,7 +24,7 @@ public class CrudPropertiesProvider extends ResourcePropertiesProvider {
     protected Map<String, Predicate<MethodInfo>> getMethodPredicates() {
         Map<String, Predicate<MethodInfo>> methodPredicates = new HashMap<>();
         methodPredicates.put("list",
-                methodInfo -> methodInfo.name().equals(LIST.getName()) && methodInfo.parameters().isEmpty());
+                methodInfo -> methodInfo.name().equals(LIST.getName()) && methodInfo.parameterTypes().isEmpty());
         methodPredicates.put("get", methodInfo -> methodInfo.name().equals(GET.getName()));
         methodPredicates.put("add", methodInfo -> methodInfo.name().equals(ADD.getName()));
         methodPredicates.put("update", methodInfo -> methodInfo.name().equals(UPDATE.getName()));

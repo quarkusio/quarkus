@@ -206,9 +206,9 @@ final class CustomResourceProducersGenerator {
                 // The JAX-RS parameters will be handled directly
                 // The other parameters we will just add to the method signature of the producer method
                 // and let CDI populate them for us
-                List<CtorParamData> ctorParamData = new ArrayList<>(ctor.parameters().size());
-                for (short i = 0; i < ctor.parameters().size(); i++) {
-                    Type parameterType = ctor.parameters().get(i);
+                List<CtorParamData> ctorParamData = new ArrayList<>(ctor.parametersCount());
+                for (short i = 0; i < ctor.parametersCount(); i++) {
+                    Type parameterType = ctor.parameterType(i);
                     if (!paramIndexToAnnotations.containsKey(i)) {
                         ctorParamData.add(new CtorParamData(CtorParamData.CustomProducerParameterType.OTHER, parameterType));
                     } else {
@@ -254,7 +254,7 @@ final class CustomResourceProducersGenerator {
                         }
                     }
                 }
-                List<String> producerMethodParameterTypes = new ArrayList<>(ctor.parameters().size());
+                List<String> producerMethodParameterTypes = new ArrayList<>(ctor.parametersCount());
                 for (CtorParamData ctorParamDatum : ctorParamData) {
                     if (ctorParamDatum.getCustomProducerParameterType() == CtorParamData.CustomProducerParameterType.OTHER) {
                         producerMethodParameterTypes.add(ctorParamDatum.getParameterType().name().toString());

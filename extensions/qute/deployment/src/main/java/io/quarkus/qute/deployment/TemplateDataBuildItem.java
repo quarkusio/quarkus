@@ -91,7 +91,7 @@ final class TemplateDataBuildItem extends MultiBuildItem {
         String name = null;
         if (target.kind() == Kind.METHOD) {
             MethodInfo method = target.asMethod();
-            if (properties && !method.parameters().isEmpty()) {
+            if (properties && !method.parameterTypes().isEmpty()) {
                 return false;
             }
             name = method.name();

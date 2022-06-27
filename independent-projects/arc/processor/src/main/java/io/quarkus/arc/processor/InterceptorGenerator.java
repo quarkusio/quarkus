@@ -228,7 +228,7 @@ public class InterceptorGenerator extends BeanGenerator {
             ResultHandle ret;
             // Check if interceptor method uses InvocationContext or ArcInvocationContext
             Class<?> invocationContextClass;
-            if (interceptorMethod.parameters().get(0).name().equals(DotNames.INVOCATION_CONTEXT)) {
+            if (interceptorMethod.parameterType(0).name().equals(DotNames.INVOCATION_CONTEXT)) {
                 invocationContextClass = InvocationContext.class;
             } else {
                 invocationContextClass = ArcInvocationContext.class;

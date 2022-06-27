@@ -353,7 +353,7 @@ public class QuteProcessor {
                 }
 
                 Map<String, String> bindings = new HashMap<>();
-                List<Type> parameters = methodInfo.parameters();
+                List<Type> parameters = methodInfo.parameterTypes();
                 List<String> parameterNames = new ArrayList<>(parameters.size());
                 for (int i = 0; i < parameters.size(); i++) {
                     Type type = parameters.get(i);
@@ -484,7 +484,7 @@ public class QuteProcessor {
         Map<String, Map<String, MethodParameterDeclaration>> msgBundleTemplateIdToParamDecl = new HashMap<>();
         for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
             MethodInfo method = messageBundleMethod.getMethod();
-            for (ListIterator<Type> it = method.parameters().listIterator(); it.hasNext();) {
+            for (ListIterator<Type> it = method.parameterTypes().listIterator(); it.hasNext();) {
                 Type paramType = it.next();
                 String name = MessageBundleProcessor.getParameterName(method, it.previousIndex());
                 msgBundleTemplateIdToParamDecl
@@ -1126,7 +1126,7 @@ public class QuteProcessor {
                     // Filter out non-static, synthetic, private and void methods
                     continue;
                 }
-                if ((namespace == null || namespace.isEmpty()) && method.parameters().isEmpty()) {
+                if ((namespace == null || namespace.isEmpty()) && method.parameterTypes().isEmpty()) {
                     // Filter out methods with no params for non-namespace extensions
                     continue;
                 }
@@ -1194,7 +1194,7 @@ public class QuteProcessor {
         }
 
         extensionMethods.produce(new TemplateExtensionMethodBuildItem(method, matchName, matchNames, matchRegex,
-                namespace.isEmpty() ? method.parameters().get(0) : null, priority, namespace));
+                namespace.isEmpty() ? method.parameterType(0) : null, priority, namespace));
     }
 
     private static BeanInfo findBean(Expression expression, IndexView index,
@@ -1781,7 +1781,7 @@ public class QuteProcessor {
                     // 1. identify the type used to match the base object; List<T>
                     // 2. resolve this type; List<String>
                     // 3. if needed apply to the return type; Iterator<String>
-                    List<Type> params = method.parameters();
+                    List<Type> params = method.parameterTypes();
                     Set<AnnotationInstance> attributeAnnotations = Annotations.getAnnotations(Kind.METHOD_PARAMETER,
                             ExtensionMethodGenerator.TEMPLATE_ATTRIBUTE, method.annotations());
                     if (attributeAnnotations.isEmpty()) {
@@ -2270,7 +2270,7 @@ public class QuteProcessor {
         }
 
         boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
         int lastParamIdx = parameters.size() - 1;
 
         if (isVarArgs) {

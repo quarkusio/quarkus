@@ -140,7 +140,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
     private boolean needsJvmBridge(MethodInfo method) {
         if (needsJvmBridge(method.returnType()))
             return true;
-        for (org.jboss.jandex.Type paramType : method.parameters()) {
+        for (org.jboss.jandex.Type paramType : method.parameterTypes()) {
             if (needsJvmBridge(paramType))
                 return true;
         }
@@ -165,7 +165,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
                     descriptor,
                     null,
                     null);
-            List<org.jboss.jandex.Type> parameters = method.parameters();
+            List<org.jboss.jandex.Type> parameters = method.parameterTypes();
             AsmUtil.copyParameterNames(mv, method);
             mv.visitCode();
             // this
@@ -203,7 +203,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
 
     protected void generateModelBridge(MethodInfo method, AnnotationInstance bridge) {
         // JpaOperations erases the Id type to Object
-        List<org.jboss.jandex.Type> parameters = method.parameters();
+        List<org.jboss.jandex.Type> parameters = method.parameterTypes();
 
         // Note: we can't use SYNTHETIC here because otherwise Mockito will never mock these methods
         MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC,
@@ -261,7 +261,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
     }
 
     private void descriptors(MethodInfo method, StringJoiner joiner) {
-        for (org.jboss.jandex.Type parameter : method.parameters()) {
+        for (org.jboss.jandex.Type parameter : method.parameterTypes()) {
             if (parameter.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE
                     || method.name().endsWith("ById")
                             && parameter.name().equals(typeArguments.get("Id").dotName())) {

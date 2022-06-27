@@ -243,7 +243,7 @@ public class ReflectiveHierarchyStep {
         for (MethodInfo method : info.methods()) {
             if (reflectiveHierarchyBuildItem.getIgnoreMethodPredicate().test(method) ||
             // we will only consider potential getters
-                    method.parameters().size() > 0 ||
+                    method.parametersCount() > 0 ||
                     Modifier.isStatic(method.flags()) ||
                     method.returnType().kind() == Kind.VOID) {
                 continue;

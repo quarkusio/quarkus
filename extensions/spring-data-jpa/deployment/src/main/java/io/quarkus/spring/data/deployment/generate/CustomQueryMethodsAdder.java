@@ -108,7 +108,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                         "Offending method is " + methodName + " of Repository " + repositoryName);
             }
 
-            List<Type> methodParameterTypes = method.parameters();
+            List<Type> methodParameterTypes = method.parameterTypes();
             String[] methodParameterTypesStr = new String[methodParameterTypes.size()];
             List<Integer> queryParameterIndexes = new ArrayList<>(methodParameterTypes.size());
             Integer pageableParameterIndex = null;

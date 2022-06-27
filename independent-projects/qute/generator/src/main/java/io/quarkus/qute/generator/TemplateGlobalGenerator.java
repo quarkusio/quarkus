@@ -99,7 +99,7 @@ public class TemplateGlobalGenerator {
             throw new IllegalStateException("Global variable method declared on " + method.declaringClass().name()
                     + " must not return void: " + method);
         }
-        if (!method.parameters().isEmpty()) {
+        if (!method.parameterTypes().isEmpty()) {
             throw new IllegalStateException("Global variable method declared on " + method.declaringClass().name()
                     + " must not accept any parameter: " + method);
         }

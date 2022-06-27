@@ -82,7 +82,7 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
     }
 
     private MethodInfo validateSignature(MethodInfo method) {
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
         if (parameters.size() != 1 || !(parameters.get(0).name().equals(DotNames.INVOCATION_CONTEXT)
                 || parameters.get(0).name().equals(DotNames.ARC_INVOCATION_CONTEXT))) {
             throw new IllegalStateException(

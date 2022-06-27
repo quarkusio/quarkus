@@ -444,7 +444,7 @@ class SpringSecurityProcessor {
 
                     String propertyName = matcher.group(PARAMETER_EQ_PRINCIPAL_USERNAME_PROPERTY_ACCESSOR_MATCHER_GROUP);
                     if (propertyName == null) { // this is the case where the parameter is supposed to be a string
-                        if (!DotNames.STRING.equals(methodInfo.parameters().get(parameterNameAndIndex.getIndex()).name())) {
+                        if (!DotNames.STRING.equals(methodInfo.parameterType(parameterNameAndIndex.getIndex()).name())) {
                             throw new IllegalArgumentException(
                                     "Expression: '" + part + "' in the @PreAuthorize annotation on method '" + methodInfo.name()
                                             + "' of class '" + methodInfo.declaringClass() + "' references method parameter '"

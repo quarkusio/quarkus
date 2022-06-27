@@ -226,8 +226,8 @@ class HibernateValidatorProcessor {
         for (AnnotationInstance constraint : indexView.getAnnotations(DotName.createSimple(Constraint.class.getName()))) {
             constraints.add(constraint.target().asClass().name());
 
-            if (constraint.target().asClass().annotations().containsKey(REPEATABLE)) {
-                for (AnnotationInstance repeatableConstraint : constraint.target().asClass().annotations()
+            if (constraint.target().asClass().annotationsMap().containsKey(REPEATABLE)) {
+                for (AnnotationInstance repeatableConstraint : constraint.target().asClass().annotationsMap()
                         .get(REPEATABLE)) {
                     constraints.add(repeatableConstraint.value().asClass().name());
                 }
@@ -286,7 +286,7 @@ class HibernateValidatorProcessor {
                     // a getter does not have parameters so it's a pure method: no need for reflection in this case
                     contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView, consideredAnnotation,
                             // FIXME this won't work in the case of synthetic parameters
-                            annotation.target().asMethodParameter().method().parameters()
+                            annotation.target().asMethodParameter().method().parameterTypes()
                                     .get(annotation.target().asMethodParameter().position()));
                     contributeMethodsWithInheritedValidation(methodsWithInheritedValidation, indexView,
                             annotation.target().asMethodParameter().method());

@@ -59,14 +59,14 @@ public final class PanacheJpaCommonResourceProcessor {
             return;
         }
 
-        List<AnnotationInstance> namedQueryInstances = classInfo.annotations().get(DOTNAME_NAMED_QUERY);
+        List<AnnotationInstance> namedQueryInstances = classInfo.annotationsMap().get(DOTNAME_NAMED_QUERY);
         if (namedQueryInstances != null) {
             for (AnnotationInstance namedQueryInstance : namedQueryInstances) {
                 namedQueries.add(namedQueryInstance.value("name").asString());
             }
         }
 
-        List<AnnotationInstance> namedQueriesInstances = classInfo.annotations().get(DOTNAME_NAMED_QUERIES);
+        List<AnnotationInstance> namedQueriesInstances = classInfo.annotationsMap().get(DOTNAME_NAMED_QUERIES);
         if (namedQueriesInstances != null) {
             for (AnnotationInstance namedQueriesInstance : namedQueriesInstances) {
                 AnnotationValue value = namedQueriesInstance.value();

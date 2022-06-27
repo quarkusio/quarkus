@@ -298,7 +298,7 @@ public class GrpcClientProcessor {
                 // CDI initializer
                 MethodInfo method = injectAnnotation.target().asMethod();
                 short position = 0;
-                for (Type param : method.parameters()) {
+                for (Type param : method.parameterTypes()) {
                     position++;
                     if (serviceInterfaces.contains(param.name())) {
                         // e.g. @Inject void setGreeter(Greeter greeter)

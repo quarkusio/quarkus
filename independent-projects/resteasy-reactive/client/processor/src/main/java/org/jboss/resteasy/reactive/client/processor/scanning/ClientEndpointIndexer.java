@@ -83,8 +83,8 @@ public class ClientEndpointIndexer
     }
 
     private void warnForUnsupportedAnnotations(ClassInfo classInfo) {
-        if ((classInfo.annotations().get(ResteasyReactiveDotNames.BLOCKING) != null)
-                || (classInfo.annotations().get(ResteasyReactiveDotNames.NON_BLOCKING) != null)) {
+        if ((classInfo.annotationsMap().get(ResteasyReactiveDotNames.BLOCKING) != null)
+                || (classInfo.annotationsMap().get(ResteasyReactiveDotNames.NON_BLOCKING) != null)) {
             log.warn(
                     "'@Blocking' and '@NonBlocking' annotations are not necessary (or supported) on REST Client interfaces. Offending class is '"
                             + classInfo.name()

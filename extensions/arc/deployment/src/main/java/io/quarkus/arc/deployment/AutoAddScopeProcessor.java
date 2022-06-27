@@ -137,14 +137,14 @@ public class AutoAddScopeProcessor {
     }
 
     private boolean hasContainerAnnotation(ClassInfo clazz, Set<DotName> containerAnnotationNames) {
-        if (clazz.annotations().isEmpty() || containerAnnotationNames.isEmpty()) {
+        if (clazz.annotationsMap().isEmpty() || containerAnnotationNames.isEmpty()) {
             return false;
         }
         return containsAny(clazz, containerAnnotationNames);
     }
 
     private boolean containsAny(ClassInfo clazz, Set<DotName> annotationNames) {
-        for (DotName annotation : clazz.annotations().keySet()) {
+        for (DotName annotation : clazz.annotationsMap().keySet()) {
             if (annotationNames.contains(annotation)) {
                 return true;
             }

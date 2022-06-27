@@ -112,16 +112,16 @@ public final class AmazonLambdaProcessor {
             while (current != null && !done) {
                 for (MethodInfo method : current.methods()) {
                     if (method.name().equals("handleRequest")) {
-                        if (method.parameters().size() == 3) {
+                        if (method.parametersCount() == 3) {
                             streamHandler = true;
                             done = true;
                             break;
-                        } else if (method.parameters().size() == 2
-                                && !method.parameters().get(0).name().equals(DotName.createSimple(Object.class.getName()))) {
+                        } else if (method.parametersCount() == 2
+                                && !method.parameterType(0).name().equals(DotName.createSimple(Object.class.getName()))) {
                             String source = getClass().getSimpleName() + " > " + method.declaringClass() + "[" + method + "]";
 
                             reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                    .type(method.parameters().get(0))
+                                    .type(method.parameterType(0))
                                     .source(source)
                                     .build());
                             reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()

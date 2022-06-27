@@ -120,7 +120,7 @@ class NarayanaLRAProcessor {
         ClassInfo classInfo = index.getClassByName(name);
 
         if (classInfo != null) {
-            annotations.putAll(classInfo.annotations());
+            annotations.putAll(classInfo.annotationsMap());
             annotations.putAll(getInterfaceAnnotations(classInfo.interfaceNames(), index));
             annotations.putAll(getAllAnnotationsFromClassInfoHierarchy(classInfo.superName(), index));
         }
@@ -135,7 +135,7 @@ class NarayanaLRAProcessor {
 
         for (DotName interfaceName : interfaceNames) {
             interfaceClassInfo = index.getClassByName(interfaceName);
-            Map<DotName, List<AnnotationInstance>> interfaceAnnotations = interfaceClassInfo.annotations();
+            Map<DotName, List<AnnotationInstance>> interfaceAnnotations = interfaceClassInfo.annotationsMap();
             annotations.forEach((k, v) -> interfaceAnnotations.merge(k, v, (v1, v2) -> {
                 v1.addAll(v2);
                 return v1;

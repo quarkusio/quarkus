@@ -74,9 +74,9 @@ final class Methods {
                 methods.computeIfAbsent(new Methods.MethodKey(method), key -> {
                     // If parameterized try to resolve the type variables
                     Type returnType = key.method.returnType();
-                    Type[] params = new Type[key.method.parameters().size()];
+                    Type[] params = new Type[key.method.parametersCount()];
                     for (int i = 0; i < params.length; i++) {
-                        params[i] = key.method.parameters().get(i);
+                        params[i] = key.method.parameterType(i);
                     }
                     List<TypeVariable> typeVariables = key.method.typeParameters();
                     return MethodInfo.create(classInfo, key.method.name(), params, returnType, key.method.flags(),
@@ -289,9 +289,9 @@ final class Methods {
 
         public static NameAndDescriptor fromMethodInfo(MethodInfo method) {
             String returnTypeDesc = DescriptorUtils.objectToDescriptor(method.returnType().name().toString());
-            String[] paramTypesDesc = new String[(method.parameters().size())];
-            for (int i = 0; i < method.parameters().size(); i++) {
-                paramTypesDesc[i] = DescriptorUtils.objectToDescriptor(method.parameters().get(i).name().toString());
+            String[] paramTypesDesc = new String[method.parametersCount()];
+            for (int i = 0; i < method.parametersCount(); i++) {
+                paramTypesDesc[i] = DescriptorUtils.objectToDescriptor(method.parameterType(i).name().toString());
             }
 
             return new NameAndDescriptor(method.name(),
@@ -327,7 +327,7 @@ final class Methods {
             this.name = method.name();
             this.returnType = method.returnType().name();
             this.params = new ArrayList<>();
-            for (Type i : method.parameters()) {
+            for (Type i : method.parameterTypes()) {
                 params.add(i.name());
             }
         }
@@ -385,8 +385,8 @@ final class Methods {
         if (!method.name().equals(subclassMethod.name())) {
             return false;
         }
-        List<Type> parameters = method.parameters();
-        List<Type> subParameters = subclassMethod.parameters();
+        List<Type> parameters = method.parameterTypes();
+        List<Type> subParameters = subclassMethod.parameterTypes();
 
         int paramCount = parameters.size();
         if (paramCount != subParameters.size()) {
@@ -451,7 +451,7 @@ final class Methods {
     }
 
     static boolean containsTypeVariableParameter(MethodInfo method) {
-        for (Type param : method.parameters()) {
+        for (Type param : method.parameterTypes()) {
             if (Types.containsTypeVariable(param)) {
                 return true;
             }
@@ -555,7 +555,7 @@ final class Methods {
                 return false;
             }
 
-            List<Type> parameters = method.parameters();
+            List<Type> parameters = method.parameterTypes();
             if (!parameters.isEmpty() && (beanArchiveIndex != null)) {
                 String originalClassPackage = DotNames.packageName(originalClazz.name());
                 for (Type type : parameters) {
@@ -598,8 +598,8 @@ final class Methods {
         private boolean hasImplementation(MethodInfo bridge) {
             for (MethodInfo declaredMethod : regularMethods) {
                 if (bridge.name().equals(declaredMethod.name())) {
-                    List<Type> params = declaredMethod.parameters();
-                    List<Type> bridgeParams = bridge.parameters();
+                    List<Type> params = declaredMethod.parameterTypes();
+                    List<Type> bridgeParams = bridge.parameterTypes();
                     if (params.size() != bridgeParams.size()) {
                         continue;
                     }
@@ -665,8 +665,8 @@ final class Methods {
         }
 
         private boolean parametersMatch(MethodInfo method, MethodInfo bridge) {
-            List<Type> params = method.parameters();
-            List<Type> bridgeParams = bridge.parameters();
+            List<Type> params = method.parameterTypes();
+            List<Type> bridgeParams = bridge.parameterTypes();
             if (bridgeParams.size() != params.size()) {
                 return false;
             }

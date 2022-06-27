@@ -472,9 +472,9 @@ public class SecurityProcessor {
         for (Map.Entry<MethodInfo, SecurityCheck> methodEntry : securityChecks
                 .entrySet()) {
             MethodInfo method = methodEntry.getKey();
-            String[] params = new String[method.parameters().size()];
-            for (int i = 0; i < method.parameters().size(); ++i) {
-                params[i] = method.parameters().get(i).name().toString();
+            String[] params = new String[method.parametersCount()];
+            for (int i = 0; i < method.parametersCount(); ++i) {
+                params[i] = method.parameterType(i).name().toString();
             }
             recorder.addMethod(builder, method.declaringClass().name().toString(), method.name(), params,
                     methodEntry.getValue());

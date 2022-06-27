@@ -131,7 +131,7 @@ public class HibernateSearchOutboxPollingClassesTest {
             collectModelClassesRecursively(index, field.type(), classes);
         }
         for (MethodInfo methodInfo : clazz.methods()) {
-            if (!methodInfo.parameters().isEmpty()) {
+            if (!methodInfo.parameterTypes().isEmpty()) {
                 // Definitely not a getter, just skip.
                 continue;
             }

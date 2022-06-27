@@ -90,7 +90,7 @@ public class AsmUtil {
      * @return a bytecode descriptor for that method.
      */
     public static String getDescriptor(MethodInfo method, Function<String, String> typeArgMapper) {
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
 
         StringBuilder descriptor = new StringBuilder("(");
         for (Type type : parameters) {

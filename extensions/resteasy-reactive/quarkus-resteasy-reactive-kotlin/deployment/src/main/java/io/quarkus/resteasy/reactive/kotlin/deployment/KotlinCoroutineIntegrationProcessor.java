@@ -111,7 +111,7 @@ public class KotlinCoroutineIntegrationProcessor {
 
             @Override
             public boolean isMethodSignatureAsync(MethodInfo info) {
-                for (var param : info.parameters()) {
+                for (var param : info.parameterTypes()) {
                     if (param.name().equals(CONTINUATION)) {
                         return true;
                     }
@@ -133,7 +133,7 @@ public class KotlinCoroutineIntegrationProcessor {
         StringBuilder sigBuilder = new StringBuilder();
         sigBuilder.append(info.name())
                 .append(info.returnType());
-        for (Type t : info.parameters()) {
+        for (Type t : info.parameterTypes()) {
             sigBuilder.append(t);
         }
         String baseName = currentClassInfo.name() + "$quarkuscoroutineinvoker$" + info.name() + "_"
@@ -149,9 +149,9 @@ public class KotlinCoroutineIntegrationProcessor {
 
             try (MethodCreator mc = classCreator.getMethodCreator("invokeCoroutine", Object.class, Object.class, Object[].class,
                     CONTINUATION.toString())) {
-                ResultHandle[] args = new ResultHandle[info.parameters().size()];
+                ResultHandle[] args = new ResultHandle[info.parametersCount()];
                 ResultHandle array = mc.getMethodParam(1);
-                for (int i = 0; i < info.parameters().size() - 1; ++i) {
+                for (int i = 0; i < info.parametersCount() - 1; ++i) {
                     args[i] = mc.readArrayValue(array, i);
                 }
                 args[args.length - 1] = mc.getMethodParam(2);

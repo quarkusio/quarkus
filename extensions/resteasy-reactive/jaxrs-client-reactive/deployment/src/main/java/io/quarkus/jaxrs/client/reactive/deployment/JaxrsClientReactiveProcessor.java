@@ -411,7 +411,7 @@ public class JaxrsClientReactiveProcessor {
             }
             for (MethodInfo method : multipartResponseTypeInfo.methods()) {
                 String methodName = method.name();
-                if (methodName.startsWith("set") && method.parameters().size() == 1) {
+                if (methodName.startsWith("set") && method.parametersCount() == 1) {
                     AnnotationInstance partType;
                     String fieldName = setterToFieldName(methodName);
                     if ((partType = partTypeFromGetterOrSetter(method)) != null
@@ -467,7 +467,7 @@ public class JaxrsClientReactiveProcessor {
         String fillerClassName = dataClassName + "$$" + setter.name();
         try (ClassCreator c = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClasses, true),
                 fillerClassName, null, FieldFiller.class.getName())) {
-            Type parameter = setter.parameters().get(0);
+            Type parameter = setter.parameterType(0);
             createFieldFillerConstructor(partType, parameter, partName, fillerClassName, c);
 
             MethodCreator set = c
@@ -838,7 +838,7 @@ public class JaxrsClientReactiveProcessor {
                             methodCreator.assign(methodTarget,
                                     addQueryParam(jandexMethod, methodCreator, methodTarget, param.name,
                                             methodCreator.getMethodParam(paramIdx),
-                                            jandexMethod.parameters().get(paramIdx), index, methodCreator.getThis(),
+                                            jandexMethod.parameterType(paramIdx), index, methodCreator.getThis(),
                                             methodCreator.readStaticField(methodGenericParametersField.get()),
                                             methodCreator.readStaticField(methodParamAnnotationsField.get()),
                                             paramIdx));
@@ -928,7 +928,7 @@ public class JaxrsClientReactiveProcessor {
                                         + jandexMethod.declaringClass().name() + "#" + jandexMethod.name());
                             }
                             multipartForm = createMultipartForm(methodCreator, methodCreator.getMethodParam(paramIdx),
-                                    jandexMethod.parameters().get(paramIdx), index);
+                                    jandexMethod.parameterType(paramIdx), index);
                         }
                     }
 
@@ -1104,7 +1104,7 @@ public class JaxrsClientReactiveProcessor {
                         .getFieldDescriptor();
                 ownerMethod.writeInstanceField(paramField, subInstance, ownerMethod.getMethodParam(i));
                 subParamFields.add(new SubResourceParameter(method.getParameters()[i], method.getParameters()[i].type,
-                        jandexMethod.parameters().get(i), paramField, methodParamAnnotationsField, methodGenericParametersField,
+                        jandexMethod.parameterType(i), paramField, methodParamAnnotationsField, methodGenericParametersField,
                         i));
             }
 
@@ -1278,7 +1278,7 @@ public class JaxrsClientReactiveProcessor {
                             subMethodCreator.assign(methodTarget,
                                     addQueryParam(jandexMethod, subMethodCreator, methodTarget, param.name,
                                             subMethodCreator.getMethodParam(paramIdx),
-                                            jandexSubMethod.parameters().get(paramIdx), index,
+                                            jandexSubMethod.parameterType(paramIdx), index,
                                             subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
                                             subMethodCreator.readStaticField(subMethodGenericParametersField.get()),
                                             subMethodCreator.readStaticField(subMethodParamAnnotationsField.get()),
@@ -1371,7 +1371,7 @@ public class JaxrsClientReactiveProcessor {
                             }
                             multipartForm = createMultipartForm(subMethodCreator,
                                     subMethodCreator.getMethodParam(paramIdx),
-                                    jandexSubMethod.parameters().get(paramIdx), index);
+                                    jandexSubMethod.parameterType(paramIdx), index);
                         }
 
                     }
@@ -1508,7 +1508,7 @@ public class JaxrsClientReactiveProcessor {
             String getterName = "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
             for (MethodInfo method : formClass.methods()) {
                 if (method.name().equals(getterName) && method.returnType().name().equals(field.type().name())
-                        && method.parameters().isEmpty() && Modifier.isPublic(method.flags())
+                        && method.parameterTypes().isEmpty() && Modifier.isPublic(method.flags())
                         && !Modifier.isStatic(method.flags())) {
                     fieldValue = methodCreator.invokeVirtualMethod(method, methodParam);
                     break;
@@ -1808,7 +1808,7 @@ public class JaxrsClientReactiveProcessor {
     }
 
     private String[] parametersAsStringArray(MethodInfo subMethod) {
-        List<Type> params = subMethod.parameters();
+        List<Type> params = subMethod.parameterTypes();
         String[] result = new String[params.size()];
         int i = 0;
         for (Type param : params) {
@@ -1871,7 +1871,7 @@ public class JaxrsClientReactiveProcessor {
         Integer continuationIndex = null;
         //TODO: there should be an SPI for this
         if (returnCategory == ReturnCategory.BLOCKING) {
-            List<Type> parameters = jandexMethod.parameters();
+            List<Type> parameters = jandexMethod.parameterTypes();
             if (!parameters.isEmpty()) {
                 Type lastParamType = parameters.get(parameters.size() - 1);
                 if (lastParamType.name().equals(CONTINUATION)) {
@@ -2154,11 +2154,11 @@ public class JaxrsClientReactiveProcessor {
             MethodParameter[] parameters, IndexView index) {
 
         for (MethodInfo methodInfo : interfaceClass.methods()) {
-            if (methodInfo.name().equals(method.getName()) && methodInfo.parameters().size() == parameters.length) {
+            if (methodInfo.name().equals(method.getName()) && methodInfo.parametersCount() == parameters.length) {
                 boolean matches = true;
                 for (int i = 0; i < parameters.length; i++) {
                     MethodParameter actualParam = parameters[i];
-                    Type parameterType = methodInfo.parameters().get(i);
+                    Type parameterType = methodInfo.parameterType(i);
                     String declaredType = actualParam.declaredType != null ? actualParam.declaredType : actualParam.type;
                     if (!declaredType.equals(parameterType.name().toString())) {
                         matches = false;

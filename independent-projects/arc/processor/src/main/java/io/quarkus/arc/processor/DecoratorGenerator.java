@@ -150,7 +150,7 @@ public class DecoratorGenerator extends BeanGenerator {
         // Constructor
         MethodInfo decoratorConstructor = decoratorClass.firstMethod(Methods.INIT);
         MethodCreator constructor = decoratorImplCreator.getMethodCreator(Methods.INIT, "V",
-                decoratorConstructor.parameters().toArray());
+                decoratorConstructor.parameterTypes().toArray());
         // Invoke super()
         constructor.invokeSpecialMethod(decoratorConstructor, constructor.getThis());
         // Set the delegate field

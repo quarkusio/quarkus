@@ -115,7 +115,7 @@ public class NativeCheckedTemplateEnhancer implements BiFunction<String, ClassVi
                 }
 
                 int slot = 0; // arg slots start at 0 for static methods
-                List<Type> parameters = nativeMethod.methodInfo.parameters();
+                List<Type> parameters = nativeMethod.methodInfo.parameterTypes();
                 for (int i = 0; i < nativeMethod.parameterNames.size(); i++) {
                     Type parameterType = parameters.get(i);
                     /*

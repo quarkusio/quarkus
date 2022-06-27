@@ -84,7 +84,7 @@ public class GoogleCloudFunctionsProcessor {
         for (ClassInfo classInfo : functions) {
             String className = classInfo.name().toString();
             unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(className));
-            List<AnnotationInstance> annotationInstances = classInfo.annotations().get(DOTNAME_NAMED);
+            List<AnnotationInstance> annotationInstances = classInfo.annotationsMap().get(DOTNAME_NAMED);
             CloudFunctionBuildItem buildItem = new CloudFunctionBuildItem(className, functionType);
             if (annotationInstances != null) {
                 buildItem.setBeanName(annotationInstances.get(0).value().asString());

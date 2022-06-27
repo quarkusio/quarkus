@@ -78,7 +78,7 @@ public class ConfigPropertiesBuildStep {
             } else if (target.kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
                 final MethodParameterInfo parameter = target.asMethodParameter();
                 short position = parameter.position();
-                classInfo = index.getClassByName(parameter.method().parameters().get(position).name());
+                classInfo = index.getClassByName(parameter.method().parameterType(position).name());
             } else {
                 break;
             }

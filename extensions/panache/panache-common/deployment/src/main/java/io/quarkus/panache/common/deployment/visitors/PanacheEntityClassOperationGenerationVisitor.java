@@ -145,7 +145,7 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
     }
 
     protected void generateMethod(MethodInfo method, AnnotationValue targetReturnTypeErased, AnnotationValue callSuperMethod) {
-        List<org.jboss.jandex.Type> parameters = method.parameters();
+        List<org.jboss.jandex.Type> parameters = method.parameterTypes();
 
         MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC,
                 method.name(),
@@ -229,7 +229,7 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
     }
 
     private void descriptors(MethodInfo method, StringJoiner joiner) {
-        for (org.jboss.jandex.Type parameter : method.parameters()) {
+        for (org.jboss.jandex.Type parameter : method.parameterTypes()) {
             if (parameter.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE
                     || method.name().endsWith("ById")
                             && parameter.name().equals(typeArguments.get("Id").dotName())) {

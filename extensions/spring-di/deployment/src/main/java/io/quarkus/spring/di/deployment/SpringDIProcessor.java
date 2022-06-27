@@ -164,7 +164,7 @@ public class SpringDIProcessor {
         final List<ClassInfo> allAnnotations = getOrderedAnnotations(index);
         final Set<DotName> stereotypeClasses = new HashSet<>(SPRING_STEREOTYPE_ANNOTATIONS);
         for (final ClassInfo clazz : allAnnotations) {
-            final Set<DotName> clazzAnnotations = clazz.annotations().keySet();
+            final Set<DotName> clazzAnnotations = clazz.annotationsMap().keySet();
             final Set<DotName> clazzStereotypes = new HashSet<>();
             final Set<DotName> clazzScopes = new HashSet<>();
             for (final DotName stereotypeName : stereotypeClasses) {
@@ -246,7 +246,7 @@ public class SpringDIProcessor {
         final Map<DotName, Set<DotName>> deps = new HashMap<>();
         for (final ClassInfo clazz : index.getKnownClasses()) {
             if (clazz.isAnnotation()) {
-                deps.put(clazz.name(), clazz.annotations().keySet());
+                deps.put(clazz.name(), clazz.annotationsMap().keySet());
             }
         }
         final List<ClassInfo> ret = new ArrayList<>();
@@ -299,7 +299,7 @@ public class SpringDIProcessor {
             final Set<DotName> scopes = new HashSet<>();
             final Set<DotName> scopeStereotypes = new HashSet<>();
             final Set<String> names = new HashSet<>();
-            final Set<DotName> clazzAnnotations = classInfo.annotations().keySet();
+            final Set<DotName> clazzAnnotations = classInfo.annotationsMap().keySet();
 
             for (AnnotationInstance instance : classInfo.classAnnotations()) {
                 // make sure that we don't mix and match Spring and CDI annotations since this can cause a lot of problems
@@ -331,7 +331,8 @@ public class SpringDIProcessor {
                         declaredScope,
                         target,
                         Collections.emptyList()));
-            } else if (!(isAnnotation && scopes.isEmpty()) && !classInfo.annotations().containsKey(CONFIGURATION_ANNOTATION)) { // Annotations without an explicit scope shouldn't default to anything
+            } else if (!(isAnnotation && scopes.isEmpty())
+                    && !classInfo.annotationsMap().containsKey(CONFIGURATION_ANNOTATION)) { // Annotations without an explicit scope shouldn't default to anything
                 boolean shouldAdd = false;
                 for (final DotName clazzAnnotation : clazzAnnotations) {
                     if (stereotypes.contains(clazzAnnotation) || scopeStereotypes.contains(clazzAnnotation)) {
@@ -356,7 +357,7 @@ public class SpringDIProcessor {
                         Collections.singletonList(AnnotationValue.createStringValue("value", name))));
             }
 
-            if (classInfo.annotations().containsKey(CONFIGURATION_ANNOTATION)) {
+            if (classInfo.annotationsMap().containsKey(CONFIGURATION_ANNOTATION)) {
                 annotationsToAdd.add(create(
                         CDI_APP_SCOPED_ANNOTATION,
                         target,
@@ -430,7 +431,7 @@ public class SpringDIProcessor {
                         target,
                         Collections.emptyList()));
                 // in Spring List<SomeBean> means that all instances of SomeBean should be injected
-                List<Type> parameters = methodInfo.parameters();
+                List<Type> parameters = methodInfo.parameterTypes();
                 for (int i = 0; i < parameters.size(); i++) {
                     Type parameter = parameters.get(i);
                     if (parameter.name().equals(DotNames.LIST)) {

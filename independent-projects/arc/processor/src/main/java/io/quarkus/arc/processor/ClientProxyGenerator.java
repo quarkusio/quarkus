@@ -166,8 +166,8 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 forward.addException(exception.toString());
             }
             // Method params
-            ResultHandle[] params = new ResultHandle[method.parameters().size()];
-            for (int i = 0; i < method.parameters().size(); ++i) {
+            ResultHandle[] params = new ResultHandle[method.parametersCount()];
+            for (int i = 0; i < method.parametersCount(); ++i) {
                 params[i] = forward.getMethodParam(i);
             }
 
@@ -182,7 +182,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 } else {
                     MethodDescriptor superDescriptor = MethodDescriptor.ofMethod(superClass, method.name(),
                             method.returnType().name().toString(),
-                            method.parameters().stream().map(p -> p.name().toString()).toArray());
+                            method.parameterTypes().stream().map(p -> p.name().toString()).toArray());
                     notConstructed.returnValue(
                             notConstructed.invokeSpecialMethod(superDescriptor, notConstructed.getThis(), params));
                 }
@@ -207,9 +207,9 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 ret = forward.invokeInterfaceMethod(method, delegate, params);
             } else if (isReflectionFallbackNeeded(method, targetPackage)) {
                 // Reflection fallback
-                ResultHandle paramTypesArray = forward.newArray(Class.class, forward.load(method.parameters().size()));
+                ResultHandle paramTypesArray = forward.newArray(Class.class, forward.load(method.parametersCount()));
                 int idx = 0;
-                for (Type param : method.parameters()) {
+                for (Type param : method.parameterTypes()) {
                     forward.writeArrayValue(paramTypesArray, idx++, forward.loadClass(param.name().toString()));
                 }
                 ResultHandle argsArray = forward.newArray(Object.class, forward.load(params.length));

@@ -11,7 +11,7 @@ public class KotlinUtils {
     }
 
     public static boolean isSuspendMethod(MethodInfo methodInfo) {
-        List<Type> parameters = methodInfo.parameters();
+        List<Type> parameters = methodInfo.parameterTypes();
         if (parameters.isEmpty()) {
             return false;
         }

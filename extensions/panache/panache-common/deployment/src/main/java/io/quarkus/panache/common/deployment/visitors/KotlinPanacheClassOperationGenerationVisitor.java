@@ -127,7 +127,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
 
     protected void addNullityChecks(MethodVisitor mv, MethodInfo method) {
         int index = 1;
-        for (Type methodParameter : method.parameters()) {
+        for (Type methodParameter : method.parameterTypes()) {
             org.objectweb.asm.Type parameter = asmType(methodParameter);
             if (isNotPrimitiveId(methodParameter)) {
                 mv.visitVarInsn(parameter.getOpcode(ILOAD), index);
@@ -143,7 +143,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     private void loadArguments(MethodVisitor mv, MethodInfo method) {
         mv.visitLdcInsn(typeArguments.get("Entity").type());
         int index = 1;
-        for (Type methodParameter : method.parameters()) {
+        for (Type methodParameter : method.parameterTypes()) {
             org.objectweb.asm.Type parameter = asmType(methodParameter);
             mv.visitVarInsn(parameter.getOpcode(ILOAD), index);
             // long and double take two slots and have size == 2.  others, size == 1
@@ -162,11 +162,11 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     }
 
     private void annotateParamsWithNotNull(MethodVisitor mv, MethodInfo method) {
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
         if (parameters.size() != 0) {
             mv.visitAnnotableParameterCount(parameters.size(), false);
             for (int i = 0; i < parameters.size(); i++) {
-                if (isNotPrimitiveId(method.parameters().get(i))) {
+                if (isNotPrimitiveId(method.parameterType(i))) {
                     mv.visitParameterAnnotation(i, NOT_NULL_DESCRIPTOR, false);
                 }
             }
@@ -242,7 +242,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
 
     private void descriptors(MethodInfo method, StringJoiner joiner) {
         ByteCodeType id = typeArguments.get("Id");
-        for (Type parameter : method.parameters()) {
+        for (Type parameter : method.parameterTypes()) {
             if (!id.isPrimitive() && parameter.name().equals(id.dotName())) {
                 joiner.add(OBJECT.descriptor());
             } else {
@@ -344,8 +344,8 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     private void emitLocalVariablesTable(MethodVisitor mv, MethodInfo method) {
         mv.visitLabel(addLabel());
         mv.visitLocalVariable("this", desc(classInfo.name().toString()), null, startLabel(), endLabel(), 0);
-        for (int i = 0; i < method.parameters().size(); i++) {
-            Type type = method.parameters().get(i);
+        for (int i = 0; i < method.parametersCount(); i++) {
+            Type type = method.parameterType(i);
             String typeName = type instanceof TypeVariable
                     ? this.typeArguments.get(((TypeVariable) type).identifier()).descriptor()
                     : desc(type.name().toString());
@@ -361,7 +361,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                 descriptor,
                 null,
                 null);
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
         AsmUtil.copyParameterNames(mv, method);
         mv.visitCode();
         // this
@@ -426,7 +426,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
 
         StringJoiner joiner = new StringJoiner("", "(", ")");
         joiner.add(CLASS.descriptor());
-        for (Type parameter : method.parameters()) {
+        for (Type parameter : method.parameterTypes()) {
             joiner.add(parameter.kind() == Kind.TYPE_VARIABLE ? OBJECT.descriptor() : getDescriptor(parameter, argMapper));
         }
 
@@ -490,7 +490,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     private boolean needsJvmBridge(MethodInfo method) {
         if (needsJvmBridge(method.returnType()))
             return true;
-        for (Type paramType : method.parameters()) {
+        for (Type paramType : method.parameterTypes()) {
             if (needsJvmBridge(paramType))
                 return true;
         }
@@ -564,8 +564,8 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                     AnnotationValue targetReturnTypeErased = bridge.value("targetReturnTypeErased");
                     if (typeArguments.get("Id").isPrimitive() && targetReturnTypeErased != null
                             && targetReturnTypeErased.asBoolean()) {
-                        if (method.parameters().size() == 1
-                                && method.parameters().get(0).asTypeVariable().identifier().equals("Id")) {
+                        if (method.parametersCount() == 1
+                                && method.parameterType(0).asTypeVariable().identifier().equals("Id")) {
                             generatePrimitiveBridge(method, descriptor);
                         }
                     }

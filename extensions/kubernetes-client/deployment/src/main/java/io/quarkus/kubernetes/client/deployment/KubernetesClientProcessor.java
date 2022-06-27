@@ -129,7 +129,7 @@ public class KubernetesClientProcessor {
                 .filter(c -> !watchedClasses.contains(c.name()))
                 .map(c -> {
                     boolean registerFields = false;
-                    List<AnnotationInstance> jsonFormatInstances = c.annotations().get(JSON_FORMAT);
+                    List<AnnotationInstance> jsonFormatInstances = c.annotationsMap().get(JSON_FORMAT);
                     if (jsonFormatInstances != null) {
                         for (AnnotationInstance jsonFormatInstance : jsonFormatInstances) {
                             if (jsonFormatInstance.target().kind() == AnnotationTarget.Kind.FIELD) {

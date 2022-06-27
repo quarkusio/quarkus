@@ -64,7 +64,7 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
         this.typesUtil = typesUtil;
 
         this.returnType = controllerAdviceMethod.returnType();
-        this.parameterTypes = controllerAdviceMethod.parameters();
+        this.parameterTypes = controllerAdviceMethod.parameterTypes();
         this.declaringClassName = controllerAdviceMethod.declaringClass().name().toString();
         this.isResteasyClassic = isResteasyClassic;
     }

@@ -93,7 +93,7 @@ public class SmallRyeGraphQLClientProcessor {
                 reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
                         .type(method.returnType())
                         .build());
-                for (Type parameter : method.parameters()) {
+                for (Type parameter : method.parameterTypes()) {
                     reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
                             .type(parameter)
                             .build());

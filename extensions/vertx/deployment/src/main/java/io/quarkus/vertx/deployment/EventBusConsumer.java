@@ -85,7 +85,7 @@ class EventBusConsumer {
 
         StringBuilder sigBuilder = new StringBuilder();
         sigBuilder.append(method.name()).append("_").append(method.returnType().name().toString());
-        for (Type i : method.parameters()) {
+        for (Type i : method.parameterTypes()) {
             sigBuilder.append(i.name().toString());
         }
         String generatedName = targetPackage + baseName + INVOKER_SUFFIX + "_" + method.name() + "_"
@@ -156,7 +156,7 @@ class EventBusConsumer {
         ResultHandle messageHandle = invoke.getMethodParam(0);
         ResultHandle result;
 
-        Type paramType = method.parameters().get(0);
+        Type paramType = method.parameterType(0);
         if (paramType.name().equals(MESSAGE)) {
             // io.vertx.core.eventbus.Message
             invoke.invokeVirtualMethod(

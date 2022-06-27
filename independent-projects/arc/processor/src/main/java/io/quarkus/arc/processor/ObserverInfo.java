@@ -52,7 +52,7 @@ public class ObserverInfo implements InjectionTargetInfo {
             priority = ObserverMethod.DEFAULT_PRIORITY;
         }
 
-        Type observedType = observerMethod.parameters().get(eventParameter.position());
+        Type observedType = observerMethod.parameterType(eventParameter.position());
         if (Types.containsTypeVariable(observedType)) {
             Map<TypeVariable, Type> resolvedTypeVariables = Types
                     .resolvedTypeVariables(declaringBean.getImplClazz(), declaringBean.getDeployment())
@@ -340,7 +340,7 @@ public class ObserverInfo implements InjectionTargetInfo {
 
     int initEventMetadataParam(MethodInfo observerMethod) {
         if (observerMethod != null) {
-            for (ListIterator<Type> iterator = observerMethod.parameters().listIterator(); iterator.hasNext();) {
+            for (ListIterator<Type> iterator = observerMethod.parameterTypes().listIterator(); iterator.hasNext();) {
                 if (iterator.next().name().equals(DotNames.EVENT_METADATA)) {
                     return iterator.previousIndex();
                 }

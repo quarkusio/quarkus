@@ -326,7 +326,7 @@ public final class ServerExceptionMapperGenerator {
 
         // handle the case where we deduce the type of exception handler by the Throwable defined in method parameters
         Type deducedHandledExceptionType = null;
-        List<Type> methodParameters = targetMethod.parameters();
+        List<Type> methodParameters = targetMethod.parameterTypes();
         for (Type methodParameter : methodParameters) {
             if (methodParameter.kind() == Type.Kind.CLASS) {
                 try {
@@ -416,7 +416,7 @@ public final class ServerExceptionMapperGenerator {
         ResultHandle contextHandle = mc.checkCast(mc.getMethodParam(1),
                 ResteasyReactiveRequestContext.class);
         ResultHandle targetInstanceHandle = targetInstanceHandleCreator.apply(mc, contextHandle);
-        if (targetMethod.parameters().isEmpty()) {
+        if (targetMethod.parameterTypes().isEmpty()) {
             // just call the target method with no parameters
             ResultHandle resultHandle = mc.invokeVirtualMethod(
                     ofMethod(targetClass.name().toString(), targetMethod.name(), targetMethod.returnType().name().toString()),
@@ -467,7 +467,7 @@ public final class ServerExceptionMapperGenerator {
         ResultHandle contextHandle = mc.checkCast(serverContextHandle, ResteasyReactiveRequestContext.class);
         ResultHandle targetInstanceHandle = targetInstanceHandleCreator.apply(mc, contextHandle);
         ResultHandle uniHandle;
-        if (targetMethod.parameters().isEmpty()) {
+        if (targetMethod.parameterTypes().isEmpty()) {
             // just call the target method with no parameters
             uniHandle = mc.invokeVirtualMethod(
                     ofMethod(targetClass.name().toString(), targetMethod.name(), Uni.class),
@@ -490,7 +490,7 @@ public final class ServerExceptionMapperGenerator {
     private static TargetMethodParamsInfo getTargetMethodParamsInfo(MethodInfo targetMethod, ClassInfo targetClass,
             Type handledExceptionType, MethodCreator mc, ResultHandle exceptionHandle, ResultHandle contextHandle,
             boolean handlesMultipleExceptions, boolean handledContainsThrowable, Set<DotName> unwrappableTypes) {
-        List<Type> parameters = targetMethod.parameters();
+        List<Type> parameters = targetMethod.parameterTypes();
         ResultHandle[] targetMethodParamHandles = new ResultHandle[parameters.size()];
         String[] parameterTypes = new String[parameters.size()];
         // TODO: we probably want to refactor this and remove duplicate code that also exists in CustomFilterGenerator

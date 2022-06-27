@@ -550,7 +550,7 @@ public class SmallRyeOpenApiProcessor {
                     Collection<ClassInfo> allKnownImplementors = apiFilteredIndexViewBuildItem.getIndex()
                             .getAllKnownImplementors(method.declaringClass().name());
                     for (ClassInfo impl : allKnownImplementors) {
-                        MethodInfo implMethod = impl.method(method.name(), method.parameters().toArray(new Type[] {}));
+                        MethodInfo implMethod = impl.method(method.name(), method.parameterTypes().toArray(new Type[] {}));
                         if (implMethod != null) {
                             String implRef = JandexUtil.createUniqueMethodReference(impl, method);
                             classNames.put(implRef, impl.simpleName());
@@ -560,7 +560,7 @@ public class SmallRyeOpenApiProcessor {
                     Collection<ClassInfo> allKnownSubclasses = apiFilteredIndexViewBuildItem.getIndex()
                             .getAllKnownSubclasses(method.declaringClass().name());
                     for (ClassInfo impl : allKnownSubclasses) {
-                        MethodInfo implMethod = impl.method(method.name(), method.parameters().toArray(new Type[] {}));
+                        MethodInfo implMethod = impl.method(method.name(), method.parameterTypes().toArray(new Type[] {}));
                         if (implMethod != null) {
                             String implRef = JandexUtil.createUniqueMethodReference(impl, method);
                             classNames.put(implRef, impl.simpleName());

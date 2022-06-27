@@ -352,7 +352,7 @@ public class ValueResolverGenerator {
 
             for (MethodKey methodKey : methods) {
                 MethodInfo method = methodKey.method;
-                List<Type> methodParams = method.parameters();
+                List<Type> methodParams = method.parameterTypes();
                 if (methodParams.isEmpty()) {
                     // No params - just invoke the method
                     LOGGER.debugf("Method added %s", method);
@@ -376,7 +376,7 @@ public class ValueResolverGenerator {
                     }
                 } else {
                     // Collect methods with params
-                    Match match = new Match(method.name(), method.parameters().size());
+                    Match match = new Match(method.name(), method.parametersCount());
                     List<MethodInfo> methodMatches = matches.get(match);
                     if (methodMatches == null) {
                         methodMatches = new ArrayList<>();
@@ -387,7 +387,7 @@ public class ValueResolverGenerator {
                     if (isVarArgs(method)) {
                         // The last argument is a sequence of arguments -> match name and min number of params
                         // getList(int age, String... names) -> "getList", 1
-                        match = new Match(method.name(), method.parameters().size() - 1);
+                        match = new Match(method.name(), method.parametersCount() - 1);
                         methodMatches = varargsMatches.get(match);
                         if (methodMatches == null) {
                             methodMatches = new ArrayList<>();
@@ -492,7 +492,7 @@ public class ValueResolverGenerator {
 
             for (MethodKey methodKey : staticMethods) {
                 MethodInfo method = methodKey.method;
-                List<Type> methodParams = method.parameters();
+                List<Type> methodParams = method.parameterTypes();
                 if (methodParams.isEmpty()) {
                     // No params - just invoke the method
                     LOGGER.debugf("Static method added %s", method);
@@ -516,7 +516,7 @@ public class ValueResolverGenerator {
                     }
                 } else {
                     // Collect methods with params
-                    Match match = new Match(method.name(), method.parameters().size());
+                    Match match = new Match(method.name(), method.parametersCount());
                     List<MethodInfo> methodMatches = matches.get(match);
                     if (methodMatches == null) {
                         methodMatches = new ArrayList<>();
@@ -527,7 +527,7 @@ public class ValueResolverGenerator {
                     if (isVarArgs(method)) {
                         // The last argument is a sequence of arguments -> match name and min number of params
                         // getList(int age, String... names) -> "getList", 1
-                        match = new Match(method.name(), method.parameters().size() - 1);
+                        match = new Match(method.name(), method.parametersCount() - 1);
                         methodMatches = varargsMatches.get(match);
                         if (methodMatches == null) {
                             methodMatches = new ArrayList<>();
@@ -581,7 +581,7 @@ public class ValueResolverGenerator {
 
     private void matchMethod(MethodInfo method, ClassInfo clazz, MethodCreator resolve, ResultHandle base, ResultHandle name,
             ResultHandle params, ResultHandle paramsCount, ResultHandle evalContext) {
-        List<Type> methodParams = method.parameters();
+        List<Type> methodParams = method.parameterTypes();
 
         LOGGER.debugf("Method added %s", method);
 
@@ -624,7 +624,7 @@ public class ValueResolverGenerator {
         BytecodeCreator success = throwableIsNull.trueBranch();
 
         // Check type parameters and return NO_RESULT if failed
-        List<Type> parameterTypes = method.parameters();
+        List<Type> parameterTypes = method.parameterTypes();
         ResultHandle paramTypesHandle = success.newArray(Class.class, parameterTypes.size());
         int idx = 0;
         for (Type parameterType : parameterTypes) {
@@ -764,7 +764,7 @@ public class ValueResolverGenerator {
             boolean isVarArgs = isVarArgs(method);
             // Try to match parameter types
             try (BytecodeCreator paramMatchScope = success.createScope()) {
-                List<Type> parameterTypes = method.parameters();
+                List<Type> parameterTypes = method.parameterTypes();
                 ResultHandle paramTypesHandle = paramMatchScope.newArray(Class.class, parameterTypes.size());
                 int idx = 0;
                 for (Type parameterType : parameterTypes) {
@@ -1044,7 +1044,7 @@ public class ValueResolverGenerator {
 
     static boolean propertiesFilter(AnnotationTarget target) {
         if (target.kind() == Kind.METHOD) {
-            return target.asMethod().parameters().size() == 0;
+            return target.asMethod().parametersCount() == 0;
         }
         return true;
     }
@@ -1279,7 +1279,7 @@ public class ValueResolverGenerator {
             this.method = method;
             this.name = method.name();
             this.params = new ArrayList<>();
-            for (Type i : method.parameters()) {
+            for (Type i : method.parameterTypes()) {
                 params.add(i.name());
             }
         }

@@ -11,15 +11,15 @@ final class KotlinUtil {
     }
 
     static boolean isSuspendMethod(MethodInfo methodInfo) {
-        if (!methodInfo.parameters().isEmpty()) {
-            return methodInfo.parameters().get(methodInfo.parameters().size() - 1).name()
+        if (!methodInfo.parameterTypes().isEmpty()) {
+            return methodInfo.parameterType(methodInfo.parametersCount() - 1).name()
                     .equals(SchedulerDotNames.CONTINUATION);
         }
         return false;
     }
 
     static Type determineReturnTypeOfSuspendMethod(MethodInfo methodInfo) {
-        Type lastParamType = methodInfo.parameters().get(methodInfo.parameters().size() - 1);
+        Type lastParamType = methodInfo.parameterType(methodInfo.parametersCount() - 1);
         if (lastParamType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
             throw new IllegalStateException("Something went wrong during parameter type resolution - expected "
                     + lastParamType + " to be a Continuation with a generic type");

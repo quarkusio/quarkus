@@ -89,7 +89,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
 
             Type returnType = method.returnType();
 
-            List<Type> parameters = method.parameters();
+            List<Type> parameters = method.parameterTypes();
             String[] parameterTypesStr = new String[parameters.size()];
             List<Integer> queryParameterIndexes = new ArrayList<>(parameters.size());
             Integer pageableParameterIndex = null;

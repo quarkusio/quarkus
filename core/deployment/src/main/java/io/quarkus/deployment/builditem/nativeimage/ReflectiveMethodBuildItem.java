@@ -15,9 +15,9 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
     final String[] params;
 
     public ReflectiveMethodBuildItem(MethodInfo methodInfo) {
-        String[] params = new String[methodInfo.parameters().size()];
+        String[] params = new String[methodInfo.parametersCount()];
         for (int i = 0; i < params.length; ++i) {
-            params[i] = methodInfo.parameters().get(i).name().toString();
+            params[i] = methodInfo.parameterType(i).name().toString();
         }
         this.name = methodInfo.name();
         this.params = params;

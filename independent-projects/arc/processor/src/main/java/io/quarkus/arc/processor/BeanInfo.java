@@ -643,7 +643,7 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     List<DecoratorInfo> findMatchingDecorators(MethodInfo method, List<DecoratorInfo> decorators) {
-        List<Type> methodParams = method.parameters();
+        List<Type> methodParams = method.parameterTypes();
         List<DecoratorInfo> matching = new ArrayList<>(decorators.size());
         for (DecoratorInfo decorator : decorators) {
             for (Type decoratedType : decorator.getDecoratedTypes()) {
@@ -658,7 +658,7 @@ public class BeanInfo implements InjectionTargetInfo {
                     if (!method.name().equals(decoratedMethod.name())) {
                         continue;
                     }
-                    List<Type> decoratedMethodParams = decoratedMethod.parameters();
+                    List<Type> decoratedMethodParams = decoratedMethod.parameterTypes();
                     if (methodParams.size() != decoratedMethodParams.size()) {
                         continue;
                     }

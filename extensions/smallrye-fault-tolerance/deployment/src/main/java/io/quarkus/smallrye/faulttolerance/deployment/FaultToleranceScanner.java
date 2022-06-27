@@ -138,7 +138,7 @@ final class FaultToleranceScanner {
         MethodDescriptor result = new MethodDescriptor();
         result.declaringClass = getClassProxy(method.declaringClass());
         result.name = method.name();
-        result.parameterTypes = method.parameters()
+        result.parameterTypes = method.parameterTypes()
                 .stream()
                 .map(this::getClassProxy)
                 .toArray(Class[]::new);

@@ -50,7 +50,7 @@ public final class PanacheHibernateCommonResourceProcessor {
                 // We don't need to generate accessors for those.
                 continue;
             }
-            if (entityClass.annotations().containsKey(DOTNAME_KOTLIN_METADATA)) {
+            if (entityClass.annotationsMap().containsKey(DOTNAME_KOTLIN_METADATA)) {
                 // This is a Kotlin class.
                 // Historically we've never created accessors automatically for Kotlin,
                 // since Kotlin language features (properties) can be used instead.

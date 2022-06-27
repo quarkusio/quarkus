@@ -66,7 +66,7 @@ public class ClassComparisonUtil {
                 if (!i.returnType().equals(method.returnType())) {
                     continue;
                 }
-                if (i.parameters().size() != method.parameters().size()) {
+                if (i.parametersCount() != method.parametersCount()) {
                     continue;
                 }
                 if (i.flags() != method.flags()) {
@@ -76,9 +76,9 @@ public class ClassComparisonUtil {
                     continue;
                 }
                 boolean paramEqual = true;
-                for (int j = 0; j < method.parameters().size(); ++j) {
-                    Type a = method.parameters().get(j);
-                    Type b = i.parameters().get(j);
+                for (int j = 0; j < method.parametersCount(); ++j) {
+                    Type a = method.parameterType(j);
+                    Type b = i.parameterType(j);
                     if (!a.equals(b)) {
                         paramEqual = false;
                         break;

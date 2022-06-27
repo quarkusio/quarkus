@@ -334,7 +334,7 @@ public class BeanGenerator extends AbstractGenerator {
                 .append(UNDERSCORE)
                 .append(producerMethod.returnType().name().toString());
 
-        for (Type i : producerMethod.parameters()) {
+        for (Type i : producerMethod.parameterTypes()) {
             sigBuilder.append(i.name().toString());
         }
 
@@ -805,10 +805,10 @@ public class BeanGenerator extends AbstractGenerator {
                         declaringProviderInstanceHandle);
             }
 
-            ResultHandle[] referenceHandles = new ResultHandle[disposerMethod.parameters().size()];
+            ResultHandle[] referenceHandles = new ResultHandle[disposerMethod.parametersCount()];
             int disposedParamPosition = bean.getDisposer().getDisposedParameter().position();
             Iterator<InjectionPointInfo> injectionPointsIterator = bean.getDisposer().getInjection().injectionPoints.iterator();
-            for (int i = 0; i < disposerMethod.parameters().size(); i++) {
+            for (int i = 0; i < disposerMethod.parametersCount(); i++) {
                 if (i == disposedParamPosition) {
                     referenceHandles[i] = destroy.getMethodParam(0);
                 } else {
@@ -833,7 +833,7 @@ public class BeanGenerator extends AbstractGenerator {
                 ResultHandle argsArray = destroy.newArray(Object.class, destroy.load(referenceHandles.length));
                 for (int i = 0; i < referenceHandles.length; i++) {
                     destroy.writeArrayValue(paramTypesArray, i,
-                            destroy.loadClass(disposerMethod.parameters().get(i).name().toString()));
+                            destroy.loadClass(disposerMethod.parameterType(i).name().toString()));
                     destroy.writeArrayValue(argsArray, i, referenceHandles[i]);
                 }
                 reflectionRegistration.registerMethod(disposerMethod);
@@ -1176,7 +1176,7 @@ public class BeanGenerator extends AbstractGenerator {
             ResultHandle argsArray = create.newArray(Object.class, create.load(referenceHandles.length));
             for (int i = 0; i < referenceHandles.length; i++) {
                 create.writeArrayValue(paramTypesArray, i,
-                        create.loadClass(producerMethod.parameters().get(i).name().toString()));
+                        create.loadClass(producerMethod.parameterType(i).name().toString()));
                 create.writeArrayValue(argsArray, i, referenceHandles[i]);
             }
             reflectionRegistration.registerMethod(producerMethod);
@@ -1473,7 +1473,7 @@ public class BeanGenerator extends AbstractGenerator {
                 ResultHandle argsArray = create.newArray(Object.class, create.load(referenceHandles.length));
                 for (int i = 0; i < referenceHandles.length; i++) {
                     create.writeArrayValue(paramTypesArray, i,
-                            create.loadClass(initializerMethod.parameters().get(i).name().toString()));
+                            create.loadClass(initializerMethod.parameterType(i).name().toString()));
                     create.writeArrayValue(argsArray, i, referenceHandles[i]);
                 }
                 reflectionRegistration.registerMethod(initializerMethod);
@@ -1826,8 +1826,8 @@ public class BeanGenerator extends AbstractGenerator {
                 // Reflections.findConstructor(org.foo.SimpleBean.class,java.lang.String.class)
                 ResultHandle[] paramsHandles = new ResultHandle[2];
                 paramsHandles[0] = constructor.loadClass(method.declaringClass().name().toString());
-                ResultHandle paramsArray = constructor.newArray(Class.class, constructor.load(method.parameters().size()));
-                for (ListIterator<Type> iterator = method.parameters().listIterator(); iterator.hasNext();) {
+                ResultHandle paramsArray = constructor.newArray(Class.class, constructor.load(method.parametersCount()));
+                for (ListIterator<Type> iterator = method.parameterTypes().listIterator(); iterator.hasNext();) {
                     constructor.writeArrayValue(paramsArray, iterator.nextIndex(),
                             constructor.loadClass(iterator.next().name().toString()));
                 }
@@ -1839,8 +1839,8 @@ public class BeanGenerator extends AbstractGenerator {
                 ResultHandle[] paramsHandles = new ResultHandle[3];
                 paramsHandles[0] = constructor.loadClass(method.declaringClass().name().toString());
                 paramsHandles[1] = constructor.load(method.name());
-                ResultHandle paramsArray = constructor.newArray(Class.class, constructor.load(method.parameters().size()));
-                for (ListIterator<Type> iterator = method.parameters().listIterator(); iterator.hasNext();) {
+                ResultHandle paramsArray = constructor.newArray(Class.class, constructor.load(method.parametersCount()));
+                for (ListIterator<Type> iterator = method.parameterTypes().listIterator(); iterator.hasNext();) {
                     constructor.writeArrayValue(paramsArray, iterator.nextIndex(),
                             constructor.loadClass(iterator.next().name().toString()));
                 }

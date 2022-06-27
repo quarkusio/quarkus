@@ -15,12 +15,6 @@ final class LinksProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         boolean isHalSupported = capabilities.isPresent(Capability.HAL);
         if (isHalSupported) {
-            if (!capabilities.isPresent(Capability.RESTEASY_JSON_JSONB)
-                    && !capabilities.isPresent(Capability.RESTEASY_JSON_JACKSON)) {
-                throw new IllegalStateException("Cannot generate HAL endpoints without "
-                        + "either 'quarkus-resteasy-jsonb' or 'quarkus-resteasy-jackson'");
-            }
-
             jaxRsProviders.produce(
                     new ResteasyJaxrsProviderBuildItem(HalServerResponseFilter.class.getName()));
 

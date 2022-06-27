@@ -14,6 +14,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
+import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -82,21 +83,42 @@ final class LinksProcessor {
     }
 
     @BuildStep
-    void addHalSupport(Capabilities capabilities, BuildProducer<CustomContainerResponseFilterBuildItem> customResponseFilters,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+    void validateJsonNeededForHal(Capabilities capabilities,
+            ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntriesBuildItem) {
         boolean isHalSupported = capabilities.isPresent(Capability.HAL);
-        if (isHalSupported) {
+        if (isHalSupported && isHalMediaTypeUsedInAnyResource(resourceMethodEntriesBuildItem.getEntries())) {
+
             if (!capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JSONB) && !capabilities.isPresent(
                     Capability.RESTEASY_REACTIVE_JSON_JACKSON)) {
                 throw new IllegalStateException("Cannot generate HAL endpoints without "
                         + "either 'quarkus-resteasy-reactive-jsonb' or 'quarkus-resteasy-reactive-jackson'");
             }
+        }
+    }
 
+    @BuildStep
+    void addHalSupport(Capabilities capabilities,
+            BuildProducer<CustomContainerResponseFilterBuildItem> customResponseFilters,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        boolean isHalSupported = capabilities.isPresent(Capability.HAL);
+        if (isHalSupported) {
             customResponseFilters.produce(
                     new CustomContainerResponseFilterBuildItem(HalServerResponseFilter.class.getName()));
 
             additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ResteasyReactiveHalService.class));
         }
+    }
+
+    private boolean isHalMediaTypeUsedInAnyResource(List<ResteasyReactiveResourceMethodEntriesBuildItem.Entry> entries) {
+        for (ResteasyReactiveResourceMethodEntriesBuildItem.Entry entry : entries) {
+            for (String mediaType : entry.getResourceMethod().getProduces()) {
+                if (RestMediaType.APPLICATION_HAL_JSON.equals(mediaType)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private LinksContainer getLinksContainer(ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntriesBuildItem,

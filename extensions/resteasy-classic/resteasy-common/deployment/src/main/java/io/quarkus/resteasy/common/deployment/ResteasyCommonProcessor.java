@@ -96,6 +96,8 @@ public class ResteasyCommonProcessor {
     private static final DotName QUARKUS_JSONB_SERIALIZER = DotName
             .createSimple("io.quarkus.resteasy.common.runtime.jsonb.QuarkusJsonbSerializer");
 
+    private static final String APPLICATION_HAL_JSON = "application/hal+json";
+
     private static final String[] WILDCARD_MEDIA_TYPE_ARRAY = { MediaType.WILDCARD };
 
     private ResteasyCommonConfig resteasyCommonConfig;
@@ -217,7 +219,8 @@ public class ResteasyCommonProcessor {
             boolean needJsonSupport = restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.CONSUMES)
                     || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.PRODUCES)
                     || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.RESTEASY_SSE_ELEMENT_TYPE)
-                    || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.RESTEASY_PART_TYPE);
+                    || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.RESTEASY_PART_TYPE)
+                    || restJsonSupportNeededForHalCapability(capabilities, indexBuildItem);
             if (needJsonSupport) {
                 LOGGER.warn(
                         "Quarkus detected the need of REST JSON support but you have not provided the necessary JSON " +
@@ -390,21 +393,36 @@ public class ResteasyCommonProcessor {
         }
     }
 
+    private boolean restJsonSupportNeededForHalCapability(Capabilities capabilities, CombinedIndexBuildItem indexBuildItem) {
+        return capabilities.isPresent(Capability.HAL)
+                && isMediaTypeFoundInAnnotation(indexBuildItem, ResteasyDotNames.PRODUCES, APPLICATION_HAL_JSON);
+    }
+
     private boolean restJsonSupportNeeded(CombinedIndexBuildItem indexBuildItem, DotName mediaTypeAnnotation) {
+        return isMediaTypeFoundInAnnotation(indexBuildItem, mediaTypeAnnotation,
+                MediaType.APPLICATION_JSON, MediaType.APPLICATION_JSON_PATCH_JSON);
+    }
+
+    private boolean isMediaTypeFoundInAnnotation(CombinedIndexBuildItem indexBuildItem, DotName mediaTypeAnnotation,
+            String... mediaTypes) {
         for (AnnotationInstance annotationInstance : indexBuildItem.getIndex().getAnnotations(mediaTypeAnnotation)) {
             final AnnotationValue annotationValue = annotationInstance.value();
             if (annotationValue == null) {
                 continue;
             }
 
-            List<String> mediaTypes = Collections.emptyList();
+            List<String> foundMediaTypes = Collections.emptyList();
             if (annotationValue.kind() == Kind.ARRAY) {
-                mediaTypes = Arrays.asList(annotationValue.asStringArray());
+                foundMediaTypes = Arrays.asList(annotationValue.asStringArray());
             } else if (annotationValue.kind() == Kind.STRING) {
-                mediaTypes = Collections.singletonList(annotationValue.asString());
+                foundMediaTypes = Collections.singletonList(annotationValue.asString());
             }
-            return mediaTypes.contains(MediaType.APPLICATION_JSON)
-                    || mediaTypes.contains(MediaType.APPLICATION_JSON_PATCH_JSON);
+
+            for (int i = 0; i < mediaTypes.length; i++) {
+                if (foundMediaTypes.contains(mediaTypes[i])) {
+                    return true;
+                }
+            }
         }
 
         return false;

@@ -119,12 +119,16 @@ public class NativeImageFeatureStep {
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuildGraal22_2OrLater.class)
-    JPMSExportBuildItem addExportsToNativeImage(List<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses) {
+    void addExportsToNativeImage(BuildProducer<JPMSExportBuildItem> features,
+            List<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses,
+            List<LambdaCapturingTypeBuildItem> lambdaCapturingTypeBuildItems,
+            List<NativeImageResourcePatternsBuildItem> resourcePatterns) {
+        // required in order to access org.graalvm.nativeimage.impl.RuntimeSerializationSupport and org.graalvm.nativeimage.impl.ConfigurationCondition
+        features.produce(new JPMSExportBuildItem("org.graalvm.sdk", "org.graalvm.nativeimage.impl"));
         // required in order to access com.oracle.svm.core.jni.JNIRuntimeAccess
         if (jniRuntimeAccessibleClasses != null && !jniRuntimeAccessibleClasses.isEmpty()) {
-            return new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jni");
+            features.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jni"));
         }
-        return null;
     }
 
     private boolean graalVM22_2OrLater() {

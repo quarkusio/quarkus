@@ -96,6 +96,11 @@ recipeList:
       oldArtifactId: quarkus-local-cache
       newGroupId: org.hibernate
       newArtifactId: quarkus-local-cache-jakarta
+  # Mail
+  # TODO: move to Angus artifacts
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: jakarta.mail.version
+      newValue: 2.0.1
   # Security - See below
   - org.openrewrite.maven.ChangePropertyValue:
       key: quarkus-security.version

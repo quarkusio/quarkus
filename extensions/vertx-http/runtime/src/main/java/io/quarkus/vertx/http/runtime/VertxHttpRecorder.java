@@ -867,6 +867,7 @@ public class VertxHttpRecorder {
         }
         httpServerOptions.setDecompressionSupported(buildTimeConfig.enableDecompression);
         httpServerOptions.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
+        httpServerOptions.setHandle100ContinueAutomatically(httpConfiguration.handle100ContinueAutomatically);
     }
 
     private static KeyStoreOptions createKeyStoreOptions(Path path, String password, Optional<String> fileType,

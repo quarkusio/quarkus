@@ -418,7 +418,7 @@ function clearConfigFilter(){
 
                         <td class="filterableConfigKey">
                             {#if item.configPhase?? && (item.configPhase == "BUILD_AND_RUN_TIME_FIXED" || item.configPhase == "BUILD_TIME")}
-                            <i class="fas fa-lock data-toggle="tooltip" data-placement="top" title="Fixed at build time (not overridable at runtime)"></i>
+                            <i class="fas fa-lock" data-toggle="tooltip" data-placement="top" title="Fixed at build time (not overridable at runtime)"></i>
                             {#else}
                             <i class="fas fa-lock-open text-white" data-placement="top" title="Overridable at runtime"></i>
                             {/if}

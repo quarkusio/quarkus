@@ -5,6 +5,8 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 
+import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.time.Duration;
 import java.util.List;
@@ -21,8 +23,10 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.TraceId;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapSetter;
+import io.quarkus.it.opentelemetry.util.SocketClient;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.specification.RequestSpecification;
 
@@ -747,6 +751,23 @@ public class OpenTelemetryTestCase {
         Assertions.assertEquals("200", spanData.get("attr_http.status_code"));
         Assertions.assertNotNull(spanData.get("attr_http.client_ip"));
         Assertions.assertNotNull(spanData.get("attr_http.user_agent"));
+    }
+
+    /**
+     * From bug #26149
+     * NPE was thrown when HTTP version was not supported with OpenTelemetry
+     */
+    @Test
+    void testWrongHTTPVersion() {
+        final int port = RestAssured.port;
+        final String host = URI.create(RestAssured.baseURI).getHost();
+
+        try (SocketClient sc = new SocketClient(host, port)) {
+            Assertions.assertEquals("HTTP/50.0 501 Not Implemented",
+                    sc.sendMessage("GET /client/ping/1 HTTP/50.0\r\n\r\n"));
+        } catch (IOException e) {
+            Assertions.fail("Not failing graciously. Got: " + e.getMessage());
+        }
     }
 
     private void verifyResource(Map<String, Object> spanData) {

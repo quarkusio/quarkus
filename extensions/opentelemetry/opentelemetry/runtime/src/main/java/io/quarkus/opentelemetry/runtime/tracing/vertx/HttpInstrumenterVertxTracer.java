@@ -28,6 +28,7 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.impl.headers.HeadersAdaptor;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.net.SocketAddress;
@@ -154,16 +155,20 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
         @Override
         public String flavor(final HttpRequest request) {
             if (request instanceof HttpServerRequest) {
-                HttpServerRequest serverRequest = (HttpServerRequest) request;
-                switch (serverRequest.version()) {
-                    case HTTP_1_0:
-                        return "1.0";
-                    case HTTP_1_1:
-                        return "1.1";
-                    case HTTP_2:
-                        return "2.0";
-                    default:
-                        return null;
+                HttpVersion version = ((HttpServerRequest) request).version();
+                if (version != null) {
+                    switch (version) {
+                        case HTTP_1_0:
+                            return "1.0";
+                        case HTTP_1_1:
+                            return "1.1";
+                        case HTTP_2:
+                            return "2.0";
+                        default:
+                            // Will be executed once Vert.x supports other versions
+                            // At that point version transformation will be needed for OTel semantics
+                            return version.alpnName();
+                    }
                 }
             }
             return null;

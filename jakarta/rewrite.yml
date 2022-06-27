@@ -470,6 +470,48 @@ recipeList:
 #        <smallrye-reactive-messaging.version>3.15.0</smallrye-reactive-messaging.version>
 ---
 type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.microprofile-tck-versions
+displayName: Adjust MicroProfile TCK versions
+recipeList:
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-config-tck.version
+      newValue: 3.0.1
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-context-propagation-tck.version
+      newValue: 1.3
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-fault-tolerance-tck.version
+      newValue: 4.0
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-graphql-tck.version
+      newValue: 2.0
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-health-tck.version
+      newValue: 4.0
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-jwt-auth-tck.version
+      newValue: 2.1-RC2
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-metrics-tck.version
+      newValue: 4.0.1
+  # TODO: update to 3.1 once SmallRye passes it
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-openapi-tck.version
+      newValue: 3.0
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-opentracing-tck.version
+      newValue: 3.0
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-reactive-messaging-tck.version
+      newValue: 3.0-RC2
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-rest-client-tck.version
+      newValue: 3.0
+#  - org.openrewrite.maven.ChangePropertyValue:
+#      key: resteasy-reactive-testsuite.repo.ref
+#      newValue: 
+---
+type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.maven.javax.managed
 displayName: Adjust inject dependencies for Maven
 recipeList:

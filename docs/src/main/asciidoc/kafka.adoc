@@ -327,12 +327,12 @@ As mentioned above, the method can also override the acknowledgment strategy to 
 [[commit-strategies]]
 === Commit Strategies
 
-When a message produced from a Kafka record is acknowledged, the connector invokes a commit strategy. 
-These strategies decide when the consumer offset for a specific topic/partition is committed. 
-Committing an offset indicates that all previous records have been processed. 
+When a message produced from a Kafka record is acknowledged, the connector invokes a commit strategy.
+These strategies decide when the consumer offset for a specific topic/partition is committed.
+Committing an offset indicates that all previous records have been processed.
 It is also the position where the application would restart the processing after a crash recovery or a restart.
 
-Committing every offset has performance penalties as Kafka offset management can be slow. 
+Committing every offset has performance penalties as Kafka offset management can be slow.
 However, not committing the offset often enough may lead to message duplication if the application crashes between two commits.
 
 The Kafka connector supports three strategies:
@@ -515,7 +515,7 @@ To achieve this, implement the `io.smallrye.reactive.messaging.kafka.KafkaConsum
 A common use case is to store offset in a separate data store to implement exactly-once semantic, or starting the processing at a specific offset.
 
 The listener is invoked every time the consumer topic/partition assignment changes.
-For example, when the application starts, it invokes the `partitionsAssigned` callback with the initial set of topics/partitions associated with the consumer. 
+For example, when the application starts, it invokes the `partitionsAssigned` callback with the initial set of topics/partitions associated with the consumer.
 If, later, this set changes, it calls the `partitionsRevoked` and `partitionsAssigned` callbacks again, so you can implement custom logic.
 
 Note that the rebalance listener methods are called from the Kafka polling thread and **will** block the caller thread until completion.
@@ -2338,22 +2338,27 @@ import io.smallrye.mutiny.Uni;
 @ApplicationScoped
 public class FruitStore {
 
-    @Incoming("fruits")
-    public Uni<Void> persist(Fruit fruit) {
-        return Panache.withTransaction(() ->  // <1>
-            fruit.persist()                   // <2>
-                .map(persisted -> null)       // <3>
-        );
+    @Inject
+    Mutiny.Session session;                    // <1>
+
+    @Incoming("in")
+    public Uni<Void> consume(Fruit fruit) {
+        return session.withTransaction(t -> {  // <2>
+            return entity.persistAndFlush()    // <3>
+                    .replaceWithVoid();        // <4>
+        }).onTermination().call(() -> session.close()); // <5>
     }
 
 }
 ----
-<1> Instruct Panache to run the given (asynchronous) action in a transaction. The transaction completes when the action completes.
-<2> Persist the entity. It returns a `Uni<Fruit>`.
-<3> Switch back to a `Uni<Void>`.
+<1> Inject the Hibernate Reactive `Session`
+<2> Requests a new transaction. The transaction completes when the passed action completes.
+<3> Persist the entity. It returns a `Uni<Fruit>`.
+<4> Switch back to a `Uni<Void>`.
+<5> Close the session - this is close the connection with the database. The connection can then be recycled.
 
 Unlike with _classic_ Hibernate, you can't use `@Transactional`.
-Instead, we use `Panache.withTransaction` and persist our entity.
+Instead, we use `session.withTransaction` and persist our entity.
 The `map` is used to return a `Uni<Void>` and not a `Uni<Fruit>`.
 
 You need a deserializer that can create a `Fruit` from the record.

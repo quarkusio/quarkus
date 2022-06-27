@@ -91,7 +91,6 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
 
         AnnotationInstance registerClientHeaders = interfaceClass.classAnnotation(REGISTER_CLIENT_HEADERS);
 
-        boolean useDefaultHeaders = true;
         if (registerClientHeaders != null) {
             String headersFactoryClass = registerClientHeaders.valueWithDefault(index)
                     .asClass().name().toString();
@@ -108,12 +107,12 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                 clientHeadersFactory = constructor
                         .invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
                                 instanceHandle);
-                useDefaultHeaders = false;
+            } else {
+                clientHeadersFactory = constructor
+                        .newInstance(MethodDescriptor.ofConstructor(DEFAULT_HEADERS_FACTORY));
             }
-        }
-        if (useDefaultHeaders) {
-            clientHeadersFactory = constructor
-                    .newInstance(MethodDescriptor.ofConstructor(DEFAULT_HEADERS_FACTORY));
+        } else {
+            clientHeadersFactory = constructor.loadNull();
         }
 
         ResultHandle restClientFilter = constructor.newInstance(

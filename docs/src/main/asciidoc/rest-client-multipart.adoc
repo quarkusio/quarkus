@@ -128,7 +128,7 @@ The purpose of the annotations in the code above is the following:
 
 * `@RegisterRestClient` allows Quarkus to know that this interface is meant to be available for
 CDI injection as a REST Client
-* `@Path`, `@GET` and `@PathParam` are the standard JAX-RS annotations used to define how to access the service
+* `@Path` and `@POST` are the standard JAX-RS annotations used to define how to access the service
 * `@MultipartForm` defines the parameter as a value object for incoming/outgoing request/responses of the multipart/form-data mime type.
 * `@Consumes` defines the expected content-type consumed by this request (parameters)
 * `@Produces` defines the expected content-type produced by this request (return type)

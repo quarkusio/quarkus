@@ -8,6 +8,7 @@ import javax.persistence.NamedQuery;
 @Entity
 @NamedQuery(name = "Product.findAll", query = "SELECT p FROM Product p ORDER BY p.name")
 public class Product {
+
 	@Id
 	private Integer id;
 	
@@ -29,7 +30,6 @@ public class Product {
 	public void setName(String name) {
 		this.name = name;
 	}
-	
-	
 
 }
+

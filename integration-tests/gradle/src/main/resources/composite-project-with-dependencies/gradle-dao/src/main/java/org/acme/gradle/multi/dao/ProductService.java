@@ -15,4 +15,5 @@ public class ProductService {
 	public List<Product> getProducts() {
 		return em.createNamedQuery("Product.findAll", Product.class).getResultList();
 	}
+
 }

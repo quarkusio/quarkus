@@ -1,8 +1,12 @@
 package io.quarkus.container.image.jib.deployment;
 
+import static com.google.cloud.tools.jib.api.buildplan.FileEntriesLayer.DEFAULT_FILE_PERMISSIONS_PROVIDER;
+import static com.google.cloud.tools.jib.api.buildplan.FileEntriesLayer.DEFAULT_OWNERSHIP_PROVIDER;
+import static com.google.cloud.tools.jib.api.buildplan.FilePermissions.DEFAULT_FILE_PERMISSIONS;
 import static io.quarkus.container.image.deployment.util.EnablementUtil.buildContainerImageNeeded;
 import static io.quarkus.container.image.deployment.util.EnablementUtil.pushContainerImageNeeded;
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
+import static io.quarkus.deployment.pkg.PackageConfig.MUTABLE_JAR;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -43,6 +47,8 @@ import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath;
 import com.google.cloud.tools.jib.api.buildplan.FileEntriesLayer;
 import com.google.cloud.tools.jib.api.buildplan.FileEntry;
 import com.google.cloud.tools.jib.api.buildplan.FilePermissions;
+import com.google.cloud.tools.jib.api.buildplan.FilePermissionsProvider;
+import com.google.cloud.tools.jib.api.buildplan.OwnershipProvider;
 import com.google.cloud.tools.jib.api.buildplan.Port;
 import com.google.cloud.tools.jib.frontend.CredentialRetrieverFactory;
 
@@ -56,7 +62,7 @@ import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.container.util.PathsUtil;
-import io.quarkus.deployment.IsNormalNotRemoteDev;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
@@ -89,6 +95,16 @@ public class JibProcessor {
     private static final String DEFAULT_BASE_IMAGE_USER = "185";
 
     private static final String OPENTELEMETRY_CONTEXT_CONTEXT_STORAGE_PROVIDER_SYS_PROP = "io.opentelemetry.context.contextStorageProvider";
+    private static final FilePermissions REMOTE_DEV_FOLDER_PERMISSIONS = FilePermissions.fromOctalString("777");
+    private static final FilePermissions REMOTE_DEV_FILE_PERMISSIONS = FilePermissions.fromOctalString("666");
+
+    private static final FilePermissionsProvider REMOTE_DEV_FOLDER_PERMISSIONS_PROVIDER = (sourcePath,
+            destinationPath) -> Files.isDirectory(sourcePath)
+                    ? REMOTE_DEV_FOLDER_PERMISSIONS
+                    : REMOTE_DEV_FILE_PERMISSIONS;
+
+    private static final OwnershipProvider REMOTE_DEV_OWNERSHIP_PROVIDER = (sourcePath,
+            destinationPath) -> DEFAULT_BASE_IMAGE_USER;
 
     @BuildStep
     public AvailableContainerImageExtensionBuildItem availability() {
@@ -122,7 +138,7 @@ public class JibProcessor {
         return JAVA_11_BASE_IMAGE;
     }
 
-    @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, JibBuild.class }, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = { IsNormal.class, JibBuild.class }, onlyIfNot = NativeBuild.class)
     public void buildFromJar(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
             PackageConfig packageConfig,
             ContainerImageInfoBuildItem containerImage,
@@ -154,7 +170,7 @@ public class JibProcessor {
             jibContainerBuilder = createContainerBuilderFromFastJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
                     jibConfig, containerImageConfig, sourceJar, curateOutcome,
                     containerImageLabels,
-                    appCDSResult);
+                    appCDSResult, packageType.equals(MUTABLE_JAR));
         } else {
             throw new IllegalArgumentException(
                     "Package type '" + packageType + "' is not supported by the container-image-jib extension");
@@ -173,7 +189,7 @@ public class JibProcessor {
         containerImageBuilder.produce(new ContainerImageBuilderBuildItem(JIB));
     }
 
-    @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, JibBuild.class, NativeBuild.class })
+    @BuildStep(onlyIf = { IsNormal.class, JibBuild.class, NativeBuild.class })
     public void buildFromNative(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
             ContainerImageInfoBuildItem containerImage,
             NativeImageBuildItem nativeImage,
@@ -350,7 +366,8 @@ public class JibProcessor {
             ContainerImageConfig containerImageConfig,
             JarBuildItem sourceJarBuildItem,
             CurateOutcomeBuildItem curateOutcome, List<ContainerImageLabelBuildItem> containerImageLabels,
-            Optional<AppCDSResultBuildItem> appCDSResult) {
+            Optional<AppCDSResultBuildItem> appCDSResult,
+            boolean isMutableJar) {
         Path componentsPath = sourceJarBuildItem.getPath().getParent();
         Path appLibDir = componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.MAIN);
 
@@ -435,7 +452,7 @@ public class JibProcessor {
             if (fastChangingLibPaths.isEmpty()) {
                 // just create a layer with the entire lib structure intact
                 addLayer(jibContainerBuilder, Collections.singletonList(componentsPath.resolve(JarResultBuildStep.LIB)),
-                        workDirInContainer, "fast-jar-lib");
+                        workDirInContainer, "fast-jar-lib", isMutableJar, now);
             } else {
                 // we need to manually create each layer
                 // the idea here is that the fast changing libraries are created in a later layer, thus when they do change,
@@ -464,23 +481,21 @@ public class JibProcessor {
                 }
                 jibContainerBuilder.addFileEntriesLayer(bootLibsLayerBuilder.build());
 
-                Path deploymentPath = componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.DEPLOYMENT_LIB);
-                if (Files.exists(deploymentPath)) { // this is the case of mutable-jar
-                    FileEntriesLayer.Builder deploymentLayerBuilder = FileEntriesLayer.builder()
-                            .setName("fast-jar-deployment-libs");
-                    Files.list(deploymentPath).forEach(lib -> {
-                        AbsoluteUnixPath libPathInContainer = workDirInContainer.resolve(JarResultBuildStep.LIB)
-                                .resolve(JarResultBuildStep.DEPLOYMENT_LIB)
-                                .resolve(lib.getFileName());
-                        deploymentLayerBuilder.addEntry(lib, libPathInContainer);
-                    });
-                    jibContainerBuilder.addFileEntriesLayer(deploymentLayerBuilder.build());
+                if (isMutableJar) {
+                    Path deploymentPath = componentsPath.resolve(JarResultBuildStep.LIB)
+                            .resolve(JarResultBuildStep.DEPLOYMENT_LIB);
+                    addLayer(jibContainerBuilder, Collections.singletonList(deploymentPath),
+                            workDirInContainer.resolve(JarResultBuildStep.LIB)
+                                    .resolve(JarResultBuildStep.DEPLOYMENT_LIB),
+                            "fast-jar-deployment-libs", true, now);
                 }
 
                 AbsoluteUnixPath libsMainPath = workDirInContainer.resolve(JarResultBuildStep.LIB)
                         .resolve(JarResultBuildStep.MAIN);
-                addLayer(jibContainerBuilder, nonFastChangingLibPaths, libsMainPath, "fast-jar-normal-libs");
-                addLayer(jibContainerBuilder, new ArrayList<>(fastChangingLibPaths), libsMainPath, "fast-jar-changing-libs");
+                addLayer(jibContainerBuilder, nonFastChangingLibPaths, libsMainPath, "fast-jar-normal-libs",
+                        isMutableJar, now);
+                addLayer(jibContainerBuilder, new ArrayList<>(fastChangingLibPaths), libsMainPath, "fast-jar-changing-libs",
+                        isMutableJar, now);
             }
 
             if (appCDSResult.isPresent()) {
@@ -492,15 +507,21 @@ public class JibProcessor {
                 jibContainerBuilder
                         .addLayer(Collections.singletonList(appCDSResult.get().getAppCDS()), workDirInContainer);
             } else {
-                jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder().setName("fast-jar-run").addEntry(
-                        componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
-                        workDirInContainer.resolve(JarResultBuildStep.QUARKUS_RUN_JAR)).build());
+                jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder()
+                        .setName("fast-jar-run")
+                        .addEntry(
+                                componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
+                                workDirInContainer.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
+                                isMutableJar ? REMOTE_DEV_FILE_PERMISSIONS : DEFAULT_FILE_PERMISSIONS,
+                                now,
+                                isMutableJar ? DEFAULT_BASE_IMAGE_USER : "")
+                        .build());
             }
 
             addLayer(jibContainerBuilder, Collections.singletonList(componentsPath.resolve(JarResultBuildStep.APP)),
-                    workDirInContainer, "fast-jar-quarkus-app");
+                    workDirInContainer, "fast-jar-quarkus-app", isMutableJar, now);
             addLayer(jibContainerBuilder, Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS)),
-                    workDirInContainer, "fast-jar-quarkus");
+                    workDirInContainer, "fast-jar-quarkus", isMutableJar, now);
             if (JibConfig.DEFAULT_WORKING_DIR.equals(jibConfig.workingDirectory)) {
                 // this layer ensures that the working directory is writeable
                 // see https://github.com/GoogleContainerTools/jib/issues/1270
@@ -511,6 +532,23 @@ public class JibProcessor {
                                 AbsoluteUnixPath.get(jibConfig.workingDirectory),
                                 FilePermissions.DEFAULT_FOLDER_PERMISSIONS,
                                 now, DEFAULT_BASE_IMAGE_USER))
+                        .build());
+            }
+            if (isMutableJar) {
+                // this layer is needed for remote-dev
+                jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder()
+                        .addEntry(
+                                new FileEntry(
+                                        Files.createTempDirectory("jib"),
+                                        workDirInContainer.resolve("dev"),
+                                        REMOTE_DEV_FOLDER_PERMISSIONS,
+                                        now, DEFAULT_BASE_IMAGE_USER))
+                        .addEntry(
+                                new FileEntry(
+                                        componentsPath.resolve(JarResultBuildStep.QUARKUS_APP_DEPS),
+                                        workDirInContainer.resolve(JarResultBuildStep.QUARKUS_APP_DEPS),
+                                        REMOTE_DEV_FOLDER_PERMISSIONS,
+                                        now, DEFAULT_BASE_IMAGE_USER))
                         .build());
             }
 
@@ -538,13 +576,17 @@ public class JibProcessor {
     }
 
     public JibContainerBuilder addLayer(JibContainerBuilder jibContainerBuilder, List<Path> files,
-            AbsoluteUnixPath pathInContainer, String name)
+            AbsoluteUnixPath pathInContainer, String name, boolean isMutableJar,
+            Instant now)
             throws IOException {
         FileEntriesLayer.Builder layerConfigurationBuilder = FileEntriesLayer.builder().setName(name);
 
         for (Path file : files) {
             layerConfigurationBuilder.addEntryRecursive(
-                    file, pathInContainer.resolve(file.getFileName()));
+                    file, pathInContainer.resolve(file.getFileName()),
+                    isMutableJar ? REMOTE_DEV_FOLDER_PERMISSIONS_PROVIDER : DEFAULT_FILE_PERMISSIONS_PROVIDER,
+                    (sourcePath, destinationPath) -> now,
+                    isMutableJar ? REMOTE_DEV_OWNERSHIP_PROVIDER : DEFAULT_OWNERSHIP_PROVIDER);
         }
 
         return jibContainerBuilder.addFileEntriesLayer(layerConfigurationBuilder.build());

@@ -1,6 +1,7 @@
 package io.quarkus.qute.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.qute.Namespaces.isDataNamespace;
 import static io.quarkus.qute.runtime.EngineProducer.CDI_NAMESPACE;
 import static io.quarkus.qute.runtime.EngineProducer.INJECT_NAMESPACE;
 import static java.util.function.Predicate.not;
@@ -95,6 +96,7 @@ import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.ErrorCode;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expression.VirtualMethodPart;
+import io.quarkus.qute.Expressions;
 import io.quarkus.qute.LoopSectionHelper;
 import io.quarkus.qute.ParameterDeclaration;
 import io.quarkus.qute.ParserHelper;
@@ -110,6 +112,7 @@ import io.quarkus.qute.TemplateExtension;
 import io.quarkus.qute.TemplateGlobal;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateLocator;
+import io.quarkus.qute.TemplateNode;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.WhenSectionHelper;
@@ -449,13 +452,44 @@ public class QuteProcessor {
             }
         });
 
-        Map<String, MessageBundleMethodBuildItem> messageBundleMethodsMap;
-        if (messageBundleMethods.isEmpty()) {
-            messageBundleMethodsMap = Collections.emptyMap();
-        } else {
-            messageBundleMethodsMap = new HashMap<>();
-            for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
-                messageBundleMethodsMap.put(messageBundleMethod.getTemplateId(), messageBundleMethod);
+        // It's a file-based template
+        // We need to find out whether the parsed template represents a checked template
+        Map<String, String> pathToPathWithoutSuffix = new HashMap<>();
+        for (String path : filePaths.getFilePaths()) {
+            for (String suffix : config.suffixes) {
+                if (path.endsWith(suffix)) {
+                    // Remove the suffix and add to Map
+                    pathToPathWithoutSuffix.put(path, path.substring(0, path.length() - (suffix.length() + 1)));
+                    break;
+                }
+            }
+
+            // Path has already no suffix
+            if (!pathToPathWithoutSuffix.containsKey(path)) {
+                pathToPathWithoutSuffix.put(path, path);
+            }
+        }
+
+        // Checked Template id -> method parameter declaration
+        Map<String, Map<String, MethodParameterDeclaration>> checkedTemplateIdToParamDecl = new HashMap<>();
+        for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
+            for (Entry<String, String> entry : checkedTemplate.bindings.entrySet()) {
+                checkedTemplateIdToParamDecl
+                        .computeIfAbsent(checkedTemplate.templateId, s -> new HashMap<>())
+                        .put(entry.getKey(), new MethodParameterDeclaration(entry.getValue(), entry.getKey()));
+            }
+        }
+
+        // Message Bundle Template id -> method parameter declaration
+        Map<String, Map<String, MethodParameterDeclaration>> msgBundleTemplateIdToParamDecl = new HashMap<>();
+        for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
+            MethodInfo method = messageBundleMethod.getMethod();
+            for (ListIterator<Type> it = method.parameters().listIterator(); it.hasNext();) {
+                Type paramType = it.next();
+                String name = MessageBundleProcessor.getParameterName(method, it.previousIndex());
+                msgBundleTemplateIdToParamDecl
+                        .computeIfAbsent(messageBundleMethod.getTemplateId(), s -> new HashMap<>())
+                        .put(name, new MethodParameterDeclaration(JandexUtil.getBoxedTypeName(paramType), name));
             }
         }
 
@@ -467,41 +501,17 @@ public class QuteProcessor {
                 String templateId = parserHelper.getTemplateId();
 
                 if (filePaths.contains(templateId)) {
-                    // It's a file-based template
-                    // We need to find out whether the parsed template represents a checked template
-                    String path = templateId;
-                    for (String suffix : config.suffixes) {
-                        if (path.endsWith(suffix)) {
-                            // Remove the suffix
-                            path = path.substring(0, path.length() - (suffix.length() + 1));
-                            break;
-                        }
-                    }
                     // Set the bindings for globals first so that type-safe templates can override them
                     for (TemplateGlobalBuildItem global : globals) {
                         parserHelper.addParameter(global.getName(),
                                 JandexUtil.getBoxedTypeName(global.getVariableType()).toString());
                     }
-                    for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
-                        if (checkedTemplate.templateId.equals(path)) {
-                            for (Entry<String, String> entry : checkedTemplate.bindings.entrySet()) {
-                                parserHelper.addParameter(entry.getKey(), entry.getValue());
-                            }
-                            break;
-                        }
-                    }
+
+                    addMethodParamsToParserHelper(parserHelper, pathToPathWithoutSuffix.get(templateId),
+                            checkedTemplateIdToParamDecl);
                 }
 
-                // If needed add params to message bundle templates
-                MessageBundleMethodBuildItem messageBundleMethod = messageBundleMethodsMap.get(templateId);
-                if (messageBundleMethod != null) {
-                    MethodInfo method = messageBundleMethod.getMethod();
-                    for (ListIterator<Type> it = method.parameters().listIterator(); it.hasNext();) {
-                        Type paramType = it.next();
-                        String name = MessageBundleProcessor.getParameterName(method, it.previousIndex());
-                        parserHelper.addParameter(name, JandexUtil.getBoxedTypeName(paramType));
-                    }
-                }
+                addMethodParamsToParserHelper(parserHelper, templateId, msgBundleTemplateIdToParamDecl);
             }
 
         }).build();
@@ -511,16 +521,34 @@ public class QuteProcessor {
         for (TemplatePathBuildItem path : templatePaths) {
             Template template = dummyEngine.getTemplate(path.getPath());
             if (template != null) {
+
+                final List<ParameterDeclaration> parameterDeclarations;
+                if (checkedTemplateIdToParamDecl.isEmpty()) {
+                    parameterDeclarations = template.getParameterDeclarations();
+                } else {
+                    // Add method parameter declarations if they were not overridden in the template
+                    String templateId = pathToPathWithoutSuffix.get(template.getId());
+                    parameterDeclarations = mergeParamDeclarations(
+                            template.getParameterDeclarations(),
+                            checkedTemplateIdToParamDecl.get(templateId));
+                }
+
                 analysis.add(new TemplateAnalysis(null, template.getGeneratedId(), template.getExpressions(),
-                        template.getParameterDeclarations(), path.getPath()));
+                        parameterDeclarations, path.getPath()));
             }
         }
 
         // Message bundle templates
         for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
             Template template = dummyEngine.parse(messageBundleMethod.getTemplate(), null, messageBundleMethod.getTemplateId());
+
+            // Add method parameter declarations if they were not overridden in the template
+            List<ParameterDeclaration> paramDeclarations = mergeParamDeclarations(
+                    template.getParameterDeclarations(),
+                    msgBundleTemplateIdToParamDecl.get(messageBundleMethod.getTemplateId()));
+
             analysis.add(new TemplateAnalysis(messageBundleMethod.getTemplateId(), template.getGeneratedId(),
-                    template.getExpressions(), template.getParameterDeclarations(),
+                    template.getExpressions(), paramDeclarations,
                     messageBundleMethod.getMethod().declaringClass().name() + "#" + messageBundleMethod.getMethod().name()
                             + "()"));
         }
@@ -528,6 +556,29 @@ public class QuteProcessor {
         LOGGER.debugf("Finished analysis of %s templates in %s ms", analysis.size(),
                 TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
         return new TemplatesAnalysisBuildItem(analysis);
+    }
+
+    private List<ParameterDeclaration> mergeParamDeclarations(List<ParameterDeclaration> parameterDeclarations,
+            Map<String, MethodParameterDeclaration> paramNameToDeclaration) {
+        if (paramNameToDeclaration != null) {
+            Map<String, ParameterDeclaration> mergeResult = new HashMap<>(paramNameToDeclaration);
+            for (ParameterDeclaration paramDeclaration : parameterDeclarations) {
+                // Template parameter declarations override method parameter declarations
+                mergeResult.put(paramDeclaration.getKey(), paramDeclaration);
+            }
+            return List.copyOf(mergeResult.values());
+        }
+        return parameterDeclarations;
+    }
+
+    private void addMethodParamsToParserHelper(ParserHelper parserHelper, String templateId,
+            Map<String, Map<String, MethodParameterDeclaration>> templateIdToParamDecl) {
+        var paramNameToDeclaration = templateIdToParamDecl.get(templateId);
+        if (paramNameToDeclaration != null) {
+            for (MethodParameterDeclaration parameterDeclaration : paramNameToDeclaration.values()) {
+                parserHelper.addParameter(parameterDeclaration.getKey(), parameterDeclaration.getParamType());
+            }
+        }
     }
 
     @BuildStep
@@ -737,6 +788,7 @@ public class QuteProcessor {
         Match match = new Match(index, assignableCache);
 
         String namespace = expression.getNamespace();
+        TypeInfos.TypeInfo dataNamespaceExpTypeInfo = null;
         TemplateDataBuildItem templateData = null;
         List<TemplateExtensionMethodBuildItem> extensionMethods = null;
 
@@ -747,6 +799,24 @@ public class QuteProcessor {
                     rootClazz = bean.getImplClazz();
                 } else {
                     // Bean not found
+                    return putResult(match, results, expression);
+                }
+            } else if (isDataNamespace(namespace) && !expression.getParts().isEmpty()) {
+                Expression.Part firstPart = expression.getParts().get(0);
+                String firstPartName = firstPart.getName();
+
+                for (ParameterDeclaration paramDeclaration : templateAnalysis.parameterDeclarations) {
+                    if (paramDeclaration.getKey().equals(firstPartName)) {
+                        // Data Namespace expression has bounded parameter declaration
+                        dataNamespaceExpTypeInfo = TypeInfos
+                                .create(paramDeclaration.getTypeInfo(), firstPart, index, templateIdToPathFun,
+                                        expression.getOrigin())
+                                .asTypeInfo();
+                        break;
+                    }
+                }
+
+                if (dataNamespaceExpTypeInfo == null) {
                     return putResult(match, results, expression);
                 }
             } else {
@@ -769,7 +839,8 @@ public class QuteProcessor {
             }
         }
 
-        if (checkedTemplate != null && checkedTemplate.requireTypeSafeExpressions && !expression.hasTypeInfo()) {
+        if (checkedTemplate != null && checkedTemplate.requireTypeSafeExpressions && !expression.hasTypeInfo()
+                && dataNamespaceExpTypeInfo == null) {
             if (!expression.hasNamespace() && expression.getParts().size() == 1
                     && ITERATION_METADATA_KEYS.contains(expression.getParts().get(0).getName())) {
                 String prefixInfo;
@@ -806,7 +877,7 @@ public class QuteProcessor {
             return putResult(match, results, expression);
         }
 
-        if (rootClazz == null && !expression.hasTypeInfo()) {
+        if (rootClazz == null && !expression.hasTypeInfo() && dataNamespaceExpTypeInfo == null) {
             // No type info available
             return putResult(match, results, expression);
         }
@@ -845,6 +916,10 @@ public class QuteProcessor {
                 return putResult(match, results, expression);
             }
 
+        } else if (dataNamespaceExpTypeInfo != null) {
+            // Validate as Data namespace expression has parameter declaration bound to the variable
+            // Skip the first part, e.g. for {data:item.name} we start validation with "name"
+            match.setValues(dataNamespaceExpTypeInfo.rawClass, dataNamespaceExpTypeInfo.resolvedType);
         } else if (rootClazz == null) {
             // No namespace is used or no declarative resolver (extension methods, @TemplateData, etc.)
             if (root.isTypeInfo()) {
@@ -2696,6 +2771,41 @@ public class QuteProcessor {
             return "BUILD_" + name();
         }
 
+    }
+
+    private static final class MethodParameterDeclaration implements ParameterDeclaration {
+
+        private final String paramType;
+        private final String paramName;
+
+        private MethodParameterDeclaration(String paramType, String paramName) {
+            this.paramType = paramType;
+            this.paramName = paramName;
+        }
+
+        public String getParamType() {
+            return paramType;
+        }
+
+        @Override
+        public String getTypeInfo() {
+            return Expressions.typeInfoFrom(paramType);
+        }
+
+        @Override
+        public String getKey() {
+            return paramName;
+        }
+
+        @Override
+        public Expression getDefaultValue() {
+            return null;
+        }
+
+        @Override
+        public TemplateNode.Origin getOrigin() {
+            return null;
+        }
     }
 
 }

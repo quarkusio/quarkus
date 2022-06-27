@@ -1,5 +1,7 @@
 package io.quarkus.qute;
 
+import static io.quarkus.qute.Namespaces.DATA_NAMESPACE;
+
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import java.time.Duration;
@@ -225,7 +227,7 @@ class TemplateImpl implements Template {
 
         @Override
         public String getNamespace() {
-            return "data";
+            return DATA_NAMESPACE;
         }
 
     }

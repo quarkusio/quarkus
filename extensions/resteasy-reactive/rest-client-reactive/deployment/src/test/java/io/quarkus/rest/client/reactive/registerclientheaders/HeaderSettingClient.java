@@ -15,4 +15,8 @@ public interface HeaderSettingClient {
     @GET
     RequestData setHeaderValue(@HeaderParam(HEADER) String headerName);
 
+    @Path("/with-incoming-header/no-passing")
+    @GET
+    RequestData setHeaderValueNoPassing(@HeaderParam(HEADER) String headerName);
+
 }

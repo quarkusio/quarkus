@@ -25,6 +25,7 @@ public class RegisterClientHeadersTest {
                                         setUrlForClass(EchoClient.class) +
                                                 setUrlForClass(HeaderSettingClient.class) +
                                                 setUrlForClass(HeaderPassingClient.class) +
+                                                setUrlForClass(HeaderNoPassingClient.class) +
                                                 "org.eclipse.microprofile.rest.client.propagateHeaders="
                                                 + HeaderSettingClient.HEADER),
                                 "application.properties");
@@ -47,6 +48,13 @@ public class RegisterClientHeadersTest {
         String headerValue = "my-header-value";
         RequestData requestData = headerSettingClient.setHeaderValue(headerValue);
         assertThat(requestData.getHeaders().get(HeaderSettingClient.HEADER).get(0)).isEqualTo(headerValue);
+    }
+
+    @Test
+    public void shouldNotPassIncomingHeaders() {
+        String headerValue = "my-header-value";
+        RequestData requestData = headerSettingClient.setHeaderValueNoPassing(headerValue);
+        assertThat(requestData.getHeaders().get(HeaderSettingClient.HEADER)).isNull();
     }
 
 }

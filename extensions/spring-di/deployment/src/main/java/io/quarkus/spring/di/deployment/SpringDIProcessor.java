@@ -89,7 +89,7 @@ public class SpringDIProcessor {
     /*
      * This Build Item can't be generated in the beanTransformer method because the annotation transformer
      * is generated lazily.
-     * However the logic is the same
+     * However, the logic is the same.
      */
     @BuildStep
     SpringBeanNameToDotNameBuildItem createBeanNamesMap(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
@@ -238,7 +238,7 @@ public class SpringDIProcessor {
 
     /**
      * @return All the annotations in the index ordered with dependents after their dependencies.
-     *         They are traversed in this order so that we can start with out root annotations
+     *         They are traversed in this order so that we can start without root annotations
      *         (@Component, @Service & @Repository) and create a set of everything that extends it
      *         directly or indirectly.
      */
@@ -280,7 +280,7 @@ public class SpringDIProcessor {
      *
      * @param target The annotated class
      * @param stereotypeScopes A map on spring stereotype classes to all the scopes
-     *        they, or any of their stereotypes (etc) declare
+     *        they, or any of their stereotypes (etc.) declare
      * @return The CDI annotations to add to the class
      */
     Set<AnnotationInstance> getAnnotationsToAdd(

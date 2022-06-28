@@ -106,7 +106,7 @@ public class RedisConfig {
         public Optional<RedisRole> role;
 
         /**
-         * Whether or not to use replicas nodes (only considered in Cluster mode).
+         * Whether to use replicas nodes (only considered in Cluster mode).
          */
         @ConfigItem(defaultValueDocumentation = "never")
         public Optional<RedisReplicas> replicas;
@@ -146,7 +146,7 @@ public class RedisConfig {
         public Duration poolRecycleTimeout;
 
         /**
-         * Sets how much handlers is the client willing to queue.
+         * Sets how many handlers is the client willing to queue.
          * <p>
          * The client will always work on pipeline mode, this means that messages can start queueing.
          * Using this configuration option, you can control how much backlog you're willing to accept.

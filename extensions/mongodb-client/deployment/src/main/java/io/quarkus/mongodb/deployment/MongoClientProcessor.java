@@ -207,9 +207,9 @@ public class MongoClientProcessor {
 
     @BuildStep
     void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        // add the @MongoClientName class otherwise it won't registered as a qualifier
+        // add the @MongoClientName class otherwise it won't be registered as a qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(MongoClientName.class).build());
-        // make MongoClients an unremoveable bean
+        // make MongoClients an unremovable bean
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(MongoClients.class).setUnremovable().build());
     }
 
@@ -328,7 +328,7 @@ public class MongoClientProcessor {
                 .configure(MongoClient.class)
                 .scope(ApplicationScoped.class)
                 // pass the runtime config into the recorder to ensure that the DataSource related beans
-                // are created after runtime configuration has been setup
+                // are created after runtime configuration has been set up
                 .supplier(recorder.mongoClientSupplier(clientName, mongodbConfig))
                 .setRuntimeInit();
 
@@ -342,7 +342,7 @@ public class MongoClientProcessor {
                 .configure(ReactiveMongoClient.class)
                 .scope(ApplicationScoped.class)
                 // pass the runtime config into the recorder to ensure that the DataSource related beans
-                // are created after runtime configuration has been setup
+                // are created after runtime configuration has been set up
                 .supplier(recorder.reactiveMongoClientSupplier(clientName, mongodbConfig))
                 .setRuntimeInit();
 

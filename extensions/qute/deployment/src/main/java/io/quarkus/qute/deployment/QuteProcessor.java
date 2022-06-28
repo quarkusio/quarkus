@@ -463,7 +463,7 @@ public class QuteProcessor {
 
             @Override
             public void beforeParsing(ParserHelper parserHelper) {
-                // The template id may be the full path, e.g. "items.html" or a path without the suffic, e.g. "items"
+                // The template id may be the full path, e.g. "items.html" or a path without the suffix, e.g. "items"
                 String templateId = parserHelper.getTemplateId();
 
                 if (filePaths.contains(templateId)) {
@@ -1955,6 +1955,8 @@ public class QuteProcessor {
 
         void autoExtractType() {
             if (clazz != null) {
+                // Make sure that hierarchy of the matching class is indexed
+                Types.indexHierarchy(clazz, index);
                 boolean hasCompletionStage = Types.isAssignableFrom(Names.COMPLETION_STAGE, clazz.name(), index,
                         assignableCache);
                 boolean hasUni = hasCompletionStage ? false

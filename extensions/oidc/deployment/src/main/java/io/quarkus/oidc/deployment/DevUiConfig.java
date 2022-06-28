@@ -15,7 +15,7 @@ public class DevUiConfig {
      *
      * For example: if the grant type is 'code' then an authorization code will be returned directly to Dev UI which will use a
      * code
-     * handler to acquire the tokens while a user name and password will have to be entered to request a token using a
+     * handler to acquire the tokens while a username and password will have to be entered to request a token using a
      * 'password' grant.
      */
     public Grant grant = new Grant();

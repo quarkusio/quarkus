@@ -153,7 +153,7 @@ final class DefaultDnsResolverSubstitution {
      * 0 5 5060 example.com.
      * The priority and weight are ignored, and we just concatenate the host (after removing the ending '.') and port with a
      * ':' in between, as expected by ServerAddress.
-     * It's required that the srvHost has at least three parts (e.g. foo.bar.baz) and that all of the resolved hosts have a
+     * It's required that the srvHost has at least three parts (e.g. foo.bar.baz) and that all the resolved hosts have a
      * parent
      * domain equal to the domain of the srvHost.
      */

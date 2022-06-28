@@ -61,7 +61,7 @@ public class FormAuthConfig {
 
     /**
      * Option to control the name of the cookie used to redirect the user back
-     * to where he want to get access to.
+     * to where he wants to get access to.
      */
     @ConfigItem(defaultValue = "quarkus-redirect-location")
     public String locationCookie;
@@ -86,7 +86,7 @@ public class FormAuthConfig {
      * is when the cookie is 9m old then the actual timeout will happen 21m after the last request, as the timeout
      * is only refreshed when a new cookie is generated.
      *
-     * In other words no timeout is tracked on the server side; the timestamp is encoded and encrypted in the cookie itself
+     * In other words no timeout is tracked on the server side; the timestamp is encoded and encrypted in the cookie itself,
      * and it is decrypted and parsed with each request.
      */
     @ConfigItem(defaultValue = "PT1M")

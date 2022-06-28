@@ -33,7 +33,7 @@ public class ExchangeAttributeParser {
         for (ExchangeAttributeBuilder instance : loader) {
             builders.add(instance);
         }
-        //sort with highest priority first
+        //sort with the highest priority first
         builders.sort(new Comparator<ExchangeAttributeBuilder>() {
             @Override
             public int compare(ExchangeAttributeBuilder o1, ExchangeAttributeBuilder o2) {

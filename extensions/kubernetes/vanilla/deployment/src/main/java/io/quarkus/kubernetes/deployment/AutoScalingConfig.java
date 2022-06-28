@@ -37,7 +37,7 @@ public class AutoScalingConfig {
      * The exact amount of requests allowed to the replica at a time.
      * Its default value is “0”, which means an unlimited number of requests are allowed to flow into the replica.
      *
-     * @return the container concurrenct or zero if its not bound.
+     * @return the container concurrency, or zero if it is not bound.
      */
     Optional<Integer> containerConcurrency;
 

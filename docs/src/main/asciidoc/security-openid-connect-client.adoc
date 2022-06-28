@@ -26,8 +26,8 @@ In this example, we will build an application which consists of two JAX-RS resou
 
 `FrontendResource` has 4 endpoints:
 
-* `/frontend/user-name-with-oidc-client`
-* `/frontend/admin-name-with-oidc-client`
+* `/frontend/user-name-with-oidc-client-token`
+* `/frontend/admin-name-with-oidc-client-token`
 * `/frontend/user-name-with-propagated-token`
 * `/frontend/admin-name-with-propagated-token`
 

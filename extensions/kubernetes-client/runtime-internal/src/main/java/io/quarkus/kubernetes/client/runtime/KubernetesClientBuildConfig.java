@@ -11,7 +11,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class KubernetesClientBuildConfig {
 
     /**
-     * Whether or not the client should trust a self signed certificate if so presented by the API server
+     * Whether the client should trust a self-signed certificate if so presented by the API server
      */
     @ConfigItem
     public Optional<Boolean> trustCerts = Optional.empty();

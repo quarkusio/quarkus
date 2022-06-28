@@ -80,8 +80,8 @@ public interface HttpAuthenticationMechanism {
      * specific
      * configuration.
      *
-     * Multiple mechanisms are sorted in descending order, so highest priority gets the first chance to send a challenge. The
-     * default priority is equal to 1000.
+     * Multiple mechanisms are sorted in descending order, so the highest priority gets the first chance to send a challenge.
+     * The default priority is equal to 1000.
      *
      * @return priority
      */

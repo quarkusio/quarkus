@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-confluent-registry-avro</artifactId>
     <name>Quarkus - Confluent Schema Registry - Avro - Runtime</name>
+    <description>Use Confluent as Avro schema registry</description>
 
     <dependencies>
         <dependency>

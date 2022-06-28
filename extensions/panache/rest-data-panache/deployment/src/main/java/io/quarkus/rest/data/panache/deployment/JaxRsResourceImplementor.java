@@ -7,8 +7,11 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.ws.rs.Path;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldCreator;
@@ -29,6 +32,7 @@ import io.quarkus.runtime.util.HashUtil;
 class JaxRsResourceImplementor {
 
     private static final Logger LOGGER = Logger.getLogger(JaxRsResourceImplementor.class);
+    private static final String OPENAPI_TAG_ANNOTATION = "org.eclipse.microprofile.openapi.annotations.tags.Tag";
 
     private final List<MethodImplementor> methodImplementors;
 
@@ -58,7 +62,8 @@ class JaxRsResourceImplementor {
      * }
      * </pre>
      */
-    void implement(ClassOutput classOutput, ResourceMetadata resourceMetadata, ResourceProperties resourceProperties) {
+    void implement(ClassOutput classOutput, ResourceMetadata resourceMetadata, ResourceProperties resourceProperties,
+            Capabilities capabilities) {
         String controllerClassName = resourceMetadata.getResourceInterface() + "JaxRs_" +
                 HashUtil.sha1(resourceMetadata.getResourceInterface());
         LOGGER.tracef("Starting generation of '%s'", controllerClassName);
@@ -66,7 +71,7 @@ class JaxRsResourceImplementor {
                 .classOutput(classOutput).className(controllerClassName)
                 .build();
 
-        implementClassAnnotations(classCreator, resourceProperties);
+        implementClassAnnotations(classCreator, resourceMetadata, resourceProperties, capabilities);
         FieldDescriptor resourceField = implementResourceField(classCreator, resourceMetadata);
         implementMethods(classCreator, resourceMetadata, resourceProperties, resourceField);
 
@@ -74,8 +79,13 @@ class JaxRsResourceImplementor {
         LOGGER.tracef("Completed generation of '%s'", controllerClassName);
     }
 
-    private void implementClassAnnotations(ClassCreator classCreator, ResourceProperties resourceProperties) {
+    private void implementClassAnnotations(ClassCreator classCreator, ResourceMetadata resourceMetadata,
+            ResourceProperties resourceProperties, Capabilities capabilities) {
         classCreator.addAnnotation(Path.class).addValue("value", resourceProperties.getPath());
+        if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
+            String className = StringUtils.substringAfterLast(resourceMetadata.getResourceInterface(), ".");
+            classCreator.addAnnotation(OPENAPI_TAG_ANNOTATION).add("name", className);
+        }
     }
 
     private FieldDescriptor implementResourceField(ClassCreator classCreator, ResourceMetadata resourceMetadata) {

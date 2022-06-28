@@ -26,8 +26,9 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(MultipartOutputResource.class, MultipartOutputResponse.class,
-                            MultipartOutputFileResponse.class,
-                            Status.class, FormDataBase.class, OtherPackageFormDataBase.class));
+                            MultipartOutputFileResponse.class, MultipartOutputMultipleFileResponse.class,
+                            MultipartOutputMultipleFileDownloadResponse.class, MultipartOutputSingleFileDownloadResponse.class,
+                            Status.class, FormDataBase.class, OtherPackageFormDataBase.class, PathFileDownload.class));
 
     @Test
     public void testSimple() {
@@ -71,18 +72,60 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
     }
 
     @Test
-    public void testWithFiles() {
+    public void testWithFile() {
         String response = RestAssured
                 .given()
                 .get("/multipart/output/with-file")
                 .then()
                 .contentType(ContentType.MULTIPART)
                 .statusCode(200)
-                .log().all()
                 .extract().asString();
 
         assertContainsValue(response, "name", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_NAME);
         assertContainsFile(response, "file", MediaType.APPLICATION_OCTET_STREAM, "lorem.txt");
+    }
+
+    @Test
+    public void testWithSingleFileDownload() {
+        String response = RestAssured
+                .given()
+                .get("/multipart/output/with-single-file-download")
+                .then()
+                .contentType(ContentType.MULTIPART)
+                .statusCode(200)
+                .extract().asString();
+
+        assertContainsFile(response, "one", MediaType.APPLICATION_OCTET_STREAM, "test.xml");
+    }
+
+    @Test
+    public void testWithMultipleFiles() {
+        String response = RestAssured
+                .given()
+                .get("/multipart/output/with-multiple-file")
+                .then()
+                .contentType(ContentType.MULTIPART)
+                .statusCode(200)
+                .extract().asString();
+
+        assertContainsValue(response, "name", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_NAME);
+        assertContainsFile(response, "files", MediaType.APPLICATION_OCTET_STREAM, "lorem.txt");
+        assertContainsFile(response, "files", MediaType.APPLICATION_OCTET_STREAM, "test.xml");
+    }
+
+    @Test
+    public void testWithMultipleFileDownload() {
+        String response = RestAssured
+                .given()
+                .get("/multipart/output/with-multiple-file-download")
+                .then()
+                .contentType(ContentType.MULTIPART)
+                .statusCode(200)
+                .extract().asString();
+
+        assertContainsValue(response, "name", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_NAME);
+        assertContainsFile(response, "files", MediaType.APPLICATION_OCTET_STREAM, "lorem.txt");
+        assertContainsFile(response, "files", MediaType.APPLICATION_OCTET_STREAM, "test.xml");
     }
 
     @EnabledIfSystemProperty(named = "test-resteasy-reactive-large-files", matches = "true")

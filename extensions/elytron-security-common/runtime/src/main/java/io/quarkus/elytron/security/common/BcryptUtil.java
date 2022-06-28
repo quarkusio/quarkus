@@ -97,7 +97,7 @@ public class BcryptUtil {
      *
      * @param plainText the plain text string to check
      * @param passwordHash the Modular Crypt Format bcrypt hash to compare against
-     * @return the boolean result of whether or not the plain text matches the decoded Modular Crypt Format bcrypt hash
+     * @return the boolean result of whether the plain text matches the decoded Modular Crypt Format bcrypt hash
      * @throws NullPointerException if the plainText password or passwordHash is null
      */
     public static boolean matches(String plainText, String passwordHash) {

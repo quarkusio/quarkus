@@ -23,7 +23,7 @@ public class GlobalAutoScalingConfig {
      *
      * @see <a href="https://knative.dev/docs/serving/autoscaling/concurrency/#hard-limit">Knative Knative: Configuring
      *      concurrency: Hard Limit</a>
-     * @return the container concurrenct or zero if its not bound.
+     * @return the container concurrency, or zero if it is not bound.
      */
     Optional<Integer> containerConcurrency;
 

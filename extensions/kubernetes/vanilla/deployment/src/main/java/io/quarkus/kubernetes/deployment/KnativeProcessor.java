@@ -64,7 +64,7 @@ public class KnativeProcessor {
 
     private static final String LATEST_REVISION = "latest";
     /**
-     * The following properties must be set to workaround
+     * The following properties must be set to work around
      * this Dekorate issue: https://github.com/dekorateio/dekorate/issues/869.
      * Once this issue is fixed, we can get rid of these properties and use the Dekorate knative decorators.
      */

@@ -82,6 +82,10 @@ public class MicroProfileRestClientRequestFilter implements ResteasyReactiveClie
                     requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
                 }
             }
+        } else {
+            for (Map.Entry<String, List<String>> headerEntry : headers.entrySet()) {
+                requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
+            }
         }
     }
 

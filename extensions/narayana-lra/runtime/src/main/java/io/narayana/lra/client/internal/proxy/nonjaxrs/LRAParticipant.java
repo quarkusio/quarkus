@@ -39,7 +39,7 @@ import io.narayana.lra.AnnotationResolver;
 import io.narayana.lra.logging.LRALogger;
 
 /**
- * Keeps references to individual non-JAX-RS paraticipant methods in
+ * Keeps references to individual non-JAX-RS participant methods in
  * single LRA participant class.
  */
 public class LRAParticipant {
@@ -229,7 +229,7 @@ public class LRAParticipant {
 
             return processResult(result, participantResult.getType(), type);
         } else {
-            // participant is still compensating / compeleting
+            // participant is still compensating / completing
             return Response.accepted().build();
         }
     }

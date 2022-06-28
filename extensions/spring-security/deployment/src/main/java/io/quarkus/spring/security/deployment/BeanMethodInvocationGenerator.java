@@ -160,7 +160,7 @@ class BeanMethodInvocationGenerator {
                             throw createGenericMalformedException(securedMethodInfo, expression);
                         }
 
-                        // this is the index index of the parameter we care about
+                        // this is the index of the parameter we care about
                         int parameterIndex = getParameterIndex(securedMethodInfo, parameterMatcher.group(1), expression);
 
                         DotName expectedType = securedMethodInfo.parameters().get(parameterIndex).name();

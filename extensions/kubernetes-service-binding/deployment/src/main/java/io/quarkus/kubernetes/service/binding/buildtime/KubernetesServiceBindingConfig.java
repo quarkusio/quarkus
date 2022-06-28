@@ -12,7 +12,7 @@ public class KubernetesServiceBindingConfig {
 
     /**
      * A list of explicitly configured services.
-     * The configured value will be used in order to generate the `ServiceBindig` resource (in case that kubernetes resource
+     * The configured value will be used in order to generate the `ServiceBinding` resource (in case that kubernetes resource
      * generation is enabled).
      */
     @ConfigItem
@@ -26,7 +26,7 @@ public class KubernetesServiceBindingConfig {
 
     /**
      * Determines if binding should be created as files or env vars.
-     * Set this value to false to bind as env vars.`
+     * Set this value to {@code false} to bind as env vars.`
      */
     @ConfigItem(defaultValue = "true")
     public Boolean bindAsFiles;

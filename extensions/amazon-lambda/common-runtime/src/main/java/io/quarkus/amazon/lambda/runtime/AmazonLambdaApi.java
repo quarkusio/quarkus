@@ -32,7 +32,7 @@ public class AmazonLambdaApi {
     public static final String API_PATH_ERROR = "/error";
     public static final String API_PATH_RESPONSE = "/response";
 
-    // Only available in dev/test mode and points to path for mock even tserver
+    // Only available in dev/test mode and points to path for mock EventServer
     public static final String API_BASE_PATH_TEST = "/_lambda_";
     public static final String POST_EVENT = API_BASE_PATH_TEST;
 

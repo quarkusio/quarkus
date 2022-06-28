@@ -24,7 +24,7 @@ public class VertxTcpMetrics extends VertxNetworkMetrics
      * Called when a client has connected, which is applicable for TCP connections.
      * <p>
      * The remote name of the client is a best effort to provide the name of the
-     * remote host, i.e if the name is specified at creation time, this name will be
+     * remote host, i.e. if the name is specified at creation time, this name will be
      * used otherwise it will be the remote address.
      *
      * @param remoteAddress the remote address of the client

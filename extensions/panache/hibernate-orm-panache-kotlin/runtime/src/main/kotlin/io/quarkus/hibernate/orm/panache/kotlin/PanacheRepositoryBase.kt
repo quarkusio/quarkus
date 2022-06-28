@@ -576,7 +576,7 @@ interface PanacheRepositoryBase<Entity : Any, Id: Any> {
      * Persist all given entities.
      *
      * @param entities the entities to persist
-     * @see [PanacfluheRepositoryBase.persist]
+     * @see [PanacheRepositoryBase.persist]
      */
     fun persist(entities: Stream<Entity>) {
         INSTANCE.persist(entities)

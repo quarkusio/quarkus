@@ -15,7 +15,7 @@ class ProcessedCategoryTest {
         Extension gRPC = createExtension("Camel gRPC");
         Extension iCal = createExtension("Camel iCal");
         Extension univocityParser = createExtension("Camel univocityParser");
-        ProcessedCategory category = new ProcessedCategory(Category.builder().build(), List.of(
+        ProcessedCategory category = new ProcessedCategory(Category.builder().setId("integration").build(), List.of(
                 zipFile,
                 gRPC,
                 iCal,

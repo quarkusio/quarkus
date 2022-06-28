@@ -618,7 +618,7 @@ public class ResteasyReactiveProcessor {
                 if (endpoints.isPresent()) {
                     subResourceClasses.add(endpoints.get());
                 }
-                //we need to also look for all sub classes and interfaces
+                //we need to also look for all subclasses and interfaces
                 //they may have type variables that need to be handled
                 toScan.addAll(index.getKnownDirectImplementors(classInfo.name()));
                 toScan.addAll(index.getKnownDirectSubclasses(classInfo.name()));
@@ -930,10 +930,10 @@ public class ResteasyReactiveProcessor {
     }
 
     private String getDuplicateEndpointMessage(List<EndpointConfig> endpoints) {
-        StringBuilder message = new StringBuilder();
         if (endpoints.size() < 2) {
             return null;
         }
+        StringBuilder message = new StringBuilder();
         Map<String, List<EndpointConfig>> duplicatesByMimeTypes = endpoints.stream()
                 .collect(Collectors.groupingBy(EndpointConfig::toString));
         for (Map.Entry<String, List<EndpointConfig>> duplicates : duplicatesByMimeTypes.entrySet()) {

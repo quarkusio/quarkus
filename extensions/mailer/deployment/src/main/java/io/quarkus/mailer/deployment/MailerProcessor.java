@@ -108,7 +108,7 @@ public class MailerProcessor {
                 filePath = filePath.replace(File.separatorChar, '/');
             }
             if (filePath.endsWith("html") || filePath.endsWith("htm") || filePath.endsWith("txt")) {
-                // For e-mails we only consider html and txt templates
+                // For emails, we only consider html and txt templates
                 filePaths.add(filePath);
                 int idx = filePath.lastIndexOf('.');
                 if (idx != -1) {

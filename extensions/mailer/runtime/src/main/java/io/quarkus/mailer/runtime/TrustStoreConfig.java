@@ -33,9 +33,9 @@ public class TrustStoreConfig {
      * Sets the trust store type.
      * By default, it guesses the type from the file name extension.
      * For instance, {@code truststore.pem} will be seen as a PEM file, while {@code truststore.jks} will be seen as a
-     * JKS file. {@code truststore.p12} and {@code truststore.pfx} will both be seen as PCK#12 files.
+     * JKS file. {@code truststore.p12} and {@code truststore.pfx} will both be seen as PKCS#12 files.
      *
-     * Accepted values are: {@code JKS}, {@code PEM}, {@code PCKS}.
+     * Accepted values are: {@code JKS}, {@code PEM}, {@code PKCS}.
      */
     @ConfigItem
     Optional<String> type;

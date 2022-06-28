@@ -119,7 +119,7 @@ public class EngineProducer {
             builder.strictRendering(true);
         } else {
             builder.strictRendering(false);
-            // If needed use a specific result mapper for the selected strategy
+            // If needed, use a specific result mapper for the selected strategy
             if (runtimeConfig.propertyNotFoundStrategy.isPresent()) {
                 switch (runtimeConfig.propertyNotFoundStrategy.get()) {
                     case THROW_EXCEPTION:
@@ -187,7 +187,7 @@ public class EngineProducer {
         builder.addLocator(this::locate);
         registerCustomLocators(builder, locators);
 
-        // Add a special parserk hook for Qute.fmt() methods
+        // Add a special parser hook for Qute.fmt() methods
         builder.addParserHook(new Qute.IndexedArgumentsParserHook());
 
         // Add template initializers
@@ -195,7 +195,7 @@ public class EngineProducer {
             builder.addTemplateInstanceInitializer(createInitializer(initializerClass));
         }
 
-        // Add a special initializer for templates that contain a inject/cdi namespace expressions
+        // Add a special initializer for templates that contain an inject/cdi namespace expressions
         Map<String, Boolean> discoveredInjectTemplates = new HashMap<>();
         builder.addTemplateInstanceInitializer(new Initializer() {
 

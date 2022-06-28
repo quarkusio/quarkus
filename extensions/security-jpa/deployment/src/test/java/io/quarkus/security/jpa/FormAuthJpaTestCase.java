@@ -66,7 +66,7 @@ public class FormAuthJpaTestCase {
                 .header("location", containsString("/login"))
                 .cookie("quarkus-redirect-location", containsString("/servlet-secured"));
 
-        // test with a non existent user
+        // test with a non-existent user
         RestAssured
                 .given()
                 .filter(cookies)

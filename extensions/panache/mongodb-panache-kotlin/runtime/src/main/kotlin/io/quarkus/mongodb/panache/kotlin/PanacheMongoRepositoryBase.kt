@@ -24,7 +24,7 @@ import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations.Companion
 interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
     /**
      * Persist the given entity in the database.
-     * This will set it's ID field if not already set.
+     * This will set its ID field if not already set.
      *
      * @param entity the entity to insert.
      * @see [persist]
@@ -40,7 +40,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
     fun update(entity: Entity) = INSTANCE.update(entity)
 
     /**
-     * Persist the given entity in the database or update it if it already exist.
+     * Persist the given entity in the database or update it if it already exists.
      *
      * @param entity the entity to update.
      * @see [persistOrUpdate]

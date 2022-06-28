@@ -283,7 +283,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         MongoCollection collection = mongoCollection(firstEntity);
         ClientSession session = getSession(firstEntity);
 
-        //this will be an ordered bulk: it's less performant than a unordered one but will fail at the first failed write
+        //this will be an ordered bulk: it's less performant than an unordered one but will fail at the first failed write
         List<WriteModel> bulk = new ArrayList<>();
         for (Object entity : entities) {
             //we transform the entity as a document first

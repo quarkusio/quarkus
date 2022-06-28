@@ -15,7 +15,8 @@ public interface ParserHelper {
     String getTemplateId();
 
     /**
-     * Adds an <em>implicit</em> parameter declaration. This an alternative approach to <em>explicit</em> parameter declarations
+     * Adds an <em>implicit</em> parameter declaration. This is an alternative approach to <em>explicit</em> parameter
+     * declarations
      * used directly in the templates, e.g. <code>{@org.acme.Foo foo}</code>.
      *
      * @param name

@@ -121,7 +121,7 @@ class InfinispanClientProcessor {
 
         IndexView index = applicationIndexBuildItem.getIndex();
 
-        // This is always non null
+        // This is always non-null
         Object marshaller = properties.get(ConfigurationProperties.MARSHALLER);
 
         if (marshaller instanceof ProtoStreamMarshaller) {

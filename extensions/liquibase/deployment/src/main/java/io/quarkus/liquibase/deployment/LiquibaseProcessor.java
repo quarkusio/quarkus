@@ -265,7 +265,7 @@ class LiquibaseProcessor {
         additionalBeans
                 .produce(AdditionalBeanBuildItem.builder().addBeanClasses(LiquibaseFactoryProducer.class).setUnremovable()
                         .setDefaultScope(DotNames.SINGLETON).build());
-        // add the @LiquibaseDataSource class otherwise it won't registered as a qualifier
+        // add the @LiquibaseDataSource class otherwise it won't be registered as a qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(LiquibaseDataSource.class).build());
 
         Collection<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);

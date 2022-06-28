@@ -167,7 +167,7 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
     public void resetDatabase(String dbName) {
         String name = datasourceToPuMap.get(dbName);
         if (name == null) {
-            //not a hibernate DS
+            //not an hibernate DS
             return;
         }
         recreateDatabase(name);

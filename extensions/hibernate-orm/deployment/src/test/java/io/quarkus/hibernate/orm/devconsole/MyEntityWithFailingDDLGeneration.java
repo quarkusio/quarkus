@@ -20,7 +20,7 @@ public class MyEntityWithFailingDDLGeneration {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "myEntitySeq")
     public Long id;
 
-    // The goal of this cusstom type is to trigger an error during DDL generation
+    // The goal of this custom type is to trigger an error during DDL generation
     @Type(type = "typeWithUnsupportedSqlCode")
     public String name;
 

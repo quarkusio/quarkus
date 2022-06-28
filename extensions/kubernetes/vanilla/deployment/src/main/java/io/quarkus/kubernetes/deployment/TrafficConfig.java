@@ -32,7 +32,7 @@ public class TrafficConfig {
 
     /**
      * Percent indicates that percentage based routing should be used and
-     * the value indicates the percent of traffic that is be routed to this
+     * the value indicates the percent of traffic that is to be routed to this
      * Revision or Configuration. `0` (zero) mean no traffic, `100` means all
      * traffic.
      */

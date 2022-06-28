@@ -216,7 +216,7 @@ public class DockerProcessor {
                 // If not using buildx, push the images
                 loginToRegistryIfNeeded(containerImageConfig, containerImageInfo, dockerConfig);
 
-                Stream.concat(containerImageInfo.getAdditionalTags().stream(), Stream.of(containerImageInfo.getImage()))
+                Stream.concat(containerImageInfo.getAdditionalImageTags().stream(), Stream.of(containerImageInfo.getImage()))
                         .forEach(imageToPush -> pushImage(imageToPush, dockerConfig));
             }
         }

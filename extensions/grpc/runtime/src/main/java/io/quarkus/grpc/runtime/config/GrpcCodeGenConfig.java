@@ -33,7 +33,7 @@ public class GrpcCodeGenConfig {
      * <li><i>all</i> - scan all dependencies</li>
      * </ul>
      *
-     * By default: <i>com.google.protobuf:protobuf-java</i>
+     * By default, <i>com.google.protobuf:protobuf-java</i>.
      */
     @ConfigItem(defaultValue = "com.google.protobuf:protobuf-java")
     public String scanForImports;

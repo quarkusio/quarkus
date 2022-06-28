@@ -105,7 +105,7 @@ class SmallRyeJwtProcessor {
     }
 
     /**
-     * Register this extension as a MP-JWT feature
+     * Register this extension as an MP-JWT feature
      *
      * @return FeatureBuildItem
      */

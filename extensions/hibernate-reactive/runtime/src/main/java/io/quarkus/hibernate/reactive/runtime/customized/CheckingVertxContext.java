@@ -8,7 +8,7 @@ import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
  * The {@link VertxContext} in Hibernate Reactive is accessing the
  * Vert.x context directly, assuming this is the correct context as
  * intended by the developer, as Hibernate Reactive has no opinion in
- * regards to how Vert.x is integrated with other components.
+ * regard to how Vert.x is integrated with other components.
  * The precise definition of "correct context" will most likely depend
  * on the runtime model and how other components are integrated with Vert.x;
  * in particular the lifecycle of the context needs to be specified.

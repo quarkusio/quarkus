@@ -23,7 +23,7 @@ public class QuarkusSecurityCommonProcessor {
     }
 
     /**
-     * Graal VM now seems to loose providers registered at static init
+     * Graal VM now seems to lose providers registered at static init
      *
      * We re-register at runtime (which is a no-op in JVM mode)
      */

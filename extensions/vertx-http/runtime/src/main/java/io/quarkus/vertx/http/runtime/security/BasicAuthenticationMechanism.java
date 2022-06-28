@@ -58,7 +58,7 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
     /**
      * A comma separated list of patterns and charsets. The pattern is a regular expression.
      *
-     * Because different browsers user different encodings this allows for the correct encoding to be selected based
+     * Because different browsers use different encodings this allows for the correct encoding to be selected based
      * on the current browser. In general though it is recommended that BASIC auth not be used when passwords contain
      * characters outside ASCII, as some browsers use the current locate to determine encoding.
      *

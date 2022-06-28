@@ -56,6 +56,12 @@ public class JDBCMariaDBProcessor {
                 .produce(ServiceProviderBuildItem.allProvidersFromClassPath("org.mariadb.jdbc.plugin.AuthenticationPlugin"));
     }
 
+    @BuildStep
+    void registerCodecs(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        serviceProvider
+                .produce(ServiceProviderBuildItem.allProvidersFromClassPath("org.mariadb.jdbc.plugin.Codec"));
+    }
+
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void addNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resources) {
         // mariadb.properties is used by org.mariadb.jdbc.util.VersionFactory and is small enough.

@@ -26,7 +26,7 @@ public class KubernetesConfigSourceConfig {
      * ConfigMaps to look for in the namespace that the Kubernetes Client has been configured for.
      * ConfigMaps defined later in this list have a higher priority that ConfigMaps defined earlier
      * in this list.
-     * Furthermore any Secrets defined in {@code secrets}, will have higher priorities than all ConfigMaps.
+     * Furthermore, any Secrets defined in {@code secrets}, will have higher priorities than all ConfigMaps.
      */
     @ConfigItem
     public Optional<List<String>> configMaps;
@@ -36,7 +36,7 @@ public class KubernetesConfigSourceConfig {
      * If you use this, you probably want to enable {@code quarkus.kubernetes-config.secrets.enabled}.
      * Secrets defined later in this list have a higher priority that ConfigMaps defined earlier
      * in this list.
-     * Furthermore these Secrets have a higher priorities than all ConfigMaps defined in {@code configMaps}.
+     * Furthermore, these Secrets have a higher priorities than all ConfigMaps defined in {@code configMaps}.
      */
     @ConfigItem
     public Optional<List<String>> secrets;

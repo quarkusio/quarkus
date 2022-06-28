@@ -270,7 +270,7 @@ public class OidcCommonConfig {
 
             /**
              * JWT audience ('aud') claim value.
-             * By default the audience is set to the address of the OpenId Connect Provider's token endpoint.
+             * By default, the audience is set to the address of the OpenId Connect Provider's token endpoint.
              */
             @ConfigItem
             public Optional<String> audience = Optional.empty();

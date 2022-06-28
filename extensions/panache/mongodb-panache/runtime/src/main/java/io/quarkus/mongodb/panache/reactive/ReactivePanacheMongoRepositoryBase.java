@@ -31,7 +31,7 @@ import io.smallrye.mutiny.Uni;
 public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Persist the given entity in the database.
-     * This will set it's ID field if not already set.
+     * This will set its ID field if not already set.
      *
      * @param entity the entity to insert.
      * @see #persist(Iterable)
@@ -55,7 +55,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Persist the given entity in the database or update it if it already exist.
+     * Persist the given entity in the database or update it if it already exists.
      *
      * @param entity the entity to update.
      * @see #persistOrUpdate(Iterable)

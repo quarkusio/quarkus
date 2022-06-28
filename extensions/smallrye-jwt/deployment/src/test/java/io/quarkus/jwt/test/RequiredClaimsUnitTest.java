@@ -74,7 +74,7 @@ public class RequiredClaimsUnitTest {
     }
 
     /**
-     * Verify that the token sub claim is as expected
+     * Verify that the token subclaim is as expected
      *
      */
     @Test()

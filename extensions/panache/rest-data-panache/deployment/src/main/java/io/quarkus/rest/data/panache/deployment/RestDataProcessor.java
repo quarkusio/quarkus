@@ -84,7 +84,7 @@ public class RestDataProcessor {
 
             }
             if (resourceProperties.isExposed()) {
-                jaxRsResourceImplementor.implement(classOutput, resourceMetadata, resourceProperties);
+                jaxRsResourceImplementor.implement(classOutput, resourceMetadata, resourceProperties, capabilities);
             }
         }
     }

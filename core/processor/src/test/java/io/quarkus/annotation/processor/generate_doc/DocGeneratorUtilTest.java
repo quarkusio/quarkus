@@ -11,6 +11,7 @@ import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.deri
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getJavaDocSiteLink;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getName;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.normalizeDurationValue;
+import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.toEnvVarName;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigInteger;
@@ -103,6 +104,16 @@ public class DocGeneratorUtilTest {
 
         value = getJavaDocSiteLink("java.util.List<java.lang.String>");
         assertEquals(OFFICIAL_JAVA_DOC_BASE_LINK + "java/util/List.html", value);
+    }
+
+    @Test
+    public void replaceNonAlphanumericByUnderscoresThenConvertToUpperCase() {
+        assertEquals("QUARKUS_DATASOURCE__DATASOURCE_NAME__JDBC_BACKGROUND_VALIDATION_INTERVAL",
+                toEnvVarName("quarkus.datasource.\"datasource-name\".jdbc.background-validation-interval"));
+        assertEquals(
+                "QUARKUS_SECURITY_JDBC_PRINCIPAL_QUERY__NAMED_PRINCIPAL_QUERIES__BCRYPT_PASSWORD_MAPPER_ITERATION_COUNT_INDEX",
+                toEnvVarName(
+                        "quarkus.security.jdbc.principal-query.\"named-principal-queries\".bcrypt-password-mapper.iteration-count-index"));
     }
 
     @Test

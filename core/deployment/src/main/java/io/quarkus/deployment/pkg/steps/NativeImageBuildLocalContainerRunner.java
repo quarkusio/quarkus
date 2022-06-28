@@ -40,8 +40,7 @@ public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContai
         List<String> containerRuntimeArgs = super.getContainerRuntimeBuildArgs();
         String volumeOutputPath = outputPath;
         if (SystemUtils.IS_OS_WINDOWS) {
-            volumeOutputPath = FileUtil.translateToVolumePath(volumeOutputPath,
-                    containerRuntime == ContainerRuntimeUtil.ContainerRuntime.PODMAN);
+            volumeOutputPath = FileUtil.translateToVolumePath(volumeOutputPath);
         }
 
         Collections.addAll(containerRuntimeArgs, "-v",

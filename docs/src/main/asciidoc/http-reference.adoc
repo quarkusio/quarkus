@@ -245,6 +245,16 @@ Will include the `Cache-Control: max-age=1` header when `/paths/order` is reques
 
 include::{generated-dir}/config/quarkus-vertx-http-config-group-filter-config.adoc[leveloffset=+1, opts=optional]
 
+== Support 100-Continue in vert.x
+
+In order to support `100-continue`, the `quarkus.http.handle-100-continue-automatically` option needs to be enabled explicitly
+For additional information check https://datatracker.ietf.org/doc/html/rfc7231#section-5.1.1[100-continue= and the related
+https://vertx.io/docs/apidocs/io/vertx/core/http/HttpServerOptions.html#DEFAULT_HANDLE_100_CONTINE_AUTOMATICALLY[Vert.x documentation].
+
+[source,properties]
+----
+quarkus.http.handle-100-continue-automatically=true
+----
 
 == HTTP/2 Support
 

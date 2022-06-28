@@ -1007,20 +1007,41 @@ public class SmallRyeOpenApiProcessor {
             OpenAPI staticModel,
             OpenAPI annotationModel,
             List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems) throws IOException {
+        return storeDocument(out, smallRyeOpenApiConfig, staticModel, annotationModel, openAPIBuildItems, true);
+    }
+
+    private OpenApiDocument storeDocument(OutputTargetBuildItem out,
+            SmallRyeOpenApiConfig smallRyeOpenApiConfig,
+            OpenAPI staticModel,
+            OpenAPI annotationModel,
+            List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems,
+            boolean includeRuntimeFilters) throws IOException {
 
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
 
         OpenApiDocument document = prepareOpenApiDocument(staticModel, annotationModel, openAPIBuildItems);
 
-        document.filter(filter(openApiConfig)); // This usually happens at runtime, so when storing we want to filter here too.
+        if (includeRuntimeFilters) {
+            document.filter(filter(openApiConfig)); // This usually happens at runtime, so when storing we want to filter here too.
+        }
+
         // By default, also add the auto generated server
         OASFilter autoServerFilter = getAutoServerFilter(smallRyeOpenApiConfig, true);
         if (autoServerFilter != null) {
             document.filter(autoServerFilter);
         }
-        document.initialize();
 
+        try {
+            document.initialize();
+        } catch (RuntimeException re) {
+            if (includeRuntimeFilters) {
+                // This is a Runtime filter, so it might not work at build time. In that case we ignore the filter.
+                return storeDocument(out, smallRyeOpenApiConfig, staticModel, annotationModel, openAPIBuildItems, false);
+            } else {
+                throw re;
+            }
+        }
         // Store the document if needed
         boolean shouldStore = smallRyeOpenApiConfig.storeSchemaDirectory.isPresent();
         if (shouldStore) {

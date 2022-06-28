@@ -930,10 +930,10 @@ public class ResteasyReactiveProcessor {
     }
 
     private String getDuplicateEndpointMessage(List<EndpointConfig> endpoints) {
-        StringBuilder message = new StringBuilder();
         if (endpoints.size() < 2) {
             return null;
         }
+        StringBuilder message = new StringBuilder();
         Map<String, List<EndpointConfig>> duplicatesByMimeTypes = endpoints.stream()
                 .collect(Collectors.groupingBy(EndpointConfig::toString));
         for (Map.Entry<String, List<EndpointConfig>> duplicates : duplicatesByMimeTypes.entrySet()) {

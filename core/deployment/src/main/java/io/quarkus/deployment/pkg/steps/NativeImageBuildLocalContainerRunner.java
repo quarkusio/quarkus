@@ -11,15 +11,13 @@ import java.util.List;
 import org.apache.commons.lang3.SystemUtils;
 
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.runtime.util.ContainerRuntimeUtil;
 
 public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContainerRunner {
 
-    public NativeImageBuildLocalContainerRunner(NativeConfig nativeConfig, Path outputDir,
-            CompiledJavaVersionBuildItem.JavaVersion javaVersion) {
-        super(nativeConfig, outputDir, javaVersion);
+    public NativeImageBuildLocalContainerRunner(NativeConfig nativeConfig, Path outputDir) {
+        super(nativeConfig, outputDir);
         if (SystemUtils.IS_OS_LINUX) {
             ArrayList<String> containerRuntimeArgs = new ArrayList<>(Arrays.asList(baseContainerRuntimeArgs));
             String uid = getLinuxID("-ur");

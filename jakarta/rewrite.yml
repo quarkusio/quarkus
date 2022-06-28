@@ -460,6 +460,10 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-rest-client.version
       newValue: 3.0
+  # TestNG update, needed for the MicroProfile TCKs
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: testng.version
+      newValue: 7.4.0
 # In progress, these ones need a change:
 #        <microprofile-reactive-streams-operators.version>1.0.1</microprofile-reactive-streams-operators.version>
 #        <microprofile-lra.version>1.0</microprofile-lra.version>

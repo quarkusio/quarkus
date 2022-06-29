@@ -1,6 +1,5 @@
 package io.quarkus.redis.client.deployment;
 
-import static io.quarkus.redis.client.runtime.RedisClientUtil.isDefault;
 import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
 
 import java.io.Closeable;
@@ -35,8 +34,7 @@ import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.redis.client.deployment.RedisBuildTimeConfig.DevServiceConfiguration;
-import io.quarkus.redis.client.runtime.RedisClientUtil;
-import io.quarkus.redis.client.runtime.RedisConfig;
+import io.quarkus.redis.client.runtime.config.RedisConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -71,7 +69,7 @@ public class DevServicesRedisProcessor {
             GlobalDevServicesConfig devServicesConfig) {
 
         Map<String, DevServiceConfiguration> currentDevServicesConfiguration = new HashMap<>(config.additionalDevServices);
-        currentDevServicesConfiguration.put(RedisClientUtil.DEFAULT_CLIENT, config.defaultDevService);
+        currentDevServicesConfiguration.put(RedisConfig.DEFAULT_CLIENT_NAME, config.defaultDevService);
 
         // figure out if we need to shut down and restart existing redis containers
         // if not and the redis containers have already started we just return
@@ -145,28 +143,28 @@ public class DevServicesRedisProcessor {
         return devServices.stream().map(RunningDevService::toBuildItem).collect(Collectors.toList());
     }
 
-    private RunningDevService startContainer(DockerStatusBuildItem dockerStatusBuildItem, String connectionName,
+    private RunningDevService startContainer(DockerStatusBuildItem dockerStatusBuildItem, String name,
             DevServicesConfig devServicesConfig, LaunchMode launchMode,
             boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!devServicesConfig.enabled) {
             // explicitly disabled
-            log.debug("Not starting devservices for " + (isDefault(connectionName) ? "default redis client" : connectionName)
+            log.debug("Not starting devservices for " + (RedisConfig.isDefaultClient(name) ? "default redis client" : name)
                     + " as it has been disabled in the config");
             return null;
         }
 
-        String configPrefix = getConfigPrefix(connectionName);
+        String configPrefix = getConfigPrefix(name);
 
         boolean needToStart = !ConfigUtils.isPropertyPresent(configPrefix + RedisConfig.HOSTS_CONFIG_NAME);
         if (!needToStart) {
-            log.debug("Not starting devservices for " + (isDefault(connectionName) ? "default redis client" : connectionName)
+            log.debug("Not starting devservices for " + (RedisConfig.isDefaultClient(name) ? "default redis client" : name)
                     + " as hosts have been provided");
             return null;
         }
 
         if (!dockerStatusBuildItem.isDockerAvailable()) {
             log.warn("Please configure quarkus.redis.hosts for "
-                    + (isDefault(connectionName) ? "default redis client" : connectionName)
+                    + (RedisConfig.isDefaultClient(name) ? "default redis client" : name)
                     + " or get a working docker instance");
             return null;
         }
@@ -193,10 +191,10 @@ public class DevServicesRedisProcessor {
                 .orElseGet(defaultRedisServerSupplier);
     }
 
-    private String getConfigPrefix(String connectionName) {
+    private String getConfigPrefix(String name) {
         String configPrefix = QUARKUS + RedisConfig.REDIS_CONFIG_ROOT_NAME + DOT;
-        if (!isDefault(connectionName)) {
-            configPrefix = configPrefix + connectionName + DOT;
+        if (!RedisConfig.isDefaultClient(name)) {
+            configPrefix = configPrefix + name + DOT;
         }
         return configPrefix;
     }

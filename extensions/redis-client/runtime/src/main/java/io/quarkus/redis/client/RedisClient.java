@@ -1,11 +1,7 @@
 package io.quarkus.redis.client;
 
-import static io.quarkus.redis.client.runtime.RedisClientUtil.DEFAULT_CLIENT;
-
 import java.util.List;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.redis.client.runtime.RedisClientsProducer;
 import io.vertx.redis.client.Response;
 
 /**
@@ -15,26 +11,12 @@ import io.vertx.redis.client.Response;
  *
  * For more information about how each individual command visit
  * the <a href="https://redis.io/commands">Redis Commands Page</a>
+ *
+ * @deprecated Use {@link io.vertx.mutiny.redis.client.RedisAPI} or
+ *             {@link io.quarkus.redis.datasource.api.RedisDataSource} instead.
  */
+@Deprecated
 public interface RedisClient {
-    /**
-     * Creates the {@link RedisClient} using the default redis client configuration
-     *
-     * @return {@link RedisClient} - the default redis client
-     */
-    static RedisClient createClient() {
-        return createClient(DEFAULT_CLIENT);
-    }
-
-    /**
-     * Creates the {@link RedisClient} using the named redis client configuration
-     *
-     * @return {@link RedisClient} - the named client
-     */
-    static RedisClient createClient(String name) {
-        RedisClientsProducer redisClientsProducer = Arc.container().instance(RedisClientsProducer.class).get();
-        return redisClientsProducer.getRedisClient(name);
-    }
 
     void close();
 
@@ -150,6 +132,7 @@ public interface RedisClient {
 
     Response hmset(List<String> args);
 
+    @Deprecated
     Response host(List<String> args);
 
     Response hscan(List<String> args);
@@ -238,6 +221,7 @@ public interface RedisClient {
 
     Response ping(List<String> args);
 
+    @Deprecated
     Response post(List<String> args);
 
     Response psetex(String arg0, String arg1, String arg2);

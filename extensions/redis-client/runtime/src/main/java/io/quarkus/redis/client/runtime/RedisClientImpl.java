@@ -5,14 +5,20 @@ import java.util.List;
 
 import io.quarkus.redis.client.RedisClient;
 import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.redis.client.Command;
+import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisAPI;
+import io.vertx.mutiny.redis.client.Request;
 import io.vertx.redis.client.Response;
 
 class RedisClientImpl implements RedisClient {
     private final RedisAPI redisAPI;
     private final Duration timeout;
 
-    public RedisClientImpl(RedisAPI redisAPI, Duration timeout) {
+    private final Redis redis;
+
+    public RedisClientImpl(Redis redis, RedisAPI redisAPI, Duration timeout) {
+        this.redis = redis;
         this.redisAPI = redisAPI;
         this.timeout = timeout;
     }
@@ -174,12 +180,12 @@ class RedisClientImpl implements RedisClient {
 
     @Override
     public Response expire(String arg0, String arg1) {
-        return await(redisAPI.expire(arg0, arg1));
+        return await(redisAPI.expire(List.of(arg0, arg1)));
     }
 
     @Override
     public Response expireat(String arg0, String arg1) {
-        return await(redisAPI.expireat(arg0, arg1));
+        return await(redisAPI.expireat(List.of(arg0, arg1)));
     }
 
     @Override
@@ -304,7 +310,7 @@ class RedisClientImpl implements RedisClient {
 
     @Override
     public Response host(List<String> args) {
-        return await(redisAPI.host(args));
+        return await(redis.send(Request.cmd(Command.create("host"), args.toArray(new String[0]))));
     }
 
     @Override
@@ -484,12 +490,12 @@ class RedisClientImpl implements RedisClient {
 
     @Override
     public Response pexpire(String arg0, String arg1) {
-        return await(redisAPI.pexpire(arg0, arg1));
+        return await(redisAPI.pexpire(List.of(arg0, arg1)));
     }
 
     @Override
     public Response pexpireat(String arg0, String arg1) {
-        return await(redisAPI.pexpireat(arg0, arg1));
+        return await(redisAPI.pexpireat(List.of(arg0, arg1)));
     }
 
     @Override
@@ -524,7 +530,7 @@ class RedisClientImpl implements RedisClient {
 
     @Override
     public Response post(List<String> args) {
-        return await(redisAPI.post(args));
+        return await(redis.send(Request.cmd(Command.create("post"), args.toArray(new String[0]))));
     }
 
     @Override
@@ -914,7 +920,7 @@ class RedisClientImpl implements RedisClient {
 
     @Override
     public Response xsetid(String arg0, String arg1) {
-        return await(redisAPI.xsetid(arg0, arg1));
+        return await(redisAPI.xsetid(List.of(arg0, arg1)));
     }
 
     @Override

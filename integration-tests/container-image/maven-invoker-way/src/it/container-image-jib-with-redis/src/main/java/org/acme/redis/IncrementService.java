@@ -1,54 +1,46 @@
 package org.acme.redis;
 
-import io.quarkus.redis.client.RedisClient;
-import io.quarkus.redis.client.reactive.ReactiveRedisClient;
-import io.smallrye.mutiny.Uni;
+import io.quarkus.redis.datasource.api.RedisDataSource;
+import io.quarkus.redis.datasource.api.keys.KeyCommands;
+import io.quarkus.redis.datasource.api.string.StringCommands;
 
-import io.vertx.mutiny.redis.client.Response;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.List;
 
 @Singleton
 class IncrementService {
 
-    @Inject
-    RedisClient redisClient;
 
-    @Inject
-    ReactiveRedisClient reactiveRedisClient;
+    private final KeyCommands<String> keyCommands;
+    private final StringCommands<String, Integer> stringCommands;
 
-    Uni<Void> del(String key) {
-        return reactiveRedisClient.del(Arrays.asList(key))
-                .map(response -> null);
+    public IncrementService(RedisDataSource ds) {
+
+        keyCommands = ds.key();
+        stringCommands = ds.string(Integer.class);
+
     }
 
-    String get(String key) {
-        return redisClient.get(key).toString();
+    void del(String key) {
+        keyCommands.del(key);
+    }
+
+    Integer get(String key) {
+        return stringCommands.get(key);
     }
 
     void set(String key, Integer value) {
-        redisClient.set(Arrays.asList(key, value.toString()));
+        stringCommands.set(key, value);
+        ;
     }
 
     void increment(String key, Integer incrementBy) {
-        redisClient.incrby(key, incrementBy.toString());
+        stringCommands.incrby(key, incrementBy);
     }
 
-    Uni<List<String>> keys() {
-        return reactiveRedisClient
-                .keys("*")
-                .map(response -> {
-                    List<String> result = new ArrayList<>();
-                    for (Response r : response) {
-                        result.add(r.toString());
-                    }
-                    return result;
-                });
+    List<String> keys() {
+        return keyCommands.keys("*");
     }
 }
+
 

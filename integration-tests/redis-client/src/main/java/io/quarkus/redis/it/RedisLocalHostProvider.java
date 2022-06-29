@@ -5,13 +5,15 @@ import java.util.Collections;
 import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Named;
 
 import io.quarkus.redis.client.RedisHostsProvider;
+import io.smallrye.common.annotation.Identifier;
 
 @ApplicationScoped
-@Named("test-hosts-provider")
+@Identifier("test-hosts-provider")
 public class RedisLocalHostProvider implements RedisHostsProvider {
+
+    // Select the database "3"
     @Override
     public Set<URI> getHosts() {
         return Collections.singleton(URI.create("redis://localhost:6379/3"));

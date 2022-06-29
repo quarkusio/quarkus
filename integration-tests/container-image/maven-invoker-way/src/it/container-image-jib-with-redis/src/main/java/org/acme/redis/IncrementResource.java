@@ -18,14 +18,13 @@ import io.smallrye.mutiny.Uni;
 @Path("/increments")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@Blocking
 public class IncrementResource {
 
     @Inject
     IncrementService service;
 
     @GET
-    public Uni<List<String>> keys() {
+    public List<String> keys() {
         return service.keys();
     }
 
@@ -49,7 +48,7 @@ public class IncrementResource {
 
     @DELETE
     @Path("/{key}")
-    public Uni<Void> delete(@PathParam("key") String key) {
-        return service.del(key);
+    public void delete(@PathParam("key") String key) {
+        service.del(key);
     }
 }

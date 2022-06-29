@@ -3,99 +3,647 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Redis Reference Guide
+= Redis Extension Reference Guide
 
 :extension-status: preview
 include::./attributes.adoc[]
 :numbered:
 :sectnums:
 
-[[custom_redis_commands]]
-== How to use custom Redis Commands
+Redis is an in-memory data store used as a database, cache, streaming engine, and message broker.
+The Quarkus Redis extension allows integrating Quarkus applications with Redis.
 
-As the list of commands which are supported out-of-box by both https://github.com/quarkusio/quarkus/blob/main/extensions/redis-client/runtime/src/main/java/io/quarkus/redis/client/RedisClient.java[`RedisClient`] and https://github.com/quarkusio/quarkus/blob/main/extensions/redis-client/runtime/src/main/java/io/quarkus/redis/client/reactive/ReactiveRedisClient.java[`ReactiveRedisClient`] depends on what is available in https://github.com/vert-x3/vertx-redis-client[`vertx-redis-client`], then there might be case when you need a command which is not (yet) available via https://github.com/vert-x3/vertx-redis-client[`vertx-redis-client`].
+To use this extension, the user must be familiar with Redis, especially understanding the mechanism of commands and how they are organized.
+Typically, we recommend:
 
-In such case (if you don't want to wait for the new command to be supported in https://github.com/vert-x3/vertx-redis-client[`vertx-redis-client`]), you can implement it in either https://github.com/quarkusio/quarkus/blob/main/extensions/redis-client/runtime/src/main/java/io/quarkus/redis/client/RedisClient.java[`RedisClient`] or https://github.com/quarkusio/quarkus/blob/main/extensions/redis-client/runtime/src/main/java/io/quarkus/redis/client/reactive/ReactiveRedisClient.java[`ReactiveRedisClient`]. 
-In order to do so, you will need:
+1. The https://try.redis.io/[interactive tutorial] introducing Redis.
+2. The https://redis.io/commands/[command references] explains Redis commands and contains links to reference documentation.
 
-- Generate a new `Command` based on the nodejs code available in https://github.com/vert-x3/vertx-redis-client[`vertx-redis-client`] repository:
+This extension provides imperative and reactive APIs and low-level and high-level (type-safe) clients.
 
-If you don't have a Redis service running locally, you can run Redis in a Docker container:
-[source,shell script]
+
+== Installation
+
+If you want to use this extension, you need to add the `io.quarkus:quarkus-redis` extension first.
+In your `pom.xml` file, add:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-docker run --name redis -p 7006:6379 -d redis
+<dependency>
+    <groupId>io.quarkiverse.redis</groupId>
+    <artifactId>quarkus-redis</artifactId>
+</dependency>
 ----
 
-Next, while being in https://github.com/vert-x3/vertx-redis-client[`vertx-redis-client`] root folder execute:
-
-[source,shell script]
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
 ----
-cd tools
-npm i
-npm start
+implementation("io.quarkus:quarkus-redis")
 ----
 
-The above sequence of commands should update the https://github.com/vert-x3/vertx-redis-client/blob/master/src/main/java/io/vertx/redis/client/Command.java[`Command.java`] file, so it includes all the possible commands supported by a particular Redis version.
+With this dependency, you can then inject Redis clients or _datasource_ (high-level, type-safe API), such as:
 
 [source,java]
 ----
-Command ZUNION = Command.create("zunion", -3, 0, 0, 0, false, true, true, false);
+import io.quarkus.redis.datasource.api.RedisDataSource;
+
+// ...
+@Inject RedisAPI lowLevelClient;
+@Inject RedisDataSource highLevelApi;
 ----
 
-This definition is very important as we will have to use it in the service.
-Once we have this `Command` we can start to update the redis-client extension by:
+More details about the various APIs offered by the quarkus-redis extension are available in the <<apis>> section.
 
-- Updating the https://github.com/quarkusio/quarkus/blob/main/extensions/redis-client/runtime/src/main/java/io/quarkus/redis/client/RedisClient.java[`RedisClient`] interface, i.e.:
+[[apis]]
+== One extension, multiple APIs
+
+This extension provides multiple ways to interact with Redis:
+
+- the _low-level_ Vert.x client: it's a fully reactive, non-blocking, and asynchronous client.
+More details on https://vertx.io/docs/vertx-redis-client/java/[the Vert.x Redis Client documentation].
+Two APIs are exposed: `io.vertx.redis.client.Redis`, and `io.vertx.redis.client.RedisAPI`.
+You will generally use the latter, except if you need to manage connections yourself.
+- the _low-level_ Mutiny variant of the Vert.x API: Unlike the previous one, it exposes a Mutiny API and provides both reactive and imperative methods (suffixed with `andAwait()`).
+Two APIs are exposed: `io.vertx.mutiny.redis.client.Redis` and `io.vertx.mutiny.redis.client.RedisAPI`.
+You will generally use the latter, except if you need to manage connections yourself.
+- a _high-level_ reactive data source: A type-safe, high-level API to interact with Redis.
+This API is fully reactive and asynchronous.
+It exposes a Mutiny API.
+It exposes the `io.quarkus.redis.datasource.api.ReactiveRedisDataSource` interface.
+- a _high-level_ imperative data source: A type-safe, high-level API to interact with Redis.
+It is the imperative variant of the reactive data source.
+It exposes the `io.quarkus.redis.datasource.api.RedisDataSource` interface.
+
+To help you select the suitable API for you, here are some recommendations:
+
+* If you are building an imperative (_classic_) Quarkus application integrating with Redis: use `io.quarkus.redis.datasource.api.RedisDataSource`.
+* If you are building a reactive Quarkus application integrating with Redis: use `io.quarkus.redis.datasource.api.RedisReactiveDataSource`.
+* If you need fine-grain control, or execute commands in a generic way: use `io.vertx.mutiny.redis.client.RedisAPI`
+* If you have existing Vert.x code, use `io.vertx.redis.client.RedisAPI`
+* If you need to emit custom commands, you can either use the data sources (reactive or imperative) or the `io.vertx.mutiny.redis.client.Redis`.
+
+
+== Default and named clients
+
+This extension lets you configure a _default_ Redis client/data sources or _named_ ones.
+The latter is essential when you need to connect to multiple Redis instances.
+
+The default connection is configured using the `quarkus.redis.*` properties.
+For example, to configure the default Redis client, use:
+
+
+[source,properties]
+----
+quarkus.redis.hosts=redis://localhost/
+----
+
+When using the default connection, you can inject the various APIS using a _plain_ `@Inject`:
 
 [source,java]
 ----
-Response zunion(List<String> args);
-----
-
-- Updating the https://github.com/quarkusio/quarkus/blob/main/extensions/redis-client/runtime/src/main/java/io/quarkus/redis/client/runtime/RedisClientImpl.java[`RedisClientImpl`], i.e.:
-
-[source,java]
-----
-@Override
-public Response zunion(List<String> args) {
-    final io.vertx.mutiny.redis.client.Command ZUNION = Command.create("zunion", -3, 0, 0, 0, false, true, true, false);
-    final io.vertx.mutiny.redis.client.Request requestWithArgs = args.stream().reduce(
-            io.vertx.mutiny.redis.client.Request.cmd(ZUNION),
-            (request, s) -> request.arg(s),
-            (request, request2) -> request);
-
-    return await(mutinyRedis.send(requestWithArgs));
+@ApplicationScoped
+public class RedisExample {
+    @Inject RedisReactiveDataSource reactiveDataSource;
+    @Inject RedisDataSource redisDataSource;
+    @Inject RedisAPI redisAPI;
+    // ...
 }
 ----
 
-- Updating the https://github.com/quarkusio/quarkus/blob/main/extensions/redis-client/runtime/src/main/java/io/quarkus/redis/client/reactive/ReactiveRedisClient.java[`ReactiveRedisClient`] interface, i.e.:
+TIP: In general, you inject a single one; the previous snippet is just an example.
+
+
+_Named_ clients are configured using the `quarkus.redis.<name>.*` properties:
+
+[source,properties]
+----
+quarkus.redis.my-redis-1.hosts=redis://localhost/
+quarkus.redis.my-redis-2.hosts=redis://my-other-redis:6379
+----
+
+To access the APIs, you need to use the `@RedisClientName` qualifier:
 
 [source,java]
 ----
-Uni<Response> zunion(List<String> args);
-
-Response zunionAndAwait(List<String> args);
+@ApplicationScoped
+public class RedisExample {
+    @Inject @RedisClientName("my-redis-1") RedisReactiveDataSource reactiveDataSource;
+    @Inject @RedisClientName("my-redis-2") RedisDataSource redisDataSource;
+    // ...
+}
 ----
 
-- Updating the https://github.com/quarkusio/quarkus/blob/main/extensions/redis-client/runtime/src/main/java/io/quarkus/redis/client/runtime/ReactiveRedisClientImpl.java[`ReactiveRedisClientImpl`], i.e.:
+TIP: When using `@RedisClientName`, you can omit the `@Inject` annotation.
+
+== Connecting to Redis
+
+The Redis extension can operate in 4 distinct modes:
+
+* Simple client (probably what most users need).
+* Sentinel (when working with Redis in High Availability mode).
+* Cluster (when working with Redis in Clustered mode).
+* Replication (single shard, one node write, multiple read).
+
+The connection url is configured with the `quarkus.redis.hosts` (or `quarkus.redis.<name>.hosts`) as follows:
+
+[source,properties]
+----
+quarkus.redis.hosts=redis://[:password@]host[:port][/db-number]
+----
+
+=== Using Unix Socket
+
+When using unix-socket, you need:
+
+[source,properties]
+----
+quarkus.redis.hosts=unix://[:password@]/domain/docker.sock[?select=db-number]
+----
+
+=== Sentinel Mode
+
+When using Sentinel, you need to pass multiple _host urls_ and configure the client type to `sentinel`:
+
+[source,properties]
+----
+quarkus.redis.hosts=redis://localhost:5000,redis://localhost:5001,redis://localhost:5002
+quarkus.redis.client-type=sentinel
+
+# Optional
+quarkus.redis.master-name=my-sentinel # Default is my-master
+quarkus.redis.role=master # master is the default
+----
+
+=== Cluster Mode
+
+When using Redis in cluster mode, you need to pass multiple _host urls_, configure the client type to `cluster` and configure the `replicas` mode:
+
+[source,properties]
+----
+quarkus.redis.hosts=redis://localhost:7000,redis://localhost:7001,redis://localhost:7002
+quarkus.redis.client-type=cluster
+quarkus.redis.replicas=share
+----
+
+=== Replication Mode
+
+When using the replication mode, you need to pass a single host url and configure the type to be `replication`:
+
+[source,properties]
+----
+quarkus.redis.hosts=redis://localhost:7000
+quarkus.redis.client-type=replication
+----
+
+=== Connecting to Redis Cloud
+
+To connect to redis cloud, you need the following properties:
+
+[source,properties]
+----
+quarkus.redis.hosts=<the redis cloud url such as redis://redis-12436.c14.us-east-1-3.ec2.cloud.redislabs.com:12436>
+quarkus.redis.password=<the password>
+----
+
+=== Authentication
+
+The Redis password can be set in the `redis://` URL or with the `quarkus.redis.password` property.
+We recommend the latter, and if possible, using secrets or an environment variable to configure the password.
+
+The associated environment variable is `QUARKUS_REDIS_PASSWORD`, or `QUARKUS_REDIS_<NAME>_PASSWORD` for named clients.
+
+== Using the high-level clients (data sources)
+
+Quarkus exposes a high-level API on top of Redis.
+This API is type-safe and structured around the notion of _group_, inherited from the https://redis.io/commands/command-docs/[Redis command organization].
+This API lets you execute Redis commands more conveniently and safely.
+
+=== Injecting data sources
+
+For each configured Redis client, two Redis data sources are exposed:
+
+- `io.quarkus.redis.datasource.api.RedisDataSource` - an imperative (blocking) Redis data source.
+Each operation blocks until a response is received or a timeout is reached
+- `io.quarkus.redis.datasource.api.ReactiveRedisDataSource` - a reactive Redis data source returning `Uni<X>` or `Multi<X>`.
+
+If you configured the _default_ Redis client, you could inject the data sources using:
 
 [source,java]
 ----
-@Override
-public Uni<Response> zunion(List<String> args) {
-    final Command ZUNION = Command.create("zunion", -3, 0, 0, 0, false, true, true, false);
-    final io.vertx.mutiny.redis.client.Request requestWithArgs = args.stream().reduce(
-            io.vertx.mutiny.redis.client.Request.cmd(ZUNION),
-            (request, s) -> request.arg(s),
-            (request, request2) -> request);
+@Inject RedisDataSource defaultRedisDataSource;
+@Inject ReactiveRedisDataSource defaultReactiveRedisDataSource;
+----
 
-    return mutinyRedis.send(requestWithArgs);
+If you configured a _named_ Redis client, you need to use the `io.quarkus.redis.RedisClientName` qualifier to select the right client:
+
+[source,java]
+----
+@RedisClientName("my-redis") RedisDataSource myRedisDataSource;
+@RedisClientName("my-redis") ReactiveRedisDataSource myReactiveRedisDataSource;
+----
+
+When using the _blocking_ variant, you can configure the default timeout with:
+
+[source,properties]
+----
+quarkus.redis.timeout=5s
+quarkus.redis.my-redis.timeout=5s
+----
+
+The default timeout is configured to 10s.
+
+[INFO]
+.All about delegation
+----
+The blocking data source (`io.quarkus.redis.datasource.api.RedisDataSource`) is implemented on top of the reactive one (`io.quarkus.redis.datasource.api.ReactiveRedisDataSource`).
+The `ReactiveRedisDataSource` is implemented on top of the `io.vertx.mutiny.redis.Redis` API.
+----
+
+==== Data Source groups
+
+As mentioned above, the API is divided into groups:
+
+- bitmap - `.bitmap()`
+- bitmap - `.bitmap()`
+- key (generic) - `.key()`
+- geo - `.geo(memberType)`
+- hash - `.hash(`valueType)`
+- hyperloglog - `.hyperloglog(memberType)`
+- list - `.list(memberType)`
+- pubsub - `pubsub()`
+- set - `.set(memberType)`
+- sorted-set - `.sortedSet(memberType)`
+- stream (not available yet)
+- string - `.string(valueType)`
+- transactions - `withTransaction`
+
+Each of these methods returns an object that lets you execute the commands related to the group.
+The following snippet demonstrates how to use the _hash_ group:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyRedisService {
+
+    private static final String MY_KEY = "my-key";
+
+    private final HashCommands<String, String, Person> commands;
+
+    public MyRedisService(RedisDataSource ds) { // <1>
+        commands = ds.hash(Person.class); // <2>
+    }
+
+    public void set(String field, Person value) {
+        commands.hset(MY_KEY, field, value);  // <3>
+    }
+
+    public Person get(String field) {
+        commands.hget(MY_KEY, field);  // <4>
+    }
 }
+----
+<1> Inject the `RedisDataSource` in the constructor
+<2> Creates the `HashCommands` object.
+This object has three type parameters: the type of the key, the type of the field, and the type of the member
+<3> Use the created `commands` to associate the field `field` with the value `value`
+<4> Use the created `commands` to retrieve the field `field` value.
 
-@Override
-public Response zunionAndAwait(List<String> args) {
-    return zunion(args).await().indefinitely();
+=== Serialization and Deserialization
+
+The data source APIs handle the serialization and deserialization automatically.
+When a non-standard type is used, the object is serialized into JSON and deserialized from JSON.
+In this case, `quarkus-jackson` is used.
+
+To store binary data, use `byte[]`.
+
+=== The `string` group
+
+The `string` group is used to manipulate https://redis.io/docs/manual/data-types/#strings[Redis Strings].
+Thus, this group is not limited to Java Strings but can be used for integers (like a counter) or binary content (like images).
+
+==== Caching values
+
+You can use Redis as a cache using the `setex` command, which stores a given value to a given key for a given duration.
+The following snippet shows how such a command can be used to store `BusinessObject` for 1 second.
+
+[source,java]
+----
+@ApplicationScoped
+public static class MyRedisCache {
+
+    private final StringCommands<String, BusinessObject> commands;
+
+    public MyRedisCache(RedisDataSource ds) {
+        commands = ds.string(BusinessObject.class);
+    }
+
+    public BusinessObject get(String key) {
+        return commands.get(key);
+    }
+
+    public void set(String key, BusinessObject bo) {
+        commands.setex(key, 1, bo); // Expires after 1 second
+    }
 }
 ----
 
-- Please note that it's using the `MutinyRedis` class which does asynchronous calls to Redis.
+You can use the `setnx` method only to set the value if no value has been stored for the given key.
+
+TIP: The `key` group provides more fine-grain control on expiration and ttl of each key.
+
+[NOTE]
+====
+The `set` method can also receive a `SetArgs` argument that modify the behavior:
+
+- `ex(seconds)` - Set the specified expire time, in seconds.
+- `px(milliseconds)` - Set the specified expire time, in milliseconds.
+- `exat(timestamp-seconds)` - Set the specified Unix time at which the key will expire, in seconds.
+- `pxat(timestamp-milliseconds)` - Set the specified Unix time at which the key will expire, in milliseconds.
+- `nx()` - Only set the key if it does not already exist.
+- `xx()` - Only set the key if it already exists.
+- `keepttl()` - Retain the time to live associated with the key.
+====
+
+==== Storing binary data
+
+Redis _strings_ can be used to store binary data, such as images.
+In this case, we will use `byte[]` as value type:
+
+[source,java]
+----
+@ApplicationScoped
+public static class MyBinaryRepository {
+
+    private final StringCommands<String, byte[]> commands;
+
+    public MyBinaryRepository(RedisDataSource ds) {
+        commands = ds.string(byte[].class);
+    }
+
+    public byte[] get(String key) {
+        byte[] bytes = commands.get(key);
+        if (bytes == null) {
+            throw new NoSuchElementException("`" + key + "` not found");
+        }
+        return bytes;
+    }
+
+    public void add(String key, byte[] bytes) {
+        commands.set(key, bytes);
+    }
+
+    public void addIfAbsent(String key, byte[] bytes) {
+        commands.setnx(key, bytes);
+    }
+}
+----
+
+==== Storing a counter
+
+You can store counters in Redis as demonstrated below:
+
+[source,java]
+----
+@ApplicationScoped
+public static class MyRedisCounter {
+
+    private final StringCommands<String, Long> commands;
+
+    public MyRedisCounter(RedisDataSource ds) {
+        commands = ds.string(Long.class); // <1>
+    }
+
+    public long get(String key) {
+        Long l = commands.get(key);  // <2>
+        if (l == null) {
+            return 0L;
+        }
+        return l;
+    }
+
+    public void incr(String key) {
+        commands.incr(key);  // <3>
+    }
+
+}
+----
+<1> Retrieve the commands.
+This time we will manipulate `Long` values
+<2> Retrieve the counter associated with the given `key`.
+Return `0L` when no counter is stored.
+<3> Increment the value.
+If there are no counter stored for the key, the `incr` command considers 0 as value (so `incr` sets the value to 1).
+
+There are other methods that can be useful to manipulate counters, such as:
+
+- `incrby` - allows setting the increment value (positive or negative)
+- `incrbyfloat` - allows setting the increment value as a float/ double (the stored value will be a double)
+- `set` - to set an initial value if needed
+- `decr` and `decrby` - allows decrementing the stored value
+
+==== Using pub/sub
+
+Redis allows sending _messages_ to channels and listening for these messages.
+These features are available from the the `pubsub` group.
+
+The following snippets shows how a _cache_ can emit a `Notification` after every `set`, and how a subscriber can receive the notification.
+
+[source, java]
+----
+public static final class Notification {
+    public String key;
+    public BusinessObject bo;
+
+    public Notification() {
+
+    }
+
+    public Notification(String key, BusinessObject bo) {
+        this.key = key;
+        this.bo = bo;
+    }
+}
+
+@ApplicationScoped
+@Startup // We want to create the bean instance on startup to subscribe to the channel.
+public static class MySubscriber implements Consumer<Notification> {
+    private final PubSubCommands<Notification> pub;
+    private final PubSubCommands.RedisSubscriber subscriber;
+
+    public MySubscriber(RedisDataSource ds) {
+        pub = ds.pubsub(Notification.class);
+        subscriber = pub.subscribe("notifications", this);
+    }
+
+    @Override
+    public void accept(Notification notification) {
+        // Receive the notification
+    }
+
+    @PreDestroy
+    public void terminate() {
+        subscriber.unsubscribe(); // Unsubscribe from all subscribed channels
+    }
+}
+
+@ApplicationScoped
+public static class MyCache {
+
+    private final StringCommands<String, BusinessObject> commands;
+    private final PubSubCommands<Notification> pub;
+
+    public MyCache(RedisDataSource ds) {
+        commands = ds.string(BusinessObject.class);
+        pub = ds.pubsub(Notification.class);
+    }
+
+    public BusinessObject get(String key) {
+        return commands.get(key);
+    }
+
+    public void set(String key, BusinessObject bo) {
+        commands.set(key, bo);
+        pub.publish("notifications", new Notification(key, bo));
+    }
+}
+----
+
+==== Using transactions
+
+Redis transactions are slightly different from relational database transactions.
+Redis transactions are a batch of commands executed altogether.
+
+A Redis transaction can _watch_ a set of keys, which would _discard_ the transaction is one of these keys are updated during the transaction execution.
+
+Commands enqueued in a transaction are not executed before the whole transaction is executed.
+It means that you cannot retrieve a result during the transaction.
+Results are accumulated in a `TransactionResult` object you will access after the completion of the transaction.
+This object contains whether the transaction succeeded or was discarded, and in the former case the result of each command (indexed by the command order).
+
+To start a transaction, you use the `withTransaction` method.
+This method receives a `Consumer<TransactionalRedisDataSource>`, which follows the same API as the regular `RedisDataSource` except that the commands return `void` (`Uni<Void>` for the reactive variant).
+When that consumer returns, the transaction is _executed_.
+
+The following snippet shows how to create a transaction executing two related _writes_:
+
+[source, java]
+----
+@Inject RedisDataSource ds;
+
+// ...
+
+TransactionResult result = ds.withTransaction(tx -> {
+        TransactionalHashCommands<String, String, String> hash = tx.hash(String.class);
+        hash.hset(KEY, "field-1", "hello");
+        hash.hset(KEY, "field-2", "hello");
+    });
+----
+
+The received `tx` object can also be used to _discard_ the transaction, using: `tx.discard();`.
+The returned `TransactionResult` lets you retrieve the result of each command.
+
+When using the reactive variant of the data source, the passed callback is a `Function<ReactiveTransactionalRedisDataSource, Uni<Void>>`:
+
+[source, java]
+----
+@Inject ReactiveRedisDataSource ds;
+
+// ...
+
+Uni<TransactionResult> result = ds.withTransaction(tx -> {
+        ReactiveTransactionalHashCommands<String, String, String> hash = tx.hash(String.class);
+        return hash.hset(KEY, "field-1", "hello")
+            .chain(() -> hash.hset(KEY, "field-2", "hello"));
+});
+----
+
+Transaction execution can be conditioned by _keys_.
+When a passed key gets modified during the execution of a transaction, the transaction is discarded.
+The keys are passed as `String` as a second parameter to the `withTransaction` method:
+
+[source, java]
+----
+TransactionResult result = ds.withTransaction(tx -> {
+    TransactionalHashCommands<String, String, String> hash = tx.hash(String.class);
+    hash.hset(KEY, "field-1", "hello");
+    hash.hset(KEY, "field-2", "hello");
+}, KEY);
+----
+
+IMPORTANT: You cannot use the pub/sub feature from within a transaction.
+
+==== Executing custom commands
+
+To execute a custom command, or a command not supported by the API, use the following approach:
+
+[source, java]
+----
+@Inject ReactiveRedisDataSource ds;
+
+// ...
+
+Response response = ds.execute("my-command", param1, param2, param3);
+----
+
+The `execute` method sends the command to Redis and retrieves the `Response`.
+The command name is passed as first parameters.
+You can add an arbitrary number of **String** parameters to your command.
+The result is wrapped into a `Response` object.
+
+The reactive variant returns a `Uni<Response>`.
+
+NOTE: You can also execute custom command in a transaction.
+
+== Vert.x Redis Client
+
+In addition to the high-level API, you can use the Vertx Redis clients directly in your code.
+The documentation of the Vert.x Redis Client is available on the https://vertx.io/docs/vertx-redis-client/java/[Vert.x Web Site].
+
+== Redis Health Check
+
+If you are using the `quarkus-smallrye-health` extension, `quarkus-redis` will automatically add a readiness health check to validate the connection to the Redis server.
+
+So when you access the `/q/health/ready` endpoint of your application you will have information about the connection validation status.
+
+This behavior can be disabled by setting the `quarkus.redis.health.enabled` property to `false` in your `application.properties`.
+
+== Providing Redis Hosts Programmatically
+
+The `RedisHostsProvider` programmatically provides redis hosts.
+This allows for configuration of properties like redis connection password coming from other sources.
+
+[NOTE]
+====
+This is useful as it removes the need to store sensitive data in application.properties.
+====
+
+[source,java,indent=0]
+----
+@ApplicationScoped
+@Identifier("hosts-provider") // the name of the host provider
+public class ExampleRedisHostProvider implements RedisHostsProvider {
+    @Override
+    public Set<URI> getHosts() {
+        // do stuff to get the host
+        String host = "redis://localhost:6379/3";
+        return Collections.singleton(URI.create(host));
+    }
+}
+----
+
+The host provider can be used to configure the redis client like shown below
+[source,properties,indent=0]
+
+----
+quarkus.redis.hosts-provider-name=hosts-provider
+----
+
+=== Dev Services
+
+See link:redis-dev-services.adoc[Redis Dev Service].
+
+[[redis-configuration-reference]]
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-redis.adoc[opts=optional, leveloffset=+1]

@@ -288,6 +288,7 @@ When using Maven, we could use the following configuration:
 </profiles>
 ----
 
+[[delay-class-init-in-your-app]]
 === Delaying class initialization
 
 By default, Quarkus initializes all classes at build time.
@@ -404,6 +405,161 @@ https://maven.apache.org/guides/introduction/introduction-to-optional-and-exclud
 is a clear indicator that your application might suffer from similar problems.
 These type of dependencies should be avoided,
 and instead code that interacts with optional dependencies should be moved into separate modules.
+
+[[enforcing-singletons]]
+=== Enforcing Singletons
+
+As already explained in the <<delay-class-init-in-your-app, delay class initialization>> section,
+Quarkus marks all code to be initialized at build time by default.
+This means that, unless marked otherwise,
+static variables will be assigned at build time,
+and static blocks will be executed at build time too.
+
+This can cause values in Java programs that would normally vary from one run to another,
+to always return a constant value.
+E.g. a static field that is assigned the value of `System.currentTimeMillis()`
+will always return the same value when executed as a Quarkus native executable.
+
+Singletons that rely on static variable initialization will suffer similar problems.
+For example, imagine you have a singleton based around static initialization along with a REST endpoint to query it:
+
+[source,java]
+----
+@Path("/singletons")
+public class Singletons {
+
+    @GET
+    @Path("/static")
+    public long withStatic() {
+        return StaticSingleton.startTime();
+    }
+}
+
+class StaticSingleton {
+    static final long START_TIME = System.currentTimeMillis();
+
+    static long startTime() {
+        return START_TIME;
+    }
+}
+----
+
+When the `singletons/static` endpoint is queried,
+it will always return the same value,
+even after the application is restarted:
+
+[source,bash]
+----
+$ curl http://localhost:8080/singletons/static
+1656509254532%
+
+$ curl http://localhost:8080/singletons/static
+1656509254532%
+
+### Restart the native application ###
+
+$ curl http://localhost:8080/singletons/static
+1656509254532%
+----
+
+Singletons that rely on `enum` classes are also affected by the same issue:
+
+[source,java]
+----
+@Path("/singletons")
+public class Singletons {
+
+    @GET
+    @Path("/enum")
+    public long withEnum() {
+        return EnumSingleton.INSTANCE.startTime();
+    }
+}
+
+enum EnumSingleton {
+    INSTANCE(System.currentTimeMillis());
+
+    private final long startTime;
+
+    private EnumSingleton(long startTime) {
+        this.startTime = startTime;
+    }
+
+    long startTime() {
+        return startTime;
+    }
+}
+----
+
+When the `singletons/enum` endpoint is queried,
+it will always return the same value,
+even after the application is restarted:
+
+[source,bash]
+----
+$ curl http://localhost:8080/singletons/enum
+1656509254601%
+
+$ curl http://localhost:8080/singletons/enum
+1656509254601%
+
+### Restart the native application ###
+
+$ curl http://localhost:8080/singletons/enum
+1656509254601%
+----
+
+One way to fix it is to build singletons using CDI's `@Singleton` annotation:
+
+[source,java]
+----
+@Path("/singletons")
+public class Singletons {
+
+    @Inject
+    CdiSingleton cdiSingleton;
+
+    @GET
+    @Path("/cdi")
+    public long withCdi() {
+        return cdiSingleton.startTime();
+    }
+}
+
+@Singleton
+class CdiSingleton {
+    // Note that the field is not static
+    final long startTime = System.currentTimeMillis();
+
+    long startTime() {
+        return startTime;
+    }
+}
+----
+
+After each restart,
+querying `singletons/cdi` will return a different value,
+just like it would in JVM mode:
+
+[source,bash]
+----
+$ curl http://localhost:8080/singletons/cdi
+1656510218554%
+
+$ curl http://localhost:8080/singletons/cdi
+1656510218554%
+
+### Restart the native application ###
+
+$ curl http://localhost:8080/singletons/cdi
+1656510714689%
+----
+
+An alternative way to enforce a singleton while relying static fields, or enums,
+is to <<delay-class-init-in-your-app,delay its class initialization until run time>>.
+The nice advantage of CDI-based singletons is that your class initialization is not constrained,
+so you can freely decide whether it should be build-time or run-time initialized,
+depending on your use case.
 
 [[native-in-extension]]
 == Supporting native in a Quarkus extension

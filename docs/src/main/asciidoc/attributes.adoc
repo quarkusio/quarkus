@@ -1,8 +1,11 @@
-// for rendering the final website the attributes are set by
-// https://github.com/quarkusio/quarkusio.github.io/blob/develop/_guides/pom.xml
+// for rendering the final website the attributes are set in the appropriate
+// location based on source versions in https://github.com/quarkusio/quarkusio.github.io/
 // they are duplicated here to ease the preview when editing in the IDE
 :idprefix:
 :idseparator: -
 :icons: font
+// tag::xref-attributes[]
+:doc-examples: ./_examples
 :imagesdir: ./images
 :includes: ./includes
+// end::xref-attributes[]

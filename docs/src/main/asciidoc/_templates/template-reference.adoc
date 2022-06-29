@@ -1,0 +1,47 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="reference-..."]
+= Title using sentence capitalization
+////
+TODO: If this is a reference for an experimental or tech-preview extension, uncomment the following and set the appropriate status (otherwise delete)
+:extension-status: preview
+////
+include::attributes.adoc[]
+
+A short introduction that describes the content of this reference.
+This summary should help a reader determine if this document is likely to contain the information they are looking for.
+
+////
+TODO: If this is a reference for an experimental or tech-preview extension, uncomment the following (otherwise delete)
+include::{includes}/extension-status.adoc[]
+////
+
+== Add additional sections
+
+- xref:{doc-guides}/doc-concepts.adoc#reference[Documentation concepts: Reference guides]
+- xref:{doc-guides}/doc-reference.adoc[Quarkus documentation reference]
+
+== Guidelines for a good reference
+
+- Be consistent
+- Be accurate
+- Do nothing but describe
+    - Include examples where appropriate, e.g. an example usage of a command
+    - Link to tutorials, how-to guides, or concepts/explainers as necessary
+
+.Language tips:
+--
+- State facts about how things work: X is an example of Y.
+- List commands, options, operations, features, flags, limitations, error messages, etc.
+- Provide warnings where appropriate
+--
+
+////
+TODO: If this is an extension reference, include the relevant configuration
+== Configuration Reference
+
+include::{generated-dir}/config/<<generated-filename>>.adoc[opts=optional, leveloffset=+1]
+////

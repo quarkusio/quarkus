@@ -1,0 +1,125 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="tutorial-acme-serve-http-requests"]
+= Serve Http requests using the Acme extension
+:extension-status: experimental
+include::attributes.adoc[]
+
+In this tutorial, we will create an application that uses unique annotations from the experimental acme extension to define two endpoints:
+a simple Http endpoint and an endpoint that emits Server-Sent Events (SSE).
+We will also use Quarkus dev mode for iterative development and test.
+
+include::{includes}/extension-status.adoc[]
+
+== Prerequisites
+
+:prerequisites-time: 30 minutes
+:prerequisites-docker:
+:prerequisites-no-graalvm:
+
+include::{includes}/prerequisites.adoc[]
+
+The `curl` command line utility is also used to manually test the endpoint.
+
+:sectnums:
+:sectnumlevels: 3
+== Create a new project
+
+Create a new project with the following command:
+
+:create-app-artifact-id: acme-quickstart
+:create-app-extensions: acme
+include::{includes}/devtools/create-app.adoc[]
+
+== Hello, World! as an Acme Http service
+
+Let's create a Http endpoint using the `@Anvil` annotation.
+
+Create a new source file, `src/main/java/org/acme/MyAcmeApplication.java`,
+and define the `MyAcmeApplication` bean as follows:
+
+[source,java]
+----
+include::{examples}/acme-serve-http-requests-MyAcmeApplication.java[tags=*;!goodbye]
+----
+
+<1> Specify the CDI lifecycle of this bean.
+An `@ApplicationScoped` bean has a single bean instance that is used for the application.
+<2> The `@Anvil` annotation always implies a simple Http GET request with the uri derived from the method name, `/hello` in this case.
+The `optional` value indicates that the `name` parameter is not required.
+
+== Dev Mode: Hello, World!
+
+Let's run our application using Quarkus' iterative development mode:
+
+include::{includes}/devtools/dev.adoc[]
+
+Once the console output from dev mode indicates that things are ready, use `curl` to invoke the `hello` endpoint:
+
+[source,shell]
+----
+$ curl -w "\n" http://localhost:8080/hello
+Hello, World!
+----
+
+Pass the name as a parameter:
+
+[source,bash,subs=attributes+]
+----
+$ curl localhost:8080/hello -d '{"name": "bananas"}'
+Hello, bananas!
+----
+
+You can leave dev mode running throughout the rest of the tutorial for continuous feedback as you make changes to code.
+Use `CTRL-C` to exit dev mode.
+
+== Testing: Hello, World!
+
+Let's create a test to work with our `@Anvil` endpoint.
+
+Create a new source file, `src/test/java/org/acme/MyAcmeApplicationTest.java`, and define `MyAcmeApplicationTest` as follows:
+
+[source,java]
+----
+include::{examples}/acme-serve-http-requests-MyAcmeApplicationTest.java[tags=*;!goodbye]
+----
+
+After saving, the dev console should detect the presence of tests, but it isn't running by default.
+The bottom of the console screen will display a message indicating that running tests have been paused.
+
+Press `r` to resume testing.
+You should see the status change as they are running, and it should finish with a message indicating that 1 test was run and that it was successful.
+
+== Goodbye, Sweet Planet! Server sent events with Acme
+
+Let's add an endpoint that supports Server Sent Events using the `@Toaster` annotation:
+
+[source,java]
+----
+include::{examples}/acme-serve-http-requests-MyAcmeApplication.java[tag=goodbye]
+----
+<1> The `@Toaster` annotation indicates that this method emits Server-Sent Events.
+<2> A `Multi` is an asynchronous publisher of multiple events provided by Mutiny, the event-driven reactive streams library used by Quarkus.
+
+== Testing: Goodbye, Sweet Planet!
+
+Let's create a test to work with our `@Toaster` endpoint.
+
+Add the following method to `src/test/java/org/acme/MyAcmeApplicationTest.java`:
+
+[source,java]
+----
+include::{examples}/acme-serve-http-requests-MyAcmeApplicationTest.java[tag=goodbye]
+----
+
+After saving, the dev console should detect the presence of the additional test, and run both.
+You should see a message that 2 tests were run, and both were successful.
+
+:sectnums!:
+== Summary
+
+Congratulations!
+You have created a project that uses the acme extension to create fanciful endpoints using the `@Anvil` and `@Toaster` annotations.

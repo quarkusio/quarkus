@@ -22,7 +22,8 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
         "io.opentelemetry.sdk.resources.Resource",
         "io.opentelemetry.sdk.resources.AutoValue_Resource",
         "io.opentelemetry.api.common.Attributes",
-        "io.quarkus.opentelemetry.runtime.tracing.DelayedAttributes"
+        "io.quarkus.opentelemetry.runtime.tracing.DelayedAttributes",
+        "io.opentelemetry.sdk.common.AutoValue_InstrumentationScopeInfo"
 })
 public class SpanData {
 }

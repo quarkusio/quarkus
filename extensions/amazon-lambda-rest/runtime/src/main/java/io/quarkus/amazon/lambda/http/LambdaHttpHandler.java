@@ -62,7 +62,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         }
 
         try {
-            return nettyDispatch(clientAddress, request, (AmazonLambdaContext) context);
+            return nettyDispatch(clientAddress, request, context);
         } catch (Exception e) {
             log.error("Request Failure", e);
             return new AwsProxyResponse(500, errorHeaders, "{ \"message\": \"Internal Server Error\" }");
@@ -152,7 +152,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
     }
 
     private AwsProxyResponse nettyDispatch(InetSocketAddress clientAddress, AwsProxyRequest request,
-            AmazonLambdaContext context)
+            Context context)
             throws Exception {
         String path = request.getPath();
         //log.info("---- Got lambda request: " + path);
@@ -210,8 +210,9 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         NettyResponseHandler handler = new NettyResponseHandler(request);
         VirtualClientConnection connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP,
                 clientAddress);
-        if (connection.peer().remoteAddress().equals(VertxHttpRecorder.VIRTUAL_HTTP)) {
-            URL requestURL = context.getRequestURL();
+        if (context instanceof AmazonLambdaContext
+                && connection.peer().remoteAddress().equals(VertxHttpRecorder.VIRTUAL_HTTP)) {
+            URL requestURL = ((AmazonLambdaContext) context).getRequestURL();
             connection.peer().attr(ConnectionBase.REMOTE_ADDRESS_OVERRIDE).set(
                     SocketAddress.inetSocketAddress(requestURL.getPort(), requestURL.getHost()));
         }

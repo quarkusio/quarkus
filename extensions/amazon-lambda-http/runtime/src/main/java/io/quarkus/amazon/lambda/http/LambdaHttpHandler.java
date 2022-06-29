@@ -67,7 +67,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         }
 
         try {
-            return nettyDispatch(clientAddress, request, (AmazonLambdaContext) context);
+            return nettyDispatch(clientAddress, request, context);
         } catch (Exception e) {
             log.error("Request Failure", e);
             APIGatewayV2HTTPResponse res = new APIGatewayV2HTTPResponse();
@@ -168,7 +168,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
     }
 
     private APIGatewayV2HTTPResponse nettyDispatch(InetSocketAddress clientAddress, APIGatewayV2HTTPEvent request,
-            AmazonLambdaContext context)
+            Context context)
             throws Exception {
         QuarkusHttpHeaders quarkusHeaders = new QuarkusHttpHeaders();
         quarkusHeaders.setContextObject(Context.class, context);
@@ -223,8 +223,9 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         NettyResponseHandler handler = new NettyResponseHandler(request);
         VirtualClientConnection connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP,
                 clientAddress);
-        if (connection.peer().remoteAddress().equals(VertxHttpRecorder.VIRTUAL_HTTP)) {
-            URL requestURL = context.getRequestURL();
+        if (context instanceof AmazonLambdaContext
+                && connection.peer().remoteAddress().equals(VertxHttpRecorder.VIRTUAL_HTTP)) {
+            URL requestURL = ((AmazonLambdaContext) context).getRequestURL();
             connection.peer().attr(ConnectionBase.REMOTE_ADDRESS_OVERRIDE).set(
                     SocketAddress.inetSocketAddress(requestURL.getPort(), requestURL.getHost()));
         }

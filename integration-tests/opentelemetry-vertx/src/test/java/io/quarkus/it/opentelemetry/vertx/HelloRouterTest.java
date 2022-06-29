@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -128,7 +129,7 @@ class HelloRouterTest {
         assertEquals("vert.x", ((Map<?, ?>) spans.get(0).get("attributes")).get(MESSAGING_SYSTEM.toString()));
         assertEquals("topic", ((Map<?, ?>) spans.get(0).get("attributes")).get(MESSAGING_DESTINATION_KIND.toString()));
         assertEquals("bus", ((Map<?, ?>) spans.get(0).get("attributes")).get(MESSAGING_DESTINATION.toString()));
-        assertEquals(MessageOperation.RECEIVE.operationName(),
+        assertEquals(MessageOperation.RECEIVE.toString().toLowerCase(Locale.ROOT),
                 ((Map<?, ?>) spans.get(0).get("attributes")).get(MESSAGING_OPERATION.toString()));
 
         assertEquals(PRODUCER.toString(), spans.get(1).get("kind"));

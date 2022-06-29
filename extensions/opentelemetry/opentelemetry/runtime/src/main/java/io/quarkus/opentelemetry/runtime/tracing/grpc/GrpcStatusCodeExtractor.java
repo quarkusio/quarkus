@@ -24,7 +24,7 @@ class GrpcStatusCodeExtractor implements AttributesExtractor<GrpcRequest, Status
             final Throwable error) {
 
         if (status != null) {
-            set(attributes, SemanticAttributes.RPC_GRPC_STATUS_CODE, (long) (status.getCode().value()));
+            attributes.put(SemanticAttributes.RPC_GRPC_STATUS_CODE, status.getCode().value());
         }
     }
 }

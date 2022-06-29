@@ -125,6 +125,7 @@ updates:
       - dependency-name: org.apache.avro:*
       # gRPC
       - dependency-name: io.grpc:*
+      - dependency-name: com.google.api.grpc:proto-google-common-protos
       # jaeger
       - dependency-name: io.jaegertracing:*
       # Kotlin

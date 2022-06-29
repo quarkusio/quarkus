@@ -231,10 +231,7 @@ public class ParserTest {
         String jsSnippet = "<script>const foo = function(){alert('bar');};</script>";
         assertThatExceptionOfType(Exception.class)
                 .isThrownBy(() -> engine.parse("Hello {name} " + jsSnippet));
-        assertEquals("Hello world <script>const foo = function(){alert('bar');};</script>", engine.parse("Hello {name} {["
-                + jsSnippet
-                + "]}").data("name", "world").render());
-        assertEquals("Hello world <strong>", engine.parse("Hello {name} {[<strong>]}").data("name", "world").render());
+
         assertEquals("Hello world <script>const foo = function(){alert('bar');};</script>", engine.parse("Hello {name} {|"
                 + jsSnippet
                 + "|}").data("name", "world").render());

@@ -149,7 +149,10 @@ Unparsed Character Data::
 It is used to mark the content that should be rendered but _not parsed_.
 It starts with the sequence `{|`  and ends with the sequence `|}`: `{| <script>if(true){alert('Qute is cute!')};</script> |}`, and could be multi-line.
 +
-NOTE: Previously, unparsed character data had to start with `{[` and end with `]}`. This syntax is still supported, but we encourage users to switch to the new syntax to avoid some common collisions with constructs from other languages.
+[WARNING]
+====
+Previously, unparsed character data could start with `{[` and end with `]}`. This syntax is now removed due to common collisions with constructs from other languages.
+====
 
 [[identifiers]]
 === Identifiers and Tags

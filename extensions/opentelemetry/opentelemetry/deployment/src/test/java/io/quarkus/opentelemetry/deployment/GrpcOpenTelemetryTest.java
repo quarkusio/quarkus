@@ -29,6 +29,8 @@ import io.opentelemetry.extension.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
+import io.quarkus.opentelemetry.deployment.MutinyGreeterGrpc.MutinyGreeterStub;
+import io.quarkus.opentelemetry.deployment.MutinyStreamingGrpc.MutinyStreamingStub;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Multi;
 
@@ -45,12 +47,16 @@ public class GrpcOpenTelemetryTest {
                     .addClasses(StreamService.class)
                     .addClasses(StreamingGrpc.class, MutinyStreamingGrpc.class,
                             Streaming.class, StreamingBean.class, StreamingClient.class,
-                            StreamingProto.class, Item.class, ItemOrBuilder.class));
+                            StreamingProto.class, Item.class, ItemOrBuilder.class))
+            .overrideConfigKey("quarkus.grpc.clients.greeter.host", "localhost")
+            .overrideConfigKey("quarkus.grpc.clients.greeter.port", "9001")
+            .overrideConfigKey("quarkus.grpc.clients.streaming.host", "localhost")
+            .overrideConfigKey("quarkus.grpc.clients.streaming.port", "9001");
 
     @Inject
     TestSpanExporter spanExporter;
-    @GrpcClient
-    MutinyGreeterGrpc.MutinyGreeterStub greeterStub;
+    @GrpcClient("greeter")
+    MutinyGreeterStub greeterStub;
     @Inject
     HelloBean helloBean;
 
@@ -170,8 +176,8 @@ public class GrpcOpenTelemetryTest {
         }
     }
 
-    @GrpcClient
-    MutinyStreamingGrpc.MutinyStreamingStub streamingStub;
+    @GrpcClient("streaming")
+    MutinyStreamingStub streamingStub;
 
     @Test
     void stream() {

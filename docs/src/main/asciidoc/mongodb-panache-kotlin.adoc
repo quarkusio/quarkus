@@ -155,7 +155,7 @@ personRepository.deleteAll()
 val deleted = personRepository.deleteById(personId)
 
 // set the name of all living persons to 'Mortal'
-personRepository.update("name = 'Mortal' where status = ?1", Status.Alive)
+var updated = personRepository.update("name", "Mortal").where("status", Status.Alive)
 
 ----
 

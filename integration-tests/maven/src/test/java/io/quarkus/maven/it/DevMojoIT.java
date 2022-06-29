@@ -23,6 +23,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -92,34 +93,10 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         String response = DevModeTestUtils.getHttpResponse("/hello", true);
         assertThat(response).contains(error.report());
 
-        final StringWriter buf = new StringWriter();
-        try (BufferedWriter writer = new BufferedWriter(buf)) {
-            writer.write("        <dependency>");
-            writer.newLine();
-            writer.write("            <groupId>org.acme</groupId>");
-            writer.newLine();
-            writer.write("            <artifactId>acme-quarkus-ext</artifactId>");
-            writer.newLine();
-            writer.write("        </dependency>");
-            writer.newLine();
-        }
-        final String acmeDep = buf.toString();
-        filter(runnerPom, Collections.singletonMap(acmeDep, ""));
+        filter(runnerPom, Map.of("<artifactId>acme-quarkus-ext</artifactId>", "<artifactId>alt-quarkus-ext</artifactId>"));
         assertThat(DevModeTestUtils.getHttpResponse("/hello", false)).isEqualTo("hello");
 
-        buf.getBuffer().setLength(0);
-        try (BufferedWriter writer = new BufferedWriter(buf)) {
-            writer.write("        <dependency>");
-            writer.newLine();
-            writer.write("            <groupId>org.acme</groupId>");
-            writer.newLine();
-            writer.write("            <artifactId>alt-quarkus-ext</artifactId>");
-            writer.newLine();
-            writer.write("        </dependency>");
-            writer.newLine();
-        }
-        final String altDep = buf.toString();
-        filter(runnerPom, Collections.singletonMap(acmeDep, altDep));
+        filter(runnerPom, Map.of("<artifactId>alt-quarkus-ext</artifactId>", "<artifactId>acme-quarkus-ext</artifactId>"));
         assertThat(DevModeTestUtils.getHttpResponse("/hello", false)).isEqualTo("hello");
     }
 

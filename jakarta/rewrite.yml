@@ -511,9 +511,9 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-rest-client-tck.version
       newValue: 3.0
-#  - org.openrewrite.maven.ChangePropertyValue:
-#      key: resteasy-reactive-testsuite.repo.ref
-#      newValue: 
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: resteasy-reactive-testsuite.repo.ref
+      newValue: 4324a133a824c6b9253870df8e8f7aeb2d76fe3b
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.maven.javax.managed

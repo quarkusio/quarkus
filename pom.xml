@@ -73,7 +73,7 @@
         <grpc-jprotoc.version>1.2.1</grpc-jprotoc.version>
         <protoc.version>3.19.3</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
-        <proto-google-common-protos.version>2.0.1</proto-google-common-protos.version>
+        <proto-google-common-protos.version>2.9.1</proto-google-common-protos.version>
 
     </properties>
 

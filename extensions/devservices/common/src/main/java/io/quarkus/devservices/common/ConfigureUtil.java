@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,7 +42,7 @@ public final class ConfigureUtil {
             container.setNetwork(Network.SHARED);
         }
 
-        String hostName = hostNamePrefix + "-" + Base58.randomString(5);
+        String hostName = (hostNamePrefix + "-" + Base58.randomString(5)).toLowerCase(Locale.ROOT);
         container.setNetworkAliases(Collections.singletonList(hostName));
 
         return hostName;

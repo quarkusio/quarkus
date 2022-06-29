@@ -1,7 +1,11 @@
 package io.quarkus.kubernetes.deployment;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
+import io.dekorate.kubernetes.config.Item;
+import io.dekorate.kubernetes.config.ItemBuilder;
 import io.dekorate.kubernetes.config.SecretVolume;
 import io.dekorate.kubernetes.config.SecretVolumeBuilder;
 
@@ -16,6 +20,18 @@ public class SecretVolumeConverter {
         b.withSecretName(c.secretName);
         b.withDefaultMode(FilePermissionUtil.parseInt(c.defaultMode));
         b.withOptional(c.optional);
+        if (c.items != null && !c.items.isEmpty()) {
+            List<Item> items = new ArrayList<>(c.items.size());
+            for (Map.Entry<String, VolumeItemConfig> item : c.items.entrySet()) {
+                items.add(new ItemBuilder()
+                        .withKey(item.getKey())
+                        .withPath(item.getValue().path)
+                        .withMode(item.getValue().mode)
+                        .build());
+            }
+
+            b.withItems(items.toArray(new Item[items.size()]));
+        }
         return b;
     }
 }

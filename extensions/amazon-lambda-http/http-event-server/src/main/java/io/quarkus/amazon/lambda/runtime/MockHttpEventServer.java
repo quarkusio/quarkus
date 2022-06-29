@@ -56,6 +56,7 @@ public class MockHttpEventServer extends MockEventServer {
         event.setRequestContext(new APIGatewayV2HTTPEvent.RequestContext());
         event.getRequestContext().setHttp(new APIGatewayV2HTTPEvent.RequestContext.Http());
         event.getRequestContext().getHttp().setMethod(ctx.request().method().name());
+        event.getRequestContext().getHttp().setSourceIp(ctx.request().connection().remoteAddress().hostAddress());
         event.setRawPath(ctx.request().path());
         event.setRawQueryString(ctx.request().query());
         for (String header : ctx.request().headers().names()) {

@@ -2,7 +2,6 @@ package io.quarkus.amazon.lambda.http;
 
 import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
@@ -34,7 +33,6 @@ import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequestContext;
 import io.quarkus.amazon.lambda.http.model.AwsProxyResponse;
 import io.quarkus.amazon.lambda.http.model.Headers;
-import io.quarkus.amazon.lambda.runtime.AmazonLambdaContext;
 import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
 import io.quarkus.netty.runtime.virtual.VirtualResponseHandler;
 import io.quarkus.vertx.http.runtime.QuarkusHttpHeaders;
@@ -62,7 +60,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         }
 
         try {
-            return nettyDispatch(clientAddress, request, (AmazonLambdaContext) context);
+            return nettyDispatch(clientAddress, request, context);
         } catch (Exception e) {
             log.error("Request Failure", e);
             return new AwsProxyResponse(500, errorHeaders, "{ \"message\": \"Internal Server Error\" }");
@@ -152,7 +150,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
     }
 
     private AwsProxyResponse nettyDispatch(InetSocketAddress clientAddress, AwsProxyRequest request,
-            AmazonLambdaContext context)
+            Context context)
             throws Exception {
         String path = request.getPath();
         //log.info("---- Got lambda request: " + path);
@@ -208,10 +206,17 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         NettyResponseHandler handler = new NettyResponseHandler(request);
         VirtualClientConnection connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP,
                 clientAddress);
-        if (connection.peer().remoteAddress().equals(VertxHttpRecorder.VIRTUAL_HTTP)) {
-            URL requestURL = context.getRequestURL();
+        if (request.getRequestContext() != null
+                && request.getRequestContext().getIdentity() != null
+                && request.getRequestContext().getIdentity().getSourceIp() != null
+                && request.getRequestContext().getIdentity().getSourceIp().length() > 0) {
+            int port = 443; // todo, may be bad to assume 443?
+            if (request.getMultiValueHeaders() != null &&
+                    request.getMultiValueHeaders().getFirst("X-Forwarded-Port") != null) {
+                port = Integer.parseInt(request.getMultiValueHeaders().getFirst("X-Forwarded-Port"));
+            }
             connection.peer().attr(ConnectionBase.REMOTE_ADDRESS_OVERRIDE).set(
-                    SocketAddress.inetSocketAddress(requestURL.getPort(), requestURL.getHost()));
+                    SocketAddress.inetSocketAddress(port, request.getRequestContext().getIdentity().getSourceIp()));
         }
 
         connection.sendMessage(nettyRequest);

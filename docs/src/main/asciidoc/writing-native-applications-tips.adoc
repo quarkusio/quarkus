@@ -360,6 +360,51 @@ com.oracle.svm.core.jdk.UnsupportedFeatureError: Proxy class defined by interfac
 Solving this issue requires adding the `-H:DynamicProxyConfigurationResources=<comma-separated-config-resources>` option and to provide a dynamic proxy configuration file.
 You can find all the information about the format of this file in https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/DynamicProxy.md#manual-configuration[the GraalVM documentation].
 
+[[modularity-benefits]]
+=== Modularity Benefits
+
+During native executable build time GraalVM analyses the application's call tree and generates a code-set that includes all the code it needs.
+Having a modular codebase is key to avoiding problems with unused or optional parts of your application,
+while at the same time reducing both native executable build times and size.
+In this section you will learn about the details behind the benefits of modularity for native applications.
+
+When code is not modular enough, generated native executables can end up with more code than what the user needs.
+If a feature is not used and the code gets compiled into the native executable,
+this is a waste of native compilation time and memory usage, as well as native executable disk space and starting heap size.
+Even more problems arise when third party libraries or specialized API subsystems are used which cause native compilation or runtime errors,
+and their use is not modularised enough.
+A recent problem can be found in the JAXB library,
+which is capable of deserializing XML files containing images using Java’s AWT APIs.
+The vast majority of Quarkus XML users don’t need to deserialize images,
+so there shouldn’t be a need for users applications to include Java AWT code,
+unless they specifically configure Quarkus to add the JAXB AWT code to the native executable.
+However, because JAXB code that uses AWT is in the same jar as the rest of the XML parsing code,
+achieving this separation was rather complex and required the use of Java bytecode substitutions to get around it.
+These substitutions are hard to maintain and can easily break, hence they should be one's last resort.
+
+A modular codebase is the best way to avoid these kind of issues.
+Taking the JAXB/AWT problem above,
+if the JAXB code that dealt with images was in a separate module or jar (e.g. `jaxb-images`),
+then Quarkus could choose not to include that module unless the user specifically requested the need to serialize/deserialize XML files containing images at build time.
+
+Another benefit of modular applications is that they can reduce the code-set that will need to get into the native executable.
+The smaller the code-set, the faster the native executable builds will be and the smaller the native executable produced.
+
+[TIP]
+====
+The key takeaway point here is the following:
+Keeping optional features, particularly those that depend on third party libraries or API subsystems with a big footprint,
+in separate modules is the best solution.
+====
+
+How do I know if my application suffers from similar problems?
+Aside from a deep study of the application,
+finding usages of
+https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html[Maven optional dependencies]
+is a clear indicator that your application might suffer from similar problems.
+These type of dependencies should be avoided,
+and instead code that interacts with optional dependencies should be moved into separate modules.
+
 [[native-in-extension]]
 == Supporting native in a Quarkus extension
 

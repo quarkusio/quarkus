@@ -169,7 +169,8 @@ public class MSSQLPoolRecorder {
                     dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get());
         }
 
-        dataSourceReactiveRuntimeConfig.additionalProperties.forEach(mssqlConnectOptions::addProperty);
+        dataSourceReactiveRuntimeConfig.additionalProperties
+                .ifPresent(props -> props.forEach(mssqlConnectOptions::addProperty));
 
         return mssqlConnectOptions;
     }

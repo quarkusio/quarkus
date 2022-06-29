@@ -138,7 +138,8 @@ public class OraclePoolRecorder {
             }
         }
 
-        dataSourceReactiveRuntimeConfig.additionalProperties.forEach(oracleConnectOptions::addProperty);
+        dataSourceReactiveRuntimeConfig.additionalProperties
+                .ifPresent(props -> props.forEach(oracleConnectOptions::addProperty));
 
         return oracleConnectOptions;
     }

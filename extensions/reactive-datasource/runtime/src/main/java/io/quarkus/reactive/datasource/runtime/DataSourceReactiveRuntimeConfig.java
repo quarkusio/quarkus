@@ -152,5 +152,5 @@ public class DataSourceReactiveRuntimeConfig {
      * are initiated.
      */
     @ConfigItem
-    public Map<String, String> additionalProperties;
+    public Optional<Map<String, String>> additionalProperties;
 }

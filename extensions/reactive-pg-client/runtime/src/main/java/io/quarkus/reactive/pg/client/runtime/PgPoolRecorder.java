@@ -190,7 +190,7 @@ public class PgPoolRecorder {
                     dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get());
         }
 
-        dataSourceReactiveRuntimeConfig.additionalProperties.forEach(pgConnectOptions::addProperty);
+        dataSourceReactiveRuntimeConfig.additionalProperties.ifPresent(props -> props.forEach(pgConnectOptions::addProperty));
 
         return pgConnectOptions;
     }

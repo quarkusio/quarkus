@@ -191,7 +191,8 @@ public class MySQLPoolRecorder {
                     dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get());
         }
 
-        dataSourceReactiveRuntimeConfig.additionalProperties.forEach(mysqlConnectOptions::addProperty);
+        dataSourceReactiveRuntimeConfig.additionalProperties
+                .ifPresent(props -> props.forEach(mysqlConnectOptions::addProperty));
 
         return mysqlConnectOptions;
     }

@@ -19,6 +19,7 @@ import io.dekorate.knative.decorator.AddHostAliasesToRevisionDecorator;
 import io.dekorate.knative.decorator.AddPvcVolumeToRevisionDecorator;
 import io.dekorate.knative.decorator.AddSecretVolumeToRevisionDecorator;
 import io.dekorate.knative.decorator.AddSidecarToRevisionDecorator;
+import io.dekorate.knative.decorator.ApplyAnnotationsToServiceTemplate;
 import io.dekorate.knative.decorator.ApplyGlobalAutoscalingClassDecorator;
 import io.dekorate.knative.decorator.ApplyGlobalRequestsPerSecondTargetDecorator;
 import io.dekorate.knative.decorator.ApplyGlobalTargetUtilizationDecorator;
@@ -28,6 +29,7 @@ import io.dekorate.knative.decorator.ApplyServiceAccountToRevisionSpecDecorator;
 import io.dekorate.knative.decorator.ApplyTrafficDecorator;
 import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.decorator.AddConfigMapDataDecorator;
+import io.dekorate.kubernetes.decorator.AddConfigMapResourceProvidingDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddImagePullSecretToServiceAccountDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
@@ -63,11 +65,6 @@ public class KnativeProcessor {
     private static final int KNATIVE_PRIORITY = DEFAULT_PRIORITY;
 
     private static final String LATEST_REVISION = "latest";
-    /**
-     * The following properties must be set to work around
-     * this Dekorate issue: https://github.com/dekorateio/dekorate/issues/869.
-     * Once this issue is fixed, we can get rid of these properties and use the Dekorate knative decorators.
-     */
     private static final String KNATIVE_CONFIG_AUTOSCALER = "config-autoscaler";
     private static final String KNATIVE_CONFIG_DEFAULTS = "config-defaults";
     private static final String KNATIVE_SERVING = "knative-serving";
@@ -229,13 +226,13 @@ public class KnativeProcessor {
                 .ifPresent(a -> {
                     result.add(
                             new DecoratorBuildItem(KNATIVE,
-                                    new AddConfigMapDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
+                                    new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
                     result.add(new DecoratorBuildItem(KNATIVE, new ApplyGlobalAutoscalingClassDecorator(a)));
                 });
         config.globalAutoScaling.containerConcurrency.map(String::valueOf)
                 .ifPresent(c -> {
                     result.add(new DecoratorBuildItem(KNATIVE,
-                            new AddConfigMapDecorator(KNATIVE_CONFIG_DEFAULTS, KNATIVE_SERVING)));
+                            new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_DEFAULTS, KNATIVE_SERVING)));
                     /**
                      * Once the Dekorate issue is fixed https://github.com/dekorateio/dekorate/issues/869,
                      * we should replace ApplyAnnotationsToServiceTemplate by ApplyGlobalContainerConcurrencyDecorator.
@@ -248,7 +245,7 @@ public class KnativeProcessor {
                 .ifPresent(r -> {
                     result.add(
                             new DecoratorBuildItem(KNATIVE,
-                                    new AddConfigMapDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
+                                    new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
                     result.add(new DecoratorBuildItem(KNATIVE, new ApplyGlobalRequestsPerSecondTargetDecorator(r)));
                 });
 
@@ -256,12 +253,13 @@ public class KnativeProcessor {
                 .ifPresent(t -> {
                     result.add(
                             new DecoratorBuildItem(KNATIVE,
-                                    new AddConfigMapDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
+                                    new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
                     result.add(new DecoratorBuildItem(KNATIVE, new ApplyGlobalTargetUtilizationDecorator(t)));
                 });
 
         if (!config.scaleToZeroEnabled) {
-            result.add(new DecoratorBuildItem(KNATIVE, new AddConfigMapDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
+            result.add(new DecoratorBuildItem(KNATIVE,
+                    new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
             result.add(
                     new DecoratorBuildItem(KNATIVE,
                             new AddConfigMapDataDecorator(KNATIVE_CONFIG_AUTOSCALER, "enable-scale-to-zero",

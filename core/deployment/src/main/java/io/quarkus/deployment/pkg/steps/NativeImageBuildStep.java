@@ -78,10 +78,11 @@ public class NativeImageBuildStep {
     private static final String MOVED_TRUST_STORE_NAME = "trustStore";
     public static final String APP_SOURCES = "app-sources";
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuildGraal22_2OrLater.class)
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void addExportsToNativeImage(BuildProducer<JPMSExportBuildItem> exports) {
         // Needed by io.quarkus.runtime.ResourceHelper.registerResources
-        exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk"));
+        exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk",
+                GraalVM.Version.VERSION_22_1_0));
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -843,8 +844,11 @@ public class NativeImageBuildStep {
                 if (jpmsExports != null) {
                     HashSet<JPMSExportBuildItem> deduplicatedJpmsExport = new HashSet<>(jpmsExports);
                     for (JPMSExportBuildItem jpmsExport : deduplicatedJpmsExport) {
-                        nativeImageArgs.add(
-                                "-J--add-exports=" + jpmsExport.getModule() + "/" + jpmsExport.getPackage() + "=ALL-UNNAMED");
+                        if (graalVMVersion.isNewerThan(jpmsExport.getExportAfter())) {
+                            nativeImageArgs.add(
+                                    "-J--add-exports=" + jpmsExport.getModule() + "/" + jpmsExport.getPackage()
+                                            + "=ALL-UNNAMED");
+                        }
                     }
                 }
 

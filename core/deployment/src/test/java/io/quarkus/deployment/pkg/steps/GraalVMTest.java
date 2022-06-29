@@ -109,6 +109,8 @@ public class GraalVMTest {
                 "GraalVM 21.3.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)");
         assertNewerThan("GraalVM 21.3.1 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)",
                 "GraalVM 21.3 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)");
+        assertNewerThan("native-image 22.3.0-dev6d51160e2f3 Mandrel Distribution (Java Version 17.0.4-beta+7-202206162318)",
+                "native-image 22.2.0-dev6d51160e2f3 Mandrel Distribution (Java Version 17.0.4-beta+7-202206162318)");
     }
 
     /**

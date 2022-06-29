@@ -69,6 +69,11 @@
                     <groupId>org.glassfish</groupId>
                     <artifactId>javax.json</artifactId>
                 </exclusion>
+                <!-- We let quarkus-jsonp choose the implementation of it -->
+                <exclusion>
+                    <groupId>org.glassfish</groupId>
+                    <artifactId>jakarta.json</artifactId>
+                </exclusion>
                 <exclusion>
                     <groupId>commons-logging</groupId>
                     <artifactId>commons-logging</artifactId>

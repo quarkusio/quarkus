@@ -27,7 +27,8 @@ public class GrpcPostProcessing {
 
     private static final String POST_PROCESS_QUARKUS_GENERATED_ANNOTATION = "quarkus.generate-code.grpc-post-processing.use-quarkus-generated-annotation";
     private static final String POST_PROCESS_NO_FINAL = "quarkus.generate-code.grpc-post-processing.no-final";
-    public static final String JAVAX_GENERATED = "javax.annotation.Generated";
+    // this is intentionally split so that it doesn't get replaced by the Jakarta transformer
+    public static final String JAVAX_GENERATED = "javax" + ".annotation.Generated";
     public static final String QUARKUS_GENERATED = "io.quarkus.grpc.common.Generated";
     public static final String STUB = "Stub";
     public static final String BIND_METHOD = "bindService";

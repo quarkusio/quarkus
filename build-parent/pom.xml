@@ -53,7 +53,7 @@
         <commonmark.version>0.19.0</commonmark.version>
 
         <!-- Arquillian BOM -->
-        <arquillian.version>1.5.0.Final</arquillian.version>
+        <arquillian.version>1.7.0.Alpha10</arquillian.version>
 
         <!-- Enable APT by default for Eclipse -->
         <m2e.apt.activation>jdt_apt</m2e.apt.activation>

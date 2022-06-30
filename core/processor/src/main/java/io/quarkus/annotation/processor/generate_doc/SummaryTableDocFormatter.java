@@ -1,5 +1,7 @@
 package io.quarkus.annotation.processor.generate_doc;
 
+import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.toEnvVarName;
+
 import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
@@ -7,6 +9,7 @@ import java.util.List;
 import io.quarkus.annotation.processor.Constants;
 
 final class SummaryTableDocFormatter implements DocFormatter {
+    private static final String TWO_NEW_LINES = "\n\n";
     private static final String TABLE_CLOSING_TAG = "\n|===";
     public static final String SEARCHABLE_TABLE_CLASS = ".searchable"; // a css class indicating if a table is searchable
     public static final String CONFIGURATION_TABLE_CLASS = ".configuration-reference";
@@ -70,6 +73,15 @@ final class SummaryTableDocFormatter implements DocFormatter {
         }
 
         String doc = configDocKey.getConfigDoc();
+
+        // Convert a property name to an environment variable name and show it in the config description
+        final var envVarExample = String.format("Environment variable: `+++%s+++`", toEnvVarName(configDocKey.getKey()));
+        if (configDocKey.getConfigDoc().isEmpty()) {
+            doc = envVarExample;
+        } else {
+            // Add 2 new lines in order to show the environment variable on next line
+            doc += TWO_NEW_LINES + envVarExample;
+        }
 
         final String typeDetail = DocGeneratorUtil.getTypeFormatInformationNote(configDocKey);
         final String defaultValue = configDocKey.getDefaultValue();

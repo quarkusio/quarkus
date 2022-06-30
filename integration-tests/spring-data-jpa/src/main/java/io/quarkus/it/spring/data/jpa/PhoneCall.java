@@ -2,30 +2,23 @@ package io.quarkus.it.spring.data.jpa;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
-import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
 @Entity
 @Table(name = "phone_call")
-public class PhoneCall {
-
-    @EmbeddedId
-    private PhoneNumberId id;
+public class PhoneCall extends AbstractPhoneEntity<PhoneCallId> {
 
     private int duration;
 
     private CallAgent callAgent;
 
-    PhoneCall() {
+    PhoneCall() { // only for hibernate
+        super(null);
     }
 
-    public PhoneCall(PhoneNumberId id) {
-        this.id = id;
-    }
-
-    public PhoneNumberId getId() {
-        return id;
+    public PhoneCall(PhoneCallId id) {
+        super(id);
     }
 
     public int getDuration() {

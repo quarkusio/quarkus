@@ -4,10 +4,11 @@ import java.io.Serializable;
 import java.util.Objects;
 
 import javax.persistence.Column;
-import javax.persistence.Embeddable;
+import javax.persistence.MappedSuperclass;
 
-@Embeddable
-public class PhoneNumberId implements Serializable {
+// this is a bit artificial, but next to PhoneCallId there could be e.g. a PhoneBookEntryId subclass
+@MappedSuperclass
+public abstract class PhoneNumberId implements Serializable {
 
     @Column(name = "area_code")
     private String areaCode;

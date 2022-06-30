@@ -15,10 +15,10 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
-import org.jboss.jandex.Type.Kind;
+import org.jboss.jandex.TypeVariable;
 
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.panache.common.Sort;
 
 public class MethodNameParser {
@@ -351,6 +351,7 @@ public class MethodNameParser {
         ClassInfo parentClassInfo = this.entityClass;
         FieldInfo fieldInfo = null;
 
+        MutableReference<List<ClassInfo>> parentSuperClassInfos = new MutableReference<>();
         int fieldStartIndex = 0;
         while (fieldStartIndex < fieldPathExpression.length()) {
             if (fieldPathExpression.charAt(fieldStartIndex) == '_') {
@@ -359,7 +360,6 @@ public class MethodNameParser {
                     throw new UnableToParseMethodException(fieldNotResolvableMessage + offendingMethodMessage);
                 }
             }
-            MutableReference<List<ClassInfo>> parentSuperClassInfos = new MutableReference<>();
             // the underscore character is treated as reserved character to manually define traversal points.
             int firstSeparator = fieldPathExpression.indexOf('_', fieldStartIndex);
             int fieldEndIndex = firstSeparator == -1 ? fieldPathExpression.length() : firstSeparator;
@@ -385,17 +385,28 @@ public class MethodNameParser {
             }
             fieldPathBuilder.append(fieldInfo.name());
             if (!isHibernateProvidedBasicType(fieldInfo.type().name())) {
-                parentClassInfo = indexView.getClassByName(fieldInfo.type().name());
+                DotName parentClassName;
+                boolean typed = false;
+                if (fieldInfo.type().kind() == Type.Kind.TYPE_VARIABLE) {
+                    typed = true;
+                    parentClassName = getParentNameFromTypedFieldViaHierarchy(fieldInfo, mappedSuperClassInfos);
+                } else {
+                    parentClassName = fieldInfo.type().name();
+                }
+                parentClassInfo = indexView.getClassByName(parentClassName);
+                parentSuperClassInfos.set(null);
                 if (parentClassInfo == null) {
                     throw new IllegalStateException(
                             "Entity class " + fieldInfo.type().name() + " referenced by "
                                     + this.entityClass + "." + fieldPathBuilder
-                                    + " was not part of the Quarkus index. " + offendingMethodMessage);
+                                    + " was not part of the Quarkus index"
+                                    + (typed ? " or typed field could not be resolved properly. " : ". ")
+                                    + offendingMethodMessage);
                 }
+
             }
             fieldStartIndex = fieldEndIndex;
         }
-
         return fieldInfo;
     }
 
@@ -543,18 +554,60 @@ public class MethodNameParser {
                 mappedSuperClassInfoElements.add(superClass);
             }
 
-            if (superClassType.kind() == Kind.CLASS) {
-                superClassType = superClass.superClassType();
-            } else if (superClassType.kind() == Kind.PARAMETERIZED_TYPE) {
-                ParameterizedType parameterizedType = superClassType.asParameterizedType();
-                superClassType = parameterizedType.owner();
-            }
+            superClassType = superClass.superClassType();
         }
         return mappedSuperClassInfoElements;
     }
 
     private boolean isHibernateProvidedBasicType(DotName dotName) {
         return DotNames.HIBERNATE_PROVIDED_BASIC_TYPES.contains(dotName);
+    }
+
+    // Tries to get the parent (name) of a field that is typed, e.g.:
+    // class Foo<ID extends Serializable> { @EmbeddedId ID id; }
+    // class Bar<ID extends SomeMoreSpecificBaseId> extends FOO<ID> { }
+    // class Baz extends Bar<BazId> { }
+    // @Embeddable class BazId extends SomeMoreSpecificBaseId { @Column String a; @Column String b; }
+    //
+    // Without this method, type of Foo.id would be Serializable and therefore Foo.id.a (or b) would not be found.
+    //
+    // Note: This method is lenient in that it doesn't throw exceptions aggressively when an assumption is not met.
+    private DotName getParentNameFromTypedFieldViaHierarchy(FieldInfo fieldInfo, List<ClassInfo> parentSuperClassInfos) {
+        // find in the hierarchy the position of the class the fieldInfo belongs to
+        int superClassIndex = parentSuperClassInfos.indexOf(fieldInfo.declaringClass());
+        if (superClassIndex == -1) {
+            // field seems to belong to concrete entity class; no use narrowing it down via class hierarchy
+            return fieldInfo.type().name();
+        }
+        TypeVariable typeVariable = fieldInfo.type().asTypeVariable();
+        // entire hierarchy as list: entityClass, superclass of entityClass, superclass of the latter, ...
+        List<ClassInfo> classInfos = new ArrayList<>();
+        classInfos.add(entityClass);
+        classInfos.addAll(parentSuperClassInfos.subList(0, superClassIndex + 1));
+        // go down the hierarchy until ideally a concrete class is found that specifies the actual type of the field
+        for (int i = classInfos.size() - 1; i > 0; i--) {
+            ClassInfo currentClassInfo = classInfos.get(i);
+            ClassInfo childClassInfo = classInfos.get(i - 1);
+            int typeParameterIndex = currentClassInfo.typeParameters().indexOf(typeVariable);
+            if (typeParameterIndex >= 0) {
+                List<Type> resolveTypeParameters = JandexUtil.resolveTypeParameters(childClassInfo.name(),
+                        currentClassInfo.name(), indexView);
+                if (resolveTypeParameters.size() <= typeParameterIndex) {
+                    // edge case; subclass without or with incomplete parameterization? raw types?
+                    break;
+                }
+                Type type = resolveTypeParameters.get(typeParameterIndex);
+                if (type.kind() == Type.Kind.TYPE_VARIABLE) {
+                    // go on with the type variable from the child class (which is potentially more specific that the previous one)
+                    typeVariable = type.asTypeVariable();
+                } else if (type.kind() == Type.Kind.CLASS) {
+                    // ideal outcome: concrete class, doesn't get more specific than this
+                    return type.name();
+                }
+            }
+        }
+        // return the most specific type variable we were able to get
+        return typeVariable.name();
     }
 
     private static class MutableReference<T> {

@@ -251,7 +251,20 @@ public class SmallRyeFaultToleranceProcessor {
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             AnnotationProxyBuildItem annotationProxy,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors) {
+
+        Config config = ConfigProvider.getConfig();
+
+        Set<String> exceptionConfigs = Set.of("CircuitBreaker/failOn", "CircuitBreaker/skipOn",
+                "Fallback/applyOn", "Fallback/skipOn", "Retry/retryOn", "Retry/abortOn");
+
+        for (String exceptionConfig : exceptionConfigs) {
+            Optional<String[]> exceptionNames = config.getOptionalValue(exceptionConfig, String[].class);
+            if (exceptionNames.isPresent()) {
+                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, exceptionNames.get()));
+            }
+        }
 
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
         IndexView index = beanArchiveIndexBuildItem.getIndex();
@@ -271,6 +284,14 @@ public class SmallRyeFaultToleranceProcessor {
                 continue;
             }
 
+            for (String exceptionConfig : exceptionConfigs) {
+                Optional<String[]> exceptionNames = config.getOptionalValue(beanClass.name().toString()
+                        + "/" + exceptionConfig, String[].class);
+                if (exceptionNames.isPresent()) {
+                    reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, exceptionNames.get()));
+                }
+            }
+
             if (scaner.hasFTAnnotations(beanClass)) {
                 scaner.forEachMethod(beanClass, method -> {
                     FaultToleranceMethod ftMethod = scaner.createFaultToleranceMethod(beanClass, method);
@@ -280,6 +301,14 @@ public class SmallRyeFaultToleranceProcessor {
                         if (method.hasAnnotation(DotNames.BLOCKING) && method.hasAnnotation(DotNames.NON_BLOCKING)) {
                             exceptions.add(
                                     new DefinitionException("Both @Blocking and @NonBlocking present on '" + method + "'"));
+                        }
+
+                        for (String exceptionConfig : exceptionConfigs) {
+                            Optional<String[]> exceptionNames = config.getOptionalValue(beanClass.name().toString()
+                                    + "/" + method.name() + "/" + exceptionConfig, String[].class);
+                            if (exceptionNames.isPresent()) {
+                                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, exceptionNames.get()));
+                            }
                         }
                     }
                 });

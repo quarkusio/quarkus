@@ -266,7 +266,10 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
                 final HttpRequest httpRequest) {
 
             if (httpRequest instanceof HttpServerRequest) {
-                set(attributes, HTTP_CLIENT_IP, VertxUtil.extractClientIP((HttpServerRequest) httpRequest));
+                String clientIp = VertxUtil.extractClientIP((HttpServerRequest) httpRequest);
+                if (clientIp != null) {
+                    attributes.put(HTTP_CLIENT_IP, clientIp);
+                }
             }
         }
 

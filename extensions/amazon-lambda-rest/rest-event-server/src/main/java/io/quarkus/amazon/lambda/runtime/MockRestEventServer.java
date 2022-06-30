@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
+import io.quarkus.amazon.lambda.http.model.ApiGatewayRequestIdentity;
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequestContext;
 import io.quarkus.amazon.lambda.http.model.AwsProxyResponse;
@@ -61,6 +62,8 @@ public class MockRestEventServer extends MockEventServer {
         event.setRequestContext(new AwsProxyRequestContext());
         event.getRequestContext().setRequestId(requestId);
         event.getRequestContext().setHttpMethod(ctx.request().method().name());
+        event.getRequestContext().setIdentity(new ApiGatewayRequestIdentity());
+        event.getRequestContext().getIdentity().setSourceIp(ctx.request().connection().remoteAddress().hostAddress());
         event.setHttpMethod(ctx.request().method().name());
         event.setPath(ctx.request().path());
         if (ctx.request().query() != null) {

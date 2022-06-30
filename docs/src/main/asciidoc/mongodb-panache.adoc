@@ -99,15 +99,15 @@ If your project is already configured to use other annotation processors, you wi
     <version>${compiler-plugin.version}</version>
     <configuration>
         <parameters>${maven.compiler.parameters}</parameters>
-            <annotationProcessorPaths>
-                <!-- Your existing annotation processor(s)... -->
-                <path>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-panache-common</artifactId>
-                    <version>${quarkus.platform.version}</version>
-                </path>
-            </annotationProcessorPaths>
-        </configuration>
+        <annotationProcessorPaths>
+            <!-- Your existing annotation processor(s)... -->
+            <path>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-panache-common</artifactId>
+                <version>${quarkus.platform.version}</version>
+            </path>
+        </annotationProcessorPaths>
+    </configuration>
 </plugin>
 ----
 

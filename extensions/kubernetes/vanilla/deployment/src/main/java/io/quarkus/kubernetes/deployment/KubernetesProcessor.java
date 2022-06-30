@@ -31,6 +31,7 @@ import io.dekorate.processor.SimpleFileWriter;
 import io.dekorate.project.Project;
 import io.dekorate.utils.Maps;
 import io.dekorate.utils.Strings;
+import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsTest;
@@ -79,6 +80,14 @@ class KubernetesProcessor {
             }
         }
         return new EnabledKubernetesDeploymentTargetsBuildItem(entries);
+    }
+
+    @BuildStep
+    public void preventContainerPush(ContainerImageConfig containerImageConfig,
+            BuildProducer<PreventImplicitContainerImagePushBuildItem> producer) {
+        if (containerImageConfig.isPushExplicitlyDisabled()) {
+            producer.produce(new PreventImplicitContainerImagePushBuildItem());
+        }
     }
 
     @BuildStep(onlyIfNot = IsTest.class)

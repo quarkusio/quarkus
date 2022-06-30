@@ -1,5 +1,6 @@
 package io.quarkus.kubernetes.deployment;
 
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
@@ -16,6 +17,7 @@ public class KubernetesDeployerPrerequisite {
     public void prepare(ContainerImageInfoBuildItem containerImage,
             Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
             Optional<FallbackContainerImageRegistryBuildItem> fallbackRegistry,
+            List<PreventImplicitContainerImagePushBuildItem> preventImplicitContainerImagePush,
             BuildProducer<ContainerImageBuildRequestBuildItem> buildRequestProducer,
             BuildProducer<ContainerImagePushRequestBuildItem> pushRequestProducer) {
 
@@ -28,11 +30,10 @@ public class KubernetesDeployerPrerequisite {
         //Let's communicate to the container-image plugin that we need an image build and an image push.
         buildRequestProducer.produce(new ContainerImageBuildRequestBuildItem());
         // When a registry is present, we want to push the image
-        // However we need to make sure we don't push to the registry when deploying to Minikube
+        // However we need to make sure we don't push to the registry when deploying to a local cluster
         // since all updates are meant to find the image from the docker daemon
         boolean registryIsPresent = containerImage.getRegistry().isPresent() || fallbackRegistry.isPresent();
-        if (registryIsPresent &&
-                !selectedDeploymentTarget.get().getEntry().getName().equals(Constants.MINIKUBE)) {
+        if (registryIsPresent && preventImplicitContainerImagePush.isEmpty()) {
             pushRequestProducer.produce(new ContainerImagePushRequestBuildItem());
         }
     }

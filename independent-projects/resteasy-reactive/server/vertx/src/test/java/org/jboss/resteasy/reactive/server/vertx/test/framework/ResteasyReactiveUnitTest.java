@@ -358,7 +358,11 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                         .onComplete(new io.vertx.core.Handler<AsyncResult<HttpServer>>() {
                             @Override
                             public void handle(AsyncResult<HttpServer> event) {
-                                startPromise.complete();
+                                if (event.failed()) {
+                                    startPromise.fail(event.cause());
+                                } else {
+                                    startPromise.complete();
+                                }
                             }
                         });
             }

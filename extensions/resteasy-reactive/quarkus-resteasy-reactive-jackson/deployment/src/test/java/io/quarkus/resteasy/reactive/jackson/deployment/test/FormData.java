@@ -2,6 +2,7 @@ package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
 import java.util.Map;
 
+import javax.validation.Valid;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.core.MediaType;
 
@@ -25,6 +26,7 @@ public class FormData {
 
     @RestForm
     @PartType(MediaType.APPLICATION_JSON)
+    @Valid
     public Person person;
 
     @RestForm

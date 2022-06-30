@@ -3,6 +3,7 @@ package io.quarkus.resteasy.reactive.jackson.deployment.test;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -21,7 +22,7 @@ public class MultipartResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Blocking
     @Path("/json")
-    public Map<String, Object> greeting(@MultipartForm FormData formData) {
+    public Map<String, Object> greeting(@Valid @MultipartForm FormData formData) {
         Map<String, Object> result = new HashMap<>(formData.map);
         result.put("person", formData.person);
         result.put("htmlFileSize", formData.getHtmlPart().size());

@@ -35,7 +35,7 @@ public class MultipartTest {
     private final File HTML_FILE = new File("./src/test/resources/test.html");
 
     @Test
-    public void test() throws IOException {
+    public void testValid() throws IOException {
         RestAssured.given()
                 .multiPart("map",
                         "{\n" +
@@ -72,5 +72,28 @@ public class MultipartTest {
                 .body("persons[0].last", equalTo("Last1"))
                 .body("persons[1].first", equalTo("First2"))
                 .body("persons[1].last", equalTo("Last2"));
+    }
+
+    @Test
+    public void testInvalid() {
+        RestAssured.given()
+                .multiPart("map",
+                        "{\n" +
+                                "  \"foo\": \"bar\",\n" +
+                                "  \"sub\": {\n" +
+                                "    \"foo2\": \"bar2\"\n" +
+                                "  }\n" +
+                                "}")
+                .multiPart("person", "{\"first\": \"Bob\"}", "application/json")
+                .multiPart("htmlFile", HTML_FILE, "text/html")
+                .multiPart("names", "name1")
+                .multiPart("names", "name2")
+                .multiPart("numbers", 1)
+                .multiPart("numbers", 2)
+                .accept("application/json")
+                .when()
+                .post("/multipart/json")
+                .then()
+                .statusCode(400);
     }
 }

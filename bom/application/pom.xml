@@ -117,7 +117,7 @@
         <quartz.version>2.3.2</quartz.version>
         <h2.version>2.1.210</h2.version>
         <postgresql-jdbc.version>42.3.6</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.0.5</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.0.6</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.29</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>

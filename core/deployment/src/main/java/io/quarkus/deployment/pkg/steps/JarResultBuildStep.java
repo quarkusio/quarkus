@@ -263,7 +263,7 @@ public class JarResultBuildStep {
 
         //we use the -runner jar name, unless we are building both types
         Path runnerJar = outputTargetBuildItem.getOutputDirectory()
-                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
+                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix() + ".jar");
         Files.deleteIfExists(runnerJar);
 
         buildUberJar0(curateOutcomeBuildItem,
@@ -287,7 +287,7 @@ public class JarResultBuildStep {
         final Path originalJar = Files.exists(standardJar) ? standardJar : null;
 
         return new JarBuildItem(runnerJar, originalJar, null, PackageConfig.UBER_JAR,
-                suffixToClassifier(packageConfig.runnerSuffix));
+                suffixToClassifier(packageConfig.getRunnerSuffix()));
     }
 
     private String suffixToClassifier(String suffix) {
@@ -502,7 +502,7 @@ public class JarResultBuildStep {
             ClassLoadingConfig classLoadingConfig) throws Exception {
 
         Path runnerJar = outputTargetBuildItem.getOutputDirectory()
-                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
+                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix() + ".jar");
         Path libDir = outputTargetBuildItem.getOutputDirectory().resolve("lib");
         Files.deleteIfExists(runnerJar);
         IoUtils.createOrEmptyDir(libDir);
@@ -519,7 +519,7 @@ public class JarResultBuildStep {
         runnerJar.toFile().setReadable(true, false);
 
         return new JarBuildItem(runnerJar, null, libDir, PackageConfig.LEGACY_JAR,
-                suffixToClassifier(packageConfig.runnerSuffix));
+                suffixToClassifier(packageConfig.getRunnerSuffix()));
     }
 
     private JarBuildItem buildThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -958,7 +958,7 @@ public class JarResultBuildStep {
         copyJsonConfigFiles(applicationArchivesBuildItem, targetDirectory);
 
         Path runnerJar = targetDirectory
-                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
+                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix() + ".jar");
         Path libDir = targetDirectory.resolve(LIB);
         Files.createDirectories(libDir);
 

@@ -84,7 +84,7 @@ public class KubernetesCommonHelper {
             Optional<CustomProjectRootBuildItem> customProjectRoot, OutputTargetBuildItem outputTarget,
             PackageConfig packageConfig) {
         return createProject(app, customProjectRoot, outputTarget.getOutputDirectory()
-                .resolve(String.format(OUTPUT_ARTIFACT_FORMAT, outputTarget.getBaseName(), packageConfig.runnerSuffix)));
+                .resolve(String.format(OUTPUT_ARTIFACT_FORMAT, outputTarget.getBaseName(), packageConfig.getRunnerSuffix())));
     }
 
     public static Optional<Project> createProject(ApplicationInfoBuildItem app,

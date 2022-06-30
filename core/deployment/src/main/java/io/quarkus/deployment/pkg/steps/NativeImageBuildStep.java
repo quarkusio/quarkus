@@ -291,7 +291,7 @@ public class NativeImageBuildStep {
     }
 
     private String getNativeImageName(OutputTargetBuildItem outputTargetBuildItem, PackageConfig packageConfig) {
-        return outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix;
+        return outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix();
     }
 
     private String getResultingExecutableName(String nativeImageName, boolean isContainerBuild) {

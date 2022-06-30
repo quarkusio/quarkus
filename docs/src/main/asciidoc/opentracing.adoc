@@ -208,19 +208,36 @@ The https://github.com/opentracing-contrib/java-jdbc[JDBC instrumentation] will 
 implementation("io.opentracing.contrib:opentracing-jdbc")
 ----
 
-As it uses a dedicated JDBC driver, you must configure your datasource and Hibernate to use it.
+Then, you need to enable it in the configuration:
 
 [source, properties]
 ----
-quarkus.datasource.db-kind=postgresql
-# add ':tracing' to your database URL
-quarkus.datasource.jdbc.url=jdbc:tracing:postgresql://localhost:5432/mydatabase
-# use the 'TracingDriver' instead of the one for your database
-quarkus.datasource.jdbc.driver=io.opentracing.contrib.jdbc.TracingDriver
-# configure Hibernate dialect
-quarkus.hibernate-orm.dialect=org.hibernate.dialect.PostgreSQLDialect
+quarkus.datasource.jdbc.tracing=true
 ----
 
+`quarkus.datasource.jdbc.tracing` is a build time configuration property:
+it makes sure all the tracing infrastructure is included in your application.
+
+[NOTE]
+====
+This is especially important when building a native executable as we need to
+make sure the OpenTracing JDBC driver has been registered for reflection,
+together with the underlying JDBC driver.
+====
+
+The Agroal extension will take care of adjusting the JDBC URL with the `tracing` prefix
+when tracing is enabled,
+so you do not have to adjust the JDBC URL yourself.
+
+By default, when `quarkus.datasource.jdbc.tracing` is true, tracing is enabled at runtime
+but you can explicitly disable it by setting the following property:
+
+[source, properties]
+----
+quarkus.datasource.jdbc.tracing.enabled=false
+----
+
+This way, you can have your Quarkus application ready for tracing and toggle JDBC tracing at runtime.
 
 === Kafka
 

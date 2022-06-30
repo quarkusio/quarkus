@@ -62,7 +62,10 @@ import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 public class DataSources {
 
     private static final Logger log = Logger.getLogger(DataSources.class.getName());
+
     public static final String TRACING_DRIVER_CLASSNAME = "io.opentracing.contrib.jdbc.TracingDriver";
+    private static final String JDBC_URL_PREFIX = "jdbc:";
+    private static final String JDBC_TRACING_URL_PREFIX = "jdbc:tracing:";
 
     private final DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig;
     private final DataSourcesRuntimeConfig dataSourcesRuntimeConfig;
@@ -157,8 +160,11 @@ public class DataSources {
             boolean tracingEnabled = dataSourceJdbcRuntimeConfig.tracing.enabled.orElse(dataSourceJdbcBuildTimeConfig.tracing);
 
             if (tracingEnabled) {
-                StringBuilder tracingURL = new StringBuilder(
-                        dataSourceJdbcRuntimeConfig.url.get().replace("jdbc:", "jdbc:tracing:"));
+                String rootTracingUrl = !jdbcUrl.startsWith(JDBC_TRACING_URL_PREFIX)
+                        ? jdbcUrl.replace(JDBC_URL_PREFIX, JDBC_TRACING_URL_PREFIX)
+                        : jdbcUrl;
+
+                StringBuilder tracingURL = new StringBuilder(rootTracingUrl);
 
                 if (dataSourceJdbcRuntimeConfig.tracing.traceWithActiveSpanOnly) {
                     if (!tracingURL.toString().contains("?")) {

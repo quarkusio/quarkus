@@ -6,12 +6,15 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+import javax.ws.rs.core.MultivaluedMap;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.server.core.LazyResponse;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 public class ResteasyReactiveOutputStream extends OutputStream {
@@ -233,10 +236,22 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                 } else {
                     context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, "" + buffer.readableBytes());
                 }
-            } else if (!request.response().headers().contains(HttpHeaderNames.CONTENT_LENGTH)) {
+            } else if (!contentLengthSet()) {
                 request.response().setChunked(true);
             }
         }
+    }
+
+    private boolean contentLengthSet() {
+        if (request.response().headers().contains(HttpHeaderNames.CONTENT_LENGTH)) {
+            return true;
+        }
+        LazyResponse lazyResponse = context.getResponse();
+        if (!lazyResponse.isCreated()) {
+            return false;
+        }
+        MultivaluedMap<String, Object> responseHeaders = lazyResponse.get().getHeaders();
+        return (responseHeaders != null) && responseHeaders.containsKey(HttpHeaders.CONTENT_LENGTH);
     }
 
     /**

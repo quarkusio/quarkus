@@ -201,7 +201,11 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
 
         @Override
         public String serverName(final HttpRequest request) {
-            return request.remoteAddress().hostName();
+            SocketAddress remoteAddress = request.remoteAddress();
+            if (remoteAddress != null) {
+                return remoteAddress.hostName();
+            }
+            return null;
         }
 
         @Override

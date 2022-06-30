@@ -37,7 +37,8 @@ While not absolute, here is some advice:
   look if interested.
   If the PR is very large or is a new extension, better let it
   bake for a few days.
-* We do _merge commits_ so please ask the author to properly squash the commits before merging (when it makes sense).
+* A pull request may not contain _merge commits_ (it makes backporting a lot harder) or `fixup!` commits.
+* We merge pull requests with _merge commits_ so please ask the author to properly squash the commits before merging (when it makes sense).
   The idea is to have proper semantic commits. Several commits are not a problem as long as they have a proper semantic.
   If the author is not familiar with Git or not available, you can also (carefully)
   https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/committing-changes-to-a-pull-request-branch-created-from-a-fork[do it for them]

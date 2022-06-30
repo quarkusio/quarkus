@@ -8,27 +8,20 @@ class NativeConfigTest {
 
     @Test
     public void testBuilderImageProperlyDetected() {
-        assertThat(createConfig("graalvm").getEffectiveBuilderImage(false)).contains("ubi-quarkus-native-image")
-                .contains("java11");
-        assertThat(createConfig("graalvm").getEffectiveBuilderImage(true)).contains("ubi-quarkus-native-image")
+        assertThat(createConfig("graalvm").getEffectiveBuilderImage()).contains("ubi-quarkus-native-image")
                 .contains("java17");
-        assertThat(createConfig("GraalVM").getEffectiveBuilderImage(true)).contains("ubi-quarkus-native-image")
+        assertThat(createConfig("GraalVM").getEffectiveBuilderImage()).contains("ubi-quarkus-native-image")
                 .contains("java17");
-        assertThat(createConfig("GraalVM").getEffectiveBuilderImage(true)).contains("ubi-quarkus-native-image")
+        assertThat(createConfig("GraalVM").getEffectiveBuilderImage()).contains("ubi-quarkus-native-image")
                 .contains("java17");
-        assertThat(createConfig("GRAALVM").getEffectiveBuilderImage(false)).contains("ubi-quarkus-native-image")
-                .contains("java11");
-        assertThat(createConfig("GRAALVM").getEffectiveBuilderImage(true)).contains("ubi-quarkus-native-image")
+        assertThat(createConfig("GRAALVM").getEffectiveBuilderImage()).contains("ubi-quarkus-native-image")
                 .contains("java17");
 
-        assertThat(createConfig("mandrel").getEffectiveBuilderImage(false)).contains("ubi-quarkus-mandrel").contains("java11");
-        assertThat(createConfig("mandrel").getEffectiveBuilderImage(true)).contains("ubi-quarkus-mandrel").contains("java17");
-        assertThat(createConfig("Mandrel").getEffectiveBuilderImage(false)).contains("ubi-quarkus-mandrel").contains("java11");
-        assertThat(createConfig("Mandrel").getEffectiveBuilderImage(true)).contains("ubi-quarkus-mandrel").contains("java17");
-        assertThat(createConfig("MANDREL").getEffectiveBuilderImage(false)).contains("ubi-quarkus-mandrel").contains("java11");
-        assertThat(createConfig("MANDREL").getEffectiveBuilderImage(true)).contains("ubi-quarkus-mandrel").contains("java17");
+        assertThat(createConfig("mandrel").getEffectiveBuilderImage()).contains("ubi-quarkus-mandrel").contains("java17");
+        assertThat(createConfig("Mandrel").getEffectiveBuilderImage()).contains("ubi-quarkus-mandrel").contains("java17");
+        assertThat(createConfig("MANDREL").getEffectiveBuilderImage()).contains("ubi-quarkus-mandrel").contains("java17");
 
-        assertThat(createConfig("aRandomString").getEffectiveBuilderImage(false)).isEqualTo("aRandomString");
+        assertThat(createConfig("aRandomString").getEffectiveBuilderImage()).isEqualTo("aRandomString");
     }
 
     private NativeConfig createConfig(String configValue) {

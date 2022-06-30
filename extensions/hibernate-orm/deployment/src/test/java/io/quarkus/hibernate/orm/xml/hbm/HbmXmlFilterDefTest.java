@@ -50,12 +50,12 @@ public class HbmXmlFilterDefTest {
 
         assertThat(session.createQuery("select e from " + NonAnnotatedEntity.class.getName() + " e",
                 NonAnnotatedEntity.class).list())
-                        .hasSize(2);
+                .hasSize(2);
         session.enableFilter("idFilter")
                 .setParameterList("ids", Collections.singletonList(firstEntity.getId()));
         assertThat(session.createQuery("select e from " + NonAnnotatedEntity.class.getName() + " e",
                 NonAnnotatedEntity.class).list())
-                        .hasSize(1);
+                .hasSize(1);
     }
 
 }

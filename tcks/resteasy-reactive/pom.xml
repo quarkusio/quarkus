@@ -72,7 +72,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>mvnw</executable>
+                            <executable>${maven.multiModuleProjectDirectory}/mvnw</executable>
                             <commandlineArgs>-e -B --settings ${session.request.userSettingsFile.path} clean install ${resteasy-reactive-testsuite.mvn.args}</commandlineArgs>
                             <skip>${resteasy-reactive-testsuite.test.skip}</skip>
                         </configuration>

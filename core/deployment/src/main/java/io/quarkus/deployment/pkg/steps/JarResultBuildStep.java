@@ -49,7 +49,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.model.MutableJarApplicationModel;
@@ -92,16 +91,16 @@ import io.quarkus.paths.PathVisitor;
 /**
  * This build step builds both the thin jars and uber jars.
  *
- * The way this is built is a bit convoluted. In general we only want a single one built,
+ * The way this is built is a bit convoluted. In general, we only want a single one built,
  * as determined by the {@link PackageConfig} (unless the config explicitly asks for both of them)
  *
- * However we still need an extension to be able to ask for a specify one of these despite the config,
+ * However, we still need an extension to be able to ask for a specific one of these despite the config,
  * e.g. if a serverless environment needs an uberjar to build its deployment package then we need
  * to be able to provide this.
  *
  * To enable this we have two build steps that strongly produce the respective artifact type build
  * items, but not a {@link ArtifactResultBuildItem}. We then
- * have another two build steps that only run if they are configured too that consume these explicit
+ * have another two build steps that only run if they are configured to consume these explicit
  * build items and transform them into {@link ArtifactResultBuildItem}.
  */
 public class JarResultBuildStep {
@@ -459,7 +458,7 @@ public class JarResultBuildStep {
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                             throws IOException {
                         final String relativePath = toUri(root.relativize(file));
-                        //if this has been transfomed we do not copy it
+                        //if this has been transformed we do not copy it
                         // if it's a signature file (under the <jar>/META-INF directory),
                         // then we don't add it to the uber jar
                         if (isBlockOrSF(relativePath) &&
@@ -929,10 +928,7 @@ public class JarResultBuildStep {
             List<GeneratedNativeImageClassBuildItem> nativeImageResources,
             List<GeneratedResourceBuildItem> generatedResources,
             MainClassBuildItem mainClassBuildItem,
-            List<UberJarRequiredBuildItem> uberJarRequired,
-            List<UberJarMergedResourceBuildItem> mergeResources,
-            ClassLoadingConfig classLoadingConfig,
-            List<UberJarIgnoredResourceBuildItem> ignoreResources) throws Exception {
+            ClassLoadingConfig classLoadingConfig) throws Exception {
         Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
         IoUtils.createOrEmptyDir(targetDirectory);
@@ -942,28 +938,10 @@ public class JarResultBuildStep {
                 .map((s) -> new GeneratedClassBuildItem(true, s.getName(), s.getClassData()))
                 .collect(Collectors.toList()));
 
-        if (SystemUtils.IS_OS_WINDOWS) {
-            log.warn("Uber JAR strategy is used for native image source JAR generation on Windows. This is done " +
-                    "for the time being to work around a current GraalVM limitation on Windows concerning the " +
-                    "maximum command length (see https://github.com/oracle/graal/issues/2387).");
-            // Native image source jar generation with the uber jar strategy is provided as a workaround for Windows and
-            // will be removed once https://github.com/oracle/graal/issues/2387 is fixed.
-            final NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem = buildNativeImageUberJar(curateOutcomeBuildItem,
-                    outputTargetBuildItem, transformedClasses,
-                    applicationArchivesBuildItem,
-                    packageConfig, applicationInfo, allClasses, generatedResources, mergeResources,
-                    ignoreResources, mainClassBuildItem,
-                    targetDirectory, classLoadingConfig);
-            // additionally copy any json config files to a location accessible by native-image tool during
-            // native-image generation
-            copyJsonConfigFiles(applicationArchivesBuildItem, targetDirectory);
-            return nativeImageSourceJarBuildItem;
-        } else {
-            return buildNativeImageThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
-                    applicationArchivesBuildItem,
-                    applicationInfo, packageConfig, allClasses, generatedResources, mainClassBuildItem, targetDirectory,
-                    classLoadingConfig);
-        }
+        return buildNativeImageThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
+                applicationArchivesBuildItem,
+                applicationInfo, packageConfig, allClasses, generatedResources, mainClassBuildItem, targetDirectory,
+                classLoadingConfig);
     }
 
     private NativeImageSourceJarBuildItem buildNativeImageThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -994,40 +972,6 @@ public class JarResultBuildStep {
         }
         runnerJar.toFile().setReadable(true, false);
         return new NativeImageSourceJarBuildItem(runnerJar, libDir);
-    }
-
-    private NativeImageSourceJarBuildItem buildNativeImageUberJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem,
-            TransformedClassesBuildItem transformedClasses,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            PackageConfig packageConfig,
-            ApplicationInfoBuildItem applicationInfo,
-            List<GeneratedClassBuildItem> generatedClasses,
-            List<GeneratedResourceBuildItem> generatedResources,
-            List<UberJarMergedResourceBuildItem> mergeResources,
-            List<UberJarIgnoredResourceBuildItem> ignoreResources,
-            MainClassBuildItem mainClassBuildItem,
-            Path targetDirectory,
-            ClassLoadingConfig classLoadingConfig) throws Exception {
-        //we use the -runner jar name, unless we are building both types
-        Path runnerJar = targetDirectory
-                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
-
-        buildUberJar0(curateOutcomeBuildItem,
-                outputTargetBuildItem,
-                transformedClasses,
-                applicationArchivesBuildItem,
-                packageConfig,
-                applicationInfo,
-                generatedClasses,
-                generatedResources,
-                mergeResources,
-                ignoreResources,
-                mainClassBuildItem,
-                classLoadingConfig,
-                runnerJar);
-
-        return new NativeImageSourceJarBuildItem(runnerJar, null);
     }
 
     /**
@@ -1267,7 +1211,7 @@ public class JarResultBuildStep {
      * So we first try to see if a manifest exists, and otherwise create a new one.
      *
      * <b>BEWARE</b> this method should be invoked after file copy from target/classes and so on.
-     * Otherwise this manifest manipulation will be useless.
+     * Otherwise, this manifest manipulation will be useless.
      */
     private void generateManifest(FileSystem runnerZipFs, final String classPath, PackageConfig config,
             ResolvedDependency appArtifact,

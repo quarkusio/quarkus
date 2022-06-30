@@ -26,7 +26,7 @@ public class ResteasyReactiveConfig {
     public int outputBufferSize;
 
     /**
-     * By default we assume a default produced media type of "text/plain"
+     * By default, we assume a default produced media type of "text/plain"
      * for String endpoint return types. If this is disabled, the default
      * produced media type will be "[text/plain, *&sol;*]" which is more
      * expensive due to negotiation.
@@ -45,14 +45,14 @@ public class ResteasyReactiveConfig {
     public boolean defaultProduces;
 
     /**
-     * Whether or not annotations such `@IfBuildTimeProfile`, `@IfBuildTimeProperty` and friends will be taken
+     * Whether annotations such `@IfBuildTimeProfile`, `@IfBuildTimeProperty` and friends will be taken
      * into account when used on JAX-RS classes.
      */
     @ConfigItem(defaultValue = "true")
     public boolean buildTimeConditionAware;
 
     /**
-     * Whether or not duplicate endpoints should trigger error at startup
+     * Whether duplicate endpoints should trigger error at startup
      */
     @ConfigItem(defaultValue = "true")
     public boolean failOnDuplicate;

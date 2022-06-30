@@ -801,7 +801,7 @@ public class ValueResolverGenerator {
                     // Then we need to create an array for the last argument
                     Type varargsParam = parameterTypes.get(parameterTypes.size() - 1);
                     ResultHandle componentType = tryCatch
-                            .loadClassFromTCCL(varargsParam.asArrayType().component().name().toString());
+                            .loadClass(varargsParam.asArrayType().component().name().toString());
                     ResultHandle varargsResults = tryCatch.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
                             evaluatedParams, tryCatch.load(parameterTypes.size()), componentType);
                     // E.g. String, String, String -> String, String[]
@@ -870,27 +870,27 @@ public class ValueResolverGenerator {
         if (org.jboss.jandex.Type.Kind.PRIMITIVE.equals(paramType.kind())) {
             switch (paramType.asPrimitiveType().primitive()) {
                 case INT:
-                    return creator.loadClassFromTCCL(Integer.class);
+                    return creator.loadClass(Integer.class);
                 case LONG:
-                    return creator.loadClassFromTCCL(Long.class);
+                    return creator.loadClass(Long.class);
                 case BOOLEAN:
-                    return creator.loadClassFromTCCL(Boolean.class);
+                    return creator.loadClass(Boolean.class);
                 case BYTE:
-                    return creator.loadClassFromTCCL(Byte.class);
+                    return creator.loadClass(Byte.class);
                 case CHAR:
-                    return creator.loadClassFromTCCL(Character.class);
+                    return creator.loadClass(Character.class);
                 case DOUBLE:
-                    return creator.loadClassFromTCCL(Double.class);
+                    return creator.loadClass(Double.class);
                 case FLOAT:
-                    return creator.loadClassFromTCCL(Float.class);
+                    return creator.loadClass(Float.class);
                 case SHORT:
-                    return creator.loadClassFromTCCL(Short.class);
+                    return creator.loadClass(Short.class);
                 default:
                     throw new IllegalArgumentException("Unsupported primitive type: " + paramType);
             }
         }
         // TODO: we should probably use the TCCL to load the param type
-        return creator.loadClassFromTCCL(paramType.name().toString());
+        return creator.loadClass(paramType.name().toString());
     }
 
     private BytecodeCreator createMatchScope(BytecodeCreator bytecodeCreator, String methodName, int methodParams,
@@ -928,7 +928,7 @@ public class ValueResolverGenerator {
 
         // Test base object class
         ResultHandle baseClass = baseNotNullBranch.invokeVirtualMethod(Descriptors.GET_CLASS, base);
-        ResultHandle testClass = baseNotNullBranch.loadClassFromTCCL(clazz.name().toString());
+        ResultHandle testClass = baseNotNullBranch.loadClass(clazz.name().toString());
         ResultHandle test = baseNotNullBranch.invokeVirtualMethod(Descriptors.IS_ASSIGNABLE_FROM, testClass, baseClass);
         BytecodeCreator baseAssignableBranch = baseNotNullBranch.ifNonZero(test).trueBranch();
         baseAssignableBranch.returnValue(baseAssignableBranch.load(true));

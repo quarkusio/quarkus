@@ -77,7 +77,7 @@ public class NonBlockingScheduledMethodTest {
         static final AtomicBoolean UNI_ON_EVENT_LOOP = new AtomicBoolean();
         static final AtomicBoolean CS_ON_EVENT_LOOP = new AtomicBoolean();
 
-        // sucessfull events
+        // successful events
         static final CountDownLatch SUCCESS_LATCH = new CountDownLatch(3);
         static final List<SuccessfulExecution> events = new CopyOnWriteArrayList<>();
 

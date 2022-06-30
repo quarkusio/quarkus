@@ -12,7 +12,7 @@ In this guide, we see how you can get your REST services to use the MongoDB data
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * MongoDB installed or Docker installed
 
 == Architecture
@@ -38,7 +38,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: mongodb-quickstart
 :create-app-extensions: resteasy-reactive-jackson,mongodb-client
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven structure importing the RESTEasy Reactive Jackson and MongoDB Client extensions.
 After this, the `quarkus-mongodb-client` extension has been added to your build file.
@@ -47,7 +47,7 @@ If you already have your Quarkus project configured, you can add the `mongodb-cl
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: mongodb-client
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your `pom.xml`:
 
@@ -210,10 +210,10 @@ public class FruitResource {
 }
 ----
 
-The implementation is pretty straightforward and you just need to define your endpoints using the JAX-RS annotations and use the `FruitService` to list/add new fruits.
+The implementation is pretty straightforward, and you just need to define your endpoints using the JAX-RS annotations and use the `FruitService` to list/add new fruits.
 
 == Configuring the MongoDB database
-The main property to configure is the URL to access to MongoDB, almost all configuration can be included in the connection URI so we advise you to do so, you can find more information in the MongoDB documentation: https://docs.mongodb.com/manual/reference/connection-string/
+The main property to configure is the URL to access to MongoDB. Almost all configuration can be included in the connection URI, so we advise you to do so. You can find more information in the MongoDB documentation: https://docs.mongodb.com/manual/reference/connection-string/
 
 A sample configuration should look like this:
 
@@ -233,14 +233,14 @@ quarkus.mongodb.connection-string = mongodb://localhost:27017
 
 If you need more configuration properties, there is a full list at the end of this guide.
 
-WARNING: By default Quarkus will restrict the use of JNDI within an application, as a precaution to try and mitigate any future vulnerabilities similar to log4shell.
+WARNING: By default, Quarkus will restrict the use of JNDI within an application, as a precaution to try and mitigate any future vulnerabilities similar to Log4Shell.
 Because the `mongo+srv` protocol often used to connect to MongoDB requires JNDI, this protection is automatically disabled when using the MongoDB client extension.
 
 [[dev-services]]
 === Dev Services (Configuration Free Databases)
 
 Quarkus supports a feature called Dev Services that allows you to create various datasources without any config. In the case of MongoDB this support extends to the default MongoDB connection.
-What that means practically, is that if you have not configured `quarkus.mongodb.connection-string` Quarkus will automatically start a MongoDB container when running tests or dev-mode,
+What that means practically, is that if you have not configured `quarkus.mongodb.connection-string` Quarkus will automatically start a MongoDB container when running tests or dev mode,
 and automatically configure the connection.
 
 When running the production version of the application, the MongoDB connection need to be configured as normal, so if you want to include a production database config in your
@@ -270,7 +270,7 @@ If the name is omitted, it configures the default client.
 The use of multiple MongoDB clients enables multi-tenancy for MongoDB by allowing to connect to multiple MongoDB clusters. +
 If you want to connect to multiple databases inside the same cluster,
 multiple clients are **not** necessary as a single client is able to access all databases in the same cluster
-(like a JDBC connection is able to access to multiple schemas inside the same database).
+(as a JDBC connection is able to access to multiple schemas inside the same database).
 ====
 
 === Named Mongo client Injection
@@ -318,7 +318,7 @@ You can now interact with your REST service:
 :devtools-wrapped:
  * start Quarkus with:
 +
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
  * open a browser to `http://localhost:8080/fruits.html`
  * add new fruits to the list via the form
 :!devtools-wrapped:
@@ -664,7 +664,7 @@ quarkus.mongodb.tls-insecure=true # only if TLS certificate cannot be validated
 
 You can then build a native executable with the usual command:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 Running it is as simple as executing `./target/mongodb-quickstart-1.0.0-SNAPSHOT-runner`.
 

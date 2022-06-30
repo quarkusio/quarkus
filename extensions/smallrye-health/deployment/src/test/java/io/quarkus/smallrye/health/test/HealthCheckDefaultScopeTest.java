@@ -34,7 +34,7 @@ public class HealthCheckDefaultScopeTest {
 
     @Test
     public void testHealth() {
-        // the health check does not set a content type so we need to force the parser
+        // the health check does not set a content type, so we need to force the parser
         try {
             RestAssured.defaultParser = Parser.JSON;
             when().get("/q/health/live").then()

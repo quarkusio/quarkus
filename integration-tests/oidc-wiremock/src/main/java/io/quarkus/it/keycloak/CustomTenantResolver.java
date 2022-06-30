@@ -35,6 +35,9 @@ public class CustomTenantResolver implements TenantResolver {
         if (path.endsWith("bearer-no-introspection")) {
             return "bearer-no-introspection";
         }
+        if (path.endsWith("bearer-role-claim-path")) {
+            return "bearer-role-claim-path";
+        }
         if (path.endsWith("bearer-key-without-kid-thumbprint")) {
             return "bearer-key-without-kid-thumbprint";
         }

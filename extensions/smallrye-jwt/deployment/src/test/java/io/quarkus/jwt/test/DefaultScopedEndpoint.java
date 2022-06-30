@@ -19,7 +19,7 @@ import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.Claims;
 
 /**
- * An endpoint that uses no explict scoping
+ * An endpoint that uses no explicit scoping
  */
 @Path("/endp-defaultscoped")
 public class DefaultScopedEndpoint {

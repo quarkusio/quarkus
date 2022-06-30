@@ -37,7 +37,7 @@ public class KotlinProcessor {
 
     /**
      * Kotlin data classes that have multiple constructors need to have their final fields writable,
-     * otherwise creating a instance of them with default values, fails in native mode
+     * otherwise creating an instance of them with default values fails in native mode.
      */
     @BuildStep
     ReflectiveClassFinalFieldsWritablePredicateBuildItem dataClassPredicate() {

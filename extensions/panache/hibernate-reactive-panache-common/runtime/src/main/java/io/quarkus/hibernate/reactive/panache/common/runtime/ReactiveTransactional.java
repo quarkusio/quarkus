@@ -14,7 +14,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.impl.VertxThread;
 
 /**
- * Use this annotation on your method to run them in a reactive {@link Mutiny.Session.Transation}.
+ * Use this annotation on your method to run them in a reactive {@link Mutiny.Transaction}.
  *
  * If the annotated method returns a {@link Uni}, this has exactly the same behaviour as if the method
  * was enclosed in a call to {@link Mutiny.Session#withTransaction(java.util.function.Function)}.

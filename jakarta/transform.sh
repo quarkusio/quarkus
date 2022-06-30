@@ -193,14 +193,16 @@ clean_maven_repository
 clean_project
 
 ## let's build what's required to be able to run the rewrite
-./mvnw -B -pl :quarkus-platform-descriptor-json-plugin -pl :quarkus-bootstrap-maven-plugin -pl :quarkus-enforcer-rules -pl :quarkus-maven-plugin -pl :quarkus-bom-test -am clean install -DskipTests -DskipITs -Dinvoker.skip
+./mvnw -B -pl :quarkus-bootstrap-maven-plugin -pl :quarkus-enforcer-rules -pl :quarkus-maven-plugin -pl :quarkus-bom-test -am clean install -DskipTests -DskipITs -Dinvoker.skip
 
 ## we cannot rewrite some of the modules for various reasons but we rewrite most of them
-./mvnw -B -e rewrite:run -Denforcer.skip -Dprotoc.skip -Dmaven.main.skip -Dmaven.test.skip -Dforbiddenapis.skip -Dinvoker.skip -Dquarkus.generate-code.skip -Dquarkus.build.skip -DskipExtensionValidation -DskipCodestartValidation -Pbom-descriptor-json-hollow -pl '!:io.quarkus.gradle.plugin' -pl '!:io.quarkus.extension.gradle.plugin' -pl '!:quarkus-integration-test-gradle-plugin' -pl '!:quarkus-documentation' -Drewrite.pomCacheEnabled=false -Djakarta-rewrite
+./mvnw -B -e rewrite:run -Dtcks -Denforcer.skip -Dprotoc.skip -Dmaven.main.skip -Dmaven.test.skip -Dforbiddenapis.skip -Dinvoker.skip -Dquarkus.generate-code.skip -Dquarkus.build.skip -DskipExtensionValidation -DskipCodestartValidation -Pbom-descriptor-json-hollow -pl '!:io.quarkus.gradle.plugin' -pl '!:io.quarkus.extension.gradle.plugin' -pl '!:quarkus-integration-test-gradle-plugin' -pl '!:quarkus-documentation' -Drewrite.pomCacheEnabled=false -Djakarta-rewrite
 
 ## remove banned dependencies
 remove_banned_dependency "independent-projects/bootstrap" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
 remove_banned_dependency "independent-projects/bootstrap" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
+remove_banned_dependency "independent-projects/extension-maven-plugin" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
+remove_banned_dependency "independent-projects/extension-maven-plugin" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
 remove_banned_dependency "independent-projects/tools" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
 remove_banned_dependency "independent-projects/tools" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
 update_banned_dependency "independent-projects/resteasy-reactive" 'jakarta.xml.bind:jakarta.xml.bind-api' 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec'
@@ -220,6 +222,7 @@ sed -i 's@ServletContextConfigSourceImpl@ServletContextConfigSource@g' extension
 # I started some discussions with James Perkins about how to contribute back our changes
 # For now, this will have to do
 cp "jakarta/overrides/rest-client/QuarkusRestClientBuilder.java" "extensions/resteasy-classic/rest-client/runtime/src/main/java/io/quarkus/restclient/runtime/"
+cp "jakarta/overrides/jaxb/JAXBSubstitutions.java" "extensions/jaxb/runtime/src/main/java/io/quarkus/jaxb/runtime/graal/"
 
 ## JSON-P implementation switch
 sed -i 's@<runnerParentFirstArtifact>org.glassfish:jakarta.json</runnerParentFirstArtifact>@<runnerParentFirstArtifact>org.eclipse.parsson:jakarta.json</runnerParentFirstArtifact>@g' extensions/logging-json/runtime/pom.xml
@@ -276,6 +279,7 @@ transform_scala_module "devtools/project-core-extension-codestarts/src/main/reso
 transform_module "integration-tests"
 transform_scala_module "integration-tests/scala"
 transform_kotlin_module "integration-tests"
+transform_module "tcks"
 
 sed -i 's/@javax.annotation.Generated/@jakarta.annotation.Generated/g' extensions/grpc/protoc/src/main/resources/*.mustache
 
@@ -302,8 +306,7 @@ fi
 
 # - Infinispan uses the @javax.annotation.Generated annotation in code generation and it's not available
 # - Confluent registry client doesn't have a version supporting Jakarta packages
-# - gRPC protoc plugin generates classes with @javax.annotation.Generated
-./mvnw -B clean install -f integration-tests -DskipTests -DskipITs -pl '!:quarkus-integration-test-infinispan-client' -pl '!:quarkus-integration-test-kafka-avro' -pl '!:quarkus-integration-test-opentelemetry-grpc' -pl '!:quarkus-integration-test-grpc-tls' -pl '!:quarkus-integration-test-grpc-plain-text-gzip' -pl '!:quarkus-integration-test-grpc-plain-text-mutiny' -pl '!:quarkus-integration-test-grpc-mutual-auth' -pl '!:quarkus-integration-test-grpc-streaming' -pl '!:quarkus-integration-test-grpc-interceptors' -pl '!:quarkus-integration-test-grpc-proto-v2' -pl '!:quarkus-integration-test-grpc-hibernate' -pl '!:quarkus-integration-test-grpc-hibernate-reactive' -pl '!:quarkus-integration-test-grpc-external-proto-test' -pl '!:quarkus-integration-test-grpc-stork-response-time'
+./mvnw -B clean install -f integration-tests -DskipTests -DskipITs -pl '!:quarkus-integration-test-infinispan-client' -pl '!:quarkus-integration-test-kafka-avro'
 
 exit 0
 

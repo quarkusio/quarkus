@@ -1,0 +1,10 @@
+// Allow examples to render correctly in previews despite being
+// a nested directory
+:idprefix:
+:idseparator: -
+:icons: font
+:doc-guides: ../
+:doc-examples: ../_examples
+:imagesdir: ../../asciidoc/images
+:includes: ../includes
+:root: ../../asciidoc/

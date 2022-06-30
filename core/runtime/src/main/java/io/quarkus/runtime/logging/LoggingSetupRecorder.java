@@ -73,7 +73,9 @@ public class LoggingSetupRecorder {
         ConfigInstantiator.handleObject(buildConfig);
         ConsoleRuntimeConfig consoleRuntimeConfig = new ConsoleRuntimeConfig();
         ConfigInstantiator.handleObject(consoleRuntimeConfig);
-        new LoggingSetupRecorder(new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(config, buildConfig, false, null,
+        new LoggingSetupRecorder(new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(config, buildConfig,
+                Collections.emptyMap(),
+                false, null,
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
@@ -81,6 +83,7 @@ public class LoggingSetupRecorder {
     }
 
     public void initializeLogging(LogConfig config, LogBuildTimeConfig buildConfig,
+            final Map<String, InheritableLevel> categoryDefaultMinLevels,
             final boolean enableWebStream,
             final RuntimeValue<Optional<Handler>> devUiConsoleHandler,
             final List<RuntimeValue<Optional<Handler>>> additionalHandlers,
@@ -199,9 +202,9 @@ public class LoggingSetupRecorder {
                 @Override
                 public void accept(String categoryName, CategoryConfig config) {
                     final Level logLevel = getLogLevel(categoryName, categories, CategoryConfig::getLevel,
-                            buildConfig.minLevel);
+                            Collections.emptyMap(), buildConfig.minLevel);
                     final Level minLogLevel = getLogLevel(categoryName, buildConfig.categories,
-                            CategoryBuildTimeConfig::getMinLevel, buildConfig.minLevel);
+                            CategoryBuildTimeConfig::getMinLevel, categoryDefaultMinLevels, buildConfig.minLevel);
 
                     if (logLevel.intValue() < minLogLevel.intValue()) {
                         log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s",
@@ -230,6 +233,7 @@ public class LoggingSetupRecorder {
     }
 
     public static void initializeBuildTimeLogging(LogConfig config, LogBuildTimeConfig buildConfig,
+            Map<String, InheritableLevel> categoryDefaultMinLevels,
             ConsoleRuntimeConfig consoleConfig, List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
             LaunchMode launchMode) {
 
@@ -263,9 +267,10 @@ public class LoggingSetupRecorder {
 
         for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
             final String categoryName = entry.getKey();
-            final Level logLevel = getLogLevel(categoryName, categories, CategoryConfig::getLevel, buildConfig.minLevel);
+            final Level logLevel = getLogLevel(categoryName, categories, CategoryConfig::getLevel,
+                    Collections.emptyMap(), buildConfig.minLevel);
             final Level minLogLevel = getLogLevel(categoryName, buildConfig.categories, CategoryBuildTimeConfig::getMinLevel,
-                    buildConfig.minLevel);
+                    categoryDefaultMinLevels, buildConfig.minLevel);
 
             if (logLevel.intValue() < minLogLevel.intValue()) {
                 log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s", logLevel,
@@ -292,14 +297,12 @@ public class LoggingSetupRecorder {
     }
 
     public static <T> Level getLogLevel(String categoryName, Map<String, T> categories,
-            Function<T, InheritableLevel> levelExtractor, Level rootMinLevel) {
+            Function<T, InheritableLevel> levelExtractor, Map<String, InheritableLevel> categoryDefaults, Level rootMinLevel) {
         while (true) {
-            T categoryConfig = categories.get(categoryName);
-            if (categoryConfig != null) {
-                final InheritableLevel inheritableLevel = levelExtractor.apply(categoryConfig);
-                if (inheritableLevel != null && !inheritableLevel.isInherited()) {
-                    return inheritableLevel.getLevel();
-                }
+            InheritableLevel inheritableLevel = getLogLevelNoInheritance(categoryName, categories, levelExtractor,
+                    categoryDefaults);
+            if (!inheritableLevel.isInherited()) {
+                return inheritableLevel.getLevel();
             }
             final int lastDotIndex = categoryName.lastIndexOf('.');
             if (lastDotIndex == -1) {
@@ -307,6 +310,22 @@ public class LoggingSetupRecorder {
             }
             categoryName = categoryName.substring(0, lastDotIndex);
         }
+    }
+
+    public static <T> InheritableLevel getLogLevelNoInheritance(String categoryName, Map<String, T> categories,
+            Function<T, InheritableLevel> levelExtractor, Map<String, InheritableLevel> categoryDefaults) {
+        T categoryConfig = categories.get(categoryName);
+        InheritableLevel inheritableLevel = null;
+        if (categoryConfig != null) {
+            inheritableLevel = levelExtractor.apply(categoryConfig);
+        }
+        if (inheritableLevel == null) {
+            inheritableLevel = categoryDefaults.get(categoryName);
+        }
+        if (inheritableLevel == null) {
+            inheritableLevel = InheritableLevel.Inherited.INSTANCE;
+        }
+        return inheritableLevel;
     }
 
     private static Map<String, Handler> createNamedHandlers(LogConfig config, ConsoleRuntimeConfig consoleRuntimeConfig,

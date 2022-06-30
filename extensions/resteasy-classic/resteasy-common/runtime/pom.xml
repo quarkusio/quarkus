@@ -91,7 +91,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <excludedArtifacts>
                         <excludedArtifact>javax.ws.rs:javax.ws.rs-api</excludedArtifact>

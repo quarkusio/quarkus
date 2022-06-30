@@ -24,6 +24,7 @@ public class StaticResourcesRecorder {
 
     final RuntimeValue<HttpConfiguration> httpConfiguration;
     final HttpBuildTimeConfig httpBuildTimeConfig;
+    private Set<String> compressMediaTypes = Set.of();
 
     public StaticResourcesRecorder(RuntimeValue<HttpConfiguration> httpConfiguration,
             HttpBuildTimeConfig httpBuildTimeConfig) {
@@ -36,7 +37,9 @@ public class StaticResourcesRecorder {
     }
 
     public Consumer<Route> start(Set<String> knownPaths) {
-
+        if (httpBuildTimeConfig.enableCompression && httpBuildTimeConfig.compressMediaTypes.isPresent()) {
+            this.compressMediaTypes = Set.copyOf(httpBuildTimeConfig.compressMediaTypes.get());
+        }
         List<Handler<RoutingContext>> handlers = new ArrayList<>();
 
         if (hotDeploymentResourcePaths != null && !hotDeploymentResourcePaths.isEmpty()) {
@@ -49,13 +52,14 @@ public class StaticResourcesRecorder {
                 staticHandler.setDefaultContentEncoding("UTF-8");
                 handlers.add(new Handler<>() {
                     @Override
-                    public void handle(RoutingContext event) {
+                    public void handle(RoutingContext ctx) {
                         try {
-                            staticHandler.handle(event);
+                            compressIfNeeded(ctx, ctx.normalizedPath());
+                            staticHandler.handle(ctx);
                         } catch (Exception e) {
                             // on Windows, the drive in file path screws up cache lookup
                             // so just punt to next handler
-                            event.next();
+                            ctx.next();
                         }
                     }
                 });
@@ -72,11 +76,8 @@ public class StaticResourcesRecorder {
                                     // let's be extra careful here in case Vert.x normalizes the mount points at some point
                                     ctx.mountPoint().endsWith("/") ? ctx.mountPoint().length() - 1 : ctx.mountPoint().length());
                     if (knownPaths.contains(rel)) {
+                        compressIfNeeded(ctx, rel);
                         staticHandler.handle(ctx);
-                        if (httpBuildTimeConfig.enableCompression && isCompressed(rel)) {
-                            // Remove the "Content-Encoding: identity" header and enable compression
-                            ctx.response().headers().remove(HttpHeaders.CONTENT_ENCODING);
-                        }
                     } else {
                         // make sure we don't lose the correct TCCL to Vert.x...
                         Thread.currentThread().setContextClassLoader(currentCl);
@@ -97,16 +98,21 @@ public class StaticResourcesRecorder {
         };
     }
 
-    private boolean isCompressed(String path) {
-        String suffix;
-        int lastDot = path.lastIndexOf('.');
-        if (lastDot != -1 && lastDot != path.length() - 1) {
-            suffix = path.substring(lastDot + 1);
-        } else {
-            suffix = null;
+    private void compressIfNeeded(RoutingContext ctx, String path) {
+        if (httpBuildTimeConfig.enableCompression && isCompressed(path)) {
+            // VertxHttpRecorder is adding "Content-Encoding: identity" to all requests if compression is enabled.
+            // Handlers can remove the "Content-Encoding: identity" header to enable compression.
+            ctx.response().headers().remove(HttpHeaders.CONTENT_ENCODING);
         }
-        String contentType = MimeMapping.getMimeTypeForExtension(suffix);
-        return httpBuildTimeConfig.compressMediaTypes.orElse(List.of()).contains(contentType);
+    }
+
+    private boolean isCompressed(String path) {
+        if (compressMediaTypes.isEmpty()) {
+            return false;
+        }
+        final String resourcePath = path.endsWith("/") ? path + StaticHandler.DEFAULT_INDEX_PAGE : path;
+        String contentType = MimeMapping.getMimeTypeForFilename(resourcePath);
+        return contentType != null && compressMediaTypes.contains(contentType);
     }
 
 }

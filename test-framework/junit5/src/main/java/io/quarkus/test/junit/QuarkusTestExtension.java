@@ -345,7 +345,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     }
 
     private void populateCallbacks(ClassLoader classLoader) throws ClassNotFoundException {
-        // make sure that we start over everytime we populate the callbacks
+        // make sure that we start over every time we populate the callbacks
         // otherwise previous runs of QuarkusTest (with different TestProfile values can leak into the new run)
         quarkusTestMethodContextClass = null;
         beforeClassCallbacks = new ArrayList<>();
@@ -818,7 +818,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
 
         //as a convenience to the user we attach any exceptions from the server itself
-        //as supressed exceptions from the failure
+        //as suppressed exceptions from the failure
         //this makes it easy to see why your request has failed in the test output itself
         //instead of needed to look in the log output
         List<Throwable> serverExceptions = new CopyOnWriteArrayList<>();

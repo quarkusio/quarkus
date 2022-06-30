@@ -17,7 +17,7 @@ Please also read xref:security-openid-connect.adoc[Using OpenID Connect to Prote
 == Prerequisites
 
 :prerequisites-docker:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * https://stedolan.github.io/jq/[jq tool]
 
 == Architecture
@@ -26,8 +26,8 @@ In this example, we will build an application which consists of two JAX-RS resou
 
 `FrontendResource` has 4 endpoints:
 
-* `/frontend/user-name-with-oidc-client`
-* `/frontend/admin-name-with-oidc-client`
+* `/frontend/user-name-with-oidc-client-token`
+* `/frontend/admin-name-with-oidc-client-token`
 * `/frontend/user-name-with-propagated-token`
 * `/frontend/admin-name-with-propagated-token`
 
@@ -38,7 +38,7 @@ In this example, we will build an application which consists of two JAX-RS resou
 * `/protected/user-name`
 * `/protected/admin-name`
 
-Both of these endpoints return the user name extracted from the incoming access token which was propagated to `ProtectedResource` from `FrontendResource`. The only difference between these endpoints is that calling `/protected/user-name` is only allowed if the current access token has a `user` role and calling `/protected/admin-name` is only allowed if the current access token has an `admin` role.
+Both of these endpoints return the username extracted from the incoming access token which was propagated to `ProtectedResource` from `FrontendResource`. The only difference between these endpoints is that calling `/protected/user-name` is only allowed if the current access token has a `user` role and calling `/protected/admin-name` is only allowed if the current access token has an `admin` role.
 
 == Solution
 
@@ -55,14 +55,14 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-openid-connect-client-quickstart
 :create-app-extensions: oidc,oidc-client-reactive-filter,oidc-token-propagation-reactive,resteasy-reactive
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven project, importing the `oidc`, `oidc-client-reactive-filter`, `oidc-client-reactive-filter` and `resteasy-reactive` extensions.
 
 If you already have your Quarkus project configured, you can add these extensions to your project by running the following command in your project base directory:
 
 :add-extension-extensions: oidc,oidc-client-reactive-filter,oidc-token-propagation-reactive,resteasy-reactive
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -207,9 +207,9 @@ public interface ProtectedResourceTokenPropagationFilter {
 
 where `ProtectedResourceTokenPropagationFilter` will depend on `AccessTokenRequestReactiveFilter` to propagate the incoming, already existing tokens.
 
-Note that both `ProtectedResourceOidcClientFilter` and `ProtectedResourceTokenPropagationFilter` interfaces are identical - the reason behind it is that combining `OidcClientRequestReactiveFilter` and `AccessTokenRequestReactiveFilter` on the same REST Client will cause side-effects as both filters can interfere with other, for example, `OidcClientRequestReactiveFilter` may override the token propagated by `AccessTokenRequestReactiveFilter` or `AccessTokenRequestReactiveFilter` can fail if it is called when no token is available to propagate and `OidcClientRequestReactiveFilter` is expected to acquire a new token instead.
+Note that both `ProtectedResourceOidcClientFilter` and `ProtectedResourceTokenPropagationFilter` interfaces are identical - the reason behind it is that combining `OidcClientRequestReactiveFilter` and `AccessTokenRequestReactiveFilter` on the same REST Client will cause side effects as both filters can interfere with other, for example, `OidcClientRequestReactiveFilter` may override the token propagated by `AccessTokenRequestReactiveFilter` or `AccessTokenRequestReactiveFilter` can fail if it is called when no token is available to propagate and `OidcClientRequestReactiveFilter` is expected to acquire a new token instead.
 
-Now lets complete creating the application with adding `FrontendResource`:
+Now let's complete creating the application with adding `FrontendResource`:
 
 [source,java]
 ----
@@ -294,7 +294,7 @@ This exception mapper is only added to verify during the tests that `ProtectedRe
 
 == Configuring the application
 
-We have prepared the code, and now lets configure the application:
+We have prepared the code, and now let's configure the application:
 
 [source,properties]
 ----
@@ -358,13 +358,13 @@ This `quarkus` realm file will add a `frontend` client, and `alice` and `admin` 
 
 To run the application in a dev mode, use:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
 
 Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[/q/dev] and click on a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
 
-You will be asked to login into a `Single Page Application` provided by `OpenID Connect Dev UI`:
+You will be asked to log in into a `Single Page Application` provided by `OpenID Connect Dev UI`:
 
  * Login as `alice` (password: `alice`) who has a `user` role
  ** accessing `/frontend/user-name-with-propagated-token` will return `200`
@@ -381,7 +381,7 @@ When you're done playing with the `dev` mode" you can run it as a standard Java 
 
 First compile it:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 Then run it:
 
@@ -401,7 +401,7 @@ the produced binary, and optimized to run with minimal resource overhead.
 Compilation will take a bit longer, so this step is disabled by default;
 let's build again by enabling the `native` profile:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 After getting a cup of coffee, you'll be able to run this binary directly:
 
@@ -481,7 +481,7 @@ curl -v -X GET \
 will also return `200` status code and the name `admin`, as `admin` has both `user` and `admin` roles.
 
 
-Now lets check `FrontendResource` methods which do not propagate the existing tokens but use `OidcClient` to acquire and propagate the tokens. You have seen that `OidcClient` is configured to acquire teh tokens for the `alice` user, so:
+Now lets check `FrontendResource` methods which do not propagate the existing tokens but use `OidcClient` to acquire and propagate the tokens. You have seen that `OidcClient` is configured to acquire the tokens for the `alice` user, so:
 
 [source,bash]
 ----

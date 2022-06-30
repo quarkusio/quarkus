@@ -470,7 +470,7 @@ public class QuartzScheduler implements Scheduler {
     }
 
     /**
-     * Need to gracefully shutdown the scheduler making sure that all triggers have been
+     * Need to gracefully shut down the scheduler making sure that all triggers have been
      * released before datasource shutdown.
      *
      * @param event ignored
@@ -534,6 +534,10 @@ public class QuartzScheduler implements Scheduler {
                 props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".acquireTriggersWithinLock", "true");
                 props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".clusterCheckinInterval",
                         "" + quartzSupport.getBuildTimeConfig().clusterCheckinInterval);
+                if (buildTimeConfig.selectWithLockSql.isPresent()) {
+                    props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".selectWithLockSQL",
+                            buildTimeConfig.selectWithLockSql.get());
+                }
             }
 
             if (buildTimeConfig.storeType.isNonManagedTxJobStore()) {

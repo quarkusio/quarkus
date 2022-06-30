@@ -23,6 +23,8 @@ public class TestResource {
 
     @RestClient
     HeaderPassingClient headerPassingClient;
+    @RestClient
+    HeaderNoPassingClient headerNoPassingClient;
 
     @GET
     @Path("/echo")
@@ -30,7 +32,7 @@ public class TestResource {
     @Consumes(MediaType.TEXT_PLAIN)
     public String echo(@QueryParam("message") String message,
             @HeaderParam("foo") String foo) {
-        return message + foo;
+        return message + (foo == null ? "_null_" : foo);
     }
 
     @GET
@@ -45,8 +47,14 @@ public class TestResource {
     @Path("/with-incoming-header")
     @Blocking
     public RequestData callThroughClient() {
-        RequestData data = headerPassingClient.call();
-        return data;
+        return headerPassingClient.call();
+    }
+
+    @GET
+    @Path("/with-incoming-header/no-passing")
+    @Blocking
+    public RequestData callThroughNotPassingClient() {
+        return headerNoPassingClient.call();
     }
 
 }

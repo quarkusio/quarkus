@@ -46,7 +46,7 @@ public class PublicFieldAccessInheritanceTest {
     public void testFieldAccess()
             throws SystemException, NotSupportedException, HeuristicRollbackException, HeuristicMixedException,
             RollbackException {
-        // Ideally we'd write a @ParamaterizedTest and pass the delegates as parameters,
+        // Ideally we'd write a @ParameterizedTest and pass the delegates as parameters,
         // but we cannot do that due to JUnit using a different classloader than the test.
         for (FieldAccessEnhancedDelegate delegate : FieldAccessEnhancedDelegate.values()) {
             doTestFieldAccess(delegate);

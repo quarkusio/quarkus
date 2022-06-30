@@ -12,7 +12,7 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.ServerWebSocket;
 
 //TODO: do we actually want vert.x websockets?
-//they are not our primary API but they are easy to support
+//they are not our primary API, but they are easy to support
 public class VertxWebSocketParamExtractor implements ParameterExtractor {
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {

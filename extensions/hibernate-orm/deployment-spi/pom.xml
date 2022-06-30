@@ -17,10 +17,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-datasource-common</artifactId>
-        </dependency>
     </dependencies>
 
 </project>

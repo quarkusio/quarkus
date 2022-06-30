@@ -12,7 +12,7 @@ This guide demonstrates how your Quarkus application can use an LDAP server to a
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -26,7 +26,7 @@ The `/api/public` endpoint can be accessed anonymously.
 The `/api/admin` endpoint is protected with RBAC (Role-Based Access Control) where only users granted with the `adminRole` role can access. At this endpoint, we use the `@RolesAllowed` annotation to declaratively enforce the access constraint.
 The `/api/users/me` endpoint is also protected with RBAC (Role-Based Access Control) where only users granted with the `standardRole` role can access. As a response, it returns a JSON document with details about the user.
 
-WARNING: By default Quarkus will restrict the use of JNDI within an application, as a precaution to try and mitigate any future vulnerabilities similar to log4shell. Because LDAP based auth requires JNDI
+WARNING: By default, Quarkus will restrict the use of JNDI within an application, as a precaution to try and mitigate any future vulnerabilities similar to Log4Shell. Because LDAP based auth requires JNDI
 this protection will be automatically disabled.
 
 == Solution
@@ -44,7 +44,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-ldap-quickstart
 :create-app-extensions: elytron-security-ldap,resteasy-reactive
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a project, importing the `elytron-security-ldap` extension
 which is a `wildfly-elytron-realm-ldap` adapter for Quarkus applications.
@@ -53,7 +53,7 @@ If you already have your Quarkus project configured, you can add the `elytron-se
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: elytron-security-ldap
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -124,7 +124,7 @@ public class AdminResource {
 ----
 
 Finally, let's consider the `/api/users/me` endpoint. As you can see from the source code below, we are trusting only users with the `standardRole` role.
-We are using `SecurityContext` to get access to the current authenticated Principal and we return the user's name. This information is loaded from the LDAP server.
+We are using `SecurityContext` to get access to the current authenticated Principal, and we return the user's name. This information is loaded from the LDAP server.
 
 [source,java]
 ----
@@ -177,7 +177,7 @@ The `elytron-security-ldap` extension requires a dir-context and an identity-map
 The application is now protected and the identities are provided by our LDAP server.
 Let's start the application in dev mode:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 The very first thing to check is to ensure the anonymous access works.
 
@@ -191,7 +191,7 @@ Content-Type: text/plain;charset=UTF-8
 public%
 ----
 
-Now, let's try a to hit a protected resource anonymously.
+Now, let's try to hit a protected resource anonymously.
 
 [source,shell]
 ----

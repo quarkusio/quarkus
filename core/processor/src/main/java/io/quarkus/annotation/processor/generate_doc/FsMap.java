@@ -47,7 +47,7 @@ public class FsMap {
 
     /**
      * Attempts to call {@link Files#createDirectories(Path, java.nio.file.attribute.FileAttribute...)} with the given
-     * {@code dir} at most {@code dir.getNameCount()} times as long as it does not exists, assuming that other treads
+     * {@code dir} at most {@code dir.getNameCount()} times as long as it does not exist, assuming that other treads
      * may try to create the same directory concurrently.
      *
      * @param dir the directory to create

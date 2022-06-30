@@ -18,12 +18,16 @@ public class VariantTemplateTest {
                     .addClasses(ItemResource.class, Item.class)
                     .addAsResource(new StringAsset("Item {name}: {price}"), "templates/item.txt")
                     .addAsResource(new StringAsset("<html><body>Item {name}: {price}</body></html>"),
-                            "templates/item.html"));
+                            "templates/item.html")
+                    .addAsResource(new StringAsset("<html><body>Item {item.name}: {item.price}</body></html>"),
+                            "templates/ItemResource/item.html"));
 
     @Test
     public void testVariant() {
         given().when().accept("text/plain").get("/item/10").then().contentType("text/plain").body(Matchers.is("Item foo: 10"));
         given().when().accept("text/html").get("/item/20").then().contentType("text/html")
+                .body(Matchers.is("<html><body>Item foo: 20</body></html>"));
+        given().when().get("/item/checked/20").then().contentType("text/html")
                 .body(Matchers.is("<html><body>Item foo: 20</body></html>"));
     }
 

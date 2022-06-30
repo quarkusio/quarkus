@@ -11,7 +11,6 @@ import java.util.function.Supplier;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.archive.scan.spi.Scanner;
@@ -24,6 +23,7 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
+import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;

@@ -7,7 +7,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that this field or property should be used as a source of user name for security. Only
+ * Indicates that this field or property should be used as a source of username for security. Only
  * supports the {@link String} type.
  */
 @Target({ ElementType.FIELD, ElementType.METHOD })

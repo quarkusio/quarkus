@@ -28,7 +28,7 @@ public class DevServicesConfig {
      *
      * Image with a Quarkus based distribution is used by default.
      * Image with a WildFly based distribution can be selected instead, for example:
-     * 'quay.io/keycloak/keycloak:18.0.0-legacy'.
+     * 'quay.io/keycloak/keycloak:18.0.1-legacy'.
      * <p>
      * Note Keycloak Quarkus and Keycloak WildFly images are initialized differently.
      * By default, Dev Services for Keycloak will assume it is a Keycloak Quarkus image if the image version does not end with a
@@ -36,7 +36,7 @@ public class DevServicesConfig {
      * string.
      * Set 'quarkus.keycloak.devservices.keycloak-x-image' to override this check.
      */
-    @ConfigItem(defaultValue = "quay.io/keycloak/keycloak:18.0.0")
+    @ConfigItem(defaultValue = "quay.io/keycloak/keycloak:18.0.1")
     public String imageName;
 
     /**
@@ -70,7 +70,7 @@ public class DevServicesConfig {
      * This property is used when {@code shared} is set to {@code true}.
      * In this case, before starting a container, Dev Services for Keycloak looks for a container with the
      * {@code quarkus-dev-service-keycloak} label
-     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise it
+     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise, it
      * starts a new container with the {@code quarkus-dev-service-keycloak} label set to the specified value.
      * <p>
      * Container sharing is only used in dev mode.
@@ -112,7 +112,7 @@ public class DevServicesConfig {
     public boolean createRealm;
 
     /**
-     * The Keycloak users map containing the user name and password pairs.
+     * The Keycloak users map containing the username and password pairs.
      * If this map is empty then two users, 'alice' and 'bob' with the passwords matching their names will be created.
      * This property will be used to create the Keycloak users if the realm file pointed to by the 'realm-path' property does
      * not exist.

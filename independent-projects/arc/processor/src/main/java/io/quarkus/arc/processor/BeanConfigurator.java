@@ -34,11 +34,6 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
         this.beanConsumer = beanConsumer;
     }
 
-    @Override
-    protected BeanConfigurator<T> self() {
-        return this;
-    }
-
     /**
      * Finish the configurator. The configurator should not be modified after this method is called.
      */

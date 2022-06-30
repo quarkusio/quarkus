@@ -63,7 +63,7 @@ public class GrpcClientConfiguration {
     public Optional<Duration> idleTimeout;
 
     /**
-     * The amount of time the sender of of a keep alive ping waits for an acknowledgement.
+     * The amount of time the sender of a keep alive ping waits for an acknowledgement.
      */
     @ConfigItem
     public Optional<Duration> keepAliveTimeout;
@@ -147,8 +147,8 @@ public class GrpcClientConfiguration {
 
     /**
      * Use a custom load balancing policy.
-     * Accepted values are: {@code pick_value}, {@code round_robin}, {@code grpclb}
-     * This value is ignored if name-resolver is set to 'stork'
+     * Accepted values are: {@code pick_value}, {@code round_robin}, {@code grpclb}.
+     * This value is ignored if name-resolver is set to 'stork'.
      */
     @ConfigItem(defaultValue = "pick_first")
     public String loadBalancingPolicy;

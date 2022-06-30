@@ -1,12 +1,13 @@
 package io.quarkus.redis.client.deployment;
 
-import static io.quarkus.arc.processor.BuiltinScope.SINGLETON;
+import static io.quarkus.redis.client.runtime.config.RedisConfig.DEFAULT_CLIENT_NAME;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
@@ -17,69 +18,46 @@ import org.jboss.jandex.IndexView;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.deployment.Feature;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.client.RedisHostsProvider;
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;
-import io.quarkus.redis.client.runtime.MutinyRedis;
-import io.quarkus.redis.client.runtime.MutinyRedisAPI;
 import io.quarkus.redis.client.runtime.RedisClientRecorder;
-import io.quarkus.redis.client.runtime.RedisClientUtil;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
-import io.vertx.redis.client.Redis;
-import io.vertx.redis.client.RedisAPI;
 import io.vertx.redis.client.impl.types.BulkType;
 
 public class RedisClientProcessor {
 
-    private static final DotName REDIS_CLIENT_ANNOTATION = DotName.createSimple(RedisClientName.class.getName());
+    static final DotName REDIS_CLIENT_ANNOTATION = DotName.createSimple(RedisClientName.class.getName());
+
+    private static final String FEATURE = "redis-client";
+
+    private static final List<DotName> SUPPORTED_INJECTION_TYPE = List.of(
+            // Legacy types
+            DotName.createSimple(RedisClient.class.getName()),
+            DotName.createSimple(ReactiveRedisClient.class.getName()),
+            // Client types
+            DotName.createSimple(io.vertx.mutiny.redis.client.Redis.class.getName()),
+            DotName.createSimple(io.vertx.mutiny.redis.client.RedisAPI.class.getName()),
+            DotName.createSimple(io.vertx.redis.client.Redis.class.getName()),
+            DotName.createSimple(io.vertx.redis.client.RedisAPI.class.getName()));
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(Feature.REDIS_CLIENT);
-    }
-
-    @BuildStep
-    ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
-        return new ExtensionSslNativeSupportBuildItem(Feature.REDIS_CLIENT.getName());
-    }
-
-    @BuildStep
-    AdditionalBeanBuildItem registerAdditionalBeans() {
-        return new AdditionalBeanBuildItem.Builder()
-                .setUnremovable()
-                .addBeanClass(RedisHostsProvider.class)
-                .build();
-    }
-
-    @BuildStep
-    List<AdditionalBeanBuildItem> registerRedisBeans() {
-        return Arrays.asList(
-                AdditionalBeanBuildItem
-                        .builder()
-                        .addBeanClass("io.quarkus.redis.client.runtime.RedisClientsProducer")
-                        .setDefaultScope(SINGLETON.getName())
-                        .setUnremovable()
-                        .build(),
-                AdditionalBeanBuildItem
-                        .builder()
-                        .addBeanClass(RedisClientName.class)
-                        .build());
-    }
-
-    @BuildStep
-    HealthBuildItem addHealthCheck(RedisBuildTimeConfig buildTimeConfig) {
-        return new HealthBuildItem("io.quarkus.redis.client.runtime.health.RedisHealthCheck", buildTimeConfig.healthEnabled);
+        return new FeatureBuildItem(FEATURE);
     }
 
     @BuildStep
@@ -91,105 +69,102 @@ public class RedisClientProcessor {
         producer.produce(new RuntimeInitializedClassBuildItem("io.vertx.redis.client.impl.Slots"));
         producer.produce(new RuntimeInitializedClassBuildItem("io.vertx.redis.client.impl.RedisClusterConnection"));
         producer.produce(new RuntimeInitializedClassBuildItem("io.vertx.redis.client.impl.RedisReplicationConnection"));
-        // RedisClusterConnections is referenced from RedisClusterClient. Thus, we need to runtime-init
-        // that too.
+        // RedisClusterConnections is referenced from RedisClusterClient. Thus, we need to runtime-init that too.
         producer.produce(new RuntimeInitializedClassBuildItem("io.vertx.redis.client.impl.RedisClusterClient"));
     }
 
     @BuildStep
+    ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
+        return new ExtensionSslNativeSupportBuildItem(FEATURE);
+    }
+
+    @BuildStep
+    List<AdditionalBeanBuildItem> registerRedisClientName() {
+        List<AdditionalBeanBuildItem> list = new ArrayList<>();
+        list.add(AdditionalBeanBuildItem
+                .builder()
+                .addBeanClass(RedisClientName.class)
+                .build());
+        return list;
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem makeHostsProviderUnremovable() {
+        return UnremovableBeanBuildItem.beanTypes(RedisHostsProvider.class);
+    }
+
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void produceRedisClient(RedisClientRecorder recorder, BeanArchiveIndexBuildItem indexBuildItem,
+    public void init(RedisClientRecorder recorder,
+            BeanArchiveIndexBuildItem indexBuildItem,
+            BeanDiscoveryFinishedBuildItem beans,
+            ShutdownContextBuildItem shutdown,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             VertxBuildItem vertxBuildItem) {
-        Set<String> clientNames = new HashSet<>();
-        clientNames.add(RedisClientUtil.DEFAULT_CLIENT);
 
+        // Collect the used redis clients, the unused clients will not be instantiated.
+        Set<String> names = new HashSet<>();
         IndexView indexView = indexBuildItem.getIndex();
         Collection<AnnotationInstance> clientAnnotations = indexView.getAnnotations(REDIS_CLIENT_ANNOTATION);
         for (AnnotationInstance annotation : clientAnnotations) {
-            clientNames.add(annotation.value().asString());
+            names.add(annotation.value().asString());
         }
 
-        for (String clientName : clientNames) {
-            syntheticBeans.produce(createRedisClientSyntheticBean(recorder, clientName));
-            syntheticBeans.produce(createRedisReactiveClientSyntheticBean(recorder, clientName));
-            syntheticBeans.produce(createMutinyRedisAPISyntheticBean(recorder, clientName));
-            syntheticBeans.produce(createMutinyRedisSyntheticBean(recorder, clientName));
-            syntheticBeans.produce(createRedisSyntheticBean(recorder, clientName));
-            syntheticBeans.produce(createRedisAPISyntheticBean(recorder, clientName));
+        // Check if the application use the default Redis client.
+        beans.getInjectionPoints().stream().filter(InjectionPointInfo::hasDefaultedQualifier)
+                .filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name()))
+                .findAny()
+                .ifPresent(x -> names.add(DEFAULT_CLIENT_NAME));
+
+        // Inject the creation of the client when the application starts.
+        recorder.initialize(vertxBuildItem.getVertx(), names);
+
+        // Create the supplier and define the beans.
+        for (String name : names) {
+            // Redis objects
+            syntheticBeans.produce(configureAndCreateSyntheticBean(name, io.vertx.mutiny.redis.client.Redis.class,
+                    recorder.getRedisClient(name)));
+            syntheticBeans.produce(configureAndCreateSyntheticBean(name, io.vertx.redis.client.Redis.class,
+                    recorder.getBareRedisClient(name)));
+
+            // Redis API objects
+            syntheticBeans.produce(configureAndCreateSyntheticBean(name, io.vertx.mutiny.redis.client.RedisAPI.class,
+                    recorder.getRedisAPI(name)));
+            syntheticBeans.produce(configureAndCreateSyntheticBean(name, io.vertx.redis.client.RedisAPI.class,
+                    recorder.getBareRedisAPI(name)));
+
+            // Legacy clients
+            syntheticBeans
+                    .produce(configureAndCreateSyntheticBean(name, RedisClient.class, recorder.getLegacyRedisClient(name)));
+            syntheticBeans.produce(configureAndCreateSyntheticBean(name, ReactiveRedisClient.class,
+                    recorder.getLegacyReactiveRedisClient(name)));
         }
+
+        recorder.cleanup(shutdown);
     }
 
-    private SyntheticBeanBuildItem createRedisClientSyntheticBean(RedisClientRecorder recorder, String clientName) {
+    static <T> SyntheticBeanBuildItem configureAndCreateSyntheticBean(String name,
+            Class<T> type,
+            Supplier<T> supplier) {
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(RedisClient.class)
+                .configure(type)
+                .supplier(supplier)
                 .scope(ApplicationScoped.class)
-                .supplier(recorder.redisClientSupplier(clientName))
+                .unremovable()
                 .setRuntimeInit();
 
-        return applyCommonBeanConfig(clientName, configurator);
-    }
-
-    private SyntheticBeanBuildItem createRedisReactiveClientSyntheticBean(RedisClientRecorder recorder, String clientName) {
-        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(ReactiveRedisClient.class)
-                .scope(ApplicationScoped.class)
-                .supplier(recorder.reactiveRedisClientSupplier(clientName))
-                .setRuntimeInit();
-
-        return applyCommonBeanConfig(clientName, configurator);
-    }
-
-    private SyntheticBeanBuildItem createMutinyRedisSyntheticBean(RedisClientRecorder recorder, String clientName) {
-        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(MutinyRedis.class)
-                .scope(ApplicationScoped.class)
-                .supplier(recorder.mutinyRedisSupplier(clientName))
-                .setRuntimeInit();
-
-        return applyCommonBeanConfig(clientName, configurator);
-    }
-
-    private SyntheticBeanBuildItem createMutinyRedisAPISyntheticBean(RedisClientRecorder recorder, String clientName) {
-        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(MutinyRedisAPI.class)
-                .scope(ApplicationScoped.class)
-                .supplier(recorder.mutinyRedisAPISupplier(clientName))
-                .setRuntimeInit();
-
-        return applyCommonBeanConfig(clientName, configurator);
-    }
-
-    private SyntheticBeanBuildItem createRedisSyntheticBean(RedisClientRecorder recorder, String clientName) {
-        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(Redis.class)
-                .scope(ApplicationScoped.class)
-                .supplier(recorder.redisSupplier(clientName))
-                .setRuntimeInit();
-
-        return applyCommonBeanConfig(clientName, configurator);
-    }
-
-    private SyntheticBeanBuildItem createRedisAPISyntheticBean(RedisClientRecorder recorder, String clientName) {
-        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(RedisAPI.class)
-                .scope(ApplicationScoped.class)
-                .supplier(recorder.redisAPISupplier(clientName))
-                .setRuntimeInit();
-
-        return applyCommonBeanConfig(clientName, configurator);
-    }
-
-    private SyntheticBeanBuildItem applyCommonBeanConfig(String clientName,
-            SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator) {
-
-        configurator.unremovable();
-
-        if (RedisClientUtil.isDefault(clientName)) {
+        if (DEFAULT_CLIENT_NAME.equalsIgnoreCase(name)) {
             configurator.addQualifier(Default.class);
         } else {
-            configurator.addQualifier().annotation(REDIS_CLIENT_ANNOTATION).addValue("value", clientName).done();
+            configurator.addQualifier().annotation(REDIS_CLIENT_ANNOTATION).addValue("value", name).done();
         }
+
         return configurator.done();
+    }
+
+    @BuildStep
+    HealthBuildItem addHealthCheck(RedisBuildTimeConfig buildTimeConfig) {
+        return new HealthBuildItem("io.quarkus.redis.client.runtime.health.RedisHealthCheck",
+                buildTimeConfig.healthEnabled);
     }
 }

@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-narayana-lra</artifactId>
     <name>Quarkus - Narayana LRA Participant - Runtime</name>
+    <description>Coordinate Long Running Actions (LRA)</description>
 
     <dependencies>
         <dependency>
@@ -50,7 +51,19 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <configuration>
+                    <removedResources>
+                        <artifact>
+                            <key>org.jboss.narayana.rts:narayana-lra</key>
+                            <resources>META-INF/services/javax.ws.rs.client.ClientBuilder</resources>
+                        </artifact>
+                        <artifact>
+                            <key>org.jboss.narayana.rts:lra-client</key>
+                            <resources>META-INF/services/javax.ws.rs.client.ClientBuilder</resources>
+                        </artifact>
+                    </removedResources>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

@@ -71,7 +71,7 @@ public final class OpenTelemetryUtil {
      * In case of duplicate keys, the latest takes precedence.
      *
      * @param headers nullable list of "key=value" pairs
-     * @return non null map of key-value pairs
+     * @return non-null map of key-value pairs
      */
     public static Map<String, String> convertKeyValueListToMap(List<String> headers) {
         if (headers == null) {

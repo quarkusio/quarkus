@@ -2,6 +2,7 @@ package io.quarkus.resteasy.jaxb.deployment;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.jboss.jandex.DotName;
@@ -10,12 +11,15 @@ import org.jboss.resteasy.annotations.providers.jaxb.Wrapped;
 import org.jboss.resteasy.annotations.providers.jaxb.WrappedMap;
 import org.jboss.resteasy.api.validation.ConstraintType;
 
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.jaxb.deployment.JaxbClassesToBeBoundBuildItem;
 
 public class ResteasyJaxbProcessor {
 
@@ -40,6 +44,15 @@ public class ResteasyJaxbProcessor {
                 addReflectiveClass(reflectiveClass, true, true, "javax.xml.bind.annotation.W3CDomHandler");
                 break;
             }
+        }
+    }
+
+    @BuildStep
+    void setupJaxbContextConfigForValidator(Capabilities capabilities,
+            BuildProducer<JaxbClassesToBeBoundBuildItem> classesToBeBoundProducer) {
+        if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
+            classesToBeBoundProducer.produce(new JaxbClassesToBeBoundBuildItem(
+                    Collections.singletonList(org.jboss.resteasy.api.validation.ViolationReport.class.getName())));
         }
     }
 

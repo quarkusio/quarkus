@@ -1114,10 +1114,10 @@ public class JaxrsClientReactiveProcessor {
             for (ResourceMethod subMethod : method.getSubResourceMethods()) {
                 MethodInfo jandexSubMethod = getJavaMethod(subInterface, subMethod,
                         subMethod.getParameters(), index)
-                                .orElseThrow(() -> new RuntimeException(
-                                        "Failed to find matching java method for " + subMethod + " on "
-                                                + subInterface
-                                                + ". It may have unresolved parameter types (generics)"));
+                        .orElseThrow(() -> new RuntimeException(
+                                "Failed to find matching java method for " + subMethod + " on "
+                                        + subInterface
+                                        + ". It may have unresolved parameter types (generics)"));
                 subMethodIndex++;
 
                 boolean isSubResourceMethod = subMethod.getHttpMethod() == null;
@@ -1668,7 +1668,7 @@ public class JaxrsClientReactiveProcessor {
                 return methodCreator.invokeStaticMethod(
                         MethodDescriptor.ofMethod(String.class, "valueOf", String.class, long.class), fieldValue);
             default:
-                throw new IllegalArgumentException("Unsupported primitive type in mulitpart form field: "
+                throw new IllegalArgumentException("Unsupported primitive type in multipart form field: "
                         + field.declaringClass().name() + "." + field.name());
         }
     }

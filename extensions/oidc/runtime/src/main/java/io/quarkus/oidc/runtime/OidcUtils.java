@@ -90,7 +90,7 @@ public final class OidcUtils {
         // part 2: token content
         String encodedContent = tokens.nextToken();
 
-        // lets check only 1 more signature part is available
+        // let's check only 1 more signature part is available
         if (tokens.countTokens() != 1) {
             return null;
         }
@@ -115,7 +115,7 @@ public final class OidcUtils {
         if (rolesConfig.getRoleClaimPath().isPresent()) {
             List<String> roles = new LinkedList<>();
             for (String roleClaimPath : rolesConfig.getRoleClaimPath().get()) {
-                roles.addAll(findClaimWithRoles(rolesConfig, roleClaimPath, json));
+                roles.addAll(findClaimWithRoles(rolesConfig, roleClaimPath.trim(), json));
             }
             return roles;
         }

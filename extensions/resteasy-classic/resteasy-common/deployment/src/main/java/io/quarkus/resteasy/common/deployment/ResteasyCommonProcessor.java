@@ -96,6 +96,8 @@ public class ResteasyCommonProcessor {
     private static final DotName QUARKUS_JSONB_SERIALIZER = DotName
             .createSimple("io.quarkus.resteasy.common.runtime.jsonb.QuarkusJsonbSerializer");
 
+    private static final String APPLICATION_HAL_JSON = "application/hal+json";
+
     private static final String[] WILDCARD_MEDIA_TYPE_ARRAY = { MediaType.WILDCARD };
 
     private ResteasyCommonConfig resteasyCommonConfig;
@@ -217,7 +219,8 @@ public class ResteasyCommonProcessor {
             boolean needJsonSupport = restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.CONSUMES)
                     || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.PRODUCES)
                     || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.RESTEASY_SSE_ELEMENT_TYPE)
-                    || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.RESTEASY_PART_TYPE);
+                    || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.RESTEASY_PART_TYPE)
+                    || restJsonSupportNeededForHalCapability(capabilities, indexBuildItem);
             if (needJsonSupport) {
                 LOGGER.warn(
                         "Quarkus detected the need of REST JSON support but you have not provided the necessary JSON " +
@@ -390,21 +393,36 @@ public class ResteasyCommonProcessor {
         }
     }
 
+    private boolean restJsonSupportNeededForHalCapability(Capabilities capabilities, CombinedIndexBuildItem indexBuildItem) {
+        return capabilities.isPresent(Capability.HAL)
+                && isMediaTypeFoundInAnnotation(indexBuildItem, ResteasyDotNames.PRODUCES, APPLICATION_HAL_JSON);
+    }
+
     private boolean restJsonSupportNeeded(CombinedIndexBuildItem indexBuildItem, DotName mediaTypeAnnotation) {
+        return isMediaTypeFoundInAnnotation(indexBuildItem, mediaTypeAnnotation,
+                MediaType.APPLICATION_JSON, MediaType.APPLICATION_JSON_PATCH_JSON);
+    }
+
+    private boolean isMediaTypeFoundInAnnotation(CombinedIndexBuildItem indexBuildItem, DotName mediaTypeAnnotation,
+            String... mediaTypes) {
         for (AnnotationInstance annotationInstance : indexBuildItem.getIndex().getAnnotations(mediaTypeAnnotation)) {
             final AnnotationValue annotationValue = annotationInstance.value();
             if (annotationValue == null) {
                 continue;
             }
 
-            List<String> mediaTypes = Collections.emptyList();
+            List<String> foundMediaTypes = Collections.emptyList();
             if (annotationValue.kind() == Kind.ARRAY) {
-                mediaTypes = Arrays.asList(annotationValue.asStringArray());
+                foundMediaTypes = Arrays.asList(annotationValue.asStringArray());
             } else if (annotationValue.kind() == Kind.STRING) {
-                mediaTypes = Collections.singletonList(annotationValue.asString());
+                foundMediaTypes = Collections.singletonList(annotationValue.asString());
             }
-            return mediaTypes.contains(MediaType.APPLICATION_JSON)
-                    || mediaTypes.contains(MediaType.APPLICATION_JSON_PATCH_JSON);
+
+            for (int i = 0; i < mediaTypes.length; i++) {
+                if (foundMediaTypes.contains(mediaTypes[i])) {
+                    return true;
+                }
+            }
         }
 
         return false;
@@ -514,7 +532,7 @@ public class ResteasyCommonProcessor {
                 }
             }
 
-            // handle @PartType: we don't know if it's used for writing or reading so we register both
+            // handle @PartType: we don't know if it's used for writing or reading, so we register both
             for (AnnotationInstance partTypeAnnotation : index.getAnnotations(ResteasyDotNames.RESTEASY_PART_TYPE)) {
                 try {
                     MediaType partTypeMediaType = MediaType.valueOf(partTypeAnnotation.value().asString());
@@ -605,7 +623,7 @@ public class ResteasyCommonProcessor {
         //   if it is, then include a provider which can handle that element type.
         // - if no @SseElementType is present, check if the media type has the "element-type" parameter
         //   and if it does then include the provider which can handle that element-type
-        // - if neither of the above specifies an element-type then we by fallback to including text/plain
+        // - if neither of the above specifies an element-type then we fall back to including text/plain
         //   provider as a default
         if (matches(MediaType.SERVER_SENT_EVENTS_TYPE, mediaType)) {
             final Set<String> additionalProvidersToRegister = new HashSet<>();
@@ -623,7 +641,7 @@ public class ResteasyCommonProcessor {
             if (elementType != null) {
                 additionalProvidersToRegister.addAll(categorizedProviders.getPossible(MediaType.valueOf(elementType)));
             } else {
-                // add text/plain provider as a fallback default for SSE mediatype
+                // add text/plain provider as a fallback default for SSE media-type
                 additionalProvidersToRegister.addAll(categorizedProviders.getPossible(MediaType.TEXT_PLAIN_TYPE));
             }
             return additionalProvidersToRegister;
@@ -633,7 +651,7 @@ public class ResteasyCommonProcessor {
 
     /**
      * Compares the {@link MediaType#getType() type} and the {@link MediaType#getSubtype() subtype} to see if they are
-     * equal (case insensitive). If they are equal, then this method returns {@code true}, else returns {@code false}.
+     * equal (case-insensitive). If they are equal, then this method returns {@code true}, else returns {@code false}.
      * Unlike the {@link MediaType#equals(Object)}, this method doesn't take into account the {@link MediaType#getParameters()
      * parameters} during the equality check
      *

@@ -52,10 +52,8 @@ public class MutinyTest {
     public void testHelloAsMulti() {
         get("/mutiny/hello/stream")
                 .then()
-                .contentType("application/json")
-                .body("[0]", is("he"))
-                .body("[1]", is("ll"))
-                .body("[2]", is("o"))
+                .contentType("text/plain")
+                .body(is("hello"))
                 .statusCode(200);
     }
 

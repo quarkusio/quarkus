@@ -29,6 +29,7 @@ import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
@@ -92,6 +93,12 @@ class AgroalProcessor {
         for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedDataSourceBuildTimeConfig : aggregatedDataSourceBuildTimeConfigs) {
             validateBuildTimeConfig(aggregatedDataSourceBuildTimeConfig);
 
+            if (aggregatedDataSourceBuildTimeConfig.getJdbcConfig().tracing) {
+                reflectiveClass
+                        .produce(new ReflectiveClassBuildItem(true, false,
+                                DataSources.TRACING_DRIVER_CLASSNAME));
+            }
+
             reflectiveClass
                     .produce(new ReflectiveClassBuildItem(true, false,
                             aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass()));
@@ -124,6 +131,14 @@ class AgroalProcessor {
 
         String fullDataSourceName = aggregatedConfig.isDefault() ? "default datasource"
                 : "datasource named '" + aggregatedConfig.getName() + "'";
+
+        if (jdbcBuildTimeConfig.tracing) {
+            if (!QuarkusClassLoader.isClassPresentAtRuntime(DataSources.TRACING_DRIVER_CLASSNAME)) {
+                throw new ConfigurationException(
+                        "Unable to load the tracing driver " + DataSources.TRACING_DRIVER_CLASSNAME + " for the "
+                                + fullDataSourceName);
+            }
+        }
 
         String driverName = aggregatedConfig.getResolvedDriverClass();
         Class<?> driver;
@@ -231,7 +246,7 @@ class AgroalProcessor {
                     .setRuntimeInit()
                     .unremovable()
                     // pass the runtime config into the recorder to ensure that the DataSource related beans
-                    // are created after runtime configuration has been setup
+                    // are created after runtime configuration has been set up
                     .supplier(recorder.agroalDataSourceSupplier(dataSourceName, dataSourcesRuntimeConfig));
 
             if (entry.getValue().isDefault) {

@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.annotation.security.RolesAllowed;
-import javax.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Name;
@@ -141,7 +140,6 @@ public class SecurityTest extends AbstractGraphQLTest {
     }
 
     @GraphQLApi
-    @ApplicationScoped
     public static class SecuredApi {
 
         @Query

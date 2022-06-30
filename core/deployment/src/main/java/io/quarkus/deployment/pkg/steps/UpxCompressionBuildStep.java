@@ -18,7 +18,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
-import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
 import io.quarkus.deployment.util.FileUtil;
@@ -36,7 +35,6 @@ public class UpxCompressionBuildStep {
 
     @BuildStep(onlyIf = NativeBuild.class)
     public void compress(NativeConfig nativeConfig, NativeImageBuildItem image,
-            CompiledJavaVersionBuildItem compiledJavaVersionBuildItem,
             BuildProducer<UpxCompressedBuildItem> upxCompressedProducer,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
         if (nativeConfig.compression.level.isEmpty()) {
@@ -44,9 +42,7 @@ public class UpxCompressionBuildStep {
             return;
         }
 
-        String effectiveBuilderImage = nativeConfig.getEffectiveBuilderImage(
-                compiledJavaVersionBuildItem.getJavaVersion()
-                        .isExactlyJava11() == CompiledJavaVersionBuildItem.JavaVersion.Status.FALSE);
+        String effectiveBuilderImage = nativeConfig.getEffectiveBuilderImage();
         Optional<File> upxPathFromSystem = getUpxFromSystem();
         if (upxPathFromSystem.isPresent()) {
             log.debug("Running UPX from system path");

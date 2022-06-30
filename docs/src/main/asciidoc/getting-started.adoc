@@ -30,12 +30,12 @@ This guide covers:
 == Prerequisites
 
 :prerequisites-no-graalvm:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 [TIP]
 .Verify Maven is using the Java you expect
 ====
-If you have multiple JDK's installed it is not certain Maven will pick up the expected java
+If you have multiple JDK's installed, it is not certain Maven will pick up the expected java
 and you could end up with unexpected results.
 You can verify which JDK Maven uses by running `mvn --version`. 
 ====
@@ -74,7 +74,7 @@ For Linux & MacOS users
 :create-app-artifact-id: getting-started
 :create-app-extensions: resteasy-reactive
 :create-app-code:
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 For Windows users
 
@@ -188,7 +188,7 @@ of the resource is created and not one per request. You can configure this using
 
 Now we are ready to run our application:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 [source,shell]
 ----
@@ -217,7 +217,7 @@ Once started, you can request the provided endpoint:
 [source,shell]
 ----
 $ curl -w "\n" http://localhost:8080/hello
-hello
+Hello from RESTEasy Reactive
 ----
 
 Hit `CTRL+C` to stop the application, or keep it running and enjoy the blazing fast hot-reload.
@@ -293,7 +293,7 @@ If you stopped the application
 (keep in mind you don't have to do it, changes will be automatically deployed by our live reload feature),
 restart the application with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Then check that the endpoint returns `hello quarkus` as expected:
 
@@ -454,7 +454,7 @@ Be sure to read the xref:cdi-reference.adoc#bean_discovery[Bean Discovery] secti
 
 The application is packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 It produces several outputs in `/target`:
 
@@ -472,7 +472,7 @@ NOTE: Before running the application, don't forget to stop the hot reload mode (
 [#banner]
 == Configuring the banner
 
-By default when a Quarkus application starts (in regular or dev mode), it will display an ASCII art banner. The banner can be disabled by setting `quarkus.banner.enabled=false` in `application.properties`,
+By default, when a Quarkus application starts (in regular or dev mode), it will display an ASCII art banner. The banner can be disabled by setting `quarkus.banner.enabled=false` in `application.properties`,
 by setting the `-Dquarkus.banner.enabled=false` Java System Property, or by setting the `QUARKUS_BANNER_ENABLED` environment variable to `false`.
 Furthermore, users can supply a custom banner by placing the banner file in `src/main/resources` and configuring `quarkus.banner.path=name-of-file` in `application.properties`.
 

@@ -34,7 +34,7 @@ The solution is located in the `context-propagation-quickstart` {quickstarts-tre
 
 == Setting it up
 
-If you are using link:http://smallrye.io/smallrye-mutiny[Mutiny] (the `quarkus-mutiny` extension), you just need to add the
+If you are using link:http://smallrye.io/smallrye-mutiny[Mutiny] (the `quarkus-mutiny` extension), you just need to add
 the `quarkus-smallrye-context-propagation` extension to enable context propagation.
 
 In other words, add the following dependencies to your build file:
@@ -289,7 +289,7 @@ Likewise, there is a similar way to inject a configured instance of `ManagedExec
 
 === Sharing configured CDI instances of ManagedExecutor and ThreadContext
 
-If you need to inject the same `ManagedExecutor` or `ThreadContext` into several places and share it's capacity, you can name the instance with https://javadoc.io/doc/io.smallrye/smallrye-context-propagation-api/latest/io/smallrye/context/api/NamedInstance.html[`@NamedInstance`] annotation.
+If you need to inject the same `ManagedExecutor` or `ThreadContext` into several places and share its capacity, you can name the instance with https://javadoc.io/doc/io.smallrye/smallrye-context-propagation-api/latest/io/smallrye/context/api/NamedInstance.html[`@NamedInstance`] annotation.
 `@NamedInstance` is a CDI qualifier and all injections of the same type and name will therefore share the same underlying instance.
 If you also need to customize your instance, you can do so using `@ManagedExecutorConfig`/`ThreadContextConfig` annotation on one of its injection points:
 

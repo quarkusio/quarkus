@@ -81,7 +81,7 @@ NOTE: If the client does not support HTTP compression then the response body is 
 [[context-path]]
 == Configuring the Context path
 
-By default Quarkus will serve content from under the root context. If you want to change this you can use the
+By default, Quarkus will serve content from under the root context. If you want to change this you can use the
 `quarkus.http.root-path` config key to set the context path.
 
 If you are using Servlet you can control the Servlet context path via `quarkus.servlet.context-path`. This item is relative
@@ -179,7 +179,7 @@ values:
 `redirect`:: HTTP requests will be redirected to the HTTPS port
 `disabled`:: The HTTP port will not be opened.
 
-NOTE: if you use `redirect` or `disabled` and have not added a SSL certificate or keystore, your server will not start!
+NOTE: if you use `redirect` or `disabled` and have not added an SSL certificate or keystore, your server will not start!
 
 == Additional HTTP Headers
 
@@ -245,6 +245,16 @@ Will include the `Cache-Control: max-age=1` header when `/paths/order` is reques
 
 include::{generated-dir}/config/quarkus-vertx-http-config-group-filter-config.adoc[leveloffset=+1, opts=optional]
 
+== Support 100-Continue in vert.x
+
+In order to support `100-continue`, the `quarkus.http.handle-100-continue-automatically` option needs to be enabled explicitly
+For additional information check https://datatracker.ietf.org/doc/html/rfc7231#section-5.1.1[100-continue= and the related
+https://vertx.io/docs/apidocs/io/vertx/core/http/HttpServerOptions.html#DEFAULT_HANDLE_100_CONTINE_AUTOMATICALLY[Vert.x documentation].
+
+[source,properties]
+----
+quarkus.http.handle-100-continue-automatically=true
+----
 
 == HTTP/2 Support
 
@@ -362,7 +372,7 @@ reflecting the values in these headers.
 IMPORTANT: Activating this feature leaves the server exposed to several security issues (i.e. information spoofing).
 Consider activate it only when running behind a reverse proxy.
 
-To setup this feature, please include the following lines in `src/main/resources/application.properties`:
+To set up this feature, please include the following lines in `src/main/resources/application.properties`:
 [source,properties]
 ----
 quarkus.http.proxy-address-forwarding=true
@@ -384,7 +394,7 @@ quarkus.http.proxy.enable-forwarded-host=true
 quarkus.http.proxy.enable-forwarded-prefix=true
 ----
 
-Both configurations related to standard and non-standard headers can be combined, although the standard headers configuration will have precedence. However combining them has security implications as clients can forge requests with a forwarded header that is not overwritten by the proxy. Therefore proxies should strip unexpected `X-Forwarded` or `X-Forwarded-*` headers from the client.
+Both configurations related to standard and non-standard headers can be combined, although the standard headers configuration will have precedence. However, combining them has security implications as clients can forge requests with a forwarded header that is not overwritten by the proxy. Therefore, proxies should strip unexpected `X-Forwarded` or `X-Forwarded-*` headers from the client.
 
 Supported forwarding address headers are:
 

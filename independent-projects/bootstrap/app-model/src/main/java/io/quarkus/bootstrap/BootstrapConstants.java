@@ -44,4 +44,6 @@ public interface BootstrapConstants {
     String PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX = "-quarkus-platform-properties";
 
     String PLATFORM_PROPERTY_PREFIX = "platform.";
+
+    String QUARKUS_BOOTSTRAP_WORKSPACE_DISCOVERY = "quarkus.bootstrap.workspace-discovery";
 }

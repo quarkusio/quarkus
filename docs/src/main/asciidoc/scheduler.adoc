@@ -14,7 +14,7 @@ TIP: If you need a clustered scheduler use the xref:quartz.adoc[Quartz extension
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -38,7 +38,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: scheduler-quickstart
 :create-app-extensions: resteasy-reactive,scheduler
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 It generates a new project including:
 
@@ -52,7 +52,7 @@ If you already have your Quarkus project configured, you can add the `scheduler`
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: scheduler
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -115,7 +115,7 @@ public class CounterBean {
 <1> Declare the bean in the _application_ scope
 <2> The `get()` method allows retrieving the current value.
 <3> Use the `@Scheduled` annotation to instruct Quarkus to run this method every 10 seconds provided a worker thread is available
-(Quarkus is using 10 worker threads for the scheduler). If it is not available the method invocation should be re-scheduled by default i.e
+(Quarkus is using 10 worker threads for the scheduler). If it is not available the method invocation should be re-scheduled by default i.e.
 it should be invoked as soon as possible. The invocation of the scheduled method does not depend on the status or result of the previous invocation.
 <4> The code is pretty straightforward. Every 10 seconds, the counter is incremented.
 <5> Define a job with a cron-like expression. The annotated method is executed at 10:15am every day.
@@ -167,7 +167,7 @@ public class CountResource {
 
 Run the application with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 In another terminal, run `curl localhost:8080/count` to check the counter value.
 After a few seconds, re-run `curl localhost:8080/count` to verify the counter has been incremented.
@@ -177,13 +177,13 @@ that the cron job using an expression configured in `application.properties` has
 
 As usual, the application can be packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 And executed with `java -jar target/quarkus-app/quarkus-run.jar`.
 
 You can also generate the native executable with:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 [[scheduler-configuration-reference]]
 == Scheduler Configuration Reference

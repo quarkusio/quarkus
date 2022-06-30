@@ -499,10 +499,11 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
+          cache: 'gradle'
       - name: Verify dependencies
         # runs on Windows as well but would require newline conversion, not worth it
         if: "!startsWith(matrix.java.os-name, 'windows')"

@@ -49,10 +49,12 @@ public class RabbitMQDevServicesProcessor {
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-rabbitmq";
 
     private static final int RABBITMQ_PORT = 5672;
+    private static final int RABBITMQ_HTTP_PORT = 15672;
 
     private static final ContainerLocator rabbitmqContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL, RABBITMQ_PORT);
     private static final String RABBITMQ_HOST_PROP = "rabbitmq-host";
     private static final String RABBITMQ_PORT_PROP = "rabbitmq-port";
+    private static final String RABBITMQ_HTTP_PORT_PROP = "rabbitmq-http-port";
     private static final String RABBITMQ_USERNAME_PROP = "rabbitmq-username";
     private static final String RABBITMQ_PASSWORD_PROP = "rabbitmq-password";
 
@@ -174,6 +176,7 @@ public class RabbitMQDevServicesProcessor {
         ConfiguredRabbitMQContainer container = new ConfiguredRabbitMQContainer(
                 DockerImageName.parse(config.imageName),
                 config.fixedExposedPort,
+                config.fixedExposedHttpPort,
                 launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null);
 
         config.exchanges.forEach(x -> container.withExchange(x.name, x.type, x.autoDelete, false, x.durable, x.arguments));
@@ -186,22 +189,27 @@ public class RabbitMQDevServicesProcessor {
             // Starting the broker
             timeout.ifPresent(container::withStartupTimeout);
             container.start();
-
             return getRunningDevService(container.getContainerId(), container::close, container.getHost(),
-                    container.getPort(), container.getAdminUsername(), container.getAdminPassword());
+                    container.getPort(), container.getHttpPort(), container.getAdminUsername(), container.getAdminPassword());
         };
+
+        Integer httpPort = rabbitmqContainerLocator
+                .locatePublicPort(config.serviceName, config.shared, launchMode.getLaunchMode(), RABBITMQ_HTTP_PORT)
+                .orElse(0);
 
         return rabbitmqContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
                 .map(containerAddress -> getRunningDevService(containerAddress.getId(), null, containerAddress.getHost(),
-                        containerAddress.getPort(), container.getAdminUsername(), container.getAdminPassword()))
+                        containerAddress.getPort(), httpPort, container.getAdminUsername(),
+                        container.getAdminPassword()))
                 .orElseGet(defaultRabbitMQBrokerSupplier);
     }
 
-    private RunningDevService getRunningDevService(String containerId, Closeable closeable, String host, int port,
+    private RunningDevService getRunningDevService(String containerId, Closeable closeable, String host, int port, int httpPort,
             String username, String password) {
         Map<String, String> configMap = new HashMap<>();
         configMap.put(RABBITMQ_HOST_PROP, host);
         configMap.put(RABBITMQ_PORT_PROP, String.valueOf(port));
+        configMap.put(RABBITMQ_HTTP_PORT_PROP, String.valueOf(httpPort));
         configMap.put(RABBITMQ_USERNAME_PROP, username);
         configMap.put(RABBITMQ_PASSWORD_PROP, password);
         return new RunningDevService(Feature.SMALLRYE_REACTIVE_MESSAGING_RABBITMQ.getName(),
@@ -304,6 +312,7 @@ public class RabbitMQDevServicesProcessor {
         private final boolean devServicesEnabled;
         private final String imageName;
         private final Integer fixedExposedPort;
+        private final Integer fixedExposedHttpPort;
         private final boolean shared;
         private final String serviceName;
         private final List<Exchange> exchanges;
@@ -314,6 +323,7 @@ public class RabbitMQDevServicesProcessor {
             this.devServicesEnabled = devServicesConfig.enabled.orElse(true);
             this.imageName = devServicesConfig.imageName;
             this.fixedExposedPort = devServicesConfig.port.orElse(0);
+            this.fixedExposedHttpPort = devServicesConfig.httpPort.orElse(0);
             this.shared = devServicesConfig.shared;
             this.serviceName = devServicesConfig.serviceName;
             this.exchanges = devServicesConfig.exchanges != null
@@ -352,12 +362,15 @@ public class RabbitMQDevServicesProcessor {
     private static final class ConfiguredRabbitMQContainer extends RabbitMQContainer {
 
         private final int port;
+        private final int httpPort;
 
-        private ConfiguredRabbitMQContainer(DockerImageName dockerImageName, int fixedExposedPort, String serviceName) {
+        private ConfiguredRabbitMQContainer(DockerImageName dockerImageName, int fixedExposedPort, int fixedExposedHttpPort,
+                String serviceName) {
             super(dockerImageName);
             this.port = fixedExposedPort;
+            this.httpPort = fixedExposedHttpPort;
             withNetwork(Network.SHARED);
-            withExposedPorts(RABBITMQ_PORT);
+            withExposedPorts(RABBITMQ_PORT, RABBITMQ_HTTP_PORT);
             if (serviceName != null) { // Only adds the label in dev mode.
                 withLabel(DEV_SERVICE_LABEL, serviceName);
             }
@@ -371,6 +384,9 @@ public class RabbitMQDevServicesProcessor {
             super.configure();
             if (port > 0) {
                 addFixedExposedPort(port, RABBITMQ_PORT);
+            }
+            if (httpPort > 0) {
+                addFixedExposedPort(httpPort, RABBITMQ_HTTP_PORT);
             }
         }
 

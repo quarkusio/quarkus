@@ -90,7 +90,7 @@ public class InterceptedStaticMethodsProcessor {
             InterceptorResolverBuildItem interceptorResolver, TransformedAnnotationsBuildItem transformedAnnotations,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
 
-        // In this step we collect all intercepted static methods, ie. static methods annotated with interceptor bindings
+        // In this step we collect all intercepted static methods, i.e. static methods annotated with interceptor bindings
         Set<DotName> interceptorBindings = interceptorResolver.getInterceptorBindings();
 
         for (ClassInfo clazz : beanArchiveIndex.getIndex().getKnownClasses()) {

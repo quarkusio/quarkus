@@ -36,7 +36,7 @@ public class InfinispanClientRuntimeConfig {
     /**
      * Sets client intelligence used by authentication
      * Available values:
-     * * `BASIC` - Means that the client doesn't handle server topology changes and therefore will only used the list
+     * * `BASIC` - Means that the client doesn't handle server topology changes and therefore will only use the list
      *              of servers supplied at configuration time.
      * * `TOPOLOGY_AWARE` - Use this provider if you don't want the client to present any certificates to the
      *              remote TLS host.
@@ -50,7 +50,7 @@ public class InfinispanClientRuntimeConfig {
 
     // @formatter:off
     /**
-     * Enables or disables authentication. Set it to false when connecting to a Infinispan Server without authentication.
+     * Enables or disables authentication. Set it to false when connecting to an Infinispan Server without authentication.
      * deployments. Default is 'true'.
      */
     // @formatter:on
@@ -58,7 +58,7 @@ public class InfinispanClientRuntimeConfig {
     Optional<Boolean> useAuth;
 
     /**
-     * Sets user name used by authentication.
+     * Sets username used by authentication.
      */
     @ConfigItem
     Optional<String> authUsername;

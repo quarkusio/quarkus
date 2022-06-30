@@ -34,6 +34,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.jackson.deployment.IgnoreJsonDeserializeClassBuildItem;
+import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
 import io.quarkus.kubernetes.client.runtime.KubernetesConfigProducer;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
@@ -72,6 +73,7 @@ public class KubernetesClientProcessor {
 
     @BuildStep
     public void process(ApplicationIndexBuildItem applicationIndex, CombinedIndexBuildItem combinedIndexBuildItem,
+            KubernetesClientBuildConfig kubernetesClientConfig,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<FeatureBuildItem> featureProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -80,13 +82,18 @@ public class KubernetesClientProcessor {
             BuildProducer<KubernetesRoleBindingBuildItem> roleBindingProducer) {
 
         featureProducer.produce(new FeatureBuildItem(Feature.KUBERNETES_CLIENT));
-        roleBindingProducer.produce(new KubernetesRoleBindingBuildItem("view", true));
+        if (kubernetesClientConfig.generateRbac) {
+            roleBindingProducer.produce(new KubernetesRoleBindingBuildItem("view", true));
+        }
 
         // register fully (and not weakly) for reflection watchers, informers and custom resources
         final Set<DotName> watchedClasses = new HashSet<>();
-        findWatchedClasses(WATCHER, applicationIndex, combinedIndexBuildItem, watchedClasses, 1);
-        findWatchedClasses(RESOURCE_EVENT_HANDLER, applicationIndex, combinedIndexBuildItem, watchedClasses, 1);
-        findWatchedClasses(CUSTOM_RESOURCE, applicationIndex, combinedIndexBuildItem, watchedClasses, 2);
+        findWatchedClasses(WATCHER, applicationIndex, combinedIndexBuildItem, watchedClasses, 1,
+                true);
+        findWatchedClasses(RESOURCE_EVENT_HANDLER, applicationIndex, combinedIndexBuildItem, watchedClasses, 1,
+                true);
+        findWatchedClasses(CUSTOM_RESOURCE, applicationIndex, combinedIndexBuildItem, watchedClasses, 2,
+                false);
 
         Predicate<DotName> reflectionIgnorePredicate = ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE
                 .or(IS_OKHTTP_CLASS);
@@ -196,29 +203,36 @@ public class KubernetesClientProcessor {
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.KUBERNETES_CLIENT));
     }
 
-    private void findWatchedClasses(final DotName implementor, final ApplicationIndexBuildItem applicationIndex,
+    private void findWatchedClasses(final DotName implementedOrExtendedClass, final ApplicationIndexBuildItem applicationIndex,
             final CombinedIndexBuildItem combinedIndexBuildItem, final Set<DotName> watchedClasses,
-            final int expectedGenericTypeCardinality) {
-        applicationIndex.getIndex().getAllKnownImplementors(implementor)
-                .forEach(c -> {
-                    try {
-                        final List<Type> watcherGenericTypes = JandexUtil.resolveTypeParameters(c.name(),
-                                implementor, combinedIndexBuildItem.getIndex());
-                        if (watcherGenericTypes.size() == expectedGenericTypeCardinality) {
-                            watcherGenericTypes.forEach(t -> watchedClasses.add(t.name()));
-                        }
-                    } catch (IllegalArgumentException ignored) {
-                        // when the class has no subclasses and we were not able to determine the generic types,
-                        // it's likely that the class might be able to get deserialized
-                        if (applicationIndex.getIndex().getAllKnownSubclasses(c.name()).isEmpty()) {
-                            log.warnv("{0} '{1}' will most likely not work correctly in native mode. " +
-                                    "Consider specifying the generic type of '{2}' that this class handles. "
-                                    +
-                                    "See https://quarkus.io/guides/kubernetes-client#note-on-generic-types for more details",
-                                    implementor.local(), c.name(), implementor);
-                        }
-                    }
-                });
+            final int expectedGenericTypeCardinality, boolean isTargetClassAnInterface) {
+        final var index = applicationIndex.getIndex();
+        final var implementors = isTargetClassAnInterface ? index
+                .getAllKnownImplementors(implementedOrExtendedClass) : index.getAllKnownSubclasses(implementedOrExtendedClass);
+        implementors.forEach(c -> {
+            try {
+                final List<Type> watcherGenericTypes = JandexUtil.resolveTypeParameters(c.name(),
+                        implementedOrExtendedClass, combinedIndexBuildItem.getIndex());
+                if (!isTargetClassAnInterface) {
+                    // add the class itself: for example, in the case of CustomResource, we want to
+                    // register the class that extends CustomResource in addition to its type parameters
+                    watchedClasses.add(c.name());
+                }
+                if (watcherGenericTypes.size() == expectedGenericTypeCardinality) {
+                    watcherGenericTypes.forEach(t -> watchedClasses.add(t.name()));
+                }
+            } catch (IllegalArgumentException ignored) {
+                // when the class has no subclasses and we were not able to determine the generic types,
+                // it's likely that the class might be able to get deserialized
+                if (index.getAllKnownSubclasses(c.name()).isEmpty()) {
+                    log.warnv("{0} '{1}' will most likely not work correctly in native mode. " +
+                            "Consider specifying the generic type of '{2}' that this class handles. "
+                            +
+                            "See https://quarkus.io/guides/kubernetes-client#note-on-generic-types for more details",
+                            implementedOrExtendedClass.local(), c.name(), implementedOrExtendedClass);
+                }
+            }
+        });
     }
 
 }

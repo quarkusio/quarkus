@@ -32,7 +32,7 @@ public class MetadataBuilderContributorTest {
 
         assertThat(entityManager.createQuery("select addHardcodedSuffix(e.name) from MyEntity e", String.class)
                 .getSingleResult())
-                        .isEqualTo("some_name_some_suffix");
+                .isEqualTo("some_name_some_suffix");
     }
 
 }

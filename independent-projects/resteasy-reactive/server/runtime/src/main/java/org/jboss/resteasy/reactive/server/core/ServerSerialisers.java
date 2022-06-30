@@ -241,6 +241,9 @@ public class ServerSerialisers extends Serialisers {
             //the error handling will want to write out its own response
             //and the pre commit listener will interfere with that
             context.serverResponse().setPreCommitListener(null);
+            // also clear the stream in order to try to avoid writing out any data that
+            // might have been put on the stream before the exception occurred
+            context.setOutputStream(null);
             if (e instanceof RuntimeException) {
                 throw new PreserveTargetException(e);
             } else if (e instanceof IOException) {

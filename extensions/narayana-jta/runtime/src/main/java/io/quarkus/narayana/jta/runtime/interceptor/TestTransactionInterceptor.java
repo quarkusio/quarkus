@@ -35,7 +35,7 @@ public class TestTransactionInterceptor {
             return context.proceed();
         }
 
-        // an exception from proceed() has to be captured to avoid shadowing it in finally() with a exception from rollback()
+        // an exception from proceed() has to be captured to avoid shadowing it in finally() with an exception from rollback()
         Throwable caught = null;
         try {
             userTransaction.begin();

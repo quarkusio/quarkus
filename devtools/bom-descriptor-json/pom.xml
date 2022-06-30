@@ -70,9 +70,8 @@
          and will also not generate/install the descriptor (the module is "hollowed out").
          It is assumed that the descriptor has been installed before in a consistent state (CI guarantees this)
          and so all the IT modules will pick up that previously installed descriptor from the local repo.
-         Just skipping this module entirely in an incremental build is not an option since somthing in this module,
-         in quarkus-platform-descriptor-json-plugin or further upstream might have been changed, requiring all IT
-         modules to be built! -->
+         Just skipping this module entirely in an incremental build is not an option since something in this module
+         or further upstream might have been changed, requiring all IT modules to be built! -->
 
     <profiles>
         <profile>
@@ -2102,19 +2101,6 @@
                 <dependency>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-resteasy-reactive-jaxb</artifactId>
-                    <version>${project.version}</version>
-                    <type>pom</type>
-                    <scope>test</scope>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>*</groupId>
-                            <artifactId>*</artifactId>
-                        </exclusion>
-                    </exclusions>
-                </dependency>
-                <dependency>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-resteasy-reactive-jaxb-common</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>

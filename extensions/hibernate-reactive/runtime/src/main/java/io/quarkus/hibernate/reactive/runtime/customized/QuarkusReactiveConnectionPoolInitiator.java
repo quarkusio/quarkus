@@ -65,7 +65,7 @@ public final class QuarkusReactiveConnectionPoolInitiator
          * Since this Service implementation does not implement @{@link org.hibernate.service.spi.Stoppable}
          * and we're only adapting an externally provided pool, we will not actually close such provided pool
          * when Hibernate ORM is shutdown (it doesn't own the lifecycle of this external component).
-         * Therefore there is no need to wait for its shutdown and this method returns an already
+         * Therefore, there is no need to wait for its shutdown and this method returns an already
          * successfully completed CompletionStage.
          *
          * @return

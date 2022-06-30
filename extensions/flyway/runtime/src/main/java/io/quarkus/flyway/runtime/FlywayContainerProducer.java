@@ -14,7 +14,7 @@ import org.flywaydb.core.api.callback.Callback;
  * and it's {@code createFlyway} method is called at runtime in order to produce
  * the actual {@code Flyway} objects.
  *
- * CDI scopes and qualifiers are setup at build-time, which is why this class is devoid of
+ * CDI scopes and qualifiers are set up at build-time, which is why this class is devoid of
  * any CDI annotations
  *
  */

@@ -357,7 +357,7 @@
         "doc-root": "https://quarkus.io",
         "rest-assured-version": "4.3.2",
         "compiler-plugin-version": "3.8.1",
-        "surefire-plugin-version": "3.0.0-M5",
+        "surefire-plugin-version": "3.0.0-M7",
         "kotlin-version": "1.4.31",
         "scala-version": "2.12.13",
         "scala-plugin-version": "4.4.0",
@@ -368,8 +368,8 @@
         "gradle-plugin-id": "io.quarkus",
         "gradle-plugin-version": "999-FAKE",
         "supported-maven-versions": "[3.6.2,)",
-        "proposed-maven-version": "3.8.4",
-        "maven-wrapper-version": "3.1.0",
+        "proposed-maven-version": "3.8.6",
+        "maven-wrapper-version": "3.1.1",
         "gradle-wrapper-version": "7.4.2"
       }
     },

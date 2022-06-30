@@ -117,7 +117,7 @@ public class OidcClientImpl implements OidcClient {
                         body.add(entry.getKey(), entry.getValue());
                     }
                 }
-                // Retry up to three times with a one second delay between the retries if the connection is closed
+                // Retry up to three times with a one-second delay between the retries if the connection is closed
                 Uni<HttpResponse<Buffer>> response = request.sendBuffer(OidcCommonUtils.encodeForm(body))
                         .onFailure(ConnectException.class)
                         .retry()

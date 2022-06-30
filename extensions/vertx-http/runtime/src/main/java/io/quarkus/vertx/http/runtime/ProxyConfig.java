@@ -11,7 +11,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 @ConfigGroup
 public class ProxyConfig {
     /**
-     * If this is true then the address, scheme etc will be set from headers forwarded by the proxy server, such as
+     * If this is true then the address, scheme etc. will be set from headers forwarded by the proxy server, such as
      * {@code X-Forwarded-For}. This should only be set if you are behind a proxy that sets these headers.
      */
     @ConfigItem
@@ -22,7 +22,7 @@ public class ProxyConfig {
      * In case the not standard {@code X-Forwarded-For} header is enabled and detected on HTTP requests, the standard header has
      * the precedence.
      * Activating this together with {@code quarkus.http.proxy.allow-x-forwarded} has security implications as clients can forge
-     * requests with a forwarded header that is not overwritten by the proxy. Therefore proxies should strip unexpected
+     * requests with a forwarded header that is not overwritten by the proxy. Therefore, proxies should strip unexpected
      * `X-Forwarded` or `X-Forwarded-*` headers from the client.
      */
     @ConfigItem
@@ -34,7 +34,7 @@ public class ProxyConfig {
      * In case the standard {@code Forwarded} header is enabled and detected on HTTP requests, the standard header has the
      * precedence.
      * Activating this together with {@code quarkus.http.proxy.allow-x-forwarded} has security implications as clients can forge
-     * requests with a forwarded header that is not overwritten by the proxy. Therefore proxies should strip unexpected
+     * requests with a forwarded header that is not overwritten by the proxy. Therefore, proxies should strip unexpected
      * `X-Forwarded` or `X-Forwarded-*` headers from the client.
      */
     @ConfigItem

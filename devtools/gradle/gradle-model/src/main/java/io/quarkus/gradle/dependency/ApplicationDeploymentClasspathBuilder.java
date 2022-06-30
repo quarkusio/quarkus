@@ -22,6 +22,7 @@ import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.provider.ListProperty;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.PlatformImports;
@@ -135,13 +136,15 @@ public class ApplicationDeploymentClasspathBuilder {
 
             project.getConfigurations().create(this.platformConfigurationName, configuration -> {
                 // Platform configuration is just implementation, filtered to platform dependencies
-                configuration.getDependencies().addAllLater(project.provider(() -> project.getConfigurations()
-                        .getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
-                        .getAllDependencies()
-                        .stream()
-                        .filter(dependency -> dependency instanceof ModuleDependency &&
-                                ToolingUtils.isEnforcedPlatform((ModuleDependency) dependency))
-                        .collect(Collectors.toList())));
+                ListProperty<Dependency> dependencyListProperty = project.getObjects().listProperty(Dependency.class);
+                configuration.getDependencies()
+                        .addAllLater(dependencyListProperty.value(project.provider(() -> project.getConfigurations()
+                                .getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
+                                .getAllDependencies()
+                                .stream()
+                                .filter(dependency -> dependency instanceof ModuleDependency &&
+                                        ToolingUtils.isEnforcedPlatform((ModuleDependency) dependency))
+                                .collect(Collectors.toList()))));
                 // Configures PlatformImportsImpl once the platform configuration is resolved
                 configuration.getResolutionStrategy().eachDependency(d -> {
                     ModuleIdentifier identifier = d.getTarget().getModule();
@@ -192,7 +195,8 @@ public class ApplicationDeploymentClasspathBuilder {
             project.getConfigurations().create(this.deploymentConfigurationName, configuration -> {
                 Configuration enforcedPlatforms = this.getPlatformConfiguration();
                 configuration.extendsFrom(enforcedPlatforms);
-                configuration.getDependencies().addAllLater(project.provider(() -> {
+                ListProperty<Dependency> dependencyListProperty = project.getObjects().listProperty(Dependency.class);
+                configuration.getDependencies().addAllLater(dependencyListProperty.value(project.provider(() -> {
                     ConditionalDependenciesEnabler cdEnabler = new ConditionalDependenciesEnabler(project, mode,
                             enforcedPlatforms);
                     final Collection<ExtensionDependency> allExtensions = cdEnabler.getAllExtensions();
@@ -225,7 +229,7 @@ public class ApplicationDeploymentClasspathBuilder {
                         }
                     }
                     return deploymentDependencies;
-                }));
+                })));
             });
         }
     }

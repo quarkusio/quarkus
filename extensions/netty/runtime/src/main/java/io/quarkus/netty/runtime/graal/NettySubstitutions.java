@@ -346,7 +346,7 @@ final class Target_io_netty_bootstrap_AbstractBootstrap {
                 // channel can be null if newChannel crashed (eg SocketException("too many open files"))
                 channel.unsafe().closeForcibly();
             }
-            // as the Channel is not registered yet we need to force the usage of the GlobalEventExecutor
+            // as the Channel is not registered yet, we need to force the usage of the GlobalEventExecutor
             return new DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE).setFailure(t);
         }
 
@@ -403,8 +403,8 @@ final class Holder_io_netty_util_concurrent_ScheduledFutureTask {
     static final long START_TIME = System.nanoTime();
 }
 
-@TargetClass(className = "io.netty.util.concurrent.ScheduledFutureTask")
-final class Target_io_netty_util_concurrent_ScheduledFutureTask {
+@TargetClass(className = "io.netty.util.concurrent.AbstractScheduledEventExecutor")
+final class Target_io_netty_util_concurrent_AbstractScheduledEventExecutor {
 
     // The START_TIME field is kept but not used.
     // All the accesses to it have been replaced with Holder_io_netty_util_concurrent_ScheduledFutureTask
@@ -415,19 +415,8 @@ final class Target_io_netty_util_concurrent_ScheduledFutureTask {
     }
 
     @Substitute
-    static long nanoTime() {
+    static long defaultCurrentTimeNanos() {
         return System.nanoTime() - Holder_io_netty_util_concurrent_ScheduledFutureTask.START_TIME;
-    }
-
-    @Alias
-    public long deadlineNanos() {
-        return 0;
-    }
-
-    @Substitute
-    public long delayNanos(long currentTimeNanos) {
-        return Math.max(0,
-                deadlineNanos() - (currentTimeNanos - Holder_io_netty_util_concurrent_ScheduledFutureTask.START_TIME));
     }
 }
 
@@ -496,16 +485,6 @@ final class Target_io_netty_buffer_EmptyByteBuf {
 
 }
 
-// We need to delete this class but we let GraalVM dead code elimination do it for us.
-// Otherwise it causes a problem when --report-unsupported-elements-at-runtime is enabled:
-// when trying to delete the class, GraalVM throws a java.lang.NoClassDefFoundError: Lcom/aayushatharva/brotli4j/decoder/DecoderJNI$Wrapper;
-// While we recommend not using this option, some extensions out there are using it.
-//@TargetClass(className = "io.netty.handler.codec.compression.BrotliDecoder")
-//@Delete
-//final class Target_BrotliDecoder {
-//
-//}
-
 @TargetClass(className = "io.netty.handler.codec.http.HttpContentDecompressor")
 final class Target_io_netty_handler_codec_http_HttpContentDecompressor {
 
@@ -558,6 +537,15 @@ final class Target_io_netty_handler_codec_http2_DelegatingDecompressorFrameListe
             return new EmbeddedChannel(ctx.channel().id(), ctx.channel().metadata().hasDisconnect(), ctx.channel().config(),
                     new ChannelHandler[] { ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP) });
         }
+    }
+}
+
+@TargetClass(className = "io.netty.handler.ssl.SslHandler")
+final class Target_SslHandler {
+
+    @Substitute
+    private void setOpensslEngineSocketFd(Channel c) {
+        // do nothing.
     }
 }
 

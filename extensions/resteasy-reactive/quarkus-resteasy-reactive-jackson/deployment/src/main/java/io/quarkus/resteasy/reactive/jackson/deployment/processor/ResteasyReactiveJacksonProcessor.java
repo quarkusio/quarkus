@@ -116,7 +116,7 @@ public class ResteasyReactiveJacksonProcessor {
                 .addBeanClass(BasicServerJacksonMessageBodyWriter.class)
                 // This will not be needed in most cases, but it will not be involved in serialization
                 // just because it's a bean.
-                // Whether or not it is used in RESTEasy Reactive is determined elsewhere
+                // Whether it is used in RESTEasy Reactive is determined elsewhere
                 .addBeanClass(FullyFeaturedServerJacksonMessageBodyWriter.class)
                 .setUnremovable().build();
     }
@@ -131,43 +131,43 @@ public class ResteasyReactiveJacksonProcessor {
                 .produce(
                         new MessageBodyReaderBuildItem.Builder(ServerJacksonMessageBodyReader.class.getName(),
                                 Object.class.getName())
-                                        .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                        .setBuiltin(true).build());
+                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
+                                .setBuiltin(true).build());
         additionalReaders
                 .produce(
                         new MessageBodyReaderBuildItem.Builder(VertxJsonArrayMessageBodyReader.class.getName(),
                                 JsonArray.class.getName())
-                                        .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                        .setBuiltin(true)
-                                        .build());
+                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
+                                .setBuiltin(true)
+                                .build());
         additionalReaders
                 .produce(
                         new MessageBodyReaderBuildItem.Builder(VertxJsonObjectMessageBodyReader.class.getName(),
                                 JsonObject.class.getName())
-                                        .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                        .setBuiltin(true)
-                                        .build());
+                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
+                                .setBuiltin(true)
+                                .build());
         additionalWriters
                 .produce(
                         new MessageBodyWriterBuildItem.Builder(
                                 getJacksonMessageBodyWriter(applicationNeedsSpecialJacksonFeatures), Object.class.getName())
-                                        .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                        .setBuiltin(true)
-                                        .build());
+                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
+                                .setBuiltin(true)
+                                .build());
         additionalWriters
                 .produce(
                         new MessageBodyWriterBuildItem.Builder(VertxJsonArrayMessageBodyWriter.class.getName(),
                                 JsonArray.class.getName())
-                                        .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                        .setBuiltin(true)
-                                        .build());
+                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
+                                .setBuiltin(true)
+                                .build());
         additionalWriters
                 .produce(
                         new MessageBodyWriterBuildItem.Builder(VertxJsonObjectMessageBodyWriter.class.getName(),
                                 JsonObject.class.getName())
-                                        .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                        .setBuiltin(true)
-                                        .build());
+                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
+                                .setBuiltin(true)
+                                .build());
     }
 
     private String getJacksonMessageBodyWriter(boolean applicationNeedsSpecialJacksonFeatures) {

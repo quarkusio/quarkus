@@ -11,8 +11,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-integration-test-oidc-client-reactive</artifactId>
-    <name>Quarkus - Integration Tests - OpenID Connect Client Reactive </name>
-    <description>Module that contains OpenID Connect Client tests using RestEasy Reactive</description>
+    <name>Quarkus - Integration Tests - OpenID Connect Client Reactive</name>
+    <description>Module that contains OpenID Connect Client tests using RESTEasy Reactive</description>
 
     <properties>
         <keycloak.url>http://localhost:8180/auth</keycloak.url>

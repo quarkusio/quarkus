@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.xml.persistence;
 
+import static org.hibernate.cfg.AvailableSettings.PERSISTENCE_UNIT_NAME;
+
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
@@ -34,7 +36,7 @@ public class PersistenceXmlTest {
         try {
             // the PU is templatePU from the persistence.xml, not the default entity manager from application.properties
             Assertions.assertEquals("templatePU",
-                    entityManager.getEntityManagerFactory().getProperties().get("hibernate.ejb.persistenceUnitName"));
+                    entityManager.getEntityManagerFactory().getProperties().get(PERSISTENCE_UNIT_NAME));
         } finally {
             Arc.container().requestContext().deactivate();
         }

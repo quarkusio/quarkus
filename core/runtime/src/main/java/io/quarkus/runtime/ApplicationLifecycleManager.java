@@ -83,7 +83,7 @@ public class ApplicationLifecycleManager {
     public static void run(Application application, Class<? extends QuarkusApplication> quarkusApplication,
             BiConsumer<Integer, Throwable> exitCodeHandler, String... args) {
         stateLock.lock();
-        //in tests we might pass this method an already started application
+        //in tests, we might pass this method an already started application
         //in this case we don't shut it down at the end
         boolean alreadyStarted = application.isStarted();
         if (shutdownHookThread == null) {
@@ -251,7 +251,7 @@ public class ApplicationLifecycleManager {
 
     /**
      * Run some background cleanup once after the application has booted.
-     * This will not be invoked for command mode, as it's not worth it for a short lived process.
+     * This will not be invoked for command mode, as it's not worth it for a short-lived process.
      */
     private static void longLivedPostBootCleanup() {
         final ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -332,7 +332,7 @@ public class ApplicationLifecycleManager {
      * Sets the default exit code and exception handler for application run through the run method
      * that does not take an exit handler.
      *
-     * By default this will just call System.exit, however this is not always
+     * By default, this will just call {@code System.exit}, however this is not always
      * what is wanted.
      *
      * @param defaultExitCodeHandler the new default exit handler
@@ -346,7 +346,7 @@ public class ApplicationLifecycleManager {
      * Sets the default exit code handler for application run through the run method
      * that does not take an exit handler.
      *
-     * By default this will just call System.exit, however this is not always
+     * By default, this will just call {@code System.exit}, however this is not always
      * what is wanted.
      *
      * @param defaultExitCodeHandler the new default exit handler

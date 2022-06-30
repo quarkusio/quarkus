@@ -98,7 +98,7 @@ public class JPAConfig {
     }
 
     /**
-     * Need to shutdown all instances of Hibernate ORM before the actual destroy event,
+     * Need to shut down all instances of Hibernate ORM before the actual destroy event,
      * as it might need to use the datasources during shutdown.
      *
      * @param event ignored

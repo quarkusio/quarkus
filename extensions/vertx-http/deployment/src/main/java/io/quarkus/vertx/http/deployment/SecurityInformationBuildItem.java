@@ -20,6 +20,10 @@ public final class SecurityInformationBuildItem extends MultiBuildItem {
         return new SecurityInformationBuildItem(SecurityModel.jwt, Optional.empty());
     }
 
+    public static SecurityInformationBuildItem OAUTH2() {
+        return new SecurityInformationBuildItem(SecurityModel.oauth2, Optional.empty());
+    }
+
     public static SecurityInformationBuildItem OPENIDCONNECT(String urlConfigKey) {
         return new SecurityInformationBuildItem(SecurityModel.oidc,
                 Optional.of(new OpenIDConnectInformation(urlConfigKey)));
@@ -42,6 +46,7 @@ public final class SecurityInformationBuildItem extends MultiBuildItem {
     public enum SecurityModel {
         basic,
         jwt,
+        oauth2,
         oidc
     }
 

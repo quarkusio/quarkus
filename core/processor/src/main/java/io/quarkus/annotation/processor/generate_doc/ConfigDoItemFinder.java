@@ -166,6 +166,7 @@ class ConfigDoItemFinder {
             String hyphenatedFieldName = hyphenate(fieldName);
             String configDocMapKey = hyphenatedFieldName;
             boolean isDeprecated = false;
+            boolean generateDocumentation = true;
             ConfigDocSection configSection = new ConfigDocSection();
             configSection.setTopLevelGrouping(rootName);
             configSection.setWithinAMap(withinAMap);
@@ -182,12 +183,12 @@ class ConfigDoItemFinder {
                     for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationMirror
                             .getElementValues().entrySet()) {
                         final String key = entry.getKey().toString();
-                        final String value = entry.getValue().getValue().toString();
+                        final Object value = entry.getValue().getValue();
                         if (annotationName.equals(ANNOTATION_CONFIG_DOC_MAP_KEY) && "value()".equals(key)) {
-                            configDocMapKey = value;
+                            configDocMapKey = value.toString();
                         } else if (annotationName.equals(ANNOTATION_CONFIG_ITEM)) {
                             if ("name()".equals(key)) {
-                                switch (value) {
+                                switch (value.toString()) {
                                     case HYPHENATED_ELEMENT_NAME:
                                         name = parentName + DOT + hyphenatedFieldName;
                                         break;
@@ -198,9 +199,11 @@ class ConfigDoItemFinder {
                                         name = parentName + DOT + value;
                                 }
                             } else if ("defaultValue()".equals(key)) {
-                                defaultValue = value;
+                                defaultValue = value.toString();
                             } else if ("defaultValueDocumentation()".equals(key)) {
-                                defaultValueDoc = value;
+                                defaultValueDoc = value.toString();
+                            } else if ("generateDocumentation()".equals(key)) {
+                                generateDocumentation = (Boolean) value;
                             }
                         }
                     }
@@ -218,6 +221,9 @@ class ConfigDoItemFinder {
 
             if (isDeprecated) {
                 continue; // do not include deprecated config items
+            }
+            if (!generateDocumentation) {
+                continue; // documentation for this item was explicitly disabled
             }
 
             if (name == null) {
@@ -474,7 +480,7 @@ class ConfigDoItemFinder {
 
         // make sure that the config section is added  if it is to be shown or when scanning parent configuration group
         // priory to scanning configuration roots. This is useful as we get indication of whether the config items are part
-        // of a configuration section (i.e configuration group) we are current scanning.
+        // of a configuration section (i.e. configuration group) we are current scanning.
         if (configSection.isShowSection() || !generateSeparateConfigGroupDocs) {
             final ConfigDocItem configDocItem = new ConfigDocItem();
             configDocItem.setConfigDocSection(configSection);

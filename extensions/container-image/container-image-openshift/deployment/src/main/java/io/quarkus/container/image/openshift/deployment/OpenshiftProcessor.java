@@ -137,7 +137,7 @@ public class OpenshiftProcessor {
 
         if (config.buildStrategy == BuildStrategy.BINARY) {
             // Jar directory priorities:
-            // 1. explictly specified by the user.
+            // 1. explicitly specified by the user.
             // 2. detected via OpenshiftBaseJavaImage
             // 3. fallback value
             String jarDirectory = config.jarDirectory
@@ -192,7 +192,7 @@ public class OpenshiftProcessor {
             builderImageProducer.produce(new BaseImageInfoBuildItem(config.baseNativeImage));
             Optional<OpenshiftBaseNativeImage> baseImage = OpenshiftBaseNativeImage.findMatching(config.baseNativeImage);
             // Native binary directory priorities:
-            // 1. explictly specified by the user.
+            // 1. explicitly specified by the user.
             // 2. detected via OpenshiftBaseNativeImage
             // 3. fallback value
             String nativeBinaryDirectory = config.nativeBinaryDirectory
@@ -202,12 +202,16 @@ public class OpenshiftProcessor {
             baseImage.ifPresent(b -> {
                 envProducer.produce(
                         KubernetesEnvBuildItem.createSimpleVar(b.getHomeDirEnvVar(), nativeBinaryDirectory, OPENSHIFT));
-                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getOptsEnvVar(),
-                        String.join(" ", config.nativeArguments), OPENSHIFT));
+                config.nativeArguments.ifPresent(nativeArguments -> {
+                    envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getOptsEnvVar(),
+                            String.join(" ", nativeArguments), OPENSHIFT));
+                });
+
             });
 
-            if (!baseImage.isPresent()) {
-                commandProducer.produce(KubernetesCommandBuildItem.commandWithArgs(pathToNativeBinary, config.nativeArguments));
+            if (!baseImage.isPresent() && config.nativeArguments.isPresent()) {
+                commandProducer
+                        .produce(KubernetesCommandBuildItem.commandWithArgs(pathToNativeBinary, config.nativeArguments.get()));
             }
         }
     }

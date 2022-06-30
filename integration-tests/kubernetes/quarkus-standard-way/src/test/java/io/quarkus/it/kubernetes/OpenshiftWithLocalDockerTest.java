@@ -25,8 +25,8 @@ import io.quarkus.test.QuarkusProdModeTest;
 // The purpose of this test is to assert that
 // When: We run local container builds targeting Openshift (and `DeploymentConfig` is used).
 // Then:
-//   - No BuildConfg is generated.
-//   - A signle docker ImageStreams are generated and that `docker.io` is used as the default registry.
+//   - No BuildConfig is generated.
+//   - A single docker ImageStreams are generated and that `docker.io` is used as the default registry.
 //
 public class OpenshiftWithLocalDockerTest {
 

@@ -1,9 +1,8 @@
 package io.quarkus.redis.client.runtime.health;
 
-import static io.quarkus.redis.client.runtime.RedisClientUtil.DEFAULT_CLIENT;
+import static io.quarkus.redis.client.runtime.VertxRedisClientFactory.DEFAULT_CLIENT;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,40 +18,49 @@ import org.eclipse.microprofile.health.Readiness;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.RedisClientName;
-import io.quarkus.redis.client.reactive.ReactiveRedisClient;
-import io.quarkus.redis.client.runtime.RedisClientUtil;
-import io.quarkus.redis.client.runtime.RedisConfig;
-import io.quarkus.redis.client.runtime.RedisConfig.RedisConfiguration;
-import io.vertx.redis.client.Response;
+import io.quarkus.redis.client.runtime.config.RedisConfig;
+import io.quarkus.redis.datasource.api.ReactiveRedisDataSource;
+import io.quarkus.redis.datasource.api.RedisDataSource;
+import io.vertx.mutiny.redis.client.Command;
+import io.vertx.mutiny.redis.client.Redis;
+import io.vertx.mutiny.redis.client.Request;
+import io.vertx.mutiny.redis.client.Response;
 
 @Readiness
 @ApplicationScoped
 class RedisHealthCheck implements HealthCheck {
-    private final Map<String, RedisClient> clients = new HashMap<>();
-    private final Map<String, ReactiveRedisClient> reactiveClients = new HashMap<>();
-    private final RedisConfig redisConfig;
+    private final Map<String, Redis> clients = new HashMap<>();
 
-    public RedisHealthCheck(RedisConfig redisConfig) {
-        this.redisConfig = redisConfig;
+    private final RedisConfig config;
+
+    public RedisHealthCheck(RedisConfig config) {
+        this.config = config;
     }
 
     @PostConstruct
     protected void init() {
-        for (InstanceHandle<RedisClient> handle : Arc.container().select(RedisClient.class, Any.Literal.INSTANCE).handles()) {
+        for (InstanceHandle<Redis> handle : Arc.container().select(Redis.class, Any.Literal.INSTANCE).handles()) {
             String clientName = getClientName(handle.getBean());
-            clients.put(clientName == null ? DEFAULT_CLIENT : clientName, handle.get());
+            clients.putIfAbsent(clientName == null ? DEFAULT_CLIENT : clientName, handle.get());
         }
 
-        for (InstanceHandle<ReactiveRedisClient> handle : Arc.container()
-                .select(ReactiveRedisClient.class, Any.Literal.INSTANCE).handles()) {
+        for (InstanceHandle<ReactiveRedisDataSource> handle : Arc.container()
+                .select(ReactiveRedisDataSource.class, Any.Literal.INSTANCE).handles()) {
             String clientName = getClientName(handle.getBean());
-            reactiveClients.put(clientName == null ? DEFAULT_CLIENT : clientName, handle.get());
+            Redis redis = handle.get().getRedis();
+            clients.putIfAbsent(clientName == null ? DEFAULT_CLIENT : clientName, redis);
+        }
+
+        for (InstanceHandle<RedisDataSource> handle : Arc.container().select(RedisDataSource.class, Any.Literal.INSTANCE)
+                .handles()) {
+            String clientName = getClientName(handle.getBean());
+            Redis redis = handle.get().getReactive().getRedis();
+            clients.putIfAbsent(clientName == null ? DEFAULT_CLIENT : clientName, redis);
         }
     }
 
-    private String getClientName(Bean bean) {
+    private String getClientName(Bean<?> bean) {
         for (Object qualifier : bean.getQualifiers()) {
             if (qualifier instanceof RedisClientName) {
                 return ((RedisClientName) qualifier).value();
@@ -61,44 +69,27 @@ class RedisHealthCheck implements HealthCheck {
         return null;
     }
 
+    private Duration getTimeout(String name) {
+        if (RedisConfig.isDefaultClient(name)) {
+            return config.defaultRedisClient.timeout;
+        } else {
+            return config.namedRedisClients.get(name).timeout;
+        }
+    }
+
     @Override
     public HealthCheckResponse call() {
         HealthCheckResponseBuilder builder = HealthCheckResponse.named("Redis connection health check").up();
-        for (Map.Entry<String, RedisClient> client : clients.entrySet()) {
+        for (Map.Entry<String, Redis> client : clients.entrySet()) {
             try {
                 boolean isDefault = DEFAULT_CLIENT.equals(client.getKey());
-                RedisClient redisClient = client.getValue();
+                Redis redisClient = client.getValue();
                 String redisClientName = isDefault ? "default" : client.getKey();
-                Response response = redisClient.ping(Collections.emptyList());
+                Duration timeout = getTimeout(client.getKey());
+                Response response = redisClient.send(Request.cmd(Command.PING)).await().atMost(timeout);
                 builder.up().withData(redisClientName, response.toString());
             } catch (Exception e) {
                 return builder.down().withData("reason", "client [" + client.getKey() + "]: " + e.getMessage()).build();
-            }
-        }
-
-        for (Map.Entry<String, ReactiveRedisClient> client : reactiveClients.entrySet()) {
-
-            // Ignore named ReactiveRedisClient that have a blocking RedisClient since they have already been checked as part of blocking clients
-            if (clients.containsKey(client.getKey())) {
-                continue;
-            }
-
-            try {
-                boolean isDefault = DEFAULT_CLIENT.equals(client.getKey());
-                ReactiveRedisClient redisClient = client.getValue();
-                RedisConfiguration redisConfig = RedisClientUtil.getConfiguration(this.redisConfig,
-                        isDefault ? DEFAULT_CLIENT : client.getKey());
-                long timeout = 10;
-                if (redisConfig.timeout.isPresent()) {
-                    timeout = redisConfig.timeout.get().getSeconds();
-                }
-                String redisClientName = isDefault ? "default" : client.getKey();
-                io.vertx.mutiny.redis.client.Response response = redisClient.ping(Collections.emptyList()).await()
-                        .atMost(Duration.ofSeconds(timeout));
-                builder.up().withData(redisClientName, response.toString());
-            } catch (Exception e) {
-                return builder.down().withData("reason", "client [" + client.getKey() + "]: " + e.getMessage())
-                        .build();
             }
         }
         return builder.build();

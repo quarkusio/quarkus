@@ -4,7 +4,7 @@ import io.quarkus.devtools.project.codegen.CreateProjectHelper;
 import picocli.CommandLine;
 
 public class TargetGAVGroup {
-    final static String DEFAULT_GAV = CreateProjectHelper.DEFAULT_GROUP_ID + ":"
+    static final String DEFAULT_GAV = CreateProjectHelper.DEFAULT_GROUP_ID + ":"
             + CreateProjectHelper.DEFAULT_ARTIFACT_ID + ":"
             + CreateProjectHelper.DEFAULT_VERSION;
 

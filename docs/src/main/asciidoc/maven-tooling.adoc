@@ -17,7 +17,7 @@ You can scaffold a new Maven project with:
 :create-app-artifact-id: my-artifactId
 :create-app-code:
 :create-app-post-command:
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 If you are using the CLI, you can get the list of available options with:
 
@@ -72,7 +72,7 @@ If you are using the Maven command, the following table lists the attributes you
 
 | `quarkusRegistryClient`
 | `true`
-| Whether or not Quarkus should use the online registry to resolve extension catalogs. If this is set to false, the extension catalog will be narrowed to the defined (or default) platform BOM.
+| Whether Quarkus should use the online registry to resolve extension catalogs. If this is set to false, the extension catalog will be narrowed to the defined (or default) platform BOM.
 
 |===
 
@@ -88,19 +88,19 @@ Instructions to build the image and run the container are written in those Docke
 
 From inside a Quarkus project, you can obtain a list of the available extensions with:
 
-include::includes/devtools/extension-list.adoc[]
+include::{includes}/devtools/extension-list.adoc[]
 
 You can add an extension using:
 
 :add-extension-extensions: hibernate-validator
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 Extensions are passed using a comma-separated list.
 
 The extension name is the GAV name of the extension: e.g. `io.quarkus:quarkus-agroal`.
 But you can pass a partial name and Quarkus will do its best to find the right extension.
 For example, `agroal`, `Agroal` or `agro`  will expand to `io.quarkus:quarkus-agroal`.
-If no extension is found or if more than one extensions match, you will see a red check mark  ❌ in the command result.
+If no extension is found or if more than one extension matches, you will see a red check mark  ❌ in the command result.
 
 [source,shell]
 ----
@@ -119,7 +119,7 @@ $ ./mvnw quarkus:add-extensions -Dextensions=jdbc,agroal,non-exist-ent
 You can install all extensions which match a globbing pattern :
 
 :add-extension-extensions: smallrye-*
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 [[dev-mode]]
 == Development mode
@@ -127,7 +127,7 @@ include::includes/devtools/extension-add.adoc[]
 Quarkus comes with a built-in development mode.
 Run your application with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 You can then update the application sources, resources and configurations.
 The changes are automatically reflected in your running application.
@@ -148,7 +148,7 @@ Hit `CTRL+C` to stop the application.
 By default, `quarkus:dev` sets the debug host to `localhost` (for security reasons). If you need to change this, for example to enable debugging on all hosts, you can use the `-DdebugHost` option like so:
 
 :dev-additional-parameters: -DdebugHost=0.0.0.0
-include::includes/devtools/dev-parameters.adoc[]
+include::{includes}/devtools/dev-parameters.adoc[]
 :!dev-additional-parameters:
 ====
 
@@ -178,7 +178,7 @@ may want to leave it out of the properties file and specify it as a system prope
 
 The `mutable-jar` is then built in the same way that a regular Quarkus jar is built, i.e. by issuing:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 Before you start Quarkus on the remote host set the environment variable `QUARKUS_LAUNCH_DEVMODE=true`. If you are
 on bare metal you can set it via the `export QUARKUS_LAUNCH_DEVMODE=true` command and then run the application with the proper `java -jar ...` command to run the application.
@@ -188,7 +188,7 @@ When the application starts you should now see the following line in the logs: `
 
 NOTE: The remote side does not need to include Maven or any other development tools. The normal `fast-jar` Dockerfile
 that is generated with a new Quarkus application is all you need. If you are using bare metal launch the Quarkus runner
-jar, do not attempt to run normal devmode.
+jar, do not attempt to run normal dev mode.
 
 Now you need to connect your local agent to the remote host, using the `remote-dev` command:
 
@@ -198,7 +198,7 @@ Now you need to connect your local agent to the remote host, using the `remote-d
 ----
 
 Now every time you refresh the browser you should see any changes you have made locally immediately visible in the remote
-app. This is done via a HTTP based long polling transport, that will synchronize your local workspace and the remote
+app. This is done via an HTTP based long polling transport, that will synchronize your local workspace and the remote
 application via HTTP calls.
 
 If you do not want to use the HTTP feature then you can simply run the `remote-dev` command without specifying the URL.
@@ -269,7 +269,7 @@ An additional system property `suspend` can be used to suspend the JVM, when lau
 You can also run a Quarkus application in debug mode with a suspended JVM using:
 
 :dev-additional-parameters: -Dsuspend -Ddebug
-include::includes/devtools/dev-parameters.adoc[]
+include::{includes}/devtools/dev-parameters.adoc[]
 :!dev-additional-parameters:
 
 Then, attach your debugger to `localhost:5005`.
@@ -289,15 +289,15 @@ The next screen list the found modules; select the generated project and click o
 
 In a separated terminal, run:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 and enjoy a highly productive environment.
 
-**IntelliJ**
+**IntelliJ IDEA**
 
-In IntelliJ:
+In IntelliJ IDEA:
 
-1. From inside IntelliJ select `File -> New -> Project From Existing Sources...` or, if you are on the welcome dialog, select `Import project`.
+1. From inside IntelliJ IDEA select `File -> New -> Project From Existing Sources...` or, if you are on the welcome dialog, select `Import project`.
 2. Select the project root
 3. Select `Import project from external model` and `Maven`
 4. Next a few times (review the different options if needed)
@@ -305,7 +305,7 @@ In IntelliJ:
 
 In a separated terminal or in the embedded terminal, run:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Enjoy!
 
@@ -319,7 +319,7 @@ In NetBeans:
 
 In a separated terminal or the embedded terminal, go to the project root and run:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Enjoy!
 
@@ -352,7 +352,7 @@ The goal accepts the following optional parameters:
 
 * `mode` - the default value is `prod`, i.e. the production build dependency tree. Alternatively, it accepts values `test` to display the test dependency tree and `dev` to display the dev mode dependency tree;
 * `outputFile` - specifies the file to persist the dependency tree to;
-* `appendOutput` - the default value is `false`, indicates whether the output to the command should be appended to the file specified with the `outputFile` parameter or it should be overriden.
+* `appendOutput` - the default value is `false`, indicates whether the output to the command should be appended to the file specified with the `outputFile` parameter or it should be overridden.
 
 == Downloading Maven artifact dependencies for offline development and testing
 
@@ -378,7 +378,7 @@ Verify that your `pom.xml` has the proper `native` profile (see <<build-tool-mav
 
 Create a native executable using:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 A native executable will be present in `target/`.
 
@@ -421,10 +421,10 @@ The native executable will be specific to your operating system.
 To create an executable that will run in a container, use the following:
 
 :build-additional-parameters: -Dquarkus.native.container-build=true
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 :!build-additional-parameters:
 
-The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
+The produced executable will be a 64-bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
 Note that in this case the build itself runs in a Docker container too, so you don't need to have GraalVM installed locally.
 
@@ -562,7 +562,7 @@ on the classpath that the legacy jar necessitates, when loading a class or resou
 Quarkus Maven plugin supports the generation of Uber-Jars by specifying a `quarkus.package.type=uber-jar` configuration option in your `application.properties`
 (or `<quarkus.package.type>uber-jar</quarkus.package.type>` in your `pom.xml`).
 
-The original jar will still be present in the `target` directory but it will be renamed to contain the `.original` suffix.
+The original jar will still be present in the `target` directory, but it will be renamed to contain the `.original` suffix.
 
 When building an Uber-Jar you can specify entries that you want to exclude from the generated jar by using the `quarkus.package.ignored-entries` configuration
 option, this takes a comma separated list of entries to ignore.
@@ -577,7 +577,7 @@ Uber-Jar's final name is configurable via a Maven's build settings `finalName` o
 By default, Quarkus will not discover CDI beans inside another module.
 
 The best way to enable CDI bean discovery for a module in a multi-module project would be to include the `jandex-maven-plugin`,
-unless it is the main application module already configured with the quarkus-maven-plugin, in which case it will indexed automatically.
+unless it is the main application module already configured with the quarkus-maven-plugin, in which case it will be indexed automatically.
 
 [source,xml,subs="attributes+"]
 ----
@@ -611,10 +611,10 @@ The profile can be provided directly in the Maven build's command thanks to the 
 
 // TODO switch to <profile-name-here> once escaping issue is fixed in Asciidoctor
 :build-additional-parameters: -Dquarkus.profile=profile-name-here
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 :!build-additional-parameters:
 
-However it is also possible to specify the profile directly in the POM file of the project using project properties, the Quarkus Maven plugin configuration properties or system properties set in the Quarkus Maven plugin configuration.
+However, it is also possible to specify the profile directly in the POM file of the project using project properties, the Quarkus Maven plugin configuration properties or system properties set in the Quarkus Maven plugin configuration.
 
 In order of precedence (greater precedence first):
 
@@ -825,7 +825,7 @@ include::{generated-dir}/config/quarkus-package-pkg-package-config.adoc[opts=opt
 
 By default, Quarkus tests in JVM mode are run using the `test` configuration profile. If you are not familiar with Quarkus
 configuration profiles, everything you need to know is explained in the
-xref:config.adoc#configuration-profiles[Configuration Profiles Documentation].
+xref:config-reference.adoc#profiles[Configuration Profiles Documentation].
 
 It is however possible to use a custom configuration profile for your tests with the Maven Surefire and Maven Failsafe
 configurations shown below. This can be useful if you need for example to run some tests using a specific database which is not
@@ -880,7 +880,7 @@ It is not possible to use a custom test configuration profile in native mode for
 
 Quarkus bootstrap includes a Maven resolver implementation that is used to resolve application runtime and build time dependencies. The Quarkus Maven resolver is initialized from the same Maven command line that launched the build, test or dev mode. Typically, there is no need to add any extra configuration for it. However, there could be cases where an extra configuration option may be necessary to properly resolve application dependencies in test or dev modes, or IDEs.
 
-Maven test plugins (such as `surefire` and `failsafe`), for example, are not propagating build system properties to the running tests by default. Which means some of the system properties set by the Maven CLI aren't available for the Quarkus Maven resolver initialized for the tests, which may result in test dependencies being resolved using different settings than the main Maven build.
+Maven test plugins (such as `surefire` and `failsafe`), for example, are not propagating build system properties to the running tests by default. Which means some system properties set by the Maven CLI aren't available for the Quarkus Maven resolver initialized for the tests, which may result in test dependencies being resolved using different settings than the main Maven build.
 
 Here is a list of system properties the Quarkus bootstrap Maven resolver checks during its initialization.
 
@@ -895,20 +895,20 @@ Here is a list of system properties the Quarkus bootstrap Maven resolver checks 
 | The Maven home dir is used to resolve the global settings file unless it was explicitly provided on the command line with the `-gs` argument
 
 | `maven.settings`
-| `~/m2/settings.xml`
+| `~/.m2/settings.xml`
 | Unless the custom settings file has been provided with the `-s` argument, this property can be used to point the resolver to a custom Maven settings file
 
 | `maven.repo.local`
-| `~/m2/repository`
+| `~/.m2/repository`
 | This property could be used to configure a custom local Maven repository directory, if it is different from the default one and the one specified in the `settings.xml`
 
 | `maven.top-level-basedir`
 | none
-| This property may be useful to help the Maven resolver identify the top-level Maven project in the workspace. By default, the Maven resolver will be discovering a project's workspace by navigating the parent-module POM relationship. However there could be project layouts that are using an aggregator module which isn't appearing as the parent for its modules. In this case, this property will help the Quarkus Maven resolver to properly discover the workspace.
+| This property may be useful to help the Maven resolver identify the top-level Maven project in the workspace. By default, the Maven resolver will be discovering a project's workspace by navigating the parent-module POM relationship. However, there could be project layouts that are using an aggregator module which isn't appearing as the parent for its modules. In this case, this property will help the Quarkus Maven resolver to properly discover the workspace.
 
 | `quarkus.bootstrap.effective-model-builder`
 | `false`
-| By default, the Quarkus Maven resolver is reading project's POMs directly when discovering the project's layout. While in most cases it works well enough and relatively fast, reading raw POMs has its limitation. E.g. if a POM includes modules in a profile, these modules will not be discovered. This system property enables project's layout discovery based on the effective POM models, that are properly interpolated, instead of the raw ones. The reason this option is not enabled by default is it may appear to be significantly more time consuming that could increase, e.g. CI testing times. Until there is a better approach found that could be used by default, projects that require it should enable this option.
+| By default, the Quarkus Maven resolver is reading project's POMs directly when discovering the project's layout. While in most cases it works well enough and relatively fast, reading raw POMs has its limitation. E.g. if a POM includes modules in a profile, these modules will not be discovered. This system property enables project's layout discovery based on the effective POM models, that are properly interpolated, instead of the raw ones. The reason this option is not enabled by default is it may appear to be significantly more time-consuming that could increase, e.g. CI testing times. Until there is a better approach found that could be used by default, projects that require it should enable this option.
 
 |===
 
@@ -925,7 +925,7 @@ These system properties above could be added to, e.g., a `surefire` and/or `fail
         <version>${surefire-plugin.version}</version>
         <configuration>
           <systemPropertyVariables>
-            <maven.home>${maven.hom}</maven.home> <1>
+            <maven.home>${maven.home}</maven.home> <1>
             <maven.repo.local>${settings.localRepository}</maven.repo.local> <2>
             <maven.settings>${session.request.userSettingsFile.path}</maven.settings> <3>
             <maven.top-level-basedir>${session.topLevelProject.basedir.absolutePath}</maven.top-level-basedir> <4>
@@ -1008,7 +1008,7 @@ Here is an example `info` output for a simple project:
 NOTE: `quarkus:info` will also report Quarkus extensions that aren't found in the Quarkus extension registries if those are present among the project dependencies, indicating they have an 'unknown origin'.
 
 [[project-info-misaligned]]
-=== Highlighing misaligned versions
+=== Highlighting misaligned versions
 
 `quarkus:info` will also highlight basic Quarkus dependency version misalignments, in case they are detected. For example, if we modify the project mentioned above by removing the `kogito-quarkus-decisions` extension from the dependencies and adding a `2.6.3.Final` `<version>` element to the `quarkus-resteasy-reactive` dependency that is managed by the `quarkus-bom` and then run `quarkus:info` again, we'll see something like:
 

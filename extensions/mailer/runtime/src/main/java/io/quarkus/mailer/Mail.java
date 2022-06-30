@@ -349,7 +349,7 @@ public class Mail {
      * @param name the name of the attachment, generally a file name.
      * @param file the file to be attached. Note that the file will be read asynchronously.
      * @param contentType the content type
-     * @param contentId the content id. It must follows the {@code <some-id@some-domain>} syntax. Then the HTML
+     * @param contentId the content id. It must follow the {@code <some-id@some-domain>} syntax. Then the HTML
      *        content can reference this attachment using {@code src="cid:some-id@some-domain"}.
      * @return the current {@link Mail}
      */
@@ -403,7 +403,7 @@ public class Mail {
      * @param name the name of the attachment, generally a file name.
      * @param data the binary data to be attached
      * @param contentType the content type
-     * @param contentId the content id. It must follows the {@code <some-id@some-domain>} syntax. Then the HTML
+     * @param contentId the content id. It must follow the {@code <some-id@some-domain>} syntax. Then the HTML
      *        content can reference this attachment using {@code src="cid:some-id@some-domain"}.
      * @return the current {@link Mail}
      */
@@ -418,7 +418,7 @@ public class Mail {
      * @param name the name of the attachment, generally a file name.
      * @param data the binary data to be attached
      * @param contentType the content type
-     * @param contentId the content id. It must follows the {@code <some-id@some-domain>} syntax. Then the HTML
+     * @param contentId the content id. It must follow the {@code <some-id@some-domain>} syntax. Then the HTML
      *        content can reference this attachment using {@code src="cid:some-id@some-domain"}.
      * @return the current {@link Mail}
      */

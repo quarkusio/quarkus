@@ -13,6 +13,7 @@
 
     <artifactId>quarkus-amazon-lambda-rest</artifactId>
     <name>Quarkus - Amazon Lambda AWS Gateway REST API- Runtime</name>
+    <description>Build an API Gateway REST API with Lambda integration</description>
 
     <dependencies>
         <dependency>
@@ -37,7 +38,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

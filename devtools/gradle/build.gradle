@@ -1,5 +1,5 @@
 plugins {
-    id 'com.gradle.plugin-publish' version '0.21.0' apply false
+    id 'com.gradle.plugin-publish' version '1.0.0' apply false
 }
 
 subprojects {
@@ -21,14 +21,7 @@ subprojects {
     }
 
     repositories {
-        // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
-        if (System.properties.containsKey('maven.repo.local')) {
-            maven {
-                url System.properties.get('maven.repo.local')
-            }
-        } else {
-            mavenLocal()
-        }
+        mavenLocal()
         mavenCentral()
     }
 

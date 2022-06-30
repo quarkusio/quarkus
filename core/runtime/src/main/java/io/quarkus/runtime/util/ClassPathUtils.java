@@ -213,7 +213,7 @@ public class ClassPathUtils {
 
     /**
      * Translates a URL to local file system path.
-     * In case the the URL couldn't be translated to a file system path,
+     * In case the URL couldn't be translated to a file system path,
      * an instance of {@link IllegalArgumentException} will be thrown.
      *
      * @param url URL

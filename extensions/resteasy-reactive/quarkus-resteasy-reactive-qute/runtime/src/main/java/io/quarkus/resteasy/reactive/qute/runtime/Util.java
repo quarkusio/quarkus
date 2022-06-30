@@ -25,7 +25,7 @@ final class Util {
             // Make sure the timeout is always used
             long timeout = instance.getTimeout();
             uni = uni.ifNoItem().after(Duration.ofMillis(timeout))
-                    .failWith(() -> new TemplateException(instance + " rendering timeout [" + timeout + "ms] occured"));
+                    .failWith(() -> new TemplateException(instance + " rendering timeout [" + timeout + "ms] occurred"));
         }
         return uni;
     }

@@ -39,7 +39,7 @@ The condition which triggers activation of an extension is configured in the ext
     <plugins>  
       <plugin>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+        <artifactId>quarkus-extension-maven-plugin</artifactId>
         <version>${quarkus.version}</version>
         <executions>
           <execution>
@@ -150,7 +150,7 @@ Conditional dependencies can also be configured in the Quarkus extension descrip
     <plugins>  
       <plugin>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+        <artifactId>quarkus-extension-maven-plugin</artifactId>
         <version>${quarkus.version}</version>
         <executions>
           <execution>

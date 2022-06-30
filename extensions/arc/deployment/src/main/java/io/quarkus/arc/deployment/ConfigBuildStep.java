@@ -68,6 +68,7 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
+import io.smallrye.config.WithConverter;
 import io.smallrye.config.inject.ConfigProducer;
 
 /**
@@ -83,6 +84,7 @@ public class ConfigBuildStep {
     private static final DotName LIST_NAME = DotName.createSimple(List.class.getName());
     private static final DotName SUPPLIER_NAME = DotName.createSimple(Supplier.class.getName());
     private static final DotName CONFIG_VALUE_NAME = DotName.createSimple(io.smallrye.config.ConfigValue.class.getName());
+    private static final DotName WITH_CONVERTER = DotName.createSimple(WithConverter.class.getName());
 
     @BuildStep
     void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -350,6 +352,19 @@ public class ConfigBuildStep {
                             .creator(ConfigMappingCreator.class)
                             .param("type", configClass.getConfigClass())
                             .param("prefix", configClass.getPrefix())));
+        }
+    }
+
+    @BuildStep
+    void registerConfigMappingConverters(CombinedIndexBuildItem indexBuildItem,
+            BuildProducer<ReflectiveClassBuildItem> producer) {
+
+        String[] valueTypes = indexBuildItem.getIndex().getAnnotations(WITH_CONVERTER).stream()
+                .map(i -> i.value().asClass().name().toString())
+                .toArray(String[]::new);
+        if (valueTypes.length > 0) {
+            producer.produce(
+                    ReflectiveClassBuildItem.builder(valueTypes).constructors(true).methods(false).fields(false).build());
         }
     }
 

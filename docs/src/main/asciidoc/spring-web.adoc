@@ -15,7 +15,7 @@ This guide explains how a Quarkus application can leverage the well known Spring
 
 To complete this guide, you need:
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Solution
 
@@ -32,7 +32,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-web-quickstart
 :create-app-extensions: spring-web,resteasy-reactive-jackson
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a project which imports the `spring-web` extension.
 
@@ -40,7 +40,7 @@ If you already have your Quarkus project configured, you can add the `spring-web
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: spring-web,resteasy-reactive-jackson
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
 
@@ -125,7 +125,7 @@ public class GreetingControllerTest {
 
 Run the application with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Open your browser to http://localhost:8080/greeting.
 
@@ -135,7 +135,7 @@ The result should be: `{"message": "hello"}`.
 
 You can generate the native executable with:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 == Going further with an endpoint returning JSON
 
@@ -373,8 +373,8 @@ components:
 
 === Using Swagger UI
 
-Swagger UI is included by default when running in `Dev` or `Test` mode, and can optionally added to `Prod` mode.
-See xref:openapi-swaggerui.adoc#use-swagger-ui-for-development[the Swagger UI] Guide for more details.
+Swagger UI is included by default when running in `Dev` or `Test` mode, and can optionally be added to `Prod` mode.
+See xref:openapi-swaggerui.adoc#dev-mode[the Swagger UI] Guide for more details.
 
 Navigate to link:http://localhost:8080/q/swagger-ui/[localhost:8080/q/swagger-ui/] and you will see the Swagger UI screen:
 
@@ -465,7 +465,7 @@ Other parameter types mentioned in the Spring `https://docs.spring.io/spring-fra
 
 Please note that the Spring support in Quarkus does not start a Spring Application Context nor are any Spring infrastructure classes run.
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
-What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover Spring infrastructure
+What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover, Spring infrastructure
 classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for example) will not be executed.
 
 == Conversion Table

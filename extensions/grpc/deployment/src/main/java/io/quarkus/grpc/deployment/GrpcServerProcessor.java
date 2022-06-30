@@ -297,7 +297,7 @@ public class GrpcServerProcessor {
      * Retrieve the blocking-mode for the given method name.
      *
      * <p>
-     * Traverses the service impl class hierarchy, stops at the first "explict" annotation
+     * Traverses the service impl class hierarchy, stops at the first "explicit" annotation
      * ({@link io.smallrye.common.annotation.Blocking} or {@link io.smallrye.common.annotation.NonBlocking}).
      *
      * <p>

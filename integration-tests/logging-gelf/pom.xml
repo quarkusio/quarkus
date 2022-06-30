@@ -161,7 +161,7 @@
                                             <ES_JAVA_OPTS>-Xms512m -Xmx512m</ES_JAVA_OPTS>
                                         </env>
                                         <log>
-                                            <prefix>Elasticsearch: </prefix>
+                                            <prefix>Elasticsearch:</prefix>
                                             <date>default</date>
                                             <color>cyan</color>
                                         </log>
@@ -192,13 +192,13 @@
                                             <port>9600:9600</port>
                                         </ports>
                                         <log>
-                                            <prefix>Logstash: </prefix>
+                                            <prefix>Logstash:</prefix>
                                             <date>default</date>
                                             <color>cyan</color>
                                         </log>
                                         <volumes>
                                             <bind>
-                                                <volume>${project.basedir}/src/test/resources/pipeline:/usr/share/logstash/pipeline:Z</volume>
+                                                <volume>${project.basedir}/src/test/resources/pipeline:/usr/share/logstash/pipeline${volume.access.modifier}</volume>
                                             </bind>
                                         </volumes>
                                         <wait>

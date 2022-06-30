@@ -14,7 +14,7 @@ import io.smallrye.mutiny.Uni
 abstract class ReactivePanacheMongoEntityBase {
     /**
      * Persist this entity in the database.
-     * This will set it's ID field if not already set.
+     * This will set its ID field if not already set.
      *
      * @see [persist]
      */
@@ -28,7 +28,7 @@ abstract class ReactivePanacheMongoEntityBase {
     fun <T : ReactivePanacheMongoEntityBase> update(): Uni<T> = INSTANCE.update(this).map { this as T }
 
     /**
-     * Persist this entity in the database or update it if it already exist.
+     * Persist this entity in the database or update it if it already exists.
      *
      * @see [persistOrUpdate]
      */

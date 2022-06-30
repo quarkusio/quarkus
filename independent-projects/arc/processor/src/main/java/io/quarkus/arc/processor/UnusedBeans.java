@@ -10,8 +10,11 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.jboss.logging.Logger;
 
 final class UnusedBeans {
+
+    private static final Logger LOG = Logger.getLogger(UnusedBeans.class);
 
     private UnusedBeans() {
     }
@@ -38,24 +41,29 @@ final class UnusedBeans {
         test: for (BeanInfo bean : beans) {
             // Named beans can be used in templates and expressions
             if (bean.getName() != null) {
+                LOG.debugf("Unremovable - named: %s", bean);
                 continue test;
             }
             // Unremovable synthetic beans
             if (!bean.isRemovable()) {
+                LOG.debugf("Unremovable - unremovable synthetic: %s", bean);
                 continue test;
             }
             // Custom exclusions
             for (Predicate<BeanInfo> exclusion : allUnusedExclusions) {
                 if (exclusion.test(bean)) {
+                    LOG.debugf("Unremovable - excluded by %s: %s", exclusion.toString(), bean);
                     continue test;
                 }
             }
             // Is injected
             if (injected.contains(bean)) {
+                LOG.debugf("Unremovable - injected: %s", bean);
                 continue test;
             }
             // Declares an observer method
             if (declaresObserver.contains(bean)) {
+                LOG.debugf("Unremovable - declares observer: %s", bean);
                 continue test;
             }
             // Instance<Foo>
@@ -63,7 +71,7 @@ final class UnusedBeans {
                 if (Beans.hasQualifiers(bean, injectionPoint.getRequiredQualifiers())
                         && bean.getDeployment().getBeanResolver().matchesType(bean,
                                 injectionPoint.getType().asParameterizedType().arguments().get(0))) {
-
+                    LOG.debugf("Unremovable - programmatic lookup: %s", bean);
                     continue test;
                 }
             }
@@ -87,6 +95,8 @@ final class UnusedBeans {
                 if (unusedButDeclaresProducer.contains(declaringBean) && unusedProducers.containsAll(entry.getValue())) {
                     // All producers declared by this bean are unused
                     removableBeans.add(declaringBean);
+                } else {
+                    LOG.debugf("Unremovable - declares producer: %s", declaringBean);
                 }
             }
         }

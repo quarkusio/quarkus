@@ -8,7 +8,7 @@ import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 /**
- * Needs to mimick MutableIdentifierGeneratorFactoryInitiator, but allows us to capture
+ * Needs to mimic MutableIdentifierGeneratorFactoryInitiator, but allows us to capture
  * which Identifier strategies are being used, so that we can keep a reference to the classed
  * needed at runtime.
  *

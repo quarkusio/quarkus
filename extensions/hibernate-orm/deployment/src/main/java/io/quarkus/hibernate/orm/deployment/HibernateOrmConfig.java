@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.deployment;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
@@ -51,7 +52,7 @@ public class HibernateOrmConfig {
     public Optional<Boolean> logSessionMetrics;
 
     /**
-     * Whether or not metrics are published if a metrics extension is enabled.
+     * Whether metrics are published if a metrics extension is enabled.
      */
     @ConfigItem(name = "metrics.enabled")
     public boolean metricsEnabled;
@@ -64,11 +65,13 @@ public class HibernateOrmConfig {
                 metricsEnabled;
     }
 
-    public static String puPropertyKey(String puName, String radical) {
-        String prefix = PersistenceUnitUtil.isDefaultPersistenceUnit(puName)
-                ? "quarkus.hibernate-orm."
-                : "quarkus.hibernate-orm.\"" + puName + "\".";
-        return prefix + radical;
+    public Map<String, HibernateOrmConfigPersistenceUnit> getAllPersistenceUnitConfigsAsMap() {
+        Map<String, HibernateOrmConfigPersistenceUnit> map = new TreeMap<>();
+        if (defaultPersistenceUnit != null) {
+            map.put(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, defaultPersistenceUnit);
+        }
+        map.putAll(persistenceUnits);
+        return map;
     }
 
     @ConfigGroup

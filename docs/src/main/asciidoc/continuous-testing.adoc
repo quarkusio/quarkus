@@ -21,7 +21,7 @@ Learn how to use continuous testing in your Quarkus Application.
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * The completed greeter application from the xref:getting-started.adoc[Getting Started Guide]
 
 == Introduction
@@ -34,7 +34,7 @@ only run the relevant tests when code is changed.
 
 Start the xref:getting-started.adoc[Getting Started] application (or any other application) using:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Quarkus will start in development mode as normal, but down the bottom of the screen you should see the following:
 
@@ -148,7 +148,7 @@ mode run `mvn quarkus:test`.
 
 NOTE: The Dev UI is not available when running in continuous testing mode, as this is provided by dev mode.
 
-== Multi Module Projects
+== Multi-module Projects
 
 Note that continuous testing supports multi-module projects, so tests in modules other than the application can still
 be run when files are changed. The modules that are run can be controlled using config as listed below.

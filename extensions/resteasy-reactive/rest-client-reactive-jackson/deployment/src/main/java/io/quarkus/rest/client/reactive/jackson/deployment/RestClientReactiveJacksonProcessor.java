@@ -56,43 +56,43 @@ public class RestClientReactiveJacksonProcessor {
                 .produce(
                         new MessageBodyReaderBuildItem.Builder(JacksonBasicMessageBodyReader.class.getName(),
                                 Object.class.getName())
-                                        .setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES)
-                                        .setBuiltin(true)
-                                        .build());
+                                .setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES)
+                                .setBuiltin(true)
+                                .build());
         additionalReaders
                 .produce(
                         new MessageBodyReaderBuildItem.Builder(VertxJsonArrayBasicMessageBodyReader.class.getName(),
                                 JsonArray.class.getName())
-                                        .setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES)
-                                        .setBuiltin(true)
-                                        .build());
+                                .setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES)
+                                .setBuiltin(true)
+                                .build());
         additionalReaders
                 .produce(
                         new MessageBodyReaderBuildItem.Builder(VertxJsonObjectBasicMessageBodyReader.class.getName(),
                                 JsonObject.class.getName())
-                                        .setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES)
-                                        .setBuiltin(true)
-                                        .build());
+                                .setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES)
+                                .setBuiltin(true)
+                                .build());
         additionalWriters
                 .produce(
                         new MessageBodyWriterBuildItem.Builder(ClientJacksonMessageBodyWriter.class.getName(),
                                 Object.class.getName())
-                                        .setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES)
-                                        .setBuiltin(true)
-                                        .build());
+                                .setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES)
+                                .setBuiltin(true)
+                                .build());
         additionalWriters
                 .produce(
                         new MessageBodyWriterBuildItem.Builder(VertxJsonArrayBasicMessageBodyWriter.class.getName(),
                                 JsonArray.class.getName())
-                                        .setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES)
-                                        .setBuiltin(true)
-                                        .build());
+                                .setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES)
+                                .setBuiltin(true)
+                                .build());
         additionalWriters
                 .produce(
                         new MessageBodyWriterBuildItem.Builder(VertxJsonObjectBasicMessageBodyWriter.class.getName(),
                                 JsonObject.class.getName())
-                                        .setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES)
-                                        .setBuiltin(true)
-                                        .build());
+                                .setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES)
+                                .setBuiltin(true)
+                                .build());
     }
 }

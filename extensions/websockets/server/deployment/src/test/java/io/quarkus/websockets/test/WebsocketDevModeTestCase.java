@@ -13,6 +13,7 @@ import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
  */
 public class WebsocketDevModeTestCase {
 
-    @TestHTTPResource("echo")
+    @TestHTTPResource("api/echo")
     URI echoUri;
 
     @RegisterExtension
@@ -35,7 +36,8 @@ public class WebsocketDevModeTestCase {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(EchoWebSocket.class, EchoService.class);
+                            .addClasses(EchoWebSocket.class, EchoService.class)
+                            .addAsResource(new StringAsset("quarkus.http.root-path=/api/"), "application.properties");
                 }
             });
 

@@ -1,0 +1,44 @@
+{#include main fluid=true}
+{#title}Build Steps{/title}
+{#body}
+
+{#let metrics=info:buildMetrics.get}
+
+<p class="lead mt-4 mb-4">
+Executed <strong>{metrics.steps.size}</strong> build steps on <strong>{metrics.threads.size}</strong> threads.
+</p>
+
+<table class="table table-striped">
+   <thead class="thead-dark">
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">Build Step</th>
+      <th scope="col">Started</th>
+      <th scope="col">Duration</th>
+      <th scope="col">Thread</th>
+    </tr>
+   </thead>
+   <tbody>
+    {#for step in metrics.steps}
+    <tr>
+      <td>{step_count}</td>
+      <td>
+      {step.stepId}
+      </td>
+      <td>
+      {step.started} 
+      </td>
+      <td>
+      {step.duration} ms 
+      </td>
+      <td>
+      {step.thread}
+      </td>
+    {/for}
+   </tbody>
+  </table>
+
+{/let}
+  
+{/body}
+{/include}

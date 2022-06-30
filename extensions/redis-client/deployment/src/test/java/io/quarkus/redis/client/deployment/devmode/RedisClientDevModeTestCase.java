@@ -10,9 +10,12 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.redis.client.deployment.RedisTestResource;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.restassured.RestAssured;
 
+@QuarkusTestResource(RedisTestResource.class)
 public class RedisClientDevModeTestCase {
 
     @RegisterExtension
@@ -21,7 +24,7 @@ public class RedisClientDevModeTestCase {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addAsResource(new StringAsset("quarkus.redis.hosts=redis://localhost:6379/0"),
+                            .addAsResource(new StringAsset("quarkus.redis.hosts=${quarkus.redis.tr}"),
                                     "application.properties")
                             .addClass(IncrementResource.class);
                 }

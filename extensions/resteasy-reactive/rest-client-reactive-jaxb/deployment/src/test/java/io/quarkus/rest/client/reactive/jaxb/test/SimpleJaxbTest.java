@@ -57,18 +57,21 @@ public class SimpleJaxbTest {
     @Path("/xml")
     public static class XmlResource {
 
+        private static final String DTO_FOO_BAR = "<?xml version=\"1.0\" encoding=\"UTF-8\" "
+                + "standalone=\"yes\"?><Dto><name>foo</name><value>bar</value></Dto>";
+
         @GET
         @Produces(MediaType.APPLICATION_XML)
         @Path("/dto")
-        public Dto dto() {
-            return new Dto("foo", "bar");
+        public String dto() {
+            return DTO_FOO_BAR;
         }
 
         @GET
         @Produces(MediaType.TEXT_XML)
         @Path("/plain")
-        public Dto plain() {
-            return new Dto("foo", "bar");
+        public String plain() {
+            return DTO_FOO_BAR;
         }
     }
 

@@ -102,7 +102,7 @@ public class SpringCloudConfigClientConfig {
     public Optional<String> keyPassword;
 
     /**
-     * When using HTTPS and no keyStore has been specified, whether or not to trust all certificates
+     * When using HTTPS and no keyStore has been specified, whether to trust all certificates
      */
     @ConfigItem(defaultValue = "false")
     public boolean trustCerts;

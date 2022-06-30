@@ -23,7 +23,7 @@ TIP: there is another guide if you need to write server xref:rest-json.adoc[JSON
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Solution
 
@@ -40,7 +40,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: rest-client-quickstart
 :create-app-extensions: resteasy,resteasy-jackson,rest-client,rest-client-jackson
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates the Maven project with a REST endpoint and imports:
 
@@ -51,7 +51,7 @@ If you already have your Quarkus project configured, you can add the `rest-clien
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: rest-client,rest-client-jackson
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your `pom.xml`:
 
@@ -113,6 +113,7 @@ import org.jboss.resteasy.annotations.jaxrs.QueryParam;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
 import java.util.Set;
 
 @Path("/extensions")
@@ -130,7 +131,7 @@ The purpose of the annotations in the code above is the following:
 
 * `@RegisterRestClient` allows Quarkus to know that this interface is meant to be available for
 CDI injection as a REST Client
-* `@Path`, `@GET` and `@PathParam` are the standard JAX-RS annotations used to define how to access the service
+* `@Path`, `@GET` and `@QueryParam` are the standard JAX-RS annotations used to define how to access the service
 
 [NOTE]
 ====
@@ -596,7 +597,7 @@ org.eclipse.microprofile.rest.client.propagateHeaders=Authorization,Proxy-Author
 
 Run the application with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Open your browser to http://localhost:8080/extension/id/io.quarkus:quarkus-rest-client.
 
@@ -604,13 +605,13 @@ You should see a JSON object containing some basic information about the REST Cl
 
 As usual, the application can be packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 And executed with `java -jar target/quarkus-app/quarkus-run.jar`.
 
 You can also generate the native executable with:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 == REST Client and RESTEasy interactions
 
@@ -632,7 +633,7 @@ Setting up a mock HTTP server, against which tests are run, is a common testing 
 Examples of such servers are link:http://wiremock.org/[Wiremock] and link:https://docs.hoverfly.io/projects/hoverfly-java/en/latest/index.html[Hoverfly].
 In this section we'll demonstrate how Wiremock can be leveraged for testing the `ExtensionsService` which was developed above.
 
-First of all, Wiremock needs to be added as a test dependency. For a Maven project that would happen like so:
+First, Wiremock needs to be added as a test dependency. For a Maven project that would happen like so:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml

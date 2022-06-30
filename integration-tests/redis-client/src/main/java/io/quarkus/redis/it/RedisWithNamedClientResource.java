@@ -15,15 +15,15 @@ import io.quarkus.redis.client.reactive.ReactiveRedisClient;
 import io.smallrye.mutiny.Uni;
 import io.vertx.redis.client.Response;
 
-@Path("/quarkus-redis-with-named")
+@Path("/quarkus-redis-with-name-legacy")
 @ApplicationScoped
 public class RedisWithNamedClientResource {
     @Inject
-    @RedisClientName("named-client")
+    @RedisClientName("named-client-legacy")
     RedisClient redisClient;
 
     @Inject
-    @RedisClientName("named-reactive-client")
+    @RedisClientName("named-reactive-client-legacy")
     ReactiveRedisClient reactiveRedisClient;
 
     // synchronous

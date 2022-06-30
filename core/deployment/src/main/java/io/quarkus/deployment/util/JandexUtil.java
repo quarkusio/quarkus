@@ -189,7 +189,7 @@ public final class JandexUtil {
         // figure out which arguments we passed to the supertype
         List<Type> appliedArguments;
 
-        // we passed them explicitely
+        // we passed them explicitly
         if (appliedType.kind() == Kind.PARAMETERIZED_TYPE) {
             appliedArguments = appliedType.asParameterizedType().arguments();
         } else {
@@ -290,7 +290,7 @@ public final class JandexUtil {
     /**
      * Returns the enclosing class of the given annotation instance. For field or method annotations this
      * will return the enclosing class. For parameters, this will return the enclosing class of the enclosing
-     * method. For classes it will return the class itself.
+     * method. For classes, it will return the class itself.
      *
      * @param annotationInstance the annotation whose enclosing class to look up.
      * @return the enclosing class.

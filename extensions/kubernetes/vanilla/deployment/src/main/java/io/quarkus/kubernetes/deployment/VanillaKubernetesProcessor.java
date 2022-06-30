@@ -102,7 +102,7 @@ public class VanillaKubernetesProcessor {
         KubernetesCommonHelper.combinePorts(ports, config).values().forEach(value -> {
             result.add(new ConfiguratorBuildItem(new AddPortToKubernetesConfig(value)));
         });
-        result.add(new ConfiguratorBuildItem(new ApplyExpositionConfigurator((config.ingress))));
+        result.add(new ConfiguratorBuildItem(new ApplyKubernetesExpositionConfigurator((config.ingress))));
 
         // Handle remote debug configuration for container ports
         if (config.remoteDebug.enabled) {

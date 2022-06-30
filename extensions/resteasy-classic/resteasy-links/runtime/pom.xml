@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-resteasy-links</artifactId>
     <name>Quarkus - RESTEasy - Links - Runtime</name>
-    <description>Links support for RESTEasy Classic</description>
+    <description>Web Links support for RESTEasy Classic. Inject web links into response HTTP headers by annotating your endpoint resources.</description>
 
     <dependencies>
         <dependency>
@@ -24,7 +24,7 @@
             <artifactId>resteasy-links</artifactId>
             <exclusions>
                 <!--
-                jakarta.el:jakara.el-api is coming from CDI
+                jakarta.el:jakarta.el-api is coming from CDI
                 we don't add it as a dependency to avoid having to define a version in the BOM
                 -->
                 <exclusion>
@@ -44,7 +44,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <executions>
                     <execution>
                         <phase>process-resources</phase>

@@ -15,7 +15,7 @@ public class LRAParticipantTestResourceLifecycle implements QuarkusTestResourceL
     private static GenericContainer<?> registry;
     private static String coordinatorEndpoint;
 
-    // the endpoint on wich an LRA coordinator is listening
+    // the endpoint on which an LRA coordinator is listening
     public static String getCoordinatorEndpoint() {
         return coordinatorEndpoint;
     }

@@ -153,7 +153,7 @@ public class ResteasyServerCommonProcessor {
         String path;
 
         /**
-         * Whether or not detailed JAX-RS metrics should be enabled if the smallrye-metrics
+         * Whether detailed JAX-RS metrics should be enabled if the smallrye-metrics
          * extension is present.
          * <p>
          * See <a href=
@@ -174,7 +174,7 @@ public class ResteasyServerCommonProcessor {
         boolean ignoreApplicationClasses;
 
         /**
-         * Whether or not annotations such `@IfBuildTimeProfile`, `@IfBuildTimeProperty` and friends will be taken
+         * Whether annotations such `@IfBuildTimeProfile`, `@IfBuildTimeProperty` and friends will be taken
          * into account when used on JAX-RS classes.
          */
         @ConfigItem(defaultValue = "true")
@@ -923,7 +923,7 @@ public class ResteasyServerCommonProcessor {
      * @param annotationInstance the annotation instance to test.
      * @return {@code true} if the enclosing class of the annotation is a concrete class and is part of the allowed
      *         classes, or is an interface and at least one concrete implementation is included, or is an abstract class
-     *         and at least one concrete sub class is included, or is not part of the excluded classes, {@code false} otherwise.
+     *         and at least one concrete subclass is included, or is not part of the excluded classes, {@code false} otherwise.
      */
     private static boolean keepAnnotation(IndexView index, Set<String> allowedClasses, Set<String> excludedClasses,
             AnnotationInstance annotationInstance) {
@@ -934,13 +934,13 @@ public class ResteasyServerCommonProcessor {
             // Keep the enclosing class only if not excluded
             return !excludedClasses.contains(className);
         } else if (Modifier.isAbstract(classInfo.flags())) {
-            // Only keep the annotation if a concrete implementation or a sub class has been included
+            // Only keep the annotation if a concrete implementation or a subclass has been included
             return (Modifier.isInterface(classInfo.flags()) ? index.getAllKnownImplementors(classInfo.name())
                     : index.getAllKnownSubclasses(classInfo.name()))
-                            .stream()
-                            .filter(clazz -> !Modifier.isAbstract(clazz.flags()))
-                            .map(Objects::toString)
-                            .anyMatch(allowedClasses::contains);
+                    .stream()
+                    .filter(clazz -> !Modifier.isAbstract(clazz.flags()))
+                    .map(Objects::toString)
+                    .anyMatch(allowedClasses::contains);
         }
         return allowedClasses.contains(className);
     }
@@ -948,13 +948,13 @@ public class ResteasyServerCommonProcessor {
     /**
      * @param allowedClasses the classes returned by the methods {@link Application#getClasses()} and
      *        {@link Application#getSingletons()} to keep.
-     * @param excludedClasses the classes that have been annotated wih unsuccessful build time conditions and that
+     * @param excludedClasses the classes that have been annotated with unsuccessful build time conditions and that
      *        need to be excluded from the list of providers.
      * @param jaxrsProvidersToRegisterBuildItem the initial {@code jaxrsProvidersToRegisterBuildItem} before being
      *        filtered
      * @return an instance of {@link JaxrsProvidersToRegisterBuildItem} that has been filtered to take into account
      *         the classes returned by the methods {@link Application#getClasses()} and {@link Application#getSingletons()}
-     *         if at least one of those methods return a non empty {@code Set}, the provided instance of
+     *         if at least one of those methods return a non-empty {@code Set}, the provided instance of
      *         {@link JaxrsProvidersToRegisterBuildItem} otherwise.
      */
     private static JaxrsProvidersToRegisterBuildItem getFilteredJaxrsProvidersToRegisterBuildItem(

@@ -10,7 +10,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -301,24 +300,22 @@ public class IfSectionHelper implements SectionHelper {
                 // There is no need to continue with the next operand
                 return CompletedStage.of(shortResult);
             } else {
-                CompletableFuture<Object> result = new CompletableFuture<>();
                 Object literalVal = next.getLiteralValue();
                 if (literalVal != null) {
                     // A literal value does not need to be evaluated
                     if (operator == Operator.NOT) {
                         literalVal = logicalComplement(literalVal);
                     }
-                    processConditionValue(context, operator, previousValue, literalVal, result, iter);
+                    return processConditionValue(context, operator, previousValue, literalVal, iter);
                 } else {
-                    next.evaluate(context).whenComplete((r, t) -> {
-                        if (t != null) {
-                            result.completeExceptionally(t);
-                        } else {
-                            processConditionValue(context, operator, previousValue, r, result, iter);
-                        }
-                    });
+                    CompletionStage<Object> ret = next.evaluate(context);
+                    if (ret instanceof CompletedStage) {
+                        return processConditionValue(context, operator, previousValue, ((CompletedStage<Object>) ret).get(),
+                                iter);
+                    } else {
+                        return ret.thenCompose(r -> processConditionValue(context, operator, previousValue, r, iter));
+                    }
                 }
-                return result;
             }
         }
 
@@ -337,8 +334,8 @@ public class IfSectionHelper implements SectionHelper {
             return "CompositeCondition [conditions=" + conditions.size() + ", operator=" + operator + "]";
         }
 
-        void processConditionValue(SectionResolutionContext context, Operator operator,
-                Object previousValue, Object conditionValue, CompletableFuture<Object> result, Iterator<Condition> iter) {
+        CompletionStage<Object> processConditionValue(SectionResolutionContext context, Operator operator,
+                Object previousValue, Object conditionValue, Iterator<Condition> iter) {
             Object val;
             if (operator == null || !operator.isBinary()) {
                 val = conditionValue;
@@ -354,20 +351,13 @@ public class IfSectionHelper implements SectionHelper {
                     }
                     val = operator.evaluate(localValue, conditionValue);
                 } catch (Throwable e) {
-                    result.completeExceptionally(e);
-                    throw e;
+                    return CompletedStage.failure(e);
                 }
             }
             if (!iter.hasNext()) {
-                result.complete(val);
+                return CompletedStage.of(val);
             } else {
-                evaluateNext(context, val, iter).whenComplete((r2, t2) -> {
-                    if (t2 != null) {
-                        result.completeExceptionally(t2);
-                    } else {
-                        result.complete(r2);
-                    }
-                });
+                return evaluateNext(context, val, iter);
             }
         }
 

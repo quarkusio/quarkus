@@ -11,7 +11,6 @@ import java.util.List;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 
 public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildContainerRunner {
 
@@ -26,9 +25,8 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
     private String containerId;
 
     public NativeImageBuildRemoteContainerRunner(NativeConfig nativeConfig, Path outputDir,
-            CompiledJavaVersionBuildItem.JavaVersion javaVersion,
             String nativeImageName, String resultingExecutableName) {
-        super(nativeConfig, outputDir, javaVersion);
+        super(nativeConfig, outputDir);
         this.nativeImageName = nativeImageName;
         this.resultingExecutableName = resultingExecutableName;
     }

@@ -109,7 +109,7 @@ public class DefaultTenantConfigResolver {
                 TenantConfigContext tenantContext = getStaticTenantContext(context);
                 if (tenantContext != null && !tenantContext.ready) {
 
-                    // check if it the connection has already been created
+                    // check if the connection has already been created
                     TenantConfigContext readyTenantContext = tenantConfigBean.getDynamicTenantsConfig()
                             .get(tenantContext.oidcConfig.tenantId.get());
                     if (readyTenantContext == null) {

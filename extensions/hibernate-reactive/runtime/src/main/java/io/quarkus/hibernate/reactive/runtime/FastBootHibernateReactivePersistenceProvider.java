@@ -124,13 +124,13 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             final boolean matches = persistenceUnitName == null
                     || persistenceUnit.getName().equals(persistenceUnitName);
             if (!matches) {
-                log.debugf("Excluding from consideration '%s' due to name mis-match", persistenceUnit.getName());
+                log.debugf("Excluding from consideration '%s' due to name mismatch", persistenceUnit.getName());
                 continue;
             }
 
             // See if we (Hibernate) are the persistence provider
             if (!isProvider(persistenceUnit)) {
-                log.debug("Excluding from consideration due to provider mis-match");
+                log.debug("Excluding from consideration due to provider mismatch");
                 continue;
             }
 
@@ -246,7 +246,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             return;
         }
 
-        // for now we only support one pool but this will change
+        // for now, we only support one pool but this will change
         InstanceHandle<Pool> poolHandle = Arc.container().instance(Pool.class);
         if (!poolHandle.isAvailable()) {
             throw new IllegalStateException("No pool has been defined for persistence unit " + persistenceUnitName);

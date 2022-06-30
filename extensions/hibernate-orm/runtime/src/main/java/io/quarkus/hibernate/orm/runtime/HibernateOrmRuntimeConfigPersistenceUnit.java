@@ -1,7 +1,10 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -32,10 +35,35 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
     @ConfigDocSection
     public HibernateOrmConfigPersistenceUnitLog log = new HibernateOrmConfigPersistenceUnitLog();
 
+    /**
+     * Properties that should be passed on directly to Hibernate ORM.
+     * Use the full configuration property key here,
+     * for instance `quarkus.hibernate-orm.unsupported-properties."hibernate.order_inserts" = true`.
+     *
+     * [WARNING]
+     * ====
+     * Properties set here are completely unsupported:
+     * as Quarkus doesn't generally know about these properties and their purpose,
+     * there is absolutely no guarantee that they will work correctly,
+     * and even if they do, that may change when upgrading to a newer version of Quarkus
+     * (even just a micro/patch version).
+     * ====
+     *
+     * Consider using a supported configuration property before falling back to unsupported ones.
+     * If none exists, make sure to file a feature request so that a supported configuration property can be added to Quarkus,
+     * and more importantly so that the configuration property is tested regularly.
+     *
+     * @asciidoclet
+     */
+    @ConfigItem
+    @ConfigDocMapKey("full-property-key")
+    public Map<String, String> unsupportedProperties = new HashMap<>();
+
     public boolean isAnyPropertySet() {
         return database.isAnyPropertySet() ||
                 scripts.isAnyPropertySet() ||
-                log.isAnyPropertySet();
+                log.isAnyPropertySet() ||
+                !unsupportedProperties.isEmpty();
     }
 
     @ConfigGroup

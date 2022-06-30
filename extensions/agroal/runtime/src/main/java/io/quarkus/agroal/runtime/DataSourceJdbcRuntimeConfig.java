@@ -138,4 +138,10 @@ public class DataSourceJdbcRuntimeConfig {
     @ConfigItem
     public Map<String, String> additionalJdbcProperties;
 
+    /**
+     * Enable JDBC tracing.
+     */
+    @ConfigItem
+    public DataSourceJdbcTracingRuntimeConfig tracing;
+
 }

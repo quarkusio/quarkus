@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
@@ -37,6 +38,7 @@ import javax.annotation.processing.Filer;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -390,21 +392,21 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         for (Element e : clazz.getEnclosedElements()) {
             switch (e.getKind()) {
                 case FIELD: {
-                    if (isAnnotationPresent(e, Constants.ANNOTATION_CONFIG_ITEM, Constants.ANNOTATION_CONFIG_DOC_SECTION)) {
+                    if (isDocumentedConfigItem(e)) {
                         processFieldConfigItem((VariableElement) e, javadocProps, className);
                     }
                     break;
                 }
                 case CONSTRUCTOR: {
                     final ExecutableElement ex = (ExecutableElement) e;
-                    if (hasParameterAnnotated(ex, Constants.ANNOTATION_CONFIG_ITEM, Constants.ANNOTATION_CONFIG_DOC_SECTION)) {
+                    if (hasParameterDocumentedConfigItem(ex)) {
                         processCtorConfigItem(ex, javadocProps, className);
                     }
                     break;
                 }
                 case METHOD: {
                     final ExecutableElement ex = (ExecutableElement) e;
-                    if (hasParameterAnnotated(ex, Constants.ANNOTATION_CONFIG_ITEM, Constants.ANNOTATION_CONFIG_DOC_SECTION)) {
+                    if (hasParameterDocumentedConfigItem(ex)) {
                         processMethodConfigItem(ex, javadocProps, className);
                     }
                     break;
@@ -739,9 +741,40 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         return REMOVE_LEADING_SPACE.matcher(docComment).replaceAll("").trim();
     }
 
-    private static boolean hasParameterAnnotated(ExecutableElement ex, String... annotationNames) {
+    private static boolean isDocumentedConfigItem(Element element) {
+        boolean hasAnnotation = false;
+        for (AnnotationMirror annotationMirror : element.getAnnotationMirrors()) {
+            String annotationName = ((TypeElement) annotationMirror.getAnnotationType().asElement())
+                    .getQualifiedName().toString();
+            if (Constants.ANNOTATION_CONFIG_ITEM.equals(annotationName)) {
+                hasAnnotation = true;
+                Object generateDocumentation = getAnnotationAttribute(annotationMirror, "generateDocumentation()");
+                if (generateDocumentation != null && !(Boolean) generateDocumentation) {
+                    // Documentation is explicitly disabled
+                    return false;
+                }
+            } else if (Constants.ANNOTATION_CONFIG_DOC_SECTION.equals(annotationName)) {
+                hasAnnotation = true;
+            }
+        }
+        return hasAnnotation;
+    }
+
+    private static Object getAnnotationAttribute(AnnotationMirror annotationMirror, String attributeName) {
+        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationMirror
+                .getElementValues().entrySet()) {
+            final String key = entry.getKey().toString();
+            final Object value = entry.getValue().getValue();
+            if (attributeName.equals(key)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private static boolean hasParameterDocumentedConfigItem(ExecutableElement ex) {
         for (VariableElement param : ex.getParameters()) {
-            if (isAnnotationPresent(param, annotationNames)) {
+            if (isDocumentedConfigItem(param)) {
                 return true;
             }
         }

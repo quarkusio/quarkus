@@ -354,7 +354,7 @@ public class SmallRyeMetricsRecorder {
                     }
                 });
             } catch (ClassCastException cce) {
-                // this should never occurs
+                // this should never occur
                 log.debug("Unable to cast the OperatingSystemMXBean to com.sun.management.OperatingSystemMXBean, " +
                         "not registering extended operating system metrics", cce);
             }

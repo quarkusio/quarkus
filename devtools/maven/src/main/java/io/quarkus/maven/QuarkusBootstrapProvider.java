@@ -24,6 +24,7 @@ import org.eclipse.aether.impl.RemoteRepositoryManager;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
@@ -115,6 +116,14 @@ public class QuarkusBootstrapProvider implements Closeable {
         }
     }
 
+    private static boolean isWorkspaceDiscovery(QuarkusBootstrapMojo mojo) {
+        String v = System.getProperty(BootstrapConstants.QUARKUS_BOOTSTRAP_WORKSPACE_DISCOVERY);
+        if (v == null) {
+            v = mojo.mavenProject().getProperties().getProperty(BootstrapConstants.QUARKUS_BOOTSTRAP_WORKSPACE_DISCOVERY);
+        }
+        return Boolean.parseBoolean(v);
+    }
+
     public class QuarkusMavenAppBootstrap implements Closeable {
 
         private CuratedApplication prodApp;
@@ -123,9 +132,11 @@ public class QuarkusBootstrapProvider implements Closeable {
 
         private MavenArtifactResolver artifactResolver(QuarkusBootstrapMojo mojo, LaunchMode mode)
                 throws MojoExecutionException {
+            isWorkspaceDiscovery(mojo);
             try {
                 return MavenArtifactResolver.builder()
-                        .setWorkspaceDiscovery(mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST)
+                        .setWorkspaceDiscovery(
+                                mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST || isWorkspaceDiscovery(mojo))
                         .setCurrentProject(mojo.mavenProject().getFile().toString())
                         .setPreferPomsFromWorkspace(mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST)
                         .setRepositorySystem(repoSystem)

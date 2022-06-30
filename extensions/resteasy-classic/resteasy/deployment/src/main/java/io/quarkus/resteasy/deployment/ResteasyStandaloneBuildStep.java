@@ -31,6 +31,8 @@ import io.vertx.ext.web.RoutingContext;
 
 public class ResteasyStandaloneBuildStep {
 
+    private static final int REST_ROUTE_ORDER_OFFSET = 500;
+
     public static final class ResteasyStandaloneBuildItem extends SimpleBuildItem {
 
         final String deploymentRootPath;
@@ -86,7 +88,9 @@ public class ResteasyStandaloneBuildStep {
                 executorBuildItem.getExecutorProxy(), resteasyVertxConfig);
         // Exact match for resources matched to the root path
         routes.produce(
-                RouteBuildItem.builder().orderedRoute(standalone.deploymentRootPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1)
+                RouteBuildItem.builder()
+                        .orderedRoute(standalone.deploymentRootPath,
+                                VertxHttpRecorder.AFTER_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET)
                         .handler(handler).build());
         String matchPath = standalone.deploymentRootPath;
         if (matchPath.endsWith("/")) {
@@ -95,7 +99,8 @@ public class ResteasyStandaloneBuildStep {
             matchPath += "/*";
         }
         // Match paths that begin with the deployment path
-        routes.produce(RouteBuildItem.builder().orderedRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1)
+        routes.produce(RouteBuildItem.builder()
+                .orderedRoute(matchPath, VertxHttpRecorder.AFTER_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET)
                 .handler(handler).build());
 
         recorder.start(shutdown, requireVirtual.isPresent());

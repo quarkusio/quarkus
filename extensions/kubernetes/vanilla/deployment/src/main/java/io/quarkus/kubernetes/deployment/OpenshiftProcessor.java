@@ -95,7 +95,7 @@ public class OpenshiftProcessor {
             DeploymentResourceKind deploymentResourceKind = openshiftConfig.getDeploymentResourceKind();
             if (deploymentResourceKind != DeploymentResourceKind.DeploymentConfig) {
                 if (openshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
-                    // Images stored in internal openshift registry use the following patttern:
+                    // Images stored in internal openshift registry use the following pattern:
                     // 'image-registry.openshift-image-registry.svc:5000/{{ project name}}/{{ image name }}: {{image version }}.
                     // So, we need warn users if group does not match currently selected project.
                     containerImageRegistry.produce(new FallbackContainerImageRegistryBuildItem(OPENSHIFT_INTERNAL_REGISTRY));
@@ -132,7 +132,7 @@ public class OpenshiftProcessor {
         KubernetesCommonHelper.combinePorts(ports, config).values().forEach(value -> {
             result.add(new ConfiguratorBuildItem(new AddPortToOpenshiftConfig(value)));
         });
-        result.add(new ConfiguratorBuildItem(new ApplyExpositionConfigurator(config.route)));
+        result.add(new ConfiguratorBuildItem(new ApplyRouteExpositionConfigurator(config.route)));
 
         // Handle remote debug configuration for container ports
         if (config.remoteDebug.enabled) {
@@ -246,7 +246,10 @@ public class OpenshiftProcessor {
         });
 
         result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyImagePullPolicyDecorator(name, config.getImagePullPolicy())));
-        result.add(new DecoratorBuildItem(OPENSHIFT, new AddLabelDecorator(name, OPENSHIFT_APP_RUNTIME, QUARKUS)));
+
+        if (labels.stream().noneMatch(l -> l.getKey().equals(OPENSHIFT_APP_RUNTIME))) {
+            result.add(new DecoratorBuildItem(OPENSHIFT, new AddLabelDecorator(name, OPENSHIFT_APP_RUNTIME, QUARKUS)));
+        }
 
         Stream.concat(config.convertToBuildItems().stream(),
                 envs.stream().filter(e -> e.getTarget() == null || OPENSHIFT.equals(e.getTarget()))).forEach(e -> {

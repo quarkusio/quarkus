@@ -183,7 +183,7 @@ final class FormDataOutputMapperGenerator {
                         formAttrName = formParamValue.asString();
                     }
 
-                    // TODO: not sure this is correct, but it seems to be what RESTEasy does and it also makes most sense in the context of a POJO
+                    // TODO: not sure if this is correct, but it seems to be what RESTEasy does and it also makes most sense in the context of a POJO
                     String partType = MediaType.TEXT_PLAIN;
                     AnnotationInstance partTypeInstance = field.annotation(ResteasyReactiveDotNames.PART_TYPE_NAME);
                     if (partTypeInstance != null) {
@@ -217,10 +217,20 @@ final class FormDataOutputMapperGenerator {
                                         inputInstanceHandle));
                     }
 
+                    // Get parameterized type if field type is a parameterized class
+                    String firstParamType = "";
+                    if (fieldType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                        List<Type> argumentTypes = fieldType.asParameterizedType().arguments();
+                        if (argumentTypes.size() > 0) {
+                            firstParamType = argumentTypes.get(0).name().toString();
+                        }
+                    }
+
                     // Create Part Item instance
                     ResultHandle partItemInstanceHandle = populate.newInstance(
-                            MethodDescriptor.ofConstructor(PartItem.class, String.class, MediaType.class, Object.class),
-                            populate.load(formAttrName), partTypeHandle, resultHandle);
+                            MethodDescriptor.ofConstructor(PartItem.class,
+                                    String.class, MediaType.class, Object.class, String.class),
+                            populate.load(formAttrName), partTypeHandle, resultHandle, populate.load(firstParamType));
 
                     // Add it to the list
                     populate.invokeVirtualMethod(

@@ -99,7 +99,7 @@ public class SmallRyeFaultToleranceProcessor {
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
-        // Add reflective acccess to fallback handlers
+        // Add reflective access to fallback handlers
         Set<String> fallbackHandlers = new HashSet<>();
         for (ClassInfo implementor : index
                 .getAllKnownImplementors(DotName.createSimple(FallbackHandler.class.getName()))) {

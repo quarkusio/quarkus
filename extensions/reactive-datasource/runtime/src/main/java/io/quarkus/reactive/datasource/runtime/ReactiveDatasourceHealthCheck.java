@@ -76,7 +76,7 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
                 //20 seconds is rather high, but using just 10 is often not enough on slow CI
                 //systems, especially if the connections have to be established for the first time.
                 databaseConnectionAttempt.get(20, TimeUnit.SECONDS);
-                builder.withData(dataSourceName, "up");
+                builder.withData(dataSourceName, "UP");
             } catch (RuntimeException | ExecutionException exception) {
                 operationsError(dataSourceName, exception);
                 builder.down();

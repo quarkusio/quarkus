@@ -37,7 +37,7 @@
 
         <enforcer-api.version>3.0.0-M3</enforcer-api.version>
         <maven-invoker-plugin.version>3.2.2</maven-invoker-plugin.version>
-        <maven-core.version>3.8.4</maven-core.version>
+        <maven-core.version>3.8.6</maven-core.version>
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
     </properties>
@@ -103,7 +103,7 @@
             <plugin>
                 <groupId>net.revelc.code.formatter</groupId>
                 <artifactId>formatter-maven-plugin</artifactId>
-                <version>2.18.0</version>
+                <version>2.19.0</version>
                 <dependencies>
                     <dependency>
                         <artifactId>quarkus-ide-config</artifactId>
@@ -122,7 +122,7 @@
             <plugin>
                 <groupId>net.revelc.code</groupId>
                 <artifactId>impsort-maven-plugin</artifactId>
-                <version>1.6.2</version>
+                <version>1.7.0</version>
                 <configuration>
                     <!-- store outside of target to speed up formatting when mvn clean is used -->
                     <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>

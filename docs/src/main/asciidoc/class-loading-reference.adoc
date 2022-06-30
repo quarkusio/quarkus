@@ -77,7 +77,7 @@ the builder classes are isolated, which means that use cases that want to custom
 
 Deployment ClassLoader::
 
-This can load all application classes, its parent is the Augment ClassLoader so it can also load all deployment classes.
+This can load all application classes. Its parent is the Augment ClassLoader, so it can also load all deployment classes.
 
 This ClassLoader is non-persistent, it will be re-created when the application is started, and is isolated. This ClassLoader
 is the context ClassLoader that is used when running the build steps. It is also transformer safe.
@@ -126,7 +126,7 @@ this, however there are a few cases where this is necessary:
 - Some logging related classes, as logging must be loaded by the system ClassLoader
 - Quarkus bootstrap itself
 
-If this is required it can be configured in the `quarkus-bootstrap-maven-plugin`. Note that if you
+If this is required it can be configured in the `quarkus-extension-maven-plugin`. Note that if you
 mark a dependency as parent first then all of its dependencies must also be parent first,
 or a `LinkageError` can occur.
 
@@ -134,7 +134,7 @@ or a `LinkageError` can occur.
 ----
 <plugin>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+    <artifactId>quarkus-extension-maven-plugin</artifactId>
     <configuration>
         <parentFirstArtifacts>
             <parentFirstArtifact>io.quarkus:quarkus-bootstrap-core</parentFirstArtifact>
@@ -152,15 +152,15 @@ or a `LinkageError` can occur.
 There are some dependencies that we can be sure we do not want. This generally happens when a dependency has had a name
 change (e.g. smallrye-config changing groups from `org.smallrye` to `org.smallrye.config`, the `javax` -> `jakarta` rename).
 This can cause problems, as if these artifacts end up in the dependency tree out of date classes can be loaded that are
-not compatible with Quarkus. To deal with this extensions can specify artifacts that should never be loaded. This is
-done by modifying the `quarkus-bootstrap-maven-plugin` config in the pom (which generates the `quarkus-extension.properties`
+not compatible with Quarkus. To deal with this, extensions can specify artifacts that should never be loaded. This is
+done by modifying the `quarkus-extension-maven-plugin` config in the pom (which generates the `quarkus-extension.properties`
 file). Simply add an `excludedArtifacts` section as shown below:
 
 [source,xml]
 ----
 <plugin>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+    <artifactId>quarkus-extension-maven-plugin</artifactId>
     <configuration>
         <excludedArtifacts>
             <excludedArtifact>io.smallrye:smallrye-config</excludedArtifact>

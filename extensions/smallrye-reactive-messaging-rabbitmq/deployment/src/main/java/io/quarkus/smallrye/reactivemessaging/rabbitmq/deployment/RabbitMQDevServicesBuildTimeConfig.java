@@ -2,6 +2,7 @@ package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -109,7 +110,15 @@ public class RabbitMQDevServicesBuildTimeConfig {
      * If not defined, the port will be chosen randomly.
      */
     @ConfigItem
-    public Optional<Integer> port;
+    public OptionalInt port;
+
+    /**
+     * Optional fixed port for the RabbitMQ management plugin.
+     * <p>
+     * If not defined, the port will be chosen randomly.
+     */
+    @ConfigItem
+    public OptionalInt httpPort;
 
     /**
      * The image to use.
@@ -136,7 +145,7 @@ public class RabbitMQDevServicesBuildTimeConfig {
      * This property is used when {@code shared} is set to {@code true}.
      * In this case, before starting a container, Dev Services for RabbitMQ looks for a container with the
      * {@code quarkus-dev-service-rabbitmq} label
-     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise it
+     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise, it
      * starts a new container with the {@code quarkus-dev-service-rabbitmq} label set to the specified value.
      * <p>
      * This property is used when you need multiple shared RabbitMQ brokers.

@@ -67,6 +67,11 @@
             <artifactId>codemirror</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>d3js</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -243,6 +248,18 @@
                                     <version>${webjar.codemirror.version}</version>
                                     <type>jar</type>
                                     <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/classes/dev-static/codemirror/mode/yaml</outputDirectory>
+                                    <includes>**/mode/yaml/**.js</includes>
+                                    <fileMappers>
+                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
+                                    </fileMappers>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.webjars</groupId>
+                                    <artifactId>codemirror</artifactId>
+                                    <version>${webjar.codemirror.version}</version>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
                                     <outputDirectory>${project.build.directory}/classes/dev-static/codemirror/mode/javascript</outputDirectory>
                                     <includes>**/mode/javascript/**.js</includes>
                                     <fileMappers>
@@ -282,6 +299,19 @@
                                     <overWrite>true</overWrite>
                                     <outputDirectory>${project.build.directory}/classes/dev-static/js/</outputDirectory>
                                     <includes>**/mermaid.min.js, **/mermaid.min.js.map</includes>
+                                    <fileMappers>
+                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
+                                    </fileMappers>
+                                </artifactItem>
+                                <!-- d3.js -->
+                                <artifactItem>
+                                    <groupId>org.webjars</groupId>
+                                    <artifactId>d3js</artifactId>
+                                    <version>${webjar.d3js.version}</version>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/classes/dev-static/js/</outputDirectory>
+                                    <includes>**/d3.min.js</includes>
                                     <fileMappers>
                                         <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
                                     </fileMappers>

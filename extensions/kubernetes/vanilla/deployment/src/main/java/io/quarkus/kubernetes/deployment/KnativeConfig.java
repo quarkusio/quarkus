@@ -56,7 +56,7 @@ public class KnativeConfig implements PlatformConfiguration {
     Map<String, String> annotations;
 
     /**
-     * Whether or not to add the build timestamp to the Kubernetes annotations
+     * Whether to add the build timestamp to the Kubernetes annotations
      * This is a very useful way to have manifests of successive builds of the same
      * application differ - thus ensuring that Kubernetes will apply the updated resources
      */
@@ -386,7 +386,7 @@ public class KnativeConfig implements PlatformConfiguration {
     }
 
     /**
-     * Whether or not this service is cluster-local.
+     * Whether this service is cluster-local.
      * Cluster local services are not exposed to the outside world.
      * More information in <a href="https://knative.dev/docs/serving/services/private-services/">this link</a>.
      */
@@ -395,7 +395,7 @@ public class KnativeConfig implements PlatformConfiguration {
 
     /**
      * This value controls the minimum number of replicas each revision should have.
-     * Knative will attempt to never have less than this number of replicas at any one point in time.
+     * Knative will attempt to never have less than this number of replicas at any point in time.
      */
     @ConfigItem
     Optional<Integer> minScale;
@@ -403,7 +403,7 @@ public class KnativeConfig implements PlatformConfiguration {
     /**
      * This value controls the maximum number of replicas each revision should have.
      * Knative will attempt to never have more than this number of replicas running, or in the process of being created, at any
-     * one point in time.
+     * point in time.
      **/
     @ConfigItem
     Optional<Integer> maxScale;
@@ -441,7 +441,7 @@ public class KnativeConfig implements PlatformConfiguration {
     Optional<String> appSecret;
 
     /**
-     * If set, the config amp will mounted to the application container and its contents will be used for application
+     * If set, the config map will be mounted to the application container and its contents will be used for application
      * configuration.
      */
     @ConfigItem

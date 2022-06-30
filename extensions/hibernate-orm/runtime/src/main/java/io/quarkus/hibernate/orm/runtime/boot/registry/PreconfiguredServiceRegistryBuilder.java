@@ -99,7 +99,7 @@ public class PreconfiguredServiceRegistryBuilder {
         // Can skip, it's only deprecated stuff:
         // applyServiceContributingIntegrators( bootstrapServiceRegistry );
 
-        // This is NOT deprecated stuff.. yet they will at best contribute stuff we
+        // This is NOT deprecated stuff, yet they will at best contribute stuff we
         // already recorded as part of #applyIntegrator, #addInitiator, #addService
         // applyServiceContributors( bootstrapServiceRegistry );
 

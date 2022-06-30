@@ -132,7 +132,7 @@ personRepository.delete(person);
 val allPersons = personRepository.listAll()
 
 // finding a specific person by ID
-// here we build a new ObjectId but you can also retrieve it from the existing entity after being persisted
+// here we build a new ObjectId, but you can also retrieve it from the existing entity after being persisted
 ObjectId personId = new ObjectId(idAsString);
 person = personRepository.findById(personId) ?: throw Exception("No person with that ID")
 
@@ -155,7 +155,7 @@ personRepository.deleteAll()
 val deleted = personRepository.deleteById(personId)
 
 // set the name of all living persons to 'Mortal'
-personRepository.update("name = 'Mortal' where status = ?1", Status.Alive)
+var updated = personRepository.update("name", "Mortal").where("status", Status.Alive)
 
 ----
 

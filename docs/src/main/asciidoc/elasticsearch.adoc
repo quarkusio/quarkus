@@ -15,7 +15,7 @@ the low level and the high level clients.
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * Elasticsearch installed or Docker installed
 
 == Architecture
@@ -32,7 +32,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: elasticsearch-quickstart
 :create-app-extensions: resteasy-reactive-jackson,elasticsearch-rest-client
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven structure importing the RESTEasy Reactive/JAX-RS, Jackson, and the Elasticsearch low level client extensions.
 After this, the `quarkus-elasticsearch-rest-client` extension has been added to your build file.
@@ -346,7 +346,7 @@ Now let's run our application via Quarkus dev mode:
 
 :devtools-wrapped:
 +
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 :!devtools-wrapped:
 
 You can add new fruits to the list via the following curl command:
@@ -367,7 +367,7 @@ curl localhost:8080/fruits/search?color=yellow
 
 Quarkus provides support for the Elasticsearch High Level REST Client but keep in mind that it comes with some caveats:
 
-- It drags a lot of dependencies - especially Lucene -, which doesn't fit well with Quarkus philosophy. The Elasticsearch team is aware of this issue and it might improve sometime in the future.
+- It drags a lot of dependencies - especially Lucene -, which doesn't fit well with Quarkus philosophy. The Elasticsearch team is aware of this issue, and it might improve sometime in the future.
 - It is tied to a certain version of the Elasticsearch server: you cannot use a High Level REST Client version 7 to access a server version 6.
 
 [WARNING]
@@ -385,7 +385,7 @@ Feel free to override the versions of the clients in your applications depending
 but be aware of https://www.elastic.co/blog/elastic-license-v2[the new licence of the High Level REST Client] for versions 7.11+:
 it is not Open Source and has several usage restrictions.
 
-We will eventually provide an extension for the new Open Source Java client but it will require changes in your applications
+We will eventually provide an extension for the new Open Source Java client, but it will require changes in your applications
 as it is an entirely new client.
 ====
 
@@ -497,7 +497,7 @@ You can use both clients in a native executable.
 
 You can build a native executable with the usual command:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 Running it is as simple as executing `./target/elasticsearch-low-level-client-quickstart-1.0.0-SNAPSHOT-runner`.
 

@@ -8,7 +8,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class SmallRyeJwtConfig {
 
     /**
-     * Enable this property if fetching the remote keys can be a time consuming operation.
+     * Enable this property if fetching the remote keys can be a time-consuming operation.
      * Do not enable it if you use the local keys.
      */
     @ConfigItem(defaultValue = "false")

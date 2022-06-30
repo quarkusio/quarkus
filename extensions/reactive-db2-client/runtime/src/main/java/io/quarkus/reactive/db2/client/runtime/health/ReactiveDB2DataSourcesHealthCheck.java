@@ -27,7 +27,7 @@ import io.vertx.mutiny.db2client.DB2Pool;
 @Readiness
 @ApplicationScoped
 /**
- * Implementation note: this healthcheck doesn't extend ReactiveDatasourceHealthCheck
+ * Implementation note: this health check doesn't extend ReactiveDatasourceHealthCheck
  * as a DB2Pool is based on Mutiny: does not extend io.vertx.sqlclient.Pool
  */
 class ReactiveDB2DataSourcesHealthCheck implements HealthCheck {

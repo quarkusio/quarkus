@@ -152,7 +152,7 @@ public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerat
     /**
      * Creates a {@link PodTemplateSpec} for the {@link KubernetesConfig}.
      *
-     * @param appConfig The sesssion.
+     * @param appConfig The session.
      * @return The pod template specification.
      */
     public static PodTemplateSpec createPodTemplateSpec(KubernetesConfig appConfig, ImageConfiguration imageConfig) {
@@ -167,7 +167,7 @@ public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerat
     /**
      * Creates a {@link PodSpec} for the {@link KubernetesConfig}.
      *
-     * @param imageConfig The sesssion.
+     * @param imageConfig The session.
      * @return The pod specification.
      */
     public static PodSpec createPodSpec(KubernetesConfig appConfig, ImageConfiguration imageConfig) {

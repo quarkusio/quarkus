@@ -58,6 +58,17 @@ public class QuartzBuildTimeConfig {
     public String tablePrefix;
 
     /**
+     * The SQL string that selects a row in the "LOCKS" table and places a lock on the row.
+     * <p>
+     * If not set, the default value of Quartz applies, for which the "{0}" is replaced during run-time with the
+     * `table-prefix`, the "{1}" with the `instance-name`.
+     * <p>
+     * An example SQL string `SELECT * FROM {0}LOCKS WHERE SCHED_NAME = {1} AND LOCK_NAME = ? FOR UPDATE`
+     */
+    @ConfigItem
+    public Optional<String> selectWithLockSql;
+
+    /**
      * Trigger listeners.
      */
     @ConfigItem

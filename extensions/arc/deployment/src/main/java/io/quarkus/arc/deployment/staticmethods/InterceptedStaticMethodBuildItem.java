@@ -54,7 +54,7 @@ public final class InterceptedStaticMethodBuildItem extends MultiBuildItem {
 
     /**
      *
-     * @return the unique hash that could be used to indentify the method
+     * @return the unique hash that could be used to identify the method
      */
     public String getHash() {
         return hash;

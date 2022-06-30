@@ -23,13 +23,13 @@
         <kotlin.version>1.6.21</kotlin.version>
         <dokka.version>1.6.21</dokka.version>
         <scala.version>2.13.8</scala.version>
-        <scala-maven-plugin.version>4.6.1</scala-maven-plugin.version>
+        <scala-maven-plugin.version>4.6.3</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
 
         <!-- version.* properties are defined in jboss-parent and are overridden/updated here: -->
         <version.enforcer.plugin>3.0.0-M3</version.enforcer.plugin>
-        <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
+        <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
         <version.exec.plugin>3.0.0</version.exec.plugin>
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
@@ -42,7 +42,7 @@
         <graal-sdk.version-for-documentation>22.1.0</graal-sdk.version-for-documentation>
         <mandrel.version-for-documentation>22.1</mandrel.version-for-documentation>
 
-        <asciidoctorj.version>2.5.3</asciidoctorj.version>
+        <asciidoctorj.version>2.5.4</asciidoctorj.version>
         <htmlunit.version>2.40.0</htmlunit.version>
         <javaparser-core.version>3.24.2</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
@@ -50,10 +50,10 @@
 
         <!-- Dev tools -->
         <freemarker.version>2.3.31</freemarker.version>
-        <commonmark.version>0.18.2</commonmark.version>
+        <commonmark.version>0.19.0</commonmark.version>
 
         <!-- Arquillian BOM -->
-        <arquillian.version>1.5.0.Final</arquillian.version>
+        <arquillian.version>1.7.0.Alpha10</arquillian.version>
 
         <!-- Enable APT by default for Eclipse -->
         <m2e.apt.activation>jdt_apt</m2e.apt.activation>
@@ -64,8 +64,8 @@
         <supported-maven-versions>[3.6.2,)</supported-maven-versions>
 
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.8.4</proposed-maven-version>
-        <maven-wrapper.version>3.1.0</maven-wrapper.version>
+        <proposed-maven-version>3.8.6</proposed-maven-version>
+        <maven-wrapper.version>3.1.1</maven-wrapper.version>
         <gradle-wrapper.version>7.4.2</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
@@ -89,32 +89,32 @@
         <opensearch.protocol>http</opensearch.protocol>
 
         <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
-        <postgres.image>docker.io/postgres:14.2</postgres.image>
-        <mariadb.image>docker.io/mariadb:10.7</mariadb.image>
+        <postgres.image>docker.io/postgres:14</postgres.image>
+        <mariadb.image>docker.io/mariadb:10.6</mariadb.image>
         <db2.image>docker.io/ibmcom/db2:11.5.7.0a</db2.image>
-        <mssql.image>mcr.microsoft.com/mssql/server:2019-CU15-ubuntu-20.04</mssql.image>
+        <mssql.image>mcr.microsoft.com/mssql/server:2019-latest</mssql.image>
         <mysql.image>docker.io/mysql:8.0</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-xe:21-slim</oracle.image>
-        <mongo.image>docker.io/mongo:4.4.13</mongo.image>
+        <mongo.image>docker.io/mongo:4.4</mongo.image>
 
         <!-- Align various dependencies that are not really part of the bom-->
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
-        <keycloak.version>18.0.0</keycloak.version>
+        <keycloak.version>18.0.1</keycloak.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.version}-legacy</keycloak.docker.legacy.image>
 
         <unboundid-ldap.version>6.0.5</unboundid-ldap.version>
 
-        <assertj.version>3.22.0</assertj.version>
+        <assertj.version>3.23.1</assertj.version>
 
         <wiremock-jre8.version>2.33.2</wiremock-jre8.version>
         <wiremock-maven-plugin.version>7.1.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.22.0</artemis.version>
+        <artemis.version>2.23.1</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
@@ -123,20 +123,21 @@
 
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
-        <docker-maven-plugin.version>0.39.1</docker-maven-plugin.version>
-        <formatter-maven-plugin.version>2.18.0</formatter-maven-plugin.version>
-        <impsort-maven-plugin.version>1.6.2</impsort-maven-plugin.version>
+        <docker-maven-plugin.version>0.40.1</docker-maven-plugin.version>
+        <formatter-maven-plugin.version>2.19.0</formatter-maven-plugin.version>
+        <impsort-maven-plugin.version>1.7.0</impsort-maven-plugin.version>
         <maven-invoker-plugin.version>3.2.2</maven-invoker-plugin.version>
         <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
 
         <!-- Webjars used by the Dev UI -->
         <webjar.bootstrap.version>4.6.1</webjar.bootstrap.version>
-        <webjar.font-awesome.version>6.1.0</webjar.font-awesome.version>
+        <webjar.font-awesome.version>6.1.1</webjar.font-awesome.version>
         <webjar.jquery.version>3.6.0</webjar.jquery.version>
         <webjar.codemirror.version>5.62.2</webjar.codemirror.version>
         <!-- we don't add mermaid as a dependency as it brings a ton of things we don't use -->
         <webjar.mermaid.version>8.9.1</webjar.mermaid.version>
+        <webjar.d3js.version>6.6.0</webjar.d3js.version>
 
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.14.6</revapi-maven-plugin.version>
@@ -315,6 +316,11 @@
                 <artifactId>codemirror</artifactId>
                 <version>${webjar.codemirror.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.webjars</groupId>
+                <artifactId>d3js</artifactId>
+                <version>${webjar.d3js.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>com.github.davidmoten</groupId>
@@ -415,8 +421,6 @@
                         <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
                         <!-- set tmpdir as early as possible because surefire sets it too late for JDK16 -->
                         <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional}</argLine>
-                        <!-- https://lists.apache.org/thread.html/r9030808273c82ac6d7b9602d34d446c7d8c4e8aa02c41bca164df1c5%40%3Cdev.maven.apache.org%3E -->
-                        <trimStackTrace>false</trimStackTrace>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                     </configuration>
                 </plugin>
@@ -435,8 +439,6 @@
                         </systemPropertyVariables>
                         <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
                         <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
-                        <!-- https://lists.apache.org/thread.html/r9030808273c82ac6d7b9602d34d446c7d8c4e8aa02c41bca164df1c5%40%3Cdev.maven.apache.org%3E -->
-                        <trimStackTrace>false</trimStackTrace>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                     </configuration>
                 </plugin>
@@ -452,7 +454,7 @@
                 </plugin>
                 <plugin>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                    <artifactId>quarkus-extension-maven-plugin</artifactId>
                     <version>${project.version}</version>
                     <executions>
                         <execution>
@@ -487,7 +489,7 @@
                                          3.0.0 suffers from https://issues.apache.org/jira/browse/MENFORCER-394, so we need to wait for a fixed release.
                                     <requirePluginVersions>
                                         <phases>compile</phases>
-                                        <unCheckedPluginList>io.quarkus:quarkus-bootstrap-maven-plugin,io.quarkus:quarkus-platform-descriptor-json-plugin,io.quarkus:quarkus-maven-plugin</unCheckedPluginList>
+                                        <unCheckedPluginList>io.quarkus:quarkus-extension-maven-plugin,io.quarkus:quarkus-bootstrap-maven-plugin,io.quarkus:quarkus-maven-plugin</unCheckedPluginList>
                                     </requirePluginVersions>-->
                                     <bannedDependencies>
                                         <excludes>
@@ -587,6 +589,8 @@
                                             <!-- Includes its own copy of an old version of the servlet API-->
                                             <exclude>org.apache.tomcat.embed:tomcat-embed-core</exclude>
                                             <exclude>org.jboss.modules:jboss-modules</exclude>
+                                            <!-- We prefer ByteBuddy where possible -->
+                                            <exclude>org.javassist:javassist</exclude>
                                         </excludes>
                                         <includes>
                                             <!-- this is for REST Assured -->
@@ -1160,13 +1164,13 @@
                             <newArtifacts>
                                 <artifact>${project.groupId}:${project.artifactId}:${revapi.newVersion}</artifact>
                             </newArtifacts>
-                            <!-- don't fail is false making it possible to have 
+                            <!-- don't fail is false making it possible to have
                                 revapi checks without requiring config files -->
                             <failOnMissingConfigurationFiles>false</failOnMissingConfigurationFiles>
-                            <!-- Consider changes from the latest .Final version, 
+                            <!-- Consider changes from the latest .Final version,
                                 not from the latest non-snapshot. -->
                             <versionFormat>\d+\.\d+\.\d+\.Final</versionFormat>
-                            <!-- By default revapi will check the oldArtifact 
+                            <!-- By default revapi will check the oldArtifact
                                 against the currently executed build -->
                             <!-- <checkDependencies>false</checkDependencies> -->
                             <analysisConfigurationFiles>
@@ -1180,8 +1184,8 @@
                                     </roots>
                                 </configurationFile>
                             </analysisConfigurationFiles>
-                            <!-- By default, revapi will only fail the build 
-                                 if there are potentially breaking or breaking changes. However, in the report 
+                            <!-- By default, revapi will only fail the build
+                                 if there are potentially breaking or breaking changes. However, in the report
                                  we want even non breaking changes to be present. -->
                             <reportSeverity>nonBreaking</reportSeverity>
                             <failSeverity>potentiallyBreaking</failSeverity>
@@ -1191,11 +1195,11 @@
                             <ignoreSuggestionsFile>${project.build.directory}/api-changes-suggestions.xml</ignoreSuggestionsFile>
                             <expandProperties>true</expandProperties>
                         </configuration>
-                        <!-- Running two executions is a workaround to make sure 
-                             we get a HTML report in case revapi finds some incompatible changes. The 
-                             "check" goal will simply fail the whole build before it could get to the 
-                             report. To make sure we always get a HTML report, the "report" goal needs 
-                             to be executed before the "check" goal. Once https://github.com/revapi/revapi/issues/11 
+                        <!-- Running two executions is a workaround to make sure
+                             we get a HTML report in case revapi finds some incompatible changes. The
+                             "check" goal will simply fail the whole build before it could get to the
+                             report. To make sure we always get a HTML report, the "report" goal needs
+                             to be executed before the "check" goal. Once https://github.com/revapi/revapi/issues/11
                              is fixed it should be possible to use single execution. -->
                         <executions>
                             <execution>
@@ -1241,12 +1245,17 @@
             <properties>
                 <!-- Podman compatibility. Currently, mac file systems based on Plan 9 does not support SELinux labeling z and Z should not be used. When they transition to use virtiofsd, it should support SELinux labeling, and then we can use it for better container separation on the Mac.-->
                 <volume.access.modifier></volume.access.modifier>
-                
+
                 <!-- See https://stackoverflow.com/questions/65456814/docker-apple-silicon-m1-preview-mysql-no-matching-manifest-for-linux-arm64-v8
                 and https://www.emmanuelgautier.com/blog/mysql-docker-arm-m1
                 This hopefully should be temporary -->
                 <mysql.image>arm64v8/mysql:8-oracle</mysql.image>
 
+                <!-- See
+                https://github.com/microsoft/mssql-docker/issues/668 and https://stackoverflow.com/questions/65398641/docker-connect-sql-server-container-non-zero-code-1/66919852#66919852.
+                The MS SQL image segfaults on ARM. Azure Edge is not fully compatible, but it is better than not running the tests at all.
+                DockerHub does not list any tags so we have to use latest for the moment.-->
+                <mssql.image>mcr.microsoft.com/azure-sql-edge:latest</mssql.image>
             </properties>
         </profile>
 

@@ -90,11 +90,13 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
                 .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
                         && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
                         && d.getScope().equals("import")
-                        && d.getType().equals("pom"))).isTrue();
+                        && d.getType().equals("pom")))
+                .isTrue();
 
         assertThat(
                 model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy-reactive")
-                        && d.getVersion() == null)).isTrue();
+                        && d.getVersion() == null))
+                .isTrue();
 
         assertThat(model.getProfiles()).hasSize(1);
         assertThat(model.getProfiles().get(0).getId()).isEqualTo("native");
@@ -277,15 +279,18 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
                 .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
                         && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
                         && d.getScope().equals("import")
-                        && d.getType().equals("pom"))).isTrue();
+                        && d.getType().equals("pom")))
+                .isTrue();
 
         assertThat(
                 model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")
-                        && d.getVersion() == null)).isTrue();
+                        && d.getVersion() == null))
+                .isTrue();
 
         assertThat(model.getDependencies().stream()
                 .anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-smallrye-metrics")
-                        && d.getVersion() == null)).isTrue();
+                        && d.getVersion() == null))
+                .isTrue();
     }
 
     @Test
@@ -347,11 +352,13 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
                 .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
                         && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
                         && d.getScope().equals("import")
-                        && d.getType().equals("pom"))).isTrue();
+                        && d.getType().equals("pom")))
+                .isTrue();
 
         assertThat(
                 model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")
-                        && d.getVersion() == null)).isTrue();
+                        && d.getVersion() == null))
+                .isTrue();
 
         assertThat(model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("commons-io")
                 && d.getVersion().equalsIgnoreCase("2.5"))).isTrue();

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -86,7 +87,7 @@ public class QuarkusAugmentor {
         if (!JavaVersionUtil.isJava11OrHigher()) {
             throw new IllegalStateException("Quarkus applications require Java 11 or higher to build");
         }
-        long time = System.currentTimeMillis();
+        long start = System.nanoTime();
         log.debug("Beginning Quarkus augmentation");
         ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         QuarkusBuildCloseablesBuildItem buildCloseables = new QuarkusBuildCloseablesBuildItem();
@@ -137,7 +138,7 @@ public class QuarkusAugmentor {
             rootBuilder.setExcludedFromIndexing(excludedFromIndexing);
 
             BuildChain chain = chainBuilder.build();
-            BuildExecutionBuilder execBuilder = chain.createExecutionBuilder("main")
+            BuildExecutionBuilder execBuilder = chain.createExecutionBuilder(baseName)
                     .produce(buildCloseables)
                     .produce(liveReloadBuildItem)
                     .produce(rootBuilder.build(buildCloseables))
@@ -155,12 +156,21 @@ public class QuarkusAugmentor {
                 execBuilder.produce(new AdditionalApplicationArchiveBuildItem(i));
             }
             BuildResult buildResult = execBuilder.execute();
-            String message = "Quarkus augmentation completed in " + (System.currentTimeMillis() - time) + "ms";
+            String message = "Quarkus augmentation completed in " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start)
+                    + "ms";
             if (launchMode == LaunchMode.NORMAL) {
                 log.info(message);
+                if (Boolean.parseBoolean(System.getProperty("quarkus.debug.dump-build-metrics"))) {
+                    buildResult.getMetrics().dumpTo(targetDir.resolve("build-metrics.json"));
+                }
             } else {
                 //test and dev mode already report the total startup time, no need to add noise to the logs
                 log.debug(message);
+
+                // Dump the metrics in the dev mode but not remote-dev (as it could cause issues with container permissions)
+                if ((launchMode == LaunchMode.DEVELOPMENT) && !LaunchMode.isRemoteDev()) {
+                    buildResult.getMetrics().dumpTo(targetDir.resolve("build-metrics.json"));
+                }
             }
             return buildResult;
         } finally {

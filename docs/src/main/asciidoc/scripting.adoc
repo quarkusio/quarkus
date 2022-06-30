@@ -11,14 +11,14 @@ Quarkus provides integration with https://jbang.dev[jbang] which allows you to w
 
 In this guide, we will see how you can write a REST application using just a single Java file.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
 :prerequisites-time: 5 minutes
 :prerequisites-no-maven:
 :prerequisites-no-cli:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 * https://jbang.dev/download[JBang]
 
 == Solution

@@ -12,7 +12,7 @@ import io.smallrye.graphql.client.impl.GraphQLClientConfiguration;
 import io.smallrye.graphql.client.impl.GraphQLClientsConfiguration;
 
 /**
- * Verify that various configuration through `quarkus.*` propeties is correctly taken into account
+ * Verify that various configuration through `quarkus.*` properties is correctly taken into account
  * for GraphQL clients.
  */
 public class GraphQLClientConfigurationTest {

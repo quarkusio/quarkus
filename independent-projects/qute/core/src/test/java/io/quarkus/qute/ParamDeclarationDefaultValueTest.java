@@ -3,6 +3,7 @@ package io.quarkus.qute;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class ParamDeclarationDefaultValueTest {
@@ -24,6 +25,19 @@ public class ParamDeclarationDefaultValueTest {
         Template template = engine
                 .parse("{@java.lang.String val='foo'}\n{@int anotherVal=1}\n{val}::{anotherVal}");
         assertEquals("foo::2", template.data("anotherVal", 2).render());
+        List<ParameterDeclaration> parameterDeclarations = template.getParameterDeclarations();
+        assertEquals(2, parameterDeclarations.size());
+        for (ParameterDeclaration pd : parameterDeclarations) {
+            if (pd.getKey().equals("val")) {
+                assertEquals("'foo'", pd.getDefaultValue().toOriginalString());
+                assertEquals("|java.lang.String|", pd.getTypeInfo());
+                assertEquals(1, pd.getOrigin().getLine());
+            } else {
+                assertEquals("anotherVal", pd.getKey());
+                assertEquals("1", pd.getDefaultValue().toOriginalString());
+                assertEquals("|int|", pd.getTypeInfo());
+            }
+        }
     }
 
     private void assertDefaultValue(Template template, String expectedOutput) {

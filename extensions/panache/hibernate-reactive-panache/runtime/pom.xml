@@ -100,7 +100,7 @@
             </plugin>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
             </plugin>
             <!-- The entity classes needs to be indexed -->
             <plugin>

@@ -1,5 +1,9 @@
 package io.quarkus.devservices.h2.deployment;
 
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_NAME;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_PASSWORD;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.Connection;
@@ -39,6 +43,10 @@ public class H2DevServicesProcessor {
                             "-ifNotExists");
                     tcpServer.start();
 
+                    String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
+                    String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
+                    String effectiveDbName = containerConfig.getDbName().orElse(datasourceName.orElse(DEFAULT_DATABASE_NAME));
+
                     StringBuilder additionalArgs = new StringBuilder();
                     for (Map.Entry<String, String> i : containerConfig.getAdditionalJdbcUrlProperties().entrySet()) {
                         additionalArgs.append(";");
@@ -50,13 +58,13 @@ public class H2DevServicesProcessor {
                     LOG.info("Dev Services for H2 started.");
 
                     String connectionUrl = "jdbc:h2:tcp://localhost:" + tcpServer.getPort() + "/mem:"
-                            + datasourceName.orElse("default")
+                            + effectiveDbName
                             + ";DB_CLOSE_DELAY=-1" + additionalArgs.toString();
                     return new RunningDevServicesDatasource(null,
                             connectionUrl,
                             null,
-                            "sa",
-                            "sa",
+                            effectiveUsername,
+                            effectivePassword,
                             new Closeable() {
                                 @Override
                                 public void close() throws IOException {
@@ -66,8 +74,8 @@ public class H2DevServicesProcessor {
                                         //make sure the DB is removed on close
                                         try (Connection connection = DriverManager.getConnection(
                                                 connectionUrl,
-                                                "sa",
-                                                "sa")) {
+                                                effectiveUsername,
+                                                effectivePassword)) {
                                             try (Statement statement = connection.createStatement()) {
                                                 statement.execute("SET DB_CLOSE_DELAY 0");
                                             }

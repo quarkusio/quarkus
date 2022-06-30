@@ -30,7 +30,7 @@ public class DkimSignOptionsConfig {
     public Optional<String> privateKeyPath;
 
     /**
-     * Configures the Agent or User Identifier(AUID).
+     * Configures the Agent or User Identifier (AUID).
      */
     @ConfigItem
     public Optional<String> auid;
@@ -42,7 +42,7 @@ public class DkimSignOptionsConfig {
     public Optional<String> selector;
 
     /**
-     * Configures the Signing Domain Identifier.
+     * Configures the Signing Domain Identifier (SDID).
      */
     @ConfigItem
     public Optional<String> sdid;
@@ -68,7 +68,7 @@ public class DkimSignOptionsConfig {
     public OptionalInt bodyLimit;
 
     /**
-     * Configures to enable or disable signature sign timestmap.
+     * Configures to enable or disable signature sign timestamp.
      */
     @ConfigItem
     public Optional<Boolean> signatureTimestamp;

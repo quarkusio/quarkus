@@ -66,13 +66,16 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.hibernate.validator.runtime.DisableLoggingFeature;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorBuildTimeConfig;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
 import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
@@ -124,6 +127,11 @@ class HibernateValidatorProcessor {
     @BuildStep
     LogCleanupFilterBuildItem logCleanup() {
         return new LogCleanupFilterBuildItem("org.hibernate.validator.internal.util.Version", "HV000001:");
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    NativeImageFeatureBuildItem nativeImageFeature() {
+        return new NativeImageFeatureBuildItem(DisableLoggingFeature.class);
     }
 
     @BuildStep

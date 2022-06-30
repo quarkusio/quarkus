@@ -82,8 +82,8 @@ public class MavenVersionEnforcer {
     }
 
     /**
-     * Copied from Artifact.VersionRange. This is tweaked to handle singular ranges properly. Currently the default
-     * containsVersion method assumes a singular version means allow everything.
+     * Copied from Artifact.VersionRange. This is tweaked to handle singular ranges properly. Currently, the default
+     * <code>containsVersion</code> method assumes a singular version means allow everything.
      *
      * @param allowedRange range of allowed versions.
      * @param theVersion the version to be checked.

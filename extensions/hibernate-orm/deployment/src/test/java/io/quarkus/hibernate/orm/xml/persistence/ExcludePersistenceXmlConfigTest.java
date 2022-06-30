@@ -45,7 +45,8 @@ public class ExcludePersistenceXmlConfigTest {
         try {
             // it is the default entity manager from application.properties, not templatePU from the persistence.xml
             Assertions.assertEquals(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
-                    entityManager.getEntityManagerFactory().getProperties().get("hibernate.ejb.persistenceUnitName"));
+                    entityManager.getEntityManagerFactory().getProperties()
+                            .get(org.hibernate.cfg.AvailableSettings.PERSISTENCE_UNIT_NAME));
         } finally {
             Arc.container().requestContext().deactivate();
         }

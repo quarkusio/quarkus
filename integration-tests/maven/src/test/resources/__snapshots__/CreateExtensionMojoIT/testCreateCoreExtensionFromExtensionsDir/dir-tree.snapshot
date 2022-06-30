@@ -29,6 +29,12 @@ extensions/my-ext/runtime/
 extensions/my-ext/runtime/pom.xml
 extensions/my-ext/runtime/src/
 extensions/my-ext/runtime/src/main/
+extensions/my-ext/runtime/src/main/java/
+extensions/my-ext/runtime/src/main/java/org/
+extensions/my-ext/runtime/src/main/java/org/acme/
+extensions/my-ext/runtime/src/main/java/org/acme/my/
+extensions/my-ext/runtime/src/main/java/org/acme/my/ext/
+extensions/my-ext/runtime/src/main/java/org/acme/my/ext/runtime/
 extensions/my-ext/runtime/src/main/resources/
 extensions/my-ext/runtime/src/main/resources/META-INF/
 extensions/my-ext/runtime/src/main/resources/META-INF/quarkus-extension.yaml

@@ -32,7 +32,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
     private static final Logger log = getLogger(QuarkusErrorHandler.class);
 
     /**
-     * we don't want to generate a new UUID each time as it is slowish. Instead we just generate one based one
+     * we don't want to generate a new UUID each time as it is slowish. Instead, we just generate one based one
      * and then use a counter.
      */
     private static final String BASE_ID = UUID.randomUUID().toString() + "-";
@@ -127,7 +127,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
             log.errorf(exception, "HTTP Request to %s failed, error id: %s", event.request().uri(), uuid);
         }
         //we have logged the error
-        //now lets see if we can actually send a response
+        //now let's see if we can actually send a response
         //if not we just return
         if (event.response().ended()) {
             return;

@@ -2,6 +2,10 @@ package io.quarkus.resteasy.reactive.jaxb.deployment.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -11,23 +15,31 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import javax.ws.rs.ConstrainedTo;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.RuntimeType;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.ext.MessageBodyReader;
+import javax.ws.rs.ext.Provider;
 import javax.ws.rs.sse.InboundSseEvent;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
 import javax.ws.rs.sse.SseEventSource;
+import javax.xml.bind.JAXB;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
+import org.jboss.resteasy.reactive.common.util.StreamUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -41,7 +53,7 @@ public class SseResourceTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(SseResource.class, Message.class));
+                    .addClasses(SseResource.class, Message.class, ClientJaxbMessageBodyReader.class));
 
     @TestHTTPResource
     URI uri;
@@ -199,5 +211,47 @@ public class SseResourceTest {
                     .thenAccept(v -> sseBroadcaster.close());
         }
 
+    }
+
+    @ConstrainedTo(RuntimeType.CLIENT)
+    @Provider
+    public static class ClientJaxbMessageBodyReader implements MessageBodyReader<Object> {
+
+        @Override
+        public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+                MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+                throws WebApplicationException, IOException {
+            return doReadFrom(type, genericType, entityStream);
+        }
+
+        @Override
+        public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+            return isReadable(mediaType, type);
+        }
+
+        protected boolean isReadable(MediaType mediaType, Class<?> type) {
+            if (mediaType == null) {
+                return false;
+            }
+            if (String.class.equals(type)) { // don't attempt to read plain strings
+                return false;
+            }
+            String subtype = mediaType.getSubtype();
+            boolean isCorrectMediaType = "application".equals(mediaType.getType()) || "text".equals(mediaType.getType());
+            return (isCorrectMediaType && "xml".equalsIgnoreCase(subtype) || subtype.endsWith("+xml"))
+                    || (mediaType.isWildcardSubtype() && (mediaType.isWildcardType() || isCorrectMediaType));
+        }
+
+        private Object doReadFrom(Class<Object> type, Type genericType, InputStream entityStream) throws IOException {
+            if (isInputStreamEmpty(entityStream)) {
+                return null;
+            }
+
+            return JAXB.unmarshal(entityStream, type);
+        }
+
+        private boolean isInputStreamEmpty(InputStream entityStream) throws IOException {
+            return StreamUtil.isEmpty(entityStream) || entityStream.available() == 0;
+        }
     }
 }

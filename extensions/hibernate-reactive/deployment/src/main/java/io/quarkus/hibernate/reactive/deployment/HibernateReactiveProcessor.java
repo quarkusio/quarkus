@@ -48,7 +48,7 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.hibernate.orm.deployment.*;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.DatasourceDbKindHibernateOrmMetadataBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
@@ -119,7 +119,7 @@ public final class HibernateReactiveProcessor {
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            List<DatasourceDbKindHibernateOrmMetadataBuildItem> dbKindMetadataBuildItems) {
+            List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems) {
 
         final boolean enableHR = hasEntities(jpaModel);
         if (!enableHR) {
@@ -148,10 +148,11 @@ public final class HibernateReactiveProcessor {
                 curateOutcomeBuildItem);
         if (dbKindOptional.isPresent()) {
             final String dbKind = dbKindOptional.get();
+            HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit;
             ParsedPersistenceXmlDescriptor reactivePU = generateReactivePersistenceUnit(
-                    hibernateOrmConfig, jpaModel,
+                    hibernateOrmConfig, persistenceUnitConfig, jpaModel,
                     dbKind, applicationArchivesBuildItem, launchMode.getLaunchMode(),
-                    systemProperties, nativeImageResources, hotDeploymentWatchedFiles, dbKindMetadataBuildItems);
+                    systemProperties, nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems);
 
             //Some constant arguments to the following method:
             // - this is Reactive
@@ -159,6 +160,7 @@ public final class HibernateReactiveProcessor {
             // - we don't support Hibernate Envers with Hibernate Reactive
             persistenceUnitDescriptors.produce(new PersistenceUnitDescriptorBuildItem(reactivePU,
                     jpaModel.getXmlMappings(reactivePU.getName()),
+                    persistenceUnitConfig.unsupportedProperties,
                     true, false));
         }
 
@@ -197,6 +199,7 @@ public final class HibernateReactiveProcessor {
      */
     private static ParsedPersistenceXmlDescriptor generateReactivePersistenceUnit(
             HibernateOrmConfig hibernateOrmConfig,
+            HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
             JpaModelBuildItem jpaModel,
             String dbKind,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
@@ -204,10 +207,7 @@ public final class HibernateReactiveProcessor {
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
-            List<DatasourceDbKindHibernateOrmMetadataBuildItem> dbKindMetadataBuildItems) {
-
-        HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit;
-
+            List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems) {
         //we have no persistence.xml so we will create a default one
         String persistenceUnitConfigName = PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 
@@ -216,7 +216,7 @@ public final class HibernateReactiveProcessor {
         if (explicitDialect.isPresent()) {
             dialect = explicitDialect.get();
         } else {
-            dialect = Dialects.guessDialect(persistenceUnitConfigName, dbKind, dbKindMetadataBuildItems);
+            dialect = Dialects.guessDialect(persistenceUnitConfigName, dbKind, dbKindDialectBuildItems);
         }
 
         // we found one
@@ -297,7 +297,7 @@ public final class HibernateReactiveProcessor {
                     hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(importFile));
                 } else if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
                     //raise exception if explicit file is not present (i.e. not the default)
-                    String propertyName = HibernateOrmConfig.puPropertyKey(persistenceUnitConfigName, "sql-load-script");
+                    String propertyName = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitConfigName, "sql-load-script");
                     throw new ConfigurationException(
                             "Unable to find file referenced in '"
                                     + propertyName + "="

@@ -83,7 +83,7 @@ If you are interested in having more details, refer to the [Build section](#buil
 
 ### Using snapshots
 
-Snapshots are published daily so you will have to wait for a snapshot containing the commits you are interested in.
+Snapshots are published daily, so you will have to wait for a snapshot containing the commits you are interested in.
 
 Then just add https://s01.oss.sonatype.org/content/repositories/snapshots as a Maven repository **and** a plugin repository in your settings xml:
 
@@ -139,6 +139,8 @@ export MAVEN_OPTS="-Xmx4g"
 ```
 
 Wait for a bit and you're done.
+
+**Note** For Apple Silicon computer, Rosetta must be installed. It can be done using `softwareupdate --install-rosetta`
 
 ### Updating the version
 
@@ -209,16 +211,16 @@ If you have not done so on this machine, you need to:
         * `xcode-select --install` 
 * Set `GRAALVM_HOME` to your GraalVM Home directory e.g. `/opt/graalvm` on Linux or `$location/JDK/GraalVM/Contents/Home` on macOS
 
-Docker is not strictly necessary: it is used to run the MariaDB and PostgreSQL tests which are not enabled by default. However it is a recommended install if you plan to work on Quarkus JPA support:
+Docker is not strictly necessary: it is used to run the MariaDB and PostgreSQL tests which are not enabled by default. However, it is a recommended install if you plan to work on Quarkus JPA support:
 
-* Check [the installation guide](https://docs.docker.com/install/), and [the MacOS installation guide](https://docs.docker.com/docker-for-mac/install/)
+* Check [the installation guide](https://docs.docker.com/install/), and [the macOS installation guide](https://docs.docker.com/docker-for-mac/install/)
 * If you just install docker, be sure that your current user can run a container (no root required). 
 On Linux, check [the post-installation guide](https://docs.docker.com/install/linux/linux-postinstall/)
 
 ### IDE Config and Code Style
 
 Quarkus has a strictly enforced code style. Code formatting is done by the Eclipse code formatter, using the config files
-found in the `independent-projects/ide-config` directory. By default when you run `./mvnw install` the code will be formatted automatically.
+found in the `independent-projects/ide-config` directory. By default, when you run `./mvnw install`, the code will be formatted automatically.
 When submitting a pull request the CI build will fail if running the formatter results in any code changes, so it is
 recommended that you always run a full Maven build before submitting a pull request.
 
@@ -329,7 +331,7 @@ When you contribute to an extension, after having applied your changes, run:
 Obviously, when you contribute to a core artifact of Quarkus, a change may impact any part of Quarkus.
 So the rule of thumb would be to run the full test suite locally but this is clearly impractical as it takes a lot of time/resources.
 
-Thus it is recommended to use the following approach:
+Thus, it is recommended to use the following approach:
 
 * run `./mvnw -Dquickly` from the root directory to make sure you haven't broken anything obvious
 * run any build that might be useful to test the behavior you changed actually fixes the issue you had (might be an extension build, an integration test build...)
@@ -440,7 +442,7 @@ Without going too much into details (`devtools/bom-descriptor-json/pom.xml` has 
 
 The GitHub Actions based Quarkus CI is using GIB to reduce the average build time of pull request builds and builds of branches in your fork.
 
-CI is using a slighty different GIB config than locally:
+CI is using a slightly different GIB config than locally:
 
 * [Special handling of "Explicitly selected projects"](https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#explicitly-selected-projects) is deactivated
 * Untracked/uncommitted changes are not considered
@@ -552,7 +554,7 @@ The TCK module is not part of the main Maven reactor build, but you can enable i
 the Maven Profile `-Ptcks`. If your work is related to any of these areas, running the TCK's is highly recommended to 
 make sure you are not breaking the project. The TCK's will also run on any Pull Request.
 
-You can either run all of the TCK's or just a subset by executing `mvn verify` in the `tcks` module root or each of 
+You can either run all the TCK's or just a subset by executing `mvn verify` in the `tcks` module root or each of 
 the submodules. If you wish to run a particular test, you can use Maven `-Dtest=` property with the fully qualified 
 name of the test class and optionally the method name by using 
 `mvn verify -Dtest=fully.qualified.test.class.name#methodName`.
@@ -580,8 +582,8 @@ Here are a few recommendation guidelines:
 - keep it relatively short so that no hover is required to read it
 - describe the function over the technology
 - use an action / verb to start the sentence
-- do no conjugate the action verb (`Connect foo`, not `Connects foo` nor `Connecting foo`)
-- connectors (JDBC / reactive) etc tend to start with Connect
+- do not conjugate the action verb (`Connect foo`, not `Connects foo` nor `Connecting foo`)
+- connectors (JDBC / reactive) etc. tend to start with Connect
 - do not mention `Quarkus`
 - do not mention `extension`
 - avoid repeating the extension name
@@ -640,7 +642,7 @@ This project is an open source project, please act responsibly, be nice, polite 
   To ensure a consistent build order, even when building in parallel (`./mvnw -T...`) or building incrementally/partially (`./mvnw -pl...`), the build enforces the presence of certain dependencies.
   If those dependencies are not present, your local build will most likely use possibly outdated artifacts from you local repo and CI build might even fail not finding certain artifacts.
 
-  Just do what the failing enforcer rule is telling you and you should be fine.
+  Just do what the failing enforcer rule is telling you, and you should be fine.
 
 * Build fails with multiple `This project has been banned from the build due to previous failures` messages
 

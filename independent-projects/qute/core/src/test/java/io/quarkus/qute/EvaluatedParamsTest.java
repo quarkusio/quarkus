@@ -22,19 +22,19 @@ public class EvaluatedParamsTest {
         assertTrue(new EvaluatedParams(null,
                 new Supplier[] { CompletedStage.of(10), CompletedStage.of("Foo"),
                         CompletedStage.of("Bar") })
-                                .parameterTypesMatch(true, new Class<?>[] { Integer.class, Object[].class }));
+                .parameterTypesMatch(true, new Class<?>[] { Integer.class, Object[].class }));
         // varargs may be empty
         assertTrue(new EvaluatedParams(null,
                 new Supplier[] { CompletedStage.of(10) })
-                        .parameterTypesMatch(true, new Class<?>[] { Integer.class, Object[].class }));
+                .parameterTypesMatch(true, new Class<?>[] { Integer.class, Object[].class }));
         assertFalse(new EvaluatedParams(null,
                 new Supplier[] { CompletedStage.of("str") })
-                        .parameterTypesMatch(true, new Class[] { Locale.class, Object[].class }));
+                .parameterTypesMatch(true, new Class[] { Locale.class, Object[].class }));
 
         // Integer,String does not match Integer,Object[]
         assertFalse(new EvaluatedParams(null,
                 new Supplier[] { CompletedStage.of(10), CompletedStage.of("Foo") })
-                        .parameterTypesMatch(false, new Class<?>[] { Integer.class, Object[].class }));
+                .parameterTypesMatch(false, new Class<?>[] { Integer.class, Object[].class }));
     }
 
     @Test

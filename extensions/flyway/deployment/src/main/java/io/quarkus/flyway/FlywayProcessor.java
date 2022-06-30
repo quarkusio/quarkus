@@ -110,7 +110,12 @@ class FlywayProcessor {
         Collection<String> applicationMigrations = applicationMigrationsToDs.values().stream().collect(HashSet::new,
                 AbstractCollection::addAll, HashSet::addAll);
         for (String applicationMigration : applicationMigrations) {
-            hotDeploymentProducer.produce(new HotDeploymentWatchedFileBuildItem(applicationMigration));
+            Location applicationMigrationLocation = new Location(applicationMigration);
+            String applicationMigrationPath = applicationMigrationLocation.getPath();
+
+            if (applicationMigrationPath != null) {
+                hotDeploymentProducer.produce(new HotDeploymentWatchedFileBuildItem(applicationMigrationPath));
+            }
         }
         recorder.setApplicationMigrationFiles(applicationMigrations);
 
@@ -157,7 +162,7 @@ class FlywayProcessor {
         // make a FlywayContainerProducer bean
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(FlywayContainerProducer.class).setUnremovable()
                 .setDefaultScope(DotNames.SINGLETON).build());
-        // add the @FlywayDataSource class otherwise it won't registered as a qualifier
+        // add the @FlywayDataSource class otherwise it won't be registered as a qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(FlywayDataSource.class).build());
 
         recorder.resetFlywayContainers();

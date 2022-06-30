@@ -153,7 +153,7 @@ public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase
                     // The session should be initialized with the loaded workspace
                     //.setRepositorySystemSession(repoSession)
                     .setRemoteRepositories(repos)
-                    // To support multimodule projects that haven't been installed
+                    // To support multi-module projects that haven't been installed
                     .setPreferPomsFromWorkspace(true)
                     .build();
         } catch (BootstrapMavenException e) {

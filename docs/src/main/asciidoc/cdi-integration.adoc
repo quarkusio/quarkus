@@ -215,7 +215,7 @@ NOTE: There are other build items specialized in transformation: <<additional_in
 Consumers of `BeanDiscoveryFinishedBuildItem` can easily inspect all class-based beans, observers and injection points registered in the application.
 However, synthetic beans and observers are _not included_ because this build item is produced _before_ the synthetic components are registered.
 
-Additionaly, the bean resolver returned from `BeanDiscoveryFinishedBuildItem#getBeanResolver()` can be used to apply the type-safe resolution rules, e.g. to find out whether there is a bean that would satisfy certain combination of required type and qualifiers.
+Additionally, the bean resolver returned from `BeanDiscoveryFinishedBuildItem#getBeanResolver()` can be used to apply the type-safe resolution rules, e.g. to find out whether there is a bean that would satisfy certain combination of required type and qualifiers.
 
 .`BeanDiscoveryFinishedBuildItem` Example
 [source,java]
@@ -232,7 +232,7 @@ void doSomethingWithNamedBeans(BeanDiscoveryFinishedBuildItem beanDiscovery, Bui
 
 Consumers of `SynthesisFinishedBuildItem` can easily inspect all beans, observers and injection points registered in the application. Synthetic beans and observers are included because this build item is produced _after_ the synthetic components are registered.
 
-Additionaly, the bean resolver returned from `SynthesisFinishedBuildItem#getBeanResolver()` can be used to apply the type-safe resolution rules, e.g. to find out whether there is a bean that would satisfy certain combination of required type and qualifiers.
+Additionally, the bean resolver returned from `SynthesisFinishedBuildItem#getBeanResolver()` can be used to apply the type-safe resolution rules, e.g. to find out whether there is a bean that would satisfy certain combination of required type and qualifiers.
 
 .`SynthesisFinishedBuildItem` Example
 [source,java]

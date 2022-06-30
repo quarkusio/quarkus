@@ -2,6 +2,7 @@ package io.quarkus.arc.processor;
 
 import io.quarkus.gizmo.MethodCreator;
 import java.lang.annotation.Annotation;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -20,7 +21,7 @@ import org.jboss.jandex.Type.Kind;
  *
  * @see ObserverRegistrar
  */
-public final class ObserverConfigurator implements Consumer<AnnotationInstance> {
+public final class ObserverConfigurator extends ConfiguratorBase<ObserverConfigurator> implements Consumer<AnnotationInstance> {
 
     final Consumer<ObserverConfigurator> consumer;
     String id;
@@ -82,6 +83,11 @@ public final class ObserverConfigurator implements Consumer<AnnotationInstance> 
 
     public QualifierConfigurator<ObserverConfigurator> addQualifier() {
         return new QualifierConfigurator<>(this);
+    }
+
+    public ObserverConfigurator qualifiers(AnnotationInstance... qualifiers) {
+        Collections.addAll(this.observedQualifiers, qualifiers);
+        return this;
     }
 
     public ObserverConfigurator priority(int priority) {

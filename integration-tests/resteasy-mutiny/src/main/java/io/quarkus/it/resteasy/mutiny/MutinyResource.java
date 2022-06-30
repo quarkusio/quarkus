@@ -10,7 +10,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jboss.resteasy.annotations.SseElementType;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -61,7 +61,7 @@ public class MutinyResource {
     @GET
     @Path("/pets")
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    @SseElementType(MediaType.APPLICATION_JSON)
+    @RestStreamElementType(MediaType.APPLICATION_JSON)
     public Multi<Pet> sse() {
         return service.getMorePets();
     }

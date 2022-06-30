@@ -70,7 +70,7 @@ public class KubernetesDeployer {
                 .getActiveContainerImageCapability(capabilities);
 
         if (activeContainerImageCapability.isEmpty()) {
-            // we can't thrown an exception here, because it could prevent the Kubernetes resources from being generated
+            // we can't throw an exception here, because it could prevent the Kubernetes resources from being generated
             return;
         }
 
@@ -135,10 +135,9 @@ public class KubernetesDeployer {
      * The selection is done as follows:
      *
      * If there is no target deployment at all, just use vanilla Kubernetes. This will happen in cases where the user does not
-     * select
-     * a deployment target and no extensions that specify one are are present
+     * select a deployment target and no extension that specify one is present.
      *
-     * If the user specifies deployment targets, pick the first one
+     * If the user specifies deployment targets, pick the first one.
      */
     private DeploymentTargetEntry determineDeploymentTarget(
             ContainerImageInfoBuildItem containerImageInfo,

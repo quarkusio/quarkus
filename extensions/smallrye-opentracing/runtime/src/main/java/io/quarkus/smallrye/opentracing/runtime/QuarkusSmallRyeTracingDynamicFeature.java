@@ -20,8 +20,8 @@ public class QuarkusSmallRyeTracingDynamicFeature implements DynamicFeature {
     public void configure(ResourceInfo resourceInfo, FeatureContext context) {
         ServerTracingDynamicFeature.Builder builder = new ServerTracingDynamicFeature.Builder(
                 CDI.current().select(Tracer.class).get())
-                        .withOperationNameProvider(OperationNameProvider.ClassNameOperationName.newBuilder())
-                        .withTraceSerialization(false);
+                .withOperationNameProvider(OperationNameProvider.ClassNameOperationName.newBuilder())
+                .withTraceSerialization(false);
 
         tracingConfig.skipPattern.ifPresent(builder::withSkipPattern);
         if (tracingConfig.operationNameProvider.isPresent()) {

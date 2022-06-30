@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-apicurio-registry-avro</artifactId>
     <name>Quarkus - Apicurio Registry - Avro - Runtime</name>
+    <description>Use Apicurio as Avro schema registry</description>
 
     <dependencies>
         <dependency>
@@ -40,7 +41,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <capabilities>
                         <provides>io.quarkus.apicurio.registry.avro</provides>

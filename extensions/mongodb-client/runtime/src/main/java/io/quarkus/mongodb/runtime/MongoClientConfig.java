@@ -19,7 +19,7 @@ public class MongoClientConfig {
      * <p>
      * {@code mongodb://} is a required prefix to identify that this is a string in the standard connection format.
      * <p>
-     * {@code username:password@} are optional. If given, the driver will attempt to login to a database after
+     * {@code username:password@} are optional. If given, the driver will attempt to log in to a database after
      * connecting to a database server. For some authentication mechanisms, only the username is specified and the
      * password is not, in which case the ":" after the username is left off as well.
      * <p>
@@ -27,7 +27,7 @@ public class MongoClientConfig {
      * <p>
      * {@code :portX} is optional and defaults to :27017 if not provided.
      * <p>
-     * {@code /database} is the name of the database to login to and thus is only relevant if the
+     * {@code /database} is the name of the database to log in to and thus is only relevant if the
      * {@code username:password@} syntax is used. If not specified the {@code admin} database will be used by default.
      * <p>
      * {@code ?options} are connection options. Note that if {@code database} is absent there is still a {@code /}
@@ -99,7 +99,7 @@ public class MongoClientConfig {
     public Optional<Duration> maxConnectionIdleTime;
 
     /**
-     * Maximum life time of a pooled connection. A connection that exceeds this limit will be closed.
+     * Maximum lifetime of a pooled connection. A connection that exceeds this limit will be closed.
      */
     @ConfigItem
     public Optional<Duration> maxConnectionLifeTime;

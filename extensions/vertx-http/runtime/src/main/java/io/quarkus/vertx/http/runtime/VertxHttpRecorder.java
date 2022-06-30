@@ -100,6 +100,7 @@ import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.impl.Http1xServerConnection;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.EventLoopContext;
+import io.vertx.core.impl.Utils;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.core.net.KeyStoreOptions;
@@ -122,8 +123,14 @@ public class VertxHttpRecorder {
 
     public static final String MAX_REQUEST_SIZE_KEY = "io.quarkus.max-request-size";
 
-    // We do not use Integer.MAX on purpose to allow advanced users to register a route AFTER the default route
+    /** Order mark for route with priority over the default route (add an offset from this mark) **/
+    public static final int BEFORE_DEFAULT_ROUTE_ORDER_MARK = 1_000;
+
+    /** Default route order (i.e. Static Resources, Servlet) **/
     public static final int DEFAULT_ROUTE_ORDER = 10_000;
+
+    /** Order mark for route without priority over the default route (add an offset from this mark) **/
+    public static final int AFTER_DEFAULT_ROUTE_ORDER_MARK = 20_000;
 
     private static final Logger LOGGER = Logger.getLogger(VertxHttpRecorder.class.getName());
 
@@ -860,6 +867,7 @@ public class VertxHttpRecorder {
         }
         httpServerOptions.setDecompressionSupported(buildTimeConfig.enableDecompression);
         httpServerOptions.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
+        httpServerOptions.setHandle100ContinueAutomatically(httpConfiguration.handle100ContinueAutomatically);
     }
 
     private static KeyStoreOptions createKeyStoreOptions(Path path, String password, Optional<String> fileType,
@@ -1129,7 +1137,14 @@ public class VertxHttpRecorder {
                         startFuture.complete(null);
                     }
                 } else {
-                    startFuture.fail(event.cause());
+                    if (event.cause() instanceof IllegalArgumentException) {
+                        startFuture.fail(new IllegalArgumentException(
+                                String.format(
+                                        "Unable to bind to Unix domain socket. Consider adding the 'io.netty:%s' dependency. See the Quarkus Vert.x reference guide for more details.",
+                                        Utils.isLinux() ? "netty-transport-native-epoll" : "netty-transport-native-kqueue")));
+                    } else {
+                        startFuture.fail(event.cause());
+                    }
                 }
             });
         }
@@ -1455,7 +1470,7 @@ public class VertxHttpRecorder {
                 }
             };
             if (entry.getKey().equals(".*")) {
-                //bit of a hack to make sure the pattern .* is evaluated last
+                //a bit of a hack to make sure the pattern .* is evaluated last
                 last = biFunction;
             } else {
                 functions.add(biFunction);

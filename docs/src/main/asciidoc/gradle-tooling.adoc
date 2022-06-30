@@ -61,7 +61,7 @@ Instructions to build the image and run the container are written in those Docke
 
 By default, Quarkus tests in JVM mode are run using the `test` configuration profile. If you are not familiar with Quarkus
 configuration profiles, everything you need to know is explained in the
-xref:config.adoc#configuration-profiles[Configuration Profiles Documentation].
+xref:config-reference.adoc#profiles[Configuration Profiles Documentation].
 
 It is however possible to use a custom configuration profile for your tests with the Gradle build configuration shown below.
 This can be useful if you need for example to run some tests using a specific database which is not your default testing
@@ -118,7 +118,7 @@ quarkus extension
 You can enable an extension using:
 
 :add-extension-extensions: hibernate-validator
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 Extensions are passed using a comma-separated list.
 
@@ -144,7 +144,7 @@ $ ./gradlew addExtension --extensions="jdbc,agroal,non-exist-ent"
 You can install all extensions which match a globbing pattern:
 
 :add-extension-extensions: smallrye-*
-include::includes/devtools/extension-add.adoc[]
+include::{includes}/devtools/extension-add.adoc[]
 
 [[dev-mode]]
 == Development mode
@@ -152,7 +152,7 @@ include::includes/devtools/extension-add.adoc[]
 Quarkus comes with a built-in development mode.
 You can start it with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Note that if you run it this way the continuous testing experience will not be as nice, as gradle runs as a daemon
 Quarkus can't draw the 'pretty' test output so falls back to just logging the output.
@@ -204,7 +204,7 @@ By default, the `quarkusDev` task uses `compileJava` compiler options. These can
 By default, `quarkusDev` sets the debug host to `localhost` (for security reasons). If you need to change this, for example to enable debugging on all hosts, you can use the `-DdebugHost` option like so:
 
 :dev-additional-parameters: -DdebugHost=0.0.0.0
-include::includes/devtools/dev-parameters.adoc[]
+include::{includes}/devtools/dev-parameters.adoc[]
 :!dev-additional-parameters:
 ====
 The plugin also exposes a `quarkusDev` configuration. Using this configuration to declare a dependency will restrict the usage of that dependency to development mode.
@@ -258,7 +258,7 @@ may want to leave it out of the properties file and specify it as a system prope
 
 The `mutable-jar` is then built in the same way that a regular Quarkus jar is built, i.e. by issuing:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 Before you start Quarkus on the remote host set the environment variable `QUARKUS_LAUNCH_DEVMODE=true`. If you are
 on bare metal you can set it via the `export QUARKUS_LAUNCH_DEVMODE=true` command and then run the application with the proper `java -jar ...` command to run the application.
@@ -269,7 +269,7 @@ When the application starts you should now see the following line in the logs: `
 
 NOTE: The remote side does not need to include Maven or any other development tools. The normal `fast-jar` Dockerfile
 that is generated with a new Quarkus application is all you need. If you are using bare metal launch the Quarkus runner
-jar, do not attempt to run normal devmode.
+jar, do not attempt to run normal dev mode.
 
 Now you need to connect your local agent to the remote host, using the `remote-dev` command:
 
@@ -306,7 +306,7 @@ An additional system property `suspend` can be used to suspend the JVM, when lau
 You can also run a Quarkus application in debug mode with a suspended JVM using:
 
 :dev-additional-parameters: -Dsuspend -Ddebug
-include::includes/devtools/dev-parameters.adoc[]
+include::{includes}/devtools/dev-parameters.adoc[]
 :!dev-additional-parameters:
 
 Then, attach your debugger to `localhost:5005`.
@@ -326,15 +326,15 @@ The next screen list the found modules; select the generated project and click o
 
 In a separated terminal, run:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 and enjoy a highly productive environment.
 
-**IntelliJ**
+**IntelliJ IDEA**
 
-In IntelliJ:
+In IntelliJ IDEA:
 
-1. From inside IntelliJ select `File -> New -> Project From Existing Sources...` or, if you are on the welcome dialog, select `Import project`.
+1. From inside IntelliJ IDEA select `File -> New -> Project From Existing Sources...` or, if you are on the welcome dialog, select `Import project`.
 2. Select the project root
 3. Select `Import project from external model` and `Gradle`
 4. Next a few times (review the different options if needed)
@@ -342,7 +342,7 @@ In IntelliJ:
 
 In a separated terminal or in the embedded terminal, run:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Enjoy!
 
@@ -356,7 +356,7 @@ In NetBeans:
 
 In a separated terminal or the embedded terminal, go to the project root and run:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 Enjoy!
 
@@ -388,7 +388,7 @@ Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {gra
 
 Create a native executable using:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 A native executable will be present in `build/`.
 
@@ -441,9 +441,9 @@ This limitation does not apply to the Gradle Kotlin DSL.
 The native executable will be specific to your operating system.
 To create an executable that will run in a container, use the following:
 
-include::includes/devtools/build-native-container.adoc[]
+include::{includes}/devtools/build-native-container.adoc[]
 
-The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
+The produced executable will be a 64-bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
 Note that in this case the build itself runs in a Docker container too, so you don't need to have GraalVM installed locally.
 
@@ -531,7 +531,7 @@ on the classpath that the legacy jar necessitates, when loading a class or resou
 Quarkus Gradle plugin supports the generation of Uber-Jars by specifying a `quarkus.package.type` argument as follows:
 
 :build-additional-parameters: -Dquarkus.package.type=uber-jar
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 :!build-additional-parameters:
 
 When building an Uber-Jar you can specify entries that you want to exclude from the generated jar by using the `--ignored-entry` argument:
@@ -549,7 +549,7 @@ The entries are relative to the root of the generated Uber-Jar. You can specify 
 By default, Quarkus will not discover CDI beans inside another module.
 
 The best way to enable CDI bean discovery for a module in a multi-module project would be to include a `META-INF/beans.xml` file,
-unless it is the main application module already configured with the quarkus-maven-plugin, in which case it will indexed automatically.
+unless it is the main application module already configured with the quarkus-maven-plugin, in which case it will be indexed automatically.
 
 Alternatively, there is some unofficial link:https://plugins.gradle.org/search?term=jandex[Gradle Jandex plugins] that can be used instead of the `META-INF/beans.xml` file.
 

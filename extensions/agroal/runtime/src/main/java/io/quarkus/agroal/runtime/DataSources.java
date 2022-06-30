@@ -3,6 +3,7 @@ package io.quarkus.agroal.runtime;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
@@ -61,6 +62,7 @@ import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 public class DataSources {
 
     private static final Logger log = Logger.getLogger(DataSources.class.getName());
+    public static final String TRACING_DRIVER_CLASSNAME = "io.opentracing.contrib.jdbc.TracingDriver";
 
     private final DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig;
     private final DataSourcesRuntimeConfig dataSourcesRuntimeConfig;
@@ -149,6 +151,43 @@ public class DataSources {
                     "Unable to load the datasource driver " + resolvedDriverClass + " for datasource " + dataSourceName, e);
         }
 
+        String jdbcUrl = dataSourceJdbcRuntimeConfig.url.get();
+
+        if (dataSourceJdbcBuildTimeConfig.tracing) {
+            boolean tracingEnabled = dataSourceJdbcRuntimeConfig.tracing.enabled.orElse(dataSourceJdbcBuildTimeConfig.tracing);
+
+            if (tracingEnabled) {
+                StringBuilder tracingURL = new StringBuilder(
+                        dataSourceJdbcRuntimeConfig.url.get().replace("jdbc:", "jdbc:tracing:"));
+
+                if (dataSourceJdbcRuntimeConfig.tracing.traceWithActiveSpanOnly) {
+                    if (!tracingURL.toString().contains("?")) {
+                        tracingURL.append("?");
+                    }
+
+                    tracingURL.append("traceWithActiveSpanOnly=true");
+                }
+
+                if (dataSourceJdbcRuntimeConfig.tracing.ignoreForTracing.isPresent()) {
+                    if (!tracingURL.toString().contains("?")) {
+                        tracingURL.append("?");
+                    }
+
+                    Arrays.stream(dataSourceJdbcRuntimeConfig.tracing.ignoreForTracing.get().split(";"))
+                            .filter(query -> !query.isEmpty())
+                            .forEach(query -> tracingURL.append("ignoreForTracing=")
+                                    .append(query.replaceAll("\"", "\\\""))
+                                    .append(";"));
+                }
+
+                // Override datasource URL with tracing driver prefixed URL
+                jdbcUrl = tracingURL.toString();
+
+                //remove driver class so that agroal connectionFactory will use the tracking driver anyway
+                driver = null;
+            }
+        }
+
         String resolvedDbKind = matchingSupportEntry.resolvedDbKind;
         AgroalConnectionConfigurer agroalConnectionConfigurer = Arc.container()
                 .instance(AgroalConnectionConfigurer.class, new JdbcDriverLiteral(resolvedDbKind))
@@ -166,7 +205,7 @@ public class DataSources {
                 .connectionFactoryConfiguration();
 
         boolean mpMetricsPresent = dataSourceSupport.mpMetricsPresent;
-        applyNewConfiguration(dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration, driver,
+        applyNewConfiguration(dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration, driver, jdbcUrl,
                 dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, mpMetricsPresent);
 
         if (dataSourceSupport.disableSslSupport) {
@@ -208,10 +247,10 @@ public class DataSources {
 
     private void applyNewConfiguration(AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
             AgroalConnectionPoolConfigurationSupplier poolConfiguration,
-            AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration, Class<?> driver,
+            AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration, Class<?> driver, String jdbcUrl,
             DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig, DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig, boolean mpMetricsPresent) {
-        connectionFactoryConfiguration.jdbcUrl(dataSourceJdbcRuntimeConfig.url.get());
+        connectionFactoryConfiguration.jdbcUrl(jdbcUrl);
         connectionFactoryConfiguration.connectionProviderClass(driver);
         connectionFactoryConfiguration.trackJdbcResources(dataSourceJdbcRuntimeConfig.detectStatementLeaks);
 

@@ -183,12 +183,13 @@ public class KubernetesCommonHelper {
 
         //Handle RBAC
         if (!roleBindings.isEmpty()) {
-            result.add(new DecoratorBuildItem(target, new ApplyServiceAccountNameDecorator()));
-            result.add(new DecoratorBuildItem(target, new AddServiceAccountResourceDecorator()));
+            result.add(new DecoratorBuildItem(target, new ApplyServiceAccountNameDecorator(name)));
+            result.add(new DecoratorBuildItem(target, new AddServiceAccountResourceDecorator(name)));
             roles.forEach(r -> result.add(new DecoratorBuildItem(target, new AddRoleResourceDecorator(name, r))));
             roleBindings.forEach(rb -> {
+                String rbName = Strings.isNotNullOrEmpty(rb.getName()) ? rb.getName() : name;
                 result.add(new DecoratorBuildItem(target,
-                        new AddRoleBindingResourceDecorator(rb.getName(), null, rb.getRole(),
+                        new AddRoleBindingResourceDecorator(rbName, name, rb.getRole(),
                                 rb.isClusterWide() ? AddRoleBindingResourceDecorator.RoleKind.ClusterRole
                                         : AddRoleBindingResourceDecorator.RoleKind.Role)));
                 labels.forEach(l -> {

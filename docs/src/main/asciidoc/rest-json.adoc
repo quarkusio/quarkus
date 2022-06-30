@@ -21,7 +21,7 @@ A more detailed guide about RESTEasy Reactive is available xref:resteasy-reactiv
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -44,7 +44,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: rest-json-quickstart
 :create-app-extensions: resteasy-reactive-jackson
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a new project importing the RESTEasy Reactive/JAX-RS and https://github.com/FasterXML/jackson[Jackson] extensions,
 and in particular adds the following dependency:
@@ -73,7 +73,7 @@ Quarkus also supports https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] so, if y
 
 :create-app-artifact-id: rest-json-quickstart
 :create-app-extensions: resteasy-reactive-jsonb
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a new project importing the RESTEasy Reactive/JAX-RS and https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] extensions,
 and in particular adds the following dependency:
@@ -171,7 +171,7 @@ public class FruitResource {
 }
 ----
 
-The implementation is pretty straightforward and you just need to define your endpoints using the JAX-RS annotations.
+The implementation is pretty straightforward, and you just need to define your endpoints using the JAX-RS annotations.
 
 The `Fruit` objects will be automatically serialized/deserialized by https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] or https://github.com/FasterXML/jackson[Jackson],
 depending on the extension you chose when initializing the project.
@@ -193,7 +193,7 @@ In Quarkus, the default Jackson `ObjectMapper` obtained via CDI (and consumed by
 (by disabling the `DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES` feature).
 
 You can restore the default behavior of Jackson by setting `quarkus.jackson.fail-on-unknown-properties=true` in your `application.properties`
-or on a per class basis via `@JsonIgnoreProperties(ignoreUnknown = false)`.
+or on a per-class basis via `@JsonIgnoreProperties(ignoreUnknown = false)`.
 
 Furthermore, the `ObjectMapper` is configured to format dates and time in ISO-8601
 (by disabling the `SerializationFeature.WRITE_DATES_AS_TIMESTAMPS` feature).
@@ -233,12 +233,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.jackson.ObjectMapperCustomizer;
 
 import javax.enterprise.inject.Instance;
+import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 
 public class CustomObjectMapper {
 
     // Replaces the CDI producer for ObjectMapper built into Quarkus
     @Singleton
+    @Produces
     ObjectMapper objectMapper(Instance<ObjectMapperCustomizer> customizers) {
         ObjectMapper mapper = myObjectMapper(); // Custom `ObjectMapper`
 
@@ -251,6 +253,12 @@ public class CustomObjectMapper {
     }
 }
 ----
+
+===== Mixin support
+
+Quarkus automates the registration of Jackson's Mixin support, via the `io.quarkus.jackson.JacksonMixin` annotation.
+This annotation can be placed on classes that are meant to be used as Jackson mixins while the classes they are meant to customize
+are defined as the value of the annotation.
 
 ==== JSON-B
 
@@ -318,7 +326,7 @@ You can now interact with your REST service:
 
  * start Quarkus with:
 +
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
  * open a browser to `http://localhost:8080/fruits.html`
  * add new fruits to the list via the form
 
@@ -328,7 +336,7 @@ include::includes/devtools/dev.adoc[]
 
 You can build a native executable with the usual command:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 Running it is as simple as executing `./target/rest-json-quickstart-1.0.0-SNAPSHOT-runner`.
 
@@ -442,7 +450,7 @@ Now let's add a simple web page to display our list of legumes.
 In the `src/main/resources/META-INF/resources` directory, add a `legumes.html` file with the content from this
 {quickstarts-blob-url}/rest-json-quickstart/src/main/resources/META-INF/resources/legumes.html[legumes.html] file in it.
 
-Open a browser to http://localhost:8080/legumes.html and you will see our list of legumes.
+Open a browser to http://localhost:8080/legumes.html, and you will see our list of legumes.
 
 The interesting part starts when running the application as a native executable:
 
@@ -450,7 +458,7 @@ The interesting part starts when running the application as a native executable:
 
  * create the native executable with:
 +
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
  * execute it with `./target/rest-json-quickstart-1.0.0-SNAPSHOT-runner`
  * open a browser and go to http://localhost:8080/legumes.html
 
@@ -459,7 +467,7 @@ include::includes/devtools/build-native.adoc[]
 No legumes there.
 
 As mentioned above, the issue is that Quarkus was not able to determine the `Legume` class will require some reflection by analyzing the REST endpoints.
-The JSON serialization library tries to get the list of fields of `Legume` and gets an empty list so it does not serialize the fields' data.
+The JSON serialization library tries to get the list of fields of `Legume` and gets an empty list, so it does not serialize the fields' data.
 
 [NOTE]
 ====
@@ -489,7 +497,7 @@ Let's do that and follow the same steps as before:
  * hit `Ctrl+C` to stop the application
  * create the native executable with:
 +
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
  * execute it with `./target/rest-json-quickstart-1.0.0-SNAPSHOT-runner`
  * open a browser and go to http://localhost:8080/legumes.html
 

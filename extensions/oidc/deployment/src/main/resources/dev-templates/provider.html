@@ -104,13 +104,15 @@ var port = {config:property('quarkus.http.port')};
           + "?client_id=" + '{info:clientId}'
           + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
           + "&scope=openid&response_type=token id_token&response_mode=query&prompt=login"
-          + "&nonce=" + makeid();
+          + "&nonce=" + makeid()
+          + "&state=" + makeid();
       {#else}
         window.location.href = '{info:authorizationUrl??}'
           + "?client_id=" + '{info:clientId}'
           + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
           + "&scope=openid&response_type=code&response_mode=query&prompt=login"
-          + "&nonce=" + makeid();
+          + "&nonce=" + makeid()
+          + "&state=" + makeid();
       {/if}    
     }
 
@@ -222,11 +224,11 @@ var port = {config:property('quarkus.http.port')};
                     userName = jsonPayload.upn;
                 } else if (jsonPayload.preferred_username) {
                     userName = jsonPayload.preferred_username;
+                }  else if (jsonPayload.name) {
+                    userName = jsonPayload.name;
                 }
                 if (userName) {
                     $('#loggedInUser').append("Logged in as " + userName + " ");
-                } else {
-                    $('#loggedInUser').append("Logged in ");
                 }
             }
             return "<pre class='text-danger' title='Header'>" + 

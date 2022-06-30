@@ -211,7 +211,7 @@ Therefore, we recommend to stick with `@ApplicationScoped` by default unless the
 [[client_proxies]]
 == I don't understand the concept of client proxies.
 
-Indeed, the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#client_proxies[client proxies, window="_blank"] could be hard to grasp but they provide some useful functionality.
+Indeed, the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#client_proxies[client proxies, window="_blank"] could be hard to grasp, but they provide some useful functionality.
 A client proxy is basically an object that delegates all method invocations to a target bean instance.
 It's a container construct that implements `io.quarkus.arc.ClientProxy` and extends the bean class.
 
@@ -471,7 +471,7 @@ TIP: For more info about events/observers visit https://docs.jboss.org/weld/refe
 
 == Conclusion
 
-In this guide, we've covered some of the basic topics of the Quarkus programming model that is based on the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
+In this guide, we've covered some basic topics of the Quarkus programming model that is based on the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
 However, a full CDI implementation is not used under the hood.
 Quarkus only implements a subset of the CDI features - see also <<cdi-reference.adoc#supported_features,the list of supported features>> and <<cdi-reference.adoc#limitations,the list of limitations>>.
 On the other hand, there are quite a few <<cdi-reference#nonstandard_features,non-standard features>> and <<cdi-reference.adoc#build_time_apis,Quarkus-specific APIs>>.

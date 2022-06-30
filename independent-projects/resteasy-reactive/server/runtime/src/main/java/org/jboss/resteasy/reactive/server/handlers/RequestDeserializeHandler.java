@@ -71,7 +71,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
                                     type, genericType, effectiveRequestType, reader, requestContext.getInputStream(),
                                     interceptors,
                                     serialisers)
-                                            .proceed();
+                                    .proceed();
                         }
                     } catch (NoContentException e) {
                         throw new BadRequestException(e);
@@ -103,6 +103,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
     @SuppressWarnings("unchecked")
     public Object readFrom(MessageBodyReader<?> reader, ResteasyReactiveRequestContext requestContext, MediaType requestType)
             throws IOException {
+        requestContext.requireCDIRequestScope();
         if (reader instanceof ServerMessageBodyReader) {
             return ((ServerMessageBodyReader<?>) reader).readFrom((Class) type, genericType, requestType, requestContext);
         }

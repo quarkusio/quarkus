@@ -13,6 +13,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
@@ -34,6 +35,7 @@ class DevServicesConfigBuildStep {
     DevServicesLauncherConfigResultBuildItem setup(BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfig,
             List<DevServicesConfigResultBuildItem> devServicesConfigResultBuildItems,
             List<DevServicesResultBuildItem> devServicesResultBuildItems,
+            List<DevServicesAdditionalConfigBuildItem> devServicesAdditionalConfigBuildItems,
             CuratedApplicationShutdownBuildItem shutdownBuildItem) {
         Map<String, String> newProperties = new HashMap<>(devServicesConfigResultBuildItems.stream().collect(
                 Collectors.toMap(DevServicesConfigResultBuildItem::getKey, DevServicesConfigResultBuildItem::getValue)));
@@ -60,10 +62,24 @@ class DevServicesConfigBuildStep {
                 }
             }, true);
         }
-        for (Map.Entry<String, String> entry : newProperties.entrySet()) {
+        oldConfig = newProperties;
+
+        Map<String, String> newPropertiesWithAdditionalConfig = new HashMap<>(newProperties);
+        // On contrary to dev services config, "additional" config build items are
+        // produced on each restart, so we don't want to remember them from one restart to the next.
+        for (DevServicesAdditionalConfigBuildItem item : devServicesAdditionalConfigBuildItems) {
+            if (newProperties.containsKey(item.getTriggeringKey())) {
+                var callback = item.getCallbackWhenEnabled();
+                if (callback != null) {
+                    callback.run(); // This generally involves logging
+                }
+                newPropertiesWithAdditionalConfig.put(item.getKey(), item.getValue());
+            }
+        }
+
+        for (Map.Entry<String, String> entry : newPropertiesWithAdditionalConfig.entrySet()) {
             runtimeConfig.produce(new RunTimeConfigurationDefaultBuildItem(entry.getKey(), entry.getValue()));
         }
-        oldConfig = newProperties;
-        return new DevServicesLauncherConfigResultBuildItem(Collections.unmodifiableMap(newProperties));
+        return new DevServicesLauncherConfigResultBuildItem(Collections.unmodifiableMap(newPropertiesWithAdditionalConfig));
     }
 }

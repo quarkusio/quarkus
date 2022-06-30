@@ -132,7 +132,7 @@ public class RuntimeResourceDeployment {
 
     public RuntimeResource buildResourceMethod(ResourceClass clazz,
             ServerResourceMethod method, boolean locatableResource, URITemplate classPathTemplate, DeploymentInfo info) {
-        URITemplate methodPathTemplate = new URITemplate(method.getPath(), false);
+        URITemplate methodPathTemplate = new URITemplate(method.getPath(), method.isResourceLocator());
         MultivaluedMap<ScoreSystem.Category, ScoreSystem.Diagnostic> score = new QuarkusMultivaluedHashMap<>();
 
         Map<String, Integer> pathParameterIndexes = buildParamIndexMap(classPathTemplate, methodPathTemplate);

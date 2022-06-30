@@ -9,9 +9,6 @@ import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 import org.postgresql.core.BaseConnection;
 
-import com.oracle.svm.core.annotate.AutomaticFeature;
-
-@AutomaticFeature
 public final class SQLXMLFeature implements Feature {
 
     private final AtomicBoolean triggered = new AtomicBoolean(false);

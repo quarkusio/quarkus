@@ -1,6 +1,7 @@
 package io.quarkus.it.main;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 
 import org.junit.jupiter.api.Test;
 
@@ -66,6 +67,16 @@ public class RegisterForReflectionITCase {
         assertRegistration("FAILED", resourceD);
         assertRegistration("StaticClassOfD", resourceD + "$StaticClassOfD");
         assertRegistration("FAILED", resourceD + "$StaticClassOfD$OtherAccessibleClassOfD");
+    }
+
+    @Test
+    @DisableIfBuiltWithGraalVMOlderThan(GraalVMVersion.GRAALVM_22_1)
+    public void testLambdaCapturing() {
+        final String resourceLambda = BASE_PKG + ".ResourceLambda";
+
+        // Starting with GraalVM 22.1 support Lambda functions serialization
+        // (see https://github.com/oracle/graal/issues/3756)
+        RestAssured.given().when().get("/reflection/lambda").then().body(startsWith("Comparator$$Lambda$"));
     }
 
     private void assertRegistration(String expected, String queryParam) {

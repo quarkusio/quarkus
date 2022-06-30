@@ -1,5 +1,7 @@
 package io.quarkus.deployment.builditem.nativeimage;
 
+import java.util.Objects;
+
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
@@ -21,5 +23,22 @@ public final class JPMSExportBuildItem extends MultiBuildItem {
 
     public String getModule() {
         return moduleName;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        JPMSExportBuildItem that = (JPMSExportBuildItem) o;
+        return moduleName.equals(that.moduleName) && packageName.equals(that.packageName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(moduleName, packageName);
     }
 }

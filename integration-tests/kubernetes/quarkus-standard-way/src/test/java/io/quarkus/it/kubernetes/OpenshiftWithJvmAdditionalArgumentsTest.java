@@ -47,8 +47,6 @@ public class OpenshiftWithJvmAdditionalArgumentsTest {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getCommand()).containsExactly("java",
-                                    "-Dquarkus.http.host=0.0.0.0",
-                                    "-Djava.util.logging.manager=org.jboss.logmanager.LogManager",
                                     "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005",
                                     "-jar",
                                     "/deployments/quarkus-run.jar");

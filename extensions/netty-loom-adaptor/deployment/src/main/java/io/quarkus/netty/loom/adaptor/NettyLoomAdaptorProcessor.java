@@ -194,7 +194,7 @@ public class NettyLoomAdaptorProcessor {
                                         "canUseVirtual", "Ljava/lang/Boolean;");
 
                                 // fetch the currentCarrierThread method and put it inside the getCurrentCarrierMethod field
-                                // to avoid having to fetch it everytime we need to invoke it
+                                // to avoid having to fetch it every time we need to invoke it
                                 mv.visitLabel(L0);
                                 mv.visitLdcInsn("java.lang.Thread");
                                 mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
@@ -215,7 +215,7 @@ public class NettyLoomAdaptorProcessor {
                                         "(Z)V", false);
 
                                 // fetch the isVirtual method and put it inside the isVirtualMethod field to avoid
-                                // having to fetch it everytime we need to invoke it
+                                // having to fetch it every time we need to invoke it
                                 mv.visitLdcInsn("java.lang.Thread");
                                 mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
                                         "(Ljava/lang/String;)Ljava/lang/Class;", false);

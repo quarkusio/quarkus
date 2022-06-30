@@ -22,6 +22,7 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.DependencyNodeUtils;
 import io.quarkus.fs.util.ZipUtils;
+import io.quarkus.maven.ExtensionDescriptorMojo.RemovedResources;
 import io.quarkus.maven.capabilities.CapabilitiesConfig;
 import io.quarkus.maven.capabilities.CapabilityConfig;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -48,6 +49,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Component;
@@ -75,17 +77,25 @@ import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 
 /**
- * Generates Quarkus extension descriptor for the runtime artifact.
- * <p>
- * <p/>
- * Also generates META-INF/quarkus-extension.json which includes properties of
- * the extension such as name, labels, maven coordinates, etc that are used by
- * the tools.
+ * @deprecated in favor of {@code io.quarkus:quarkus-extension-maven-plugin}.
+ *             <p>
+ *             Generates Quarkus extension descriptor for the runtime artifact.
+ *             <p>
+ *             <p/>
+ *             Also generates META-INF/quarkus-extension.json which includes properties of
+ *             the extension such as name, labels, maven coordinates, etc that are used by
+ *             the tools.
  *
  * @author Alexey Loubyansky
  */
+@Deprecated(since = "2.10.0.Final")
 @Mojo(name = "extension-descriptor", defaultPhase = LifecyclePhase.PROCESS_RESOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class ExtensionDescriptorMojo extends AbstractMojo {
+
+    public static class RemovedResources {
+        String key;
+        String resources;
+    }
 
     private static final String GROUP_ID = "group-id";
     private static final String ARTIFACT_ID = "artifact-id";
@@ -160,7 +170,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
      * but in the `META-INF/quarkus-extension.properties`.
      */
     @Parameter
-    Map<String, String> removedResources = Map.of();
+    List<RemovedResources> removedResources = List.of();
 
     /**
      * Artifacts that are always loaded parent first when running in dev or test mode. This is an advanced option
@@ -203,6 +213,12 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     @Parameter(property = "skipCodestartValidation")
     boolean skipCodestartValidation;
 
+    /**
+     * The context of the execution of the plugin.
+     */
+    @Parameter(defaultValue = "${mojoExecution}", readonly = true, required = true)
+    private MojoExecution mojoExecution;
+
     AppArtifactCoords deploymentCoords;
     CollectResult collectedDeploymentDeps;
     DependencyResult runtimeDeps;
@@ -211,6 +227,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
+
+        getLog().warn("This Maven plugin was deprecated in favor of io.quarkus:quarkus-extension-maven-plugin:"
+                + mojoExecution.getVersion() + ", please, update the artifactId of the plugin in your project configuration.");
 
         if (!skipExtensionValidation) {
             validateExtensionDeps();
@@ -308,18 +327,18 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
 
         if (!removedResources.isEmpty()) {
-            for (Map.Entry<String, String> entry : removedResources.entrySet()) {
+            for (RemovedResources entry : removedResources) {
                 final ArtifactKey key;
                 try {
-                    key = ArtifactKey.fromString(entry.getKey());
+                    key = ArtifactKey.fromString(entry.key);
                 } catch (IllegalArgumentException e) {
                     throw new MojoExecutionException(
-                            "Failed to parse removed resource '" + entry.getKey() + '=' + entry.getValue() + "'", e);
+                            "Failed to parse removed resource '" + entry.key + '=' + entry.resources + "'", e);
                 }
-                if (entry.getValue() == null || entry.getValue().isBlank()) {
+                if (entry.resources == null || entry.resources.isBlank()) {
                     continue;
                 }
-                final String[] resources = entry.getValue().split(",");
+                final String[] resources = entry.resources.split(",");
                 if (resources.length == 0) {
                     continue;
                 }

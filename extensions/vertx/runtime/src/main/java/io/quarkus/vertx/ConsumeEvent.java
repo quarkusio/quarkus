@@ -93,7 +93,7 @@ public @interface ConsumeEvent {
 
     /**
      * @return {@code true} if the <em>blocking</em> consumption of the event must be ordered, meaning that the method
-     *         won't be called concurrently. Instead it serializes all the invocations based on the event order.
+     *         won't be called concurrently. Instead, it serializes all the invocations based on the event order.
      *         {@code ordered} must be used in conjunction with {@code blocking=true} or {@code @Blocking}.
      * @see io.vertx.core.Vertx#executeBlocking(io.vertx.core.Handler, boolean, io.vertx.core.Handler)
      */

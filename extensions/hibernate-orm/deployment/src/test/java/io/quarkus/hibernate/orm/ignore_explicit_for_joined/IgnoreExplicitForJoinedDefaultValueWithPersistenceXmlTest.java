@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.ignore_explicit_for_joined;
 
+import static org.hibernate.cfg.AvailableSettings.PERSISTENCE_UNIT_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Map;
@@ -33,7 +34,7 @@ public class IgnoreExplicitForJoinedDefaultValueWithPersistenceXmlTest {
         Map<String, Object> properties = em.getEntityManagerFactory().getProperties();
 
         // the PU is templatePU from the persistence.xml, not the default entity manager from application.properties
-        assertEquals("templatePU", properties.get("hibernate.ejb.persistenceUnitName"));
+        assertEquals("templatePU", properties.get(PERSISTENCE_UNIT_NAME));
         //If not defined in persistence.xml, internally hibernate-orm will assume false as default value
         assertEquals(null, properties.get("hibernate.discriminator.ignore_explicit_for_joined"));
     }

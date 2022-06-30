@@ -60,8 +60,8 @@
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <gitflow-incremental-builder.version>4.0.0</gitflow-incremental-builder.version>
-        <quarkus-platform-bom-plugin.version>0.0.40</quarkus-platform-bom-plugin.version>
+        <gitflow-incremental-builder.version>4.1.1</gitflow-incremental-builder.version>
+        <quarkus-platform-bom-plugin.version>0.0.51</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
@@ -69,10 +69,11 @@
         <!-- Dependency versions -->
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.46.0</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <grpc.version>1.47.0</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <grpc-jprotoc.version>1.2.1</grpc-jprotoc.version>
         <protoc.version>3.19.3</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
+        <proto-google-common-protos.version>2.0.1</proto-google-common-protos.version>
 
     </properties>
 
@@ -87,6 +88,7 @@
         <module>independent-projects/tools</module>
         <module>independent-projects/enforcer-rules</module>
         <module>independent-projects/resteasy-reactive</module>
+        <module>independent-projects/extension-maven-plugin</module>
 
         <!-- BOMs and parent POM -->
         <module>bom/application</module>

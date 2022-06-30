@@ -65,18 +65,16 @@ public class FileUtil {
     }
 
     /**
-     * Translates a file path from the Windows Style to a syntax accepted by Docker,
-     * so that volumes be safely mounted in both Docker for Windows and the legacy
-     * Docker Toolbox.
+     * Translates a file path from the Windows Style to a syntax accepted by Docker and Podman,
+     * so that volumes be safely mounted in both Docker Desktop for Windows and Podman Windows.
      * <p>
-     * <code>docker run -v //c/foo/bar:/somewhere (...)</code>
+     * <code>docker run -v /c/foo/bar:/somewhere (...)</code>
      * <p>
      * You should only use this method on Windows-style paths, and not Unix-style
      * paths.
      *
-     * @see https://github.com/quarkusio/quarkus/issues/5360
      * @param windowsStylePath A path formatted in Windows-style, e.g. "C:\foo\bar".
-     * @return A translated path accepted by Docker, e.g. "//c/foo/bar".
+     * @return A translated path accepted by Docker, e.g. "/c/foo/bar".
      */
     public static String translateToVolumePath(String windowsStylePath) {
         String translated = windowsStylePath.replace('\\', '/');
@@ -85,7 +83,7 @@ public class FileUtil {
         if (m.matches()) {
             String slash = Optional.ofNullable(m.group(2)).orElse("/");
             String path = Optional.ofNullable(m.group(3)).orElse("");
-            return "//" + m.group(1).toLowerCase() + slash + path;
+            return "/" + m.group(1).toLowerCase() + slash + path;
         }
         return translated;
     }

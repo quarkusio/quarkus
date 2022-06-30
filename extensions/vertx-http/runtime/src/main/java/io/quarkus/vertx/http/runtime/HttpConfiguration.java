@@ -92,6 +92,13 @@ public class HttpConfiguration {
     public ServerSslConfig ssl;
 
     /**
+     * When set to {@code true}, the HTTP server automatically sends `100 CONTINUE`
+     * response when the request expects it (with the `Expect: 100-Continue` header).
+     */
+    @ConfigItem(defaultValue = "false", name = "handle-100-continue-automatically")
+    public boolean handle100ContinueAutomatically;
+
+    /**
      * The number if IO threads used to perform IO. This will be automatically set to a reasonable value based on
      * the number of CPU cores if it is not provided. If this is set to a higher value than the number of Vert.x event
      * loops then it will be capped at the number of event loops.

@@ -14,16 +14,22 @@ class QuarkusRedisTest {
     static final String REACTIVE_KEY = "named-reactive-key";
     static final String REACTIVE_VALUE = "named-reactive-value";
 
-    static final String[] BASE_URLS = { "/quarkus-redis",
-            "/quarkus-redis-with-named",
-            "/quarkus-redis-dynamic-client-creation",
+    static final String[] BASE_URLS = { "" +
+            "/quarkus-redis",
+            "/quarkus-redis-with-name",
+            "/quarkus-redis-with-name-legacy",
             "/quarkus-redis-provided-hosts",
-            "/quarkus-redis-parameter-injection" };
+            "/quarkus-redis-parameter-injection-legacy"
+    };
+
+    String getKey(String k) {
+        return k;
+    }
 
     @Test
     public void sync() {
         for (String baseUrl : BASE_URLS) {
-            String path = String.format("%s/sync/%s", baseUrl, SYNC_KEY);
+            String path = String.format("%s/sync/%s", baseUrl, getKey(SYNC_KEY));
             RestAssured.given()
                     .when()
                     .get(path)
@@ -49,7 +55,7 @@ class QuarkusRedisTest {
     @Test
     public void reactive() {
         for (String baseUrl : BASE_URLS) {
-            String path = String.format("%s/reactive/%s", baseUrl, REACTIVE_KEY);
+            String path = String.format("%s/reactive/%s", baseUrl, getKey(REACTIVE_KEY));
             RestAssured.given()
                     .when()
                     .get(path)

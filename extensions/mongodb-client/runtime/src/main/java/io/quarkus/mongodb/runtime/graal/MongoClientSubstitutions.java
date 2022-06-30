@@ -153,12 +153,12 @@ final class DefaultDnsResolverSubstitution {
      * 0 5 5060 example.com.
      * The priority and weight are ignored, and we just concatenate the host (after removing the ending '.') and port with a
      * ':' in between, as expected by ServerAddress.
-     * It's required that the srvHost has at least three parts (e.g. foo.bar.baz) and that all of the resolved hosts have a
+     * It's required that the srvHost has at least three parts (e.g. foo.bar.baz) and that all the resolved hosts have a
      * parent
      * domain equal to the domain of the srvHost.
      */
     @Substitute
-    public List<String> resolveHostFromSrvRecords(final String srvHost) {
+    public List<String> resolveHostFromSrvRecords(String srvHost, String srvServiceName) {
         Config config = ConfigProvider.getConfig();
         if (!config.getOptionalValue(DnsClientProducer.FLAG, Boolean.class).orElse(false)) {
             throw new MongoConfigurationException(
@@ -172,12 +172,12 @@ final class DefaultDnsResolverSubstitution {
         List<String> hosts = new ArrayList<>();
         Duration timeout = config.getOptionalValue(DnsClientProducer.LOOKUP_TIMEOUT, Duration.class)
                 .orElse(Duration.ofSeconds(5));
-
+        String resourceName = "_" + srvServiceName + "._tcp." + srvHost;
         try {
-            List<SrvRecord> srvRecords = dnsClient.resolveSRV("_mongodb._tcp." + srvHost).await().atMost(timeout);
+            List<SrvRecord> srvRecords = dnsClient.resolveSRV(resourceName).await().atMost(timeout);
 
             if (srvRecords.isEmpty()) {
-                throw new MongoConfigurationException("No SRV records available for host " + "_mongodb._tcp." + srvHost);
+                throw new MongoConfigurationException("No SRV records available for host " + resourceName);
             }
             for (SrvRecord srvRecord : srvRecords) {
                 String resolvedHost = srvRecord.target().endsWith(".")

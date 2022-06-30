@@ -66,7 +66,7 @@ public class StaticFileWithResourcesTest {
         // RFC1123 date formatter
         final DateFormat dtf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.ENGLISH);
         dtf.setTimeZone(TimeZone.getTimeZone("GMT"));
-        // date in past, so that we always get a 200 response, instead of 304
+        // date in the past, so that we always get a 200 response, instead of 304
         final Date fiveMinInPast = new Date(System.currentTimeMillis() - (5 * 60 * 1000));
         final String modifiedSinceHeader = dtf.format(fiveMinInPast);
         final int numRequests = 10;

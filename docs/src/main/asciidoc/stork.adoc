@@ -19,12 +19,12 @@ It offers:
 * Built-in support for Consul and Kubernetes
 * Customizable client load-balancing strategies
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
 :prerequisites-docker:
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -72,7 +72,7 @@ Create a Quarkus project importing the quarkus-rest-client-reactive and quarkus-
 
 :create-app-artifact-id: stork-quickstart
 :create-app-extensions: quarkus-rest-client-reactive,quarkus-resteasy-reactive
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 In the generated project, also add the following dependencies:
 
@@ -336,7 +336,7 @@ If you start Consul differently, do not forget to edit the application configura
 
 Then, package the application:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 And run it:
 
@@ -361,7 +361,7 @@ The responses alternate between `Hello from Red!` and `Hello from Blue!`.
 
 You can compile this application into a native executable:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 And start it with:
 

@@ -15,7 +15,7 @@ public final class VertxGraphqlConfig {
     @ConfigGroup
     public static class VertxGraphqlUiConfig {
         /**
-         * If GraphQL UI should be included every time. By default this is only included when the application is running
+         * If GraphQL UI should be included every time. By default, this is only included when the application is running
          * in dev mode.
          */
         @ConfigItem

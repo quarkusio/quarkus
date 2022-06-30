@@ -17,7 +17,7 @@ This guide explains how to:
 
 == Prerequisites
 
-include::includes/devtools/prerequisites.adoc[]
+include::{includes}/prerequisites.adoc[]
 
 == Solution
 
@@ -33,7 +33,7 @@ The solution is located in the `lifecycle-quickstart` {quickstarts-tree-url}/lif
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: lifecycle-quickstart
-include::includes/devtools/create-app.adoc[]
+include::{includes}/devtools/create-app.adoc[]
 
 It generates:
 
@@ -43,7 +43,7 @@ It generates:
 
 == The main method
 
-By default Quarkus will automatically generate a main method, that will bootstrap Quarkus and then just wait for
+By default, Quarkus will automatically generate a main method, that will bootstrap Quarkus and then just wait for
 shutdown to be initiated. Let's provide our own main method:
 [source,java]
 ----
@@ -126,7 +126,7 @@ Command line arguments can be passed to the application through the `-D` flag wi
 
 * For Quarkus dev mode:
 +
-include::includes/devtools/dev-parameters.adoc[]
+include::{includes}/devtools/dev-parameters.adoc[]
 
 * For a runner jar: `java -Dquarkus.args=<cmd-args> -jar target/quarkus-app/quarkus-run.jar`
 * For a native executable: `./target/lifecycle-quickstart-1.0-SNAPSHOT-runner -Dquarkus.args=<cmd-args>`
@@ -213,20 +213,20 @@ TIP: If a class is annotated with `@Startup` but with no scope annotation then `
 
 Run the application with:
 
-include::includes/devtools/dev.adoc[]
+include::{includes}/devtools/dev.adoc[]
 
 The logged message is printed.
 When the application is stopped, the second log message is printed.
 
 As usual, the application can be packaged using:
 
-include::includes/devtools/build.adoc[]
+include::{includes}/devtools/build.adoc[]
 
 and executed using `java -jar target/quarkus-app/quarkus-run.jar`.
 
 You can also generate the native executable using:
 
-include::includes/devtools/build-native.adoc[]
+include::{includes}/devtools/build-native.adoc[]
 
 == Launch Modes
 
@@ -239,7 +239,7 @@ or by invoking the static method `io.quarkus.runtime.LaunchMode.current()`.
 == Graceful Shutdown
 
 Quarkus includes support for graceful shutdown, this allows Quarkus to wait for running requests to finish, up
-till a set timeout. By default this is disabled, however you can configure this by setting the `quarkus.shutdown.timeout`
+till a set timeout. By default, this is disabled, however you can configure this by setting the `quarkus.shutdown.timeout`
 config property. When this is set shutdown will not happen until all running requests have completed, or until
 this timeout has elapsed. This config property is a duration, and can be set using the standard
 `java.time.Duration` format, if only a number is specified it is interpreted as seconds.

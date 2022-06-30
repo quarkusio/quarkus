@@ -243,7 +243,7 @@ see <<uri-parameters,URI parameters>> for more information.
 
 |Query parameter
 |link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestQuery.html[`@RestQuery`]
-|The value of an https://tools.ietf.org/html/rfc3986#section-3.4[URI query parameter]
+|The value of a https://tools.ietf.org/html/rfc3986#section-3.4[URI query parameter]
 
 |Header
 |link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestHeader.html[`@RestHeader`]
@@ -482,7 +482,7 @@ TIP: The use of `@MultipartForm` is actually unnecessary as RESTEasy Reactive ca
 
 WARNING: When handling file uploads, it is very important to move the file to permanent storage (like a database, a dedicated file system or a cloud storage) in your code that handles the POJO.
 Otherwise, the file will no longer be accessible when the request terminates.
-Moreoever if `quarkus.http.body.delete-uploaded-files-on-end` is set to true, Quarkus will delete the uploaded file when the HTTP response is sent. If the setting is disabled,
+Moreover, if `quarkus.http.body.delete-uploaded-files-on-end` is set to true, Quarkus will delete the uploaded file when the HTTP response is sent. If the setting is disabled,
 the file will reside on the file system of the server (in the directory defined by the `quarkus.http.body.uploads-directory` configuration option), but as the uploaded files are saved
 with a UUID file name and no additional metadata is saved, these files are essentially a random dump of files.
 
@@ -528,7 +528,13 @@ public class Endpoint {
 }
 ----
 
-WARNING: For the time being, returning Multipart data is limited to be blocking endpoints. 
+WARNING: For the time being, returning Multipart data is limited to be blocking endpoints.
+
+==== Handling malformed input
+
+As part of reading the multipart body, RESTEasy Reactive invokes the proper MessageBodyReaderlink:{jaxrsapi}/javax/ws/rs/ext/MessageBodyReader.html[`MessageBodyReader`] for each part of the request.
+If an `IOException` occurs for one of these parts (for example if Jackson was unable to deserialize a JSON part), then a `org.jboss.resteasy.reactive.server.multipart.MultipartPartReadingException` is thrown.
+If this exception is not handled by the application as mentioned in <<exception-mapping>>, an HTTP 400 response is returned by default.
 
 === Returning a response body
 
@@ -1027,7 +1033,7 @@ Any user however that does not have the `admin` role will receive:
 ----
 
 NOTE: No additional configuration needs to be applied for this secure serialization to take place. However, users can use the `@io.quarkus.resteasy.reactive.jackson.EnableSecureSerialization` and `@io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization`
-annotation to opt-in or out for specific JAX-RS Resource classes or methods.
+annotation to opt in or out for specific JAX-RS Resource classes or methods.
 
 ===== @JsonView support
 
@@ -1137,6 +1143,93 @@ To enable XML support, add the `quarkus-resteasy-reactive-jaxb` extension to you
 Importing this module will allow HTTP message bodies to be read from XML
 and serialised to XML, for <<resource-types,all the types not already registered with a more specific
 serialisation>>.
+
+==== Advanced JAXB-specific features
+
+When using the `quarkus-resteasy-reactive-jaxb` extension there are some advanced features that RESTEasy Reactive supports.
+
+===== Inject JAXB components
+
+The JAXB resteasy reactive extension will serialize and unserialize requests and responses transparently for users. However, if you need finer grain control over JAXB components, you can inject either the JAXBContext, Marshaller, or Unmarshaller components into your beans:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyService {
+
+    @Inject
+    JAXBContext jaxbContext;
+
+    @Inject
+    Marshaller marshaller;
+
+    @Inject
+    Unmarshaller unmarshaller;
+
+    // ...
+}
+----
+
+[NOTE]
+====
+Quarkus will automatically find all the classes annotated with `@XmlRootElement` and then bound them to the JAXB context.
+====
+
+===== Customize the JAXB configuration
+
+To customize the JAXB configuration for either the JAXB context, and/or the Marshaller/Unmarshaller components, the suggested approach is to define a CDI bean of type `io.quarkus.jaxb.runtime.JaxbContextCustomizer`.
+
+An example where a custom module needs to be registered would look like so:
+
+[source,java]
+----
+@Singleton
+public class RegisterCustomModuleCustomizer implements JaxbContextCustomizer {
+
+    // For JAXB context configuration
+    @Override
+    public void customizeContextProperties(Map<String, Object> properties) {
+
+    }
+
+    // For Marshaller configuration
+    @Override
+    public void customizeMarshaller(Marshaller marshaller) throws PropertyException {
+        marshaller.setProperty("jaxb.formatted.output", Boolean.TRUE);
+    }
+
+    // For Unmarshaller configuration
+    @Override
+    public void customizeUnmarshaller(Unmarshaller unmarshaller) throws PropertyException {
+        // ...
+    }
+}
+----
+
+[NOTE]
+====
+It's not necessary to implement all three methods, but only the want you need.
+====
+
+Alternatively, you can provide your own `JAXBContext` bean by doing:
+
+[source,java]
+----
+public class CustomJaxbContext {
+
+    // Replaces the CDI producer for JAXBContext built into Quarkus
+    @Singleton
+    @Produces
+    JAXBContext jaxbContext() {
+        // ...
+    }
+}
+----
+
+[IMPORTANT]
+====
+Note that if you provide your custom JAXB context instance, you will need to register the classes you want to use for the XML serialization. This means that Quarkus will not update your custom JAXB context instance with the auto-discovered classes. 
+====
 
 === Web Links support
 
@@ -1413,7 +1506,7 @@ by default:
 
 This 'best guess' approach means that the majority of operations will run on the correct thread by default. If you are
 writing reactive code then your method will generally return one of these types, and will be executed on the IO thread.
-If you are writing blocking code your methods will generally return the result directly, and these will be run on a worker
+If you are writing blocking code your methods will usually return the result directly, and these will be run on a worker
 thread.
 
 You can override this behaviour using the
@@ -1811,7 +1904,7 @@ Now, whenever a REST method is invoked, the request will be logged into the cons
 
 [[readers-writers]]
 
-Whenever your endpoint methods return a object (of when they return a 
+Whenever your endpoint methods return an object (of when they return a
 link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse<?>`]
 or link:{jaxrsapi}/javax/ws/rs/core/Response.html[`Response`] with
 an entity), RESTEasy Reactive will look for a way to map that into an HTTP response body.
@@ -2146,7 +2239,7 @@ public class Endpoint {
 
     @Path("{converter}/{constructor}/{primitive}/{valueOf}")
     @GET
-    public String convertions(Converter converter, Constructor constructor,
+    public String conversions(Converter converter, Constructor constructor,
                               int primitive, ValueOf valueOf, 
                               @RestQuery List<Constructor> list) {
         return converter + "/" + constructor + "/" + primitive 
@@ -2157,7 +2250,7 @@ public class Endpoint {
 
 ==== Handling dates
 
-RESTEasy Reactive supports the use of the implementations of `java.time.Temporal` (like `java.time.LocalDateTime`) as query, path or form params. Furthermore it provides the `@org.jboss.resteasy.reactive.DateFormat` annotation which can be used to
+RESTEasy Reactive supports the use of the implementations of `java.time.Temporal` (like `java.time.LocalDateTime`) as query, path or form params. Furthermore, it provides the `@org.jboss.resteasy.reactive.DateFormat` annotation which can be used to
 set a custom expected pattern (otherwise the JDK's default format for each type is used implicitly).
 
 === Preconditions
@@ -2289,7 +2382,7 @@ Content-Length: 0
 === Negotiation
 
 One of the main ideas of REST (https://tools.ietf.org/html/rfc7231#section-3.4[and HTTP]) is that
-your resource is independent from its representation, and
+your resource is independent of its representation, and
 that both the client and server are free to represent their resources in as many media types as
 they want. This allows the server to declare support for multiple representations and let the
 client declare which ones it supports and get served something appropriate.

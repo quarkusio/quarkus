@@ -3,20 +3,23 @@
  */
 package io.quarkus.bootstrap.resolver.maven;
 
+import io.quarkus.bootstrap.util.DependencyUtils;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.GACT;
+import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
-import org.eclipse.aether.resolution.ArtifactRequest;
 
 public class BuildDependencyGraphVisitor {
 
-    private final Set<ArtifactKey> allRuntimeDeps;
+    private final MavenArtifactResolver resolver;
+    private final Map<ArtifactKey, ResolvedDependencyBuilder> appDeps;
     private final StringBuilder buf;
     private final Consumer<String> buildTreeConsumer;
     private final List<Boolean> depth;
@@ -25,14 +28,10 @@ public class BuildDependencyGraphVisitor {
     private DependencyNode currentRuntime;
     private Artifact runtimeArtifactToFind;
 
-    /**
-     * Nodes that are only present in the deployment class loader
-     */
-    private final List<DependencyNode> deploymentDepNodes = new ArrayList<>();
-    private final List<ArtifactRequest> requests = new ArrayList<>();
-
-    public BuildDependencyGraphVisitor(Set<ArtifactKey> allRuntimeDeps, Consumer<String> buildTreeConsumer) {
-        this.allRuntimeDeps = allRuntimeDeps;
+    public BuildDependencyGraphVisitor(MavenArtifactResolver resolver, Map<ArtifactKey, ResolvedDependencyBuilder> appDeps,
+            Consumer<String> buildTreeConsumer) {
+        this.resolver = resolver;
+        this.appDeps = appDeps;
         this.buildTreeConsumer = buildTreeConsumer;
         if (buildTreeConsumer == null) {
             buf = null;
@@ -43,15 +42,7 @@ public class BuildDependencyGraphVisitor {
         }
     }
 
-    public List<DependencyNode> getDeploymentNodes() {
-        return deploymentDepNodes;
-    }
-
-    public List<ArtifactRequest> getArtifactRequests() {
-        return requests;
-    }
-
-    public void visit(DependencyNode node) {
+    public void visit(DependencyNode node) throws BootstrapMavenException {
         if (depth != null) {
             consume(node);
         }
@@ -61,7 +52,7 @@ public class BuildDependencyGraphVisitor {
         final DependencyNode previousRuntime = currentRuntime;
         final Artifact previousRuntimeArtifact = runtimeArtifactToFind;
 
-        final Artifact newRuntimeArtifact = DeploymentInjectingDependencyVisitor.getRuntimeArtifact(node);
+        final Artifact newRuntimeArtifact = ApplicationDependencyTreeResolver.getRuntimeArtifact(node);
         if (newRuntimeArtifact != null) {
             currentDeployment = node;
             runtimeArtifactToFind = newRuntimeArtifact;
@@ -73,8 +64,9 @@ public class BuildDependencyGraphVisitor {
         }
 
         final List<DependencyNode> children = node.getChildren();
-        if (!children.isEmpty()) {
-            final int childrenTotal = children.size();
+
+        final int childrenTotal = children.size();
+        if (childrenTotal > 0) {
             if (childrenTotal == 1) {
                 if (depth != null) {
                     depth.add(false);
@@ -133,29 +125,47 @@ public class BuildDependencyGraphVisitor {
         buildTreeConsumer.accept(buf.toString());
     }
 
-    private void visitLeave(DependencyNode node) {
+    private void visitLeave(DependencyNode node) throws BootstrapMavenException {
         final Dependency dep = node.getDependency();
         if (dep == null) {
             return;
         }
-        final Artifact artifact = dep.getArtifact();
-        if (artifact.getFile() == null) {
-            requests.add(new ArtifactRequest(node));
+        if (currentDeployment == null) {
+            return;
         }
-        if (currentDeployment != null) {
-            if (currentRuntime == null && !allRuntimeDeps.contains(getKey(artifact))) {
-                deploymentDepNodes.add(node);
-            } else if (currentRuntime == node) {
-                currentRuntime = null;
-                runtimeArtifactToFind = null;
+        ArtifactKey key;
+        if (currentRuntime == null && !appDeps.containsKey(key = getKey(node.getArtifact()))) {
+
+            Artifact artifact = dep.getArtifact();
+            if (artifact.getFile() == null) {
+                artifact = resolver.resolve(artifact).getArtifact();
             }
-            if (currentDeployment == node) {
-                currentDeployment = null;
+
+            int flags = DependencyFlags.DEPLOYMENT_CP;
+            if (node.getDependency().isOptional()) {
+                flags |= DependencyFlags.OPTIONAL;
             }
+            WorkspaceModule module = null;
+            if (resolver.getProjectModuleResolver() != null) {
+                module = resolver.getProjectModuleResolver().getProjectModule(artifact.getGroupId(), artifact.getArtifactId());
+                if (module != null) {
+                    flags |= DependencyFlags.WORKSPACE_MODULE;
+                }
+            }
+            appDeps.put(key, ApplicationDependencyTreeResolver.toAppArtifact(artifact, module)
+                    .setScope(node.getDependency().getScope())
+                    .setFlags(flags));
+
+        } else if (currentRuntime == node) {
+            currentRuntime = null;
+            runtimeArtifactToFind = null;
+        }
+        if (currentDeployment == node) {
+            currentDeployment = null;
         }
     }
 
     private static ArtifactKey getKey(Artifact artifact) {
-        return new GACT(artifact.getGroupId(), artifact.getArtifactId(), artifact.getClassifier(), artifact.getExtension());
+        return DependencyUtils.getKey(artifact);
     }
 }

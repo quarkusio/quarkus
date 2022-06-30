@@ -51,7 +51,7 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
         expectedLib.add(entry.getGroupId() + '.' + entry.getArtifactId() + '-' + entry.getVersion() + '.' + entry.getType());
     }
 
-    protected void assertDeploymentDeps(Set<Dependency> deploymentDeps) throws Exception {
+    protected void assertDeploymentDep(Set<Dependency> deploymentDeps) throws Exception {
     }
 
     protected void assertAppModel(ApplicationModel appModel) throws Exception {
@@ -113,6 +113,11 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
         return platformPropsDep;
     }
 
+    public static Collection<Dependency> getDeploymentOnlyDeps(ApplicationModel model) {
+        return model.getDependencies().stream().filter(d -> d.isDeploymentCp() && !d.isRuntimeCp())
+                .map(d -> new ArtifactDependency(d)).collect(Collectors.toSet());
+    }
+
     @Override
     protected void testBootstrap(QuarkusBootstrap creator) throws Exception {
         System.setProperty("quarkus.package.type", "legacy-jar");
@@ -123,9 +128,6 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
             if (expectedExtensions != null) {
                 assertExtensionDependencies(curated.getApplicationModel(), expectedExtensions);
             }
-            assertDeploymentDeps(
-                    curated.getApplicationModel().getDependencies().stream().filter(d -> d.isDeploymentCp() && !d.isRuntimeCp())
-                            .map(d -> new ArtifactDependency(d)).collect(Collectors.toSet()));
             AugmentAction action = curated.createAugmentor();
             AugmentResult outcome = action.createProductionApplication();
 

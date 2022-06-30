@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.HashSet;
 import java.util.Set;
 
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsDependency;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
@@ -49,12 +50,12 @@ public class ProvidedExtensionDepsTest extends BootstrapFromOriginalJarTestBase 
     }
 
     @Override
-    protected void assertDeploymentDeps(Set<Dependency> deploymentDeps) throws Exception {
+    protected void assertAppModel(ApplicationModel model) throws Exception {
         final Set<Dependency> expected = new HashSet<>();
         expected.add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-a-deployment", "1"), "compile",
                 DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-a-deployment-dep", "1"), "compile",
                 DependencyFlags.DEPLOYMENT_CP));
-        assertEquals(expected, deploymentDeps);
+        assertEquals(expected, getDeploymentOnlyDeps(model));
     }
 }

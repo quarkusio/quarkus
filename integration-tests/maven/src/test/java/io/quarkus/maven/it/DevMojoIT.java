@@ -20,6 +20,7 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +29,6 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -489,23 +489,31 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         testDir = getTargetDir("projects/project-with-extension");
         runAndCheck();
 
-        final List<String> extDepWarnings = Files.readAllLines(testDir.toPath().resolve("build-project-with-extension.log"))
-                .stream()
-                .filter(s -> s.startsWith(
-                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency "))
-                .collect(Collectors.toList());
-        assertTrue(extDepWarnings
-                .contains(
-                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:acme-quarkus-ext:1.0-SNAPSHOT will not be hot-reloadable"));
-        assertTrue(extDepWarnings
-                .contains(
-                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:acme-quarkus-ext-deployment:1.0-SNAPSHOT will not be hot-reloadable"));
-        assertTrue(extDepWarnings
-                .contains(
-                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:acme-common:1.0-SNAPSHOT will not be hot-reloadable"));
-        assertTrue(extDepWarnings.contains(
-                "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:acme-common-transitive:1.0-SNAPSHOT will not be hot-reloadable"));
-        assertEquals(4, extDepWarnings.size());
+        final List<String> artifacts = getNonReloadableArtifacts(
+                Files.readAllLines(testDir.toPath().resolve("build-project-with-extension.log")));
+        assertTrue(artifacts.contains("- org.acme:acme-quarkus-ext:1.0-SNAPSHOT"));
+        assertTrue(artifacts.contains("- org.acme:acme-quarkus-ext-deployment:1.0-SNAPSHOT"));
+        assertTrue(artifacts.contains("- org.acme:acme-common:1.0-SNAPSHOT"));
+        assertTrue(artifacts.contains("- org.acme:acme-common-transitive:1.0-SNAPSHOT"));
+        assertEquals(4, artifacts.size());
+    }
+
+    protected List<String> getNonReloadableArtifacts(final List<String> log) {
+        final List<String> artifacts = new ArrayList<>();
+        boolean inWarn = false;
+        for (String line : log) {
+            if (inWarn) {
+                if (line.equals(
+                        "The artifacts above appear to be either dependencies of non-reloadable application dependencies or Quarkus extensions")) {
+                    break;
+                }
+                artifacts.add(line);
+            } else if (line.equals(
+                    "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Live reload was disabled for the following project artifacts:")) {
+                inWarn = true;
+            }
+        }
+        return artifacts;
     }
 
     @Test
@@ -513,15 +521,11 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         testDir = getTargetDir("projects/rest-client-custom-headers-extension");
         runAndCheck();
 
-        final List<String> extDepWarnings = Files
-                .readAllLines(testDir.toPath().resolve("build-rest-client-custom-headers-extension.log"))
-                .stream()
-                .filter(s -> s.startsWith(
-                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency "))
-                .collect(Collectors.toList());
-        assertTrue(extDepWarnings
-                .contains(
-                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:rest-client-custom-headers:1.0-SNAPSHOT will not be hot-reloadable"));
+        final List<String> artifacts = getNonReloadableArtifacts(
+                Files.readAllLines(testDir.toPath().resolve("build-rest-client-custom-headers-extension.log")));
+        assertTrue(artifacts.contains("- org.acme:rest-client-custom-headers:1.0-SNAPSHOT"));
+        assertTrue(artifacts.contains("- org.acme:rest-client-custom-headers-deployment:1.0-SNAPSHOT"));
+        assertEquals(2, artifacts.size());
 
         assertThat(DevModeTestUtils.getHttpResponse("/app/frontend")).isEqualTo("CustomValue1 CustomValue2");
     }

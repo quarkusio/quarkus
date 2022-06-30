@@ -6,7 +6,7 @@ import static io.quarkus.platform.descriptor.loader.json.ResourceLoaders.resolve
 import static java.util.Objects.requireNonNull;
 
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.util.DependencyNodeUtils;
+import io.quarkus.bootstrap.util.DependencyUtils;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -108,13 +108,13 @@ public final class CodestartResourceLoadersBuilder {
                 if (artifactCoords == null || codestartsArtifacts.containsKey(artifactCoords)) {
                     continue;
                 }
-                codestartsArtifacts.put(artifactCoords, DependencyNodeUtils.toArtifact(artifactCoords));
+                codestartsArtifacts.put(artifactCoords, DependencyUtils.toArtifact(artifactCoords));
             }
         }
 
         // Load base codestart artifacts
         if (baseCodestartsArtifactCoords != null) {
-            codestartsArtifacts.put(baseCodestartsArtifactCoords, DependencyNodeUtils.toArtifact(baseCodestartsArtifactCoords));
+            codestartsArtifacts.put(baseCodestartsArtifactCoords, DependencyUtils.toArtifact(baseCodestartsArtifactCoords));
         }
 
         if (catalog != null) {
@@ -124,13 +124,13 @@ public final class CodestartResourceLoadersBuilder {
                 if (codestartsArtifacts.containsKey(artifactCoords)) {
                     continue;
                 }
-                codestartsArtifacts.put(artifactCoords, DependencyNodeUtils.toArtifact(artifactCoords));
+                codestartsArtifacts.put(artifactCoords, DependencyUtils.toArtifact(artifactCoords));
             }
         }
 
         // Load codestarts from the given artifacts
         for (String codestartArtifactCoords : extraCodestartsArtifactCoords) {
-            codestartsArtifacts.put(codestartArtifactCoords, DependencyNodeUtils.toArtifact(codestartArtifactCoords));
+            codestartsArtifacts.put(codestartArtifactCoords, DependencyUtils.toArtifact(codestartArtifactCoords));
         }
 
         final List<ResourceLoader> codestartResourceLoaders = new ArrayList<>(codestartsArtifacts.size());

@@ -7,6 +7,11 @@ import io.quarkus.bootstrap.resolver.TsQuarkusExt;
 public class DependencyVersionOverridesManagedVersionTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
+    protected boolean createWorkspace() {
+        return true;
+    }
+
+    @Override
     protected TsArtifact composeApplication() {
 
         final TsQuarkusExt extA_100 = new TsQuarkusExt("ext-a", "1.0.0");

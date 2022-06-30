@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.HashSet;
 import java.util.Set;
 
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
 import io.quarkus.deployment.runnerjar.BootstrapFromOriginalJarTestBase;
@@ -66,7 +67,7 @@ public class CascadingConditionalDependenciesTest extends BootstrapFromOriginalJ
     }
 
     @Override
-    protected void assertDeploymentDeps(Set<Dependency> deploymentDeps) throws Exception {
+    protected void assertAppModel(ApplicationModel model) throws Exception {
         final Set<Dependency> expected = new HashSet<>();
         expected.add(new ArtifactDependency(
                 new GACTV(TsArtifact.DEFAULT_GROUP_ID, "ext-c-deployment", TsArtifact.DEFAULT_VERSION), "compile",
@@ -86,6 +87,6 @@ public class CascadingConditionalDependenciesTest extends BootstrapFromOriginalJ
         expected.add(new ArtifactDependency(
                 new GACTV(TsArtifact.DEFAULT_GROUP_ID, "ext-f-deployment", TsArtifact.DEFAULT_VERSION), "runtime",
                 DependencyFlags.DEPLOYMENT_CP));
-        assertEquals(expected, deploymentDeps);
+        assertEquals(expected, getDeploymentOnlyDeps(model));
     }
 }

@@ -77,9 +77,7 @@ public class MutableJarApplicationModel implements Serializable {
         for (ArtifactKey i : lesserPriorityArtifacts) {
             model.addLesserPriorityArtifact(i);
         }
-        for (ArtifactKey i : localProjectArtifacts) {
-            model.addReloadableWorkspaceModule(i);
-        }
+        model.addReloadableWorkspaceModules(localProjectArtifacts);
         for (Map.Entry<ArtifactKey, Set<String>> i : excludedResources.entrySet()) {
             model.addRemovedResources(i.getKey(), i.getValue());
         }

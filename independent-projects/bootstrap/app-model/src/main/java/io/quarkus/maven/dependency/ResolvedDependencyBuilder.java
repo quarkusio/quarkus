@@ -34,6 +34,9 @@ public class ResolvedDependencyBuilder extends AbstractDependencyBuilder<Resolve
 
     public ResolvedDependencyBuilder setWorkspaceModule(WorkspaceModule projectModule) {
         this.workspaceModule = projectModule;
+        if (projectModule != null) {
+            setWorkspaceModule();
+        }
         return this;
     }
 

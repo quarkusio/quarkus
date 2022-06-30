@@ -16,19 +16,26 @@ public class DependenciesFilter {
 
     public static List<ResolvedDependency> getReloadableModules(ApplicationModel appModel) {
         final Map<ArtifactKey, WorkspaceDependencies> modules = new HashMap<>();
-        appModel.getDependencies().forEach(d -> {
+        StringBuilder nonReloadable = null;
+        for (ResolvedDependency d : appModel.getDependencies()) {
             if (d.isReloadable()) {
                 modules.put(d.getKey(), new WorkspaceDependencies(d));
             } else if (d.isWorkspaceModule()) {
-                //if this project also contains Quarkus extensions we do no want to include these in the discovery
-                //a bit of an edge case, but if you try and include a sample project with your extension you will
-                //run into problems without this
-                final StringBuilder msg = new StringBuilder();
-                msg.append("Local Quarkus extension dependency ").append(d.toCompactCoords())
-                        .append(" will not be hot-reloadable");
-                log.warn(msg.toString());
+                // it could either be an extension,
+                // a dependency of an extension or a dependency of another non-reloadable dependency
+                if (nonReloadable == null) {
+                    nonReloadable = new StringBuilder()
+                            .append("Live reload was disabled for the following project artifacts:");
+                }
+                nonReloadable.append(System.lineSeparator()).append("- ").append(d.toCompactCoords());
             }
-        });
+        }
+        if (nonReloadable != null) {
+            nonReloadable.append(System.lineSeparator())
+                    .append("The artifacts above appear to be either dependencies of non-reloadable application dependencies or Quarkus extensions");
+            log.warn(nonReloadable);
+        }
+
         if (modules.isEmpty()) {
             return appModel.getApplicationModule() == null ? List.of() : List.of(appModel.getAppArtifact());
         }

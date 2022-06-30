@@ -48,6 +48,6 @@ public class SystemPropertyOverridesPomPropertyDependencyTestCase extends Collec
         // workspace reader for the root project
         final LocalProject currentProject = LocalProject.loadWorkspace(projectDir);
 
-        return initResolver(currentProject);
+        return newAppModelResolver(currentProject);
     }
 }

@@ -37,6 +37,7 @@ import io.fabric8.kubernetes.client.utils.ApiVersionUtil;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.client.OpenShiftClient;
 import io.quarkus.container.image.deployment.ContainerImageCapabilitiesUtil;
+import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -64,7 +65,9 @@ public class KubernetesDeployer {
     public void selectDeploymentTarget(ContainerImageInfoBuildItem containerImageInfo,
             EnabledKubernetesDeploymentTargetsBuildItem targets,
             Capabilities capabilities,
-            BuildProducer<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget) {
+            ContainerImageConfig containerImageConfig,
+            BuildProducer<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
+            BuildProducer<PreventImplicitContainerImagePushBuildItem> preventImplicitContainerImagePush) {
 
         Optional<String> activeContainerImageCapability = ContainerImageCapabilitiesUtil
                 .getActiveContainerImageCapability(capabilities);
@@ -75,8 +78,11 @@ public class KubernetesDeployer {
         }
 
         final DeploymentTargetEntry selectedTarget = determineDeploymentTarget(
-                containerImageInfo, targets, activeContainerImageCapability.get());
+                containerImageInfo, targets, activeContainerImageCapability.get(), containerImageConfig);
         selectedDeploymentTarget.produce(new SelectedKubernetesDeploymentTargetBuildItem(selectedTarget));
+        if (MINIKUBE.equals(selectedTarget.getName())) {
+            preventImplicitContainerImagePush.produce(new PreventImplicitContainerImagePushBuildItem());
+        }
     }
 
     @BuildStep
@@ -141,7 +147,8 @@ public class KubernetesDeployer {
      */
     private DeploymentTargetEntry determineDeploymentTarget(
             ContainerImageInfoBuildItem containerImageInfo,
-            EnabledKubernetesDeploymentTargetsBuildItem targets, String activeContainerImageCapability) {
+            EnabledKubernetesDeploymentTargetsBuildItem targets, String activeContainerImageCapability,
+            ContainerImageConfig containerImageConfig) {
         final DeploymentTargetEntry selectedTarget;
 
         boolean checkForMissingRegistry = true;
@@ -179,6 +186,8 @@ public class KubernetesDeployer {
             }
 
         } else if (MINIKUBE.equals(selectedTarget.getName())) {
+            checkForMissingRegistry = false;
+        } else if (containerImageConfig.isPushExplicitlyDisabled()) {
             checkForMissingRegistry = false;
         }
 

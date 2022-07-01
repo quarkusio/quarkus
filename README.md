@@ -3,7 +3,7 @@
 
 [![Version](https://img.shields.io/maven-central/v/io.quarkus/quarkus-bom?logo=apache-maven&style=for-the-badge)](https://search.maven.org/artifact/io.quarkus/quarkus-bom)
 [![GitHub Actions Status](<https://img.shields.io/github/workflow/status/QuarkusIO/quarkus/Quarkus CI?logo=GitHub&style=for-the-badge>)](https://github.com/quarkusio/quarkus/actions?query=workflow%3A%22Quarkus+CI%22)
-[![Commits](https://img.shields.io/github/commit-activity/m/quarkusio/quarkus.svg?label=commits&style=for-the-badge)](https://github.com/quarkusio/quarkus/pulse)
+[![Commits](https://img.shields.io/github/commit-activity/m/quarkusio/quarkus.svg?label=commits&style=for-the-badge&logo=git&logoColor=white)](https://github.com/quarkusio/quarkus/pulse)
 [![License](https://img.shields.io/github/license/quarkusio/quarkus?style=for-the-badge&logo=apache)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Project Chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg?style=for-the-badge&logo=zulip)](https://quarkusio.zulipchat.com/)
 [![Supported JVM Versions](https://img.shields.io/badge/JVM-11--17-brightgreen.svg?style=for-the-badge&logo=Java)](https://github.com/quarkusio/quarkus/actions/runs/113853915/)

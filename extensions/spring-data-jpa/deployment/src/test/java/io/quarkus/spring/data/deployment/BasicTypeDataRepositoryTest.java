@@ -29,6 +29,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -122,6 +123,28 @@ public class BasicTypeDataRepositoryTest {
         // next page should return zero elements
         Slice<WithDoubleValue> nextPage = repo.findAllDoubleValuesToSlice(PageRequest.of(1, 1));
         assertEquals(0, nextPage.getNumberOfElements());
+    }
+
+    @Test
+    @Order(8)
+    @Transactional
+    public void testListOrderByNullHandling() throws MalformedURLException {
+        // Insert row with null in url
+        UUID uuidForTheNullUrlRecord = UUID.randomUUID();
+        BasicTypeData item = populateData(new BasicTypeData());
+        item.setUuid(uuidForTheNullUrlRecord);
+        item.setUrl(null);
+        repo.save(item);
+        // At this moment, there should be at least two records, one inserted in the first test,
+        // and the second with the "url" column to null.
+
+        // Check Nulls first
+        List<BasicTypeData> list = repo.findAll(Sort.by(Sort.Order.by("url").nullsFirst()));
+        assertEquals(uuidForTheNullUrlRecord, list.get(0).getUuid());
+
+        // Check Nulls last
+        list = repo.findAll(Sort.by(Sort.Order.by("url").nullsLast()));
+        assertEquals(uuidForTheNullUrlRecord, list.get(list.size() - 1).getUuid());
     }
 
     private BasicTypeData populateData(BasicTypeData basicTypeData) throws MalformedURLException {

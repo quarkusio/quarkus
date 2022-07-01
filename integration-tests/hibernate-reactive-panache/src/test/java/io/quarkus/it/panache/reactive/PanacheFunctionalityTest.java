@@ -151,6 +151,11 @@ public class PanacheFunctionalityTest {
         RestAssured.when().get("/test/9036").then().body(is("OK"));
     }
 
+    @Test
+    public void testSortByNullPrecedence() {
+        RestAssured.when().get("/test/testSortByNullPrecedence").then().body(is("OK"));
+    }
+
     @DisabledOnNativeImage
     @ReactiveTransactional
     @Test

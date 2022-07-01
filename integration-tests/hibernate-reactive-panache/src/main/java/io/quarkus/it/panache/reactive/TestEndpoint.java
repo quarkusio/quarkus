@@ -1878,4 +1878,31 @@ public class TestEndpoint {
                             }).map(v -> "OK");
                 });
     }
+
+    @GET
+    @Path("testSortByNullPrecedence")
+    @ReactiveTransactional
+    public Uni<String> testSortByNullPrecedence() {
+        return Person.deleteAll()
+                .flatMap(v -> {
+                    Person stefPerson = new Person();
+                    stefPerson.name = "Stef";
+                    stefPerson.uniqueName = "stef";
+
+                    Person josePerson = new Person();
+                    josePerson.name = null;
+                    josePerson.uniqueName = "jose";
+                    return Person.persist(stefPerson, josePerson);
+                }).flatMap(p -> {
+                    return Person.findAll(Sort.by("name", Sort.NullPrecedence.NULLS_FIRST)).list();
+                }).flatMap(list -> {
+                    assertEquals("jose", ((Person) list.get(0)).uniqueName);
+
+                    return Person.findAll(Sort.by("name", Sort.NullPrecedence.NULLS_LAST)).list();
+                }).flatMap(list -> {
+                    assertEquals("jose", ((Person) list.get(list.size() - 1)).uniqueName);
+
+                    return Person.deleteAll();
+                }).map(v -> "OK");
+    }
 }

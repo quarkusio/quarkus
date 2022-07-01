@@ -177,8 +177,18 @@ public class PanacheJpaUtil {
             if (i > 0)
                 sb.append(" , ");
             sb.append(column.getName());
-            if (column.getDirection() != Sort.Direction.Ascending)
+            if (column.getDirection() != Sort.Direction.Ascending) {
                 sb.append(" DESC");
+            }
+
+            if (column.getNullPrecedence() != null) {
+                if (column.getNullPrecedence() == Sort.NullPrecedence.NULLS_FIRST) {
+                    sb.append(" NULLS FIRST");
+                } else {
+                    sb.append(" NULLS LAST");
+                }
+            }
+
         }
         return sb.toString();
     }

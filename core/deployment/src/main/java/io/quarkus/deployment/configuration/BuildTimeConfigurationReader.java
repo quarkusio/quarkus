@@ -66,6 +66,7 @@ import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.Converters;
 import io.smallrye.config.EnvConfigSource;
+import io.smallrye.config.SecretKeys;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SysPropConfigSource;
@@ -319,7 +320,7 @@ public final class BuildTimeConfigurationReader {
     }
 
     public ReadResult readConfiguration(final SmallRyeConfig config) {
-        return new ReadOperation(config).run();
+        return SecretKeys.doUnlocked(() -> new ReadOperation(config).run());
     }
 
     final class ReadOperation {

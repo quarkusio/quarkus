@@ -21,7 +21,7 @@ public class RestApplicationPathTestCase {
                     .addClasses(HelloResource.class, BarApp.class, BaseApplication.class));
 
     /**
-     * Using @ApplicationPath will overlay/replace `quarkus.rest.path`.
+     * Using @ApplicationPath will overlay/replace `quarkus.resteasy-reactive.path`.
      * Per spec:
      * <quote>
      * Identifies the application path that serves as the base URI for all resource

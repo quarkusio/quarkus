@@ -286,13 +286,14 @@ public class ApplicationDependencyTreeResolver {
                 @Override
                 public DependencyNode transformGraph(DependencyNode node, DependencyGraphTransformationContext context)
                         throws RepositoryException {
+                    final Set<ArtifactKey> visited = new HashSet<>();
                     for (DependencyNode c : node.getChildren()) {
-                        walk(c);
+                        walk(c, visited);
                     }
                     return resolver.getSession().getDependencyGraphTransformer().transformGraph(node, context);
                 }
 
-                private void walk(DependencyNode node) {
+                private void walk(DependencyNode node, Set<ArtifactKey> visited) {
                     if (node.getChildren().isEmpty()) {
                         return;
                     }
@@ -300,8 +301,13 @@ public class ApplicationDependencyTreeResolver {
                             .computeIfAbsent(DependencyUtils.getCoords(node.getArtifact()),
                                     k -> new HashSet<>(node.getChildren().size()));
                     for (DependencyNode c : node.getChildren()) {
-                        deps.add(getKey(c.getArtifact()));
-                        walk(c);
+                        final ArtifactKey key = getKey(c.getArtifact());
+                        if (!visited.add(key)) {
+                            continue;
+                        }
+                        deps.add(key);
+                        walk(c, visited);
+                        visited.remove(key);
                     }
                 }
             });

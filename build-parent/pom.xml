@@ -1254,8 +1254,8 @@
                 <!-- See
                 https://github.com/microsoft/mssql-docker/issues/668 and https://stackoverflow.com/questions/65398641/docker-connect-sql-server-container-non-zero-code-1/66919852#66919852.
                 The MS SQL image segfaults on ARM. Azure Edge is not fully compatible, but it is better than not running the tests at all.
-                DockerHub does not list any tags so we have to use latest for the moment.-->
-                <mssql.image>mcr.microsoft.com/azure-sql-edge:latest</mssql.image>
+                The :latest tag segfaults with the same segfault as MSSQL Server but 1.0.6 seems to behave well -->
+                <mssql.image>mcr.microsoft.com/azure-sql-edge:1.0.6</mssql.image>
             </properties>
         </profile>
 

@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.is;
 
 import java.util.Arrays;
 
+import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,8 @@ public class LazyAuthRolesAllowedJaxRsTestCase {
             RestAssured.given().auth().basic("user", "user").get(path).then().statusCode(200);
             RestAssured.given().auth().basic("admin", "admin").get(path + "/admin").then().statusCode(200);
             RestAssured.given().auth().basic("user", "user").get(path + "/admin").then().statusCode(403);
+            RestAssured.given().auth().basic("admin", "admin").get(path + "/admin/security-identity").then().statusCode(200)
+                    .body(Matchers.is("admin"));
         });
     }
 

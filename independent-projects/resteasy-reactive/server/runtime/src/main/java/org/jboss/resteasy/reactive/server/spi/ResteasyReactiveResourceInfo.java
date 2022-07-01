@@ -20,6 +20,10 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
     private final Class[] parameterTypes;
     private final Set<String> classAnnotationNames;
     private final Set<String> methodAnnotationNames;
+    /**
+     * If it's non-blocking method within the runtime that won't always default to blocking
+     */
+    public final boolean isNonBlocking;
 
     private volatile Annotation[] classAnnotations;
     private volatile Method method;
@@ -28,12 +32,13 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
     private volatile String methodId;
 
     public ResteasyReactiveResourceInfo(String name, Class<?> declaringClass, Class[] parameterTypes,
-            Set<String> classAnnotationNames, Set<String> methodAnnotationNames) {
+            Set<String> classAnnotationNames, Set<String> methodAnnotationNames, boolean isNonBlocking) {
         this.name = name;
         this.declaringClass = declaringClass;
         this.parameterTypes = parameterTypes;
         this.classAnnotationNames = classAnnotationNames;
         this.methodAnnotationNames = methodAnnotationNames;
+        this.isNonBlocking = isNonBlocking;
     }
 
     public String getName() {

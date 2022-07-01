@@ -182,7 +182,7 @@
         <checker-qual.version>3.22.2</checker-qual.version>
         <error-prone-annotations.version>2.14.0</error-prone-annotations.version>
         <jib-core.version>0.21.0</jib-core.version>
-        <google-http-client.version>1.41.8</google-http-client.version>
+        <google-http-client.version>1.42.1</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
         <picocli.version>4.6.3</picocli.version>
         <google-cloud-functions.version>1.0.4</google-cloud-functions.version>

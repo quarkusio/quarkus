@@ -122,6 +122,10 @@ application this will fail (as you cannot do blocking operations on the IO threa
 `Uni<SecurityIdentity> getDeferredIdentity();` method. You can then subscribe to the resulting `Uni` and will be notified
 when authentication is complete and the identity is available.
 
+NOTE: It's still possible to access the `SecurityIdentity` synchronously with `public SecurityIdentity getIdentity()`
+in the xref:resteasy-reactive.adoc[RESTEasy Reactive] from endpoints annotated with `@RolesAllowed`, `@Authenticated`,
+or with respective configuration authorization checks as authentication has already happened.
+
 === How to customize authentication exception responses
 
 By default, the authentication security constraints are enforced before the JAX-RS chain starts.

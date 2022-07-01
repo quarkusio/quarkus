@@ -1025,7 +1025,8 @@ public class ResteasyReactiveProcessor {
     }
 
     @BuildStep
-    MethodScannerBuildItem integrateEagerSecurity(Capabilities capabilities, CombinedIndexBuildItem indexBuildItem) {
+    MethodScannerBuildItem integrateEagerSecurity(Capabilities capabilities, CombinedIndexBuildItem indexBuildItem,
+            HttpBuildTimeConfig httpBuildTimeConfig) {
         if (!capabilities.isPresent(Capability.SECURITY)) {
             return null;
         }
@@ -1036,7 +1037,8 @@ public class ResteasyReactiveProcessor {
                     Map<String, Object> methodContext) {
                 return Objects.requireNonNullElse(
                         consumeStandardSecurityAnnotations(method, actualEndpointClass, index,
-                                (c) -> Collections.singletonList(new EagerSecurityHandler.Customizer())),
+                                (c) -> Collections.singletonList(
+                                        EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth.proactive))),
                         Collections.emptyList());
             }
         });

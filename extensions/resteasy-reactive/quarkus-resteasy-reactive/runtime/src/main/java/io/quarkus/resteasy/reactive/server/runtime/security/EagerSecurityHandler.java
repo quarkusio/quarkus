@@ -20,6 +20,7 @@ import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityCheckStorage;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniSubscriber;
 import io.smallrye.mutiny.subscription.UniSubscription;
 
@@ -37,9 +38,14 @@ public class EagerSecurityHandler implements ServerRestHandler {
         }
     };
 
+    private final boolean isProactiveAuthDisabled;
     private volatile InjectableInstance<CurrentIdentityAssociation> currentIdentityAssociation;
     private volatile SecurityCheck check;
     private volatile AuthorizationController authorizationController;
+
+    public EagerSecurityHandler(boolean isProactiveAuthDisabled) {
+        this.isProactiveAuthDisabled = isProactiveAuthDisabled;
+    }
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
@@ -66,11 +72,25 @@ public class EagerSecurityHandler implements ServerRestHandler {
         if (!authorizationController.isAuthorizationEnabled()) {
             return;
         }
+
         requestContext.requireCDIRequestScope();
         SecurityCheck theCheck = check;
         if (!theCheck.isPermitAll()) {
             requestContext.suspend();
-            getCurrentIdentityAssociation().get().getDeferredIdentity().map(new Function<SecurityIdentity, Object>() {
+            Uni<SecurityIdentity> deferredIdentity = getCurrentIdentityAssociation().get().getDeferredIdentity();
+
+            // if proactive auth is disabled, then accessing SecurityIdentity is a blocking operation for synchronous methods
+            // setting identity here will enable SecurityInterceptors registered in Quarkus Security Deployment to run checks
+            if (isProactiveAuthDisabled && lazyMethod.isNonBlocking) {
+                deferredIdentity = deferredIdentity.call(securityIdentity -> {
+                    if (securityIdentity != null) {
+                        getCurrentIdentityAssociation().get().setIdentity(securityIdentity);
+                    }
+                    return Uni.createFrom().item(securityIdentity);
+                });
+            }
+
+            deferredIdentity.map(new Function<SecurityIdentity, Object>() {
                 @Override
                 public Object apply(SecurityIdentity securityIdentity) {
                     theCheck.apply(securityIdentity, methodDescription,
@@ -105,14 +125,38 @@ public class EagerSecurityHandler implements ServerRestHandler {
         return identityAssociation;
     }
 
-    public static class Customizer implements HandlerChainCustomizer {
+    public static abstract class Customizer implements HandlerChainCustomizer {
+
+        public static Customizer newInstance(boolean isProactiveAuthEnabled) {
+            return isProactiveAuthEnabled ? new ProactiveAuthEnabledCustomizer() : new ProactiveAuthDisabledCustomizer();
+        }
+
+        protected abstract boolean isProactiveAuthDisabled();
+
         @Override
         public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
                 ServerResourceMethod serverResourceMethod) {
             if (phase == Phase.AFTER_MATCH) {
-                return Collections.singletonList(new EagerSecurityHandler());
+                return Collections.singletonList(new EagerSecurityHandler(isProactiveAuthDisabled()));
             }
             return Collections.emptyList();
         }
+
+        public static class ProactiveAuthEnabledCustomizer extends Customizer {
+
+            @Override
+            protected boolean isProactiveAuthDisabled() {
+                return false;
+            }
+        }
+
+        public static class ProactiveAuthDisabledCustomizer extends Customizer {
+
+            @Override
+            protected boolean isProactiveAuthDisabled() {
+                return true;
+            }
+        }
+
     }
 }

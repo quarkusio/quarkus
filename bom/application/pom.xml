@@ -26,7 +26,7 @@
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
         <opentelemetry.version>1.15.0</opentelemetry.version>
         <opentelemetry-alpha.version>1.15.0-alpha</opentelemetry-alpha.version>
-        <jaeger.version>1.8.0</jaeger.version>
+        <jaeger.version>1.8.1</jaeger.version>
         <quarkus-http.version>4.1.9</quarkus-http.version>
         <micrometer.version>1.9.1</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->

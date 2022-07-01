@@ -4,11 +4,14 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Stork Reference Guide
+:extension-status: preview
 
 include::./attributes.adoc[]
 
 This guide is the companion from the xref:stork.adoc[Stork Getting Started Guide].
 It explains the configuration and usage of SmallRye Stork integration in Quarkus.
+
+include::{includes}/extension-status.adoc[]
 
 == Supported clients
 
@@ -55,6 +58,8 @@ quarkus.stork.my-service.service-discovery.k8s-namespace=my-namespace
 
 Stork looks for the Kubernetes Service with the given name (`my-service` in the previous example) in the specified namespace.
 Instead of using the Kubernetes Service IP directly and let Kubernetes handle the selection and balancing, Stork inspects the service and retrieves the list of pods providing the service. Then, it can select the instance.
+
+For a full example of using Stork with Kubernetes, please read the xref:stork-kubernetes.adoc[Using Stork with Kubernetes guide].
 
 == Implementing a custom service discovery
 

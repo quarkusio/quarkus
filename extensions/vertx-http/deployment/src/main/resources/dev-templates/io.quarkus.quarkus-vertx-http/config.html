@@ -485,7 +485,14 @@ function clearConfigFilter(){
                             {/if}
                         </td>
                         <td>
-                           {item.description.fmtJavadoc??}
+                            {#let description=item.description.fmtJavadoc??} {#if description}
+                            <p>{description}</p>
+                            {/} {/}
+                            {#if configsource.key.showEnvVarName}
+                            <div>
+                                <span>Environment variable: </span><code>{item.configValue.name.toEnvVar}</code>
+                            </div>
+                            {/}
                         </td>
                     </tr>
                     {/for}

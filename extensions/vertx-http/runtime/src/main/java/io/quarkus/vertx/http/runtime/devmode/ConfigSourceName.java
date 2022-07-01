@@ -16,6 +16,10 @@ public class ConfigSourceName implements Comparable<ConfigSourceName> {
     private String displayName;
     private int ordinal;
     private boolean editable;
+    /**
+     * Show binding from environment variable for each config and system property
+     */
+    private boolean showEnvVarName;
 
     public ConfigSourceName() {
     }
@@ -28,6 +32,8 @@ public class ConfigSourceName implements Comparable<ConfigSourceName> {
         this.order = createOrder();
         this.displayName = createDisplayName();
         this.editable = createEditable();
+        // it doesn't make sense to convert environment variable to environment variable and show it
+        this.showEnvVarName = !name.equals(ENVIRONMENT_CONFIG_SOURCE);
     }
 
     public int getOrder() {
@@ -60,6 +66,14 @@ public class ConfigSourceName implements Comparable<ConfigSourceName> {
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    public boolean isShowEnvVarName() {
+        return showEnvVarName;
+    }
+
+    public void setShowEnvVarName(boolean showEnvVarName) {
+        this.showEnvVarName = showEnvVarName;
     }
 
     public boolean isEditable() {

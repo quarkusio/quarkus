@@ -19,4 +19,12 @@ public class FaultToleranceTestResource {
         return counter + ":" + name;
     }
 
+    @GET
+    @Path("/retried")
+    public String retried() {
+        AtomicInteger counter = new AtomicInteger();
+        String name = service.retriedMethod(counter);
+        return counter + ":" + name;
+    }
+
 }

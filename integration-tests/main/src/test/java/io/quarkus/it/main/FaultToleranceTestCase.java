@@ -25,5 +25,10 @@ public class FaultToleranceTestCase {
                 .given().baseUri(uri.toString())
                 .when().get()
                 .then().body(is("2:Lucie"));
+
+        RestAssured
+                .given().baseUri(uri.toString() + "/retried")
+                .when().get()
+                .then().body(is("2:Lucie"));
     }
 }

@@ -10,17 +10,16 @@ on:
         description: 'JDK version'
         required: true
         # make sure to keep the default of JDK_VERSION in sync!
-        default: '18-ea'
+        default: '19'
       jdkDistribution:
         description: 'JDK distribution'
         required: true
         # make sure to keep the default of JDK_DIST in sync!
-        # might need to use 'zulu' until 'temurin' dist is available
-        default: 'temurin'
+        default: 'jdk.java.net'
 
 env:
-  JDK_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkVersion || '18-ea' }}
-  JDK_DIST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkDistribution || 'temurin' }}
+  JDK_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkVersion || '19' }}
+  JDK_DIST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkDistribution || 'jdk.java.net' }}
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
   MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
@@ -37,8 +36,14 @@ jobs:
     env:
       MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m
     steps:
-
-      - name: Set up JDK
+      - name: Set up JDK from jdk.java.net
+        if: env.JDK_DIST == 'jdk.java.net'
+        uses: oracle-actions/setup-java@v1
+        with:
+          website: jdk.java.net
+          release: ${{ env.JDK_VERSION }}
+      - name: Set up JDK from other provider than jdk.java.net
+        if: env.JDK_DIST != 'jdk.java.net'
         uses: actions/setup-java@v2
         with:
           distribution: ${{ env.JDK_DIST }}

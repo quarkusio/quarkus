@@ -3,21 +3,14 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Getting Started with SmallRye Stork
+= Using Stork with Kubernetes
 :extension-status: preview
 
 include::./attributes.adoc[]
 
-The essence of distributed systems resides in the interaction between services.
-In modern architecture, you often have multiple instances of your service to share the load or improve the resilience by redundancy.
-But how do you select the best instance of your service?
-That's where https://smallrye.io/smallrye-stork[SmallRye Stork] helps.
-Stork is going to choose the most appropriate instance.
-It offers:
+This guide explains how to use Stork with Kubernetes for service discovery and load balancing.
 
-* Extensible service discovery mechanisms
-* Built-in support for Consul and Kubernetes
-* Customizable client load-balancing strategies
+If you are new to Stork, please read the xref:stork.adoc[Stork Getting Started Guide].
 
 include::{includes}/extension-status.adoc[]
 

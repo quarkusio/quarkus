@@ -344,6 +344,7 @@ public class SecurityProcessor {
     void addBouncyCastleExportsToNativeImage(BuildProducer<JPMSExportBuildItem> jpmsExports,
             List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
             List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {
+        jpmsExports.produce(new JPMSExportBuildItem("java.base", "com.sun.crypto.provider"));
         Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
         if (bouncyCastleJsseProvider.isPresent() && bouncyCastleJsseProvider.get().isInFipsMode()) {
             jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.internal.spec"));

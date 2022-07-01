@@ -1,9 +1,14 @@
 package io.quarkus.it.bouncycastle;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
+import java.security.KeyStore;
 import java.security.Security;
 import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -11,6 +16,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
@@ -21,6 +27,36 @@ import org.bouncycastle.util.io.pem.PemReader;
 
 @Path("/jca")
 public class BouncyCastleEndpoint {
+
+    @GET
+    @Path("createjceks")
+    public String createjceks() throws Exception {
+        KeyStore keyStore = KeyStore.getInstance("JCEKS");
+        keyStore.load(null, null);
+
+        KeyGenerator keyGen = KeyGenerator.getInstance("DES");
+        keyGen.init(56);
+        ;
+        Key key = keyGen.generateKey();
+
+        keyStore.setKeyEntry("secret", key, "password".toCharArray(), null);
+
+        OutputStream os = new FileOutputStream("output.jceks");
+        keyStore.store(os, "password".toCharArray());
+        os.close();
+        return "";
+    }
+
+    @GET
+    @Path("jceks")
+    public String jceks() throws Exception {
+        KeyStore keyStore = KeyStore.getInstance("JCEKS");
+        keyStore.load(new FileInputStream("output.jceks"), "password".toCharArray());
+
+        Key key = keyStore.getKey("secret", "password".toCharArray());
+
+        return key.toString();
+    }
 
     @GET
     @Path("listProviders")

@@ -1,6 +1,7 @@
 package io.quarkus.it.bouncycastle;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.startsWith;
 
 import org.junit.jupiter.api.Test;
 
@@ -9,6 +10,21 @@ import io.restassured.RestAssured;
 
 @QuarkusTest
 public class BouncyCastleTestCase {
+
+    public void doTestJceKS() throws Exception {
+        RestAssured.given()
+                .when()
+                .get("/jca/createjceks")
+                .then()
+                .statusCode(200);
+
+        RestAssured.given()
+                .when()
+                .get("/jca/jceks")
+                .then()
+                .statusCode(200)
+                .body(startsWith("javax.crypto.spec.SecretKeySpec"));
+    }
 
     @Test
     public void testListProviders() {

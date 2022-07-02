@@ -167,6 +167,10 @@
         <enforce-test-deps-scope.skip>${enforcer.skip}</enforce-test-deps-scope.skip>
 
         <surefire.argLine.additional></surefire.argLine.additional>
+        <!-- https://maven.apache.org/surefire/maven-surefire-plugin/examples/rerun-failing-tests.html -->
+        <surefire.rerunFailingTestsCount>1</surefire.rerunFailingTestsCount>
+        <failsafe.rerunFailingTestsCount>1</failsafe.rerunFailingTestsCount>
+
         <os-maven-plugin.version>1.7.0</os-maven-plugin.version>
     </properties>
 

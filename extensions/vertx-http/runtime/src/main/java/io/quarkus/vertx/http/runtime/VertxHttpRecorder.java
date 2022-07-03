@@ -981,6 +981,15 @@ public class VertxHttpRecorder {
         // Override the host (0.0.0.0 by default) with the configured domain socket.
         options.setHost(httpConfiguration.domainSocket);
 
+        // Check if we can write into the domain socket directory
+        // We can do this check using a blocking API as the execution is done from the main thread (not an I/O thread)
+        File file = new File(httpConfiguration.domainSocket);
+        if (!file.getParentFile().canWrite()) {
+            LOGGER.warnf(
+                    "Unable to write in the domain socket directory (`%s`). Binding to the socket is likely going to fail.",
+                    httpConfiguration.domainSocket);
+        }
+
         return options;
     }
 
@@ -1137,7 +1146,13 @@ public class VertxHttpRecorder {
                         startFuture.complete(null);
                     }
                 } else {
-                    if (event.cause() instanceof IllegalArgumentException) {
+                    if (event.cause() != null && event.cause().getMessage() != null
+                            && event.cause().getMessage().contains("Permission denied")) {
+                        startFuture.fail(new IllegalStateException(
+                                String.format(
+                                        "Unable to bind to Unix domain socket (%s) as the application does not have the permission to write in the directory.",
+                                        domainSocketOptions.getHost())));
+                    } else if (event.cause() instanceof IllegalArgumentException) {
                         startFuture.fail(new IllegalArgumentException(
                                 String.format(
                                         "Unable to bind to Unix domain socket. Consider adding the 'io.netty:%s' dependency. See the Quarkus Vert.x reference guide for more details.",

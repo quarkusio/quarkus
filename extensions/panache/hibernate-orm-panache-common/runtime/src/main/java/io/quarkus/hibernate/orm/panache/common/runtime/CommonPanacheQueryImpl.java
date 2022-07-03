@@ -82,6 +82,28 @@ public class CommonPanacheQueryImpl<Entity> {
             throw new PanacheQueryException("Unable to perform a projection on a named query");
         }
 
+        if (query.trim().toLowerCase().startsWith("select new ")) {
+            throw new PanacheQueryException("Unable to perform a projection on a 'select new' query: " + query);
+        }
+
+        // If the query starts with a select clause, we generate an HQL query
+        // using the fields in the select clause:
+        // Initial query: select e.field1, e.field2 from EntityClass e
+        // New query: SELECT new org.acme.ProjectionClass(e.field1, e.field2) from EntityClass e
+        if (query.trim().toLowerCase().startsWith("select ")) {
+            String trimmedQuery = query.trim();
+            int endSelect = trimmedQuery.toLowerCase().indexOf(" from ");
+            String from = trimmedQuery.substring(endSelect);
+            StringBuilder newQuery = new StringBuilder("SELECT new ")
+                    .append(type.getName())
+                    .append(" (")
+                    .append(trimmedQuery.substring("SELECT ".length(), endSelect))
+                    .append(")")
+                    .append(from);
+
+            return new CommonPanacheQueryImpl<>(this, newQuery.toString(), "select count(*) " + from);
+        }
+
         // We use the first constructor that we found and use the parameter names,
         // so the projection class must have only one constructor,
         // and the application must be built with parameter names.

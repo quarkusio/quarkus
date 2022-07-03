@@ -13,6 +13,8 @@ public class Cat extends PanacheEntity {
     @ManyToOne
     CatOwner owner;
 
+    Double weight;
+
     public Cat(String name, CatOwner owner) {
         this.name = name;
         this.owner = owner;

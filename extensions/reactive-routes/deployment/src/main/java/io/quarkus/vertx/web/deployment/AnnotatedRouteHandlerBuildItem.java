@@ -17,14 +17,18 @@ public final class AnnotatedRouteHandlerBuildItem extends MultiBuildItem {
     private final MethodInfo method;
     private final boolean blocking;
     private final HttpCompression compression;
+    /**
+     * If true, always attempt to authenticate user right before the body handler is run
+     */
+    private final boolean alwaysAuthenticateRoute;
 
     public AnnotatedRouteHandlerBuildItem(BeanInfo bean, MethodInfo method, List<AnnotationInstance> routes,
             AnnotationInstance routeBase) {
-        this(bean, method, routes, routeBase, false, HttpCompression.UNDEFINED);
+        this(bean, method, routes, routeBase, false, HttpCompression.UNDEFINED, false);
     }
 
     public AnnotatedRouteHandlerBuildItem(BeanInfo bean, MethodInfo method, List<AnnotationInstance> routes,
-            AnnotationInstance routeBase, boolean blocking, HttpCompression compression) {
+            AnnotationInstance routeBase, boolean blocking, HttpCompression compression, boolean alwaysAuthenticateRoute) {
         super();
         this.bean = bean;
         this.routes = routes;
@@ -32,6 +36,7 @@ public final class AnnotatedRouteHandlerBuildItem extends MultiBuildItem {
         this.method = method;
         this.blocking = blocking;
         this.compression = compression;
+        this.alwaysAuthenticateRoute = alwaysAuthenticateRoute;
     }
 
     public BeanInfo getBean() {
@@ -52,6 +57,10 @@ public final class AnnotatedRouteHandlerBuildItem extends MultiBuildItem {
 
     public boolean isBlocking() {
         return blocking;
+    }
+
+    public boolean shouldAlwaysAuthenticateRoute() {
+        return alwaysAuthenticateRoute;
     }
 
     public HttpCompression getCompression() {

@@ -3,13 +3,19 @@ package io.quarkus.vertx.web.runtime;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCompression;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.subscription.UniSubscriber;
+import io.smallrye.mutiny.subscription.UniSubscription;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Router;
@@ -56,7 +62,7 @@ public class VertxWebRecorder {
     }
 
     public Function<Router, io.vertx.ext.web.Route> createRouteFunction(RouteMatcher matcher,
-            Handler<RoutingContext> bodyHandler) {
+            Handler<RoutingContext> bodyHandler, boolean alwaysAuthenticateRoute) {
         return new Function<Router, io.vertx.ext.web.Route>() {
             @Override
             public io.vertx.ext.web.Route apply(Router router) {
@@ -85,6 +91,38 @@ public class VertxWebRecorder {
                     for (String consumes : matcher.getConsumes()) {
                         route.consumes(consumes);
                     }
+                }
+                if (alwaysAuthenticateRoute) {
+                    route = route.handler(routingContext -> {
+                        // check auth haven't happened further up the handler chain
+                        if (routingContext.user() == null) {
+                            // authenticate -> on deferred identity (Uni's) termination user is set to the routing context,
+                            // so SecurityIdentity will be accessible in a synchronous manner
+                            routingContext.<Uni<SecurityIdentity>> get(QuarkusHttpUser.DEFERRED_IDENTITY_KEY)
+                                    .subscribe().withSubscriber(new UniSubscriber<Object>() {
+                                        @Override
+                                        public void onSubscribe(UniSubscription subscription) {
+                                        }
+
+                                        @Override
+                                        public void onItem(Object item) {
+                                            if (routingContext.response().ended()) {
+                                                return;
+                                            }
+                                            routingContext.next();
+                                        }
+
+                                        @Override
+                                        public void onFailure(Throwable failure) {
+                                            BiConsumer<RoutingContext, Throwable> handler = routingContext
+                                                    .get(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
+                                            if (handler != null) {
+                                                handler.accept(routingContext, failure);
+                                            }
+                                        }
+                                    });
+                        }
+                    });
                 }
                 if (bodyHandler != null) {
                     route.handler(bodyHandler);

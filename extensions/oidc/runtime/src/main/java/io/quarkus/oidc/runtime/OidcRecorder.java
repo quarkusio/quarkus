@@ -233,7 +233,8 @@ public class OidcRecorder {
 
     protected static OIDCException toOidcException(Throwable cause, String authServerUrl) {
         final String message = OidcCommonUtils.formatConnectionErrorMessage(authServerUrl);
-        return new OIDCException(message, cause);
+        LOG.debug(message);
+        return new OIDCException("OIDC Server is not available", cause);
     }
 
     protected static Uni<OidcProvider> createOidcProvider(OidcTenantConfig oidcConfig, TlsConfig tlsConfig, Vertx vertx) {

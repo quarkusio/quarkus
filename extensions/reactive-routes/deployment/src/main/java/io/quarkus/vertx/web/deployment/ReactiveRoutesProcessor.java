@@ -32,6 +32,8 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import javax.annotation.security.DenyAll;
+import javax.annotation.security.RolesAllowed;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.spi.Contextual;
 
@@ -94,6 +96,7 @@ import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.runtime.util.HashUtil;
+import io.quarkus.security.Authenticated;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
@@ -102,6 +105,7 @@ import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCompression;
 import io.quarkus.vertx.web.Param;
 import io.quarkus.vertx.web.Route;
@@ -134,6 +138,9 @@ class ReactiveRoutesProcessor {
     private static final String VALUE_ORDER = "order";
     private static final String VALUE_TYPE = "type";
     private static final String SLASH = "/";
+    private static final DotName ROLES_ALLOWED = DotName.createSimple(RolesAllowed.class.getName());
+    private static final DotName AUTHENTICATED = DotName.createSimple(Authenticated.class.getName());
+    private static final DotName DENY_ALL = DotName.createSimple(DenyAll.class.getName());
 
     private static final List<ParameterInjector> PARAM_INJECTORS = initParamInjectors();
 
@@ -162,7 +169,8 @@ class ReactiveRoutesProcessor {
             TransformedAnnotationsBuildItem transformedAnnotations,
             BuildProducer<AnnotatedRouteHandlerBuildItem> routeHandlerBusinessMethods,
             BuildProducer<AnnotatedRouteFilterBuildItem> routeFilterBusinessMethods,
-            BuildProducer<ValidationErrorBuildItem> errors) {
+            BuildProducer<ValidationErrorBuildItem> errors,
+            HttpBuildTimeConfig httpBuildTimeConfig) {
 
         // Collect all business methods annotated with @Route and @RouteFilter
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
@@ -211,9 +219,28 @@ class ReactiveRoutesProcessor {
                             compression = HttpCompression.OFF;
                         }
                     }
+
+                    // Authenticate user if the proactive authentication is disabled and the route is secured with
+                    // an RBAC annotation that requires authentication as io.quarkus.security.runtime.interceptor.SecurityConstrainer
+                    // access the SecurityIdentity in a synchronous manner
+                    final boolean blocking = annotationStore.hasAnnotation(method, DotNames.BLOCKING);
+                    final boolean alwaysAuthenticateRoute;
+                    if (!httpBuildTimeConfig.auth.proactive && !blocking) {
+                        final DotName returnTypeName = method.returnType().name();
+                        // method either returns 'something' in a synchronous manner or void (in which case we can't tell)
+                        final boolean possiblySynchronousResponse = !returnTypeName.equals(DotNames.UNI)
+                                && !returnTypeName.equals(DotNames.MULTI) && !returnTypeName.equals(DotNames.COMPLETION_STAGE);
+                        final boolean hasRbacAnnotationThatRequiresAuth = annotationStore.hasAnnotation(method, ROLES_ALLOWED)
+                                || annotationStore.hasAnnotation(method, AUTHENTICATED)
+                                || annotationStore.hasAnnotation(method, DENY_ALL);
+                        alwaysAuthenticateRoute = possiblySynchronousResponse && hasRbacAnnotationThatRequiresAuth;
+                    } else {
+                        alwaysAuthenticateRoute = false;
+                    }
+
                     routeHandlerBusinessMethods
                             .produce(new AnnotatedRouteHandlerBuildItem(bean, method, routes, routeBaseAnnotation,
-                                    annotationStore.hasAnnotation(method, DotNames.BLOCKING), compression));
+                                    blocking, compression, alwaysAuthenticateRoute));
                 }
                 //
                 AnnotationInstance filterAnnotation = annotationStore.getAnnotation(method,
@@ -419,7 +446,7 @@ class ReactiveRoutesProcessor {
                 RouteMatcher matcher = new RouteMatcher(path, regex, produces, consumes, methods, order);
                 matchers.put(matcher, businessMethod.getMethod());
                 Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(matcher,
-                        bodyHandler.getHandler());
+                        bodyHandler.getHandler(), businessMethod.shouldAlwaysAuthenticateRoute());
 
                 //TODO This needs to be refactored to use routeFunction() taking a Consumer<Route> instead
                 RouteBuildItem.Builder builder = RouteBuildItem.builder()

@@ -124,7 +124,8 @@ when authentication is complete and the identity is available.
 
 NOTE: It's still possible to access the `SecurityIdentity` synchronously with `public SecurityIdentity getIdentity()`
 in the xref:resteasy-reactive.adoc[RESTEasy Reactive] from endpoints annotated with `@RolesAllowed`, `@Authenticated`,
-or with respective configuration authorization checks as authentication has already happened.
+or with respective configuration authorization checks as authentication has already happened. The same is also valid
+for the xref:reactive-routes.adoc[Reactive routes] if a route response is synchronous.
 
 === How to customize authentication exception responses
 

@@ -111,7 +111,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
 
                         @Override
                         public void onFailure(Throwable failure) {
-                            requestContext.resume(failure);
+                            requestContext.resume(failure, true);
                         }
                     });
         }

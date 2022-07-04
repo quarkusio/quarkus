@@ -1,7 +1,5 @@
 package io.quarkus.opentelemetry.runtime.tracing.grpc;
 
-import javax.annotation.Nullable;
-
 import io.grpc.Status;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanStatusBuilder;
@@ -12,8 +10,8 @@ class GrpcSpanStatusExtractor implements SpanStatusExtractor<GrpcRequest, Status
     public void extract(
             final SpanStatusBuilder spanStatusBuilder,
             final GrpcRequest grpcRequest,
-            @Nullable final Status status,
-            @Nullable final Throwable error) {
+            final Status status,
+            final Throwable error) {
         if (status != null && status.isOk()) {
             spanStatusBuilder.setStatus(StatusCode.UNSET);
         } else if (error != null) {

@@ -117,7 +117,7 @@ class KubernetesProcessor {
                 .collect(Collectors.toSet());
 
         Path artifactPath = outputTarget.getOutputDirectory()
-                .resolve(String.format(OUTPUT_ARTIFACT_FORMAT, outputTarget.getBaseName(), packageConfig.runnerSuffix));
+                .resolve(String.format(OUTPUT_ARTIFACT_FORMAT, outputTarget.getBaseName(), packageConfig.getRunnerSuffix()));
 
         try {
             // by passing false to SimpleFileWriter, we ensure that no files are actually written during this phase

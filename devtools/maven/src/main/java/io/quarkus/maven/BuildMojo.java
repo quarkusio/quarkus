@@ -134,7 +134,10 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                 Artifact original = mavenProject().getArtifact();
                 if (result.getJar() != null) {
 
-                    if (!skipOriginalJarRename && result.getJar().isUberJar()
+                    final boolean uberJarWithSuffix = result.getJar().isUberJar()
+                            && result.getJar().getOriginalArtifact() != null
+                            && !result.getJar().getOriginalArtifact().equals(result.getJar().getPath());
+                    if (!skipOriginalJarRename && uberJarWithSuffix
                             && result.getJar().getOriginalArtifact() != null) {
                         final Path standardJar = result.getJar().getOriginalArtifact();
                         if (Files.exists(standardJar)) {
@@ -149,7 +152,7 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                             original.setFile(result.getJar().getOriginalArtifact().toFile());
                         }
                     }
-                    if (result.getJar().isUberJar()) {
+                    if (uberJarWithSuffix) {
                         projectHelper.attachArtifact(mavenProject(), result.getJar().getPath().toFile(),
                                 result.getJar().getClassifier());
                     }

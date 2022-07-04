@@ -106,7 +106,7 @@ public class PackageIT extends MojoTestBase {
 
         running = new RunningInvoker(testDir, false);
         // we do want to run the tests too
-        final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
+        final MavenProcessInvocationResult result = running.execute(List.of("package"),
                 Collections.emptyMap());
 
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
@@ -131,8 +131,8 @@ public class PackageIT extends MojoTestBase {
         p.setProperty("quarkus.package.type", "uber-jar");
 
         running = new RunningInvoker(testDir, false);
-        final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
-                Collections.emptyMap(), p);
+        final MavenProcessInvocationResult result = running.execute(List.of("package"),
+                Map.of(), p);
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
         verifyUberJar();
@@ -143,14 +143,43 @@ public class PackageIT extends MojoTestBase {
         List<File> jars = getFilesEndingWith(targetDir, ".jar");
         assertThat(jars).hasSize(1);
         assertThat(getNumberOfFilesEndingWith(targetDir, ".original")).isEqualTo(1);
-        try (JarFile jarFile = new JarFile(jars.get(0))) {
+        File uberJar = jars.get(0);
+        assertMultiReleaseJar(uberJar);
+        ensureManifestOfJarIsReadableByJarInputStream(uberJar);
+    }
+
+    protected void assertMultiReleaseJar(File uberJar) throws IOException {
+        try (JarFile jarFile = new JarFile(uberJar)) {
             // we expect this uber jar to be a multi-release jar since one of its
             // dependencies (smallrye-classloader artifact), from which we composed this uber-jar,
             // is a multi-release jar
-            Assertions.assertTrue(jarFile.isMultiRelease(), "uber-jar " + jars.get(0)
+            Assertions.assertTrue(jarFile.isMultiRelease(), "uber-jar " + uberJar
                     + " was expected to be a multi-release jar but wasn't");
         }
-        ensureManifestOfJarIsReadableByJarInputStream(jars.get(0));
+    }
+
+    @Test
+    public void testUberJarWithoutRunnerSuffix()
+            throws Exception {
+        testDir = initProject("projects/uberjar-check", "projects/uberjar-runner-suffix-off");
+
+        Properties p = new Properties();
+        p.setProperty("quarkus.package.type", "uber-jar");
+        p.setProperty("quarkus.package.add-runner-suffix", "false");
+
+        running = new RunningInvoker(testDir, false);
+        final MavenProcessInvocationResult result = running.execute(List.of("-DskipTests", "package"),
+                Map.of(), p);
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        final File targetDir = getTargetDir();
+        List<File> jars = getFilesEndingWith(targetDir, ".jar");
+        assertThat(jars).hasSize(1);
+        File jarFile = jars.get(0);
+        assertThat(jarFile.getName()).isEqualTo("acme-1.0-SNAPSHOT.jar");
+
+        assertMultiReleaseJar(jarFile);
+        ensureManifestOfJarIsReadableByJarInputStream(jarFile);
     }
 
     @Test

@@ -95,6 +95,14 @@ public class PackageConfig {
     public String runnerSuffix;
 
     /**
+     * Indicates whether the generated binary file (uber-jar or native image) should have the runner suffix appended.
+     * Turning off the runner suffix in case of the uber-jar package type, the original build system (Maven, Gradle, etc)
+     * built JAR will be replaced with the Quarkus built uber JAR.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean addRunnerSuffix;
+
+    /**
      * The output folder in which to place the output, this is resolved relative to the build
      * systems target directory.
      */
@@ -221,6 +229,10 @@ public class PackageConfig {
 
     public boolean isUberJar() {
         return type.equalsIgnoreCase(PackageConfig.UBER_JAR);
+    }
+
+    public String getRunnerSuffix() {
+        return addRunnerSuffix ? runnerSuffix : "";
     }
 
     @ConfigGroup

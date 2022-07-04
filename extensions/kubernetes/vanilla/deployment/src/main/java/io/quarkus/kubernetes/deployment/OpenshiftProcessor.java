@@ -67,6 +67,7 @@ public class OpenshiftProcessor {
     private static final int OPENSHIFT_PRIORITY = DEFAULT_PRIORITY;
     private static final String OPENSHIFT_INTERNAL_REGISTRY = "image-registry.openshift-image-registry.svc:5000";
     private static final String DOCKERIO_REGISTRY = "docker.io";
+    private static final String OPENSHIFT_V3_APP = "app";
 
     @BuildStep
     public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, OpenshiftConfig config,
@@ -197,7 +198,9 @@ public class OpenshiftProcessor {
         if (config.flavor == v3) {
             //Openshift 3.x doesn't recognize 'app.kubernetes.io/name', it uses 'app' instead.
             //The decorator will be applied even on non-openshift resources is it may affect for example: knative
-            result.add(new DecoratorBuildItem(new AddLabelDecorator(name, "app", name)));
+            if (labels.stream().noneMatch(l -> l.getKey().equals(OPENSHIFT_V3_APP))) {
+                result.add(new DecoratorBuildItem(new AddLabelDecorator(name, OPENSHIFT_V3_APP, name)));
+            }
 
             // The presence of optional is causing issues in OCP 3.11, so we better remove them.
             // The following 4 decorator will set the optional property to null, so that it won't make it into the file.

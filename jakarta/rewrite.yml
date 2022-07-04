@@ -423,7 +423,7 @@ recipeList:
       newValue: 3.0.0-RC2
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-fault-tolerance.version
-      newValue: 6.0.0-RC3
+      newValue: 6.0.0-RC4
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-graphql.version
       newValue: 2.0.0.RC4

@@ -9,7 +9,7 @@ include::./attributes.adoc[]
 
 One of the challenges brought by the distributed nature of microservices is that communication with external systems is
 inherently unreliable. This increases demand on resiliency of applications. To simplify making more resilient
-applications, Quarkus provides https://github.com/smallrye/smallrye-fault-tolerance/[SmallRye Fault Tolerance] an
+applications, Quarkus provides https://github.com/smallrye/smallrye-fault-tolerance/[SmallRye Fault Tolerance], an
 implementation of the https://github.com/eclipse/microprofile-fault-tolerance/[MicroProfile Fault Tolerance]
 specification.
 
@@ -500,7 +500,7 @@ implementation("io.quarkus:quarkus-smallrye-fault-tolerance")
 == Additional resources
 
 SmallRye Fault Tolerance has more features than shown here.
-Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/5.4.0/index.html[SmallRye Fault Tolerance documentation] to learn about them.
+Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/5.5.0/index.html[SmallRye Fault Tolerance documentation] to learn about them.
 
 In Quarkus, you can use the SmallRye Fault Tolerance optional features out of the box.
 
@@ -532,7 +532,12 @@ smallrye.faulttolerance.mp-compatibility=true
 ----
 ====
 
-The link:https://smallrye.io/docs/smallrye-fault-tolerance/5.4.0/usage/programmatic-api.html[programmatic API] is present, including Mutiny support, and integrated with the declarative, annotation-based API.
+The link:https://smallrye.io/docs/smallrye-fault-tolerance/5.5.0/usage/programmatic-api.html[programmatic API] is present, including Mutiny support, and integrated with the declarative, annotation-based API.
 You can use the `FaultTolerance` and `MutinyFaultTolerance` APIs out of the box.
 
 Support for Kotlin is present (assuming you use the Quarkus extension for Kotlin), so you can guard your `suspend` functions with fault tolerance annotations.
+
+Metrics are automatically discovered and integrated.
+If your application uses the Quarkus extension for Micrometer, SmallRye Fault Tolerance will emit metrics to Micrometer.
+If your application uses the Quarkus extension for SmallRye Metrics, SmallRye Fault Tolerance will emit metrics to MicroProfile Metrics.
+Otherwise, SmallRye Fault Tolerance metrics will be disabled.

@@ -5,20 +5,29 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
+import javax.enterprise.context.control.ActivateRequestContext;
+import javax.inject.Inject;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
-import javax.xml.bind.JAXB;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.transform.stream.StreamSource;
 
 import org.jboss.resteasy.reactive.common.util.StreamUtil;
 
+@ActivateRequestContext
 public class ClientJaxbMessageBodyReader implements MessageBodyReader<Object> {
+
+    @Inject
+    Unmarshaller unmarshaller;
 
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws WebApplicationException, IOException {
-        return doReadFrom(type, genericType, entityStream);
+        return doReadFrom(type, entityStream);
     }
 
     @Override
@@ -39,12 +48,21 @@ public class ClientJaxbMessageBodyReader implements MessageBodyReader<Object> {
                 || (mediaType.isWildcardSubtype() && (mediaType.isWildcardType() || isCorrectMediaType));
     }
 
-    private Object doReadFrom(Class<Object> type, Type genericType, InputStream entityStream) throws IOException {
+    private Object doReadFrom(Class<Object> type, InputStream entityStream) throws IOException {
         if (isInputStreamEmpty(entityStream)) {
             return null;
         }
 
-        return JAXB.unmarshal(entityStream, type);
+        return unmarshal(entityStream, type);
+    }
+
+    protected Object unmarshal(InputStream entityStream, Class<Object> type) {
+        try {
+            JAXBElement<Object> item = unmarshaller.unmarshal(new StreamSource(entityStream), type);
+            return item.getValue();
+        } catch (JAXBException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private boolean isInputStreamEmpty(InputStream entityStream) throws IOException {

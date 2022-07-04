@@ -92,7 +92,7 @@ interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOperation, 
         if (instrumenter.shouldStart(parentContext, (REQ) request)) {
             io.opentelemetry.context.Context spanContext = instrumenter.start(parentContext,
                     writableHeaders((REQ) request, headers));
-            Context duplicatedContext = VertxContext.getOrCreateDuplicatedContext(context);
+            Context duplicatedContext = VertxContext.createNewDuplicatedContext(context);
             setContextSafe(duplicatedContext, true);
             Scope scope = QuarkusContextStorage.INSTANCE.attach(duplicatedContext, spanContext);
             return spanOperation(duplicatedContext, (REQ) request, toMultiMap(headers), spanContext, scope);

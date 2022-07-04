@@ -583,16 +583,16 @@ The MongoDB POJO codec doesn't support `ZonedDateTime` and `OffsetDateTime` so y
 MongoDB with Panache also supports extended MongoDB queries by providing a `Document` query, this is supported by the find/list/stream/count/delete/update methods.
 
 MongoDB with Panache offers operations to update multiple documents based on an update document and a query :
-`Person.update("foo = ?1, bar = ?2", fooName, barName).where("name = ?1", name)`.
+`Person.update("foo = ?1 and bar = ?2", fooName, barName).where("name = ?1", name)`.
 
 For these operations, you can express the update document the same way you express your queries, here are some examples:
 
 - `<singlePropertyName>` (and single parameter) which will expand to the update document `{'$set' : {'singleColumnName': '?1'}}`
-- `firstname = ?1, status = ?2` will be mapped to the update document `{'$set' : {'firstname': ?1, 'status': ?2}}`
-- `firstname = :firstname, status = :status` will be mapped to the update document `{'$set' : {'firstname': :firstname, 'status': :status}}`
-- `{'firstname' : ?1, 'status' : ?2}` will be mapped to the update document `{'$set' : {'firstname': ?1, 'status': ?2}}`
-- `{'firstname' : firstname, 'status' : :status}` ` will be mapped to the update document `{'$set' : {'firstname': :firstname, 'status': :status}}`
-- `{'$inc': {'cpt': ?1}}` will be use as-is
+- `firstname = ?1 and status = ?2` will be mapped to the update document `{'$set' : {'firstname': ?1, 'status': ?2}}`
+- `firstname = :firstname and status = :status` will be mapped to the update document `{'$set' : {'firstname': :firstname, 'status': :status}}`
+- `{'firstname' : ?1 and 'status' : ?2}` will be mapped to the update document `{'$set' : {'firstname': ?1, 'status': ?2}}`
+- `{'firstname' : :firstname and 'status' : :status}` ` will be mapped to the update document `{'$set' : {'firstname': :firstname, 'status': :status}}`
+- `{'$inc': {'cpt': ?1}}` will be used as-is
 
 === Query parameters
 

@@ -20,7 +20,7 @@ public class PhoneCallResource {
     @GET
     @Produces("application/json")
     public PhoneCall phoneCallById(@PathParam("areaCode") String areaCode, @PathParam("number") String number) {
-        return repository.findById(new PhoneNumberId(areaCode, number)).orElse(null);
+        return repository.findById(new PhoneCallId(areaCode, number)).orElse(null);
     }
 
     @Path("{areaCode}")
@@ -33,7 +33,7 @@ public class PhoneCallResource {
     @Path("ids")
     @GET
     @Produces("application/json")
-    public Set<PhoneNumberId> allIds() {
+    public Set<PhoneCallId> allIds() {
         return repository.findAllIds();
     }
 

@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.vertx;
 
+import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteSource.FILTER;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_CLIENT_IP;
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryConfig.INSTRUMENTATION_NAME;
@@ -7,6 +8,7 @@ import static io.quarkus.opentelemetry.runtime.OpenTelemetryConfig.INSTRUMENTATI
 import java.util.List;
 import java.util.function.BiConsumer;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.context.Scope;
@@ -17,7 +19,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteGetter;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteBiGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteHolder;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesGetter;
@@ -90,7 +92,7 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
             final TagExtractor<R> tagExtractor) {
 
         HttpRouteHolder.updateHttpRoute(spanOperation.getSpanContext(), FILTER, RouteGetter.ROUTE_GETTER,
-                ((HttpRequestSpan) spanOperation.getRequest()));
+                ((HttpRequestSpan) spanOperation.getRequest()), (HttpResponse) response);
         InstrumenterVertxTracer.super.sendResponse(context, response, spanOperation, failure, tagExtractor);
     }
 
@@ -131,11 +133,12 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
                 .newClientInstrumenter(new HttpRequestTextMapSetter());
     }
 
-    private static class RouteGetter implements HttpRouteGetter<HttpRequestSpan> {
+    private static class RouteGetter implements HttpRouteBiGetter<HttpRequestSpan, HttpResponse> {
         static final RouteGetter ROUTE_GETTER = new RouteGetter();
 
         @Override
-        public String get(final io.opentelemetry.context.Context context, final HttpRequestSpan requestSpan) {
+        public String get(final io.opentelemetry.context.Context context, final HttpRequestSpan requestSpan,
+                final HttpResponse response) {
             // RESTEasy
             String route = requestSpan.getContext().getLocal("UrlPathTemplate");
             if (route == null) {
@@ -145,6 +148,10 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
 
             if (route != null && route.length() > 1) {
                 return route;
+            }
+
+            if (HttpResponseStatus.NOT_FOUND.code() == response.statusCode()) {
+                return "/*";
             }
 
             return null;
@@ -194,7 +201,11 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
 
         @Override
         public String serverName(final HttpRequest request) {
-            return request.remoteAddress().hostName();
+            SocketAddress remoteAddress = request.remoteAddress();
+            if (remoteAddress != null) {
+                return remoteAddress.hostName();
+            }
+            return null;
         }
 
         @Override

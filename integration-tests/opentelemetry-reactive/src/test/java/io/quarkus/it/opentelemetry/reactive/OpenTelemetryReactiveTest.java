@@ -3,6 +3,7 @@ package io.quarkus.it.opentelemetry.reactive;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static java.net.HttpURLConnection.HTTP_OK;
+import static java.util.stream.Collectors.toSet;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,6 +58,23 @@ public class OpenTelemetryReactiveTest {
         List<Map<String, Object>> spans = getSpans();
         assertEquals(2, spans.size());
         assertEquals(spans.get(0).get("traceId"), spans.get(1).get("traceId"));
+    }
+
+    @Test
+    void multiple() {
+        given()
+                .contentType("application/json")
+                .when()
+                .get("/reactive/multiple")
+                .then()
+                .statusCode(200)
+                .body(equalTo("Hello Naruto and Hello Goku"));
+
+        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 7);
+
+        List<Map<String, Object>> spans = getSpans();
+        assertEquals(7, spans.size());
+        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
     }
 
     private static List<Map<String, Object>> getSpans() {

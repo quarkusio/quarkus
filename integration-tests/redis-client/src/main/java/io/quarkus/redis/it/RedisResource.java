@@ -6,10 +6,10 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 
-import io.quarkus.redis.datasource.api.ReactiveRedisDataSource;
-import io.quarkus.redis.datasource.api.RedisDataSource;
-import io.quarkus.redis.datasource.api.string.ReactiveStringCommands;
-import io.quarkus.redis.datasource.api.string.StringCommands;
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
+import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.datasource.string.ReactiveStringCommands;
+import io.quarkus.redis.datasource.string.StringCommands;
 import io.smallrye.mutiny.Uni;
 
 @Path("/quarkus-redis")

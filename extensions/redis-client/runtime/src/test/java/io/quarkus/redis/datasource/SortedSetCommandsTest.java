@@ -16,21 +16,17 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.redis.datasource.api.Cursor;
-import io.quarkus.redis.datasource.api.RedisDataSource;
-import io.quarkus.redis.datasource.api.ScanArgs;
-import io.quarkus.redis.datasource.api.SortArgs;
-import io.quarkus.redis.datasource.api.list.KeyValue;
-import io.quarkus.redis.datasource.api.list.ListCommands;
-import io.quarkus.redis.datasource.api.sortedset.Range;
-import io.quarkus.redis.datasource.api.sortedset.ScoreRange;
-import io.quarkus.redis.datasource.api.sortedset.ScoredValue;
-import io.quarkus.redis.datasource.api.sortedset.SortedSetCommands;
-import io.quarkus.redis.datasource.api.sortedset.ZAddArgs;
-import io.quarkus.redis.datasource.api.sortedset.ZAggregateArgs;
-import io.quarkus.redis.datasource.api.sortedset.ZRangeArgs;
-import io.quarkus.redis.datasource.api.sortedset.ZScanCursor;
-import io.quarkus.redis.datasource.impl.BlockingRedisDataSourceImpl;
+import io.quarkus.redis.datasource.list.KeyValue;
+import io.quarkus.redis.datasource.list.ListCommands;
+import io.quarkus.redis.datasource.sortedset.Range;
+import io.quarkus.redis.datasource.sortedset.ScoreRange;
+import io.quarkus.redis.datasource.sortedset.ScoredValue;
+import io.quarkus.redis.datasource.sortedset.SortedSetCommands;
+import io.quarkus.redis.datasource.sortedset.ZAddArgs;
+import io.quarkus.redis.datasource.sortedset.ZAggregateArgs;
+import io.quarkus.redis.datasource.sortedset.ZRangeArgs;
+import io.quarkus.redis.datasource.sortedset.ZScanCursor;
+import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
 @SuppressWarnings("unchecked")
 public class SortedSetCommandsTest extends DatasourceTestBase {

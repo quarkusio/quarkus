@@ -14,11 +14,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.redis.datasource.api.RedisDataSource;
-import io.quarkus.redis.datasource.api.pubsub.PubSubCommands;
-import io.quarkus.redis.datasource.api.pubsub.ReactivePubSubCommands;
-import io.quarkus.redis.datasource.impl.BlockingRedisDataSourceImpl;
-import io.quarkus.redis.datasource.impl.ReactiveRedisDataSourceImpl;
+import io.quarkus.redis.datasource.pubsub.PubSubCommands;
+import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
+import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
+import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.Cancellable;

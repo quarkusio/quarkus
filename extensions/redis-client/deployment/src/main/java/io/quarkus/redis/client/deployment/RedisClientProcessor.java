@@ -1,6 +1,6 @@
 package io.quarkus.redis.client.deployment;
 
-import static io.quarkus.redis.client.runtime.config.RedisConfig.DEFAULT_CLIENT_NAME;
+import static io.quarkus.redis.runtime.client.config.RedisConfig.DEFAULT_CLIENT_NAME;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,7 +34,7 @@ import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.client.RedisHostsProvider;
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;
-import io.quarkus.redis.client.runtime.RedisClientRecorder;
+import io.quarkus.redis.runtime.client.RedisClientRecorder;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.redis.client.impl.types.BulkType;
@@ -164,7 +164,7 @@ public class RedisClientProcessor {
 
     @BuildStep
     HealthBuildItem addHealthCheck(RedisBuildTimeConfig buildTimeConfig) {
-        return new HealthBuildItem("io.quarkus.redis.client.runtime.health.RedisHealthCheck",
+        return new HealthBuildItem("io.quarkus.redis.runtime.client.health.RedisHealthCheck",
                 buildTimeConfig.healthEnabled);
     }
 }

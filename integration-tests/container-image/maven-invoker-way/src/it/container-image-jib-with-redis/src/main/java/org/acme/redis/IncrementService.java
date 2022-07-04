@@ -1,8 +1,8 @@
 package org.acme.redis;
 
-import io.quarkus.redis.datasource.api.RedisDataSource;
-import io.quarkus.redis.datasource.api.keys.KeyCommands;
-import io.quarkus.redis.datasource.api.string.StringCommands;
+import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.datasource.keys.KeyCommands;
+import io.quarkus.redis.datasource.string.StringCommands;
 
 import javax.inject.Singleton;
 import java.util.List;

@@ -34,7 +34,7 @@ import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.redis.client.deployment.RedisBuildTimeConfig.DevServiceConfiguration;
-import io.quarkus.redis.client.runtime.config.RedisConfig;
+import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 

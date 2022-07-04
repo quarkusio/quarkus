@@ -15,22 +15,21 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.redis.datasource.api.RedisDataSource;
-import io.quarkus.redis.datasource.api.geo.GeoAddArgs;
-import io.quarkus.redis.datasource.api.geo.GeoCommands;
-import io.quarkus.redis.datasource.api.geo.GeoItem;
-import io.quarkus.redis.datasource.api.geo.GeoPosition;
-import io.quarkus.redis.datasource.api.geo.GeoRadiusArgs;
-import io.quarkus.redis.datasource.api.geo.GeoRadiusStoreArgs;
-import io.quarkus.redis.datasource.api.geo.GeoSearchArgs;
-import io.quarkus.redis.datasource.api.geo.GeoSearchStoreArgs;
-import io.quarkus.redis.datasource.api.geo.GeoUnit;
-import io.quarkus.redis.datasource.api.geo.GeoValue;
-import io.quarkus.redis.datasource.api.geo.TransactionalGeoCommands;
-import io.quarkus.redis.datasource.api.sortedset.ScoredValue;
-import io.quarkus.redis.datasource.api.sortedset.SortedSetCommands;
-import io.quarkus.redis.datasource.api.transactions.TransactionResult;
-import io.quarkus.redis.datasource.impl.BlockingRedisDataSourceImpl;
+import io.quarkus.redis.datasource.geo.GeoAddArgs;
+import io.quarkus.redis.datasource.geo.GeoCommands;
+import io.quarkus.redis.datasource.geo.GeoItem;
+import io.quarkus.redis.datasource.geo.GeoPosition;
+import io.quarkus.redis.datasource.geo.GeoRadiusArgs;
+import io.quarkus.redis.datasource.geo.GeoRadiusStoreArgs;
+import io.quarkus.redis.datasource.geo.GeoSearchArgs;
+import io.quarkus.redis.datasource.geo.GeoSearchStoreArgs;
+import io.quarkus.redis.datasource.geo.GeoUnit;
+import io.quarkus.redis.datasource.geo.GeoValue;
+import io.quarkus.redis.datasource.geo.TransactionalGeoCommands;
+import io.quarkus.redis.datasource.sortedset.ScoredValue;
+import io.quarkus.redis.datasource.sortedset.SortedSetCommands;
+import io.quarkus.redis.datasource.transactions.TransactionResult;
+import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
 @SuppressWarnings("unchecked")
 public class GeoCommandsTest extends DatasourceTestBase {

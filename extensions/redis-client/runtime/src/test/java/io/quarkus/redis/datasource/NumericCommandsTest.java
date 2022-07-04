@@ -9,9 +9,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.redis.datasource.api.RedisDataSource;
-import io.quarkus.redis.datasource.api.string.StringCommands;
-import io.quarkus.redis.datasource.impl.BlockingRedisDataSourceImpl;
+import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
 public class NumericCommandsTest extends DatasourceTestBase {
 

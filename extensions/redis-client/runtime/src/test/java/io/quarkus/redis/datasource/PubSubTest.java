@@ -10,9 +10,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.redis.datasource.api.pubsub.ReactivePubSubCommands;
-import io.quarkus.redis.datasource.impl.ReactivePubSubCommandsImpl;
-import io.quarkus.redis.datasource.impl.ReactiveRedisDataSourceImpl;
+import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
+import io.quarkus.redis.runtime.datasource.ReactivePubSubCommandsImpl;
+import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.Cancellable;
 

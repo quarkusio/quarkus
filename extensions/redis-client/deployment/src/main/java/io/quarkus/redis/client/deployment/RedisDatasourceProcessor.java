@@ -2,7 +2,7 @@ package io.quarkus.redis.client.deployment;
 
 import static io.quarkus.redis.client.deployment.RedisClientProcessor.REDIS_CLIENT_ANNOTATION;
 import static io.quarkus.redis.client.deployment.RedisClientProcessor.configureAndCreateSyntheticBean;
-import static io.quarkus.redis.client.runtime.config.RedisConfig.DEFAULT_CLIENT_NAME;
+import static io.quarkus.redis.runtime.client.config.RedisConfig.DEFAULT_CLIENT_NAME;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -22,9 +22,9 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.redis.client.runtime.RedisClientRecorder;
-import io.quarkus.redis.datasource.api.ReactiveRedisDataSource;
-import io.quarkus.redis.datasource.api.RedisDataSource;
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
+import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.runtime.client.RedisClientRecorder;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
 public class RedisDatasourceProcessor {

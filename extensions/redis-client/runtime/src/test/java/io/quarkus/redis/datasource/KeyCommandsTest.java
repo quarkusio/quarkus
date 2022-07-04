@@ -17,18 +17,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.redis.datasource.api.Cursor;
-import io.quarkus.redis.datasource.api.RedisDataSource;
-import io.quarkus.redis.datasource.api.keys.CopyArgs;
-import io.quarkus.redis.datasource.api.keys.ExpireArgs;
-import io.quarkus.redis.datasource.api.keys.KeyCommands;
-import io.quarkus.redis.datasource.api.keys.KeyScanArgs;
-import io.quarkus.redis.datasource.api.keys.RedisKeyNotFoundException;
-import io.quarkus.redis.datasource.api.keys.RedisValueType;
-import io.quarkus.redis.datasource.api.list.ListCommands;
-import io.quarkus.redis.datasource.api.sortedset.SortedSetCommands;
-import io.quarkus.redis.datasource.api.string.StringCommands;
-import io.quarkus.redis.datasource.impl.BlockingRedisDataSourceImpl;
+import io.quarkus.redis.datasource.keys.CopyArgs;
+import io.quarkus.redis.datasource.keys.ExpireArgs;
+import io.quarkus.redis.datasource.keys.KeyCommands;
+import io.quarkus.redis.datasource.keys.KeyScanArgs;
+import io.quarkus.redis.datasource.keys.RedisKeyNotFoundException;
+import io.quarkus.redis.datasource.keys.RedisValueType;
+import io.quarkus.redis.datasource.list.ListCommands;
+import io.quarkus.redis.datasource.sortedset.SortedSetCommands;
+import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
 public class KeyCommandsTest extends DatasourceTestBase {
 

@@ -98,25 +98,22 @@ With this class, we'll be able to perform the `SET`, `GET` , `DEL`, `KEYS` and `
 
 Create the `src/main/java/org/acme/redis/IncrementService.java` file, with the following content:
 
-[source, java]
+[source,java]
 ----
 package org.acme.redis;
-
-import java.util.Arrays;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import io.quarkus.redis.datasource.api.ReactiveRedisDataSource;
-import io.quarkus.redis.datasource.api.RedisDataSource;
-import io.quarkus.redis.datasource.api.keys.KeyCommands;
-import io.quarkus.redis.datasource.api.keys.ReactiveKeyCommands;
-import io.quarkus.redis.datasource.api.string.StringCommands;
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
+import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.datasource.keys.KeyCommands;
+import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
+import io.quarkus.redis.datasource.string.StringCommands;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class IncrementService {
-
 
     // This quickstart demonstrates both the imperative
     // and reactive Redis data sources

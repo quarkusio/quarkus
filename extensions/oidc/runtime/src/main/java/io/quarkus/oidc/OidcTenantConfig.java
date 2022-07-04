@@ -988,6 +988,20 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<String> header = Optional.empty();
 
         /**
+         * Decryption key location.
+         * JWT tokens can be inner-signed and encrypted by OpenId Connect providers.
+         * However, it is not always possible to remotely introspect such tokens because
+         * the providers may not control the private decryption keys.
+         * In such cases set this property to point to the file containing the decryption private key in
+         * PEM or JSON Web Key (JWK) format.
+         * Note that if a 'private_key_jwt' client authentication method is used then the private key
+         * which is used to sign client authentication JWT tokens will be used to try to decrypt an encrypted ID token
+         * if this property is not set.
+         */
+        @ConfigItem
+        public Optional<String> decryptionKeyLocation = Optional.empty();
+
+        /**
          * Allow the remote introspection of JWT tokens when no matching JWK key is available.
          *
          * Note this property is set to 'true' by default for backward-compatibility reasons and will be set to `false`
@@ -1101,6 +1115,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setAge(Duration age) {
             this.age = Optional.of(age);
+        }
+
+        public Optional<String> getDecryptionKeyLocation() {
+            return decryptionKeyLocation;
+        }
+
+        public void setDecryptionKeyLocation(String decryptionKeyLocation) {
+            this.decryptionKeyLocation = Optional.of(decryptionKeyLocation);
         }
     }
 

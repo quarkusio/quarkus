@@ -1,6 +1,8 @@
 package io.quarkus.oidc.runtime;
 
+import java.security.Key;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -10,6 +12,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
+import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.jwk.PublicJsonWebKey;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.OIDCException;
@@ -25,6 +29,8 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
+import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.ProxyOptions;
@@ -141,7 +147,7 @@ public class OidcRecorder {
 
         if (!oidcConfig.tenantEnabled) {
             LOG.debugf("'%s' tenant configuration is disabled", tenantId);
-            return Uni.createFrom().item(new TenantConfigContext(new OidcProvider(null, null, null), oidcConfig));
+            return Uni.createFrom().item(new TenantConfigContext(new OidcProvider(null, null, null, null), oidcConfig));
         }
 
         if (oidcConfig.getPublicKey().isPresent()) {
@@ -219,7 +225,8 @@ public class OidcRecorder {
         LOG.debug("'public-key' property for the local token verification is set,"
                 + " no connection to the OIDC server will be created");
 
-        return new TenantConfigContext(new OidcProvider(oidcConfig.publicKey.get(), oidcConfig), oidcConfig);
+        return new TenantConfigContext(
+                new OidcProvider(oidcConfig.publicKey.get(), oidcConfig, readTokenDecryptionKey(oidcConfig)), oidcConfig);
     }
 
     public void setSecurityEventObserved(boolean isSecurityEventObserved) {
@@ -248,15 +255,47 @@ public class OidcRecorder {
 
                                         @Override
                                         public OidcProvider apply(JsonWebKeySet jwks) {
-                                            return new OidcProvider(client, oidcConfig, jwks);
+                                            return new OidcProvider(client, oidcConfig, jwks,
+                                                    readTokenDecryptionKey(oidcConfig));
                                         }
 
                                     });
                         } else {
-                            return Uni.createFrom().item(new OidcProvider(client, oidcConfig, null));
+                            return Uni.createFrom()
+                                    .item(new OidcProvider(client, oidcConfig, null, readTokenDecryptionKey(oidcConfig)));
                         }
                     }
                 });
+    }
+
+    private static Key readTokenDecryptionKey(OidcTenantConfig oidcConfig) {
+        if (oidcConfig.token.decryptionKeyLocation.isPresent()) {
+            try {
+                Key key = null;
+
+                String keyContent = KeyUtils.readKeyContent(oidcConfig.token.decryptionKeyLocation.get());
+                if (keyContent != null) {
+                    List<JsonWebKey> keys = KeyUtils.loadJsonWebKeys(keyContent);
+                    if (keys != null && keys.size() == 1 &&
+                            (keys.get(0).getAlgorithm() == null
+                                    || keys.get(0).getAlgorithm() == KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm())
+                            && ("enc".equals(keys.get(0).getUse()) || keys.get(0).getUse() == null)) {
+                        key = PublicJsonWebKey.class.cast(keys.get(0)).getPrivateKey();
+                    }
+                }
+                if (key == null) {
+                    key = KeyUtils.decodeDecryptionPrivateKey(keyContent);
+                }
+                return key;
+            } catch (Exception ex) {
+                throw new ConfigurationException(
+                        String.format("Token decryption key for tenant %s can not be read from %s",
+                                oidcConfig.tenantId.get(), oidcConfig.token.decryptionKeyLocation.get()),
+                        ex);
+            }
+        } else {
+            return null;
+        }
     }
 
     protected static Uni<JsonWebKeySet> getJsonWebSetUni(OidcProviderClient client, OidcTenantConfig oidcConfig) {

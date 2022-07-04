@@ -17,6 +17,12 @@ public class CustomTenantResolver implements TenantResolver {
         if (path.endsWith("code-flow") || path.endsWith("code-flow/logout")) {
             return "code-flow";
         }
+        if (path.endsWith("code-flow-encrypted-id-token-jwk")) {
+            return "code-flow-encrypted-id-token-jwk";
+        }
+        if (path.endsWith("code-flow-encrypted-id-token-pem")) {
+            return "code-flow-encrypted-id-token-pem";
+        }
         if (path.endsWith("code-flow-form-post")) {
             return "code-flow-form-post";
         }

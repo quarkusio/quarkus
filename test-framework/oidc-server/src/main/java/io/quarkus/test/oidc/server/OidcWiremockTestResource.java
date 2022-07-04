@@ -140,6 +140,7 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
 
         // Code Flow Authorization Mock
         defineCodeFlowAuthorizationMockTokenStub();
+        defineCodeFlowAuthorizationMockEncryptedTokenStub();
 
         // Login Page
         server.stubFor(
@@ -253,6 +254,31 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                 "  \"id_token\": \"" + getIdToken("alice", getAdminRoles())
                                 + "\"\n" +
                                 "}")));
+    }
+
+    private void defineCodeFlowAuthorizationMockEncryptedTokenStub() {
+        server.stubFor(WireMock.post("/auth/realms/quarkus/encrypted-id-token")
+                .withRequestBody(containing("authorization_code"))
+                .willReturn(WireMock.aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\n" +
+                                "  \"access_token\": \""
+                                + getAccessToken("alice", getAdminRoles()) + "\",\n" +
+                                "  \"refresh_token\": \"07e08903-1263-4dd1-9fd1-4a59b0db5283\",\n" +
+                                "  \"id_token\": \"" + getEncryptedIdToken("alice", getAdminRoles())
+                                + "\"\n" +
+                                "}")));
+    }
+
+    public static String getEncryptedIdToken(String userName, Set<String> groups) {
+        return Jwt.preferredUserName(userName)
+                .groups(groups)
+                .issuer("quarkus.test.oidc.token.issuer")
+                .audience("quarkus.test.oidc.token.audience")
+                .subject("123456")
+                .jws()
+                .keyId("1")
+                .innerSign("privateKey.jwk").encrypt("publicKey.jwk");
     }
 
     public static X509Certificate getCertificate() {

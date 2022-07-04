@@ -1,6 +1,7 @@
 package io.quarkus.oidc.runtime;
 
 import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
+import org.jose4j.lang.JoseException;
 
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.AuthorizationCodeTokens;
@@ -74,6 +76,10 @@ public final class OidcUtils {
 
     private OidcUtils() {
 
+    }
+
+    public static boolean isEncryptedToken(String token) {
+        return new StringTokenizer(token, ".").countTokens() == 5;
     }
 
     public static boolean isOpaqueToken(String token) {
@@ -423,14 +429,18 @@ public final class OidcUtils {
         return jwe.getCompactSerialization();
     }
 
-    public static JsonObject decryptJson(String jweString, SecretKey key) throws Exception {
+    public static JsonObject decryptJson(String jweString, Key key) throws Exception {
         return new JsonObject(decryptString(jweString, key));
     }
 
-    public static String decryptString(String jweString, SecretKey key) throws Exception {
+    public static String decryptString(String jweString, Key key) throws Exception {
+        return decryptString(jweString, key, KeyEncryptionAlgorithm.A256KW);
+    }
+
+    public static String decryptString(String jweString, Key key, KeyEncryptionAlgorithm algorithm) throws JoseException {
         JsonWebEncryption jwe = new JsonWebEncryption();
         jwe.setAlgorithmConstraints(new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
-                KeyEncryptionAlgorithm.A256KW.getAlgorithm()));
+                algorithm.getAlgorithm()));
         jwe.setKey(key);
         jwe.setCompactSerialization(jweString);
         return jwe.getPlaintextString();

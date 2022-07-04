@@ -9,6 +9,7 @@ import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_TARGET;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_URL;
 import static java.net.HttpURLConnection.HTTP_OK;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URI;
@@ -27,6 +28,8 @@ import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.Router;
@@ -114,14 +117,40 @@ public class VertxClientOpenTelemetryTest {
         assertEquals(server.getParentSpanId(), client.getSpanId());
     }
 
+    @Test
+    void multiple() throws Exception {
+        HttpResponse<Buffer> response = WebClient.create(vertx)
+                .get(uri.getPort(), uri.getHost(), "/multiple")
+                .putHeader("host", uri.getHost())
+                .putHeader("port", uri.getPort() + "")
+                .send()
+                .toCompletionStage().toCompletableFuture()
+                .get();
+
+        assertEquals(HTTP_OK, response.statusCode());
+
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(6);
+        assertEquals(1, spans.stream().map(SpanData::getTraceId).collect(toSet()).size());
+    }
+
     @ApplicationScoped
     public static class HelloRouter {
         @Inject
         Router router;
+        @Inject
+        Vertx vertx;
 
         public void register(@Observes StartupEvent ev) {
             router.get("/hello").handler(rc -> rc.response().end("hello"));
             router.get("/hello/:name").handler(rc -> rc.response().end("hello " + rc.pathParam("name")));
+            router.get("/multiple").handler(rc -> {
+                String host = rc.request().getHeader("host");
+                int port = Integer.parseInt(rc.request().getHeader("port"));
+                WebClient webClient = WebClient.create(vertx);
+                Future<HttpResponse<Buffer>> one = webClient.get(port, host, "/hello/naruto").send();
+                Future<HttpResponse<Buffer>> two = webClient.get(port, host, "/hello/goku").send();
+                CompositeFuture.join(one, two).onComplete(event -> rc.response().end());
+            });
         }
     }
 }

@@ -72,10 +72,14 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
 
     @Override
     public void filter(final ClientRequestContext request) {
-        Context parentContext = Context.current();
+        io.vertx.core.Context vertxContext = getVertxContext(request);
+        io.opentelemetry.context.Context parentContext = QuarkusContextStorage.getContext(vertxContext);
+        if (parentContext == null) {
+            parentContext = io.opentelemetry.context.Context.current();
+        }
         if (instrumenter.shouldStart(parentContext, request)) {
             Context spanContext = instrumenter.start(parentContext, request);
-            Scope scope = QuarkusContextStorage.INSTANCE.attach(getVertxContext(request), spanContext);
+            Scope scope = QuarkusContextStorage.INSTANCE.attach(vertxContext, spanContext);
             request.setProperty(REST_CLIENT_OTEL_SPAN_CLIENT_CONTEXT, spanContext);
             request.setProperty(REST_CLIENT_OTEL_SPAN_CLIENT_PARENT_CONTEXT, parentContext);
             request.setProperty(REST_CLIENT_OTEL_SPAN_CLIENT_SCOPE, scope);

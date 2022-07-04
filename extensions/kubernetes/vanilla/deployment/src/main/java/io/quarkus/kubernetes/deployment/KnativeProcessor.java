@@ -79,6 +79,7 @@ public class KnativeProcessor {
     private static final String KNATIVE_UTILIZATION_PERCENTAGE = "autoscaling.knative.dev/target-utilization-percentage";
     private static final String KNATIVE_AUTOSCALING_TARGET = "autoscaling.knative.dev/target";
     private static final String KNATIVE_CONTAINER_CONCURRENCY = "container-concurrency";
+    private static final String KNATIVE_DEV_VISIBILITY = "networking.knative.dev/visibility";
 
     @BuildStep
     public void checkKnative(ApplicationInfoBuildItem applicationInfo, KnativeConfig config,
@@ -174,8 +175,11 @@ public class KnativeProcessor {
                 });
 
         if (config.clusterLocal) {
-            result.add(new DecoratorBuildItem(KNATIVE,
-                    new AddLabelDecorator(name, "networking.knative.dev/visibility", "cluster-local")));
+            if (labels.stream().noneMatch(l -> l.getKey().equals(KNATIVE_DEV_VISIBILITY))) {
+                result.add(new DecoratorBuildItem(KNATIVE,
+                        new AddLabelDecorator(name, KNATIVE_DEV_VISIBILITY, "cluster-local")));
+            }
+
         }
 
         /**

@@ -396,3 +396,10 @@ To disable the gRPC client metrics when `quarkus-micrometer` is used, add the fo
 ----
 quarkus.micrometer.binder.grpc-client.enabled=false
 ----
+
+== Dev Mode
+
+By default, when starting the application in dev mode, a gRPC server is started, even if no services are configured.
+You can configure the gRPC extension's dev mode behavior using the following properties.
+
+include::{generated-dir}/config/quarkus-grpc-config-group-grpc-dev-mode-config.adoc[opts=optional, leveloffset=+1]

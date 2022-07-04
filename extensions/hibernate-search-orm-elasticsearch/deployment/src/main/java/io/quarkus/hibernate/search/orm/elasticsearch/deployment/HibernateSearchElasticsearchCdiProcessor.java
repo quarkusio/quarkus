@@ -9,6 +9,8 @@ import javax.inject.Singleton;
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -63,5 +65,22 @@ public class HibernateSearchElasticsearchCdiProcessor {
         configurator.addQualifier().annotation(PersistenceUnit.class).addValue("value", persistenceUnitName).done();
 
         return configurator.done();
+    }
+
+    @BuildStep
+    void registerAnnotations(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
+        // add the @SearchExtension class
+        // otherwise it won't be registered as qualifier
+        additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClasses(ClassNames.SEARCH_EXTENSION.toString())
+                .build());
+
+        // Register the default scope for @SearchExtension and make such beans unremovable by default
+        // TODO make @SearchExtension beans unremovable only if the corresponding PU actually exists and is enabled
+        //   (I think there's a feature request for a configuration property to disable a PU at runtime?)
+        beanDefiningAnnotations
+                .produce(new BeanDefiningAnnotationBuildItem(ClassNames.SEARCH_EXTENSION, DotNames.APPLICATION_SCOPED,
+                        false));
     }
 }

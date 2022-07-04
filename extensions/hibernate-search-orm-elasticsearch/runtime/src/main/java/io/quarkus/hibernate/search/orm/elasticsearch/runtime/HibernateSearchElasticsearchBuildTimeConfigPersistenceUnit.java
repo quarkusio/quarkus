@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -25,7 +26,7 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
      */
     @ConfigItem(name = "elasticsearch")
     @ConfigDocSection
-    public ElasticsearchNamedBackendsBuildTimeConfig namedBackends;
+    ElasticsearchNamedBackendsBuildTimeConfig namedBackends;
 
     /**
      * A <<bean-reference-note-anchor,bean reference>> to a component
@@ -33,6 +34,14 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
      * (mainly index operations).
      *
      * The referenced bean must implement `FailureHandler`.
+     *
+     * [NOTE]
+     * ====
+     * Instead of setting this configuration property,
+     * you can simply annotate your custom `FailureHandler` implementation with `@SearchExtension`
+     * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
+     * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
+     * ====
      *
      * @asciidoclet
      */
@@ -44,6 +53,17 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
      */
     @ConfigItem
     public CoordinationConfig coordination;
+
+    public Map<String, ElasticsearchBackendBuildTimeConfig> getAllBackendConfigsAsMap() {
+        Map<String, ElasticsearchBackendBuildTimeConfig> map = new LinkedHashMap<>();
+        if (defaultBackend != null) {
+            map.put(null, defaultBackend);
+        }
+        if (namedBackends != null) {
+            map.putAll(namedBackends.backends);
+        }
+        return map;
+    }
 
     @ConfigGroup
     public static class ElasticsearchNamedBackendsBuildTimeConfig {
@@ -159,6 +179,14 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          *
          * See <<analysis-configurer>> for more information.
          *
+         * [NOTE]
+         * ====
+         * Instead of setting this configuration property,
+         * you can simply annotate your custom `ElasticsearchAnalysisConfigurer` implementation with `@SearchExtension`
+         * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
+         * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
+         * ====
+         *
          * @asciidoclet
          */
         @ConfigItem
@@ -188,6 +216,14 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * link:{hibernate-search-doc-prefix}#backend-elasticsearch-indexlayout[this section of the reference documentation]
          * for more information.
          *
+         * [NOTE]
+         * ====
+         * Instead of setting this configuration property,
+         * you can simply annotate your custom `IndexLayoutStrategy` implementation with `@SearchExtension`
+         * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
+         * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
+         * ====
+         *
          * @asciidoclet
          */
         @ConfigItem
@@ -206,7 +242,7 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * @asciidoclet
          */
         @ConfigItem(defaultValue = "none")
-        public String strategy;
+        public Optional<String> strategy;
     }
 
 }

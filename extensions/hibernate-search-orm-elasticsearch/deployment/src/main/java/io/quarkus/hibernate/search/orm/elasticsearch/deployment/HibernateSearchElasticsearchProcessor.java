@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.deployment;
 
-import static io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchClasses.INDEXED;
+import static io.quarkus.hibernate.search.orm.elasticsearch.deployment.ClassNames.INDEXED;
 import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.backendPropertyKey;
 import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.elasticsearchVersionPropertyKey;
 import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.mapperPropertyKey;
@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -100,6 +101,9 @@ class HibernateSearchElasticsearchProcessor {
         IndexView index = combinedIndexBuildItem.getIndex();
         Collection<AnnotationInstance> indexedAnnotations = index.getAnnotations(INDEXED);
 
+        Map<String, Map<String, Set<String>>> persistenceUnitAndBackendAndIndexNamesForSearchExtensions = collectPersistenceUnitAndBackendAndIndexNamesForSearchExtensions(
+                index);
+
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
             Collection<AnnotationInstance> indexedAnnotationsForPU = new ArrayList<>();
             for (AnnotationInstance indexedAnnotation : indexedAnnotations) {
@@ -108,15 +112,37 @@ class HibernateSearchElasticsearchProcessor {
                     indexedAnnotationsForPU.add(indexedAnnotation);
                 }
             }
+            Map<String, Set<String>> backendAndIndexNamesForSearchExtensions = persistenceUnitAndBackendAndIndexNamesForSearchExtensions
+                    .getOrDefault(puDescriptor.getPersistenceUnitName(), Collections.emptyMap());
             buildForPersistenceUnit(recorder, indexedAnnotationsForPU, puDescriptor.getPersistenceUnitName(),
+                    backendAndIndexNamesForSearchExtensions,
                     configuredPersistenceUnits, staticIntegrations, runtimeIntegrations);
         }
 
         registerReflectionForGson(reflectiveClass);
     }
 
+    public static Map<String, Map<String, Set<String>>> collectPersistenceUnitAndBackendAndIndexNamesForSearchExtensions(
+            IndexView index) {
+        Map<String, Map<String, Set<String>>> result = new LinkedHashMap<>();
+        for (AnnotationInstance annotation : index.getAnnotations(ClassNames.SEARCH_EXTENSION)) {
+            var puName = annotation.value("persistenceUnit");
+            var backendName = annotation.value("backend");
+            var indexName = annotation.value("index");
+            Set<String> indexNames = result
+                    .computeIfAbsent(puName == null ? PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME : puName.asString(),
+                            ignored -> new LinkedHashMap<>())
+                    .computeIfAbsent(backendName == null ? null : backendName.asString(), ignored -> new LinkedHashSet<>());
+            if (indexName != null) {
+                indexNames.add(indexName.asString());
+            }
+        }
+        return result;
+    }
+
     private void buildForPersistenceUnit(HibernateSearchElasticsearchRecorder recorder,
             Collection<AnnotationInstance> indexedAnnotationsForPU, String persistenceUnitName,
+            Map<String, Set<String>> backendAndIndexNamesForSearchExtensions,
             BuildProducer<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticIntegrations,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeIntegrations) {
@@ -127,7 +153,7 @@ class HibernateSearchElasticsearchProcessor {
             // we need a runtime listener even when Hibernate Search is disabled,
             // just to let Hibernate Search boot up until the point where it checks whether it's enabled or not
             runtimeIntegrations.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                    persistenceUnitName).setInitListener(recorder.createDisabledRuntimeInitListener()));
+                    persistenceUnitName).setInitListener(recorder.createDisabledRuntimeInitListener(persistenceUnitName)));
             return;
         }
 
@@ -146,7 +172,7 @@ class HibernateSearchElasticsearchProcessor {
 
         configuredPersistenceUnits
                 .produce(new HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem(persistenceUnitName, puConfig,
-                        defaultBackendIsUsed));
+                        defaultBackendIsUsed, backendAndIndexNamesForSearchExtensions));
     }
 
     @BuildStep
@@ -168,7 +194,7 @@ class HibernateSearchElasticsearchProcessor {
             List<HibernateSearchIntegrationStaticConfiguredBuildItem> integrationStaticConfigBuildItems,
             List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticConfigured) {
-        // Make it possible to record the ElasticsearchVersion as bytecode:
+        // Make it possible to record the settings as bytecode:
         recorderContext.registerSubstitution(ElasticsearchVersion.class,
                 String.class, ElasticsearchVersionSubstitution.class);
 
@@ -189,8 +215,10 @@ class HibernateSearchElasticsearchProcessor {
             }
             staticConfigured.produce(
                     new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
-                            .setInitListener(recorder.createStaticInitListener(configuredPersistenceUnit.getBuildTimeConfig(),
-                                    integrationStaticInitListeners))
+                            .setInitListener(
+                                    recorder.createStaticInitListener(puName, configuredPersistenceUnit.getBuildTimeConfig(),
+                                            configuredPersistenceUnit.getBackendAndIndexNamesForSearchExtensions(),
+                                            integrationStaticInitListeners))
                             .setXmlMappingRequired(xmlMappingRequired));
         }
     }
@@ -217,6 +245,7 @@ class HibernateSearchElasticsearchProcessor {
                     new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
                             .setInitListener(
                                     recorder.createRuntimeInitListener(runtimeConfig, puName,
+                                            configuredPersistenceUnit.getBackendAndIndexNamesForSearchExtensions(),
                                             integrationRuntimeInitListeners)));
         }
     }
@@ -243,31 +272,26 @@ class HibernateSearchElasticsearchProcessor {
                 .getBuildTimeConfig();
 
         Set<String> propertyKeysWithNoVersion = new LinkedHashSet<>();
+        Map<String, ElasticsearchBackendBuildTimeConfig> backends = buildTimeConfig != null
+                ? buildTimeConfig.getAllBackendConfigsAsMap()
+                : Collections.emptyMap();
         if (configuredPersistenceUnit.isDefaultBackendUsed()) {
-            ElasticsearchBackendBuildTimeConfig backendConfig = buildTimeConfig != null ? buildTimeConfig.defaultBackend : null;
-            // we validate that the version is present for the default backend
+            ElasticsearchBackendBuildTimeConfig backendConfig = backends.get(null);
+            // we validate that the default backend is configured and the version is present
             if (backendConfig == null || !backendConfig.version.isPresent()) {
                 propertyKeysWithNoVersion.add(elasticsearchVersionPropertyKey(persistenceUnitName, null));
             }
-            if (backendConfig != null) {
-                // we register files referenced from the default backend configuration
-                registerClasspathFileFromBackendConfig(persistenceUnitName, null, backendConfig,
-                        applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
-            }
         }
 
-        // we validate that the version is present for all the named backends
-        Map<String, ElasticsearchBackendBuildTimeConfig> backends = buildTimeConfig != null
-                ? buildTimeConfig.namedBackends.backends
-                : Collections.emptyMap();
-        for (Entry<String, ElasticsearchBackendBuildTimeConfig> additionalBackendEntry : backends.entrySet()) {
-            String backendName = additionalBackendEntry.getKey();
-            ElasticsearchBackendBuildTimeConfig backendConfig = additionalBackendEntry.getValue();
+        // we validate that the version is present for all backends
+        for (Entry<String, ElasticsearchBackendBuildTimeConfig> entry : backends.entrySet()) {
+            String backendName = entry.getKey();
+            ElasticsearchBackendBuildTimeConfig backendConfig = entry.getValue();
             if (!backendConfig.version.isPresent()) {
                 propertyKeysWithNoVersion
                         .add(elasticsearchVersionPropertyKey(persistenceUnitName, backendName));
             }
-            // we register files referenced from named backends configuration
+            // we register files referenced from backends configuration
             registerClasspathFileFromBackendConfig(persistenceUnitName, backendName, backendConfig,
                     applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
         }

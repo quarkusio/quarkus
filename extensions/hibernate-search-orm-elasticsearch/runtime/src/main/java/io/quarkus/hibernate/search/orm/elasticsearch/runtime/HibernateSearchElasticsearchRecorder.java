@@ -5,9 +5,13 @@ import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSea
 import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchConfigUtil.addConfig;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -18,14 +22,19 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.spi.BootstrapContext;
+import org.hibernate.search.backend.elasticsearch.analysis.ElasticsearchAnalysisConfigurer;
 import org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchBackendSettings;
 import org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchIndexSettings;
+import org.hibernate.search.backend.elasticsearch.index.layout.IndexLayoutStrategy;
 import org.hibernate.search.engine.cfg.BackendSettings;
 import org.hibernate.search.engine.cfg.EngineSettings;
+import org.hibernate.search.engine.reporting.FailureHandler;
 import org.hibernate.search.mapper.orm.Search;
+import org.hibernate.search.mapper.orm.automaticindexing.session.AutomaticIndexingSynchronizationStrategy;
 import org.hibernate.search.mapper.orm.bootstrap.impl.HibernateSearchPreIntegrationService;
 import org.hibernate.search.mapper.orm.bootstrap.spi.HibernateOrmIntegrationBooter;
 import org.hibernate.search.mapper.orm.cfg.HibernateOrmMapperSettings;
+import org.hibernate.search.mapper.orm.coordination.common.spi.CoordinationStrategy;
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 import org.hibernate.search.util.common.reflect.spi.ValueReadHandleFactory;
@@ -38,15 +47,18 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElas
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit.ElasticsearchIndexBuildTimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfigPersistenceUnit.ElasticsearchBackendRuntimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfigPersistenceUnit.ElasticsearchIndexRuntimeConfig;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.bean.HibernateSearchBeanUtil;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class HibernateSearchElasticsearchRecorder {
 
     public HibernateOrmIntegrationStaticInitListener createStaticInitListener(
-            HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig,
+            String persistenceUnitName, HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig,
+            Map<String, Set<String>> backendAndIndexNamesForSearchExtensions,
             List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners) {
-        return new HibernateSearchIntegrationStaticInitListener(buildTimeConfig, integrationStaticInitListeners);
+        return new HibernateSearchIntegrationStaticInitListener(persistenceUnitName, buildTimeConfig,
+                backendAndIndexNamesForSearchExtensions, integrationStaticInitListeners);
     }
 
     public HibernateOrmIntegrationStaticInitListener createDisabledStaticInitListener() {
@@ -55,13 +67,16 @@ public class HibernateSearchElasticsearchRecorder {
 
     public HibernateOrmIntegrationRuntimeInitListener createRuntimeInitListener(
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig, String persistenceUnitName,
+            Map<String, Set<String>> backendAndIndexNamesForSearchExtensions,
             List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners) {
         HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puConfig = runtimePuConfig(runtimeConfig, persistenceUnitName);
-        return new HibernateSearchIntegrationRuntimeInitListener(puConfig, integrationRuntimeInitListeners);
+        return new HibernateSearchIntegrationRuntimeInitListener(persistenceUnitName, puConfig,
+                backendAndIndexNamesForSearchExtensions, integrationRuntimeInitListeners);
     }
 
-    public HibernateOrmIntegrationRuntimeInitListener createDisabledRuntimeInitListener() {
-        return new HibernateSearchIntegrationRuntimeInitListener(null, Collections.emptyList());
+    public HibernateOrmIntegrationRuntimeInitListener createDisabledRuntimeInitListener(String persistenceUnitName) {
+        return new HibernateSearchIntegrationRuntimeInitListener(persistenceUnitName, null, Collections.emptyMap(),
+                Collections.emptyList());
     }
 
     public Supplier<SearchMapping> searchMappingSupplier(HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
@@ -136,13 +151,18 @@ public class HibernateSearchElasticsearchRecorder {
     private static final class HibernateSearchIntegrationStaticInitListener
             implements HibernateOrmIntegrationStaticInitListener {
 
+        private final String persistenceUnitName;
         private final HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig;
+        private final Map<String, Set<String>> backendAndIndexNamesForSearchExtensions;
         private final List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners;
 
-        private HibernateSearchIntegrationStaticInitListener(
+        private HibernateSearchIntegrationStaticInitListener(String persistenceUnitName,
                 HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig,
+                Map<String, Set<String>> backendAndIndexNamesForSearchExtensions,
                 List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners) {
+            this.persistenceUnitName = persistenceUnitName;
             this.buildTimeConfig = buildTimeConfig;
+            this.backendAndIndexNamesForSearchExtensions = backendAndIndexNamesForSearchExtensions;
             this.integrationStaticInitListeners = integrationStaticInitListeners;
         }
 
@@ -150,17 +170,30 @@ public class HibernateSearchElasticsearchRecorder {
         public void contributeBootProperties(BiConsumer<String, Object> propertyCollector) {
             addConfig(propertyCollector,
                     EngineSettings.BACKGROUND_FAILURE_HANDLER,
-                    buildTimeConfig.backgroundFailureHandler);
+                    HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(buildTimeConfig.backgroundFailureHandler,
+                            FailureHandler.class, persistenceUnitName, null, null));
 
             addConfig(propertyCollector,
                     HibernateOrmMapperSettings.COORDINATION_STRATEGY,
-                    buildTimeConfig.coordination.strategy);
+                    HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(buildTimeConfig.coordination.strategy,
+                            CoordinationStrategy.class, persistenceUnitName, null, null));
 
-            contributeBackendBuildTimeProperties(propertyCollector, null, buildTimeConfig.defaultBackend);
+            // We need this weird collecting of names from both @SearchExtension and the configuration properties
+            // because a backend/index could potentially be configured exclusively through configuration properties,
+            // or exclusively through @SearchExtension.
+            // (Well maybe not for backends, but... let's keep it simple.)
+            Map<String, ElasticsearchBackendBuildTimeConfig> backendConfigs = buildTimeConfig.getAllBackendConfigsAsMap();
+            Map<String, Set<String>> backendAndIndexNames = new LinkedHashMap<>();
+            mergeInto(backendAndIndexNames, backendAndIndexNamesForSearchExtensions);
+            for (Entry<String, ElasticsearchBackendBuildTimeConfig> entry : backendConfigs.entrySet()) {
+                mergeInto(backendAndIndexNames, entry.getKey(), entry.getValue().indexes.keySet());
+            }
 
-            for (Entry<String, ElasticsearchBackendBuildTimeConfig> backendEntry : buildTimeConfig.namedBackends.backends
-                    .entrySet()) {
-                contributeBackendBuildTimeProperties(propertyCollector, backendEntry.getKey(), backendEntry.getValue());
+            for (Entry<String, Set<String>> entry : backendAndIndexNames.entrySet()) {
+                String backendName = entry.getKey();
+                Set<String> indexNames = entry.getValue();
+                contributeBackendBuildTimeProperties(propertyCollector, backendName, indexNames,
+                        backendConfigs.get(backendName));
             }
 
             for (HibernateOrmIntegrationStaticInitListener listener : integrationStaticInitListeners) {
@@ -183,52 +216,69 @@ public class HibernateSearchElasticsearchRecorder {
         }
 
         private void contributeBackendBuildTimeProperties(BiConsumer<String, Object> propertyCollector, String backendName,
+                Set<String> indexNames,
                 ElasticsearchBackendBuildTimeConfig elasticsearchBackendConfig) {
             addBackendConfig(propertyCollector, backendName, BackendSettings.TYPE,
                     ElasticsearchBackendSettings.TYPE_NAME);
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION,
-                    elasticsearchBackendConfig.version);
+            if (elasticsearchBackendConfig != null) {
+                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION,
+                        elasticsearchBackendConfig.version);
+            }
+
+            // Settings that may default to a @SearchExtension-annotated-bean
             addBackendConfig(propertyCollector, backendName,
                     ElasticsearchBackendSettings.LAYOUT_STRATEGY,
-                    elasticsearchBackendConfig.layout.strategy);
+                    HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
+                            elasticsearchBackendConfig == null ? Optional.empty() : elasticsearchBackendConfig.layout.strategy,
+                            IndexLayoutStrategy.class, persistenceUnitName, backendName, null));
 
             // Index defaults at the backend level
             contributeBackendIndexBuildTimeProperties(propertyCollector, backendName, null,
-                    elasticsearchBackendConfig.indexDefaults);
+                    elasticsearchBackendConfig == null ? null : elasticsearchBackendConfig.indexDefaults);
 
             // Per-index properties
-            for (Entry<String, ElasticsearchIndexBuildTimeConfig> indexConfigEntry : elasticsearchBackendConfig.indexes
-                    .entrySet()) {
-                String indexName = indexConfigEntry.getKey();
-                ElasticsearchIndexBuildTimeConfig indexConfig = indexConfigEntry.getValue();
+            for (String indexName : indexNames) {
+                ElasticsearchIndexBuildTimeConfig indexConfig = elasticsearchBackendConfig == null ? null
+                        : elasticsearchBackendConfig.indexes.get(indexName);
                 contributeBackendIndexBuildTimeProperties(propertyCollector, backendName, indexName, indexConfig);
             }
         }
 
         private void contributeBackendIndexBuildTimeProperties(BiConsumer<String, Object> propertyCollector,
                 String backendName, String indexName, ElasticsearchIndexBuildTimeConfig indexConfig) {
-            addBackendIndexConfig(propertyCollector, backendName, indexName,
-                    ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_SETTINGS_FILE,
-                    indexConfig.schemaManagement.settingsFile);
-            addBackendIndexConfig(propertyCollector, backendName, indexName,
-                    ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MAPPING_FILE,
-                    indexConfig.schemaManagement.mappingFile);
+            if (indexConfig != null) {
+                addBackendIndexConfig(propertyCollector, backendName, indexName,
+                        ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_SETTINGS_FILE,
+                        indexConfig.schemaManagement.settingsFile);
+                addBackendIndexConfig(propertyCollector, backendName, indexName,
+                        ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MAPPING_FILE,
+                        indexConfig.schemaManagement.mappingFile);
+            }
+
+            // Settings that may default to a @SearchExtension-annotated-bean
             addBackendIndexConfig(propertyCollector, backendName, indexName,
                     ElasticsearchIndexSettings.ANALYSIS_CONFIGURER,
-                    indexConfig.analysis.configurer);
+                    HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
+                            indexConfig == null ? Optional.empty() : indexConfig.analysis.configurer,
+                            ElasticsearchAnalysisConfigurer.class, persistenceUnitName, backendName, indexName));
         }
     }
 
     private static final class HibernateSearchIntegrationRuntimeInitListener
             implements HibernateOrmIntegrationRuntimeInitListener {
 
+        private final String persistenceUnitName;
         private final HibernateSearchElasticsearchRuntimeConfigPersistenceUnit runtimeConfig;
+        private final Map<String, Set<String>> backendAndIndexNamesForSearchExtensions;
         private final List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners;
 
-        private HibernateSearchIntegrationRuntimeInitListener(
+        private HibernateSearchIntegrationRuntimeInitListener(String persistenceUnitName,
                 HibernateSearchElasticsearchRuntimeConfigPersistenceUnit runtimeConfig,
+                Map<String, Set<String>> backendAndIndexNamesForSearchExtensions,
                 List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners) {
+            this.persistenceUnitName = persistenceUnitName;
             this.runtimeConfig = runtimeConfig;
+            this.backendAndIndexNamesForSearchExtensions = backendAndIndexNamesForSearchExtensions;
             this.integrationRuntimeInitListeners = integrationRuntimeInitListeners;
         }
 
@@ -248,7 +298,9 @@ public class HibernateSearchElasticsearchRecorder {
                     runtimeConfig.schemaManagement.strategy);
             addConfig(propertyCollector,
                     HibernateOrmMapperSettings.AUTOMATIC_INDEXING_SYNCHRONIZATION_STRATEGY,
-                    runtimeConfig.automaticIndexing.synchronization.strategy);
+                    HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
+                            runtimeConfig.automaticIndexing.synchronization.strategy,
+                            AutomaticIndexingSynchronizationStrategy.class, persistenceUnitName, null, null));
             addConfig(propertyCollector,
                     HibernateOrmMapperSettings.AUTOMATIC_INDEXING_ENABLE_DIRTY_CHECK,
                     runtimeConfig.automaticIndexing.enableDirtyCheck);
@@ -262,12 +314,22 @@ public class HibernateSearchElasticsearchRecorder {
                     HibernateOrmMapperSettings.MULTI_TENANCY_TENANT_IDS,
                     runtimeConfig.multiTenancy.tenantIds);
 
-            contributeBackendRuntimeProperties(propertyCollector, null,
-                    runtimeConfig.defaultBackend);
+            // We need this weird collecting of names from both @SearchExtension and the configuration properties
+            // because a backend/index could potentially be configured exclusively through configuration properties,
+            // or exclusively through @SearchExtension.
+            // (Well maybe not for backends, but... let's keep it simple.)
+            Map<String, ElasticsearchBackendRuntimeConfig> backendConfigs = runtimeConfig.getAllBackendConfigsAsMap();
+            Map<String, Set<String>> backendAndIndexNames = new LinkedHashMap<>();
+            mergeInto(backendAndIndexNames, backendAndIndexNamesForSearchExtensions);
+            for (Entry<String, ElasticsearchBackendRuntimeConfig> entry : backendConfigs.entrySet()) {
+                mergeInto(backendAndIndexNames, entry.getKey(), entry.getValue().indexes.keySet());
+            }
 
-            for (Entry<String, ElasticsearchBackendRuntimeConfig> backendEntry : runtimeConfig.namedBackends.backends
-                    .entrySet()) {
-                contributeBackendRuntimeProperties(propertyCollector, backendEntry.getKey(), backendEntry.getValue());
+            for (Entry<String, Set<String>> entry : backendAndIndexNames.entrySet()) {
+                String backendName = entry.getKey();
+                Set<String> indexNames = entry.getValue();
+                contributeBackendRuntimeProperties(propertyCollector, backendName, indexNames,
+                        backendConfigs.get(backendName));
             }
 
             for (HibernateOrmIntegrationRuntimeInitListener integrationRuntimeInitListener : integrationRuntimeInitListeners) {
@@ -276,68 +338,77 @@ public class HibernateSearchElasticsearchRecorder {
         }
 
         private void contributeBackendRuntimeProperties(BiConsumer<String, Object> propertyCollector, String backendName,
-                ElasticsearchBackendRuntimeConfig elasticsearchBackendConfig) {
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.HOSTS,
-                    elasticsearchBackendConfig.hosts);
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.PROTOCOL,
-                    elasticsearchBackendConfig.protocol.getHibernateSearchString());
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.USERNAME,
-                    elasticsearchBackendConfig.username);
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.PASSWORD,
-                    elasticsearchBackendConfig.password);
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.CONNECTION_TIMEOUT,
-                    elasticsearchBackendConfig.connectionTimeout.toMillis());
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.READ_TIMEOUT,
-                    elasticsearchBackendConfig.readTimeout.toMillis());
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.REQUEST_TIMEOUT,
-                    elasticsearchBackendConfig.requestTimeout, Optional::isPresent, d -> d.get().toMillis());
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.MAX_CONNECTIONS,
-                    elasticsearchBackendConfig.maxConnections);
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.MAX_CONNECTIONS_PER_ROUTE,
-                    elasticsearchBackendConfig.maxConnectionsPerRoute);
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.THREAD_POOL_SIZE,
-                    elasticsearchBackendConfig.threadPool.size);
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION_CHECK_ENABLED,
-                    elasticsearchBackendConfig.versionCheck);
+                Set<String> indexNames, ElasticsearchBackendRuntimeConfig elasticsearchBackendConfig) {
+            if (elasticsearchBackendConfig != null) {
+                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.HOSTS,
+                        elasticsearchBackendConfig.hosts);
+                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.PROTOCOL,
+                        elasticsearchBackendConfig.protocol.getHibernateSearchString());
+                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.USERNAME,
+                        elasticsearchBackendConfig.username);
+                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.PASSWORD,
+                        elasticsearchBackendConfig.password);
+                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.CONNECTION_TIMEOUT,
+                        elasticsearchBackendConfig.connectionTimeout.toMillis());
+                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.READ_TIMEOUT,
+                        elasticsearchBackendConfig.readTimeout.toMillis());
+                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.REQUEST_TIMEOUT,
+                        elasticsearchBackendConfig.requestTimeout, Optional::isPresent, d -> d.get().toMillis());
+                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.MAX_CONNECTIONS,
+                        elasticsearchBackendConfig.maxConnections);
+                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.MAX_CONNECTIONS_PER_ROUTE,
+                        elasticsearchBackendConfig.maxConnectionsPerRoute);
+                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.THREAD_POOL_SIZE,
+                        elasticsearchBackendConfig.threadPool.size);
+                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION_CHECK_ENABLED,
+                        elasticsearchBackendConfig.versionCheck);
 
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_ENABLED,
-                    elasticsearchBackendConfig.discovery.enabled);
-            if (elasticsearchBackendConfig.discovery.enabled) {
-                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_REFRESH_INTERVAL,
-                        elasticsearchBackendConfig.discovery.refreshInterval.getSeconds());
+                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_ENABLED,
+                        elasticsearchBackendConfig.discovery.enabled);
+                if (elasticsearchBackendConfig.discovery.enabled) {
+                    addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_REFRESH_INTERVAL,
+                            elasticsearchBackendConfig.discovery.refreshInterval.getSeconds());
+                }
             }
+
+            // Settings that may default to a @SearchExtension-annotated-bean
+            // <Nothing at the moment>
 
             // Index defaults at the backend level
             contributeBackendIndexRuntimeProperties(propertyCollector, backendName, null,
-                    elasticsearchBackendConfig.indexDefaults);
+                    elasticsearchBackendConfig == null ? null : elasticsearchBackendConfig.indexDefaults);
 
             // Per-index properties
-            for (Entry<String, ElasticsearchIndexRuntimeConfig> indexConfigEntry : runtimeConfig.defaultBackend.indexes
-                    .entrySet()) {
-                String indexName = indexConfigEntry.getKey();
-                ElasticsearchIndexRuntimeConfig indexConfig = indexConfigEntry.getValue();
+            for (String indexName : indexNames) {
+                ElasticsearchIndexRuntimeConfig indexConfig = elasticsearchBackendConfig == null ? null
+                        : elasticsearchBackendConfig.indexes.get(indexName);
                 contributeBackendIndexRuntimeProperties(propertyCollector, backendName, indexName, indexConfig);
             }
         }
 
         private void contributeBackendIndexRuntimeProperties(BiConsumer<String, Object> propertyCollector,
                 String backendName, String indexName, ElasticsearchIndexRuntimeConfig indexConfig) {
-            addBackendIndexConfig(propertyCollector, backendName, indexName,
-                    ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS,
-                    indexConfig.schemaManagement.requiredStatus);
-            addBackendIndexConfig(propertyCollector, backendName, indexName,
-                    ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS_WAIT_TIMEOUT,
-                    indexConfig.schemaManagement.requiredStatusWaitTimeout, Optional::isPresent,
-                    d -> d.get().toMillis());
-            addBackendIndexConfig(propertyCollector, backendName, indexName,
-                    ElasticsearchIndexSettings.INDEXING_QUEUE_COUNT,
-                    indexConfig.indexing.queueCount);
-            addBackendIndexConfig(propertyCollector, backendName, indexName,
-                    ElasticsearchIndexSettings.INDEXING_QUEUE_SIZE,
-                    indexConfig.indexing.queueSize);
-            addBackendIndexConfig(propertyCollector, backendName, indexName,
-                    ElasticsearchIndexSettings.INDEXING_MAX_BULK_SIZE,
-                    indexConfig.indexing.maxBulkSize);
+            if (indexConfig != null) {
+                addBackendIndexConfig(propertyCollector, backendName, indexName,
+                        ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS,
+                        indexConfig.schemaManagement.requiredStatus);
+                addBackendIndexConfig(propertyCollector, backendName, indexName,
+                        ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS_WAIT_TIMEOUT,
+                        indexConfig.schemaManagement.requiredStatusWaitTimeout, Optional::isPresent,
+                        d -> d.get().toMillis());
+                addBackendIndexConfig(propertyCollector, backendName, indexName,
+                        ElasticsearchIndexSettings.INDEXING_QUEUE_COUNT,
+                        indexConfig.indexing.queueCount);
+                addBackendIndexConfig(propertyCollector, backendName, indexName,
+                        ElasticsearchIndexSettings.INDEXING_QUEUE_SIZE,
+                        indexConfig.indexing.queueSize);
+                addBackendIndexConfig(propertyCollector, backendName, indexName,
+                        ElasticsearchIndexSettings.INDEXING_MAX_BULK_SIZE,
+                        indexConfig.indexing.maxBulkSize);
+            }
+
+            // Settings that may default to a @SearchExtension-annotated-bean
+            // <Nothing at the moment>
         }
 
         @Override
@@ -349,5 +420,16 @@ public class HibernateSearchElasticsearchRecorder {
                     // because it's also responsible for determining that Hibernate Search is disabled.
                     new HibernateSearchPreIntegrationService.Initiator());
         }
+    }
+
+    private static void mergeInto(Map<String, Set<String>> target, Map<String, Set<String>> source) {
+        for (Entry<String, Set<String>> entry : source.entrySet()) {
+            mergeInto(target, entry.getKey(), entry.getValue());
+        }
+    }
+
+    private static void mergeInto(Map<String, Set<String>> target, String key, Set<String> values) {
+        target.computeIfAbsent(key, ignored -> new LinkedHashSet<>())
+                .addAll(values);
     }
 }

@@ -114,6 +114,11 @@ jobs:
       gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
       gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
     steps:
+      - name: Skip non-compilable modules for jakarta-rewrite branch
+        run: |
+          echo "COMMON_MAVEN_ARGS=${COMMON_MAVEN_ARGS} -pl '"'!'":quarkus-integration-test-infinispan-client' -pl '"'!'":quarkus-integration-test-kafka-avro'" >> $COMMON_MAVEN_ARGS
+        if: github.ref_name == 'jakarta-rewrite'
+
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -188,7 +193,7 @@ jobs:
             # we filter them here so that it cascades to all the builds
             if [ "${GITHUB_REF_NAME}" == "jakarta-rewrite" ]
             then
-              GIB_IMPACTED=$(cat gib-impacted.log | grep -Pv '^(tcks/|integration-tests/grpc-|integration-tests/infinispan-client|integration-tests/kafka-avro|integration-tests/opentelemetry-grpc)')
+              GIB_IMPACTED=$(cat gib-impacted.log | grep -Pv '^(integration-tests/infinispan-client|integration-tests/kafka-avro)')
             else
               GIB_IMPACTED=$(cat gib-impacted.log)
             fi

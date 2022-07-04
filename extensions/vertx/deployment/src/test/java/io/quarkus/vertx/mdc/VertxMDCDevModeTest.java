@@ -1,8 +1,8 @@
-package io.quarkus.it.vertx;
+package io.quarkus.vertx.mdc;
 
-import static io.restassured.RestAssured.get;
+import static io.quarkus.vertx.mdc.VerticleDeployer.REQUEST_ID_HEADER;
+import static io.quarkus.vertx.mdc.VerticleDeployer.VERTICLE_PORT;
 import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -14,51 +14,53 @@ import java.util.concurrent.TimeUnit;
 
 import org.awaitility.Awaitility;
 import org.awaitility.core.ThrowingRunnable;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.QuarkusDevModeTest;
 
-@QuarkusTest
-public class VerticleTest {
-
-    @Test
-    public void testBareVerticle() {
-        String s = get("/vertx-test/verticles/bare").asString();
-        assertThat(s).isEqualTo("OK-bare");
-    }
-
-    @Test
-    public void testBareWithClassNameVerticle() {
-        String s = get("/vertx-test/verticles/bare-classname").asString();
-        assertThat(s).isEqualTo("OK-bare-classname");
-    }
+public class VertxMDCDevModeTest {
+    @RegisterExtension
+    static final QuarkusDevModeTest TEST = new QuarkusDevModeTest()
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(JavaArchive.class, VerticleDeployer.class, InMemoryLogHandler.class,
+                            InMemoryLogHandlerProducer.class)
+                            .add(new StringAsset("quarkus.log.file.enable=true\n" +
+                                    "quarkus.log.console.format=%d{HH:mm:ss} %-5p requestId=%X{requestId} [%c{2.}] (%t) %s%e%n\n"),
+                                    "application.properties"))
+            .setLogFileName("quarkus-mdc.log");
 
     @Test
-    public void testMdcVerticle() {
+    void mdcDevMode() {
         Path logDirectory = Paths.get(".", "target");
         String value = UUID.randomUUID().toString();
-        given().queryParam("value", value)
-                .get("/vertx-test/verticles/mdc")
+        given().headers(REQUEST_ID_HEADER, value)
+                .get("http://localhost:" + VERTICLE_PORT + "/")
                 .then()
-                .body(is("OK-" + value));
+                .body(is(value));
         Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(2, TimeUnit.SECONDS)
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {
-                        final Path logFilePath = logDirectory.resolve("quarkus.log");
+                        final Path logFilePath = logDirectory.resolve("quarkus-mdc.log");
                         assertTrue(Files.exists(logFilePath),
                                 "quarkus log file " + logFilePath + " is missing");
                         String data = Files.readString(logFilePath);
-                        String receivedMessage = "Received message ### " + value;
+                        String receivedMessage = "Received HTTP request ### " + value;
                         String timerFired = "Timer fired ### " + value;
                         String blockingTask = "Blocking task executed ### " + value;
+                        String webClientResponse = "Received Web Client response ### " + value;
                         assertTrue(data.contains(receivedMessage),
                                 "log doesn't contain: " + receivedMessage);
                         assertTrue(data.contains(timerFired),
                                 "log doesn't contain: " + timerFired);
                         assertTrue(data.contains(blockingTask),
                                 "log doesn't contain: " + blockingTask);
+                        assertTrue(data.contains(webClientResponse),
+                                "log doesn't contain: " + webClientResponse);
                     }
                 });
     }

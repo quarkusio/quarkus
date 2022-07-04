@@ -15,6 +15,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>
+        <module>latebound-mdc-provider</module>
         <module>runtime</module>
     </modules>
 </project>

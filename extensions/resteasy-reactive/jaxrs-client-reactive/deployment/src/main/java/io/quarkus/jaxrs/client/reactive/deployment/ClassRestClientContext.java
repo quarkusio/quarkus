@@ -55,9 +55,9 @@ class ClassRestClientContext implements AutoCloseable {
     protected FieldDescriptor createJavaMethodField(ClassInfo interfaceClass, MethodInfo method, int methodIndex) {
         ResultHandle interfaceClassHandle = clinit.loadClassFromTCCL(interfaceClass.toString());
 
-        ResultHandle parameterArray = clinit.newArray(Class.class, method.parameters().size());
-        for (int i = 0; i < method.parameters().size(); i++) {
-            String parameterClass = method.parameters().get(i).name().toString();
+        ResultHandle parameterArray = clinit.newArray(Class.class, method.parametersCount());
+        for (int i = 0; i < method.parametersCount(); i++) {
+            String parameterClass = method.parameterType(i).name().toString();
             clinit.writeArrayValue(parameterArray, i, clinit.loadClassFromTCCL(parameterClass));
         }
 

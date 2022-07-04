@@ -80,11 +80,11 @@ public class PanacheMockMethodCustomizer implements PanacheMethodCustomizer {
         mv.visitLdcInsn(entityClassSignature);
         mv.visitLdcInsn(method.name());
 
-        mv.visitLdcInsn(method.parameters().size());
+        mv.visitLdcInsn(method.parametersCount());
         mv.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Class");
 
         int i = 0;
-        for (org.jboss.jandex.Type paramType : method.parameters()) {
+        for (org.jboss.jandex.Type paramType : method.parameterTypes()) {
             mv.visitInsn(Opcodes.DUP);
             mv.visitLdcInsn(i);
             AsmUtil.visitLdc(mv, paramType);
@@ -92,12 +92,12 @@ public class PanacheMockMethodCustomizer implements PanacheMethodCustomizer {
             i++;
         }
 
-        mv.visitLdcInsn(method.parameters().size());
+        mv.visitLdcInsn(method.parametersCount());
         mv.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Object");
 
         i = 0;
         int paramSlot = 0;
-        for (org.jboss.jandex.Type paramType : method.parameters()) {
+        for (org.jboss.jandex.Type paramType : method.parameterTypes()) {
             mv.visitInsn(Opcodes.DUP);
             mv.visitLdcInsn(i);
             mv.visitVarInsn(AsmUtil.getLoadOpcode(paramType), paramSlot);

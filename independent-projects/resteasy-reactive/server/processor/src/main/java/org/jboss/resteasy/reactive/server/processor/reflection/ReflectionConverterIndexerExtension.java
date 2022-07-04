@@ -32,8 +32,8 @@ public class ReflectionConverterIndexerExtension implements ServerEndpointIndexe
                 for (MethodInfo i : type.methods()) {
                     boolean isStatic = ((i.flags() & Modifier.STATIC) != 0);
                     boolean isNotPrivate = (i.flags() & Modifier.PRIVATE) == 0;
-                    if ((i.parameters().size() == 1) && isNotPrivate) {
-                        if (i.parameters().get(0).name().equals(STRING)) {
+                    if ((i.parametersCount() == 1) && isNotPrivate) {
+                        if (i.parameterType(0).name().equals(STRING)) {
                             if (i.name().equals("<init>")) {
                                 stringCtor = i;
                             } else if (i.name().equals("valueOf") && isStatic) {

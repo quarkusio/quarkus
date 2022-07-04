@@ -500,10 +500,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             methodContext.put(METHOD_CONTEXT_ANNOTATION_STORE, getAnnotationStore());
             Set<String> pathParameters = new HashSet<>(basicResourceClassInfo.getPathParameters());
             URLUtils.parsePathParameters(methodPath, pathParameters);
-            Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[currentMethodInfo.parameters().size()];
-            MethodParameter[] methodParameters = new MethodParameter[currentMethodInfo.parameters()
-                    .size()];
-            for (int paramPos = 0; paramPos < currentMethodInfo.parameters().size(); ++paramPos) {
+            Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[currentMethodInfo.parametersCount()];
+            MethodParameter[] methodParameters = new MethodParameter[currentMethodInfo.parametersCount()];
+            for (int paramPos = 0; paramPos < currentMethodInfo.parametersCount(); ++paramPos) {
                 parameterAnnotations[paramPos] = new HashMap<>();
             }
             for (AnnotationInstance i : getAnnotationStore().getAnnotations(currentMethodInfo)) {
@@ -522,7 +521,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             for (int i = 0; i < methodParameters.length; ++i) {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
                 boolean encoded = anns.containsKey(ENCODED);
-                Type paramType = currentMethodInfo.parameters().get(i);
+                Type paramType = currentMethodInfo.parameterType(i);
                 String errorLocation = "method " + currentMethodInfo + " on class " + currentMethodInfo.declaringClass();
 
                 PARAM parameterResult = extractParameterInfo(currentClassInfo, actualEndpointInfo, currentMethodInfo,
@@ -635,7 +634,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             // when the class defining the annotations is an interface
             if (!actualEndpointInfo.equals(currentClassInfo) && Modifier.isInterface(currentClassInfo.flags())) {
                 MethodInfo actualMethodInfo = actualEndpointInfo.method(currentMethodInfo.name(),
-                        currentMethodInfo.parameters().toArray(new Type[0]));
+                        currentMethodInfo.parameterTypes().toArray(new Type[0]));
                 if (actualMethodInfo != null) {
                     //we don't pass AUTOMATIC here, as the method signature would be the same, so the same determination
                     //would be reached for a default
@@ -1197,7 +1196,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     // so this is completely safe
                     var type = toClassName(paramType, currentClassInfo, actualEndpointInfo, index);
                     var typeInfo = index.getClassByName(DotName.createSimple(type));
-                    if (typeInfo != null && typeInfo.annotations().containsKey(REST_FORM_PARAM)) {
+                    if (typeInfo != null && typeInfo.annotationsMap().containsKey(REST_FORM_PARAM)) {
                         builder.setType(ParameterType.MULTI_PART_FORM);
                     } else {
                         //if the paramater does not have @RestForm annotations we treat it as a normal body

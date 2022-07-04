@@ -129,7 +129,7 @@ public class MicroprofileMetricsProcessor {
                 if (!MetricDotNames.isSingleInstance(clazz)) {
                     while (clazz != null && clazz.superName() != null) {
                         if (!MetricDotNames.knownClass(clazz)
-                                && MetricDotNames.containsMetricAnnotation(clazz.annotations())) {
+                                && MetricDotNames.containsMetricAnnotation(clazz.annotationsMap())) {
                             log.debugf(
                                     "Found metrics business methods on a class %s with no scope defined - adding @Dependent",
                                     ctx.getTarget());

@@ -92,8 +92,8 @@ public class MetricDotNames {
      */
     static boolean isSingleInstance(ClassInfo classInfo) {
         BuiltinScope beanScope = BuiltinScope.from(classInfo);
-        return classInfo.annotations().containsKey(REST_CONTROLLER) ||
-                classInfo.annotations().containsKey(JAXRS_PATH) ||
+        return classInfo.annotationsMap().containsKey(REST_CONTROLLER) ||
+                classInfo.annotationsMap().containsKey(JAXRS_PATH) ||
                 BuiltinScope.APPLICATION.equals(beanScope) ||
                 BuiltinScope.SINGLETON.equals(beanScope);
     }

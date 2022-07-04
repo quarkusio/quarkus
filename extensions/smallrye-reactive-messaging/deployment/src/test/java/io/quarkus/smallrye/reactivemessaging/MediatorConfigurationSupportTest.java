@@ -53,14 +53,14 @@ public class MediatorConfigurationSupportTest {
     private MediatorConfigurationSupport create(String method) {
         for (MethodInfo m : classInfo.methods()) {
             if (m.name().equalsIgnoreCase(method)) {
-                List<? extends Class<?>> list = m.parameters().stream().map(t -> load(t.name().toString()))
+                List<? extends Class<?>> list = m.parameterTypes().stream().map(t -> load(t.name().toString()))
                         .collect(Collectors.toList());
                 return new MediatorConfigurationSupport(
                         method,
                         load(m.returnType().name().toString()),
                         list.toArray(new Class[0]),
                         new QuarkusMediatorConfigurationUtil.ReturnTypeGenericTypeAssignable(m, classLoader),
-                        m.parameters().size() == 0
+                        m.parametersCount() == 0
                                 ? new QuarkusMediatorConfigurationUtil.AlwaysInvalidIndexGenericTypeAssignable()
                                 : new QuarkusMediatorConfigurationUtil.MethodParamGenericTypeAssignable(m, 0,
                                         classLoader));

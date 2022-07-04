@@ -190,9 +190,9 @@ public class ResteasyReactiveJacksonProcessor {
                 .values();
         Set<JacksonFeatureBuildItem.Feature> jacksonFeatures = new HashSet<>();
         for (ClassInfo resourceClass : resourceClasses) {
-            if (resourceClass.annotations().containsKey(JSON_VIEW)) {
+            if (resourceClass.annotationsMap().containsKey(JSON_VIEW)) {
                 jacksonFeatures.add(JacksonFeatureBuildItem.Feature.JSON_VIEW);
-                for (AnnotationInstance instance : resourceClass.annotations().get(JSON_VIEW)) {
+                for (AnnotationInstance instance : resourceClass.annotationsMap().get(JSON_VIEW)) {
                     AnnotationValue annotationValue = instance.value();
                     if (annotationValue == null) {
                         continue;
@@ -207,9 +207,9 @@ public class ResteasyReactiveJacksonProcessor {
                     recorder.recordJsonView(getMethodId(instance.target().asMethod()), jsonViews[0].name().toString());
                 }
             }
-            if (resourceClass.annotations().containsKey(CUSTOM_SERIALIZATION)) {
+            if (resourceClass.annotationsMap().containsKey(CUSTOM_SERIALIZATION)) {
                 jacksonFeatures.add(JacksonFeatureBuildItem.Feature.CUSTOM_SERIALIZATION);
-                for (AnnotationInstance instance : resourceClass.annotations().get(CUSTOM_SERIALIZATION)) {
+                for (AnnotationInstance instance : resourceClass.annotationsMap().get(CUSTOM_SERIALIZATION)) {
                     AnnotationValue annotationValue = instance.value();
                     if (annotationValue == null) {
                         continue;
@@ -316,7 +316,7 @@ public class ResteasyReactiveJacksonProcessor {
             ClassInfo currentClassInfo = effectiveReturnClassInfo;
             boolean hasSecureFields = false;
             while (true) {
-                if (currentClassInfo.annotations().containsKey(SECURE_FIELD)) {
+                if (currentClassInfo.annotationsMap().containsKey(SECURE_FIELD)) {
                     hasSecureFields = true;
                     break;
                 }
@@ -351,8 +351,8 @@ public class ResteasyReactiveJacksonProcessor {
     }
 
     private String getMethodId(MethodInfo methodInfo, ClassInfo declaringClassInfo) {
-        List<String> parameterClassNames = new ArrayList<>(methodInfo.parameters().size());
-        for (Type parameter : methodInfo.parameters()) {
+        List<String> parameterClassNames = new ArrayList<>(methodInfo.parametersCount());
+        for (Type parameter : methodInfo.parameterTypes()) {
             parameterClassNames.add(parameter.name().toString());
         }
         return MethodId.get(methodInfo.name(), declaringClassInfo.name().toString(),

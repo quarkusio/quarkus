@@ -108,7 +108,7 @@ class YamlListObjectHandler {
             getClazz.returnValue(getClazz.loadClassFromTCCL(wrapperClassName));
 
             // generate the getFieldNameMap method by searching for fields annotated with @ConfigProperty
-            List<AnnotationInstance> configPropertyInstances = classInfo.annotations().get(DotNames.CONFIG_PROPERTY);
+            List<AnnotationInstance> configPropertyInstances = classInfo.annotationsMap().get(DotNames.CONFIG_PROPERTY);
             Map<String, String> fieldNameMap = new HashMap<>();
             if (configPropertyInstances != null) {
                 for (AnnotationInstance instance : configPropertyInstances) {

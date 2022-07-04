@@ -258,7 +258,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
         @Override
         public boolean test(BeanInfo bean) {
             if (bean.isClassBean()) {
-                Map<DotName, List<AnnotationInstance>> annotations = bean.getTarget().get().asClass().annotations();
+                Map<DotName, List<AnnotationInstance>> annotations = bean.getTarget().get().asClass().annotationsMap();
                 if (name != null) {
                     return annotations.containsKey(name);
                 } else {

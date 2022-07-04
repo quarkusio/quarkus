@@ -273,9 +273,9 @@ final class CustomFilterGenerator {
             MethodCreator filterMethod, int filterMethodParamCount, ResultHandle rrReqCtxHandle,
             Set<DotName> unwrappableTypes) {
         // for each of the parameters of the user method, generate bytecode that pulls the argument outs of QuarkusRestRequestContext
-        ResultHandle[] targetMethodParamHandles = new ResultHandle[targetMethod.parameters().size()];
-        for (int i = 0; i < targetMethod.parameters().size(); i++) {
-            Type param = targetMethod.parameters().get(i);
+        ResultHandle[] targetMethodParamHandles = new ResultHandle[targetMethod.parametersCount()];
+        for (int i = 0; i < targetMethod.parametersCount(); i++) {
+            Type param = targetMethod.parameterType(i);
             DotName paramDotName = param.name();
             if (CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
                 targetMethodParamHandles[i] = filterMethod.newInstance(
@@ -472,9 +472,9 @@ final class CustomFilterGenerator {
     private static ResultHandle[] getResponseFilterResultHandles(MethodInfo targetMethod, DotName declaringClassName,
             MethodCreator filterMethod, int filterMethodParamCount, ResultHandle rrReqCtxHandle,
             Set<DotName> unwrappableTypes) {
-        ResultHandle[] targetMethodParamHandles = new ResultHandle[targetMethod.parameters().size()];
-        for (int i = 0; i < targetMethod.parameters().size(); i++) {
-            Type param = targetMethod.parameters().get(i);
+        ResultHandle[] targetMethodParamHandles = new ResultHandle[targetMethod.parametersCount()];
+        for (int i = 0; i < targetMethod.parametersCount(); i++) {
+            Type param = targetMethod.parameterType(i);
             DotName paramDotName = param.name();
             if (CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
                 targetMethodParamHandles[i] = filterMethod.newInstance(
@@ -640,7 +640,7 @@ final class CustomFilterGenerator {
     }
 
     private static DotName determineReturnDotNameOfSuspendMethod(MethodInfo methodInfo) {
-        Type lastParamType = methodInfo.parameters().get(methodInfo.parameters().size() - 1);
+        Type lastParamType = methodInfo.parameterType(methodInfo.parametersCount() - 1);
         if (lastParamType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
             throw new IllegalStateException("Something went wrong during parameter type resolution - expected "
                     + lastParamType + " to be a Continuation with a generic type");

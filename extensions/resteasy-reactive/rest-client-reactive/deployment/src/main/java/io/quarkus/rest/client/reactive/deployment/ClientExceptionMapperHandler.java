@@ -80,7 +80,7 @@ class ClientExceptionMapperHandler {
 
         StringBuilder sigBuilder = new StringBuilder();
         sigBuilder.append(targetMethod.name()).append("_").append(targetMethod.returnType().name().toString());
-        for (Type i : targetMethod.parameters()) {
+        for (Type i : targetMethod.parameterTypes()) {
             sigBuilder.append(i.name().toString());
         }
 
@@ -101,7 +101,7 @@ class ClientExceptionMapperHandler {
                             restClientInterfaceClassInfo.name().toString(),
                             targetMethod.name(),
                             targetMethod.returnType().name().toString(),
-                            targetMethod.parameters().get(0).name().toString()),
+                            targetMethod.parameterType(0).name().toString()),
                     toThrowable.getMethodParam(0));
             toThrowable.returnValue(resultHandle);
 

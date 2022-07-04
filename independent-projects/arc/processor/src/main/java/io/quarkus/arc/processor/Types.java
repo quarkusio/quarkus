@@ -342,7 +342,7 @@ public final class Types {
             MethodInfo method, IndexView index) {
         List<TypeVariable> typeParameters = classInfo.typeParameters();
         // E.g. Foo, T, List<String>
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
         if (typeParameters.isEmpty()) {
             return parameters;
         } else {

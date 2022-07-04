@@ -228,7 +228,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 return annotation.target().asField().type();
             case METHOD_PARAMETER:
                 MethodParameterInfo parameter = annotation.target().asMethodParameter();
-                return parameter.method().parameters().get(parameter.position());
+                return parameter.method().parameterType(parameter.position());
             default:
                 return null;
         }
@@ -272,7 +272,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     }
 
     private Type getIncomingTypeFromMethod(MethodInfo method) {
-        List<Type> parameterTypes = method.parameters();
+        List<Type> parameterTypes = method.parameterTypes();
         int parametersCount = parameterTypes.size();
         Type returnType = method.returnType();
 
@@ -325,7 +325,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     }
 
     private Type getOutgoingTypeFromMethod(MethodInfo method) {
-        List<Type> parameterTypes = method.parameters();
+        List<Type> parameterTypes = method.parameterTypes();
         int parametersCount = parameterTypes.size();
         Type returnType = method.returnType();
 

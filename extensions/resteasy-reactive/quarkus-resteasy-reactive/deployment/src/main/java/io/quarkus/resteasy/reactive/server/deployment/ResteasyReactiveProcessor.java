@@ -490,8 +490,8 @@ public class ResteasyReactiveProcessor {
                                     .source(source)
                                     .build());
 
-                            for (short i = 0; i < method.parameters().size(); i++) {
-                                Type parameterType = method.parameters().get(i);
+                            for (short i = 0; i < method.parametersCount(); i++) {
+                                Type parameterType = method.parameterType(i);
                                 if (!hasAnnotation(method, i, ResteasyReactiveServerDotNames.CONTEXT)) {
                                     reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
                                             .type(parameterType)

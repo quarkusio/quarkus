@@ -126,7 +126,7 @@ public class AsmUtil {
             }
         }
 
-        for (Type type : method.parameters()) {
+        for (Type type : method.parameterTypes()) {
             if (type.kind() == Kind.TYPE_VARIABLE
                     || type.kind() == Kind.UNRESOLVED_TYPE_VARIABLE
                     || type.kind() == Kind.PARAMETERIZED_TYPE) {
@@ -196,7 +196,7 @@ public class AsmUtil {
         }
 
         signature.append('(');
-        for (Type type : method.parameters()) {
+        for (Type type : method.parameterTypes()) {
             toSignature(signature, type, typeArgMapper, false);
         }
         signature.append(')');
@@ -259,7 +259,7 @@ public class AsmUtil {
      * @return a bytecode descriptor for that method.
      */
     public static String getDescriptor(MethodInfo method, Function<String, String> typeArgMapper) {
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
 
         StringBuilder descriptor = new StringBuilder("(");
         for (Type type : parameters) {
@@ -786,7 +786,7 @@ public class AsmUtil {
      * @param method the method to copy from
      */
     public static void copyParameterNames(MethodVisitor mv, MethodInfo method) {
-        int parameterSize = method.parameters().size();
+        int parameterSize = method.parametersCount();
         if (parameterSize > 0) {
             // perhaps we don't have parameter names
             if (method.parameterName(0) == null)

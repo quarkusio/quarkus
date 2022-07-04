@@ -298,7 +298,7 @@ public class SubclassGenerator extends AbstractGenerator {
             InterceptionInfo interception = bean.getInterceptedMethods().get(method);
             DecorationInfo decoration = bean.getDecoratedMethods().get(method);
             MethodDescriptor forwardDescriptor = forwardingMethods.get(methodDescriptor);
-            List<Type> parameters = method.parameters();
+            List<Type> parameters = method.parameterTypes();
 
             if (interception != null) {
                 // Each intercepted method has a corresponding InterceptedMethodMetadata field
@@ -510,7 +510,7 @@ public class SubclassGenerator extends AbstractGenerator {
             ResultHandle delegateTo;
 
             // Method params
-            List<Type> parameters = method.parameters();
+            List<Type> parameters = method.parameterTypes();
             ResultHandle[] params = new ResultHandle[parameters.size()];
             for (int i = 0; i < parameters.size(); ++i) {
                 params[i] = forward.getMethodParam(i);
@@ -648,7 +648,7 @@ public class SubclassGenerator extends AbstractGenerator {
                 methodDescriptor.getReturnType(),
                 methodDescriptor.getParameterTypes());
         MethodCreator forward = subclass.getMethodCreator(forwardDescriptor);
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
         ResultHandle[] params = new ResultHandle[parameters.size()];
         for (int i = 0; i < parameters.size(); ++i) {
             params[i] = forward.getMethodParam(i);
@@ -668,7 +668,7 @@ public class SubclassGenerator extends AbstractGenerator {
 
         // Params
         // Object[] params = new Object[] {p1}
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
         ResultHandle paramsHandle;
         if (parameters.isEmpty()) {
             paramsHandle = interceptedMethod.loadNull();

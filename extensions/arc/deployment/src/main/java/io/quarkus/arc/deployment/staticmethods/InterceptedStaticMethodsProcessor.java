@@ -237,7 +237,7 @@ public class InterceptedStaticMethodsProcessor {
     private void implementForward(ClassCreator initializer,
             InterceptedStaticMethodBuildItem interceptedStaticMethod) {
         MethodInfo method = interceptedStaticMethod.getMethod();
-        List<Type> params = method.parameters();
+        List<Type> params = method.parameterTypes();
         Object[] paramTypes = new String[params.size()];
         for (int i = 0; i < paramTypes.length; ++i) {
             paramTypes[i] = DescriptorUtils.typeToString(params.get(i));
@@ -295,9 +295,9 @@ public class InterceptedStaticMethodsProcessor {
         ResultHandle[] paramsHandles = new ResultHandle[3];
         paramsHandles[0] = init.loadClassFromTCCL(method.declaringClass().name().toString());
         paramsHandles[1] = init.load(method.name());
-        if (!method.parameters().isEmpty()) {
-            ResultHandle paramsArray = init.newArray(Class.class, init.load(method.parameters().size()));
-            for (ListIterator<Type> iterator = method.parameters().listIterator(); iterator.hasNext();) {
+        if (!method.parameterTypes().isEmpty()) {
+            ResultHandle paramsArray = init.newArray(Class.class, init.load(method.parametersCount()));
+            for (ListIterator<Type> iterator = method.parameterTypes().listIterator(); iterator.hasNext();) {
                 init.writeArrayValue(paramsArray, iterator.nextIndex(),
                         init.loadClassFromTCCL(iterator.next().name().toString()));
             }
@@ -379,7 +379,7 @@ public class InterceptedStaticMethodsProcessor {
         // Function<InvocationContext, Object> forward = ctx -> Foo.interceptMe_original((java.lang.String)ctx.getParameters()[0])
         FunctionCreator func = init.createFunction(Function.class);
         BytecodeCreator funcBytecode = func.getBytecode();
-        List<Type> paramTypes = method.parameters();
+        List<Type> paramTypes = method.parameterTypes();
         ResultHandle[] paramHandles;
         String[] params;
         if (paramTypes.isEmpty()) {
@@ -491,7 +491,7 @@ public class InterceptedStaticMethodsProcessor {
             // Invoke the initializer, i.e. Foo_InterceptorInitializer.hash("ping")
             MethodDescriptor descriptor = MethodDescriptor.of(interceptedStaticMethod.getMethod());
             int paramSlot = 0;
-            for (Type paramType : interceptedStaticMethod.getMethod().parameters()) {
+            for (Type paramType : interceptedStaticMethod.getMethod().parameterTypes()) {
                 superVisitor.visitIntInsn(AsmUtil.getLoadOpcode(paramType), paramSlot);
                 paramSlot += AsmUtil.getParameterSize(paramType);
             }

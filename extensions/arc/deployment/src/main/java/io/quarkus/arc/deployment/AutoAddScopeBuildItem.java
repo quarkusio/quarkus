@@ -174,7 +174,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
         public Builder containsAnnotations(DotName... annotationNames) {
             return and((clazz, annotations, index) -> {
                 for (DotName annotation : annotationNames) {
-                    if (clazz.annotations().containsKey(annotation)) {
+                    if (clazz.annotationsMap().containsKey(annotation)) {
                         return true;
                     }
                 }

@@ -23,7 +23,7 @@ public class ReflectionEndpointInvokerFactory implements EndpointInvokerFactory 
                 try {
                     Class<?> clazz = Class.forName(currentMethod.declaringClass().name().toString(), false,
                             Thread.currentThread().getContextClassLoader());
-                    Method meth = clazz.getDeclaredMethod(currentMethod.name(), toParamArray(currentMethod.parameters()));
+                    Method meth = clazz.getDeclaredMethod(currentMethod.name(), toParamArray(currentMethod.parameterTypes()));
                     return new EndpointInvoker() {
                         @Override
                         public Object invoke(Object instance, Object[] parameters) throws Exception {

@@ -60,7 +60,7 @@ public class InjectionPointInfo {
     static List<InjectionPointInfo> fromMethod(MethodInfo method, ClassInfo beanClass, BeanDeployment beanDeployment,
             Predicate<Set<AnnotationInstance>> skipPredicate, InjectionPointModifier transformer) {
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
-        for (ListIterator<Type> iterator = method.parameters().listIterator(); iterator.hasNext();) {
+        for (ListIterator<Type> iterator = method.parameterTypes().listIterator(); iterator.hasNext();) {
             Type paramType = iterator.next();
             int position = iterator.previousIndex();
             Set<AnnotationInstance> paramAnnotations = Annotations.getParameterAnnotations(beanDeployment, method, position);

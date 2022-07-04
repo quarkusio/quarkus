@@ -72,7 +72,7 @@ public class WrongAnnotationUsageProcessor {
                     || (NestingType.INNER == nestingType && !Modifier.isStatic(clazz.flags()))) {
                 // Annotations declared on the class, incl. the annotations added via transformers
                 Collection<AnnotationInstance> classAnnotations = transformedAnnotations.getAnnotations(clazz);
-                if (classAnnotations.isEmpty() && clazz.annotations().isEmpty()) {
+                if (classAnnotations.isEmpty() && clazz.annotationsMap().isEmpty()) {
                     continue;
                 }
                 if (scopeAnnotations.isScopeIn(classAnnotations)) {
@@ -80,12 +80,12 @@ public class WrongAnnotationUsageProcessor {
                             new IllegalStateException(String.format(
                                     "The %s class %s has a scope annotation but it must be ignored per the CDI rules",
                                     clazz.nestingType().toString(), clazz.name().toString()))));
-                } else if (clazz.annotations().containsKey(DotNames.OBSERVES)) {
+                } else if (clazz.annotationsMap().containsKey(DotNames.OBSERVES)) {
                     validationErrors.produce(new ValidationErrorBuildItem(
                             new IllegalStateException(String.format(
                                     "The %s class %s declares an observer method but it must be ignored per the CDI rules",
                                     clazz.nestingType().toString(), clazz.name().toString()))));
-                } else if (clazz.annotations().containsKey(DotNames.PRODUCES)) {
+                } else if (clazz.annotationsMap().containsKey(DotNames.PRODUCES)) {
                     validationErrors.produce(new ValidationErrorBuildItem(
                             new IllegalStateException(String.format(
                                     "The %s class %s declares a producer but it must be ignored per the CDI rules",

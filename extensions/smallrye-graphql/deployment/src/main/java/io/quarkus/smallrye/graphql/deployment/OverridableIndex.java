@@ -136,9 +136,9 @@ public class OverridableIndex implements IndexView {
         public int compare(MethodInfo t, MethodInfo t1) {
             if (classInfoComparator.compare(t.declaringClass(), t1.declaringClass()) == 0) { // Same class
                 if (t.name().toString().compareTo(t1.name().toString()) == 0) { // Same method name
-                    if (t.parameters().size() == t1.parameters().size()) { // Same number of parameters
-                        for (int i = 0; i < t.parameters().size(); i++) {
-                            int typeTheSame = typeComparator.compare(t.parameters().get(i), t1.parameters().get(i));
+                    if (t.parametersCount() == t1.parametersCount()) { // Same number of parameters
+                        for (int i = 0; i < t.parametersCount(); i++) {
+                            int typeTheSame = typeComparator.compare(t.parameterType(i), t1.parameterType(i));
                             if (typeTheSame != 0) {
                                 return typeTheSame;
                             }

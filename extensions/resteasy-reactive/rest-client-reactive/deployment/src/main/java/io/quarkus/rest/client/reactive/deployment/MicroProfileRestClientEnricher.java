@@ -339,9 +339,9 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                 }
                 headerFillingMethod = findMethod(clazz, declaringClass, staticMethodName);
 
-                if (headerFillingMethod.parameters().size() == 0) {
+                if (headerFillingMethod.parametersCount() == 0) {
                     headerValue = fillHeader.invokeStaticMethod(headerFillingMethod);
-                } else if (headerFillingMethod.parameters().size() == 1 && isString(headerFillingMethod.parameters().get(0))) {
+                } else if (headerFillingMethod.parametersCount() == 1 && isString(headerFillingMethod.parameterType(0))) {
                     headerValue = fillHeader.invokeStaticMethod(headerFillingMethod, fillHeader.load(headerName));
                 } else {
                     throw new RestClientDefinitionException(
@@ -360,9 +360,9 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                             "ClientHeaderParam method " + methodName + " not found on " + declaringClass);
                 }
 
-                if (headerFillingMethod.parameters().size() == 0) {
+                if (headerFillingMethod.parametersCount() == 0) {
                     headerValue = fillHeader.invokeInterfaceMethod(headerFillingMethod, interfaceMock);
-                } else if (headerFillingMethod.parameters().size() == 1 && isString(headerFillingMethod.parameters().get(0))) {
+                } else if (headerFillingMethod.parametersCount() == 1 && isString(headerFillingMethod.parameterType(0))) {
                     headerValue = fillHeader.invokeInterfaceMethod(headerFillingMethod, interfaceMock,
                             fillHeader.load(headerName));
                 } else {

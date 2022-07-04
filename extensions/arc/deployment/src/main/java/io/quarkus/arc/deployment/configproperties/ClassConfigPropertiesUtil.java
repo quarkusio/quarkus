@@ -314,10 +314,10 @@ final class ClassConfigPropertiesUtil {
                             if (!method.name().equals("valueOf")) {
                                 continue;
                             }
-                            if (method.parameters().size() != 1) {
+                            if (method.parametersCount() != 1) {
                                 continue;
                             }
-                            if (method.parameters().get(0).name().equals(DotNames.STRING)) {
+                            if (method.parameterType(0).name().equals(DotNames.STRING)) {
                                 reflectiveMethods.produce(new ReflectiveMethodBuildItem(method));
                                 break;
                             }

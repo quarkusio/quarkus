@@ -79,7 +79,7 @@ public class DisposerInfo implements InjectionTargetInfo {
     }
 
     Type getDisposedParameterType() {
-        return disposerMethod.parameters().get(disposedParameter.position());
+        return disposerMethod.parameterType(disposedParameter.position());
     }
 
     MethodParameterInfo initDisposedParam(MethodInfo disposerMethod) {

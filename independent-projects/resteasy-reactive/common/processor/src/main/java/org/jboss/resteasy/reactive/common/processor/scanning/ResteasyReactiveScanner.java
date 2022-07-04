@@ -208,10 +208,10 @@ public class ResteasyReactiveScanner {
     }
 
     private static boolean appClassHasInject(ClassInfo appClass) {
-        if (appClass.annotations() == null) {
+        if (appClass.annotationsMap() == null) {
             return false;
         }
-        List<AnnotationInstance> injectInstances = appClass.annotations().get(ResteasyReactiveDotNames.CDI_INJECT);
+        List<AnnotationInstance> injectInstances = appClass.annotationsMap().get(ResteasyReactiveDotNames.CDI_INJECT);
         return (injectInstances != null) && !injectInstances.isEmpty();
     }
 
@@ -242,7 +242,7 @@ public class ResteasyReactiveScanner {
                 if (ctor != null) {
                     resourcesThatNeedCustomProducer.put(clazz.name(), ctor);
                 }
-                List<AnnotationInstance> exceptionMapperAnnotationInstances = clazz.annotations()
+                List<AnnotationInstance> exceptionMapperAnnotationInstances = clazz.annotationsMap()
                         .get(ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER);
                 if (exceptionMapperAnnotationInstances != null) {
                     for (AnnotationInstance instance : exceptionMapperAnnotationInstances) {
@@ -374,7 +374,7 @@ public class ResteasyReactiveScanner {
                         MethodInfo setterMethod = target.asMethod();
                         if (beanParamAsBeanUsers.contains(setterMethod.declaringClass())
                                 || beanParams.contains(setterMethod.declaringClass().name().toString())) {
-                            Type setterParamType = setterMethod.parameters().get(0);
+                            Type setterParamType = setterMethod.parameterType(0);
 
                             newBeanParamsRegistered |= beanParams.add(setterParamType.name().toString());
                             iterator.remove();
@@ -385,7 +385,7 @@ public class ResteasyReactiveScanner {
                         if (beanParamAsBeanUsers.contains(method.declaringClass())
                                 || beanParams.contains(method.declaringClass().name().toString())) {
                             int paramIndex = target.asMethodParameter().position();
-                            Type paramType = method.parameters().get(paramIndex);
+                            Type paramType = method.parameterType(paramIndex);
                             newBeanParamsRegistered |= beanParams.add(paramType.name().toString());
                             iterator.remove();
                         }
@@ -427,7 +427,7 @@ public class ResteasyReactiveScanner {
             return null;
         }
         MethodInfo ctor = ctors.get(0);
-        if (ctor.parameters().size() == 0) { // default ctor - we don't need to do anything
+        if (ctor.parametersCount() == 0) { // default ctor - we don't need to do anything
             return null;
         }
 

@@ -64,7 +64,7 @@ public class AsmUtilCopy {
      * @return a bytecode signature for that method.
      */
     public static String getSignature(MethodInfo method, Function<TypeVariable, Type> typeArgMapper) {
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
 
         StringBuilder signature = new StringBuilder("");
         toSignature(signature, method.typeParameters(), typeArgMapper, false);
@@ -219,7 +219,7 @@ public class AsmUtilCopy {
                 || needsSignature(method.returnType())) {
             return true;
         }
-        for (Type type : method.parameters()) {
+        for (Type type : method.parameterTypes()) {
             if (needsSignature(type))
                 return true;
         }

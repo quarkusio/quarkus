@@ -236,7 +236,7 @@ public class ArcProcessor {
                 if (defaultScope != null) {
                     transformationContext.transform().add(defaultScope).done();
                 } else {
-                    if (!beanClass.annotations().containsKey(ADDITIONAL_BEAN)) {
+                    if (!beanClass.annotationsMap().containsKey(ADDITIONAL_BEAN)) {
                         // Add special stereotype is added so that @Dependent is automatically used even if no scope is declared
                         // Otherwise the bean class would be ignored during bean discovery
                         transformationContext.transform().add(ADDITIONAL_BEAN).done();
@@ -745,7 +745,7 @@ public class ArcProcessor {
                                 }
                             }
                             // Identifier is a hash of "type + method param annotations"
-                            String id = HashUtil.sha1(method.parameters().get(position) + paramAnnotations.toString());
+                            String id = HashUtil.sha1(method.parameterType(position) + paramAnnotations.toString());
                             toAdd.add(
                                     AnnotationInstance.create(DotNames.IDENTIFIED,
                                             MethodParameterInfo.create(method,

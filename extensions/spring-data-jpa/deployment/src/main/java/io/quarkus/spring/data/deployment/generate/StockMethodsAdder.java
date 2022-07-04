@@ -1006,7 +1006,7 @@ public class StockMethodsAdder {
             return false;
         }
 
-        if (candidate.parameters().size() != target.parameters().size()) {
+        if (candidate.parametersCount() != target.parametersCount()) {
             return false;
         }
 
@@ -1014,8 +1014,8 @@ public class StockMethodsAdder {
             return false;
         }
 
-        for (int i = 0; i < candidate.parameters().size(); i++) {
-            if (!canTypesBeConsideredSame(candidate.parameters().get(i), target.parameters().get(i))) {
+        for (int i = 0; i < candidate.parametersCount(); i++) {
+            if (!canTypesBeConsideredSame(candidate.parameterType(i), target.parameterType(i))) {
                 return false;
             }
         }
@@ -1046,7 +1046,7 @@ public class StockMethodsAdder {
         }
 
         List<AnnotationInstance> annotationInstances = Stream.of(DotNames.JPA_ID, DotNames.JPA_EMBEDDED_ID)
-                .map(classInfo.annotations()::get)
+                .map(classInfo.annotationsMap()::get)
                 .filter(Objects::nonNull)
                 .flatMap(List::stream)
                 .collect(Collectors.toList());
@@ -1079,14 +1079,14 @@ public class StockMethodsAdder {
             throw new IllegalStateException("Entity " + originalEntityDotName + " was not part of the Quarkus index");
         }
 
-        if (!classInfo.annotations().containsKey(DotNames.VERSION)) {
+        if (!classInfo.annotationsMap().containsKey(DotNames.VERSION)) {
             if (DotNames.OBJECT.equals(classInfo.superName())) {
                 return Optional.empty();
             }
             return getVersionAnnotationTargetRec(classInfo.superName(), index, originalEntityDotName);
         }
 
-        List<AnnotationInstance> annotationInstances = classInfo.annotations().get(DotNames.VERSION);
+        List<AnnotationInstance> annotationInstances = classInfo.annotationsMap().get(DotNames.VERSION);
         if (annotationInstances.size() > 1) {
             throw new IllegalArgumentException(
                     "Currently the @Version annotation can only be placed on a single field or method. " +

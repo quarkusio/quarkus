@@ -493,7 +493,7 @@ class RestClientReactiveProcessor {
 
                         ResultHandle result;
 
-                        int parameterCount = method.parameters().size();
+                        int parameterCount = method.parameterTypes().size();
                         ResultHandle[] params = new ResultHandle[parameterCount];
                         for (int i = 0; i < parameterCount; i++) {
                             params[i] = methodCreator.getMethodParam(i);
@@ -590,7 +590,7 @@ class RestClientReactiveProcessor {
                 scopeToUse = globalDefaultScope.getInfo();
             }
         } else {
-            final Set<DotName> annotations = restClientInterface.annotations().keySet();
+            final Set<DotName> annotations = restClientInterface.annotationsMap().keySet();
             for (final DotName annotationName : annotations) {
                 final BuiltinScope builtinScope = BuiltinScope.from(annotationName);
                 if (builtinScope != null) {

@@ -440,7 +440,7 @@ public class ResteasyServerCommonProcessor {
                 }
                 if (clazz.classAnnotation(ResteasyDotNames.PROVIDER) != null) {
                     Transformation transformation = null;
-                    if (clazz.annotations().containsKey(DotNames.INJECT)
+                    if (clazz.annotationsMap().containsKey(DotNames.INJECT)
                             || hasAutoInjectAnnotation(autoInjectAnnotationNames, clazz)) {
                         // A provider with an injection point but no built-in scope is @Singleton
                         transformation = context.transform().add(BuiltinScope.SINGLETON.getName());
@@ -540,7 +540,7 @@ public class ResteasyServerCommonProcessor {
 
     private boolean hasAutoInjectAnnotation(Set<DotName> autoInjectAnnotationNames, ClassInfo clazz) {
         for (DotName name : autoInjectAnnotationNames) {
-            List<AnnotationInstance> instances = clazz.annotations().get(name);
+            List<AnnotationInstance> instances = clazz.annotationsMap().get(name);
             if (instances != null) {
                 for (AnnotationInstance instance : instances) {
                     if (instance.target().kind() == Kind.FIELD) {
@@ -637,7 +637,7 @@ public class ResteasyServerCommonProcessor {
             ClassInfo classInfo = index.getClassByName(DotName.createSimple(providerToRegister));
             boolean includeFields = false;
             if (classInfo != null) {
-                includeFields = classInfo.annotations().containsKey(ResteasyDotNames.CONTEXT);
+                includeFields = classInfo.annotationsMap().containsKey(ResteasyDotNames.CONTEXT);
             }
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, includeFields, providerToRegister));
         }
@@ -766,14 +766,14 @@ public class ResteasyServerCommonProcessor {
             Type annotatedType = null;
             if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
                 MethodInfo method = annotation.target().asMethod();
-                if (method.parameters().size() == 1) {
-                    annotatedType = method.parameters().get(0);
+                if (method.parametersCount() == 1) {
+                    annotatedType = method.parameterType(0);
                 }
             } else if (annotation.target().kind() == AnnotationTarget.Kind.FIELD) {
                 annotatedType = annotation.target().asField().type();
             } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
                 int pos = annotation.target().asMethodParameter().position();
-                annotatedType = annotation.target().asMethodParameter().method().parameters().get(pos);
+                annotatedType = annotation.target().asMethodParameter().method().parameterType(pos);
             }
             if (annotatedType != null && annotatedType.kind() != Type.Kind.PRIMITIVE) {
                 ClassInfo type = index.getClassByName(annotatedType.name());
@@ -858,8 +858,8 @@ public class ResteasyServerCommonProcessor {
                     .source(source)
                     .build());
 
-            for (short i = 0; i < method.parameters().size(); i++) {
-                Type parameterType = method.parameters().get(i);
+            for (short i = 0; i < method.parametersCount(); i++) {
+                Type parameterType = method.parameterType(i);
                 if (!hasAnnotation(method, i, ResteasyDotNames.CONTEXT)) {
                     reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
                             .type(parameterType)
@@ -998,7 +998,7 @@ public class ResteasyServerCommonProcessor {
                 throw new RuntimeException("More than one Application class: " + applications);
             }
             selectedAppClass = applicationClassInfo;
-            if (selectedAppClass.annotations().containsKey(ResteasyDotNames.CDI_INJECT)) {
+            if (selectedAppClass.annotationsMap().containsKey(ResteasyDotNames.CDI_INJECT)) {
                 throw new RuntimeException(
                         "Usage of '@Inject' is not allowed in 'javax.ws.rs.core.Application' classes. Offending class is '"
                                 + selectedAppClass.name() + "'");

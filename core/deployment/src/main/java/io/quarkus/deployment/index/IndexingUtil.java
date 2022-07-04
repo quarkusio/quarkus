@@ -147,7 +147,7 @@ public class IndexingUtil {
             // The class could be indexed by quarkus - we still need to distinguish framework classes
             additionalIndex.add(classDotName);
         }
-        for (DotName annotationName : classInfo.annotations().keySet()) {
+        for (DotName annotationName : classInfo.annotationsMap().keySet()) {
             if (!additionalIndex.contains(annotationName) && quarkusIndex.getClassByName(annotationName) == null) {
                 try (InputStream annotationStream = IoUtil.readClass(classLoader, annotationName.toString())) {
                     if (annotationStream == null) {
@@ -187,7 +187,7 @@ public class IndexingUtil {
             // The class could be indexed by quarkus - we still need to distinguish framework classes
             additionalIndex.add(classDotName);
         }
-        for (DotName annotationName : classInfo.annotations().keySet()) {
+        for (DotName annotationName : classInfo.annotationsMap().keySet()) {
             if (!additionalIndex.contains(annotationName) && quarkusIndex.getClassByName(annotationName) == null) {
                 try (InputStream annotationStream = IoUtil.readClass(classLoader, annotationName.toString())) {
                     log.debugf("Index annotation: %s", annotationName);

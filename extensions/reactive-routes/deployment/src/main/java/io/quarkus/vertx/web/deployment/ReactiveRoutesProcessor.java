@@ -519,7 +519,7 @@ class ReactiveRoutesProcessor {
             throw new IllegalStateException(
                     String.format("Route filter method must return void [method: %s, bean: %s]", method, bean));
         }
-        List<Type> params = method.parameters();
+        List<Type> params = method.parameterTypes();
         if (params.size() != 1 || !params.get(0).name()
                 .equals(DotNames.ROUTING_CONTEXT)) {
             throw new IllegalStateException(String.format(
@@ -530,7 +530,7 @@ class ReactiveRoutesProcessor {
 
     private void validateRouteMethod(BeanInfo bean, MethodInfo method,
             TransformedAnnotationsBuildItem transformedAnnotations, IndexView index, AnnotationInstance routeAnnotation) {
-        List<Type> params = method.parameters();
+        List<Type> params = method.parameterTypes();
         if (params.isEmpty()) {
             if (method.returnType().kind() == Kind.VOID && params.isEmpty()) {
                 throw new IllegalStateException(String.format(
@@ -624,7 +624,7 @@ class ReactiveRoutesProcessor {
 
         StringBuilder sigBuilder = new StringBuilder();
         sigBuilder.append(method.name()).append("_").append(method.returnType().name().toString());
-        for (Type i : method.parameters()) {
+        for (Type i : method.parameterTypes()) {
             sigBuilder.append(i.name().toString());
         }
         String generatedName = targetPackage + baseName + HANDLER_SUFFIX + "_" + method.name() + "_"
@@ -742,7 +742,7 @@ class ReactiveRoutesProcessor {
                                     beanHandle)));
         }
 
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
         ResultHandle[] paramHandles = new ResultHandle[parameters.size()];
         String returnType = descriptor.getReturnType().name().toString();
         String[] parameterTypes = new String[parameters.size()];

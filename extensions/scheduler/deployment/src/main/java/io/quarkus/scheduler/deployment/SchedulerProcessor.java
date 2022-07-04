@@ -209,7 +209,7 @@ public class SchedulerProcessor {
             boolean isSuspendMethod = KotlinUtil.isSuspendMethod(method);
 
             // Validate method params and return type
-            List<Type> params = method.parameters();
+            List<Type> params = method.parameterTypes();
             int maxParamSize = isSuspendMethod ? 2 : 1;
             if (params.size() > maxParamSize
                     || (params.size() == maxParamSize && !params.get(0).equals(SCHEDULED_EXECUTION_TYPE))) {
@@ -388,7 +388,7 @@ public class SchedulerProcessor {
         }
         StringBuilder sigBuilder = new StringBuilder();
         sigBuilder.append(method.name()).append("_").append(method.returnType().name().toString());
-        for (Type i : method.parameters()) {
+        for (Type i : method.parameterTypes()) {
             sigBuilder.append(i.name().toString());
         }
         String generatedName = DotNames.internalPackageNameWithTrailingSlash(implClazz.name()) + baseName
@@ -427,7 +427,7 @@ public class SchedulerProcessor {
         String returnTypeStr = DescriptorUtils.typeToString(method.returnType());
         ResultHandle res;
         if (isStatic) {
-            if (method.parameters().isEmpty()) {
+            if (method.parameterTypes().isEmpty()) {
                 res = tryBlock.invokeStaticMethod(
                         MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr));
             } else {
@@ -453,7 +453,7 @@ public class SchedulerProcessor {
                             instanceHandle);
 
             if (isSuspendMethod) {
-                if (method.parameters().size() == 1) {
+                if (method.parametersCount() == 1) {
                     res = tryBlock.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), Object.class.getName(),
                                     SchedulerDotNames.CONTINUATION.toString()),
@@ -465,7 +465,7 @@ public class SchedulerProcessor {
                             beanInstanceHandle, tryBlock.getMethodParam(0), tryBlock.getMethodParam(1));
                 }
             } else {
-                if (method.parameters().isEmpty()) {
+                if (method.parameterTypes().isEmpty()) {
                     res = tryBlock.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr),
                             beanInstanceHandle);

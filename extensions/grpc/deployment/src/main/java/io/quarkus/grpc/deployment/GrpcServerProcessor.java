@@ -382,7 +382,7 @@ public class GrpcServerProcessor {
             }
 
             // Find the annotations for the current method.
-            if (methodIsBlocking(classes, methodName, implBaseMethod.parameters().toArray(new Type[0]))) {
+            if (methodIsBlocking(classes, methodName, implBaseMethod.parameterTypes().toArray(new Type[0]))) {
                 result.add(methodName);
             }
         }

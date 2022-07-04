@@ -41,7 +41,7 @@
         <maven.compiler.release>11</maven.compiler.release>
         <!-- Versions -->
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
-        <jandex.version>2.4.2.Final</jandex.version>
+        <jandex.version>2.4.3.Final</jandex.version>
         <junit5.version>5.8.2</junit5.version>
         <maven.version>3.8.6</maven.version>
         <assertj.version>3.23.1</assertj.version>

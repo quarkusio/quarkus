@@ -114,7 +114,7 @@ public class BeanParamParser {
 
     private static MethodInfo getGetterMethod(ClassInfo beanParamClass, MethodInfo methodInfo) {
         MethodInfo getter = null;
-        if (methodInfo.parameters().size() > 0) { // should be setter
+        if (methodInfo.parametersCount() > 0) { // should be setter
             // find the corresponding getter:
             String setterName = methodInfo.name();
             if (setterName.startsWith("set")) {
@@ -146,7 +146,7 @@ public class BeanParamParser {
         private ParamTypeAnnotations(ClassInfo beanParamClass, DotName parameterType) {
             this.beanParamClass = beanParamClass;
 
-            List<AnnotationInstance> relevantAnnotations = beanParamClass.annotations().get(parameterType);
+            List<AnnotationInstance> relevantAnnotations = beanParamClass.annotationsMap().get(parameterType);
             this.annotations = relevantAnnotations == null
                     ? Collections.emptyList()
                     : relevantAnnotations.stream().filter(this::isFieldOrMethodAnnotation).collect(Collectors.toList());

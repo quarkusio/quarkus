@@ -214,7 +214,7 @@ public class SmallRyeMetricsProcessor {
                 ClassInfo clazz = ctx.getTarget().asClass();
                 if (!isJaxRsEndpoint(clazz) && !isJaxRsProvider(clazz)) {
                     while (clazz != null && clazz.superName() != null) {
-                        Map<DotName, List<AnnotationInstance>> annotations = clazz.annotations();
+                        Map<DotName, List<AnnotationInstance>> annotations = clazz.annotationsMap();
                         if (annotations.containsKey(GAUGE)
                                 || annotations.containsKey(SmallRyeMetricsDotNames.CONCURRENT_GAUGE)
                                 || annotations.containsKey(SmallRyeMetricsDotNames.COUNTED)
@@ -254,7 +254,7 @@ public class SmallRyeMetricsProcessor {
                                 io.smallrye.metrics.interceptors.GaugeRegistrationInterceptor.class.getPackage().getName())) {
                     return;
                 }
-                if (clazz.annotations().containsKey(GAUGE)) {
+                if (clazz.annotationsMap().containsKey(GAUGE)) {
                     BuiltinScope beanScope = BuiltinScope.from(clazz);
                     if (!isJaxRsEndpoint(clazz) && beanScope != null &&
                             !beanScope.equals(BuiltinScope.APPLICATION) &&
@@ -615,12 +615,12 @@ public class SmallRyeMetricsProcessor {
     }
 
     private boolean isJaxRsEndpoint(ClassInfo clazz) {
-        return clazz.annotations().containsKey(SmallRyeMetricsDotNames.JAXRS_PATH) ||
-                clazz.annotations().containsKey(SmallRyeMetricsDotNames.REST_CONTROLLER);
+        return clazz.annotationsMap().containsKey(SmallRyeMetricsDotNames.JAXRS_PATH) ||
+                clazz.annotationsMap().containsKey(SmallRyeMetricsDotNames.REST_CONTROLLER);
     }
 
     private boolean isJaxRsProvider(ClassInfo clazz) {
-        return clazz.annotations().containsKey(SmallRyeMetricsDotNames.JAXRS_PROVIDER);
+        return clazz.annotationsMap().containsKey(SmallRyeMetricsDotNames.JAXRS_PROVIDER);
     }
 
 }

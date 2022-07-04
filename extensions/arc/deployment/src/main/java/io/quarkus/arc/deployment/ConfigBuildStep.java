@@ -390,7 +390,7 @@ public class ConfigBuildStep {
                 if (target.kind().equals(FIELD)) {
                     mapping = target.asField().annotation(CONFIG_MAPPING_NAME);
                 } else if (target.kind().equals(METHOD)) {
-                    List<Type> parameters = target.asMethod().parameters();
+                    List<Type> parameters = target.asMethod().parameterTypes();
                     for (int i = 0; i < parameters.size(); i++) {
                         Type parameter = parameters.get(i);
                         if (parameter.name().equals(type.name())) {

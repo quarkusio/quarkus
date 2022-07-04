@@ -140,11 +140,11 @@ public class EventBusCodecProcessor {
     }
 
     private static Type extractPayloadTypeFromParameter(MethodInfo method) {
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
         if (parameters.isEmpty()) {
             return null;
         }
-        Type param = method.parameters().get(0);
+        Type param = method.parameterType(0);
         if (param.kind() == Type.Kind.CLASS) {
             return param;
         } else if (param.kind() == Type.Kind.PARAMETERIZED_TYPE) {

@@ -371,7 +371,7 @@ public class ResteasyCommonProcessor {
     }
 
     private void checkProperConfigAccessInProvider(AnnotationInstance instance) {
-        List<AnnotationInstance> configPropertyInstances = instance.target().asClass().annotations()
+        List<AnnotationInstance> configPropertyInstances = instance.target().asClass().annotationsMap()
                 .get(ResteasyDotNames.CONFIG_PROPERTY);
         if (configPropertyInstances == null) {
             return;

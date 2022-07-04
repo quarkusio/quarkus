@@ -103,7 +103,7 @@ public class ExtensionMethodGenerator {
     public void generate(MethodInfo method, String matchName, List<String> matchNames, String matchRegex, Integer priority) {
 
         AnnotationInstance extensionAnnotation = method.annotation(TEMPLATE_EXTENSION);
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
 
         // Validate the method first
         // NOTE: this method is never used for namespace extension methods
@@ -706,7 +706,7 @@ public class ExtensionMethodGenerator {
         final List<Param> params;
 
         public Parameters(MethodInfo method, boolean isNameParameterRequired, boolean hasNamespace) {
-            List<Type> parameters = method.parameters();
+            List<Type> parameters = method.parameterTypes();
             Map<Integer, String> attributeParamNames = new HashMap<>();
             for (AnnotationInstance annotation : method.annotations()) {
                 if (annotation.target().kind() == org.jboss.jandex.AnnotationTarget.Kind.METHOD_PARAMETER

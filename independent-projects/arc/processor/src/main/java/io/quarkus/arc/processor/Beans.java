@@ -761,7 +761,7 @@ public final class Beans {
     private static void collectCallbacks(ClassInfo clazz, List<MethodInfo> callbacks, DotName annotation, IndexView index,
             Set<String> knownMethods) {
         for (MethodInfo method : clazz.methods()) {
-            if (method.returnType().kind() == Kind.VOID && method.parameters().isEmpty()) {
+            if (method.returnType().kind() == Kind.VOID && method.parameterTypes().isEmpty()) {
                 if (method.hasAnnotation(annotation) && !knownMethods.contains(method.name())) {
                     callbacks.add(method);
                 }

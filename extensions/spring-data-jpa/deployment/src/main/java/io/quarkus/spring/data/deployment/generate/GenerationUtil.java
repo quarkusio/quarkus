@@ -67,7 +67,7 @@ public final class GenerationUtil {
     // because that used the class of the method
     static MethodDescriptor toMethodDescriptor(String generatedClassName, MethodInfo methodInfo) {
         final List<String> parameterTypesStr = new ArrayList<>();
-        for (Type parameter : methodInfo.parameters()) {
+        for (Type parameter : methodInfo.parameterTypes()) {
             parameterTypesStr.add(parameter.name().toString());
         }
         return MethodDescriptor.ofMethod(generatedClassName, methodInfo.name(), methodInfo.returnType().name().toString(),

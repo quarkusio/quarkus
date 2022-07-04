@@ -409,7 +409,7 @@ class RestClientProcessor {
                 scopeToUse = BuiltinScope.DEPENDENT.getInfo();
             }
         } else {
-            final Set<DotName> annotations = classInfo.annotations().keySet();
+            final Set<DotName> annotations = classInfo.annotationsMap().keySet();
             for (final DotName annotationName : annotations) {
                 final BuiltinScope builtinScope = BuiltinScope.from(annotationName);
                 if (builtinScope != null) {

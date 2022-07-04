@@ -85,7 +85,7 @@ public class Injection {
 
             return injections;
         } else if (Kind.METHOD.equals(beanTarget.kind())) {
-            if (beanTarget.asMethod().parameters().isEmpty()) {
+            if (beanTarget.asMethod().parameterTypes().isEmpty()) {
                 return Collections.emptyList();
             }
             // All parameters are injection points
@@ -130,7 +130,7 @@ public class Injection {
             if (!isNonStaticInnerClass && !hasConstructorInjection(injections) && !beanClass.hasNoArgsConstructor()) {
                 List<MethodInfo> nonNoargConstrs = new ArrayList<>();
                 for (MethodInfo constr : classInfo.methods()) {
-                    if (Methods.INIT.equals(constr.name()) && constr.parameters().size() > 0) {
+                    if (Methods.INIT.equals(constr.name()) && constr.parametersCount() > 0) {
                         nonNoargConstrs.add(constr);
                     }
                 }

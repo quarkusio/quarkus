@@ -491,9 +491,12 @@ Uni<List<Person>> persons = Person.list(Sort.by("name").and("birth"));
 
 // and with more restrictions
 Uni<List<Person>> persons = Person.list("status", Sort.by("name").and("birth"), Status.Alive);
+
+// and list first the entries with null values in the field "birth"
+Uni<List<Person>> persons = Person.list(Sort.by("birth", Sort.NullPrecedence.NULLS_FIRST));
 ----
 
-The `Sort` class has plenty of methods for adding columns and specifying sort direction.
+The `Sort` class has plenty of methods for adding columns and specifying sort direction or the null precedence.
 
 === Simplified queries
 

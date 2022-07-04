@@ -638,6 +638,9 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         Document sortDoc = new Document();
         for (Sort.Column col : sort.getColumns()) {
             sortDoc.append(col.getName(), col.getDirection() == Sort.Direction.Ascending ? 1 : -1);
+            if (col.getNullPrecedence() != null) {
+                throw new UnsupportedOperationException("Cannot sort by nulls first or nulls last");
+            }
         }
         return sortDoc;
     }

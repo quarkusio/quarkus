@@ -1519,4 +1519,28 @@ public class TestEndpoint {
 
         return "OK";
     }
+
+    @GET
+    @Path("testSortByNullPrecedence")
+    @Transactional
+    public String testSortByNullPrecedence() {
+        Person.deleteAll();
+
+        Person stefPerson = new Person();
+        stefPerson.name = "Stef";
+        stefPerson.persist();
+
+        Person josePerson = new Person();
+        josePerson.name = null;
+        josePerson.persist();
+
+        List<Person> persons = Person.findAll(Sort.by("name", Sort.NullPrecedence.NULLS_FIRST)).list();
+        assertEquals(josePerson.id, persons.get(0).id);
+        persons = Person.findAll(Sort.by("name", Sort.NullPrecedence.NULLS_LAST)).list();
+        assertEquals(josePerson.id, persons.get(persons.size() - 1).id);
+
+        Person.deleteAll();
+
+        return "OK";
+    }
 }

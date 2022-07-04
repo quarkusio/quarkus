@@ -104,4 +104,11 @@ public class PersonRepositoryResource {
         personRepository.update("lastname", newName).where("lastname", previousName);
         return Response.ok().build();
     }
+
+    @GET
+    @Path("/search/by/nulls/precedence")
+    public Response searchPersonsByNullsPrecedence() {
+        personRepository.listAll(Sort.by("lastname", Sort.NullPrecedence.NULLS_FIRST));
+        return Response.ok().build();
+    }
 }

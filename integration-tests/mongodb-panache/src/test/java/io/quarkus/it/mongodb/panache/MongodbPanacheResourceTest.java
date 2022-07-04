@@ -11,6 +11,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 
+import org.apache.http.HttpStatus;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -65,6 +66,12 @@ class MongodbPanacheResourceTest {
     @Test
     public void testPersonRepository() {
         callPersonEndpoint("/persons/repository");
+    }
+
+    @Test
+    public void testShouldThrowExceptionWhenUsingNullsPrecedence() {
+        get("/persons/repository/search/by/nulls/precedence")
+                .then().statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
     }
 
     private void callBookEndpoint(String endpoint) {

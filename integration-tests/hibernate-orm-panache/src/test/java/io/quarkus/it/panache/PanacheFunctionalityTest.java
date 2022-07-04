@@ -86,6 +86,11 @@ public class PanacheFunctionalityTest {
     }
 
     @Test
+    public void testSortByNullPrecedence() {
+        RestAssured.when().get("/test/testSortByNullPrecedence").then().body(is("OK"));
+    }
+
+    @Test
     public void testJaxbAnnotationTransfer() {
         RestAssured.when()
                 .get("/test/testJaxbAnnotationTransfer")

@@ -27,4 +27,16 @@ public class JpaOperationsSortTest {
         assertEquals("", PanacheJpaUtil.toOrderBy(emptySort));
     }
 
+    @Test
+    public void testSortByNullsFirst() {
+        Sort emptySort = Sort.by("foo", Sort.Direction.Ascending, Sort.NullPrecedence.NULLS_FIRST);
+        assertEquals(" ORDER BY foo NULLS FIRST", PanacheJpaUtil.toOrderBy(emptySort));
+    }
+
+    @Test
+    public void testSortByNullsLast() {
+        Sort emptySort = Sort.by("foo", Sort.Direction.Descending, Sort.NullPrecedence.NULLS_LAST);
+        assertEquals(" ORDER BY foo DESC NULLS LAST", PanacheJpaUtil.toOrderBy(emptySort));
+    }
+
 }

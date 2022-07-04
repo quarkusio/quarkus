@@ -15,12 +15,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.redis.datasource.api.RedisDataSource;
-import io.quarkus.redis.datasource.api.keys.KeyCommands;
-import io.quarkus.redis.datasource.api.string.GetExArgs;
-import io.quarkus.redis.datasource.api.string.SetArgs;
-import io.quarkus.redis.datasource.api.string.StringCommands;
-import io.quarkus.redis.datasource.impl.BlockingRedisDataSourceImpl;
+import io.quarkus.redis.datasource.keys.KeyCommands;
+import io.quarkus.redis.datasource.string.GetExArgs;
+import io.quarkus.redis.datasource.string.SetArgs;
+import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
 public class StringCommandsTest extends DatasourceTestBase {
 

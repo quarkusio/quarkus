@@ -46,7 +46,7 @@ With this dependency, you can then inject Redis clients or _datasource_ (high-le
 
 [source,java]
 ----
-import io.quarkus.redis.datasource.api.RedisDataSource;
+import io.quarkus.redis.datasource.RedisDataSource;
 
 // ...
 @Inject RedisAPI lowLevelClient;
@@ -70,15 +70,15 @@ You will generally use the latter, except if you need to manage connections your
 - a _high-level_ reactive data source: A type-safe, high-level API to interact with Redis.
 This API is fully reactive and asynchronous.
 It exposes a Mutiny API.
-It exposes the `io.quarkus.redis.datasource.api.ReactiveRedisDataSource` interface.
+It exposes the `io.quarkus.redis.datasource.ReactiveRedisDataSource` interface.
 - a _high-level_ imperative data source: A type-safe, high-level API to interact with Redis.
 It is the imperative variant of the reactive data source.
-It exposes the `io.quarkus.redis.datasource.api.RedisDataSource` interface.
+It exposes the `io.quarkus.redis.datasource.RedisDataSource` interface.
 
 To help you select the suitable API for you, here are some recommendations:
 
-* If you are building an imperative (_classic_) Quarkus application integrating with Redis: use `io.quarkus.redis.datasource.api.RedisDataSource`.
-* If you are building a reactive Quarkus application integrating with Redis: use `io.quarkus.redis.datasource.api.RedisReactiveDataSource`.
+* If you are building an imperative (_classic_) Quarkus application integrating with Redis: use `io.quarkus.redis.datasource.RedisDataSource`.
+* If you are building a reactive Quarkus application integrating with Redis: use `io.quarkus.redis.datasource.RedisReactiveDataSource`.
 * If you need fine-grain control, or execute commands in a generic way: use `io.vertx.mutiny.redis.client.RedisAPI`
 * If you have existing Vert.x code, use `io.vertx.redis.client.RedisAPI`
 * If you need to emit custom commands, you can either use the data sources (reactive or imperative) or the `io.vertx.mutiny.redis.client.Redis`.
@@ -223,9 +223,9 @@ This API lets you execute Redis commands more conveniently and safely.
 
 For each configured Redis client, two Redis data sources are exposed:
 
-- `io.quarkus.redis.datasource.api.RedisDataSource` - an imperative (blocking) Redis data source.
+- `io.quarkus.redis.datasource.RedisDataSource` - an imperative (blocking) Redis data source.
 Each operation blocks until a response is received or a timeout is reached
-- `io.quarkus.redis.datasource.api.ReactiveRedisDataSource` - a reactive Redis data source returning `Uni<X>` or `Multi<X>`.
+- `io.quarkus.redis.datasource.ReactiveRedisDataSource` - a reactive Redis data source returning `Uni<X>` or `Multi<X>`.
 
 If you configured the _default_ Redis client, you could inject the data sources using:
 
@@ -256,7 +256,7 @@ The default timeout is configured to 10s.
 [NOTE]
 .All about delegation
 ====
-The blocking data source (`io.quarkus.redis.datasource.api.RedisDataSource`) is implemented on top of the reactive one (`io.quarkus.redis.datasource.api.ReactiveRedisDataSource`).
+The blocking data source (`io.quarkus.redis.datasource.RedisDataSource`) is implemented on top of the reactive one (`io.quarkus.redis.datasource.ReactiveRedisDataSource`).
 The `ReactiveRedisDataSource` is implemented on top of the `io.vertx.mutiny.redis.Redis` API.
 ====
 

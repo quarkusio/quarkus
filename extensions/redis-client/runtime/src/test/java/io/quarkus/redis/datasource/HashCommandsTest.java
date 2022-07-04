@@ -15,11 +15,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.redis.datasource.api.RedisDataSource;
-import io.quarkus.redis.datasource.api.ScanArgs;
-import io.quarkus.redis.datasource.api.hash.HashCommands;
-import io.quarkus.redis.datasource.api.hash.HashScanCursor;
-import io.quarkus.redis.datasource.impl.BlockingRedisDataSourceImpl;
+import io.quarkus.redis.datasource.hash.HashCommands;
+import io.quarkus.redis.datasource.hash.HashScanCursor;
+import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.vertx.core.json.Json;
 
 public class HashCommandsTest extends DatasourceTestBase {

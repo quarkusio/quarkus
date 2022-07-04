@@ -2,6 +2,7 @@ package io.quarkus.redis.client;
 
 import java.util.List;
 
+import io.quarkus.redis.datasource.RedisDataSource;
 import io.vertx.redis.client.Response;
 
 /**
@@ -13,7 +14,7 @@ import io.vertx.redis.client.Response;
  * the <a href="https://redis.io/commands">Redis Commands Page</a>
  *
  * @deprecated Use {@link io.vertx.mutiny.redis.client.RedisAPI} or
- *             {@link io.quarkus.redis.datasource.api.RedisDataSource} instead.
+ *             {@link RedisDataSource} instead.
  */
 @Deprecated
 public interface RedisClient {

@@ -10,9 +10,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.redis.datasource.api.RedisDataSource;
-import io.quarkus.redis.datasource.api.hyperloglog.HyperLogLogCommands;
-import io.quarkus.redis.datasource.impl.BlockingRedisDataSourceImpl;
+import io.quarkus.redis.datasource.hyperloglog.HyperLogLogCommands;
+import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
 public class HyperLogLogCommandsTest extends DatasourceTestBase {
 

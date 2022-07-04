@@ -1,10 +1,10 @@
 package io.quarkus.redis.datasource;
 
-import static io.quarkus.redis.datasource.api.bitmap.BitFieldArgs.offset;
-import static io.quarkus.redis.datasource.api.bitmap.BitFieldArgs.signed;
-import static io.quarkus.redis.datasource.api.bitmap.BitFieldArgs.typeWidthBasedOffset;
-import static io.quarkus.redis.datasource.api.bitmap.BitFieldArgs.unsigned;
-import static io.quarkus.redis.datasource.api.bitmap.BitFieldArgs.OverflowType.WRAP;
+import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.offset;
+import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.signed;
+import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.typeWidthBasedOffset;
+import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.unsigned;
+import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.OverflowType.WRAP;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -16,10 +16,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.redis.datasource.api.RedisDataSource;
-import io.quarkus.redis.datasource.api.bitmap.BitFieldArgs;
-import io.quarkus.redis.datasource.api.bitmap.BitMapCommands;
-import io.quarkus.redis.datasource.impl.BlockingRedisDataSourceImpl;
+import io.quarkus.redis.datasource.bitmap.BitFieldArgs;
+import io.quarkus.redis.datasource.bitmap.BitMapCommands;
+import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
 public class BitMapCommandsTest extends DatasourceTestBase {
 

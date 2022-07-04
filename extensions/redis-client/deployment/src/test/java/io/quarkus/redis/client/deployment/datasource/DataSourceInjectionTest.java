@@ -13,8 +13,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.client.deployment.RedisTestResource;
-import io.quarkus.redis.datasource.api.ReactiveRedisDataSource;
-import io.quarkus.redis.datasource.api.RedisDataSource;
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
+import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.QuarkusTestResource;
 

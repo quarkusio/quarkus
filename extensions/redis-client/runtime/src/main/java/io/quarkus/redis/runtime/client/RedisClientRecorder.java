@@ -1,0 +1,205 @@
+package io.quarkus.redis.runtime.client;
+
+import static io.quarkus.redis.runtime.client.config.RedisConfig.DEFAULT_CLIENT_NAME;
+
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
+
+import io.quarkus.redis.client.RedisClient;
+import io.quarkus.redis.client.reactive.ReactiveRedisClient;
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
+import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.runtime.client.config.RedisClientConfig;
+import io.quarkus.redis.runtime.client.config.RedisConfig;
+import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
+import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.redis.client.Redis;
+import io.vertx.mutiny.redis.client.RedisAPI;
+
+@Recorder
+public class RedisClientRecorder {
+
+    // Split client and DS recorders
+
+    private final RedisConfig config;
+    private final Map<String, RedisClientAndApi> clients = new HashMap<>();
+
+    private final Map<String, ReactiveRedisDataSourceImpl> dataSources = new HashMap<>();
+
+    public RedisClientRecorder(RedisConfig rc) {
+        this.config = rc;
+    }
+
+    public void initialize(RuntimeValue<io.vertx.core.Vertx> vertx, Set<String> names) {
+        Vertx v = Vertx.newInstance(vertx.getValue());
+        _initialize(v, names);
+    }
+
+    public void _initialize(Vertx vertx, Set<String> names) {
+        for (String name : names) {
+            // Search if we have an associated config:
+            // - if default -> Default
+            // - if named -> Look for that config
+            // - if not found -> ConfigurationException
+            Optional<RedisClientConfig> maybe = getConfigForName(config, name);
+            if (!RedisConfig.isDefaultClient(name)) {
+                RedisClientConfig actualConfig = maybe
+                        .orElseThrow(new Supplier<ConfigurationException>() {
+                            @Override
+                            public ConfigurationException get() {
+                                return new ConfigurationException("The application contains a " +
+                                        "@RedisClientName(\"" + name
+                                        + "\"), but the application configuration does not configure this " +
+                                        "redis client configuration with that name. " +
+                                        "You must at least configure `quarkus.redis." + name + ".hosts`.");
+                            }
+                        });
+                clients.computeIfAbsent(name, x -> new RedisClientAndApi(VertxRedisClientFactory.create(vertx, actualConfig)));
+            } else if (DEFAULT_CLIENT_NAME.equalsIgnoreCase(name) && maybe.isPresent()) {
+                clients.computeIfAbsent(name, x -> new RedisClientAndApi(VertxRedisClientFactory.create(vertx, maybe.get())));
+            }
+            // Do not throw an error. We would need to check if the default redis client is used.
+        }
+
+    }
+
+    static Optional<RedisClientConfig> getConfigForName(RedisConfig cfg, String name) {
+        if (RedisConfig.isDefaultClient(name)) {
+            return Optional.ofNullable(cfg.defaultRedisClient);
+        }
+
+        for (Map.Entry<String, RedisClientConfig> entry : cfg.namedRedisClients.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(name)) {
+                return Optional.of(entry.getValue());
+            }
+        }
+        return Optional.empty();
+    }
+
+    public Supplier<Redis> getRedisClient(String name) {
+        return new Supplier<Redis>() {
+            @Override
+            public Redis get() {
+                return clients.get(name).redis;
+            }
+        };
+    }
+
+    public Supplier<io.vertx.redis.client.Redis> getBareRedisClient(String name) {
+        return new Supplier<io.vertx.redis.client.Redis>() {
+            @Override
+            public io.vertx.redis.client.Redis get() {
+                return clients.get(name).redis.getDelegate();
+            }
+        };
+    }
+
+    public Supplier<RedisAPI> getRedisAPI(String name) {
+        return new Supplier<RedisAPI>() {
+            @Override
+            public RedisAPI get() {
+                return clients.get(name).api;
+            }
+        };
+    }
+
+    public Supplier<io.vertx.redis.client.RedisAPI> getBareRedisAPI(String name) {
+        return new Supplier<io.vertx.redis.client.RedisAPI>() {
+            @Override
+            public io.vertx.redis.client.RedisAPI get() {
+                return clients.get(name).api.getDelegate();
+            }
+        };
+    }
+
+    public Supplier<ReactiveRedisDataSource> getReactiveDataSource(String name) {
+        return new Supplier<ReactiveRedisDataSource>() {
+            @Override
+            public ReactiveRedisDataSource get() {
+                return dataSources.computeIfAbsent(name, k -> {
+                    RedisClientAndApi redisClientAndApi = clients.get(name);
+                    Redis redis = redisClientAndApi.redis;
+                    RedisAPI api = redisClientAndApi.api;
+                    return new ReactiveRedisDataSourceImpl(redis, api);
+                });
+            }
+        };
+    }
+
+    public Supplier<RedisDataSource> getBlockingDataSource(String name) {
+        return new Supplier<RedisDataSource>() {
+            @Override
+            public RedisDataSource get() {
+                Duration timeout = RedisClientRecorder.this.getTimeoutForClient(name);
+                return new BlockingRedisDataSourceImpl(
+                        (ReactiveRedisDataSourceImpl) RedisClientRecorder.this.getReactiveDataSource(name).get(), timeout);
+            }
+        };
+    }
+
+    // Legacy client
+    public Supplier<RedisClient> getLegacyRedisClient(String name) {
+        return new Supplier<RedisClient>() {
+            @Override
+            public RedisClient get() {
+                Duration timeout = getTimeoutForClient(name);
+                return new RedisClientImpl(
+                        RedisClientRecorder.this.getRedisClient(name).get(),
+                        RedisClientRecorder.this.getRedisAPI(name).get(),
+                        timeout);
+            }
+        };
+    }
+
+    private Duration getTimeoutForClient(String name) {
+        Duration timeout;
+        if (RedisConfig.isDefaultClient(name)) {
+            timeout = config.defaultRedisClient.timeout;
+        } else {
+            timeout = config.namedRedisClients.get(name).timeout;
+        }
+        return timeout;
+    }
+
+    public Supplier<ReactiveRedisClient> getLegacyReactiveRedisClient(String name) {
+        return new Supplier<ReactiveRedisClient>() {
+            @Override
+            public ReactiveRedisClient get() {
+                return new ReactiveRedisClientImpl(RedisClientRecorder.this.getRedisClient(name).get(),
+                        RedisClientRecorder.this.getRedisAPI(name).get());
+            }
+        };
+    }
+
+    public void cleanup(ShutdownContext context) {
+        context.addShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                for (RedisClientAndApi value : clients.values()) {
+                    value.redis.close();
+                }
+                clients.clear();
+            }
+        });
+    }
+
+    private static class RedisClientAndApi {
+        private final Redis redis;
+        private final RedisAPI api;
+
+        private RedisClientAndApi(Redis redis) {
+            this.redis = redis;
+            this.api = RedisAPI.api(redis);
+        }
+    }
+
+}

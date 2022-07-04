@@ -7,10 +7,8 @@ import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.redis.datasource.api.ReactiveRedisDataSource;
-import io.quarkus.redis.datasource.api.RedisDataSource;
-import io.quarkus.redis.datasource.impl.BlockingRedisDataSourceImpl;
-import io.quarkus.redis.datasource.impl.ReactiveRedisDataSourceImpl;
+import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
+import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 
 public class ConnectionRecyclingTest extends DatasourceTestBase {
 

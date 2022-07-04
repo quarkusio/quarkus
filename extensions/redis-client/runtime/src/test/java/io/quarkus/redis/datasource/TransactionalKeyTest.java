@@ -9,16 +9,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.redis.datasource.api.ReactiveRedisDataSource;
-import io.quarkus.redis.datasource.api.RedisDataSource;
-import io.quarkus.redis.datasource.api.hash.ReactiveTransactionalHashCommands;
-import io.quarkus.redis.datasource.api.hash.TransactionalHashCommands;
-import io.quarkus.redis.datasource.api.keys.ReactiveTransactionalKeyCommands;
-import io.quarkus.redis.datasource.api.keys.RedisValueType;
-import io.quarkus.redis.datasource.api.keys.TransactionalKeyCommands;
-import io.quarkus.redis.datasource.api.transactions.TransactionResult;
-import io.quarkus.redis.datasource.impl.BlockingRedisDataSourceImpl;
-import io.quarkus.redis.datasource.impl.ReactiveRedisDataSourceImpl;
+import io.quarkus.redis.datasource.hash.ReactiveTransactionalHashCommands;
+import io.quarkus.redis.datasource.hash.TransactionalHashCommands;
+import io.quarkus.redis.datasource.keys.ReactiveTransactionalKeyCommands;
+import io.quarkus.redis.datasource.keys.RedisValueType;
+import io.quarkus.redis.datasource.keys.TransactionalKeyCommands;
+import io.quarkus.redis.datasource.transactions.TransactionResult;
+import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
+import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 
 public class TransactionalKeyTest extends DatasourceTestBase {
 

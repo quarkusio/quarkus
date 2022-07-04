@@ -1,10 +1,11 @@
 package io.quarkus.redis.client.reactive;
 
-import static io.quarkus.redis.client.runtime.VertxRedisClientFactory.DEFAULT_CLIENT;
+import static io.quarkus.redis.runtime.client.VertxRedisClientFactory.DEFAULT_CLIENT;
 
 import java.util.List;
 
 import io.quarkus.redis.client.RedisClient;
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
 
@@ -15,7 +16,7 @@ import io.vertx.mutiny.redis.client.Response;
  * the <a href="https://redis.io/commands">Redis Commands Page</a>
  *
  * @deprecated Use {@link io.vertx.mutiny.redis.client.RedisAPI} or
- *             {@link io.quarkus.redis.datasource.api.ReactiveRedisDataSource} instead.
+ *             {@link ReactiveRedisDataSource} instead.
  */
 @Deprecated
 public interface ReactiveRedisClient {

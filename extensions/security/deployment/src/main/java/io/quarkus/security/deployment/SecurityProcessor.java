@@ -344,16 +344,19 @@ public class SecurityProcessor {
     void addBouncyCastleExportsToNativeImage(BuildProducer<JPMSExportBuildItem> jpmsExports,
             List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
             List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {
+        boolean isInFipsMode;
+
         Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
-        if (bouncyCastleJsseProvider.isPresent() && bouncyCastleJsseProvider.get().isInFipsMode()) {
-            jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.internal.spec"));
-            jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.provider"));
+        if (bouncyCastleJsseProvider.isPresent()) {
+            isInFipsMode = bouncyCastleJsseProvider.get().isInFipsMode();
         } else {
             Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(bouncyCastleProviders);
-            if (bouncyCastleProvider.isPresent() && bouncyCastleProvider.get().isInFipsMode()) {
-                jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.internal.spec"));
-                jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.provider"));
-            }
+            isInFipsMode = bouncyCastleProvider.isPresent() && bouncyCastleProvider.get().isInFipsMode();
+        }
+
+        if (isInFipsMode) {
+            jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.internal.spec"));
+            jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.provider"));
         }
     }
 

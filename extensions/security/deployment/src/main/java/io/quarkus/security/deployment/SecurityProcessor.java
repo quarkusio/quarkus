@@ -347,10 +347,12 @@ public class SecurityProcessor {
         Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
         if (bouncyCastleJsseProvider.isPresent() && bouncyCastleJsseProvider.get().isInFipsMode()) {
             jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.internal.spec"));
+            jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.provider"));
         } else {
             Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(bouncyCastleProviders);
             if (bouncyCastleProvider.isPresent() && bouncyCastleProvider.get().isInFipsMode()) {
                 jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.internal.spec"));
+                jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.provider"));
             }
         }
     }

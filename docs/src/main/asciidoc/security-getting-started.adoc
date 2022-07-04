@@ -362,7 +362,7 @@ As you can see you do not have to launch the test container from the test code.
 [NOTE]
 ====
 If you start your application in `devmode` then `Dev Services for PostgreSQL` will launch a `PostgreSQL` devmode container for a start for you to focus on the application development.
-While developing you can also start adding tests one by one and run them with the xref:https://quarkus.io/guides/continuous-testing[Continous Testing] feature - 
+While developing you can also start adding tests one by one and run them with the xref:continuous-testing.adoc[Continous Testing] feature - 
 `Dev Services for PostgreSQL` will support these tests with a separate `PostgreSQL` test container which will not conflict with the devmode container.
 ====
 

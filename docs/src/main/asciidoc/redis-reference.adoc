@@ -253,12 +253,12 @@ quarkus.redis.my-redis.timeout=5s
 
 The default timeout is configured to 10s.
 
-[INFO]
+[NOTE]
 .All about delegation
-----
+====
 The blocking data source (`io.quarkus.redis.datasource.api.RedisDataSource`) is implemented on top of the reactive one (`io.quarkus.redis.datasource.api.ReactiveRedisDataSource`).
 The `ReactiveRedisDataSource` is implemented on top of the `io.vertx.mutiny.redis.Redis` API.
-----
+====
 
 ==== Data Source groups
 
@@ -646,4 +646,4 @@ See link:redis-dev-services.adoc[Redis Dev Service].
 [[redis-configuration-reference]]
 == Configuration Reference
 
-include::{generated-dir}/config/quarkus-redis.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-redis-client.adoc[opts=optional, leveloffset=+1]

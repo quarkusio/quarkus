@@ -400,7 +400,7 @@ You have created a tutorial that describes how to create an application that use
 
 If you wish, you may compare your result against the complete worked example:
 
-[NOTE]
+[source,asciidoc]
 -----
 include::{doc-examples}/acme-serve-http-requests-tutorial.adoctxt[]
 -----

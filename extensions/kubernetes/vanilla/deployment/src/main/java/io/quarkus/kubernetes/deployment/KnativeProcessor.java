@@ -172,7 +172,8 @@ public class KnativeProcessor {
                 });
 
         if (config.clusterLocal) {
-            if (labels.stream().noneMatch(l -> l.getKey().equals(KNATIVE_DEV_VISIBILITY))) {
+            if (labels.stream().filter(l -> KNATIVE.equals(l.getTarget()))
+                    .noneMatch(l -> l.getKey().equals(KNATIVE_DEV_VISIBILITY))) {
                 result.add(new DecoratorBuildItem(KNATIVE,
                         new AddLabelDecorator(name, KNATIVE_DEV_VISIBILITY, "cluster-local")));
             }

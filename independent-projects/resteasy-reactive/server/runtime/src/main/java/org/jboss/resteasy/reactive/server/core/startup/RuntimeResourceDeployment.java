@@ -79,6 +79,7 @@ import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
+import org.jboss.resteasy.reactive.server.spi.AllWriteableMarker;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
@@ -532,7 +533,7 @@ public class RuntimeResourceDeployment {
 
         // in the case where the first Writer is an instance of AllWriteableMessageBodyWriter,
         // it doesn't matter that we have multiple writers as the first one will always be used to serialize
-        return buildTimeWriters.get(0) instanceof ServerMessageBodyWriter.AllWriteableMessageBodyWriter;
+        return buildTimeWriters.get(0) instanceof AllWriteableMarker;
     }
 
     private boolean addHandlers(List<ServerRestHandler> handlers, ResourceClass clazz, ServerResourceMethod method,

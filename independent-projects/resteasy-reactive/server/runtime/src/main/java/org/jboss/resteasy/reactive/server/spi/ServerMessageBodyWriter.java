@@ -22,7 +22,7 @@ public interface ServerMessageBodyWriter<T> extends MessageBodyWriter<T> {
      * to optimize for the case when there are multiple providers determined at build time
      * but the first one will always be used
      */
-    abstract class AllWriteableMessageBodyWriter implements ServerMessageBodyWriter<Object> {
+    abstract class AllWriteableMessageBodyWriter implements ServerMessageBodyWriter<Object>, AllWriteableMarker {
 
         @Override
         public final boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,

@@ -15,8 +15,10 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -121,7 +123,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     private static Class<?> actualTestClass;
     private static Object actualTestInstance;
     // needed for @Nested
-    private static List<Object> outerInstances = new ArrayList<>(1);
+    private static Deque<Object> outerInstances = new ArrayDeque<>(1);
     private static RunningQuarkusApplication runningQuarkusApplication;
     private static Pattern clonePattern;
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
@@ -561,7 +563,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
         Constructor<?> constructor = quarkusTestMethodContextClass.getConstructor(Object.class, List.class, Method.class);
         return new AbstractMap.SimpleEntry<>(quarkusTestMethodContextClass,
-                constructor.newInstance(actualTestInstance, outerInstances, actualTestMethod));
+                constructor.newInstance(actualTestInstance, new ArrayList<>(outerInstances), actualTestMethod));
     }
 
     private boolean isNativeOrIntegrationTest(Class<?> clazz) {
@@ -1078,7 +1080,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
         } finally {
             currentTestClassStack.pop();
-            outerInstances.clear();
+            if (!outerInstances.isEmpty()) {
+                actualTestInstance = outerInstances.pop();
+            }
         }
     }
 
@@ -1093,7 +1097,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         Class<?> quarkusTestContextClass = Class.forName(QuarkusTestContext.class.getName(), true,
                 runningQuarkusApplication.getClassLoader());
         Object quarkusTestContextInstance = quarkusTestContextClass.getConstructor(Object.class, List.class)
-                .newInstance(actualTestInstance, outerInstances);
+                .newInstance(actualTestInstance, new ArrayList<>(outerInstances));
 
         ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
         try {

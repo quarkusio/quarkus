@@ -25,8 +25,23 @@ public class BookResource {
     @MongoClientName("parameter-injection")
     MongoClient client;
 
+    @Inject
+    @MongoClientName("dev-services")
+    MongoClient devServiced;
+    @Inject
+    @MongoClientName("dev-services2")
+    MongoClient devServiced2;
+
     private MongoCollection<Book> getCollection() {
         return client.getDatabase("books").getCollection("my-collection", Book.class);
+    }
+
+    private MongoCollection<Book> getServicedCollection() {
+        return devServiced.getDatabase("books").getCollection("my-collection", Book.class);
+    }
+
+    private MongoCollection<Book> getServiced2Collection() {
+        return devServiced.getDatabase("books").getCollection("my-collection", Book.class);
     }
 
     @GET
@@ -46,12 +61,16 @@ public class BookResource {
     @POST
     public Response addBook(Book book) {
         getCollection().insertOne(book);
+        getServicedCollection().insertOne(book);
+        getServiced2Collection().insertOne(book);
         return Response.accepted().build();
     }
 
     @GET
     @Path("/{author}")
     public List<Book> getBooksByAuthor(@PathParam("author") String author) {
+        getServicedCollection().find(eq("author", author));
+        getServiced2Collection().find(eq("author", author));
         FindIterable<Book> iterable = getCollection().find(eq("author", author));
         List<Book> books = new ArrayList<>();
         for (Book doc : iterable) {

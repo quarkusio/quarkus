@@ -51,7 +51,12 @@ public class WithKubernetesClientAndExistingResourcesTest {
 
         assertThat(kubernetesList).filteredOn(h -> "Deployment".equals(h.getKind())).allSatisfy(h -> {
             Deployment deployment = (Deployment) h;
-            assertThat(deployment.getSpec().getTemplate().getSpec().getServiceAccountName()).isEqualTo(APPLICATION_NAME);
+            String serviceAccountName = deployment.getSpec().getTemplate().getSpec().getServiceAccountName();
+            if (h.getMetadata().getName().equals(APPLICATION_NAME)) {
+                assertThat(serviceAccountName).isEqualTo(APPLICATION_NAME);
+            } else {
+                assertThat(serviceAccountName).isNull();
+            }
         });
 
         assertThat(kubernetesList).filteredOn(h -> "ServiceAccount".equals(h.getKind())).singleElement().satisfies(h -> {

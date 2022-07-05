@@ -198,7 +198,8 @@ public class OpenshiftProcessor {
         if (config.flavor == v3) {
             //Openshift 3.x doesn't recognize 'app.kubernetes.io/name', it uses 'app' instead.
             //The decorator will be applied even on non-openshift resources is it may affect for example: knative
-            if (labels.stream().noneMatch(l -> l.getKey().equals(OPENSHIFT_V3_APP))) {
+            if (labels.stream().filter(l -> OPENSHIFT.equals(l.getTarget()))
+                    .noneMatch(l -> l.getKey().equals(OPENSHIFT_V3_APP))) {
                 result.add(new DecoratorBuildItem(new AddLabelDecorator(name, OPENSHIFT_V3_APP, name)));
             }
 
@@ -250,7 +251,8 @@ public class OpenshiftProcessor {
 
         result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyImagePullPolicyDecorator(name, config.getImagePullPolicy())));
 
-        if (labels.stream().noneMatch(l -> l.getKey().equals(OPENSHIFT_APP_RUNTIME))) {
+        if (labels.stream().filter(l -> OPENSHIFT.equals(l.getTarget()))
+                .noneMatch(l -> l.getKey().equals(OPENSHIFT_APP_RUNTIME))) {
             result.add(new DecoratorBuildItem(OPENSHIFT, new AddLabelDecorator(name, OPENSHIFT_APP_RUNTIME, QUARKUS)));
         }
 

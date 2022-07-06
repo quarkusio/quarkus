@@ -72,7 +72,7 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_GROUP=quarkustesting
           export QUARKUS_CONTAINER_IMAGE_TAG=${{ github.sha }}
           export QUARKUS_CONTAINER_IMAGE_REGISTRY=quay.io
-          ./mvnw ${MAVEN_ARGS} clean install -pl :quarkus-integration-test-kubernetes-invoker -Pkubernetes-e2e-tests
+          ./mvnw ${MAVEN_ARGS} clean install -pl :quarkus-integration-test-kubernetes-invoker -De2e-tests -Dkubernetes-e2e-tests
       - name: Report status
         if: "always() && github.repository == 'quarkusio/quarkus'"
         shell: bash
@@ -125,7 +125,7 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_GROUP=quarkustesting
           export QUARKUS_CONTAINER_IMAGE_TAG=${{ github.sha }}
           export QUARKUS_CONTAINER_IMAGE_REGISTRY=quay.io
-          ./mvnw ${MAVEN_ARGS} clean install -pl :quarkus-integration-test-kubernetes-invoker -Popenshift-e2e-tests
+          ./mvnw ${MAVEN_ARGS} clean install -pl :quarkus-integration-test-kubernetes-invoker -De2e-tests -Dopenshift-e2e-tests
       - name: Report status
         if: "always() && github.repository == 'quarkusio/quarkus'"
         shell: bash

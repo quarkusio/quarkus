@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -206,7 +204,7 @@
                     <cloneClean>true</cloneClean>
                     <postBuildHookScript>verify</postBuildHookScript>
                     <addTestClassPath>true</addTestClassPath>
-                    <skipInvocation>true</skipInvocation>
+                    <skipInvocation>${skipTests}</skipInvocation>
                     <streamLogs>true</streamLogs>
                     <invokerPropertiesFile>invoker.properties</invokerPropertiesFile>
                 </configuration>
@@ -249,51 +247,106 @@
             </properties>
         </profile>
         <profile>
-            <id>kubernetes-e2e-tests</id>
+            <id>offline-tests</id>
+            <activation>
+                <property>
+                    <name>!e2e-tests</name>
+                </property>
+            </activation>
             <build>
                 <plugins>
-                  <plugin>
-                    <artifactId>maven-invoker-plugin</artifactId>
-                    <configuration>
-                      <pomIncludes>
-                        <pomInclude>kubernetes-*/pom.xml</pomInclude>
-                        <pomInclude>minikube-*/pom.xml</pomInclude>
-                      </pomIncludes>
-                      <skipInvocation>${skipTests}</skipInvocation>
-                    </configuration>
-                  </plugin>
+                    <plugin>
+                        <artifactId>maven-invoker-plugin</artifactId>
+                        <configuration>
+                            <filterProperties>
+                                <kubernetes-client-master-url>-Dquarkus.kubernetes-client.master-url=http://localhost:12345</kubernetes-client-master-url>
+                                <build-result>failure</build-result>
+                                <container-image.registry>docker.io</container-image.registry>
+                            </filterProperties>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>kubernetes-e2e-tests</id>
+            <activation>
+                <property>
+                    <name>kubernetes-e2e-tests</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-invoker-plugin</artifactId>
+                        <configuration>
+                            <pomIncludes>
+                                <pomInclude>kubernetes-*/pom.xml</pomInclude>
+                                <pomInclude>minikube-*/pom.xml</pomInclude>
+                            </pomIncludes>
+                            <skipInvocation>${skipTests}</skipInvocation>
+                            <filterProperties>
+                                <!-- this is on purpose to make sure the property is expanded -->
+                                <kubernetes-client-master-url>-Dinvalid-on-purpose</kubernetes-client-master-url>
+                                <build-result>success</build-result>
+                                <container-image.registry>image-registry.openshift-image-registry.svc:5000</container-image.registry>
+                            </filterProperties>
+                        </configuration>
+                    </plugin>
                 </plugins>
             </build>
         </profile>
         <profile>
             <id>openshift-e2e-tests</id>
+            <activation>
+                <property>
+                    <name>openshift-e2e-tests</name>
+                </property>
+            </activation>
             <build>
                 <plugins>
-                  <plugin>
-                    <artifactId>maven-invoker-plugin</artifactId>
-                    <configuration>
-                      <pomIncludes>
-                        <pomInclude>openshift-*/pom.xml</pomInclude>
-                      </pomIncludes>
-                      <skipInvocation>${skipTests}</skipInvocation>
-                    </configuration>
-                  </plugin>
+                    <plugin>
+                        <artifactId>maven-invoker-plugin</artifactId>
+                        <configuration>
+                            <pomIncludes>
+                                <pomInclude>openshift-*/pom.xml</pomInclude>
+                            </pomIncludes>
+                            <skipInvocation>${skipTests}</skipInvocation>
+                            <filterProperties>
+                                <!-- this is on purpose to make sure the property is expanded -->
+                                <kubernetes-client-master-url>-Dinvalid-on-purpose</kubernetes-client-master-url>
+                                <build-result>success</build-result>
+                                <container-image.registry>image-registry.openshift-image-registry.svc:5000</container-image.registry>
+                            </filterProperties>
+                        </configuration>
+                    </plugin>
                 </plugins>
             </build>
         </profile>
         <profile>
             <id>knative-e2e-tests</id>
+            <activation>
+                <property>
+                    <name>knative-e2e-tests</name>
+                </property>
+            </activation>
             <build>
                 <plugins>
-                  <plugin>
-                    <artifactId>maven-invoker-plugin</artifactId>
-                    <configuration>
-                      <pomIncludes>
-                        <pomInclude>knative-*/pom.xml</pomInclude>
-                      </pomIncludes>
-                      <skipInvocation>${skipTests}</skipInvocation>
-                    </configuration>
-                  </plugin>
+                    <plugin>
+                        <artifactId>maven-invoker-plugin</artifactId>
+                        <configuration>
+                            <pomIncludes>
+                                <pomInclude>knative-*/pom.xml</pomInclude>
+                            </pomIncludes>
+                            <skipInvocation>${skipTests}</skipInvocation>
+                            <filterProperties>
+                                <!-- this is on purpose to make sure the property is expanded -->
+                                <kubernetes-client-master-url>-Dinvalid-on-purpose</kubernetes-client-master-url>
+                                <build-result>success</build-result>
+                                <container-image.registry>image-registry.openshift-image-registry.svc:5000</container-image.registry>
+                            </filterProperties>
+                        </configuration>
+                    </plugin>
                 </plugins>
             </build>
         </profile>

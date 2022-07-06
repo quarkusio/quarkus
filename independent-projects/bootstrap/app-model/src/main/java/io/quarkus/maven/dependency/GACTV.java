@@ -101,7 +101,7 @@ public class GACTV implements ArtifactCoords, Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(artifactId, classifier, groupId, type, version);
+        return Objects.hash(groupId, artifactId, classifier, type, version);
     }
 
     @Override

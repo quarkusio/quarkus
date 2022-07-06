@@ -17,7 +17,7 @@ import org.eclipse.aether.graph.DependencyNode;
 public class DependencyUtils {
 
     public static ArtifactKey getKey(Artifact artifact) {
-        return ArtifactKey.gact(artifact.getGroupId(), artifact.getArtifactId(),
+        return ArtifactKey.of(artifact.getGroupId(), artifact.getArtifactId(),
                 artifact.getClassifier(), artifact.getExtension());
     }
 

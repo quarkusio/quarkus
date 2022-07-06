@@ -43,6 +43,13 @@ public class PlatformArtifacts {
                 : coords;
     }
 
+    public static io.quarkus.maven.dependency.ArtifactCoords ensureBomArtifact(
+            io.quarkus.maven.dependency.ArtifactCoords coords) {
+        return isCatalogArtifactId(coords.getArtifactId())
+                ? getBomArtifactForCatalog(coords)
+                : coords;
+    }
+
     public static ArtifactCoords getBomArtifactForCatalog(ArtifactCoords coords) {
         return new ArtifactCoords(coords.getGroupId(),
                 coords.getArtifactId().substring(0,
@@ -50,4 +57,11 @@ public class PlatformArtifacts {
                 null, "pom", coords.getVersion());
     }
 
+    public static io.quarkus.maven.dependency.ArtifactCoords getBomArtifactForCatalog(
+            io.quarkus.maven.dependency.ArtifactCoords coords) {
+        return new ArtifactCoords(coords.getGroupId(),
+                coords.getArtifactId().substring(0,
+                        coords.getArtifactId().length() - Constants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()),
+                null, "pom", coords.getVersion());
+    }
 }

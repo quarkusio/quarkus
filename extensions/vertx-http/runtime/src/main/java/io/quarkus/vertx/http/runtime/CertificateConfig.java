@@ -6,6 +6,8 @@ import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 /**
  * A certificate configuration. Either the certificate and key files must be given, or a key store must be given.
@@ -13,6 +15,30 @@ import io.quarkus.runtime.annotations.ConfigItem;
 @ConfigGroup
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class CertificateConfig {
+
+    /**
+     * The {@linkplain CredentialsProvider}}.
+     * If this property is configured then a matching 'CredentialsProvider' will be used
+     * to get the keystore, keystore key and truststore passwords unless these passwords have already been configured.
+     *
+     * Please note that using MicroProfile {@linkplain ConfigSource} which is directly supported by Quarkus Configuration
+     * should be preferred unless using `CredentialsProvider` provides for some additional security and dynamism.
+     */
+    @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
+    public Optional<String> credentialsProvider = Optional.empty();
+
+    /**
+     * The credentials provider bean name.
+     * <p>
+     * It is the {@code &#64;Named} value of the credentials provider bean. It is used to discriminate if multiple
+     * CredentialsProvider beans are available.
+     * It is recommended to set this property even if there is only one credentials provider currently available
+     * to ensure the same provider is always found in deployments where more than one provider may be available.
+     */
+    @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
+    public Optional<String> credentialsProviderName = Optional.empty();
 
     /**
      * The file path to a server certificate or certificate chain in PEM format.
@@ -69,10 +95,23 @@ public class CertificateConfig {
     public Optional<String> keyStoreProvider;
 
     /**
-     * A parameter to specify the password of the key store file. If not given, the default ("password") is used.
+     * A parameter to specify the password of the key store file. If not given, and if it can not be retrieved from
+     * {@linkplain CredentialsProvider}, then the default ("password") is used.
+     *
+     * @see {@link #credentialsProvider}
      */
-    @ConfigItem(defaultValue = "password")
-    public String keyStorePassword;
+    @ConfigItem(defaultValueDocumentation = "password")
+    public Optional<String> keyStorePassword;
+
+    /**
+     * A parameter to specify a {@linkplain CredentialsProvider} property key which can be used to get the password of the key
+     * store file
+     * from {@linkplain CredentialsProvider}.
+     *
+     * @see {@link #credentialsProvider}
+     */
+    @ConfigItem
+    public Optional<String> keyStorePasswordKey;
 
     /**
      * An optional parameter to select a specific key in the key store. When SNI is disabled, if the key store contains multiple
@@ -82,10 +121,22 @@ public class CertificateConfig {
     public Optional<String> keyStoreKeyAlias;
 
     /**
-     * An optional parameter to define the password for the key, in case it's different from {@link #keyStorePassword}.
+     * An optional parameter to define the password for the key, in case it's different from {@link #keyStorePassword}
+     * If not given then it may be retrieved from {@linkplain CredentialsProvider}.
+     *
+     * @see {@link #credentialsProvider}.
      */
     @ConfigItem
     public Optional<String> keyStoreKeyPassword;
+
+    /**
+     * A parameter to specify a {@linkplain CredentialsProvider} property key which can be used to get the password for the key
+     * from {@linkplain CredentialsProvider}.
+     *
+     * @see {@link #credentialsProvider}
+     */
+    @ConfigItem
+    public Optional<String> keyStoreKeyPasswordKey;
 
     /**
      * An optional trust store which holds the certificate information of the certificates to trust.
@@ -109,9 +160,22 @@ public class CertificateConfig {
 
     /**
      * A parameter to specify the password of the trust store file.
+     * If not given then it may be retrieved from {@linkplain CredentialsProvider}.
+     *
+     * @see {@link #credentialsProvider}.
      */
     @ConfigItem
     public Optional<String> trustStorePassword;
+
+    /**
+     * A parameter to specify a {@linkplain CredentialsProvider} property key which can be used to get the password of the trust
+     * store file
+     * from {@linkplain CredentialsProvider}.
+     *
+     * @see {@link #credentialsProvider}
+     */
+    @ConfigItem
+    public Optional<String> trustStorePasswordKey;
 
     /**
      * An optional parameter to trust only one specific certificate in the trust store (instead of trusting all certificates in

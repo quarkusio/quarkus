@@ -49,6 +49,8 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.bootstrap.runner.Timing;
+import io.quarkus.credentials.CredentialsProvider;
+import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.netty.runtime.virtual.VirtualAddress;
@@ -781,10 +783,22 @@ public class VertxHttpRecorder {
             certificates.add(certFile.get());
         }
 
+        // credentials provider
+        Map<String, String> credentials = Map.of();
+        if (sslConfig.certificate.credentialsProvider.isPresent()) {
+            String beanName = sslConfig.certificate.credentialsProviderName.orElse(null);
+            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
+            String name = sslConfig.certificate.credentialsProvider.get();
+            credentials = credentialsProvider.getCredentials(name);
+        }
         final Optional<Path> keyStoreFile = sslConfig.certificate.keyStoreFile;
-        final String keystorePassword = sslConfig.certificate.keyStorePassword;
+        final Optional<String> keyStorePassword = getCredential(sslConfig.certificate.keyStorePassword, credentials,
+                sslConfig.certificate.keyStorePasswordKey);
+        final Optional<String> keyStoreKeyPassword = getCredential(sslConfig.certificate.keyStoreKeyPassword, credentials,
+                sslConfig.certificate.keyStoreKeyPasswordKey);
         final Optional<Path> trustStoreFile = sslConfig.certificate.trustStoreFile;
-        final Optional<String> trustStorePassword = sslConfig.certificate.trustStorePassword;
+        final Optional<String> trustStorePassword = getCredential(sslConfig.certificate.trustStorePassword, credentials,
+                sslConfig.certificate.trustStorePasswordKey);
         final HttpServerOptions serverOptions = new HttpServerOptions();
 
         //ssl
@@ -801,11 +815,11 @@ public class VertxHttpRecorder {
         } else if (keyStoreFile.isPresent()) {
             KeyStoreOptions options = createKeyStoreOptions(
                     keyStoreFile.get(),
-                    keystorePassword,
+                    keyStorePassword.orElse("password"),
                     sslConfig.certificate.keyStoreFileType,
                     sslConfig.certificate.keyStoreProvider,
                     sslConfig.certificate.keyStoreKeyAlias,
-                    sslConfig.certificate.keyStoreKeyPassword);
+                    keyStoreKeyPassword);
             serverOptions.setKeyCertOptions(options);
         } else {
             return null;
@@ -844,6 +858,19 @@ public class VertxHttpRecorder {
         applyCommonOptions(serverOptions, buildTimeConfig, httpConfiguration, websocketSubProtocols);
 
         return serverOptions;
+    }
+
+    private static Optional<String> getCredential(Optional<String> password, Map<String, String> credentials,
+            Optional<String> passwordKey) {
+        if (password.isPresent()) {
+            return password;
+        }
+
+        if (passwordKey.isPresent()) {
+            return Optional.ofNullable(credentials.get(passwordKey.get()));
+        } else {
+            return Optional.empty();
+        }
     }
 
     private static void applyCommonOptions(HttpServerOptions httpServerOptions,

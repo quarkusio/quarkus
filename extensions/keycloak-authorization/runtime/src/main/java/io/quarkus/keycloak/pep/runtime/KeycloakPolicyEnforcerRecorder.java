@@ -1,5 +1,6 @@
 package io.quarkus.keycloak.pep.runtime;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -90,8 +91,11 @@ public class KeycloakPolicyEnforcerRecorder {
         adapterConfig.setConnectionPoolSize(keycloakPolicyEnforcerConfig.connectionPoolSize);
 
         if (oidcConfig.proxy.host.isPresent()) {
-            adapterConfig.setProxyUrl(oidcConfig.proxy.host.get() + ":"
-                    + oidcConfig.proxy.port);
+            String host = oidcConfig.proxy.host.get();
+            if (!host.startsWith("http://") && !host.startsWith("https://")) {
+                host = URI.create(authServerUrl).getScheme() + "://" + host;
+            }
+            adapterConfig.setProxyUrl(host + ":" + oidcConfig.proxy.port);
         }
 
         PolicyEnforcerConfig enforcerConfig = getPolicyEnforcerConfig(keycloakPolicyEnforcerConfig,

@@ -485,8 +485,7 @@ public class JibProcessor {
                     Path deploymentPath = componentsPath.resolve(JarResultBuildStep.LIB)
                             .resolve(JarResultBuildStep.DEPLOYMENT_LIB);
                     addLayer(jibContainerBuilder, Collections.singletonList(deploymentPath),
-                            workDirInContainer.resolve(JarResultBuildStep.LIB)
-                                    .resolve(JarResultBuildStep.DEPLOYMENT_LIB),
+                            workDirInContainer.resolve(JarResultBuildStep.LIB),
                             "fast-jar-deployment-libs", true, now);
                 }
 

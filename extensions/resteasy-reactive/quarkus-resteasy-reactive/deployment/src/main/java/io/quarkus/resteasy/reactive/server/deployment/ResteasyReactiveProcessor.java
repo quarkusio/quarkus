@@ -1037,16 +1037,26 @@ public class ResteasyReactiveProcessor {
         if (!capabilities.isPresent(Capability.SECURITY)) {
             return null;
         }
+
+        final boolean denyJaxRs = ConfigProvider.getConfig()
+                .getOptionalValue("quarkus.security.jaxrs.deny-unannotated-endpoints", Boolean.class).orElse(false);
+        final boolean hasDefaultJaxRsRolesAllowed = ConfigProvider.getConfig()
+                .getOptionalValues("quarkus.security.jaxrs.default-roles-allowed", String.class).map(l -> !l.isEmpty())
+                .orElse(false);
         var index = indexBuildItem.getComputingIndex();
         return new MethodScannerBuildItem(new MethodScanner() {
             @Override
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                     Map<String, Object> methodContext) {
-                return Objects.requireNonNullElse(
-                        consumeStandardSecurityAnnotations(method, actualEndpointClass, index,
-                                (c) -> Collections.singletonList(
-                                        EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth.proactive))),
-                        Collections.emptyList());
+                List<HandlerChainCustomizer> securityHandlerList = consumeStandardSecurityAnnotations(method,
+                        actualEndpointClass, index,
+                        (c) -> Collections.singletonList(
+                                EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth.proactive)));
+                if (securityHandlerList == null && (denyJaxRs || hasDefaultJaxRsRolesAllowed)) {
+                    securityHandlerList = Collections
+                            .singletonList(EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth.proactive));
+                }
+                return Objects.requireNonNullElse(securityHandlerList, Collections.emptyList());
             }
         });
     }

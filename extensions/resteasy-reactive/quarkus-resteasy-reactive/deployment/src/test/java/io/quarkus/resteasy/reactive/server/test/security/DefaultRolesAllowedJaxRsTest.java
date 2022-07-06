@@ -43,6 +43,18 @@ public class DefaultRolesAllowedJaxRsTest {
     }
 
     @Test
+    public void shouldDenyUnannotatedNonBlocking() {
+        String path = "/unsecured/defaultSecurityNonBlocking";
+        assertStatus(path, 200, 403, 401);
+    }
+
+    @Test
+    public void shouldPermitPermitAllMethodNonBlocking() {
+        String path = "/permitAll/defaultSecurityNonBlocking";
+        assertStatus(path, 200, 200, 200);
+    }
+
+    @Test
     public void shouldPermitPermitAllMethod() {
         assertStatus("/unsecured/permitAll", 200, 200, 200);
     }

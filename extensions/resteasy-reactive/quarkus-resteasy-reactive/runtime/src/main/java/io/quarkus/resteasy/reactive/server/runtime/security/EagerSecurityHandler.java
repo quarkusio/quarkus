@@ -127,7 +127,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
 
     public static abstract class Customizer implements HandlerChainCustomizer {
 
-        public static Customizer newInstance(boolean isProactiveAuthEnabled) {
+        public static HandlerChainCustomizer newInstance(boolean isProactiveAuthEnabled) {
             return isProactiveAuthEnabled ? new ProactiveAuthEnabledCustomizer() : new ProactiveAuthDisabledCustomizer();
         }
 

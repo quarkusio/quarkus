@@ -73,6 +73,18 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_TAG=${{ github.sha }}
           export QUARKUS_CONTAINER_IMAGE_REGISTRY=quay.io
           ./mvnw ${MAVEN_ARGS} clean install -pl :quarkus-integration-test-kubernetes-invoker -Pkubernetes-e2e-tests
+      - name: Report status
+        if: "always() && github.repository == 'quarkusio/quarkus'"
+        shell: bash
+        run: |
+          curl -Ls https://sh.jbang.dev | bash -s - app setup
+          ~/.jbang/bin/jbang .github/NativeBuildReport.java \
+            issueNumber=26581 \
+            runId=${{ github.run_id }} \
+            status=${{ job.status }} \
+            token=${{ secrets.GITHUB_API_TOKEN }} \
+            issueRepo=${{ github.repository }} \
+            thisRepo=${{ github.repository }}
 
   openshift:
     name: OpenShift Integration Tests
@@ -114,3 +126,15 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_TAG=${{ github.sha }}
           export QUARKUS_CONTAINER_IMAGE_REGISTRY=quay.io
           ./mvnw ${MAVEN_ARGS} clean install -pl :quarkus-integration-test-kubernetes-invoker -Popenshift-e2e-tests
+      - name: Report status
+        if: "always() && github.repository == 'quarkusio/quarkus'"
+        shell: bash
+        run: |
+          curl -Ls https://sh.jbang.dev | bash -s - app setup
+          ~/.jbang/bin/jbang .github/NativeBuildReport.java \
+            issueNumber=26582 \
+            runId=${{ github.run_id }} \
+            status=${{ job.status }} \
+            token=${{ secrets.GITHUB_API_TOKEN }} \
+            issueRepo=${{ github.repository }} \
+            thisRepo=${{ github.repository }}

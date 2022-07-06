@@ -40,6 +40,18 @@ public class DenyAllJaxRsTest {
     }
 
     @Test
+    public void shouldDenyUnannotatedNonBlocking() {
+        String path = "/unsecured/defaultSecurityNonBlocking";
+        assertStatus(path, 403, 401);
+    }
+
+    @Test
+    public void shouldPermitPermitAllMethodNonBlocking() {
+        String path = "/permitAll/defaultSecurityNonBlocking";
+        assertStatus(path, 200, 200);
+    }
+
+    @Test
     public void shouldDenyDenyAllMethod() {
         String path = "/unsecured/denyAll";
         assertStatus(path, 403, 401);

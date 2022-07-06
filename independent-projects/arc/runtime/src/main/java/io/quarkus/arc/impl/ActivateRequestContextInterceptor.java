@@ -2,6 +2,7 @@ package io.quarkus.arc.impl;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -24,6 +25,10 @@ public class ActivateRequestContextInterceptor {
 
         if (ctx.getMethod().getReturnType().equals(CompletionStage.class)) {
             return invokeStage(ctx);
+        }
+
+        if (ctx.getMethod().getReturnType().equals(Multi.class)) {
+            return invokeMulti(ctx);
         }
 
         return invoke(ctx);
@@ -54,6 +59,28 @@ public class ActivateRequestContextInterceptor {
             return (CompletionStage<?>) ctx.proceed();
         } catch (Throwable t) {
             return CompletableFuture.failedStage(t);
+        }
+    }
+
+    private Multi<?> invokeMulti(InvocationContext ctx) {
+        return Multi.createFrom().deferred(() -> {
+            ManagedContext requestContext = Arc.container().requestContext();
+            if (requestContext.isActive()) {
+                return proceedWithMulti(ctx);
+            }
+
+            return Multi.createFrom().deferred(() -> {
+                requestContext.activate();
+                return proceedWithMulti(ctx);
+            }).onTermination().invoke(requestContext::terminate);
+        });
+    }
+
+    private Multi<?> proceedWithMulti(InvocationContext ctx) {
+        try {
+            return (Multi<?>) ctx.proceed();
+        } catch (Throwable t) {
+            return Multi.createFrom().failure(t);
         }
     }
 

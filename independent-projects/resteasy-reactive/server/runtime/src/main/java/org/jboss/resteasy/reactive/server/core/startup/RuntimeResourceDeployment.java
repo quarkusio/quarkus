@@ -30,6 +30,7 @@ import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.reflection.ReflectionBeanFactoryCreator;
+import org.jboss.resteasy.reactive.common.types.AllWriteableMarker;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
@@ -532,7 +533,7 @@ public class RuntimeResourceDeployment {
 
         // in the case where the first Writer is an instance of AllWriteableMessageBodyWriter,
         // it doesn't matter that we have multiple writers as the first one will always be used to serialize
-        return buildTimeWriters.get(0) instanceof ServerMessageBodyWriter.AllWriteableMessageBodyWriter;
+        return buildTimeWriters.get(0) instanceof AllWriteableMarker;
     }
 
     private boolean addHandlers(List<ServerRestHandler> handlers, ResourceClass clazz, ServerResourceMethod method,

@@ -9,11 +9,13 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import java.io.File;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -24,7 +26,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,6 +33,7 @@ import javax.ws.rs.Priorities;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.ext.MessageBodyWriter;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -43,6 +45,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.InjectableBean;
@@ -63,6 +66,7 @@ import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
+import org.jboss.resteasy.reactive.common.types.AllWriteableMarker;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
@@ -122,6 +126,7 @@ import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
@@ -188,6 +193,7 @@ public class ResteasyReactiveProcessor {
     private static final DotName FILE = DotName.createSimple(File.class.getName());
 
     private static final int SECURITY_EXCEPTION_MAPPERS_PRIORITY = Priorities.USER + 1;
+    private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
     @BuildStep
     public FeatureBuildItem buildSetup() {
@@ -294,7 +300,8 @@ public class ResteasyReactiveProcessor {
                     classOutput,
                     Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()));
             reflectiveClass.produce(
-                    new ReflectiveClassBuildItem(true, false, false, generationResult.values().toArray(new String[0])));
+                    new ReflectiveClassBuildItem(true, false, false, generationResult.values().toArray(
+                            EMPTY_STRING_ARRAY)));
             Map<String, String> classMappers;
             DotName classDotName = methodInfo.declaringClass().name();
             if (resultingMappers.containsKey(classDotName)) {
@@ -322,7 +329,7 @@ public class ResteasyReactiveProcessor {
         }
         Set<String> beanParams = resourceScanningResultBuildItem.get().getResult()
                 .getBeanParams();
-        unremoveableBeans.produce(UnremovableBeanBuildItem.beanClassNames(beanParams.toArray(new String[0])));
+        unremoveableBeans.produce(UnremovableBeanBuildItem.beanClassNames(beanParams.toArray(EMPTY_STRING_ARRAY)));
     }
 
     @BuildStep
@@ -663,7 +670,7 @@ public class ResteasyReactiveProcessor {
         }
         if (!dateTimeFormatterProviderClassNames.isEmpty()) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, false,
-                    dateTimeFormatterProviderClassNames.toArray(new String[0])));
+                    dateTimeFormatterProviderClassNames.toArray(EMPTY_STRING_ARRAY)));
         }
     }
 
@@ -917,7 +924,7 @@ public class ResteasyReactiveProcessor {
             if (config.failOnDuplicate) {
                 throw new ConfigurationError(message);
             }
-            log.warning(message);
+            log.warn(message);
         }
     }
 
@@ -1042,6 +1049,55 @@ public class ResteasyReactiveProcessor {
                         Collections.emptyList());
             }
         });
+    }
+
+    /**
+     * This results in adding {@link AllWriteableMarker} to user provided {@link MessageBodyWriter} classes
+     * that handle every class
+     *
+     * RESTEasy Reactive already has a mechanism to do this for built-in types at the build time of that project,
+     * so we don't need to do it here.
+     */
+    @BuildStep
+    void addAllWriteableMarker(List<MessageBodyWriterBuildItem> messageBodyWriterBuildItems,
+            BuildProducer<BytecodeTransformerBuildItem> producer) {
+        List<String> messageBodyWriterClassNames = new ArrayList<>(messageBodyWriterBuildItems.size());
+        for (MessageBodyWriterBuildItem bi : messageBodyWriterBuildItems) {
+            if (!bi.isBuiltin() && ((bi.getRuntimeType() == null) || bi.getRuntimeType().equals(RuntimeType.SERVER))) {
+                messageBodyWriterClassNames.add(bi.getClassName());
+            }
+        }
+
+        for (String className : messageBodyWriterClassNames) {
+            if (MessageBodyWriterTransformerUtils.shouldAddAllWriteableMarker(className,
+                    Thread.currentThread().getContextClassLoader())) {
+                log.debug("Class '" + className + "' will be transformed to add '" + AllWriteableMarker.class.getName()
+                        + "' to its interfaces");
+                producer.produce(new BytecodeTransformerBuildItem(className,
+                        new BiFunction<>() {
+                            @Override
+                            public ClassVisitor apply(String s, ClassVisitor classVisitor) {
+                                return new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
+
+                                    /**
+                                     * Simply adds {@link AllWriteableMarker} to the list of implemented interfaces
+                                     */
+                                    @Override
+                                    public void visit(int version, int access, String name, String signature,
+                                            String superName,
+                                            String[] interfaces) {
+                                        LinkedHashSet<String> newInterfaces = new LinkedHashSet<>(interfaces.length + 1);
+                                        newInterfaces.addAll(Arrays.asList(interfaces));
+                                        newInterfaces.add(AllWriteableMarker.class.getName().replace('.', '/'));
+                                        super.visit(version, access, name, signature, superName,
+                                                newInterfaces.toArray(EMPTY_STRING_ARRAY));
+                                    }
+                                };
+                            }
+                        }));
+            }
+        }
+
     }
 
     private <T> T consumeStandardSecurityAnnotations(MethodInfo methodInfo, ClassInfo classInfo, IndexView index,

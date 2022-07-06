@@ -45,6 +45,15 @@
 
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
     <profiles>
         <profile>
             <id>jakarta-rewrite</id>

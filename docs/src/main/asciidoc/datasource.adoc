@@ -650,3 +650,93 @@ include::{generated-dir}/config/quarkus-reactive-oracle-client.adoc[opts=optiona
 === Reactive PostgreSQL Specific Configuration
 
 include::{generated-dir}/config/quarkus-reactive-pg-client.adoc[opts=optional, leveloffset=+1]
+
+
+[[reactive-url]]
+== Reactive Datasource URL Reference
+
+=== DB2
+
+`db2://[user[:[password]]@]host[:port][/database][?<key1>=<value1>[&<key2>=<value2>]]`
+
+Example:: `db2://dbuser:secretpassword@database.server.com:50000/mydb`
+
+Currently, the client supports the following parameter keys:
+
+* `host`
+* `port`
+* `user`
+* `password`
+* `database`
+
+NOTE: Configuring parameters in connection URL will override the default properties.
+
+=== Microsoft SQL Server
+
+`sqlserver://[user[:[password]]@]host[:port][/database][?<key1>=<value1>[&<key2>=<value2>]]`
+
+Example:: `sqlserver://dbuser:secretpassword@database.server.com:1433/mydb`
+
+Currently, the client supports the following parameter keys:
+
+* `host`
+* `port`
+* `user`
+* `password`
+* `database`
+
+NOTE: Configuring parameters in connection URL will override the default properties.
+
+=== MySQL / MariaDB
+
+`mysql://[user[:[password]]@]host[:port][/database][?<key1>=<value1>[&<key2>=<value2>]]`
+
+Example:: `mysql://dbuser:secretpassword@database.server.com:3211/mydb`
+
+Currently, the client supports the following parameter keys (case-insensitive):
+
+* `host`
+* `port`
+* `user`
+* `password`
+* `schema`
+* `socket`
+* `useAffectedRows`
+
+NOTE: Configuring parameters in connection URL will override the default properties.
+
+=== Oracle
+
+==== EZConnect Format
+
+`oracle:thin:@[[protocol:]//]host[:port][/service_name][:server_mode][/instance_name][?connection properties]`
+
+Example:: `oracle:thin:@mydbhost1:5521/mydbservice?connect_timeout=10sec`
+
+==== TNS Alias Format
+
+`oracle:thin:@<alias_name>[?connection properties]`
+
+Example:: `oracle:thin:@prod_db?TNS_ADMIN=/work/tns/`
+
+=== PostgreSQL
+
+`postgresql://[user[:[password]]@]host[:port][/database][?<key1>=<value1>[&<key2>=<value2>]]`
+
+Example:: `postgresql://dbuser:secretpassword@database.server.com:5432/mydb`
+
+Currently, the client supports the following parameter keys:
+
+* `host`
+* `port`
+* `user`
+* `password`
+* `dbname`
+* `sslmode`
+* additional properties, including:
+** `application_name`
+** `fallback_application_name`
+** `search_path`
+** `options`
+
+NOTE: Configuring parameters in connection URL will override the default properties.

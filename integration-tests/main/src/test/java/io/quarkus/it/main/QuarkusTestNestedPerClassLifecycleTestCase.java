@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
@@ -27,7 +28,16 @@ public class QuarkusTestNestedPerClassLifecycleTestCase {
     private final AtomicInteger counter = new AtomicInteger(0);
 
     @BeforeAll
-    public void increment() {
+    public void incrementInBeforeAll() {
+        counter.incrementAndGet();
+    }
+
+    /**
+     * We're doing nothing with this code, but we want to keep it to verify the methods annotated
+     * with `@AfterAll` work for nested tests.
+     */
+    @AfterAll
+    public void incrementInAfterAll() {
         counter.incrementAndGet();
     }
 

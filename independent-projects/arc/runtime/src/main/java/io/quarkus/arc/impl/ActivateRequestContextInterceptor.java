@@ -19,19 +19,16 @@ public class ActivateRequestContextInterceptor {
 
     @AroundInvoke
     Object aroundInvoke(InvocationContext ctx) throws Exception {
-        if (ctx.getMethod().getReturnType().equals(Uni.class)) {
-            return invokeUni(ctx);
+        switch (ReactiveType.valueOf(ctx.getMethod())) {
+            case UNI:
+                return invokeUni(ctx);
+            case MULTI:
+                return invokeMulti(ctx);
+            case STAGE:
+                return invokeStage(ctx);
+            default:
+                return invoke(ctx);
         }
-
-        if (ctx.getMethod().getReturnType().equals(CompletionStage.class)) {
-            return invokeStage(ctx);
-        }
-
-        if (ctx.getMethod().getReturnType().equals(Multi.class)) {
-            return invokeMulti(ctx);
-        }
-
-        return invoke(ctx);
     }
 
     private CompletionStage<?> invokeStage(InvocationContext ctx) {

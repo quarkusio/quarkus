@@ -47,18 +47,20 @@ public class DataSourceHealthCheck implements HealthCheck {
         for (Map.Entry<String, DataSource> dataSource : dataSources.entrySet()) {
             boolean isDefault = DataSourceUtil.isDefault(dataSource.getKey());
             AgroalDataSource ads = (AgroalDataSource) dataSource.getValue();
+            String dsName = dataSource.getKey();
+
             try {
                 boolean valid = ads.isHealthy(false);
                 if (!valid) {
                     String data = isDefault ? "validation check failed for the default DataSource"
                             : "validation check failed for DataSource '" + dataSource.getKey() + "'";
-                    String dsName = isDefault ? "default" : dataSource.getKey();
                     builder.down().withData(dsName, data);
+                } else {
+                    builder.withData(dsName, "UP");
                 }
             } catch (SQLException e) {
                 String data = isDefault ? "Unable to execute the validation check for the default DataSource: "
                         : "Unable to execute the validation check for DataSource '" + dataSource.getKey() + "': ";
-                String dsName = isDefault ? "default" : dataSource.getKey();
                 builder.down().withData(dsName, data + e.getMessage());
             }
         }

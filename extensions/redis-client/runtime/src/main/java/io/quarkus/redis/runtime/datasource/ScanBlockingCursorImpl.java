@@ -3,15 +3,15 @@ package io.quarkus.redis.runtime.datasource;
 import java.time.Duration;
 import java.util.Set;
 
-import io.quarkus.redis.datasource.Cursor;
-import io.quarkus.redis.datasource.ReactiveCursor;
+import io.quarkus.redis.datasource.keys.KeyScanCursor;
+import io.quarkus.redis.datasource.keys.ReactiveKeyScanCursor;
 
-public class ScanBlockingCursorImpl<K, V> implements Cursor<Set<K>> {
+public class ScanBlockingCursorImpl<K> implements KeyScanCursor<K> {
 
-    private final ReactiveCursor<Set<K>> reactive;
+    private final ReactiveKeyScanCursor<K> reactive;
     private final Duration timeout;
 
-    public ScanBlockingCursorImpl(ReactiveCursor<Set<K>> reactive, Duration timeout) {
+    public ScanBlockingCursorImpl(ReactiveKeyScanCursor<K> reactive, Duration timeout) {
         this.timeout = timeout;
         this.reactive = reactive;
     }
@@ -29,5 +29,10 @@ public class ScanBlockingCursorImpl<K, V> implements Cursor<Set<K>> {
     @Override
     public long cursorId() {
         return reactive.cursorId();
+    }
+
+    @Override
+    public Iterable<K> toIterable() {
+        return reactive.toMulti().subscribe().asIterable();
     }
 }

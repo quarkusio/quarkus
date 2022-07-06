@@ -5,8 +5,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
-import io.quarkus.redis.datasource.Cursor;
-
 /**
  * Allows executing commands manipulating keys.
  * See <a href="https://redis.io/commands/?group=generic">the generic command list</a> for further information about these
@@ -405,7 +403,7 @@ public interface KeyCommands<K> {
      *
      * @return the cursor.
      **/
-    Cursor<Set<K>> scan();
+    KeyScanCursor<K> scan();
 
     /**
      * Execute the command <a href="https://redis.io/commands/scan">SCAN</a>.
@@ -416,7 +414,7 @@ public interface KeyCommands<K> {
      * @param args the extra arguments
      * @return the cursor.
      **/
-    Cursor<Set<K>> scan(KeyScanArgs args);
+    KeyScanCursor<K> scan(KeyScanArgs args);
 
     /**
      * Execute the command <a href="https://redis.io/commands/touch">TOUCH</a>.

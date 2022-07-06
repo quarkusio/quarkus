@@ -3,13 +3,12 @@ package io.quarkus.redis.runtime.datasource;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
 
-import io.quarkus.redis.datasource.Cursor;
 import io.quarkus.redis.datasource.keys.CopyArgs;
 import io.quarkus.redis.datasource.keys.ExpireArgs;
 import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.keys.KeyScanArgs;
+import io.quarkus.redis.datasource.keys.KeyScanCursor;
 import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
 import io.quarkus.redis.datasource.keys.RedisValueType;
 
@@ -210,12 +209,12 @@ public class BlockingKeyCommandsImpl<K> implements KeyCommands<K> {
     }
 
     @Override
-    public Cursor<Set<K>> scan() {
+    public KeyScanCursor<K> scan() {
         return new ScanBlockingCursorImpl<>(reactive.scan(), timeout);
     }
 
     @Override
-    public Cursor<Set<K>> scan(KeyScanArgs args) {
+    public KeyScanCursor<K> scan(KeyScanArgs args) {
         return new ScanBlockingCursorImpl<>(reactive.scan(args), timeout);
     }
 

@@ -31,4 +31,9 @@ public class ZScanBlockingCursorImpl<V> implements ZScanCursor<V> {
     public long cursorId() {
         return reactive.cursorId();
     }
+
+    @Override
+    public Iterable<ScoredValue<V>> toIterable() {
+        return reactive.toMulti().subscribe().asIterable();
+    }
 }

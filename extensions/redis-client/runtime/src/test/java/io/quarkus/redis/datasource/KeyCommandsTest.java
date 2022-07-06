@@ -21,6 +21,7 @@ import io.quarkus.redis.datasource.keys.CopyArgs;
 import io.quarkus.redis.datasource.keys.ExpireArgs;
 import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.keys.KeyScanArgs;
+import io.quarkus.redis.datasource.keys.KeyScanCursor;
 import io.quarkus.redis.datasource.keys.RedisKeyNotFoundException;
 import io.quarkus.redis.datasource.keys.RedisValueType;
 import io.quarkus.redis.datasource.list.ListCommands;
@@ -351,7 +352,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     @Test
     void scan() {
         strings.set(key, Person.person7);
-        Cursor<Set<String>> cursor = keys.scan();
+        KeyScanCursor<String> cursor = keys.scan();
         assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
         assertThat(cursor.next()).containsExactly(key);
         assertThat(cursor.hasNext()).isFalse();
@@ -359,9 +360,27 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    void scanEmpty() {
+        KeyScanCursor<String> cursor = keys.scan();
+        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
+        assertThat(cursor.next()).isEmpty();
+        assertThat(cursor.hasNext()).isFalse();
+        assertThat(cursor.cursorId()).isEqualTo(0);
+    }
+
+    @Test
+    void scanIterableEmpty() {
+        KeyScanCursor<String> cursor = keys.scan();
+        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
+        assertThat(cursor.toIterable()).isEmpty();
+        assertThat(cursor.hasNext()).isFalse();
+        assertThat(cursor.cursorId()).isEqualTo(0);
+    }
+
+    @Test
     void scanWithArgs() {
         strings.set(key, Person.person7);
-        Cursor<Set<String>> cursor = keys.scan(new KeyScanArgs().count(10));
+        KeyScanCursor<String> cursor = keys.scan(new KeyScanArgs().count(10));
         assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
         assertThat(cursor.next()).containsExactly(key);
         assertThat(cursor.hasNext()).isFalse();
@@ -373,7 +392,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
         strings.set("key1", Person.person7);
         ds.list(Person.class).lpush("key2", Person.person7);
 
-        Cursor<Set<String>> cursor = keys.scan(new KeyScanArgs().type(RedisValueType.STRING));
+        KeyScanCursor<String> cursor = keys.scan(new KeyScanArgs().type(RedisValueType.STRING));
         assertThat(cursor.next()).containsExactly("key1");
 
         cursor = keys.scan(new KeyScanArgs().type(RedisValueType.LIST));
@@ -385,7 +404,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
         Set<String> expect = new HashSet<>();
         populateMany(expect);
 
-        Cursor<Set<String>> cursor = keys.scan(new KeyScanArgs().count(12));
+        KeyScanCursor<String> cursor = keys.scan(new KeyScanArgs().count(12));
 
         assertThat(cursor.cursorId()).isNotEqualTo(0);
         assertThat(cursor.hasNext()).isTrue();
@@ -401,10 +420,27 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    void scanMultipleAsIterable() {
+        Set<String> expect = new HashSet<>();
+        populateMany(expect);
+
+        KeyScanCursor<String> cursor = keys.scan(new KeyScanArgs().count(12));
+        Iterable<String> iterable = cursor.toIterable();
+
+        Set<String> check = new HashSet<>(cursor.next());
+        for (String k : iterable) {
+            check.add(k);
+        }
+
+        assertThat(check).isEqualTo(expect);
+        assertThat(check).hasSize(100);
+    }
+
+    @Test
     void scanMatch() {
         Set<String> expect = new HashSet<>();
         populateMany(expect);
-        Cursor<Set<String>> cursor = keys.scan(new KeyScanArgs().count(200).match(key + "*"));
+        KeyScanCursor<String> cursor = keys.scan(new KeyScanArgs().count(200).match(key + "*"));
         assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
         assertThat(cursor.next()).hasSize(expect.size());
         assertThat(cursor.hasNext()).isFalse();

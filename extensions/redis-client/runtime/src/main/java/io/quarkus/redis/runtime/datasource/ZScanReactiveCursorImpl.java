@@ -5,6 +5,7 @@ import java.util.List;
 
 import io.quarkus.redis.datasource.sortedset.ReactiveZScanCursor;
 import io.quarkus.redis.datasource.sortedset.ScoredValue;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Response;
@@ -58,5 +59,13 @@ public class ZScanReactiveCursorImpl<V> extends AbstractRedisCommands implements
     @Override
     public long cursorId() {
         return cursor;
+    }
+
+    @Override
+    public Multi<ScoredValue<V>> toMulti() {
+        return Multi.createBy().repeating()
+                .uni(this::next)
+                .whilst(m -> !m.isEmpty() && hasNext())
+                .onItem().transformToMultiAndConcatenate(list -> Multi.createFrom().items(list.stream()));
     }
 }

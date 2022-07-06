@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
-import io.quarkus.redis.datasource.ReactiveCursor;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -406,7 +405,7 @@ public interface ReactiveKeyCommands<K> {
      *
      * @return the cursor.
      **/
-    ReactiveCursor<Set<K>> scan();
+    ReactiveKeyScanCursor<K> scan();
 
     /**
      * Execute the command <a href="https://redis.io/commands/scan">SCAN</a>.
@@ -417,7 +416,7 @@ public interface ReactiveKeyCommands<K> {
      * @param args the extra arguments
      * @return the cursor.
      **/
-    ReactiveCursor<Set<K>> scan(KeyScanArgs args);
+    ReactiveKeyScanCursor<K> scan(KeyScanArgs args);
 
     /**
      * Execute the command <a href="https://redis.io/commands/touch">TOUCH</a>.

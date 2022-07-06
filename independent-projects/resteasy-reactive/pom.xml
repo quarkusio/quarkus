@@ -42,6 +42,7 @@
         <!-- Versions -->
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <jandex.version>2.4.3.Final</jandex.version>
+        <bytebuddy.version>1.12.12</bytebuddy.version>
         <junit5.version>5.8.2</junit5.version>
         <maven.version>3.8.6</maven.version>
         <assertj.version>3.23.1</assertj.version>
@@ -70,8 +71,9 @@
     </properties>
 
     <modules>
-        <module>server</module>
         <module>common</module>
+        <module>build-support</module>
+        <module>server</module>
         <module>client</module>
     </modules>
 
@@ -96,6 +98,19 @@
             <dependency>
                 <groupId>io.quarkus.resteasy.reactive</groupId>
                 <artifactId>resteasy-reactive-processor</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.quarkus.resteasy.reactive</groupId>
+                <artifactId>resteasy-reactive-build-support</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+            </dependency>
+
+            <dependency>
+                <groupId>io.quarkus.resteasy.reactive</groupId>
+                <artifactId>resteasy-reactive-common-types</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -142,6 +157,17 @@
                 <groupId>org.jboss</groupId>
                 <artifactId>jandex</artifactId>
                 <version>${jandex.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy</artifactId>
+                <version>${bytebuddy.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy-maven-plugin</artifactId>
+                <version>${bytebuddy.version}</version>
             </dependency>
 
             <dependency>
@@ -479,6 +505,28 @@
                         <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>
                         <removeUnused>true</removeUnused>
                         <skip>${format.skip}</skip>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>net.bytebuddy</groupId>
+                    <artifactId>byte-buddy-maven-plugin</artifactId>
+                    <version>${bytebuddy.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>transform</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <transformations>
+                            <transformation>
+                                <groupId>${project.groupId}</groupId>
+                                <artifactId>resteasy-reactive-build-support</artifactId>
+                                <version>${project.version}</version>
+                                <plugin>org.jboss.resteasy.reactive.build.support.AllWriteableMessageBodyWriterByteBuddyPlugin</plugin>
+                            </transformation>
+                        </transformations>
                     </configuration>
                 </plugin>
             </plugins>

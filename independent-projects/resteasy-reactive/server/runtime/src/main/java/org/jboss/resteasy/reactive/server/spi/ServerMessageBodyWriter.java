@@ -6,6 +6,7 @@ import java.lang.reflect.Type;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyWriter;
+import org.jboss.resteasy.reactive.common.types.AllWriteableMarker;
 
 /**
  * Extension of MessageBodyWriter which can write directly to a Vert.x response

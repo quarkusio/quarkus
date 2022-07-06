@@ -56,6 +56,20 @@
             <artifactId>jboss-logging</artifactId>
         </dependency>
 
+        <!-- this is only done in order to ensure that resteasy-reactive-build-support is built before this module -->
+        <dependency>
+            <groupId>io.quarkus.resteasy.reactive</groupId>
+            <artifactId>resteasy-reactive-build-support</artifactId>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
     </dependencies>
 
     <profiles>

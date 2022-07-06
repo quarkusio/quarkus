@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.server.spi;
+package org.jboss.resteasy.reactive.common.types;
 
 /**
  * A marker interface that will be used by RESTEasy Reactive to determine if a list of MessageBodyWriter objects

@@ -248,6 +248,7 @@
                 <module>kubernetes-service-binding-reactive</module>
                 <module>openshift-client</module>
                 <module>mongodb-client</module>
+                <module>mongodb-devservices</module>
                 <module>jackson</module>
                 <module>jsonb</module>
                 <module>resteasy-jackson</module>

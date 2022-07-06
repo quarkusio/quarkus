@@ -24,7 +24,6 @@ import io.quarkus.mongodb.health.MongoHealthCheck;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class NamedMongoClientConfigTest extends MongoWithReplicasTestBase {
-
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class))

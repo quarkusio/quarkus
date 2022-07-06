@@ -9,12 +9,14 @@ import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 
+import org.bson.BsonObjectId;
+
 import com.mongodb.WriteConcern;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.result.InsertOneResult;
 
-import io.quarkus.mongodb.MongoClientName;
 import io.smallrye.common.annotation.Blocking;
 
 @Path("/books")
@@ -22,7 +24,6 @@ import io.smallrye.common.annotation.Blocking;
 public class BookResource {
 
     @Inject
-    @MongoClientName("parameter-injection")
     MongoClient client;
 
     private MongoCollection<Book> getCollection() {
@@ -35,18 +36,19 @@ public class BookResource {
         List<Book> books = new ArrayList<>();
         WriteConcern writeConcern = client.getDatabase("temp").getWriteConcern();
         // force a test failure if we're not getting the correct, and correctly configured named mongodb client
-        if (Boolean.TRUE.equals(writeConcern.getJournal())) {
-            for (Book doc : iterable) {
-                books.add(doc);
-            }
+        for (Book doc : iterable) {
+            books.add(doc);
         }
         return books;
     }
 
     @POST
     public Response addBook(Book book) {
-        getCollection().insertOne(book);
-        return Response.accepted().build();
+        InsertOneResult insertOneResult = getCollection().insertOne(book);
+        BsonObjectId insertedId = (BsonObjectId) insertOneResult.getInsertedId();
+        return Response.accepted()
+                .entity(insertedId.getValue().toString())
+                .build();
     }
 
     @GET

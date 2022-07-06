@@ -7,8 +7,8 @@ import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusProdModeTest;
 
 public class MultipleContainerImageExtensionTest {
@@ -21,8 +21,8 @@ public class MultipleContainerImageExtensionTest {
             .setExpectedException(IllegalStateException.class)
             .setForcedDependencies(
                     Arrays.asList(
-                            new AppArtifact("io.quarkus", "quarkus-container-image-jib", Version.getVersion()),
-                            new AppArtifact("io.quarkus", "quarkus-container-image-docker", Version.getVersion())));
+                            Dependency.of("io.quarkus", "quarkus-container-image-jib", Version.getVersion()),
+                            Dependency.of("io.quarkus", "quarkus-container-image-docker", Version.getVersion())));
 
     @Test
     public void testBuildShouldFail() {

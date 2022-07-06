@@ -2,13 +2,13 @@ package io.quarkus.webjar.locator.test;
 
 import static org.hamcrest.core.Is.is;
 
-import java.util.Arrays;
+import java.util.List;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -20,8 +20,9 @@ public class WebJarLocatorTest extends WebJarLocatorTestSupport {
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset("<html>Hello!<html>"), META_INF_RESOURCES + "/index.html")
                     .addAsResource(new StringAsset("Test"), META_INF_RESOURCES + "/some/path/test.txt"))
-            .setForcedDependencies(Arrays.asList(new AppArtifact("org.webjars", "jquery-ui", JQUERY_UI_VERSION),
-                    new AppArtifact("org.webjars", "momentjs", MOMENTJS_VERSION)));
+            .setForcedDependencies(List.of(
+                    Dependency.of("org.webjars", "jquery-ui", JQUERY_UI_VERSION),
+                    Dependency.of("org.webjars", "momentjs", MOMENTJS_VERSION)));
 
     @Test
     public void test() {

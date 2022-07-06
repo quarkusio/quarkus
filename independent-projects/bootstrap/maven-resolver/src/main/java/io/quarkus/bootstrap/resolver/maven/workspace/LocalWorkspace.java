@@ -1,6 +1,5 @@
 package io.quarkus.bootstrap.resolver.maven.workspace;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
@@ -218,8 +217,8 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
         if (findArtifact(artifact) == null) {
             return Collections.emptyList();
         }
-        lastFindVersionsKey = new AppArtifactKey(artifact.getGroupId(), artifact.getArtifactId());
-        return lastFindVersions = Collections.singletonList(artifact.getVersion());
+        lastFindVersionsKey = ArtifactKey.ga(artifact.getGroupId(), artifact.getArtifactId());
+        return lastFindVersions = List.of(artifact.getVersion());
     }
 
     public String getResolvedVersion() {

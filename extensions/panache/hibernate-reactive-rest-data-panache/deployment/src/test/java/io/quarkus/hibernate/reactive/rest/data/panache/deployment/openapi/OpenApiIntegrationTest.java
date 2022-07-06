@@ -6,7 +6,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
 import io.quarkus.hibernate.reactive.rest.data.panache.deployment.repository.AbstractEntity;
 import io.quarkus.hibernate.reactive.rest.data.panache.deployment.repository.AbstractItem;
@@ -19,6 +18,7 @@ import io.quarkus.hibernate.reactive.rest.data.panache.deployment.repository.Emp
 import io.quarkus.hibernate.reactive.rest.data.panache.deployment.repository.Item;
 import io.quarkus.hibernate.reactive.rest.data.panache.deployment.repository.ItemsRepository;
 import io.quarkus.hibernate.reactive.rest.data.panache.deployment.repository.ItemsResource;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusProdModeTest;
 import io.restassured.RestAssured;
 
@@ -36,9 +36,9 @@ class OpenApiIntegrationTest {
                     .addAsResource("application.properties")
                     .addAsResource("import.sql"))
             .setForcedDependencies(List.of(
-                    new AppArtifact("io.quarkus", "quarkus-smallrye-openapi", Version.getVersion()),
-                    new AppArtifact("io.quarkus", "quarkus-reactive-pg-client-deployment", Version.getVersion()),
-                    new AppArtifact("io.quarkus", "quarkus-resteasy-reactive-jsonb-deployment", Version.getVersion())))
+                    Dependency.of("io.quarkus", "quarkus-smallrye-openapi", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-reactive-pg-client-deployment", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-resteasy-reactive-jsonb-deployment", Version.getVersion())))
             .setRun(true);
 
     @Test

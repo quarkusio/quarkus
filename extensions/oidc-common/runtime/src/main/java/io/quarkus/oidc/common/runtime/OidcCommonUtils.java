@@ -228,7 +228,14 @@ public class OidcCommonUtils {
             return Optional.empty();
         }
         JsonObject jsonOptions = new JsonObject();
-        jsonOptions.put("host", proxyConfig.host.get());
+        // Vert.x Client currently does not expect a host having a scheme but keycloak-authorization expects scheme and host.
+        // Having a dedicated scheme property is probably better, but since it is property is not taken into account in Vertx Client
+        // it does not really make sense as it can send a misleading message that users can choose between `http` and `https`.
+        String host = URI.create(proxyConfig.host.get()).getHost();
+        if (host == null) {
+            host = proxyConfig.host.get();
+        }
+        jsonOptions.put("host", host);
         jsonOptions.put("port", proxyConfig.port);
         if (proxyConfig.username.isPresent()) {
             jsonOptions.put("username", proxyConfig.username.get());

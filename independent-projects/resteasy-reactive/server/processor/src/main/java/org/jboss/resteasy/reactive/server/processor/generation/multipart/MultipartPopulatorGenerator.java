@@ -15,6 +15,7 @@ import io.quarkus.gizmo.ResultHandle;
 import java.io.File;
 import java.lang.reflect.Modifier;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -267,7 +268,7 @@ public final class MultipartPopulatorGenerator {
                     }
 
                     ResultHandle formAttrNameHandle = populate.load(formAttrName);
-                    AssignableResultHandle resultHandle = populate.createVariable(Object.class);
+                    AssignableResultHandle resultVariableHandle = populate.createVariable(Object.class);
 
                     if (isFileRelatedType(fieldDotName)) {
                         // uploaded file are present in the RoutingContext and are extracted using MultipartSupport#getFileUpload
@@ -277,20 +278,20 @@ public final class MultipartPopulatorGenerator {
                                         String.class, ResteasyReactiveRequestContext.class),
                                 formAttrNameHandle, rrCtxHandle);
                         if (fieldDotName.equals(DotNames.FIELD_UPLOAD_NAME)) {
-                            populate.assign(resultHandle, fileUploadHandle);
+                            populate.assign(resultVariableHandle, fileUploadHandle);
                         } else if (fieldDotName.equals(DotNames.PATH_NAME) || fieldDotName.equals(DotNames.FILE_NAME)) {
                             BranchResult fileUploadNullBranch = populate.ifNull(fileUploadHandle);
                             BytecodeCreator fileUploadNullTrue = fileUploadNullBranch.trueBranch();
-                            fileUploadNullTrue.assign(resultHandle, populate.loadNull());
+                            fileUploadNullTrue.assign(resultVariableHandle, populate.loadNull());
                             fileUploadNullTrue.breakScope();
                             BytecodeCreator fileUploadFalse = fileUploadNullBranch.falseBranch();
                             ResultHandle pathHandle = fileUploadFalse.invokeVirtualMethod(
                                     MethodDescriptor.ofMethod(DefaultFileUpload.class, "uploadedFile", Path.class),
                                     fileUploadHandle);
                             if (fieldDotName.equals(DotNames.PATH_NAME)) {
-                                fileUploadFalse.assign(resultHandle, pathHandle);
+                                fileUploadFalse.assign(resultVariableHandle, pathHandle);
                             } else {
-                                fileUploadFalse.assign(resultHandle, fileUploadFalse.invokeInterfaceMethod(
+                                fileUploadFalse.assign(resultVariableHandle, fileUploadFalse.invokeInterfaceMethod(
                                         MethodDescriptor.ofMethod(Path.class, "toFile", File.class), pathHandle));
                             }
                             fileUploadFalse.breakScope();
@@ -323,13 +324,13 @@ public final class MultipartPopulatorGenerator {
                                 throw new IllegalArgumentException(
                                         "Unhandled genetic type '" + fieldGenericType.name().toString() + "'");
                             }
-                            populate.assign(resultHandle, fileUploadHandle);
+                            populate.assign(resultVariableHandle, fileUploadHandle);
                         } else {
                             ResultHandle allFileUploadsHandle = populate.invokeStaticMethod(
                                     MethodDescriptor.ofMethod(MultipartSupport.class, "getFileUploads", List.class,
                                             ResteasyReactiveRequestContext.class),
                                     rrCtxHandle);
-                            populate.assign(resultHandle, allFileUploadsHandle);
+                            populate.assign(resultVariableHandle, allFileUploadsHandle);
                         }
                     } else {
                         // this is a common enough mistake, so let's provide a good error message
@@ -347,12 +348,12 @@ public final class MultipartPopulatorGenerator {
                         if (fieldDotName.equals(DotNames.STRING_NAME) && partType.equals(MediaType.TEXT_PLAIN)) {
                             // in this case all we need to do is read the value of the form attribute
 
-                            populate.assign(resultHandle,
+                            populate.assign(resultVariableHandle,
                                     populate.invokeVirtualMethod(MethodDescriptor.ofMethod(ResteasyReactiveRequestContext.class,
                                             "getFormParameter", Object.class, String.class, boolean.class, boolean.class),
                                             rrCtxHandle,
                                             formAttrNameHandle, populate.load(true), populate.load(false)));
-                        } else if (fieldType.kind() == Type.Kind.ARRAY) {
+                        } else if ((fieldType.kind() == Type.Kind.ARRAY) || isList(fieldType)) {
                             // Media Type static field
                             FieldDescriptor mediaTypeField = cc.getFieldCreator(field.name() + "_mediaType", MediaType.class)
                                     .setModifiers(Modifier.PRIVATE | Modifier.STATIC).getFieldDescriptor();
@@ -361,7 +362,9 @@ public final class MultipartPopulatorGenerator {
                                     clinit.load(partType)));
 
                             // Component Type static field
-                            Type componentType = fieldType.asArrayType().component();
+                            boolean isArray = fieldType.kind() == Type.Kind.ARRAY;
+                            Type componentType = isArray ? fieldType.asArrayType().component()
+                                    : fieldType.asParameterizedType().arguments().get(0);
                             ClassInfo componentClassInfo = index.getClassByName(componentType.name());
                             FieldDescriptor genericComponentTypeField = cc
                                     .getFieldCreator(field.name() + "_genericComponentType", java.lang.reflect.Type.class)
@@ -379,15 +382,21 @@ public final class MultipartPopulatorGenerator {
                                     rrCtxHandle,
                                     formAttrNameHandle, populate.load(false), populate.load(false));
 
-                            ResultHandle arrayResultHandle = populate.newArray(componentType.toString(),
-                                    populate.invokeInterfaceMethod(MethodDescriptor.ofMethod(
-                                            Collection.class, "size", int.class), formCollectionValueHandle));
+                            ResultHandle resultHandle;
+                            ResultHandle formCollectionSizeHandle = populate.invokeInterfaceMethod(MethodDescriptor.ofMethod(
+                                    Collection.class, "size", int.class), formCollectionValueHandle);
+                            if (isArray) {
+                                resultHandle = populate.newArray(componentType.toString(), formCollectionSizeHandle);
+                            } else {
+                                resultHandle = populate.newInstance(MethodDescriptor.ofConstructor(ArrayList.class, int.class),
+                                        formCollectionSizeHandle);
+                            }
 
                             ResultHandle formValueIterator = populate.invokeInterfaceMethod(
                                     MethodDescriptor.ofMethod(Collection.class, "iterator", Iterator.class),
                                     populate.checkCast(formCollectionValueHandle, Collection.class));
-                            AssignableResultHandle indexArray = populate.createVariable(int.class);
-                            populate.assign(indexArray, populate.load(0));
+                            AssignableResultHandle collectionIndex = populate.createVariable(int.class);
+                            populate.assign(collectionIndex, populate.load(0));
 
                             BytecodeCreator loopIterator = populate.whileLoop(c -> c.ifTrue(
                                     c.invokeInterfaceMethod(
@@ -396,8 +405,10 @@ public final class MultipartPopulatorGenerator {
                                     .block();
                             ResultHandle formValueAsString = loopIterator.invokeInterfaceMethod(
                                     MethodDescriptor.ofMethod(Iterator.class, "next", Object.class), formValueIterator);
-                            loopIterator.writeArrayValue(arrayResultHandle, indexArray, loopIterator.invokeStaticMethod(
-                                    MethodDescriptor.ofMethod(MultipartSupport.class, "convertFormAttribute", Object.class,
+
+                            ResultHandle convertedValueHandle = loopIterator.invokeStaticMethod(
+                                    MethodDescriptor.ofMethod(MultipartSupport.class, "convertFormAttribute",
+                                            Object.class,
                                             String.class,
                                             Class.class,
                                             java.lang.reflect.Type.class, MediaType.class,
@@ -406,11 +417,19 @@ public final class MultipartPopulatorGenerator {
                                     loopIterator.loadClass(componentType.toString()),
                                     loopIterator.readStaticField(genericComponentTypeField),
                                     loopIterator.readStaticField(mediaTypeField),
-                                    rrCtxHandle, formAttrNameHandle));
+                                    rrCtxHandle, formAttrNameHandle);
+                            if (isArray) {
+                                loopIterator.writeArrayValue(resultHandle, collectionIndex, convertedValueHandle);
+                            } else {
+                                loopIterator.invokeVirtualMethod(
+                                        MethodDescriptor.ofMethod(ArrayList.class, "add", boolean.class,
+                                                Object.class),
+                                        resultHandle, convertedValueHandle);
+                            }
 
-                            loopIterator.assign(indexArray, loopIterator.increment(indexArray));
+                            loopIterator.assign(collectionIndex, loopIterator.increment(collectionIndex));
 
-                            populate.assign(resultHandle, arrayResultHandle);
+                            populate.assign(resultVariableHandle, resultHandle);
                         } else {
                             // we need to use the field type and the media type to locate a MessageBodyReader
 
@@ -448,7 +467,7 @@ public final class MultipartPopulatorGenerator {
                                     rrCtxHandle,
                                     formAttrNameHandle, populate.load(true), populate.load(false));
 
-                            populate.assign(resultHandle, populate.invokeStaticMethod(
+                            populate.assign(resultVariableHandle, populate.invokeStaticMethod(
                                     MethodDescriptor.ofMethod(MultipartSupport.class, "convertFormAttribute", Object.class,
                                             String.class,
                                             Class.class,
@@ -464,17 +483,17 @@ public final class MultipartPopulatorGenerator {
                     if (useFieldAccess) {
                         BytecodeCreator bc = populate;
                         if (fieldType.kind() == Type.Kind.PRIMITIVE) {
-                            bc = populate.ifNull(resultHandle).falseBranch();
+                            bc = populate.ifNull(resultVariableHandle).falseBranch();
                         }
                         bc.writeInstanceField(FieldDescriptor.of(currentClassInHierarchy.name().toString(), field.name(),
-                                fieldDotName.toString()), instanceHandle, resultHandle);
+                                fieldDotName.toString()), instanceHandle, resultVariableHandle);
                     } else {
                         BytecodeCreator bc = populate;
                         if (fieldType.kind() == Type.Kind.PRIMITIVE) {
-                            bc = populate.ifNull(resultHandle).falseBranch();
+                            bc = populate.ifNull(resultVariableHandle).falseBranch();
                         }
                         bc.invokeVirtualMethod(MethodDescriptor.ofMethod(currentClassInHierarchy.name().toString(),
-                                setterName, void.class, fieldDotName.toString()), instanceHandle, resultHandle);
+                                setterName, void.class, fieldDotName.toString()), instanceHandle, resultVariableHandle);
                     }
                 }
 
@@ -512,6 +531,11 @@ public final class MultipartPopulatorGenerator {
             }
         }
         return false;
+    }
+
+    private static boolean isList(Type fieldType) {
+        return (fieldType.kind() == Type.Kind.PARAMETERIZED_TYPE) && fieldType.name()
+                .equals(ResteasyReactiveDotNames.LIST);
     }
 
     private static void failIfFileTypeUsedAsGenericType(FieldInfo field, Type fieldType, DotName fieldDotName) {

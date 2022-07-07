@@ -50,8 +50,12 @@ public class MultipartTest {
                 .multiPart("names", "name2")
                 .multiPart("numbers", 1)
                 .multiPart("numbers", 2)
+                .multiPart("numbers2", 1)
+                .multiPart("numbers2", 2)
                 .multiPart("persons", "{\"first\": \"First1\", \"last\": \"Last1\"}", "application/json")
                 .multiPart("persons", "{\"first\": \"First2\", \"last\": \"Last2\"}", "application/json")
+                .multiPart("persons2", "{\"first\": \"First1\", \"last\": \"Last1\"}", "application/json")
+                .multiPart("persons2", "{\"first\": \"First2\", \"last\": \"Last2\"}", "application/json")
                 .accept("application/json")
                 .when()
                 .post("/multipart/json")
@@ -68,10 +72,16 @@ public class MultipartTest {
                 .body("names[1]", equalTo("name2"))
                 .body("numbers[0]", equalTo(1))
                 .body("numbers[1]", equalTo(2))
+                .body("numbers2[0]", equalTo(1))
+                .body("numbers2[1]", equalTo(2))
                 .body("persons[0].first", equalTo("First1"))
                 .body("persons[0].last", equalTo("Last1"))
                 .body("persons[1].first", equalTo("First2"))
-                .body("persons[1].last", equalTo("Last2"));
+                .body("persons[1].last", equalTo("Last2"))
+                .body("persons2[0].first", equalTo("First1"))
+                .body("persons2[0].last", equalTo("Last1"))
+                .body("persons2[1].first", equalTo("First2"))
+                .body("persons2[1].last", equalTo("Last2"));
     }
 
     @Test

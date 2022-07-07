@@ -256,8 +256,9 @@ public class MultipartResource {
     @POST
     @Path("/echo/text")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public String consumeText(@MultipartForm MultipartBodyWithTextFile body) {
-        return String.format("fileOk:%s,numberOk:%s", containsHelloWorld(body.file), NUMBER == Integer.parseInt(body.number));
+    public String consumeText(@MultipartForm MultipartBodyWithTextFile2 body) {
+        return String.format("fileOk:%s,numberOk:%s", containsHelloWorld(body.file),
+                NUMBER == Integer.parseInt(body.number[0]));
     }
 
     @POST
@@ -318,6 +319,17 @@ public class MultipartResource {
         @FormParam("number")
         @PartType(MediaType.TEXT_PLAIN)
         public String number;
+    }
+
+    public static class MultipartBodyWithTextFile2 {
+
+        @FormParam("file")
+        @PartType(MediaType.TEXT_PLAIN)
+        public File file;
+
+        @FormParam("number")
+        @PartType(MediaType.TEXT_PLAIN)
+        public String[] number;
     }
 
     public static class MultipartBodyWithBinaryFileAndPojo {

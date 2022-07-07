@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
+import java.util.List;
 import java.util.Map;
 
 import javax.validation.Valid;
@@ -18,11 +19,15 @@ public class FormData {
 
     @FormParam("names")
     @PartType(MediaType.TEXT_PLAIN)
-    public String[] names;
+    public List<String> names;
 
     @RestForm
     @PartType(MediaType.TEXT_PLAIN)
     public int[] numbers;
+
+    @RestForm
+    @PartType(MediaType.TEXT_PLAIN)
+    public List<Integer> numbers2;
 
     @RestForm
     @PartType(MediaType.APPLICATION_JSON)
@@ -32,6 +37,10 @@ public class FormData {
     @RestForm
     @PartType(MediaType.APPLICATION_JSON)
     public Person[] persons;
+
+    @RestForm
+    @PartType(MediaType.APPLICATION_JSON)
+    public List<Person> persons2;
 
     @RestForm("htmlFile")
     private FileUpload htmlPart;

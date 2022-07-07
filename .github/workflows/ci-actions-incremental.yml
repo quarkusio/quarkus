@@ -116,7 +116,7 @@ jobs:
     steps:
       - name: Skip non-compilable modules for jakarta-rewrite branch
         run: |
-          echo "COMMON_MAVEN_ARGS=${COMMON_MAVEN_ARGS} -pl '"'!'":quarkus-integration-test-infinispan-client' -pl '"'!'":quarkus-integration-test-kafka-avro'" >> $GITHUB_ENV
+          echo "EXCLUDE_JAKARTA_INCOMPATIBLE_MODULES=-pl "'!'":quarkus-integration-test-infinispan-client -pl "'!'":quarkus-integration-test-kafka-avro" >> $GITHUB_ENV
         if: github.ref_name == 'jakarta-rewrite'
 
       - uses: actions/checkout@v2
@@ -155,7 +155,7 @@ jobs:
         run: ./jakarta/prepare.sh
       - name: Build
         run: |
-          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dtcks clean install
+          ./mvnw -T1C $COMMON_MAVEN_ARGS $EXCLUDE_JAKARTA_INCOMPATIBLE_MODULES -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dtcks clean install
       - name: Verify extension dependencies
         shell: bash
         run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
@@ -186,7 +186,7 @@ jobs:
         id: get-gib-impacted
         # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
         run: |
-          ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
+          ./mvnw -q -T1C $COMMON_MAVEN_ARGS $EXCLUDE_JAKARTA_INCOMPATIBLE_MODULES -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
           if [ -f gib-impacted.log ]
           then
             # TODO: for now, we don't run TCKs and for the jakarta-rewrite branch

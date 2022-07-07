@@ -10,7 +10,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.test.QuarkusProdModeTest;
 
@@ -26,10 +26,9 @@ class UberJarIgnoredResourceBuildItemTest {
             .setRun(true)
             .setExpectExit(true)
             .overrideConfigKey("quarkus.package.type", "uber-jar")
-            .setForcedDependencies(
-                    Collections.singletonList(
-                            // META-INF/cxf/cxf.fixml should be present in the cxf-rt-transports-http and cxf-core JARs
-                            new AppArtifact("org.apache.cxf", "cxf-rt-transports-http", "3.4.3")));
+            .setForcedDependencies(List.of(
+                    // META-INF/cxf/cxf.fixml should be present in the cxf-rt-transports-http and cxf-core JARs
+                    Dependency.of("org.apache.cxf", "cxf-rt-transports-http", "3.4.3")));
 
     @Test
     public void testResourceWasIgnored() throws IOException {

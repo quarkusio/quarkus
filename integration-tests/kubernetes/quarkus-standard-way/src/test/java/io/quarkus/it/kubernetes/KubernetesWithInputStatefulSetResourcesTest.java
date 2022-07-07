@@ -13,9 +13,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.StatefulSet;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -33,8 +33,7 @@ public class KubernetesWithInputStatefulSetResourcesTest {
             .setLogFileName("k8s.log")
             .addCustomResourceEntry(Path.of("src", "main", "kubernetes", "kubernetes.yml"),
                     "manifests/custom-deployment/kubernetes-with-stateful.yml")
-            .setForcedDependencies(
-                    Collections.singletonList(new AppArtifact("io.quarkus", "quarkus-kubernetes", Version.getVersion())))
+            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-kubernetes", Version.getVersion())))
             .addBuildChainCustomizerEntries(
                     new QuarkusProdModeTest.BuildChainCustomizerEntry(
                             KubernetesWithCustomResourcesTest.CustomProjectRootBuildItemProducerProdMode.class,

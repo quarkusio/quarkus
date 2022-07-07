@@ -8,14 +8,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.test.QuarkusProdModeTest;
 
@@ -31,10 +30,9 @@ class GeneratedResourceBuildItemTest {
             .setRun(true)
             .setExpectExit(true)
             .overrideConfigKey("quarkus.package.type", "uber-jar")
-            .setForcedDependencies(
-                    Arrays.asList(
-                            new AppArtifact("org.apache.cxf", "cxf-rt-bindings-xml", "3.4.3"),
-                            new AppArtifact("org.apache.cxf", "cxf-rt-bindings-soap", "3.4.3")));
+            .setForcedDependencies(List.of(
+                    Dependency.of("org.apache.cxf", "cxf-rt-bindings-xml", "3.4.3"),
+                    Dependency.of("org.apache.cxf", "cxf-rt-bindings-soap", "3.4.3")));
 
     @Test
     public void testXMLResourceWasMerged() throws IOException {

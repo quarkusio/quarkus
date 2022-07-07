@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -12,8 +11,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.openshift.api.model.DeploymentConfig;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -26,8 +25,7 @@ public class OpenshiftWithJvmArgumentsTest {
             .setApplicationName("openshift-with-jvm-arguments")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("openshift-with-jvm-arguments.properties")
-            .setForcedDependencies(Collections.singletonList(
-                    new AppArtifact("io.quarkus", "quarkus-openshift", Version.getVersion())));;
+            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));;
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;

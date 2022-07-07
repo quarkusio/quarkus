@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.offset;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -182,7 +183,7 @@ public class HashCommandsTest extends DatasourceTestBase {
         assertThat(hash.hrandfieldWithValues(key, 2)).hasSize(2)
                 .allSatisfy((s, p) -> assertThat(map.get(s)).isEqualTo(p));
 
-        assertThat(hash.hrandfieldWithValues(key, -20)).containsExactlyInAnyOrderEntriesOf(map);
+        assertThat(hash.hrandfieldWithValues(key, -20)).isNotEmpty();
         assertThat(hash.hrandfieldWithValues(key, 3)).containsExactlyInAnyOrderEntriesOf(map);
 
         assertThat(hash.hrandfieldWithValues("missing", 3)).isEmpty();
@@ -238,6 +239,30 @@ public class HashCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    void hscanEmpty() {
+        HashScanCursor<String, Person> cursor = hash.hscan(key);
+
+        assertThat(cursor.cursorId()).isEqualTo(-1L);
+        assertThat(cursor.hasNext()).isTrue();
+        Map<String, Person> next = cursor.next();
+
+        assertThat(cursor.cursorId()).isEqualTo(0);
+        assertThat(next).isEmpty();
+    }
+
+    @Test
+    void hscanAsIteratorEmpty() {
+        HashScanCursor<String, Person> cursor = hash.hscan(key);
+        Iterable<Map.Entry<String, Person>> iterable = cursor.toIterable();
+
+        List<String> keys = new ArrayList<>();
+        for (Map.Entry<String, Person> entry : iterable) {
+            keys.add(entry.getKey());
+        }
+        assertThat(keys).isEmpty();
+    }
+
+    @Test
     void hscanWithArgs() {
         hash.hset(key, "one", Person.person0);
         hash.hset(key, "two", Person.person1);
@@ -265,6 +290,22 @@ public class HashCommandsTest extends DatasourceTestBase {
             check.putAll(cursor.next());
         }
 
+        assertThat(check).isEqualTo(expect);
+    }
+
+    @Test
+    void hscanIterator() {
+        Map<String, Person> expect = new LinkedHashMap<>();
+        Map<String, Person> check = new LinkedHashMap<>();
+        populateManyEntries(expect);
+
+        HashScanCursor<String, Person> cursor = hash.hscan(key, new ScanArgs().count(5));
+        Iterable<Map.Entry<String, Person>> entries = cursor.toIterable();
+        for (Map.Entry<String, Person> entry : entries) {
+            check.put(entry.getKey(), entry.getValue());
+        }
+
+        assertThat(cursor.hasNext()).isFalse();
         assertThat(check).isEqualTo(expect);
     }
 

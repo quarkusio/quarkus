@@ -6,13 +6,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
-import io.quarkus.redis.datasource.ReactiveCursor;
 import io.quarkus.redis.datasource.keys.CopyArgs;
 import io.quarkus.redis.datasource.keys.ExpireArgs;
 import io.quarkus.redis.datasource.keys.KeyScanArgs;
 import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
+import io.quarkus.redis.datasource.keys.ReactiveKeyScanCursor;
 import io.quarkus.redis.datasource.keys.RedisValueType;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
@@ -198,12 +197,12 @@ public class ReactiveKeyCommandsImpl<K> extends AbstractKeyCommands<K> implement
     }
 
     @Override
-    public ReactiveCursor<Set<K>> scan() {
+    public ReactiveKeyScanCursor<K> scan() {
         return new ScanReactiveCursorImpl<>(redis, marshaller, typeOfKey, Collections.emptyList());
     }
 
     @Override
-    public ReactiveCursor<Set<K>> scan(KeyScanArgs args) {
+    public ReactiveKeyScanCursor<K> scan(KeyScanArgs args) {
         nonNull(args, "args");
         return new ScanReactiveCursorImpl<>(redis, marshaller, typeOfKey, args.toArgs());
     }

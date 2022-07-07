@@ -4,7 +4,11 @@ import java.util.List;
 
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.*;
+import io.vertx.mutiny.redis.client.Command;
+import io.vertx.mutiny.redis.client.Redis;
+import io.vertx.mutiny.redis.client.RedisAPI;
+import io.vertx.mutiny.redis.client.Request;
+import io.vertx.mutiny.redis.client.Response;
 
 class ReactiveRedisClientImpl implements ReactiveRedisClient {
     private final RedisAPI redisAPI;

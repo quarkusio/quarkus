@@ -201,6 +201,32 @@ public class SetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    void sscanEmpty() {
+        SScanCursor<Person> cursor = sets.sscan(key);
+
+        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
+        assertThat(cursor.hasNext()).isTrue();
+
+        List<Person> list = cursor.next();
+
+        assertThat(cursor.cursorId()).isEqualTo(0);
+        assertThat(cursor.hasNext()).isFalse();
+        assertThat(list).isEmpty();
+    }
+
+    @Test
+    void sscanEmptyAsIterable() {
+        SScanCursor<Person> cursor = sets.sscan(key);
+
+        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
+        assertThat(cursor.hasNext()).isTrue();
+
+        Iterable<Person> iterable = cursor.toIterable();
+        assertThat(iterable).isEmpty();
+        assertThat(cursor.hasNext()).isFalse();
+    }
+
+    @Test
     void sscanWithCursorAndArgs() {
         sets.sadd(key, person1);
         SScanCursor<Person> cursor = sets.sscan(key, new ScanArgs().count(3));
@@ -226,6 +252,22 @@ public class SetCommandsTest extends DatasourceTestBase {
         SScanCursor<String> cursor = set.sscan(key, new ScanArgs().count(5));
         while (cursor.hasNext()) {
             check.addAll(cursor.next());
+        }
+
+        assertThat(check).containsExactlyInAnyOrderElementsOf(expect);
+    }
+
+    @Test
+    void sscanMultipleAsITerable() {
+        Set<String> expect = new HashSet<>();
+        Set<String> check = new HashSet<>();
+        SetCommands<String, String> set = ds.set(String.class, String.class);
+        populateMany(expect, set);
+
+        SScanCursor<String> cursor = set.sscan(key, new ScanArgs().count(5));
+        Iterable<String> iterable = cursor.toIterable();
+        for (String s : iterable) {
+            check.add(s);
         }
 
         assertThat(check).containsExactlyInAnyOrderElementsOf(expect);

@@ -11,15 +11,11 @@ import static io.vertx.mutiny.redis.client.Command.PEXPIRETIME;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
 
-import io.quarkus.redis.datasource.ReactiveCursor;
 import io.quarkus.redis.datasource.keys.CopyArgs;
 import io.quarkus.redis.datasource.keys.ExpireArgs;
-import io.quarkus.redis.datasource.keys.KeyScanArgs;
 import io.quarkus.redis.datasource.keys.RedisKeyNotFoundException;
 import io.quarkus.redis.datasource.keys.RedisValueType;
 import io.smallrye.mutiny.Uni;
@@ -257,15 +253,6 @@ class AbstractKeyCommands<K> extends AbstractRedisCommands {
                     }
                     return t;
                 });
-    }
-
-    ReactiveCursor<Set<K>> scan() {
-        return new ScanReactiveCursorImpl<>(redis, marshaller, typeOfKey, Collections.emptyList());
-    }
-
-    ReactiveCursor<Set<K>> scan(KeyScanArgs args) {
-        nonNull(args, "args");
-        return new ScanReactiveCursorImpl<>(redis, marshaller, typeOfKey, args.toArgs());
     }
 
     Uni<Response> _touch(K... keys) {

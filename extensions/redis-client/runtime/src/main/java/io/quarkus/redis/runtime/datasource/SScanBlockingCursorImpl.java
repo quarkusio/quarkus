@@ -30,4 +30,9 @@ public class SScanBlockingCursorImpl<V> implements SScanCursor<V> {
     public long cursorId() {
         return reactive.cursorId();
     }
+
+    @Override
+    public Iterable<V> toIterable() {
+        return reactive.toMulti().subscribe().asIterable();
+    }
 }

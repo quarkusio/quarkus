@@ -5,10 +5,12 @@ import java.util.List;
 import java.util.Set;
 
 import io.quarkus.redis.datasource.ReactiveCursor;
+import io.quarkus.redis.datasource.keys.ReactiveKeyScanCursor;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Command;
 
-public class ScanReactiveCursorImpl<K> extends AbstractRedisCommands implements ReactiveCursor<Set<K>> {
+public class ScanReactiveCursorImpl<K> extends AbstractRedisCommands implements ReactiveKeyScanCursor<K> {
 
     private final Class<K> typeOfKey;
     private long cursor;
@@ -37,5 +39,13 @@ public class ScanReactiveCursorImpl<K> extends AbstractRedisCommands implements 
         return execute(RedisCommand.of(Command.SCAN).put(pos).putAll(extra))
                 .invoke(response -> cursor = response.get(0).toLong())
                 .map(response -> marshaller.decodeAsSet(response.get(1), typeOfKey));
+    }
+
+    @Override
+    public Multi<K> toMulti() {
+        return Multi.createBy().repeating()
+                .uni(this::next)
+                .whilst(m -> !m.isEmpty() && hasNext())
+                .onItem().transformToMultiAndConcatenate(set -> Multi.createFrom().items(set.stream()));
     }
 }

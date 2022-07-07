@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.quarkus.redis.datasource.hash.ReactiveHashScanCursor;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Response;
@@ -44,6 +45,13 @@ public class HScanReactiveCursorImpl<F, V> extends AbstractRedisCommands impleme
         return execute(cmd)
                 .invoke(response -> cursor = response.get(0).toLong())
                 .map(response -> decode(response.get(1)));
+    }
+
+    public Multi<Map.Entry<F, V>> toMulti() {
+        return Multi.createBy().repeating()
+                .uni(this::next)
+                .whilst(m -> !m.isEmpty() && hasNext())
+                .onItem().transformToMultiAndConcatenate(map -> Multi.createFrom().items(map.entrySet().stream()));
     }
 
     public Map<F, V> decode(Response response) {

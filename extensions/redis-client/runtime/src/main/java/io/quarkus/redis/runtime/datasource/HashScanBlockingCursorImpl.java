@@ -27,6 +27,11 @@ public class HashScanBlockingCursorImpl<K, V> implements HashScanCursor<K, V> {
     }
 
     @Override
+    public Iterable<Map.Entry<K, V>> toIterable() {
+        return reactive.toMulti().subscribe().asIterable();
+    }
+
+    @Override
     public long cursorId() {
         return reactive.cursorId();
     }

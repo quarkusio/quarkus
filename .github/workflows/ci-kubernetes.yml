@@ -13,6 +13,7 @@ jobs:
   cache:
     name: Build and save artifacts
     runs-on: ubuntu-latest
+    if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-java@v3
@@ -35,6 +36,7 @@ jobs:
     name: Kubernetes Integration Tests
     needs: cache
     runs-on: ubuntu-latest
+    if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
     strategy:
       fail-fast: false
       matrix:
@@ -90,6 +92,7 @@ jobs:
     name: OpenShift Integration Tests
     needs: cache
     runs-on: ubuntu-latest
+    if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
     strategy:
       fail-fast: false
       matrix:

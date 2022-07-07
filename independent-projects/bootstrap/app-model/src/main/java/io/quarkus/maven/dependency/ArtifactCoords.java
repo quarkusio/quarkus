@@ -14,6 +14,14 @@ public interface ArtifactCoords {
         return new GACTV(groupId, artifactId, null, TYPE_JAR, version);
     }
 
+    static ArtifactCoords jar(String groupId, String artifactId, String classifier, String version) {
+        return new GACTV(groupId, artifactId, classifier, TYPE_JAR, version);
+    }
+
+    static ArtifactCoords of(String groupId, String artifactId, String classifier, String type, String version) {
+        return new GACTV(groupId, artifactId, classifier, type, version);
+    }
+
     String TYPE_JAR = "jar";
     String TYPE_POM = "pom";
     String DEFAULT_CLASSIFIER = "";

@@ -149,7 +149,7 @@ abstract class AbstractDependencyBuilder<B extends AbstractDependencyBuilder<B, 
     }
 
     public ArtifactKey getKey() {
-        return ArtifactKey.gact(groupId, artifactId, classifier, type);
+        return ArtifactKey.of(groupId, artifactId, classifier, type);
     }
 
     public String toGACTVString() {

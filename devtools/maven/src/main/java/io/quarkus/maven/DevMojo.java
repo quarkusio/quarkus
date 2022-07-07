@@ -1059,7 +1059,7 @@ public class DevMojo extends AbstractMojo {
             addProject(builder, appModel.getAppArtifact(), true);
             appModel.getApplicationModule().getBuildFiles().forEach(p -> builder.watchedBuildFile(p));
             builder.localArtifact(
-                    ArtifactKey.gact(project.getGroupId(), project.getArtifactId(), null, ArtifactCoords.TYPE_JAR));
+                    ArtifactKey.of(project.getGroupId(), project.getArtifactId(), null, ArtifactCoords.TYPE_JAR));
         } else {
             for (ResolvedDependency project : DependenciesFilter.getReloadableModules(appModel)) {
                 addProject(builder, project, project == appModel.getAppArtifact());
@@ -1090,7 +1090,7 @@ public class DevMojo extends AbstractMojo {
         for (Artifact appDep : project.getArtifacts()) {
             // only add the artifact if it's present in the dev mode context
             // we need this to avoid having jars on the classpath multiple times
-            ArtifactKey key = ArtifactKey.gact(appDep.getGroupId(), appDep.getArtifactId(),
+            ArtifactKey key = ArtifactKey.of(appDep.getGroupId(), appDep.getArtifactId(),
                     appDep.getClassifier(), appDep.getArtifactHandler().getExtension());
             if (!builder.isLocal(key) && configuredParentFirst.contains(key)) {
                 builder.classpathEntry(appDep.getFile());

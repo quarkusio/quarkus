@@ -654,7 +654,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                             deps = getMetadataNode(extObject).putArray("extension-dependencies");
                             extensionDeps.set(deps);
                         }
-                        deps.add(ArtifactKey.gact(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getExtension())
+                        deps.add(ArtifactKey.of(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getExtension())
                                 .toGacString());
                     }
                 }
@@ -706,7 +706,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         final ArtifactKey rootDeploymentGact = getDeploymentCoords().getKey();
         final RootNode rootDeployment = new RootNode(rootDeploymentGact, 2);
         final Artifact artifact = project.getArtifact();
-        final Node rootRuntime = rootDeployment.newChild(ArtifactKey.gact(artifact.getGroupId(), artifact.getArtifactId(),
+        final Node rootRuntime = rootDeployment.newChild(ArtifactKey.of(artifact.getGroupId(), artifact.getArtifactId(),
                 artifact.getClassifier(), artifact.getType()), 1);
 
         rootDeployment.expectedDeploymentNodes.put(rootDeployment.gact, rootDeployment);

@@ -38,7 +38,7 @@
             <span id="navbar-subtitle" class="navbar-nav">
                 <span class="navbar-item">
                     {#if currentExtensionName == 'Eclipse Vert.x - HTTP'}
-                    <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {#insert title/}
+                    {#insert breadcrumbs/} <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {#insert title/}
                     {#else}
                     <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {currentExtensionName}{#insert breadcrumbs/}<i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {#insert title/}
                     {/if}

@@ -20,7 +20,6 @@ import org.jboss.threads.JBossThreadFactory;
 
 import io.quarkus.builder.diag.Diagnostic;
 import io.quarkus.builder.item.BuildItem;
-import io.quarkus.builder.metrics.BuildMetrics;
 
 /**
  */
@@ -133,8 +132,10 @@ final class Execution {
         if (lastStepCount.get() > 0)
             throw new BuildException("Extra steps left over", Collections.emptyList());
 
+        long duration = max(0, System.nanoTime() - start);
+        metrics.buildFinished(TimeUnit.NANOSECONDS.toMillis(duration));
         return new BuildResult(singles, multis, finalIds, Collections.unmodifiableList(diagnostics),
-                max(0, System.nanoTime() - start), metrics);
+                duration, metrics);
     }
 
     EnhancedQueueExecutor getExecutor() {

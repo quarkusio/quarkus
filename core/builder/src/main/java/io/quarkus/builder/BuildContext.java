@@ -290,7 +290,7 @@ public final class BuildContext {
             }
         } finally {
             long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-            execution.getMetrics().buildStepFinished(buildStep.getId(), currentThread.getName(), started, duration);
+            execution.getMetrics().buildStepFinished(stepInfo, currentThread.getName(), started, duration);
             log.tracef("Finished step \"%s\" in %s ms", buildStep, duration);
             execution.removeBuildContext(stepInfo, this);
         }

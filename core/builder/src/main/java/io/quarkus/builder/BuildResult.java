@@ -11,7 +11,6 @@ import io.quarkus.builder.diag.Diagnostic;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
-import io.quarkus.builder.metrics.BuildMetrics;
 
 /**
  * The final result of a successful deployment operation.

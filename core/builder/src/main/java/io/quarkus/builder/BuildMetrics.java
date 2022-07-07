@@ -1,4 +1,4 @@
-package io.quarkus.builder.metrics;
+package io.quarkus.builder;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -19,20 +19,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.builder.metrics.Json.JsonArrayBuilder;
-import io.quarkus.builder.metrics.Json.JsonObjectBuilder;
+import io.quarkus.builder.Json.JsonArrayBuilder;
+import io.quarkus.builder.Json.JsonObjectBuilder;
 
 public class BuildMetrics {
 
     static final Logger LOG = Logger.getLogger(BuildMetrics.class.getName());
 
     private volatile LocalDateTime started;
+    private volatile long duration;
     private final String buildTargetName;
     private final ConcurrentMap<String, BuildStepRecord> records = new ConcurrentHashMap<>();
-    private final AtomicInteger duplicates = new AtomicInteger();
+    private final AtomicInteger idGenerator;
 
     public BuildMetrics(String buildTargetName) {
         this.buildTargetName = buildTargetName;
+        this.idGenerator = new AtomicInteger();
     }
 
     public Collection<BuildStepRecord> getRecords() {
@@ -43,13 +45,13 @@ public class BuildMetrics {
         this.started = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS);
     }
 
-    public void buildStepFinished(String stepId, String thread, LocalTime started, long duration) {
-        BuildStepRecord prev = records.putIfAbsent(stepId, new BuildStepRecord(stepId, thread, started, duration));
-        if (prev != null) {
-            String newName = stepId + "_d#" + duplicates.incrementAndGet();
-            LOG.debugf("A build step with the same identifier already exists - added a generated suffix: %s", newName);
-            buildStepFinished(newName, thread, started, duration);
-        }
+    public void buildFinished(long duration) {
+        this.duration = duration;
+    }
+
+    public void buildStepFinished(StepInfo stepInfo, String thread, LocalTime started, long duration) {
+        records.put(stepInfo.getBuildStep().getId(),
+                new BuildStepRecord(idGenerator.incrementAndGet(), stepInfo, thread, started, duration));
     }
 
     public void dumpTo(Path file) throws IOException {
@@ -66,16 +68,28 @@ public class BuildMetrics {
         JsonObjectBuilder json = Json.object();
         json.put("buildTarget", buildTargetName);
         json.put("started", started.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        json.put("duration", duration);
 
         JsonArrayBuilder steps = Json.array();
-        json.put("steps", steps);
+        json.put("records", steps);
         for (BuildStepRecord rec : sorted) {
-            JsonObjectBuilder recJson = Json.object();
-            recJson.put("stepId", rec.stepId);
-            recJson.put("thread", rec.thread);
-            recJson.put("started", rec.started.format(formatter));
-            recJson.put("duration", rec.duration);
-            steps.add(recJson);
+            JsonObjectBuilder recObject = Json.object();
+            recObject.put("id", rec.id);
+            recObject.put("stepId", rec.stepInfo.getBuildStep().getId());
+            recObject.put("thread", rec.thread);
+            recObject.put("started", rec.started.format(formatter));
+            recObject.put("duration", rec.duration);
+            JsonArrayBuilder dependentsArray = Json.array();
+            for (StepInfo dependent : rec.stepInfo.getDependents()) {
+                BuildStepRecord dependentRecord = records.get(dependent.getBuildStep().getId());
+                if (dependentRecord != null) {
+                    dependentsArray.add(dependentRecord.id);
+                } else {
+                    LOG.warnf("Dependent record not found for stepId: %s", dependent.getBuildStep().getId());
+                }
+            }
+            recObject.put("dependents", dependentsArray);
+            steps.add(recObject);
         }
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file.toFile(), StandardCharsets.UTF_8))) {
             json.appendTo(writer);
@@ -85,9 +99,11 @@ public class BuildMetrics {
     public static class BuildStepRecord {
 
         /**
-         * The identifier of the build step.
+         * A unique record id.
          */
-        public final String stepId;
+        public final int id;
+
+        public final StepInfo stepInfo;
 
         /**
          * The name of the thread this build step was executed on.
@@ -104,8 +120,9 @@ public class BuildMetrics {
          */
         public final long duration;
 
-        BuildStepRecord(String stepId, String thread, LocalTime started, long duration) {
-            this.stepId = stepId;
+        BuildStepRecord(int id, StepInfo stepInfo, String thread, LocalTime started, long duration) {
+            this.id = id;
+            this.stepInfo = stepInfo;
             this.thread = thread;
             this.started = started;
             this.duration = duration;

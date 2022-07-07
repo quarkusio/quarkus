@@ -192,8 +192,17 @@ public final class ExtensionLoader {
 
         Consumer<BuildChainBuilder> result = Functions.discardingConsumer();
         // BooleanSupplier factory
-        result = result.andThen(bcb -> bcb.addBuildStep(bc -> {
-            bc.produce(bsf);
+        result = result.andThen(bcb -> bcb.addBuildStep(new io.quarkus.builder.BuildStep() {
+
+            @Override
+            public void execute(BuildContext context) {
+                context.produce(bsf);
+            }
+
+            @Override
+            public String getId() {
+                return ExtensionLoader.class.getName() + "#booleanSupplierFactory";
+            }
         }).produces(BooleanSupplierFactoryBuildItem.class).build());
 
         // the proxy objects used for run time config in the recorders
@@ -226,40 +235,49 @@ public final class ExtensionLoader {
 
             throw new IllegalStateException("No config found for " + entry.getKey());
         }
-        result = result.andThen(bcb -> bcb.addBuildStep(bc -> {
-            bc.produce(new ConfigurationBuildItem(readResult));
-            bc.produce(new RunTimeConfigurationProxyBuildItem(proxies));
+        result = result.andThen(bcb -> bcb.addBuildStep(new io.quarkus.builder.BuildStep() {
 
-            ObjectLoader rootLoader = new ObjectLoader() {
-                public ResultHandle load(final BytecodeCreator body, final Object obj, final boolean staticInit) {
-                    return body.readStaticField(rootFields.get(obj));
-                }
+            @Override
+            public void execute(BuildContext bc) {
+                bc.produce(new ConfigurationBuildItem(readResult));
+                bc.produce(new RunTimeConfigurationProxyBuildItem(proxies));
 
-                public boolean canHandleObject(final Object obj, final boolean staticInit) {
-                    return rootFields.containsKey(obj);
-                }
-            };
+                ObjectLoader rootLoader = new ObjectLoader() {
+                    public ResultHandle load(final BytecodeCreator body, final Object obj, final boolean staticInit) {
+                        return body.readStaticField(rootFields.get(obj));
+                    }
 
-            ObjectLoader mappingLoader = new ObjectLoader() {
-                @Override
-                public ResultHandle load(final BytecodeCreator body, final Object obj, final boolean staticInit) {
-                    ConfigClassWithPrefix mapping = mappingClasses.get(obj);
-                    MethodDescriptor getConfig = MethodDescriptor.ofMethod(ConfigProvider.class, "getConfig", Config.class);
-                    ResultHandle config = body.invokeStaticMethod(getConfig);
-                    MethodDescriptor getMapping = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getConfigMapping",
-                            Object.class, Class.class, String.class);
-                    return body.invokeVirtualMethod(getMapping, config, body.loadClass(mapping.getKlass()),
-                            body.load(mapping.getPrefix()));
-                }
+                    public boolean canHandleObject(final Object obj, final boolean staticInit) {
+                        return rootFields.containsKey(obj);
+                    }
+                };
 
-                @Override
-                public boolean canHandleObject(final Object obj, final boolean staticInit) {
-                    return mappingClasses.containsKey(obj);
-                }
-            };
+                ObjectLoader mappingLoader = new ObjectLoader() {
+                    @Override
+                    public ResultHandle load(final BytecodeCreator body, final Object obj, final boolean staticInit) {
+                        ConfigClassWithPrefix mapping = mappingClasses.get(obj);
+                        MethodDescriptor getConfig = MethodDescriptor.ofMethod(ConfigProvider.class, "getConfig", Config.class);
+                        ResultHandle config = body.invokeStaticMethod(getConfig);
+                        MethodDescriptor getMapping = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getConfigMapping",
+                                Object.class, Class.class, String.class);
+                        return body.invokeVirtualMethod(getMapping, config, body.loadClass(mapping.getKlass()),
+                                body.load(mapping.getPrefix()));
+                    }
 
-            bc.produce(new BytecodeRecorderObjectLoaderBuildItem(rootLoader));
-            bc.produce(new BytecodeRecorderObjectLoaderBuildItem(mappingLoader));
+                    @Override
+                    public boolean canHandleObject(final Object obj, final boolean staticInit) {
+                        return mappingClasses.containsKey(obj);
+                    }
+                };
+
+                bc.produce(new BytecodeRecorderObjectLoaderBuildItem(rootLoader));
+                bc.produce(new BytecodeRecorderObjectLoaderBuildItem(mappingLoader));
+            }
+
+            @Override
+            public String getId() {
+                return ExtensionLoader.class.getName() + "#config";
+            }
 
         }).produces(ConfigurationBuildItem.class)
                 .produces(RunTimeConfigurationProxyBuildItem.class)

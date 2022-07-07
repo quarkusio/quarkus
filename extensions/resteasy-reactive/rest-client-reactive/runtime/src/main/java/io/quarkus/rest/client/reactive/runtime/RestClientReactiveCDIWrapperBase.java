@@ -47,7 +47,13 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
         return mock == null ? delegate : mock;
     }
 
+    @Override
     public void setMock(Object mock) {
         this.mock = mock;
+    }
+
+    @Override
+    public void clearMock() {
+        this.mock = null;
     }
 }

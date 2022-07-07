@@ -247,6 +247,11 @@
                 <artifactId>brotli4j</artifactId>
                 <version>${brotli4j.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.aayushatharva.brotli4j</groupId>
+                <artifactId>native-linux-x86_64</artifactId>
+                <version>${brotli4j.version}</version>
+            </dependency>
 
             <!-- Jackson dependencies, imported as a BOM -->
             <dependency>
@@ -1153,6 +1158,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jdbc-db2</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jdbc-db2-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2935,6 +2945,11 @@
             </dependency>
             <dependency>
                 <groupId>org.bouncycastle</groupId>
+                <artifactId>bcutil-jdk15on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
                 <artifactId>bc-fips</artifactId>
                 <version>${bouncycastle.fips.version}</version>
             </dependency>
@@ -2979,6 +2994,26 @@
                 <artifactId>certmanager-annotations</artifactId>
                 <version>${dekorate.version}</version>
                 <classifier>noapt</classifier>
+            </dependency>
+            <dependency>
+                <groupId>io.dekorate</groupId>
+                <artifactId>s2i-annotations</artifactId>
+                <version>${dekorate.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.dekorate</groupId>
+                <artifactId>docker-annotations</artifactId>
+                <version>${dekorate.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.dekorate</groupId>
+                <artifactId>option-annotations</artifactId>
+                <version>${dekorate.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.dekorate</groupId>
+                <artifactId>dekorate-core</artifactId>
+                <version>${dekorate.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.logging</groupId>
@@ -3438,6 +3473,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus.http</groupId>
+                <artifactId>quarkus-http-http-core</artifactId>
+                <version>${quarkus-http.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus.http</groupId>
                 <artifactId>quarkus-http-servlet</artifactId>
                 <version>${quarkus-http.version}</version>
                 <exclusions>
@@ -3544,6 +3584,11 @@
                 <version>${smallrye-config.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.smallrye.config</groupId>
+                <artifactId>smallrye-config-core</artifactId>
+                <version>${smallrye-config.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-health</artifactId>
                 <version>${smallrye-health.version}</version>
@@ -3553,6 +3598,11 @@
                         <artifactId>jakarta.json-api</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-health-api</artifactId>
+                <version>${smallrye-health.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>
@@ -3635,6 +3685,21 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-graphql</artifactId>
+                <version>${smallrye-graphql.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-graphql-api</artifactId>
+                <version>${smallrye-graphql.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-graphql-schema-model</artifactId>
+                <version>${smallrye-graphql.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-graphql-cdi</artifactId>
                 <version>${smallrye-graphql.version}</version>
                 <exclusions>
@@ -3682,7 +3747,27 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-opentracing-contrib</artifactId>
+                <version>${smallrye-opentracing.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-fault-tolerance</artifactId>
+                <version>${smallrye-fault-tolerance.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-fault-tolerance-api</artifactId>
+                <version>${smallrye-fault-tolerance.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-fault-tolerance-autoconfig-core</artifactId>
+                <version>${smallrye-fault-tolerance.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-fault-tolerance-core</artifactId>
                 <version>${smallrye-fault-tolerance.version}</version>
             </dependency>
             <dependency>
@@ -3737,6 +3822,11 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-context-propagation-storage</artifactId>
+                <version>${smallrye-context-propagation.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-jwt</artifactId>
                 <version>${smallrye-jwt.version}</version>
                 <exclusions>
@@ -3761,6 +3851,11 @@
             <dependency>
                 <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-jwt-build</artifactId>
+                <version>${smallrye-jwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-jwt-common</artifactId>
                 <version>${smallrye-jwt.version}</version>
             </dependency>
             <dependency>
@@ -4574,6 +4669,81 @@
                 <artifactId>wildfly-elytron-security-manager-action</artifactId>
                 <version>${wildfly-elytron.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-auth</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-base</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-http</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-keystore</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-mechanism-digest</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-mechanism-gssapi</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-mechanism-oauth2</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-mechanism-scram</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-mechanism</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-permission</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-provider-util</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-sasl</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-util</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-x500-cert-util</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-x500</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.ow2.asm</groupId>
@@ -4593,6 +4763,11 @@
             <dependency>
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm-analysis</artifactId>
+                <version>${asm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm-util</artifactId>
                 <version>${asm.version}</version>
             </dependency>
             <dependency>
@@ -4677,6 +4852,23 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+            <!-- TODO current infinispan-client is using 6.0.8 and isn't breaking with the following constraints
+            <dependency>
+                <groupId>org.hibernate.search</groupId>
+                <artifactId>hibernate-search-engine</artifactId>
+                <version>${hibernate-search.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate.search</groupId>
+                <artifactId>hibernate-search-mapper-pojo-base</artifactId>
+                <version>${hibernate-search.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate.search</groupId>
+                <artifactId>hibernate-search-util-common</artifactId>
+                <version>${hibernate-search.version}</version>
+            </dependency>
+            -->
             <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
@@ -4940,6 +5132,11 @@
                         <artifactId>log4j</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-reactive-messaging-kafka-api</artifactId>
+                <version>${smallrye-reactive-messaging.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>

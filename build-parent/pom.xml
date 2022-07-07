@@ -327,7 +327,11 @@
                 <artifactId>chartjs</artifactId>
                 <version>${webjar.chartjs.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>mermaid</artifactId>
+                <version>${webjar.mermaid.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.github.davidmoten</groupId>
                 <artifactId>subethasmtp</artifactId>

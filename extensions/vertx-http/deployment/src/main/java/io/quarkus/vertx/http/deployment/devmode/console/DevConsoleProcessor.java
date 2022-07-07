@@ -101,6 +101,7 @@ import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
 import io.quarkus.vertx.http.runtime.logstream.LogStreamRecorder;
 import io.quarkus.vertx.http.runtime.logstream.WebSocketLogHandler;
 import io.smallrye.common.vertx.VertxContext;
+import io.smallrye.config.common.utils.StringUtil;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -599,6 +600,9 @@ public class DevConsoleProcessor {
         // JavaDoc formatting
         builder.addValueResolver(new JavaDocResolver());
 
+        // Config/System property -> Environment variable
+        builder.addValueResolver(new PropertyToEnvVarConverter());
+
         // Add templates and tags
         Map<String, String> templates = new HashMap<>();
         for (DevTemplatePathBuildItem devTemplatePath : devTemplatePaths) {
@@ -814,6 +818,25 @@ public class DevConsoleProcessor {
                 return super.visitFile(file, attrs);
             }
         });
+    }
+
+    /**
+     * Convert a config/system property name to an environment variable name
+     */
+    private static final class PropertyToEnvVarConverter implements ValueResolver {
+
+        @Override
+        public boolean appliesTo(EvalContext context) {
+            return context.getBase() instanceof String && context.getName().equals("toEnvVar");
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            return CompletableFuture.completedFuture(
+                    StringUtil
+                            .replaceNonAlphanumericByUnderscores(context.getBase().toString())
+                            .toUpperCase());
+        }
     }
 
     public static class JavaDocResolver implements ValueResolver {

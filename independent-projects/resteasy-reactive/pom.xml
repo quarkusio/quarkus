@@ -519,6 +519,7 @@
                         </execution>
                     </executions>
                     <configuration>
+                        <skip>${bytebuddy.skip}</skip>
                         <transformations>
                             <transformation>
                                 <groupId>${project.groupId}</groupId>

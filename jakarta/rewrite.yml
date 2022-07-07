@@ -408,7 +408,7 @@ displayName: Adjust SmallRye dependencies
 recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-common.version
-      newValue: 2.0.0-RC2
+      newValue: 2.0.0-RC3
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-context-propagation.version
       newValue: 1.3

@@ -42,7 +42,8 @@ final class RedPandaKafkaContainer extends GenericContainer<RedPandaKafkaContain
         withCreateContainerCmdModifier(cmd -> {
             cmd.withEntrypoint("sh");
         });
-        withCommand("-c", "while [ ! -f " + STARTER_SCRIPT + " ]; do sleep 0.1; done; " + STARTER_SCRIPT);
+        withCommand("-c", "while [ ! -f " + STARTER_SCRIPT + " ]; do sleep 0.1; done; sleep 0.1; " +
+                STARTER_SCRIPT);
         waitingFor(Wait.forLogMessage(".*Started Kafka API server.*", 1));
     }
 

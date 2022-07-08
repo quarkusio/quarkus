@@ -5,11 +5,15 @@ import static io.quarkus.runtime.util.StringUtil.join;
 import static io.quarkus.runtime.util.StringUtil.lowerCase;
 import static io.quarkus.runtime.util.StringUtil.withoutSuffix;
 
+import java.util.function.BiFunction;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.ResultHandle;
 
 public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
 
@@ -19,6 +23,9 @@ public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
     private final boolean failOnMismatchingMember;
     private final boolean needsQualifier;
 
+    // used when the instance of the object needs to be created with special logic
+    private final InstanceFactory instanceFactory;
+
     public ConfigPropertiesMetadataBuildItem(ClassInfo classInfo, String prefix,
             ConfigProperties.NamingStrategy namingStrategy, boolean failOnMismatchingMember, boolean needsQualifier) {
         this.classInfo = classInfo;
@@ -26,6 +33,19 @@ public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
         this.namingStrategy = namingStrategy;
         this.failOnMismatchingMember = failOnMismatchingMember;
         this.needsQualifier = needsQualifier;
+        this.instanceFactory = null;
+    }
+
+    public ConfigPropertiesMetadataBuildItem(ClassInfo classInfo, String prefix,
+            ConfigProperties.NamingStrategy namingStrategy,
+            boolean failOnMismatchingMember, boolean needsQualifier,
+            InstanceFactory instanceFactory) {
+        this.classInfo = classInfo;
+        this.prefix = sanitisePrefix(prefix);
+        this.namingStrategy = namingStrategy;
+        this.failOnMismatchingMember = failOnMismatchingMember;
+        this.needsQualifier = needsQualifier;
+        this.instanceFactory = instanceFactory;
     }
 
     public ClassInfo getClassInfo() {
@@ -48,6 +68,10 @@ public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
         return needsQualifier;
     }
 
+    public InstanceFactory getInstanceFactory() {
+        return instanceFactory;
+    }
+
     private String sanitisePrefix(String prefix) {
         if (isPrefixUnset(prefix)) {
             return getPrefixFromClassName(classInfo.name());
@@ -64,5 +88,13 @@ public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
         return join("-",
                 withoutSuffix(lowerCase(camelHumpsIterator(simpleName)), "config", "configuration",
                         "properties", "props"));
+    }
+
+    /**
+     * Class that takes a {@link MethodCreator} and the config object class name
+     * and produces an instance of that class
+     */
+    public interface InstanceFactory extends BiFunction<MethodCreator, String, ResultHandle> {
+
     }
 }

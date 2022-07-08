@@ -486,80 +486,98 @@ public class ExtensionCatalogResolver {
 
         ensureRegistriesConfigured();
 
-        final String platformKey = streamCoords.getPlatformKey();
-        final String streamId = streamCoords.getStreamId();
-
-        PlatformStream stream = null;
-        int registryIndex = 0;
-        while (registryIndex < registries.size() && stream == null) {
-            final RegistryExtensionResolver qer = registries.get(registryIndex++);
-            final PlatformCatalog platforms = qer.resolvePlatformCatalog();
-            if (platforms == null) {
-                continue;
-            }
-            if (platformKey == null) {
-                for (Platform p : platforms.getPlatforms()) {
-                    stream = p.getStream(streamId);
-                    if (stream != null) {
-                        break;
-                    }
-                }
-            } else {
-                final Platform platform = platforms.getPlatform(platformKey);
-                if (platform == null) {
-                    continue;
-                }
-                stream = platform.getStream(streamId);
-                if (stream != null) {
-                    break;
-                }
-            }
-        }
-
-        if (stream == null) {
-            Platform requestedPlatform = null;
-            final List<Platform> knownPlatforms = new ArrayList<>();
-            for (RegistryExtensionResolver qer : registries) {
-                final PlatformCatalog platforms = qer.resolvePlatformCatalog();
-                if (platforms == null) {
-                    continue;
-                }
-                if (platformKey != null) {
-                    requestedPlatform = platforms.getPlatform(platformKey);
-                    if (requestedPlatform != null) {
-                        break;
-                    }
-                }
-                for (Platform platform : platforms.getPlatforms()) {
-                    knownPlatforms.add(platform);
-                }
-            }
-
-            final StringBuilder buf = new StringBuilder();
-            if (requestedPlatform != null) {
-                buf.append("Failed to locate stream ").append(streamId)
-                        .append(" in platform " + requestedPlatform.getPlatformKey());
-            } else if (knownPlatforms.isEmpty()) {
-                buf.append("None of the registries provided any platform");
-            } else {
-                if (platformKey == null) {
-                    buf.append("Failed to locate stream ").append(streamId).append(" in platform(s): ");
-                } else {
-                    buf.append("Failed to locate platform ").append(platformKey).append(" among available platform(s): ");
-                }
-                buf.append(knownPlatforms.get(0).getPlatformKey());
-                for (int i = 1; i < knownPlatforms.size(); ++i) {
-                    buf.append(", ").append(knownPlatforms.get(i).getPlatformKey());
-                }
-            }
-            throw new RegistryResolutionException(buf.toString());
-        }
-
+        final PlatformStream stream = findPlatformStreamOrFail(streamCoords);
         final List<ExtensionCatalog> catalogs = new ArrayList<>();
         for (PlatformRelease release : stream.getReleases()) {
             catalogs.add(resolveExtensionCatalog(release.getMemberBoms()));
         }
         return CatalogMergeUtility.merge(catalogs);
+    }
+
+    protected PlatformStream findPlatformStreamOrFail(PlatformStreamCoords streamCoords)
+            throws RegistryResolutionException {
+        var stream = findPlatformStreamOrNull(streamCoords, true);
+        if (stream != null) {
+            return stream;
+        }
+        stream = findPlatformStreamOrNull(streamCoords, false);
+        if (stream != null) {
+            return stream;
+        }
+        throw unknownStreamException(streamCoords, false);
+    }
+
+    protected PlatformStream findPlatformStreamOrNull(PlatformStreamCoords streamCoords, boolean amongRecommended)
+            throws RegistryResolutionException {
+        int registryIndex = 0;
+        while (registryIndex < registries.size()) {
+            final RegistryExtensionResolver qer = registries.get(registryIndex++);
+            final PlatformCatalog platforms = amongRecommended ? qer.resolvePlatformCatalog()
+                    : qer.resolvePlatformCatalog(Constants.QUARKUS_VERSION_CLASSIFIER_ALL);
+            if (platforms == null) {
+                continue;
+            }
+            if (streamCoords.getPlatformKey() == null) {
+                for (Platform p : platforms.getPlatforms()) {
+                    var stream = p.getStream(streamCoords.getStreamId());
+                    if (stream != null) {
+                        return stream;
+                    }
+                }
+            } else {
+                final Platform platform = platforms.getPlatform(streamCoords.getPlatformKey());
+                if (platform == null) {
+                    continue;
+                }
+                var stream = platform.getStream(streamCoords.getStreamId());
+                if (stream != null) {
+                    return stream;
+                }
+            }
+        }
+        return null;
+    }
+
+    protected RegistryResolutionException unknownStreamException(PlatformStreamCoords stream, boolean amongRecommended)
+            throws RegistryResolutionException {
+        Platform requestedPlatform = null;
+        final List<Platform> knownPlatforms = new ArrayList<>();
+        for (RegistryExtensionResolver qer : registries) {
+            final PlatformCatalog platforms = amongRecommended ? qer.resolvePlatformCatalog()
+                    : qer.resolvePlatformCatalog(Constants.QUARKUS_VERSION_CLASSIFIER_ALL);
+            if (platforms == null) {
+                continue;
+            }
+            if (stream.getPlatformKey() != null) {
+                requestedPlatform = platforms.getPlatform(stream.getPlatformKey());
+                if (requestedPlatform != null) {
+                    break;
+                }
+            }
+            for (Platform platform : platforms.getPlatforms()) {
+                knownPlatforms.add(platform);
+            }
+        }
+
+        final StringBuilder buf = new StringBuilder();
+        if (requestedPlatform != null) {
+            buf.append("Failed to locate stream ").append(stream.getStreamId())
+                    .append(" in platform " + requestedPlatform.getPlatformKey());
+        } else if (knownPlatforms.isEmpty()) {
+            buf.append("None of the registries provided any platform");
+        } else {
+            if (stream.getPlatformKey() == null) {
+                buf.append("Failed to locate stream ").append(stream.getStreamId()).append(" in platform(s): ");
+            } else {
+                buf.append("Failed to locate platform ").append(stream.getPlatformKey())
+                        .append(" among available platform(s): ");
+            }
+            buf.append(knownPlatforms.get(0).getPlatformKey());
+            for (int i = 1; i < knownPlatforms.size(); ++i) {
+                buf.append(", ").append(knownPlatforms.get(i).getPlatformKey());
+            }
+        }
+        return new RegistryResolutionException(buf.toString());
     }
 
     @SuppressWarnings("unchecked")

@@ -30,7 +30,9 @@ public class MultipartResource {
         result.put("htmlFileContentType", formData.getHtmlPart().contentType());
         result.put("names", formData.names);
         result.put("numbers", formData.numbers);
+        result.put("numbers2", formData.numbers2);
         result.put("persons", formData.persons);
+        result.put("persons2", formData.persons2);
         return result;
     }
 }

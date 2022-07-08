@@ -140,6 +140,8 @@ public interface SectionHelperFactory<T extends SectionHelper> {
          * Parse and register an expression for the specified parameter.
          * <p>
          * A registered expression contributes to the {@link Template#getExpressions()}, i.e. can be validated at build time.
+         * <p>
+         * The origin of the returned expression is the origin of the containing block.
          *
          * @param param
          * @param value

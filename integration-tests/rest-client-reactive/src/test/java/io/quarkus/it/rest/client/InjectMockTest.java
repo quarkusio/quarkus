@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.it.rest.client.main.ClientWithExceptionMapper;
@@ -14,6 +15,7 @@ import io.quarkus.test.junit.mockito.InjectMock;
 import io.restassured.RestAssured;
 
 @QuarkusTest
+@Order(100) // used in order to make sure this is run before ShouldNotUseMockTest
 public class InjectMockTest {
 
     @InjectMock

@@ -5,7 +5,6 @@ import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Supplier;
 
 import org.hibernate.HibernateException;
@@ -109,7 +108,8 @@ public final class ProxyDefinitions {
                     + "') as it's final. Your application might perform better if we're allowed to extend it.");
             return null;
         }
-        final Set<Class> proxyInterfaces = ProxyFactoryHelper.extractProxyInterfaces(persistentClass, entityName);
+        final java.util.Set<Class<?>> proxyInterfaces = org.hibernate.proxy.pojo.ProxyFactoryHelper
+                .extractProxyInterfaces(persistentClass, entityName);
         PreGeneratedProxies.ProxyClassDetailsHolder preProxy = preGeneratedProxies.getProxies()
                 .get(persistentClass.getClassName());
         Class<?> preGeneratedProxy = null;
@@ -155,7 +155,7 @@ public final class ProxyDefinitions {
         }
     }
 
-    private static Class[] toArray(final Set<Class> interfaces) {
+    private static Class[] toArray(final java.util.Set<Class<?>> interfaces) {
         if (interfaces == null) {
             return ArrayHelper.EMPTY_CLASS_ARRAY;
         }

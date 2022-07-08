@@ -152,9 +152,10 @@ final class ClassConfigPropertiesUtil {
     boolean addProducerMethodForClassConfigProperties(ClassLoader classLoader, ClassInfo configPropertiesClassInfo,
             String prefixStr, ConfigProperties.NamingStrategy namingStrategy,
             boolean failOnMismatchingMember,
-            boolean needsQualifier) {
+            boolean needsQualifier,
+            ConfigPropertiesMetadataBuildItem.InstanceFactory instanceFactory) {
 
-        if (!configPropertiesClassInfo.hasNoArgsConstructor()) {
+        if ((instanceFactory == null) && !configPropertiesClassInfo.hasNoArgsConstructor()) {
             throw new IllegalArgumentException(
                     "Class " + configPropertiesClassInfo + " which is annotated with " + DotNames.CONFIG_PROPERTIES
                             + " must contain a no-arg constructor");
@@ -205,7 +206,7 @@ final class ClassConfigPropertiesUtil {
             }
 
             ResultHandle configObject = populateConfigObject(classLoader, configPropertiesClassInfo, prefixStr, namingStrategy,
-                    failOnMismatchingMember, methodCreator);
+                    failOnMismatchingMember, instanceFactory, methodCreator);
 
             if (needsValidation) {
                 createValidationCodePath(methodCreator, configObject, prefixStr);
@@ -235,9 +236,16 @@ final class ClassConfigPropertiesUtil {
     }
 
     private ResultHandle populateConfigObject(ClassLoader classLoader, ClassInfo configClassInfo, String prefixStr,
-            ConfigProperties.NamingStrategy namingStrategy, boolean failOnMismatchingMember, MethodCreator methodCreator) {
+            ConfigProperties.NamingStrategy namingStrategy,
+            boolean failOnMismatchingMember,
+            ConfigPropertiesMetadataBuildItem.InstanceFactory instanceFactory, MethodCreator methodCreator) {
         String configObjectClassStr = configClassInfo.name().toString();
-        ResultHandle configObject = methodCreator.newInstance(MethodDescriptor.ofConstructor(configObjectClassStr));
+        ResultHandle configObject;
+        if (instanceFactory == null) {
+            configObject = methodCreator.newInstance(MethodDescriptor.ofConstructor(configObjectClassStr));
+        } else {
+            configObject = instanceFactory.apply(methodCreator, configObjectClassStr);
+        }
 
         // Fields with a default value will be removed from this list at the end of the method.
         List<ConfigPropertyBuildItemCandidate> configPropertyBuildItemCandidates = new ArrayList<>();
@@ -336,7 +344,7 @@ final class ClassConfigPropertiesUtil {
 
                         ResultHandle nestedConfigObject = populateConfigObject(classLoader, fieldTypeClassInfo,
                                 getFullConfigName(prefixStr, namingStrategy, field), namingStrategy, failOnMismatchingMember,
-                                methodCreator);
+                                null, methodCreator);
                         createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, nestedConfigObject);
                     }
                 } else {

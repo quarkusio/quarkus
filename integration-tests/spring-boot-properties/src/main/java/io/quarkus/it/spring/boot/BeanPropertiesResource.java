@@ -16,6 +16,18 @@ public class BeanPropertiesResource {
         return properties.getValue();
     }
 
+    @Path("/finalValue")
+    @GET
+    public String getFinalValue() {
+        return properties.getFinalValue();
+    }
+
+    @Path("/packagePrivateValue")
+    @GET
+    public int getPackagePrivateValue() {
+        return properties.packagePrivateValue;
+    }
+
     @Path("/innerClass/value")
     @GET
     public String getInnerClassValue() {

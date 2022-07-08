@@ -175,7 +175,8 @@ public class ConfigPropertiesBuildStep {
                 boolean needsValidation = classConfigPropertiesUtil.addProducerMethodForClassConfigProperties(
                         Thread.currentThread().getContextClassLoader(), classInfo,
                         configPropertiesMetadata.getPrefix(), configPropertiesMetadata.getNamingStrategy(),
-                        configPropertiesMetadata.isFailOnMismatchingMember(), configPropertiesMetadata.isNeedsQualifier());
+                        configPropertiesMetadata.isFailOnMismatchingMember(), configPropertiesMetadata.isNeedsQualifier(),
+                        configPropertiesMetadata.getInstanceFactory());
                 if (needsValidation) {
                     configClassesThatNeedValidation.add(classInfo.name());
                 }

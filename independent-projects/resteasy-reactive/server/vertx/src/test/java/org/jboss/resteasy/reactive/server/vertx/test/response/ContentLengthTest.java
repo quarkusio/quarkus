@@ -20,7 +20,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class ContentLengthTest {
 
-    private static final int NUMBER_OF_COPIES = 500;
+    private static final int NUMBER_OF_COPIES = 1000;
 
     @RegisterExtension
     static ResteasyReactiveUnitTest runner = new ResteasyReactiveUnitTest()

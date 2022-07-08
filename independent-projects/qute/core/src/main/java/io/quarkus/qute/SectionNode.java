@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import org.jboss.logging.Logger;
 
@@ -18,9 +17,9 @@ class SectionNode implements TemplateNode {
 
     private static final Logger LOG = Logger.getLogger("io.quarkus.qute.nodeResolve");
 
-    static Builder builder(String helperName, Origin origin, Function<String, Expression> expressionFun,
+    static Builder builder(String helperName, Origin origin, Parser parser,
             ErrorInitializer errorFun) {
-        return new Builder(helperName, origin, expressionFun, errorFun);
+        return new Builder(helperName, origin, parser, errorFun);
     }
 
     final String name;
@@ -110,15 +109,14 @@ class SectionNode implements TemplateNode {
         private EngineImpl engine;
         private final ErrorInitializer errorInitializer;
 
-        Builder(String helperName, Origin origin, Function<String, Expression> expressionFun,
-                ErrorInitializer errorInitializer) {
+        Builder(String helperName, Origin origin, Parser parser, ErrorInitializer errorInitializer) {
             this.helperName = helperName;
             this.origin = origin;
             this.blocks = new ArrayList<>();
             this.errorInitializer = errorInitializer;
             // The main block is always present
             addBlock(SectionBlock
-                    .builder(SectionHelperFactory.MAIN_BLOCK_NAME, expressionFun, errorInitializer)
+                    .builder(SectionHelperFactory.MAIN_BLOCK_NAME, parser, errorInitializer)
                     .setOrigin(origin));
         }
 

@@ -8,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -180,9 +179,9 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
         }
     }
 
-    static SectionBlock.Builder builder(String id, Function<String, Expression> expressionFunc,
+    static SectionBlock.Builder builder(String id, Parser parser,
             ErrorInitializer errorInitializer) {
-        return new Builder(id, expressionFunc, errorInitializer).setLabel(id);
+        return new Builder(id, parser, errorInitializer).setLabel(id);
     }
 
     static class Builder implements BlockInfo {
@@ -193,14 +192,13 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
         private Map<String, String> parameters;
         private final List<TemplateNode> nodes;
         private Map<String, Expression> expressions;
-        private final Function<String, Expression> expressionFun;
+        private final Parser parser;
         private final ErrorInitializer errorInitializer;
 
-        public Builder(String id, Function<String, Expression> expressionFun,
-                ErrorInitializer errorInitializer) {
+        public Builder(String id, Parser parser, ErrorInitializer errorInitializer) {
             this.id = id;
             this.nodes = new ArrayList<>();
-            this.expressionFun = expressionFun;
+            this.parser = parser;
             this.errorInitializer = errorInitializer;
         }
 
@@ -229,7 +227,7 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
 
         @Override
         public Expression addExpression(String param, String value) {
-            Expression expression = expressionFun.apply(value);
+            Expression expression = parser.createSectionBlockExpression(this, value);
             if (expressions == null) {
                 expressions = new LinkedHashMap<>();
             }

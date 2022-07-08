@@ -27,7 +27,8 @@ public class AmqpDevServicesBuildTimeConfig {
 
     /**
      * The image to use.
-     * Note that only {@code quay.io/artemiscloud/activemq-artemis-broker} images are supported.
+     * Note that only ActiveMQ Artemis images are supported.
+     * Specifically, the image repository must end with {@code artemiscloud/activemq-artemis-broker}.
      *
      * Check https://quay.io/repository/artemiscloud/activemq-artemis-broker to find the available versions.
      */

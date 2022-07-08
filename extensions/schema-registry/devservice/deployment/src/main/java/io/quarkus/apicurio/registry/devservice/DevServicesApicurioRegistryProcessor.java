@@ -259,7 +259,7 @@ public class DevServicesApicurioRegistryProcessor {
                 withLabel(DEV_SERVICE_LABEL, serviceName);
             }
             withEnv("QUARKUS_PROFILE", "prod");
-            if (!dockerImageName.getRepository().equals("apicurio/apicurio-registry-mem")) {
+            if (!dockerImageName.getRepository().endsWith("apicurio/apicurio-registry-mem")) {
                 throw new IllegalArgumentException("Only apicurio/apicurio-registry-mem images are supported");
             }
         }

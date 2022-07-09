@@ -93,11 +93,20 @@ public class CommonPanacheQueryImpl<Entity> {
         if (query.trim().toLowerCase().startsWith("select ")) {
             String trimmedQuery = query.trim();
             int endSelect = trimmedQuery.toLowerCase().indexOf(" from ");
+            String selectClause = trimmedQuery.substring("SELECT ".length(), endSelect);
             String from = trimmedQuery.substring(endSelect);
-            StringBuilder newQuery = new StringBuilder("SELECT new ")
+            StringBuilder newQuery = new StringBuilder("select ");
+            // Handle select-distinct. HQL example: select distinct new org.acme.ProjectionClass...
+            boolean distinctQuery = selectClause.trim().toLowerCase().startsWith("distinct ");
+            if (distinctQuery) {
+                selectClause = selectClause.trim().substring("distinct ".length()).trim();
+                newQuery.append("distinct ");
+            }
+            newQuery
+                    .append("new ")
                     .append(type.getName())
-                    .append(" (")
-                    .append(trimmedQuery.substring("SELECT ".length(), endSelect))
+                    .append("(")
+                    .append(selectClause)
                     .append(")")
                     .append(from);
 

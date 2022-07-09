@@ -1239,6 +1239,19 @@ public class TestEndpoint {
         long count = projectionQuery.count();
         Assertions.assertEquals(1L, count);
 
+        PanacheQuery<CatProjectionBean> projectionDistinctQuery = Cat
+                // The spaces at the beginning are intentional
+                .find("   SELECT   disTINct  c.name, cast(null as string), SUM(c.weight) from Cat c where name = :name group by name  ",
+                        Parameters.with("name", bubulle.name))
+                .project(CatProjectionBean.class);
+        CatProjectionBean aggregationDistinctProjection = projectionDistinctQuery.singleResult();
+        Assertions.assertEquals(bubulle.name, aggregationDistinctProjection.getName());
+        Assertions.assertNull(aggregationDistinctProjection.getOwnerName());
+        Assertions.assertEquals(bubulle.weight, aggregationDistinctProjection.getWeight());
+
+        long countDistinct = projectionDistinctQuery.count();
+        Assertions.assertEquals(1L, countDistinct);
+
         Cat.deleteAll();
         CatOwner.deleteAll();
 

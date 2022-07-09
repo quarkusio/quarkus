@@ -376,6 +376,7 @@ public class TestRegistryClientBuilder {
             } else {
                 final Path platformsDir = getRegistryPlatformsDir(registryDir);
                 final Map<String, PlatformCatalog.Mutable> platformsByQuarkusVersion = new HashMap<>();
+                final PlatformCatalog.Mutable allPlatforms = PlatformCatalog.builder();
                 if (platformCatalog != null) {
                     persistPlatformCatalog(platformCatalog.build(), platformsDir);
                     for (Platform p : platformCatalog.getPlatforms()) {
@@ -389,19 +390,8 @@ public class TestRegistryClientBuilder {
                                 final PlatformCatalog.Mutable c = platformsByQuarkusVersion.computeIfAbsent(
                                         r.getQuarkusCoreVersion(),
                                         v -> PlatformCatalog.builder());
-                                Platform.Mutable platform = (Platform.Mutable) c.getPlatform(p.getPlatformKey());
-                                if (platform == null) {
-                                    platform = Platform.builder()
-                                            .setPlatformKey(p.getPlatformKey());
-                                    c.addPlatform(platform);
-                                }
-                                PlatformStream.Mutable stream = (PlatformStream.Mutable) platform.getStream(s.getId());
-                                if (stream == null) {
-                                    stream = PlatformStream.builder()
-                                            .setId(s.getId());
-                                    platform.addStream(stream);
-                                }
-                                stream.addRelease(r);
+                                addPlatformRelease(p, s, r, c);
+                                addPlatformRelease(p, s, r, allPlatforms);
                             }
                         }
                     }
@@ -419,19 +409,8 @@ public class TestRegistryClientBuilder {
                                 final PlatformCatalog.Mutable c = platformsByQuarkusVersion.computeIfAbsent(
                                         r.getQuarkusCoreVersion(),
                                         v -> PlatformCatalog.builder());
-                                Platform.Mutable platform = (Platform.Mutable) c.getPlatform(p.getPlatformKey());
-                                if (platform == null) {
-                                    platform = Platform.builder();
-                                    platform.setPlatformKey(p.getPlatformKey());
-                                    c.addPlatform(platform);
-                                }
-                                PlatformStream.Mutable stream = (PlatformStream.Mutable) platform.getStream(s.getId());
-                                if (stream == null) {
-                                    stream = PlatformStream.builder();
-                                    stream.setId(s.getId());
-                                    platform.addStream(stream);
-                                }
-                                stream.addRelease(r);
+                                addPlatformRelease(p, s, r, c);
+                                addPlatformRelease(p, s, r, allPlatforms);
                             }
                         }
                     }
@@ -440,6 +419,8 @@ public class TestRegistryClientBuilder {
                 for (Map.Entry<String, PlatformCatalog.Mutable> entry : platformsByQuarkusVersion.entrySet()) {
                     persistPlatformCatalog(entry.getValue().build(), platformsDir.resolve(entry.getKey()));
                 }
+
+                persistPlatformCatalog(allPlatforms.build(), platformsDir.resolve(Constants.QUARKUS_VERSION_CLASSIFIER_ALL));
 
                 if (memberCatalogs != null && !memberCatalogs.isEmpty()) {
                     platformConfig.setExtensionCatalogsIncluded(true);
@@ -480,6 +461,23 @@ public class TestRegistryClientBuilder {
             }
         }
 
+        protected void addPlatformRelease(Platform platform, PlatformStream stream, PlatformRelease release,
+                final PlatformCatalog.Mutable catalog) {
+            Platform.Mutable mp = (Platform.Mutable) catalog.getPlatform(platform.getPlatformKey());
+            if (mp == null) {
+                mp = Platform.builder()
+                        .setPlatformKey(platform.getPlatformKey());
+                catalog.addPlatform(mp);
+            }
+            PlatformStream.Mutable ms = (PlatformStream.Mutable) mp.getStream(stream.getId());
+            if (ms == null) {
+                ms = PlatformStream.builder()
+                        .setId(stream.getId());
+                mp.addStream(ms);
+            }
+            ms.addRelease(release);
+        }
+
         private ArtifactCoords getRegistryNonPlatformCatalogArtifact() {
             return new ArtifactCoords(registryGroupId, Constants.DEFAULT_REGISTRY_NON_PLATFORM_EXTENSIONS_CATALOG_ARTIFACT_ID,
                     null, "json", Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION);
@@ -502,6 +500,28 @@ public class TestRegistryClientBuilder {
 
             platform.addStream(stream);
             return new TestPlatformCatalogStreamBuilder(this, stream);
+        }
+
+        public TestPlatformCatalogStreamBuilder newArchivedStream(String id) {
+
+            if (registry.archivedPlatformCatalog == null) {
+                registry.archivedPlatformCatalog = PlatformCatalog.builder();
+            }
+
+            Platform.Mutable archivedPlatform = (Platform.Mutable) registry.archivedPlatformCatalog
+                    .getPlatform(platform.getPlatformKey());
+            if (archivedPlatform == null) {
+                archivedPlatform = Platform.builder()
+                        .setPlatformKey(platform.getPlatformKey());
+                registry.archivedPlatformCatalog.addPlatform(archivedPlatform);
+            }
+
+            PlatformStream.Mutable archivedStream = (PlatformStream.Mutable) archivedPlatform.getStream(id);
+            if (archivedStream == null) {
+                archivedStream = PlatformStream.builder().setId(id);
+                archivedPlatform.addStream(archivedStream);
+            }
+            return new TestPlatformCatalogStreamBuilder(this, archivedStream);
         }
 
         public TestRegistryBuilder registry() {

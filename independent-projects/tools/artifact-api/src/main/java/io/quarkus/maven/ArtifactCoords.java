@@ -34,7 +34,7 @@ public class ArtifactCoords implements io.quarkus.maven.dependency.ArtifactCoord
     protected ArtifactCoords(String[] parts) {
         groupId = parts[0];
         artifactId = parts[1];
-        classifier = parts[2];
+        classifier = parts[2] == null ? DEFAULT_CLASSIFIER : parts[2];
         type = parts[3] == null ? TYPE_JAR : parts[3];
         version = parts[4];
     }
@@ -49,17 +49,17 @@ public class ArtifactCoords implements io.quarkus.maven.dependency.ArtifactCoord
     }
 
     public ArtifactCoords(String groupId, String artifactId, String version) {
-        this(groupId, artifactId, "", TYPE_JAR, version);
+        this(groupId, artifactId, DEFAULT_CLASSIFIER, TYPE_JAR, version);
     }
 
     public ArtifactCoords(String groupId, String artifactId, String type, String version) {
-        this(groupId, artifactId, "", type, version);
+        this(groupId, artifactId, DEFAULT_CLASSIFIER, type, version);
     }
 
     public ArtifactCoords(String groupId, String artifactId, String classifier, String type, String version) {
         this.groupId = groupId;
         this.artifactId = artifactId;
-        this.classifier = classifier == null ? "" : classifier;
+        this.classifier = classifier == null ? DEFAULT_CLASSIFIER : classifier;
         this.type = type == null ? TYPE_JAR : type;
         this.version = version;
     }

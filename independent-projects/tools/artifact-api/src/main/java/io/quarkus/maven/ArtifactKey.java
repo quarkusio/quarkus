@@ -24,7 +24,7 @@ public class ArtifactKey implements io.quarkus.maven.dependency.ArtifactKey, Ser
             this.classifier = parts[2];
         }
         if (parts.length <= 3 || parts[3] == null) {
-            this.type = "jar";
+            this.type = ArtifactCoords.TYPE_JAR;
         } else {
             this.type = parts[3];
         }

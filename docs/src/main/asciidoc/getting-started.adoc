@@ -113,7 +113,7 @@ In addition, you can see the `quarkus-maven-plugin` responsible of the packaging
         <plugin>
             <groupId>${quarkus.platform.group-id}</groupId>
             <artifactId>quarkus-maven-plugin</artifactId>
-            <version>${quarkus-plugin.version}</version>
+            <version>${quarkus.platform.version}</version>
             <extensions>true</extensions>
             <executions>
                 <execution>

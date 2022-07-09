@@ -39,12 +39,15 @@ public class LiquibaseMongodbFactory {
                                 "Config property 'quarkus.mongodb.database' must be defined when no database " +
                                         "exist in the connection string"));
             }
+            if (mongoClientConfig.credentials.authSource.isPresent()) {
+                connectionString += "?authSource=" + mongoClientConfig.credentials.authSource.get();
+            }
+
             Database database = DatabaseFactory.getInstance().openDatabase(connectionString,
                     this.mongoClientConfig.credentials.username.orElse(null),
                     this.mongoClientConfig.credentials.password.orElse(null),
                     null, resourceAccessor);
 
-            ;
             if (database != null) {
                 liquibaseMongodbConfig.liquibaseCatalogName.ifPresent(database::setLiquibaseCatalogName);
                 liquibaseMongodbConfig.liquibaseSchemaName.ifPresent(database::setLiquibaseSchemaName);

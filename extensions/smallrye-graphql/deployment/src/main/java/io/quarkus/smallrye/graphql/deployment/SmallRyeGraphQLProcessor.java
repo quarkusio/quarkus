@@ -75,6 +75,7 @@ import io.smallrye.graphql.cdi.producer.GraphQLProducer;
 import io.smallrye.graphql.schema.Annotations;
 import io.smallrye.graphql.schema.SchemaBuilder;
 import io.smallrye.graphql.schema.model.Argument;
+import io.smallrye.graphql.schema.model.DirectiveType;
 import io.smallrye.graphql.schema.model.Field;
 import io.smallrye.graphql.schema.model.Group;
 import io.smallrye.graphql.schema.model.InputType;
@@ -403,6 +404,7 @@ public class SmallRyeGraphQLProcessor {
         classes.addAll(getTypeClassNames(schema.getTypes().values()));
         classes.addAll(getInputClassNames(schema.getInputs().values()));
         classes.addAll(getInterfaceClassNames(schema.getInterfaces().values()));
+        classes.addAll(getDirectiveTypeClassNames(schema.getDirectiveTypes()));
 
         return classes.toArray(String[]::new);
     }
@@ -456,6 +458,16 @@ public class SmallRyeGraphQLProcessor {
         for (Type complexGraphQLType : complexGraphQLTypes) {
             classes.add(complexGraphQLType.getClassName());
             classes.addAll(getFieldClassNames(complexGraphQLType.getFields()));
+        }
+        return classes;
+    }
+
+    private Set<String> getDirectiveTypeClassNames(Collection<DirectiveType> complexGraphQLDirectiveTypes) {
+        Set<String> classes = new HashSet<>();
+        for (DirectiveType complexGraphQLDirectiveType : complexGraphQLDirectiveTypes) {
+            if (complexGraphQLDirectiveType.getClassName() != null) {
+                classes.add(complexGraphQLDirectiveType.getClassName());
+            }
         }
         return classes;
     }

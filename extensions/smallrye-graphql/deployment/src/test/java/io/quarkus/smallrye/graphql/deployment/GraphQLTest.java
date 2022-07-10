@@ -1,7 +1,5 @@
 package io.quarkus.smallrye.graphql.deployment;
 
-import static io.quarkus.smallrye.graphql.deployment.AbstractGraphQLTest.MEDIATYPE_JSON;
-
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,7 +28,7 @@ public class GraphQLTest extends AbstractGraphQLTest {
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
-                            BusinessException.class)
+                            CustomDirective.class, BusinessException.class)
                     .addAsResource(new StringAsset(getPropertyAsString(configuration())), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
@@ -51,6 +49,8 @@ public class GraphQLTest extends AbstractGraphQLTest {
         Assertions.assertTrue(body.contains("type TestGenericsPojo_String {"));
         Assertions.assertTrue(body.contains("enum SomeEnum {"));
         Assertions.assertTrue(body.contains("enum Number {"));
+        Assertions.assertTrue(body.contains("type TestPojo @customDirective(fields : [\"test-pojo\"])"));
+        Assertions.assertTrue(body.contains("message: String @customDirective(fields : [\"message\"])"));
     }
 
     @Test
@@ -253,6 +253,7 @@ public class GraphQLTest extends AbstractGraphQLTest {
     private static Map<String, String> configuration() {
         Map<String, String> m = new HashMap<>();
         m.put("quarkus.smallrye-graphql.events.enabled", "true");
+        m.put("quarkus.smallrye-graphql.schema-include-directives", "true");
         return m;
     }
 }

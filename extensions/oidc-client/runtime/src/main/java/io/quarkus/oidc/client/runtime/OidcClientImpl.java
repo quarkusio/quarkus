@@ -109,7 +109,7 @@ public class OidcClientImpl implements OidcClient {
                         body.add(OidcConstants.CLIENT_ASSERTION, jwt);
                     }
                 } else if (!OidcCommonUtils.isClientSecretPostAuthRequired(oidcConfig.credentials)) {
-                    body.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+                    body = copyMultiMap(body).set(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
                 }
                 if (!additionalGrantParameters.isEmpty()) {
                     body = copyMultiMap(body);

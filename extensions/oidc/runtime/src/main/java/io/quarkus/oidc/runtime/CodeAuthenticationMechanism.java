@@ -22,8 +22,10 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.jwt.consumer.ErrorCodes;
 import org.jose4j.jwt.consumer.InvalidJwtException;
+import org.jose4j.lang.JoseException;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.quarkus.logging.Log;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
@@ -39,6 +41,7 @@ import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
 import io.smallrye.jwt.util.KeyUtils;
@@ -216,7 +219,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         context.put(OidcConstants.ACCESS_TOKEN_VALUE, session.getAccessToken());
                         context.put(AuthorizationCodeTokens.class.getName(), session);
                         return authenticate(identityProviderManager, context,
-                                new IdTokenCredential(session.getIdToken(),
+                                new IdTokenCredential(decryptIdTokenIfEncryptedByProvider(configContext, session.getIdToken()),
                                         isInternalIdToken(session.getIdToken(), configContext)))
                                 .call(new Function<SecurityIdentity, Uni<?>>() {
                                     @Override
@@ -266,6 +269,21 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     }
 
                 });
+    }
+
+    private static String decryptIdTokenIfEncryptedByProvider(TenantConfigContext resolvedContext, String token) {
+        if ((resolvedContext.provider.tokenDecryptionKey != null || resolvedContext.provider.client.getClientJwtKey() != null)
+                && OidcUtils.isEncryptedToken(token)) {
+            try {
+                return OidcUtils.decryptString(token,
+                        resolvedContext.provider.tokenDecryptionKey != null ? resolvedContext.provider.tokenDecryptionKey
+                                : resolvedContext.provider.client.getClientJwtKey(),
+                        KeyEncryptionAlgorithm.RSA_OAEP);
+            } catch (JoseException ex) {
+                Log.debugf("Failed to decrypt a token: %s, a token introspection will be attempted instead", ex.getMessage());
+            }
+        }
+        return token;
     }
 
     private boolean isBackChannelLogoutPendingAndValid(TenantConfigContext configContext, String idToken) {
@@ -523,8 +541,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         context.put(OidcConstants.ACCESS_TOKEN_VALUE, tokens.getAccessToken());
                         context.put(AuthorizationCodeTokens.class.getName(), tokens);
 
+                        final String idToken = decryptIdTokenIfEncryptedByProvider(configContext, tokens.getIdToken());
+
                         return authenticate(identityProviderManager, context,
-                                new IdTokenCredential(tokens.getIdToken(), internalIdToken))
+                                new IdTokenCredential(idToken, internalIdToken))
                                 .call(new Function<SecurityIdentity, Uni<?>>() {
                                     @Override
                                     public Uni<Void> apply(SecurityIdentity identity) {
@@ -534,7 +554,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                     identity.getAttribute(OidcUtils.USER_INFO_ATTRIBUTE)));
                                         }
                                         return processSuccessfulAuthentication(context, configContext,
-                                                tokens, identity);
+                                                tokens, idToken, identity);
                                     }
                                 })
                                 .map(new Function<SecurityIdentity, SecurityIdentity>() {
@@ -619,19 +639,20 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     private Uni<Void> processSuccessfulAuthentication(RoutingContext context,
             TenantConfigContext configContext,
             AuthorizationCodeTokens tokens,
+            String idToken,
             SecurityIdentity securityIdentity) {
         return removeSessionCookie(context, configContext.oidcConfig)
                 .chain(new Function<Void, Uni<? extends Void>>() {
 
                     @Override
                     public Uni<? extends Void> apply(Void t) {
-                        JsonObject idToken = OidcUtils.decodeJwtContent(tokens.getIdToken());
+                        JsonObject idTokenJson = OidcUtils.decodeJwtContent(idToken);
 
-                        if (!idToken.containsKey("exp") || !idToken.containsKey("iat")) {
+                        if (!idTokenJson.containsKey("exp") || !idTokenJson.containsKey("iat")) {
                             LOG.debug("ID Token is required to contain 'exp' and 'iat' claims");
                             throw new AuthenticationCompletionException();
                         }
-                        long maxAge = idToken.getLong("exp") - idToken.getLong("iat");
+                        long maxAge = idTokenJson.getLong("exp") - idTokenJson.getLong("iat");
                         if (configContext.oidcConfig.token.lifespanGrace.isPresent()) {
                             maxAge += configContext.oidcConfig.token.lifespanGrace.getAsInt();
                         }
@@ -824,14 +845,16 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             context.put(AuthorizationCodeTokens.class.getName(), tokens);
                             context.put(REFRESH_TOKEN_GRANT_RESPONSE, Boolean.TRUE);
 
+                            final String idToken = decryptIdTokenIfEncryptedByProvider(configContext, tokens.getIdToken());
+
                             return authenticate(identityProviderManager, context,
-                                    new IdTokenCredential(tokens.getIdToken()))
+                                    new IdTokenCredential(idToken))
                                     .call(new Function<SecurityIdentity, Uni<?>>() {
                                         @Override
                                         public Uni<Void> apply(SecurityIdentity identity) {
                                             // after a successful refresh, rebuild the identity and update the cookie
                                             return processSuccessfulAuthentication(context, configContext,
-                                                    tokens, identity);
+                                                    tokens, idToken, identity);
                                         }
                                     })
                                     .map(new Function<SecurityIdentity, SecurityIdentity>() {

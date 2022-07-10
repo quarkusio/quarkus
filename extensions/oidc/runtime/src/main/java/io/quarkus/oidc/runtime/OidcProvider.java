@@ -53,8 +53,9 @@ public class OidcProvider implements Closeable {
     final OidcTenantConfig oidcConfig;
     final String issuer;
     final String[] audience;
+    final Key tokenDecryptionKey;
 
-    public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks) {
+    public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks, Key tokenDecryptionKey) {
         this.client = client;
         this.oidcConfig = oidcConfig;
         this.asymmetricKeyResolver = jwks == null ? null
@@ -62,14 +63,16 @@ public class OidcProvider implements Closeable {
 
         this.issuer = checkIssuerProp();
         this.audience = checkAudienceProp();
+        this.tokenDecryptionKey = tokenDecryptionKey;
     }
 
-    public OidcProvider(String publicKeyEnc, OidcTenantConfig oidcConfig) {
+    public OidcProvider(String publicKeyEnc, OidcTenantConfig oidcConfig, Key tokenDecryptionKey) {
         this.client = null;
         this.oidcConfig = oidcConfig;
         this.asymmetricKeyResolver = new LocalPublicKeyResolver(publicKeyEnc);
         this.issuer = checkIssuerProp();
         this.audience = checkAudienceProp();
+        this.tokenDecryptionKey = tokenDecryptionKey;
     }
 
     private String checkIssuerProp() {

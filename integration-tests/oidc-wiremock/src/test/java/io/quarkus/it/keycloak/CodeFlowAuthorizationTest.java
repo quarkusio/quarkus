@@ -7,6 +7,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.net.URI;
@@ -60,6 +61,37 @@ public class CodeFlowAuthorizationTest {
             assertEquals("Welcome, clientId: quarkus-web-app", page.getBody().asText());
             assertNull(getSessionCookie(webClient, "code-flow"));
             // Clear the post logout cookie
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCodeFlowEncryptedIdToken() throws IOException {
+        doTestCodeFlowEncryptedIdToken("code-flow-encrypted-id-token-jwk");
+        doTestCodeFlowEncryptedIdToken("code-flow-encrypted-id-token-pem");
+    }
+
+    private void doTestCodeFlowEncryptedIdToken(String tenant) throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-encrypted-id-token/" + tenant);
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            page = form.getInputByValue("login").click();
+
+            assertEquals("user: alice", page.getBody().asText());
+            Cookie sessionCookie = getSessionCookie(webClient, tenant);
+            assertNotNull(sessionCookie);
+            // default session cookie format: "idtoken|accesstoken|refreshtoken"
+            assertTrue(OidcUtils.isEncryptedToken(sessionCookie.getValue().split("\\|")[0]));
+
+            // repeat the call with the session cookie containing the encrypted id token
+            page = webClient.getPage("http://localhost:8081/code-flow-encrypted-id-token/" + tenant);
+            assertEquals("user: alice", page.getBody().asText());
+
             webClient.getCookieManager().clearCookies();
         }
     }

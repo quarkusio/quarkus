@@ -180,4 +180,8 @@ public class OidcProviderClient implements Closeable {
     public void close() {
         client.close();
     }
+
+    public Key getClientJwtKey() {
+        return clientJwtKey;
+    }
 }

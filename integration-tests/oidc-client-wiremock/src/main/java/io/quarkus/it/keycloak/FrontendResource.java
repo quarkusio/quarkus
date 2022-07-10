@@ -63,4 +63,11 @@ public class FrontendResource {
         return clients.getClient("refresh").refreshTokens(refreshToken)
                 .onItem().transform(t -> t.getAccessToken());
     }
+
+    @GET
+    @Path("password-grant-public-client")
+    @Produces("text/plain")
+    public Uni<String> passwordGrantPublicClient() {
+        return clients.getClient("password-grant-public-client").getTokens().onItem().transform(t -> t.getAccessToken());
+    }
 }

@@ -236,7 +236,9 @@ public class FastBootMetadataBuilder {
 
         MultiTenancyStrategy multiTenancyStrategy = puDefinition.getMultitenancyStrategy();
         if (multiTenancyStrategy != null) {
-            cfg.put(AvailableSettings.MULTI_TENANT, multiTenancyStrategy);
+            String legacyMULTI_TENANT = "hibernate.multiTenancy";
+            //FIXME this property is meaningless in Hibernate ORM >6 (and the constant was removed)
+            cfg.put(legacyMULTI_TENANT, multiTenancyStrategy);
         }
 
         applyTransactionProperties(persistenceUnit, cfg);

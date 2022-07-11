@@ -396,7 +396,7 @@ public final class HibernateOrmProcessor {
                             xmlDescriptor.getName(),
                             Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
                             getMultiTenancyStrategy(Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
-                                    .getProperties().getProperty(AvailableSettings.MULTI_TENANT))),
+                                    .getProperties().getProperty("hibernate.multiTenancy"))), //FIXME this property is meaningless in Hibernate ORM 6
                             null,
                             jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
                             Collections.emptyMap(),

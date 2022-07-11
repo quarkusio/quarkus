@@ -122,7 +122,11 @@ public class OidcClientImpl implements OidcClient {
                         .onFailure(ConnectException.class)
                         .retry()
                         .atMost(oidcConfig.connectionRetryCount)
-                        .onFailure().transform(t -> t.getCause());
+                        .onFailure().transform(t -> {
+                            LOG.warn("OIDC Server is not available:", t.getCause() != null ? t.getCause() : t);
+                            // don't wrap t to avoid information leak
+                            return new OidcClientException("OIDC Server is not available");
+                        });
                 return response.onItem()
                         .transform(resp -> emitGrantTokens(resp, refresh));
             }

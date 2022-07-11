@@ -35,6 +35,13 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
                                 "{\"access_token\":\"access_token_1\", \"expires_in\":4, \"refresh_token\":\"refresh_token_1\"}")));
+        server.stubFor(WireMock.post("/tokens_public_client")
+                .withRequestBody(matching("grant_type=password&username=alice&password=alice&client_id=quarkus-app"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"access_token_public_client\", \"expires_in\":20}")));
         server.stubFor(WireMock.post("/non-standard-tokens")
                 .withHeader("X-Custom", matching("XCustomHeaderValue"))
                 .withRequestBody(matching("grant_type=password&username=alice&password=alice&extra_param=extra_param_value"))

@@ -77,6 +77,18 @@ public class OidcClientTest {
     }
 
     @Test
+    public void testEchoTokensPasswordGrantPublicClient() {
+        RestAssured.when().get("/frontend/password-grant-public-client")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_public_client"));
+        RestAssured.when().get("/frontend/password-grant-public-client")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_public_client"));
+    }
+
+    @Test
     public void testEchoTokensNonStandardResponse() {
         RestAssured.when().get("/frontend/echoTokenNonStandardResponse")
                 .then()

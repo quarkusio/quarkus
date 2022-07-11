@@ -62,9 +62,6 @@ public final class StandardHibernateORMInitiatorListProvider implements InitialI
         // Custom one!
         serviceInitiators.add(QuarkusJndiServiceInitiator.INSTANCE);
 
-        // Custom one!
-        serviceInitiators.add(DisabledJMXInitiator.INSTANCE);
-
         serviceInitiators.add(PersisterClassResolverInitiator.INSTANCE);
         serviceInitiators.add(PersisterFactoryInitiator.INSTANCE);
 

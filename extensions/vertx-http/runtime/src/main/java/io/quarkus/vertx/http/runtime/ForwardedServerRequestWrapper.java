@@ -388,4 +388,15 @@ class ForwardedServerRequestWrapper implements HttpServerRequest, HttpServerRequ
     public DecoderResult decoderResult() {
         return delegate.decoderResult();
     }
+
+    @Override
+    public HttpServerRequest setParamsCharset(String charset) {
+        delegate.setParamsCharset(charset);
+        return this;
+    }
+
+    @Override
+    public String getParamsCharset() {
+        return delegate.getParamsCharset();
+    }
 }

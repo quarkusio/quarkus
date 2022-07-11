@@ -9,17 +9,15 @@ on:
       jdkVersion:
         description: 'JDK version'
         required: true
-        # make sure to keep the default of JDK_VERSION in sync!
-        default: '19'
+        # make sure to keep the matrix entries (see below) in sync!
+        default: '20'
       jdkDistribution:
         description: 'JDK distribution'
         required: true
-        # make sure to keep the default of JDK_DIST in sync!
+        # make sure to keep the matrix entries (see below) in sync!
         default: 'jdk.java.net'
 
 env:
-  JDK_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkVersion || '19' }}
-  JDK_DIST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkDistribution || 'jdk.java.net' }}
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
   MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
@@ -29,25 +27,43 @@ env:
   DB_NAME: hibernate_orm_test
 jobs:
   linux-jvm-test:
-    name: "JVM Tests - Early Access JDK Build"
+    name: JVM Tests - Early Access JDK ${{ matrix.version }} Build - ${{ matrix.dist }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # This is complex because we want to use a different matrix when using workflow_dispatch.
+      # See https://docs.github.com/en/actions/learn-github-actions/expressions#example-returning-a-json-object
+      # for the code that inspired this.
+      # The first matrix (with a single entry) gets executed when using workflow_dispatch only.
+      # The second matrix (with multiple entries) get executed when NOT using workflow_dispatch.
+      # When adding a newer JDK here, make sure to update the defaults of workflow_dispatch inputs (see top of this file).
+      matrix: >-
+        ${{
+          fromJSON(
+            github.event_name == 'workflow_dispatch'
+            && format( '{{ "include": [{{ "version": "{0}", "dist": "{1}" }}] }}',
+                github.event.inputs.jdkVersion, github.event.inputs.jdkDistribution )
+            || '{ "include": [{ "version": 19, "dist": "jdk.java.net" },
+                { "version": 20, "dist": "jdk.java.net" }] }'
+          )
+        }}
     if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
     timeout-minutes: 360
     env:
       MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m
     steps:
       - name: Set up JDK from jdk.java.net
-        if: env.JDK_DIST == 'jdk.java.net'
+        if: matrix.dist == 'jdk.java.net'
         uses: oracle-actions/setup-java@v1
         with:
           website: jdk.java.net
-          release: ${{ env.JDK_VERSION }}
+          release: ${{ matrix.version }}
       - name: Set up JDK from other provider than jdk.java.net
-        if: env.JDK_DIST != 'jdk.java.net'
+        if: matrix.dist != 'jdk.java.net'
         uses: actions/setup-java@v2
         with:
-          distribution: ${{ env.JDK_DIST }}
-          java-version: ${{ env.JDK_VERSION }}
+          distribution: ${{ matrix.dist }}
+          java-version: ${{ matrix.version }}
       - name: Print Java version
         shell: bash
         run: java -version
@@ -78,7 +94,7 @@ jobs:
           path: ~/.m2/repository
           # refresh cache every month to avoid unlimited growth
           # also add JDK version to key to avoid poisioning of the CI cache
-          key: q2maven-${{ steps.get-date.outputs.date }}-${{ env.JDK_VERSION }}
+          key: q2maven-${{ steps.get-date.outputs.date }}-${{ matrix.version }}
       - name: Build with Maven
         # -fae to try to gather as many failures as possible
         # (but not maven.test.failure.ignore because test report generation is buggy)
@@ -109,7 +125,7 @@ jobs:
         uses: actions/upload-artifact@v1
         if: failure()
         with:
-          name: test-reports-linux-jvm${{ env.JDK_VERSION }}
+          name: test-reports-linux-jvm${{ matrix.version }}
           path: 'test-reports.tgz'
       - name: Delete Local Artifacts From Cache
         if: always()

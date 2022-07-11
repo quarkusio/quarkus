@@ -21,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -256,9 +257,10 @@ public class TestResourceManager implements Closeable {
         }
         // handle meta-annotations: in this case we must rely on reflection because meta-annotations are not indexed
         // because they are not in the user's test folder but come from test extensions
-        collectMetaAnnotations(testClassFromTCCL, uniqueEntries);
+        collectMetaAnnotations(testClassFromTCCL, Class::getSuperclass, uniqueEntries);
+        collectMetaAnnotations(testClassFromTCCL, Class::getEnclosingClass, uniqueEntries);
         if (profileClassFromTCCL != null) {
-            collectMetaAnnotations(profileClassFromTCCL, uniqueEntries);
+            collectMetaAnnotations(profileClassFromTCCL, Class::getSuperclass, uniqueEntries);
         }
         for (AnnotationInstance annotation : findQuarkusTestResourceInstances(testClass, index)) {
             try {
@@ -298,8 +300,9 @@ public class TestResourceManager implements Closeable {
         return uniqueEntries;
     }
 
-    private void collectMetaAnnotations(Class<?> testClassFromTCCL, Set<TestResourceClassEntry> uniqueEntries) {
-        while (!testClassFromTCCL.getName().equals("java.lang.Object")) {
+    private void collectMetaAnnotations(Class<?> testClassFromTCCL, Function<Class<?>, Class<?>> next,
+            Set<TestResourceClassEntry> uniqueEntries) {
+        while (testClassFromTCCL != null && !testClassFromTCCL.getName().equals("java.lang.Object")) {
             for (Annotation metaAnnotation : testClassFromTCCL.getAnnotations()) {
                 for (Annotation ann : metaAnnotation.annotationType().getAnnotations()) {
                     if (ann.annotationType() == QuarkusTestResource.class) {
@@ -315,7 +318,7 @@ public class TestResourceManager implements Closeable {
                     }
                 }
             }
-            testClassFromTCCL = testClassFromTCCL.getSuperclass();
+            testClassFromTCCL = next.apply(testClassFromTCCL);
         }
     }
 
@@ -353,9 +356,15 @@ public class TestResourceManager implements Closeable {
     private Collection<AnnotationInstance> findQuarkusTestResourceInstances(Class<?> testClass, IndexView index) {
         // collect all test supertypes for matching per-test targets
         Set<String> testClasses = new HashSet<>();
-        while (testClass != Object.class) {
-            testClasses.add(testClass.getName());
-            testClass = testClass.getSuperclass();
+        Class<?> current = testClass;
+        while (current != Object.class) {
+            testClasses.add(current.getName());
+            current = current.getSuperclass();
+        }
+        current = testClass.getEnclosingClass();
+        while (current != null) {
+            testClasses.add(current.getName());
+            current = current.getEnclosingClass();
         }
         Set<AnnotationInstance> testResourceAnnotations = new LinkedHashSet<>();
         for (AnnotationInstance annotation : index.getAnnotations(DotName.createSimple(QuarkusTestResource.class.getName()))) {

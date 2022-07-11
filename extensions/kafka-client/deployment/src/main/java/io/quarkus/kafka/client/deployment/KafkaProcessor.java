@@ -85,6 +85,12 @@ import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.kafka.client.runtime.KafkaBindingConverter;
 import io.quarkus.kafka.client.runtime.KafkaRecorder;
 import io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer;
+import io.quarkus.kafka.client.serialization.BufferDeserializer;
+import io.quarkus.kafka.client.serialization.BufferSerializer;
+import io.quarkus.kafka.client.serialization.JsonArrayDeserializer;
+import io.quarkus.kafka.client.serialization.JsonArraySerializer;
+import io.quarkus.kafka.client.serialization.JsonObjectDeserializer;
+import io.quarkus.kafka.client.serialization.JsonObjectSerializer;
 import io.quarkus.kafka.client.serialization.JsonbDeserializer;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
@@ -104,6 +110,10 @@ public class KafkaProcessor {
             ByteBufferSerializer.class,
             StringSerializer.class,
             FloatSerializer.class,
+            // Provided in extension
+            JsonObjectSerializer.class,
+            JsonArraySerializer.class,
+            BufferSerializer.class,
 
             //deserializers
             ShortDeserializer.class,
@@ -114,7 +124,11 @@ public class KafkaProcessor {
             IntegerDeserializer.class,
             ByteBufferDeserializer.class,
             StringDeserializer.class,
-            FloatDeserializer.class
+            FloatDeserializer.class,
+            // Provided in extension
+            JsonObjectDeserializer.class,
+            JsonArrayDeserializer.class,
+            BufferDeserializer.class
     };
 
     static final DotName OBJECT_MAPPER = DotName.createSimple("com.fasterxml.jackson.databind.ObjectMapper");

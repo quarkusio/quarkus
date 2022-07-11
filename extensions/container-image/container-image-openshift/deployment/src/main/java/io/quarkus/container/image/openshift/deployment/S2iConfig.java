@@ -21,7 +21,7 @@ public class S2iConfig {
     public static final String DEFAULT_NATIVE_DOCKERFILE = "src/main/docker/Dockerfile.native";
 
     public static final String FALLBACK_JAR_DIRECTORY = "/deployments/";
-    public static final String FALLBAC_NATIVE_BINARY_DIRECTORY = "/home/quarkus/";
+    public static final String FALLBACK_NATIVE_BINARY_DIRECTORY = "/home/quarkus/";
 
     public static String getDefaultJvmImage(CompiledJavaVersionBuildItem.JavaVersion version) {
         switch (version.isJava17OrHigher()) {

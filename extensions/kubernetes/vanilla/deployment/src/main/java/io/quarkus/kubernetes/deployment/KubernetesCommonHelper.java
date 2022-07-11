@@ -437,12 +437,12 @@ public class KubernetesCommonHelper {
         }
 
         if (config.getExposition().isPresent() && config.getExposition().get().expose) {
-            Map<String, String> expostionAnnotations = config.getExposition().get().annotations;
+            Map<String, String> expositionAnnotations = config.getExposition().get().annotations;
             String kind = "Ingress";
             if (config.getTargetPlatformName().equals(OPENSHIFT)) {
                 kind = "Route";
             }
-            for (Map.Entry<String, String> annotation : expostionAnnotations.entrySet()) {
+            for (Map.Entry<String, String> annotation : expositionAnnotations.entrySet()) {
                 result.add(new DecoratorBuildItem(target,
                         new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), kind)));
             }

@@ -12,7 +12,7 @@ import io.quarkus.test.QuarkusUnitTest;
  * wouldn't be able to bootstrap successfully.
  * See also https://github.com/quarkusio/quarkus/issues/8350
  */
-public class EarlyMetadaValidationTest {
+public class EarlyMetadataValidationTest {
 
     @RegisterExtension
     final static QuarkusUnitTest TEST = new QuarkusUnitTest()

@@ -212,12 +212,12 @@ public class MailClientProducer {
             if (actualType.equalsIgnoreCase("JKS")) {
                 return configureJksTrustOptions(actualPaths, pwd);
             } else if (actualType.equalsIgnoreCase("PKCS")) {
-                return configurePcksTrustOptions(actualPaths, pwd);
+                return configurePkcsTrustOptions(actualPaths, pwd);
             } else if (actualType.equalsIgnoreCase("PEM")) {
                 return configurePemTrustOptions(actualPaths, pwd);
             } else {
                 throw new ConfigurationException("Unsupported value for the SMTP trust store type. The value (" + actualType
-                        + ") must be JKS, PCKS or PEM");
+                        + ") must be JKS, PKCS or PEM");
             }
         }
 
@@ -225,7 +225,7 @@ public class MailClientProducer {
         if (firstPath.endsWith(".jks")) {
             return configureJksTrustOptions(actualPaths, pwd);
         } else if (firstPath.endsWith(".p12") || firstPath.endsWith(".pfx")) {
-            return configurePcksTrustOptions(actualPaths, pwd);
+            return configurePkcsTrustOptions(actualPaths, pwd);
         } else if (firstPath.endsWith(".pem")) {
             return configurePemTrustOptions(actualPaths, pwd);
         }
@@ -246,7 +246,7 @@ public class MailClientProducer {
         return options;
     }
 
-    private TrustOptions configurePcksTrustOptions(List<String> paths, Optional<String> pwd) {
+    private TrustOptions configurePkcsTrustOptions(List<String> paths, Optional<String> pwd) {
         PfxOptions options = new PfxOptions();
         options.setPassword(pwd.orElse(null));
         if (paths.size() > 1) {

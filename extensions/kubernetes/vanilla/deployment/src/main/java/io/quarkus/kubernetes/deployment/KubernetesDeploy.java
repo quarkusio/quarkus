@@ -80,7 +80,7 @@ public class KubernetesDeploy {
                 return Result.exceptional(new RuntimeException(
                         "Although a Kubernetes deployment was requested, it however cannot take place because the API Server (at '"
                                 + masterURL
-                                + "') certificates are not trusted. The certificates can be configured using the relevant configuration propertiers under the 'quarkus.kubernetes-client' config root, or \"quarkus.kubernetes-client.trust-certs=true\" can be set to explicitly trust the certificates (not recommended)",
+                                + "') certificates are not trusted. The certificates can be configured using the relevant configuration properties under the 'quarkus.kubernetes-client' config root, or \"quarkus.kubernetes-client.trust-certs=true\" can be set to explicitly trust the certificates (not recommended)",
                         e));
             } else {
                 return Result.exceptional(new RuntimeException(

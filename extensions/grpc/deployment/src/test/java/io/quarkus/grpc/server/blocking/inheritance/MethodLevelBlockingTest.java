@@ -34,25 +34,25 @@ public class MethodLevelBlockingTest {
     @Test
     @Timeout(5)
     void shouldBlockOnInheritedBlocking() {
-        assertThat(client.notOverriden1(message()).await().indefinitely().getText()).isEqualTo(BLOCKING);
+        assertThat(client.notOverridden1(message()).await().indefinitely().getText()).isEqualTo(BLOCKING);
     }
 
     @Test
     @Timeout(5)
     void shouldNotBlockOnInheritedNonBlocking() {
-        assertThat(client.notOverriden2(message()).await().indefinitely().getText()).isEqualTo(NON_BLOCKING);
+        assertThat(client.notOverridden2(message()).await().indefinitely().getText()).isEqualTo(NON_BLOCKING);
     }
 
     @Test
     @Timeout(5)
-    void shouldNotBlockOnOverridenBlocking() {
-        assertThat(client.overriden1(message()).await().indefinitely().getText()).isEqualTo(NON_BLOCKING);
+    void shouldNotBlockOnOverriddenBlocking() {
+        assertThat(client.overridden1(message()).await().indefinitely().getText()).isEqualTo(NON_BLOCKING);
     }
 
     @Test
     @Timeout(5)
-    void shouldBlockOnOverridenBlocking() {
-        assertThat(client.overriden2(message()).await().indefinitely().getText()).isEqualTo(BLOCKING);
+    void shouldBlockOnOverriddenBlocking() {
+        assertThat(client.overridden2(message()).await().indefinitely().getText()).isEqualTo(BLOCKING);
     }
 
     private Msg message() {
@@ -62,24 +62,24 @@ public class MethodLevelBlockingTest {
     public static class ServiceA implements BlockingTestService {
         @Override
         @Blocking
-        public Uni<Msg> overriden1(Msg request) {
+        public Uni<Msg> overridden1(Msg request) {
             return isBlocking();
         }
 
         @Override
         @NonBlocking
-        public Uni<Msg> overriden2(Msg request) {
+        public Uni<Msg> overridden2(Msg request) {
             return isBlocking();
         }
 
         @Override
         @Blocking
-        public Uni<Msg> notOverriden1(Msg request) {
+        public Uni<Msg> notOverridden1(Msg request) {
             return isBlocking();
         }
 
         @Override
-        public Uni<Msg> notOverriden2(Msg request) {
+        public Uni<Msg> notOverridden2(Msg request) {
             return isBlocking();
         }
 
@@ -93,13 +93,13 @@ public class MethodLevelBlockingTest {
     @GrpcService
     public static class ServiceB extends ServiceA {
         @Override
-        public Uni<Msg> overriden1(Msg request) {
+        public Uni<Msg> overridden1(Msg request) {
             return isBlocking();
         }
 
         @Override
         @Blocking
-        public Uni<Msg> overriden2(Msg request) {
+        public Uni<Msg> overridden2(Msg request) {
             return isBlocking();
         }
     }

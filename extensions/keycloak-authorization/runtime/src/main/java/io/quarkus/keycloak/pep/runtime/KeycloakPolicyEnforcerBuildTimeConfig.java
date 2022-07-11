@@ -8,7 +8,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
  * Build time configuration for Keycloak Authorization.
  */
 @ConfigRoot(name = "keycloak")
-public class KeycloakPoilcyEnforcerBuildTimeConfig {
+public class KeycloakPolicyEnforcerBuildTimeConfig {
 
     /**
      * Policy enforcement enable status

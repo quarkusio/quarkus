@@ -20,7 +20,7 @@ import io.quarkus.grpc.server.services.GoodbyeService;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class MutipleStubsInjectionTest {
+public class MultipleStubsInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(

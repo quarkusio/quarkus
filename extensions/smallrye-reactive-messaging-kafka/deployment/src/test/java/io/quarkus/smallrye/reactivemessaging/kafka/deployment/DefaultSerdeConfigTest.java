@@ -2495,7 +2495,7 @@ public class DefaultSerdeConfigTest {
     // ---
 
     @Test
-    public void connectorConfigNotOverriden() {
+    public void connectorConfigNotOverridden() {
         // @formatter:off
         Tuple[] expectations1 = {
                 // "mp.messaging.outgoing.channel1.key.serializer" NOT expected, connector config exists

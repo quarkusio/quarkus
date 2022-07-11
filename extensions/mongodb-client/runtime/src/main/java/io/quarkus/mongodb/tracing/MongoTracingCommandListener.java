@@ -39,7 +39,7 @@ public class MongoTracingCommandListener implements CommandListener {
 
     @Override
     public void commandSucceeded(CommandSucceededEvent event) {
-        LOGGER.trace("commandSucceded event " + event.getCommandName());
+        LOGGER.trace("commandSucceeded event " + event.getCommandName());
         delegate.commandSucceeded(event);
     }
 

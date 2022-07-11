@@ -24,8 +24,8 @@ public class HibernateSearchElasticsearchDevConsoleProcessor {
     public DevConsoleRuntimeTemplateInfoBuildItem collectBeanInfo(HibernateSearchDevConsoleRecorder recorder,
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> peristenceUnitBuildItems) {
-        Set<String> persistenceUnitNames = peristenceUnitBuildItems.stream()
+            List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> persistenceUnitBuildItems) {
+        Set<String> persistenceUnitNames = persistenceUnitBuildItems.stream()
                 .map(HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem::getPersistenceUnitName)
                 .collect(Collectors.toSet());
         return new DevConsoleRuntimeTemplateInfoBuildItem("indexedPersistenceUnits",

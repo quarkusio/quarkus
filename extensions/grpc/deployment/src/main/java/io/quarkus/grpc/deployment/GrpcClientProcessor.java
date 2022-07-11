@@ -291,7 +291,7 @@ public class GrpcClientProcessor {
                 FieldInfo field = injectAnnotation.target().asField();
                 if (serviceInterfaces.contains(field.type().name()) && field.annotations().size() == 1) {
                     // e.g. @Inject Greeter
-                    throw new IllegalStateException("A gRPC service injection is missing the @GrcpClient qualifier: "
+                    throw new IllegalStateException("A gRPC service injection is missing the @GrpcClient qualifier: "
                             + field.declaringClass().name() + "#" + field.name());
                 }
             } else if (injectAnnotation.target().kind() == Kind.METHOD) {
@@ -310,7 +310,7 @@ public class GrpcClientProcessor {
                             }
                         }
                         if (annotations.size() > 1) {
-                            throw new IllegalStateException("A gRPC service injection is missing the @GrcpClient qualifier: "
+                            throw new IllegalStateException("A gRPC service injection is missing the @GrpcClient qualifier: "
                                     + method.declaringClass().name() + "#" + method.name() + "()");
                         }
                     }

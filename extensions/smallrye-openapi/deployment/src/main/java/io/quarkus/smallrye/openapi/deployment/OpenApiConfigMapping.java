@@ -67,7 +67,7 @@ public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
         mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.INFO_LICENSE_NAME, QUARKUS_INFO_LICENSE_NAME);
         mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.INFO_LICENSE_URL, QUARKUS_INFO_LICENSE_URL);
         mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.OPERATION_ID_STRAGEGY,
-                QUARKUS_OPERATION_ID_STRAGEGY);
+                QUARKUS_OPERATION_ID_STRATEGY);
         return Collections.unmodifiableMap(relocations);
     }
 
@@ -87,6 +87,6 @@ public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
     private static final String QUARKUS_INFO_CONTACT_URL = "quarkus.smallrye-openapi.info-contact-url";
     private static final String QUARKUS_INFO_LICENSE_NAME = "quarkus.smallrye-openapi.info-license-name";
     private static final String QUARKUS_INFO_LICENSE_URL = "quarkus.smallrye-openapi.info-license-url";
-    private static final String QUARKUS_OPERATION_ID_STRAGEGY = "quarkus.smallrye-openapi.operation-id-strategy";
+    private static final String QUARKUS_OPERATION_ID_STRATEGY = "quarkus.smallrye-openapi.operation-id-strategy";
 
 }

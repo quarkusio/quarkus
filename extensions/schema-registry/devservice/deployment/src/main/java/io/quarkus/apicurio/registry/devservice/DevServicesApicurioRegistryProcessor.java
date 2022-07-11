@@ -38,7 +38,7 @@ public class DevServicesApicurioRegistryProcessor {
     private static final Logger log = Logger.getLogger(DevServicesApicurioRegistryProcessor.class);
 
     private static final int APICURIO_REGISTRY_PORT = 8080; // inside the container
-    private static final String APLICURIO_REGISTRY_URL_CONFIG = "mp.messaging.connector.smallrye-kafka.apicurio.registry.url";
+    private static final String APICURIO_REGISTRY_URL_CONFIG = "mp.messaging.connector.smallrye-kafka.apicurio.registry.url";
     private static final String CONFLUENT_SCHEMA_REGISTRY_URL_CONFIG = "mp.messaging.connector.smallrye-kafka.schema.registry.url";
 
     /**
@@ -93,7 +93,7 @@ public class DevServicesApicurioRegistryProcessor {
 
         if (devService.isOwner()) {
             log.infof("Dev Services for Apicurio Registry started. The registry is available at %s",
-                    devService.getConfig().get(APLICURIO_REGISTRY_URL_CONFIG));
+                    devService.getConfig().get(APICURIO_REGISTRY_URL_CONFIG));
         }
 
         // Configure the watch dog
@@ -117,7 +117,7 @@ public class DevServicesApicurioRegistryProcessor {
 
     private Map<String, String> getRegistryUrlConfigs(String baseUrl) {
         return Map.of(
-                APLICURIO_REGISTRY_URL_CONFIG, baseUrl + "/apis/registry/v2",
+                APICURIO_REGISTRY_URL_CONFIG, baseUrl + "/apis/registry/v2",
                 CONFLUENT_SCHEMA_REGISTRY_URL_CONFIG, baseUrl + "/apis/ccompat/v6");
     }
 
@@ -142,8 +142,8 @@ public class DevServicesApicurioRegistryProcessor {
             return null;
         }
 
-        if (ConfigUtils.isPropertyPresent(APLICURIO_REGISTRY_URL_CONFIG)) {
-            log.debug("Not starting dev services for Apicurio Registry, " + APLICURIO_REGISTRY_URL_CONFIG + " is configured.");
+        if (ConfigUtils.isPropertyPresent(APICURIO_REGISTRY_URL_CONFIG)) {
+            log.debug("Not starting dev services for Apicurio Registry, " + APICURIO_REGISTRY_URL_CONFIG + " is configured.");
             return null;
         }
 

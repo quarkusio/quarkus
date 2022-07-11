@@ -235,9 +235,9 @@ public class KnativeEventsBindingRecorder {
         List<Predicate<CloudEvent>> filters = new ArrayList<>();
         for (EventAttribute attribute : mapping.attributes()) {
             Objects.requireNonNull(attribute.name(),
-                    "Attribute name of the EventAttribure on function " + functionName + " is required");
+                    "Attribute name of the EventAttribute on function " + functionName + " is required");
             Objects.requireNonNull(attribute.value(),
-                    "Attribute name of the EventAttribure on function " + functionName + " is required");
+                    "Attribute name of the EventAttribute on function " + functionName + " is required");
 
             filters.add(new CEAttributeLiteralEqualsFilter(attribute.name(), attribute.value()));
 

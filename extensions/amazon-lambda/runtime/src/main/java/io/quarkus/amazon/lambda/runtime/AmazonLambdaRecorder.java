@@ -109,9 +109,9 @@ public class AmazonLambdaRecorder {
         return method;
     }
 
-    public void chooseHandlerClass(List<Class<? extends RequestHandler<?, ?>>> unamedHandlerClasses,
+    public void chooseHandlerClass(List<Class<? extends RequestHandler<?, ?>>> unnamedHandlerClasses,
             Map<String, Class<? extends RequestHandler<?, ?>>> namedHandlerClasses,
-            List<Class<? extends RequestStreamHandler>> unamedStreamHandlerClasses,
+            List<Class<? extends RequestStreamHandler>> unnamedStreamHandlerClasses,
             Map<String, Class<? extends RequestStreamHandler>> namedStreamHandlerClasses,
             BeanContainer container) {
 
@@ -127,7 +127,7 @@ public class AmazonLambdaRecorder {
                 throw new RuntimeException(errorMessage);
             }
         } else {
-            int unnamedTotal = unamedHandlerClasses.size() + unamedStreamHandlerClasses.size();
+            int unnamedTotal = unnamedHandlerClasses.size() + unnamedStreamHandlerClasses.size();
             int namedTotal = namedHandlerClasses.size() + namedStreamHandlerClasses.size();
 
             if (unnamedTotal > 1 || namedTotal > 1 || (unnamedTotal > 0 && namedTotal > 0)) {
@@ -140,12 +140,12 @@ public class AmazonLambdaRecorder {
                         + RequestHandler.class.getName() + " or, " + RequestStreamHandler.class.getName() + " implementation";
                 throw new RuntimeException(errorMessage);
             } else if ((unnamedTotal + namedTotal) == 1) {
-                if (!unamedHandlerClasses.isEmpty()) {
-                    handlerClass = unamedHandlerClasses.get(0);
+                if (!unnamedHandlerClasses.isEmpty()) {
+                    handlerClass = unnamedHandlerClasses.get(0);
                 } else if (!namedHandlerClasses.isEmpty()) {
                     handlerClass = namedHandlerClasses.values().iterator().next();
-                } else if (!unamedStreamHandlerClasses.isEmpty()) {
-                    handlerStreamClass = unamedStreamHandlerClasses.get(0);
+                } else if (!unnamedStreamHandlerClasses.isEmpty()) {
+                    handlerStreamClass = unnamedStreamHandlerClasses.get(0);
                 } else if (!namedStreamHandlerClasses.isEmpty()) {
                     handlerStreamClass = namedStreamHandlerClasses.values().iterator().next();
                 }

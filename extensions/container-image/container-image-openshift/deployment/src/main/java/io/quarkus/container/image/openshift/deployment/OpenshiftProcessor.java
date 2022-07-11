@@ -196,7 +196,7 @@ public class OpenshiftProcessor {
             // 2. detected via OpenshiftBaseNativeImage
             // 3. fallback value
             String nativeBinaryDirectory = config.nativeBinaryDirectory
-                    .orElse(baseImage.map(i -> i.getNativeBinaryDirectory()).orElse(config.FALLBAC_NATIVE_BINARY_DIRECTORY));
+                    .orElse(baseImage.map(i -> i.getNativeBinaryDirectory()).orElse(config.FALLBACK_NATIVE_BINARY_DIRECTORY));
             String pathToNativeBinary = concatUnixPaths(nativeBinaryDirectory, nativeBinaryFileName);
 
             baseImage.ifPresent(b -> {
@@ -485,14 +485,14 @@ public class OpenshiftProcessor {
         }
     }
 
-    public static Predicate<HasMetadata> distictByResourceKey() {
+    public static Predicate<HasMetadata> distinctByResourceKey() {
         Map<Object, Boolean> seen = new ConcurrentHashMap<>();
         return t -> seen.putIfAbsent(t.getApiVersion() + "/" + t.getKind() + ":" + t.getMetadata().getName(),
                 Boolean.TRUE) == null;
     }
 
     private static Collection<HasMetadata> distinct(Collection<HasMetadata> resources) {
-        return resources.stream().filter(distictByResourceKey()).collect(Collectors.toList());
+        return resources.stream().filter(distinctByResourceKey()).collect(Collectors.toList());
     }
 
     private static List<Build> buildsOf(OpenShiftClient client, BuildConfig config) {

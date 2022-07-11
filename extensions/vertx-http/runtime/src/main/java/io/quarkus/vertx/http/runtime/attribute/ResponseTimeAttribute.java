@@ -45,10 +45,10 @@ public class ResponseTimeAttribute implements ExchangeAttribute {
         }
         if (timeUnit == TimeUnit.SECONDS) {
             StringBuilder buf = new StringBuilder();
-            long milis = TimeUnit.MILLISECONDS.convert(nanos, TimeUnit.NANOSECONDS);
-            buf.append(Long.toString(milis / 1000));
+            long millis = TimeUnit.MILLISECONDS.convert(nanos, TimeUnit.NANOSECONDS);
+            buf.append(Long.toString(millis / 1000));
             buf.append('.');
-            int remains = (int) (milis % 1000);
+            int remains = (int) (millis % 1000);
             buf.append(Long.toString(remains / 100));
             remains = remains % 100;
             buf.append(Long.toString(remains / 10));

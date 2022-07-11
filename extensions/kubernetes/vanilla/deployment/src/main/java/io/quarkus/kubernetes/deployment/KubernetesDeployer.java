@@ -253,7 +253,7 @@ public class KubernetesDeployer {
                             throw e;
                         } else if (isOptional(optionalResourceDefinitions, i)) {
                             log.warn("Failed to apply: " + i.getKind() + " " + i.getMetadata().getName()
-                                    + ", possilby due to missing a CRD apiVersion: " + i.getApiVersion() + " and kind: "
+                                    + ", possibly due to missing a CRD apiVersion: " + i.getApiVersion() + " and kind: "
                                     + i.getKind() + ".");
                         } else {
                             throw e;

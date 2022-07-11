@@ -47,7 +47,7 @@ public class MongoClientConfigTest extends MongoWithReplicasTestBase {
     }
 
     @Test
-    public void testClientConfiuration() {
+    public void testClientConfiguration() {
         MongoClientImpl clientImpl = (MongoClientImpl) unwrapper.apply(client);
         assertThat(clientImpl.getSettings().getConnectionPoolSettings().getMaxSize()).isEqualTo(2);
         assertThat(clientImpl.getSettings().getConnectionPoolSettings().getMinSize()).isEqualTo(1);

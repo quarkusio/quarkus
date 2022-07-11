@@ -307,8 +307,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
             return splitTokens;
         }
 
-        public void setSplitTokens(boolean spliTokens) {
-            this.splitTokens = spliTokens;
+        public void setSplitTokens(boolean splitTokens) {
+            this.splitTokens = splitTokens;
         }
 
         public Strategy getStrategy() {

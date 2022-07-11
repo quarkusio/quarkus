@@ -215,9 +215,9 @@ public final class OidcUtils {
         setRoutingContextAttribute(builder, vertxContext);
         setSecurityIdentityRoles(builder, config, rolesJson);
         setSecurityIdentityUserInfo(builder, userInfo);
-        setSecurityIdentityIntrospecton(builder, introspectionResult);
+        setSecurityIdentityIntrospection(builder, introspectionResult);
         setSecurityIdentityConfigMetadata(builder, resolvedContext);
-        setBlockinApiAttribute(builder, vertxContext);
+        setBlockingApiAttribute(builder, vertxContext);
         setTenantIdAttribute(builder, config);
         return builder.build();
     }
@@ -230,7 +230,7 @@ public final class OidcUtils {
         }
     }
 
-    public static void setBlockinApiAttribute(QuarkusSecurityIdentity.Builder builder, RoutingContext vertxContext) {
+    public static void setBlockingApiAttribute(QuarkusSecurityIdentity.Builder builder, RoutingContext vertxContext) {
         if (vertxContext != null) {
             builder.addAttribute(AuthenticationRequestContext.class.getName(),
                     vertxContext.get(AuthenticationRequestContext.class.getName()));
@@ -251,7 +251,7 @@ public final class OidcUtils {
         }
     }
 
-    public static void setSecurityIdentityIntrospecton(Builder builder, TokenIntrospection introspectionResult) {
+    public static void setSecurityIdentityIntrospection(Builder builder, TokenIntrospection introspectionResult) {
         if (introspectionResult != null) {
             builder.addAttribute(INTROSPECTION_ATTRIBUTE, introspectionResult);
         }

@@ -370,9 +370,9 @@ quarkus.mailer.trust-store.type=JKS # the type of trust store if it can't be ded
 
 Quarkus mailer supports JKS, PKCS#12 and PEM trust stores.
 For PEM, you can configure multiple files.
-For JKS and PCKS#12, you can configure the password if any.
+For JKS and PKCS#12, you can configure the password if any.
 
-`quarkus.mailer.trust-store.type` is optional and allows configuring the type of trust store (among `JKS`, `PEM` and `PCKS`).
+`quarkus.mailer.trust-store.type` is optional and allows configuring the type of trust store (among `JKS`, `PEM` and `PKCS`).
 When not set, Quarkus tries to deduce the type from the file name.
 
 NOTE: You can also configure `quarkus.mailer.trust-all=true` to bypass the verification.

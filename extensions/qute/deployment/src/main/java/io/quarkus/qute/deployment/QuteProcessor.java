@@ -1325,7 +1325,7 @@ public class QuteProcessor {
         Set<DotName> controlled = new HashSet<>();
         Map<DotName, AnnotationInstance> uncontrolled = new HashMap<>();
         for (TemplateDataBuildItem data : templateData) {
-            processsTemplateData(data, controlled, uncontrolled, builder);
+            processTemplateData(data, controlled, uncontrolled, builder);
         }
 
         for (ImplicitValueResolverBuildItem implicit : implicitClasses) {
@@ -2319,7 +2319,7 @@ public class QuteProcessor {
         return matches;
     }
 
-    private void processsTemplateData(TemplateDataBuildItem templateData,
+    private void processTemplateData(TemplateDataBuildItem templateData,
             Set<DotName> controlled, Map<DotName, AnnotationInstance> uncontrolled, ValueResolverGenerator.Builder builder) {
         if (templateData.isTargetAnnotatedType()) {
             controlled.add(templateData.getTargetClass().name());

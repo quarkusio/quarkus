@@ -22,7 +22,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorAbstractAnnotationFreeResouce;
+import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorAbstractAnnotationFreeResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorAnnotationFreeSubResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorBaseResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorCollectionResource;
@@ -68,7 +68,7 @@ public class ResourceLocatorTest {
                     war.addClass(ResourceLocatorQueueReceiver.class).addClass(ResourceLocatorReceiver.class)
                             .addClass(ResourceLocatorRootInterface.class).addClass(ResourceLocatorSubInterface.class)
                             .addClass(ResourceLocatorSubresource3Interface.class);
-                    war.addClasses(PortProviderUtil.class, ResourceLocatorAbstractAnnotationFreeResouce.class,
+                    war.addClasses(PortProviderUtil.class, ResourceLocatorAbstractAnnotationFreeResource.class,
                             ResourceLocatorAnnotationFreeSubResource.class, ResourceLocatorBaseResource.class,
                             ResourceLocatorCollectionResource.class, ResourceLocatorDirectory.class,
                             ResourceLocatorSubresource.class, ResourceLocatorSubresource2.class,

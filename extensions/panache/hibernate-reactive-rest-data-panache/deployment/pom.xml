@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>quarkus-hibernate-reactive-rest-data-panache-deployment</artifactId>
-    <name>Quarkus - Hibernate Reactive Reactive data with Panache - Deployment</name>
+    <name>Quarkus - Hibernate Reactive REST data with Panache - Deployment</name>
 
     <!-- Defaults, to simplify local testing -->
     <properties>

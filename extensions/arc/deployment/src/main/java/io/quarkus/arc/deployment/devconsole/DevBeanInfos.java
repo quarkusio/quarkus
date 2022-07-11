@@ -15,7 +15,7 @@ public class DevBeanInfos {
     private final List<DevInterceptorInfo> removedInterceptors;
     private final List<DevDecoratorInfo> decorators;
     private final List<DevDecoratorInfo> removedDecorators;
-    private final Map<String, DependecyGraph> dependencyGraphs;
+    private final Map<String, DependencyGraph> dependencyGraphs;
 
     public DevBeanInfos() {
         beans = new ArrayList<>();
@@ -74,7 +74,7 @@ public class DevBeanInfos {
         return null;
     }
 
-    public DependecyGraph getDependencyGraph(String beanId) {
+    public DependencyGraph getDependencyGraph(String beanId) {
         return dependencyGraphs.get(beanId);
     }
 
@@ -110,7 +110,7 @@ public class DevBeanInfos {
         removedDecorators.add(decorator);
     }
 
-    void addDependencyGraph(String beanId, DependecyGraph graph) {
+    void addDependencyGraph(String beanId, DependencyGraph graph) {
         dependencyGraphs.put(beanId, graph);
     }
 

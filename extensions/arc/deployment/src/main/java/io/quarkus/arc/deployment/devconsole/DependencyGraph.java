@@ -3,12 +3,12 @@ package io.quarkus.arc.deployment.devconsole;
 import java.util.Objects;
 import java.util.Set;
 
-public class DependecyGraph {
+public class DependencyGraph {
 
     public final Set<DevBeanInfo> nodes;
     public final Set<Link> links;
 
-    public DependecyGraph(Set<DevBeanInfo> nodes, Set<Link> links) {
+    public DependencyGraph(Set<DevBeanInfo> nodes, Set<Link> links) {
         this.nodes = nodes;
         this.links = links;
     }

@@ -18,7 +18,7 @@ import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.CompletedApplicationClassPredicateBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
-import io.quarkus.arc.deployment.devconsole.DependecyGraph.Link;
+import io.quarkus.arc.deployment.devconsole.DependencyGraph.Link;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
@@ -153,7 +153,7 @@ public class ArcDevConsoleProcessor {
         return false;
     }
 
-    DependecyGraph buildDependencyGraph(BeanInfo bean, ValidationContext validationContext, BeanResolver resolver,
+    DependencyGraph buildDependencyGraph(BeanInfo bean, ValidationContext validationContext, BeanResolver resolver,
             DevBeanInfos devBeanInfos) {
         Set<DevBeanInfo> nodes = new HashSet<>();
         Collection<BeanInfo> beans = validationContext.get(BuildExtension.Key.BEANS);
@@ -162,7 +162,7 @@ public class ArcDevConsoleProcessor {
                 .collect(Collectors.groupingBy(BeanInfo::getDeclaringBean));
         addNodesDependencies(bean, nodes, links, bean, devBeanInfos);
         addNodesDependents(bean, nodes, links, bean, beans, declaringToProducers, resolver, devBeanInfos);
-        return new DependecyGraph(nodes, links);
+        return new DependencyGraph(nodes, links);
     }
 
     void addNodesDependencies(BeanInfo root, Set<DevBeanInfo> nodes, Set<Link> links, BeanInfo bean,

@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.TimeZone;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 
@@ -17,6 +16,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import io.quarkus.arc.All;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.jackson.ObjectMapperCustomizer;
 
@@ -26,7 +26,7 @@ public class ObjectMapperProducer {
     @DefaultBean
     @Singleton
     @Produces
-    public ObjectMapper objectMapper(Instance<ObjectMapperCustomizer> customizers,
+    public ObjectMapper objectMapper(@All List<ObjectMapperCustomizer> customizers,
             JacksonBuildTimeConfig jacksonBuildTimeConfig) {
         ObjectMapper objectMapper = new ObjectMapper();
         if (!jacksonBuildTimeConfig.failOnUnknownProperties) {
@@ -60,7 +60,7 @@ public class ObjectMapperProducer {
     }
 
     private List<ObjectMapperCustomizer> sortCustomizersInDescendingPriorityOrder(
-            Instance<ObjectMapperCustomizer> customizers) {
+            Iterable<ObjectMapperCustomizer> customizers) {
         List<ObjectMapperCustomizer> sortedCustomizers = new ArrayList<>();
         for (ObjectMapperCustomizer customizer : customizers) {
             sortedCustomizers.add(customizer);

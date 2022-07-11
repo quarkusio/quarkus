@@ -38,8 +38,6 @@ public final class HibernateLogFilterBuildStep {
         filters.produce(new LogCleanupFilterBuildItem(
                 "org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator", "HHH000490"));
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.tool.schema.internal.SchemaCreatorImpl", "HHH000476"));
-        filters.produce(
-                new LogCleanupFilterBuildItem("org.hibernate.hql.internal.QueryTranslatorFactoryInitiator", "HHH000397"));
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.jpa.boot.internal.PersistenceXmlParser", "HHH000318"));
     }
 }

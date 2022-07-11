@@ -10,11 +10,11 @@ import io.quarkus.cli.create.CodeGenerationGroup;
 import io.quarkus.cli.create.TargetBuildToolGroup;
 import io.quarkus.cli.create.TargetGAVGroup;
 import io.quarkus.cli.create.TargetLanguageGroup;
+import io.quarkus.devtools.commands.SourceType;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.handlers.CreateJBangProjectCommandHandler;
 import io.quarkus.devtools.commands.handlers.CreateProjectCommandHandler;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.codegen.SourceType;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "cli", header = "Create a Quarkus command-line project.", description = "%n"
@@ -61,7 +61,7 @@ public class CreateCli extends BaseCreateCommand {
 
             BuildTool buildTool = targetBuildTool.getBuildTool(BuildTool.MAVEN);
             SourceType sourceType = targetLanguage.getSourceType(spec, buildTool, extensions, output);
-            setJavaVersion(targetLanguage.getJavaVersion());
+            setJavaVersion(sourceType, targetLanguage.getJavaVersion());
             setSourceTypeExtensions(extensions, sourceType);
             setCodegenOptions(codeGeneration);
 

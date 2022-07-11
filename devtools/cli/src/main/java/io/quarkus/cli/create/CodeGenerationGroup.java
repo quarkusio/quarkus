@@ -3,7 +3,7 @@ package io.quarkus.cli.create;
 import java.util.Collections;
 import java.util.Map;
 
-import io.quarkus.devtools.project.codegen.CreateProjectHelper;
+import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.platform.tools.ToolsUtils;
 import picocli.CommandLine;
 

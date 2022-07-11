@@ -1,5 +1,7 @@
 package io.quarkus.cli.create;
 
+import static io.quarkus.devtools.commands.CreateProjectHelper.computeJavaVersion;
+
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashMap;
@@ -13,13 +15,12 @@ import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.cli.registry.ToggleRegistryClientMixin;
-import io.quarkus.devtools.commands.CreateProject;
+import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
+import io.quarkus.devtools.commands.CreateProjectHelper;
+import io.quarkus.devtools.commands.SourceType;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.devtools.project.codegen.CreateProjectHelper;
-import io.quarkus.devtools.project.codegen.ProjectGenerator;
-import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.registry.RegistryResolutionException;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
@@ -104,9 +105,9 @@ public class BaseCreateCommand implements Callable<Integer> {
     public void setSingleProjectGAV(TargetGAVGroup targetGav) {
         projectDirName = targetGav.getArtifactId();
 
-        setValue(ProjectGenerator.PROJECT_GROUP_ID, targetGav.getGroupId());
-        setValue(ProjectGenerator.PROJECT_ARTIFACT_ID, targetGav.getArtifactId());
-        setValue(ProjectGenerator.PROJECT_VERSION, targetGav.getVersion());
+        setValue(CreateProjectKey.PROJECT_GROUP_ID, targetGav.getGroupId());
+        setValue(CreateProjectKey.PROJECT_ARTIFACT_ID, targetGav.getArtifactId());
+        setValue(CreateProjectKey.PROJECT_VERSION, targetGav.getVersion());
     }
 
     /**
@@ -163,14 +164,12 @@ public class BaseCreateCommand implements Callable<Integer> {
     public void setSourceTypeExtensions(Set<String> extensions, SourceType sourceType) {
         extensions = CreateProjectHelper.sanitizeExtensions(extensions);
         CreateProjectHelper.addSourceTypeExtensions(extensions, sourceType);
-
-        setValue(ProjectGenerator.SOURCE_TYPE, sourceType);
-        setValue(ProjectGenerator.EXTENSIONS, extensions);
+        setValue(CreateProjectKey.EXTENSIONS, extensions);
     }
 
     /** Set Java source level */
-    public void setJavaVersion(String javaVersion) {
-        CreateProjectHelper.setJavaVersion(values, javaVersion);
+    public void setJavaVersion(SourceType sourceType, String javaVersion) {
+        values.put(CreateProjectKey.JAVA_VERSION, computeJavaVersion(sourceType, javaVersion));
     }
 
     /**
@@ -179,11 +178,11 @@ public class BaseCreateCommand implements Callable<Integer> {
      * @param codeGeneration
      */
     public void setCodegenOptions(CodeGenerationGroup codeGeneration) {
-        setValue(ProjectGenerator.PACKAGE_NAME, codeGeneration.packageName);
-        setValue(ProjectGenerator.APP_CONFIG, codeGeneration.getAppConfig());
+        setValue(CreateProjectKey.PACKAGE_NAME, codeGeneration.packageName);
+        setValue(CreateProjectKey.APP_CONFIG, codeGeneration.getAppConfig());
 
-        setValue(CreateProject.NO_CODE, !codeGeneration.includeCode);
-        setValue(CreateProject.NO_BUILDTOOL_WRAPPER, !codeGeneration.includeWrapper);
+        setValue(CreateProjectKey.NO_CODE, !codeGeneration.includeCode);
+        setValue(CreateProjectKey.NO_BUILDTOOL_WRAPPER, !codeGeneration.includeWrapper);
     }
 
     private void setValue(String name, Object value) {
@@ -269,7 +268,7 @@ public class BaseCreateCommand implements Callable<Integer> {
     }
 
     public String prettyName(String key) {
-        if (CreateProject.NO_BUILDTOOL_WRAPPER.equals(key)) {
+        if (CreateProjectKey.NO_BUILDTOOL_WRAPPER.equals(key)) {
             return "Omit build tool wrapper";
         }
 
@@ -277,7 +276,8 @@ public class BaseCreateCommand implements Callable<Integer> {
         StringBuilder builder = new StringBuilder(key);
         for (int i = 0; i < builder.length(); i++) {
             // Check char is underscore
-            if (builder.charAt(i) == '_') {
+            final char c = builder.charAt(i);
+            if (c == '-' || c == '.') {
                 builder.replace(i, i + 1, " ");
                 builder.replace(i + 1, i + 2,
                         String.valueOf(Character.toUpperCase(builder.charAt(i + 1))));

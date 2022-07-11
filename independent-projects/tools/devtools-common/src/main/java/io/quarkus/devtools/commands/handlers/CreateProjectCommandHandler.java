@@ -1,32 +1,29 @@
 package io.quarkus.devtools.commands.handlers;
 
-import static io.quarkus.devtools.commands.CreateProject.EXAMPLE;
-import static io.quarkus.devtools.commands.CreateProject.EXTRA_CODESTARTS;
-import static io.quarkus.devtools.commands.CreateProject.NO_BUILDTOOL_WRAPPER;
-import static io.quarkus.devtools.commands.CreateProject.NO_CODE;
-import static io.quarkus.devtools.commands.CreateProject.NO_DOCKERFILES;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.EXAMPLE;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.EXTENSIONS;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.EXTRA_CODESTARTS;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.NO_BUILDTOOL_WRAPPER;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.NO_CODE;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.NO_DOCKERFILES;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.PACKAGE_NAME;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.PROJECT_GROUP_ID;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.QUARKUS_VERSION;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.RESOURCE_CLASS_NAME;
+import static io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataConverter.toCodestartData;
 import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.computeExtensionsFromQuery;
 import static io.quarkus.devtools.messagewriter.MessageIcons.ERROR_ICON;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.APP_CONFIG;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_ARTIFACT_ID;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_GROUP_ID;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_VERSION;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.CLASS_NAME;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.PACKAGE_NAME;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_GROUP_ID;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.QUARKUS_VERSION;
 
 import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.LegacySupport;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartProjectInput;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataConverter.CatalogKey;
 import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.devtools.project.codegen.ProjectGenerator;
 import io.quarkus.devtools.project.extensions.Extensions;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsUtils;
@@ -57,17 +54,17 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
 
     @Override
     public QuarkusCommandOutcome execute(QuarkusCommandInvocation invocation) throws QuarkusCommandException {
-        final Set<String> extensionsQuery = invocation.getValue(ProjectGenerator.EXTENSIONS, Collections.emptySet());
+        final Set<String> extensionsQuery = invocation.getValue(EXTENSIONS, Collections.emptySet());
 
         // Default to cleaned groupId if packageName not set
-        final String className = invocation.getStringValue(CLASS_NAME);
+        final String className = invocation.getStringValue(RESOURCE_CLASS_NAME);
         final String pkgName = invocation.getStringValue(PACKAGE_NAME);
         final String groupId = invocation.getStringValue(PROJECT_GROUP_ID);
         if (pkgName == null) {
             if (className != null && className.contains(".")) {
                 final int idx = className.lastIndexOf('.');
                 invocation.setValue(PACKAGE_NAME, className.substring(0, idx));
-                invocation.setValue(CLASS_NAME, className.substring(idx + 1));
+                invocation.setValue(RESOURCE_CLASS_NAME, className.substring(idx + 1));
             } else if (groupId != null) {
                 invocation.setValue(PACKAGE_NAME, groupId.replace('-', '.').replace('_', '.'));
             }
@@ -120,13 +117,13 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
             extensionCoords.add(coords);
         }
 
-        invocation.setValue(BOM_GROUP_ID, mainCatalog.getBom().getGroupId());
-        invocation.setValue(BOM_ARTIFACT_ID, mainCatalog.getBom().getArtifactId());
-        invocation.setValue(BOM_VERSION, mainCatalog.getBom().getVersion());
+        invocation.setValue(CatalogKey.BOM_GROUP_ID, mainCatalog.getBom().getGroupId());
+        invocation.setValue(CatalogKey.BOM_ARTIFACT_ID, mainCatalog.getBom().getArtifactId());
+        invocation.setValue(CatalogKey.BOM_VERSION, mainCatalog.getBom().getVersion());
         invocation.setValue(QUARKUS_VERSION, mainCatalog.getQuarkusCoreVersion());
         final Properties quarkusProps = ToolsUtils.readQuarkusProperties(mainCatalog);
         quarkusProps.forEach((k, v) -> {
-            final String name = k.toString().replace('-', '_');
+            final String name = k.toString();
             if (!invocation.hasValue(name)) {
                 invocation.setValue(name, v.toString());
             }
@@ -150,8 +147,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                     .noBuildToolWrapper(invocation.getValue(NO_BUILDTOOL_WRAPPER, false))
                     .noDockerfiles(invocation.getValue(NO_DOCKERFILES, false))
                     .addData(platformData)
-                    .addData(LegacySupport.convertFromLegacy(invocation.getValues()))
-                    .putData(APP_CONFIG, invocation.getValue(APP_CONFIG, Collections.emptyMap()))
+                    .addData(toCodestartData(invocation.getValues()))
                     .messageWriter(invocation.log())
                     .build();
             invocation.log().info("-----------");

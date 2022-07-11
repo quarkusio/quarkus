@@ -1,9 +1,9 @@
 package io.quarkus.devtools.testing.codestarts;
 
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.PROJECT_PACKAGE_NAME;
+import static io.quarkus.devtools.commands.CreateProjectHelper.completeCatalogWithCoords;
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.codestartLoadersBuilder;
 import static io.quarkus.devtools.project.QuarkusProjectHelper.artifactResolver;
-import static io.quarkus.devtools.project.codegen.CreateProjectHelper.completeCatalogWithCoords;
 import static io.quarkus.devtools.testing.RegistryClientTestHelper.disableRegistryClientTestConfig;
 import static io.quarkus.devtools.testing.RegistryClientTestHelper.enableRegistryClientTestConfig;
 import static io.quarkus.devtools.testing.SnapshotTesting.checkContains;

@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.cli.build.ExecuteUtil;
 import io.quarkus.cli.build.GradleRunner;
-import io.quarkus.devtools.project.codegen.CreateProjectHelper;
+import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import picocli.CommandLine;
 
@@ -367,8 +367,6 @@ public class CliProjectGradleTest {
                 "Output should contain 'Project ArtifactId   my-project', found: " + result.stdout);
         Assertions.assertTrue(noSpaces.contains("ProjectGroupIdsilly"),
                 "Output should contain 'Project GroupId   silly', found: " + result.stdout);
-        Assertions.assertTrue(result.stdout.contains("JAVA"),
-                "Should contain JAVA, found: " + result.stdout);
     }
 
     @Test

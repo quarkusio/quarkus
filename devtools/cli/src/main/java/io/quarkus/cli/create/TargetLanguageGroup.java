@@ -5,9 +5,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.devtools.commands.CreateProjectHelper;
+import io.quarkus.devtools.commands.SourceType;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.codegen.CreateProjectHelper;
-import io.quarkus.devtools.project.codegen.SourceType;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.ParameterException;
@@ -49,7 +49,7 @@ public class TargetLanguageGroup {
             } else if (scala) {
                 sourceType = SourceType.SCALA;
             } else {
-                sourceType = CreateProjectHelper.determineSourceType(extensions);
+                sourceType = SourceType.resolve(extensions);
             }
         }
         return sourceType;

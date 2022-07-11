@@ -11,7 +11,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.devtools.project.codegen.CreateProjectHelper;
+import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import picocli.CommandLine;
 
@@ -307,8 +307,6 @@ public class CliProjectMavenTest {
                 "Output should contain 'Project ArtifactId   my-project', found: " + result.stdout);
         Assertions.assertTrue(noSpaces.contains("ProjectGroupIdsilly"),
                 "Output should contain 'Project GroupId   silly', found: " + result.stdout);
-        Assertions.assertTrue(result.stdout.contains("JAVA"),
-                "Should contain JAVA, found: " + result.stdout);
     }
 
     @Test

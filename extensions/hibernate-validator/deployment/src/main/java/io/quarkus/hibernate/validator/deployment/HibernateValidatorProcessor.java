@@ -75,6 +75,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.hibernate.validator.HibernateValidatorFactoryCustomizer;
 import io.quarkus.hibernate.validator.runtime.DisableLoggingFeature;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorBuildTimeConfig;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
@@ -107,6 +108,9 @@ class HibernateValidatorProcessor {
             .createSimple(GetterPropertySelectionStrategy.class.getName());
     private static final DotName PROPERTY_NODE_NAME_PROVIDER = DotName
             .createSimple(PropertyNodeNameProvider.class.getName());
+
+    private static final DotName CONSTRAINT_MAPPING_PROVIDER = DotName
+            .createSimple(HibernateValidatorFactoryCustomizer.class.getName());
 
     private static final DotName CONSTRAINT_VALIDATOR = DotName.createSimple(ConstraintValidator.class.getName());
     private static final DotName VALUE_EXTRACTOR = DotName.createSimple(ValueExtractor.class.getName());
@@ -187,7 +191,8 @@ class HibernateValidatorProcessor {
                         || beanInfo.hasType(VALUE_EXTRACTOR) || beanInfo.hasType(SCRIPT_EVALUATOR_FACTORY)
                         || beanInfo.hasType(GETTER_PROPERTY_SELECTION_STRATEGY)
                         || beanInfo.hasType(LOCALE_RESOLVER)
-                        || beanInfo.hasType(PROPERTY_NODE_NAME_PROVIDER);
+                        || beanInfo.hasType(PROPERTY_NODE_NAME_PROVIDER)
+                        || beanInfo.hasType(CONSTRAINT_MAPPING_PROVIDER);
             }
         }));
     }

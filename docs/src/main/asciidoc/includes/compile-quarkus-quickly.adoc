@@ -3,15 +3,8 @@ The following will build all modules in the Quarkus repository except docs and t
 
 [source,shell]
 ----
-$ ./mvnw clean install -Dquickly \ #<1>
-  -DskipTests \ # <2>
-  -DskipITs \ # <3>
-  -Dno-test-modules # <4>
+$ ./mvnw -Dquickly
 ----
-<1> `-Dquickly` skips building documentation
-<2> `-DskipTests` Skip maven surefire tests
-<3> `-DskipITs` Skip maven failsafe integration tests
-<4> `-Dno-test-modules` Do not build integration test modules
 // end::quickly-install[]
 
 // tag::quickly-install-docs[]
@@ -19,16 +12,7 @@ The following will build all modules in the Quarkus repository (except test modu
 
 [source,shell]
 ----
-$ ./mvnw clean install -Dquickly \ #<1>
-  -DskipTests \ # <2>
-  -DskipITs \ # <3>
-  -Dno-test-modules \ # <4>
-  -DskipDocs=false # <5>
+$ ./mvnw -DquicklyDocs
 ----
-<1> `-Dquickly` skips building documentation
-<2> `-DskipTests` Skip maven surefire tests
-<3> `-DskipITs` Skip maven failsafe integration tests
-<4> `-Dno-test-modules` Do not build integration test modules
-<5> `-DskipDocs=false` re-enable the documentation build
 // end::quickly-install-docs[]
 

@@ -2,7 +2,6 @@ package io.quarkus.hibernate.orm.runtime.customized;
 
 import static org.hibernate.internal.CoreLogging.messageLogger;
 
-import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Set;
@@ -31,9 +30,9 @@ public final class QuarkusProxyFactory implements ProxyFactory {
 
     private final ProxyDefinitions proxyClassDefinitions;
 
-    private Class persistentClass;
+    private Class<?> persistentClass;
     private String entityName;
-    private Class[] interfaces;
+    private Class<?>[] interfaces;
     private Method getIdentifierMethod;
     private Method setIdentifierMethod;
     private CompositeType componentIdType;
@@ -47,7 +46,8 @@ public final class QuarkusProxyFactory implements ProxyFactory {
     }
 
     @Override
-    public void postInstantiate(String entityName, Class persistentClass, Set<Class> interfaces, Method getIdentifierMethod,
+    public void postInstantiate(String entityName, Class<?> persistentClass, Set<Class<?>> interfaces,
+            Method getIdentifierMethod,
             Method setIdentifierMethod, CompositeType componentIdType) throws HibernateException {
         this.entityName = entityName;
         this.persistentClass = persistentClass;
@@ -65,7 +65,7 @@ public final class QuarkusProxyFactory implements ProxyFactory {
 
     }
 
-    private Class[] toArray(Set<Class> interfaces) {
+    private static Class<?>[] toArray(Set<Class<?>> interfaces) {
         if (interfaces == null) {
             return ArrayHelper.EMPTY_CLASS_ARRAY;
         }
@@ -75,7 +75,7 @@ public final class QuarkusProxyFactory implements ProxyFactory {
 
     @Override
     public HibernateProxy getProxy(
-            Serializable id,
+            Object id,
             SharedSessionContractImplementor session) throws HibernateException {
         final ByteBuddyInterceptor interceptor = new ByteBuddyInterceptor(
                 entityName,

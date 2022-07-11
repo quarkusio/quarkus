@@ -14,8 +14,10 @@ import org.hibernate.Interceptor;
 import org.hibernate.SessionFactory;
 import org.hibernate.SessionFactoryObserver;
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
+import org.hibernate.boot.model.process.spi.ManagedResources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
+import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.bytecode.internal.SessionFactoryObserverForBytecodeEnhancer;
 import org.hibernate.bytecode.spi.BytecodeProvider;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -213,6 +215,16 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         public void handleEntityNotFound(String entityName, Object id) {
             throw new EntityNotFoundException("Unable to find " + entityName + " with id " + id);
         }
+    }
+
+    @Override
+    public ManagedResources getManagedResources() {
+        throw new IllegalStateException("This method is not available at runtime in Quarkus");
+    }
+
+    @Override
+    public MetadataImplementor metadata() {
+        return metadata;
     }
 
 }

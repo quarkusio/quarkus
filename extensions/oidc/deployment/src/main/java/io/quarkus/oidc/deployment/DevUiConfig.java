@@ -71,6 +71,6 @@ public class DevUiConfig {
      * Use this property to configure how long an HTTP client used by Dev UI handlers will wait for a response when requesting
      * tokens from OpenId Connect Provider and sending them to the service endpoint.
      */
-    @ConfigItem
-    public Optional<Duration> webClienTimeout;
+    @ConfigItem(defaultValue = "4S")
+    public Duration webClientTimeout;
 }

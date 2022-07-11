@@ -23,7 +23,7 @@ import org.junit.jupiter.api.TestInfo;
 import io.quarkus.test.junit.QuarkusTest;
 
 /**
- * The purpose of this test is simply to ensure that {@link SimpleAnnotationCheckerBeforeEachCallback}
+ * The purpose of this test is simply to ensure that {@link TestContextCheckerBeforeEachCallback}
  * can read {@code @TestAnnotation} without issue.
  * Also checks that {@link SimpleAnnotationCheckerBeforeClassCallback} is executed properly
  */
@@ -69,7 +69,7 @@ public class QuarkusTestCallbacksTestCase {
     @TestAnnotation
     @Order(1)
     public void testTestMethodHasAnnotation() {
-        assertTrue(SimpleAnnotationCheckerBeforeEachCallback.testAnnotationChecked);
+        assertTrue(TestContextCheckerBeforeEachCallback.testAnnotationChecked);
     }
 
     @Test

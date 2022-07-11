@@ -11,7 +11,6 @@ import jakarta.persistence.PersistenceException;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Interceptor;
-import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.SessionFactory;
 import org.hibernate.SessionFactoryObserver;
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
@@ -176,7 +175,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         BytecodeProvider bytecodeProvider = ssr.getService(BytecodeProvider.class);
         options.addSessionFactoryObservers(new SessionFactoryObserverForBytecodeEnhancer(bytecodeProvider));
 
-        if (options.getMultiTenancyStrategy() != MultiTenancyStrategy.NONE) {
+        if (options.isMultiTenancyEnabled()) {
             options.applyCurrentTenantIdentifierResolver(new HibernateCurrentTenantIdentifierResolver(persistenceUnitName));
         }
 

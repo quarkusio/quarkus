@@ -776,6 +776,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     outerInstances.add(outerInstance);
                 }
             } else {
+                outerInstances.clear();
                 actualTestInstance = runningQuarkusApplication.instance(actualTestClass);
             }
 

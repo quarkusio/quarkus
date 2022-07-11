@@ -3,9 +3,10 @@ package io.quarkus.bootstrap.model;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,8 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 public class ApplicationModelBuilder {
@@ -32,7 +31,7 @@ public class ApplicationModelBuilder {
 
     ResolvedDependency appArtifact;
 
-    final Map<ArtifactKey, ResolvedDependency> dependencies = new LinkedHashMap<>();
+    final Map<ArtifactKey, ResolvedDependencyBuilder> dependencies = new LinkedHashMap<>();
     final Set<ArtifactKey> parentFirstArtifacts = new HashSet<>();
     final Set<ArtifactKey> runnerParentFirstArtifacts = new HashSet<>();
     final Set<ArtifactKey> excludedArtifacts = new HashSet<>();
@@ -42,8 +41,6 @@ public class ApplicationModelBuilder {
     final List<ExtensionCapabilities> extensionCapabilities = new ArrayList<>();
     PlatformImports platformImports;
     final Map<WorkspaceModuleId, WorkspaceModule.Mutable> projectModules = new HashMap<>();
-
-    private Predicate<ResolvedDependency> depPredicate;
 
     public ApplicationModelBuilder setAppArtifact(ResolvedDependency appArtifact) {
         this.appArtifact = appArtifact;
@@ -60,18 +57,22 @@ public class ApplicationModelBuilder {
         return this;
     }
 
-    public ApplicationModelBuilder addDependency(ResolvedDependency dep) {
+    public ApplicationModelBuilder addDependency(ResolvedDependencyBuilder dep) {
         dependencies.put(dep.getKey(), dep);
         return this;
     }
 
-    public ApplicationModelBuilder addDependencies(Collection<ResolvedDependency> deps) {
+    public ApplicationModelBuilder addDependencies(Collection<ResolvedDependencyBuilder> deps) {
         deps.forEach(d -> addDependency(d));
         return this;
     }
 
-    public Dependency getDependency(ArtifactKey key) {
+    public ResolvedDependencyBuilder getDependency(ArtifactKey key) {
         return dependencies.get(key);
+    }
+
+    public Collection<ResolvedDependencyBuilder> getDependencies() {
+        return dependencies.values();
     }
 
     public ApplicationModelBuilder addParentFirstArtifact(ArtifactKey deps) {
@@ -208,22 +209,39 @@ public class ApplicationModelBuilder {
         }
     }
 
-    private Predicate<ResolvedDependency> dependencyPredicate() {
-        if (depPredicate == null) {
-            depPredicate = s -> {
+    private boolean isExcluded(ResolvedDependencyBuilder d) {
+        return excludedArtifacts.contains(d.getKey())
                 // we never include the ide launcher in the final app model
-                if (s.getGroupId().equals("io.quarkus")
-                        && s.getArtifactId().equals("quarkus-ide-launcher")) {
-                    return false;
-                }
-                return !excludedArtifacts.contains(s.getKey());
-            };
-        }
-        return depPredicate;
+                || (d.getArtifactId().equals("quarkus-ide-launcher") && d.getGroupId().equals("io.quarkus"));
     }
 
-    List<ResolvedDependency> filter(Collection<ResolvedDependency> deps) {
-        return deps.stream().filter(dependencyPredicate()).collect(Collectors.toList());
+    List<ResolvedDependency> buildDependencies() {
+        for (ArtifactKey key : parentFirstArtifacts) {
+            final ResolvedDependencyBuilder d = dependencies.get(key);
+            if (d != null) {
+                d.setFlags(DependencyFlags.CLASSLOADER_PARENT_FIRST);
+            }
+        }
+        for (ArtifactKey key : runnerParentFirstArtifacts) {
+            final ResolvedDependencyBuilder d = dependencies.get(key);
+            if (d != null) {
+                d.setFlags(DependencyFlags.CLASSLOADER_RUNNER_PARENT_FIRST);
+            }
+        }
+        for (ArtifactKey key : lesserPriorityArtifacts) {
+            final ResolvedDependencyBuilder d = dependencies.get(key);
+            if (d != null) {
+                d.setFlags(DependencyFlags.CLASSLOADER_LESSER_PRIORITY);
+            }
+        }
+
+        final List<ResolvedDependency> result = new ArrayList<>(dependencies.size());
+        for (ResolvedDependencyBuilder db : this.dependencies.values()) {
+            if (!isExcluded(db)) {
+                result.add(db.build());
+            }
+        }
+        return result;
     }
 
     public DefaultApplicationModel build() {

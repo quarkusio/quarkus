@@ -10,6 +10,7 @@ import io.quarkus.bootstrap.model.CapabilityContract;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import java.io.File;
@@ -75,14 +76,16 @@ public class BootstrapUtils {
             a.setPaths(d.getResolvedPaths() == null ? PathsCollection.of()
                     : PathsCollection.from(d.getResolvedPaths()));
             builder.addDependency(new AppDependency(a, d.getScope(), d.getFlags()));
+            if (d.isFlagSet(DependencyFlags.CLASSLOADER_LESSER_PRIORITY)) {
+                builder.addLesserPriorityArtifact(a.getKey());
+            }
+            if (d.isClassLoaderParentFirst()) {
+                builder.addParentFirstArtifact(a.getKey());
+            }
+            if (d.isFlagSet(DependencyFlags.CLASSLOADER_RUNNER_PARENT_FIRST)) {
+                builder.addRunnerParentFirstArtifact(a.getKey());
+            }
         });
-        appModel.getLowerPriorityArtifacts().forEach(k -> builder.addLesserPriorityArtifact(
-                new AppArtifactKey(k.getGroupId(), k.getArtifactId(), k.getClassifier(), k.getType())));
-        appModel.getParentFirst().forEach(k -> builder
-                .addParentFirstArtifact(new AppArtifactKey(k.getGroupId(), k.getArtifactId(), k.getClassifier(), k.getType())));
-        appModel.getRunnerParentFirst().forEach(k -> builder.addRunnerParentFirstArtifact(
-                new AppArtifactKey(k.getGroupId(), k.getArtifactId(), k.getClassifier(), k.getType())));
-
         appModel.getReloadableWorkspaceDependencies().forEach(k -> builder.addLocalProjectArtifact(
                 new AppArtifactKey(k.getGroupId(), k.getArtifactId(), k.getClassifier(), k.getType())));
 

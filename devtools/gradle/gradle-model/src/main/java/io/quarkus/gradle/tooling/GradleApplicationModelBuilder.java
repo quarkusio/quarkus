@@ -11,9 +11,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -113,14 +111,10 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 .addReloadableWorkspaceModule(appArtifact.getKey())
                 .setPlatformImports(platformImports);
 
-        final Map<ArtifactKey, ResolvedDependencyBuilder> appDependencies = new LinkedHashMap<>();
         collectDependencies(classpathConfig.getResolvedConfiguration(), workspaceDiscovery,
-                project, appDependencies, modelBuilder, appArtifact.getWorkspaceModule().mutable());
-        collectExtensionDependencies(project, deploymentConfig, appDependencies);
+                project, modelBuilder, appArtifact.getWorkspaceModule().mutable());
+        collectExtensionDependencies(project, deploymentConfig, modelBuilder);
 
-        for (ResolvedDependencyBuilder d : appDependencies.values()) {
-            modelBuilder.addDependency(d.build());
-        }
         return modelBuilder.build();
     }
 
@@ -169,7 +163,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
     }
 
     private void collectExtensionDependencies(Project project, Configuration deploymentConfiguration,
-            Map<ArtifactKey, ResolvedDependencyBuilder> appDependencies) {
+            ApplicationModelBuilder modelBuilder) {
         final ResolvedConfiguration rc = deploymentConfiguration.getResolvedConfiguration();
         for (ResolvedArtifact a : rc.getResolvedArtifacts()) {
             if (a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
@@ -178,15 +172,21 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 final JavaPluginConvention javaExtension = projectDep == null ? null
                         : projectDep.getConvention().findPlugin(JavaPluginConvention.class);
                 SourceSet mainSourceSet = javaExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-                final ResolvedDependencyBuilder dep = appDependencies.computeIfAbsent(
-                        toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(), a.getClassifier()),
-                        k -> toDependency(a, mainSourceSet));
+                ResolvedDependencyBuilder dep = modelBuilder.getDependency(
+                        toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(), a.getClassifier()));
+                if (dep == null) {
+                    dep = toDependency(a, mainSourceSet);
+                    modelBuilder.addDependency(dep);
+                }
                 dep.setDeploymentCp();
                 dep.clearFlag(DependencyFlags.RELOADABLE);
             } else if (isDependency(a)) {
-                final ResolvedDependencyBuilder dep = appDependencies.computeIfAbsent(
-                        toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(), a.getClassifier()),
-                        k -> toDependency(a));
+                ResolvedDependencyBuilder dep = modelBuilder.getDependency(
+                        toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(), a.getClassifier()));
+                if (dep == null) {
+                    dep = toDependency(a);
+                    modelBuilder.addDependency(dep);
+                }
                 dep.setDeploymentCp();
                 dep.clearFlag(DependencyFlags.RELOADABLE);
             }
@@ -194,8 +194,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
     }
 
     private void collectDependencies(ResolvedConfiguration configuration,
-            boolean workspaceDiscovery, Project project, Map<ArtifactKey, ResolvedDependencyBuilder> appDependencies,
-            ApplicationModelBuilder modelBuilder, WorkspaceModule.Mutable wsModule) {
+            boolean workspaceDiscovery, Project project, ApplicationModelBuilder modelBuilder,
+            WorkspaceModule.Mutable wsModule) {
 
         final Set<ResolvedArtifact> resolvedArtifacts = configuration.getResolvedArtifacts();
         // if the number of artifacts is less than the number of files then probably
@@ -206,7 +206,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
         configuration.getFirstLevelModuleDependencies()
                 .forEach(d -> {
-                    collectDependencies(d, workspaceDiscovery, project, appDependencies, artifactFiles, new HashSet<>(),
+                    collectDependencies(d, workspaceDiscovery, project, artifactFiles, new HashSet<>(),
                             modelBuilder,
                             wsModule,
                             (byte) (COLLECT_TOP_EXTENSION_RUNTIME_NODES | COLLECT_DIRECT_DEPS | COLLECT_RELOADABLE_MODULES));
@@ -243,21 +243,20 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                         .setDirect(true)
                         .setRuntimeCp();
                 processQuarkusDependency(artifactBuilder, modelBuilder);
-                appDependencies.put(artifactBuilder.getKey(), artifactBuilder);
+                modelBuilder.addDependency(artifactBuilder);
             }
         }
     }
 
     private void collectDependencies(org.gradle.api.artifacts.ResolvedDependency resolvedDep, boolean workspaceDiscovery,
-            Project project,
-            Map<ArtifactKey, ResolvedDependencyBuilder> appDependencies, Set<File> artifactFiles,
-            Set<ArtifactKey> processedModules, ApplicationModelBuilder modelBuilder, WorkspaceModule.Mutable parentModule,
+            Project project, Set<File> artifactFiles, Set<ArtifactKey> processedModules, ApplicationModelBuilder modelBuilder,
+            WorkspaceModule.Mutable parentModule,
             byte flags) {
         WorkspaceModule.Mutable projectModule = null;
         for (ResolvedArtifact a : resolvedDep.getModuleArtifacts()) {
             final ArtifactKey artifactKey = toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(),
                     a.getClassifier());
-            if (!isDependency(a) || appDependencies.containsKey(artifactKey)) {
+            if (!isDependency(a) || modelBuilder.getDependency(artifactKey) != null) {
                 continue;
             }
             final ArtifactCoords depCoords = toArtifactCoords(a);
@@ -320,7 +319,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             if (!isFlagOn(flags, COLLECT_RELOADABLE_MODULES)) {
                 depBuilder.clearFlag(DependencyFlags.RELOADABLE);
             }
-            appDependencies.put(depBuilder.getKey(), depBuilder);
+            modelBuilder.addDependency(depBuilder);
 
             if (artifactFiles != null) {
                 artifactFiles.add(a.getFile());
@@ -330,9 +329,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         processedModules.add(new GACT(resolvedDep.getModuleGroup(), resolvedDep.getModuleName()));
         for (org.gradle.api.artifacts.ResolvedDependency child : resolvedDep.getChildren()) {
             if (!processedModules.contains(new GACT(child.getModuleGroup(), child.getModuleName()))) {
-                collectDependencies(child, workspaceDiscovery, project, appDependencies, artifactFiles, processedModules,
-                        modelBuilder,
-                        projectModule, flags);
+                collectDependencies(child, workspaceDiscovery, project, artifactFiles, processedModules,
+                        modelBuilder, projectModule, flags);
             }
         }
     }

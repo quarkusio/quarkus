@@ -88,7 +88,11 @@ public class ConfiguredClassLoading implements Serializable {
             }
 
             if (appModel != null) {
-                parentFirstArtifacts.addAll(appModel.getParentFirst());
+                appModel.getDependencies().forEach(d -> {
+                    if (d.isClassLoaderParentFirst()) {
+                        parentFirstArtifacts.add(d.getKey());
+                    }
+                });
 
                 if (mode == Mode.TEST) {
                     final WorkspaceModule module = appModel.getApplicationModule();

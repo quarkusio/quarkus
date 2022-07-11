@@ -198,8 +198,10 @@ public class TestSupport implements TestController {
                     //we always want to propagate parent first
                     //so it is consistent. Some modules may not have quarkus dependencies
                     //so they won't load junit parent first without this
-                    for (var i : curatedApplication.getApplicationModel().getParentFirst()) {
-                        builder.addParentFirstArtifact(i);
+                    for (var i : curatedApplication.getApplicationModel().getDependencies()) {
+                        if (i.isClassLoaderParentFirst()) {
+                            builder.addParentFirstArtifact(i.getKey());
+                        }
                     }
                     var testCuratedApplication = builder // we want to re-discover the local dependencies with test scope
                             .build()

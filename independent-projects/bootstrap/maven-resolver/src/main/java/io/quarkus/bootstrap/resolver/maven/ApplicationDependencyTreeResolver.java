@@ -30,7 +30,6 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -92,7 +91,6 @@ public class ApplicationDependencyTreeResolver {
     private final Deque<Collection<Exclusion>> exclusionStack = new ArrayDeque<>();
 
     private final Map<ArtifactCoords, Set<ArtifactKey>> artifactDeps = new HashMap<>();
-    private final Map<ArtifactKey, ResolvedDependencyBuilder> appDeps = new LinkedHashMap<>();
 
     private MavenArtifactResolver resolver;
     private List<Dependency> managedDeps;
@@ -206,21 +204,21 @@ public class ApplicationDependencyTreeResolver {
 
         root = normalize(originalSession, root);
 
-        final BuildDependencyGraphVisitor buildDepsVisitor = new BuildDependencyGraphVisitor(originalResolver, appDeps,
+        final BuildDependencyGraphVisitor buildDepsVisitor = new BuildDependencyGraphVisitor(originalResolver, appBuilder,
                 buildTreeConsumer);
         buildDepsVisitor.visit(root);
 
         if (!CONVERGED_TREE_ONLY && collectReloadableModules) {
             final Set<ArtifactKey> visited = new HashSet<>();
-            for (ResolvedDependencyBuilder db : appDeps.values()) {
+            for (ResolvedDependencyBuilder db : appBuilder.getDependencies()) {
                 if (!db.isFlagSet(DependencyFlags.RELOADABLE)) {
                     clearReloadableFlag(db, visited);
                 }
             }
         }
 
-        for (ResolvedDependencyBuilder db : appDeps.values()) {
-            appBuilder.addDependency(db.build());
+        for (ResolvedDependencyBuilder db : appBuilder.getDependencies()) {
+            appBuilder.addDependency(db);
         }
 
         collectPlatformProperties();
@@ -252,7 +250,7 @@ public class ApplicationDependencyTreeResolver {
             return;
         }
         for (ArtifactKey key : deps) {
-            final ResolvedDependencyBuilder dep = appDeps.get(key);
+            final ResolvedDependencyBuilder dep = appBuilder.getDependency(key);
             if (dep == null || !visited.add(key)) {
                 continue;
             }
@@ -323,7 +321,7 @@ public class ApplicationDependencyTreeResolver {
     }
 
     private boolean isRuntimeArtifact(ArtifactKey key) {
-        final ResolvedDependencyBuilder dep = appDeps.get(key);
+        final ResolvedDependencyBuilder dep = appBuilder.getDependency(key);
         return dep != null && dep.isFlagSet(DependencyFlags.RUNTIME_CP);
     }
 
@@ -345,7 +343,7 @@ public class ApplicationDependencyTreeResolver {
 
         Artifact artifact = node.getArtifact();
         final ArtifactKey key = getKey(artifact);
-        ResolvedDependencyBuilder dep = appDeps.get(key);
+        ResolvedDependencyBuilder dep = appBuilder.getDependency(key);
         if (dep == null) {
             artifact = resolve(artifact);
         }
@@ -379,7 +377,7 @@ public class ApplicationDependencyTreeResolver {
                         clearWalkingFlag(COLLECT_RELOADABLE_MODULES);
                     }
                 }
-                appDeps.put(key, dep);
+                appBuilder.addDependency(dep);
             }
             clearWalkingFlag(COLLECT_DIRECT_DEPS);
 
@@ -528,7 +526,7 @@ public class ApplicationDependencyTreeResolver {
         for (DependencyNode child : node.getChildren()) {
             clearReloadable(child);
         }
-        final ResolvedDependencyBuilder dep = appDeps.get(getKey(node.getArtifact()));
+        final ResolvedDependencyBuilder dep = appBuilder.getDependency(getKey(node.getArtifact()));
         if (dep != null) {
             dep.clearFlag(DependencyFlags.RELOADABLE);
         }

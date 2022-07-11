@@ -264,8 +264,9 @@ public class FastBootMetadataBuilder {
         }
 
         //Enable the new Enhanced Proxies capability (unless it was specifically disabled):
-        if (!cfg.containsKey(AvailableSettings.ALLOW_ENHANCEMENT_AS_PROXY)) {
-            cfg.put(AvailableSettings.ALLOW_ENHANCEMENT_AS_PROXY, Boolean.TRUE.toString());
+        final String legacyALLOW_ENHANCEMENT_AS_PROXY = "hibernate.bytecode.allow_enhancement_as_proxy";
+        if (!cfg.containsKey(legacyALLOW_ENHANCEMENT_AS_PROXY)) {
+            cfg.put(legacyALLOW_ENHANCEMENT_AS_PROXY, Boolean.TRUE.toString());
         }
         //Always Order batch updates as it prevents contention on the data (unless it was disabled)
         if (!cfg.containsKey(AvailableSettings.ORDER_UPDATES)) {

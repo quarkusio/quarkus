@@ -19,7 +19,6 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.bytecode.internal.SessionFactoryObserverForBytecodeEnhancer;
 import org.hibernate.bytecode.spi.BytecodeProvider;
-import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
@@ -73,7 +72,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         try {
             final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
             populate(persistenceUnitName, optionsBuilder, standardServiceRegistry);
-            return new SessionFactoryImpl(metadata, optionsBuilder.buildOptions(), HQLQueryPlan::new);
+            return new SessionFactoryImpl(metadata, optionsBuilder.buildOptions());
         } catch (Exception e) {
             throw persistenceException("Unable to build Hibernate SessionFactory", e);
         }

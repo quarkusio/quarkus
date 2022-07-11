@@ -3,8 +3,8 @@ This document is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-[id="howto-contribute-quarkus-docs"]
-= How to contribute to Quarkus documentation
+[id="howto-contribute-docs"]
+= How to contribute documentation
 include::attributes.adoc[]
 :toc: preamble
 :asciidoc: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/

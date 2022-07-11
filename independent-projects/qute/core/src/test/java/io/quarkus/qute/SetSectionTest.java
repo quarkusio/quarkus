@@ -2,6 +2,7 @@ package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class SetSectionTest {
@@ -39,6 +40,25 @@ public class SetSectionTest {
         assertEquals("2", engine.parse("{#let foo?=1}{foo}{/let}").data("foo", 2).render());
         assertEquals("true::1::no", engine.parse("{#set foo?=true bar=1 baz?='yes'}{foo}::{bar}::{baz}{/set}")
                 .data("bar", "42", "baz", "no").render());
+    }
+
+    @Test
+    public void testParameterOrigin() {
+        Engine engine = Engine.builder().addDefaults().build();
+        Template template = engine.parse("  {#let item=1 foo=bar}{/let}");
+        List<Expression> expressions = template.getExpressions();
+        assertEquals(2, expressions.size());
+        for (Expression expression : expressions) {
+            if (expression.isLiteral()) {
+                assertEquals(1, expression.getLiteralValue().getNow(false));
+                assertEquals(1, expression.getOrigin().getLine());
+                assertEquals(3, expression.getOrigin().getLineCharacterStart());
+            } else {
+                assertEquals("bar", expression.toOriginalString());
+                assertEquals(1, expression.getOrigin().getLine());
+                assertEquals(3, expression.getOrigin().getLineCharacterStart());
+            }
+        }
     }
 
 }

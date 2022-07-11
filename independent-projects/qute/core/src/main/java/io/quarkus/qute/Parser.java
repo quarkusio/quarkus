@@ -1,6 +1,7 @@
 package io.quarkus.qute;
 
 import io.quarkus.qute.Expression.Part;
+import io.quarkus.qute.SectionHelperFactory.BlockInfo;
 import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
 import io.quarkus.qute.SectionHelperFactory.ParserDelegate;
 import io.quarkus.qute.TemplateNode.Origin;
@@ -31,7 +32,7 @@ import org.jboss.logging.Logger;
 /**
  * Simple non-reusable parser.
  */
-class Parser implements Function<String, Expression>, ParserHelper, ParserDelegate, WithOrigin, ErrorInitializer {
+class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializer {
 
     private static final Logger LOGGER = Logger.getLogger(Parser.class);
     static final String ROOT_HELPER_NAME = "$root";
@@ -414,7 +415,7 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
         } else {
             // Expression
             sectionStack.peek().currentBlock()
-                    .addNode(new ExpressionNode(apply(content), engine));
+                    .addNode(new ExpressionNode(createExpression(content), engine));
         }
         this.buffer = new StringBuilder();
     }
@@ -446,7 +447,7 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
 
             // => New section block
             SectionBlock.Builder block = SectionBlock.builder("" + sectionBlockIdx++, this, this)
-                    .setOrigin(origin(0)).setLabel(sectionName);
+                    .setOrigin(origin(tag.length() - 1)).setLabel(sectionName);
             lastSection.addBlock(block);
 
             processParams(tag, sectionName, iter, block);
@@ -465,7 +466,7 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
                         .build();
             }
             SectionNode.Builder sectionNode = SectionNode
-                    .builder(sectionName, origin(0), this, this)
+                    .builder(sectionName, origin(tag.length() - 1), this, this)
                     .setEngine(engine)
                     .setHelperFactory(factory);
 
@@ -578,7 +579,8 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
         String typeInfo = Expressions.typeInfoFrom(value);
         currentScope.putBinding(key, typeInfo);
         sectionStack.peek().currentBlock().addNode(
-                new ParameterDeclarationNode(typeInfo, key, defaultValue != null ? apply(defaultValue) : null, origin(0)));
+                new ParameterDeclarationNode(typeInfo, key, defaultValue != null ? createExpression(defaultValue) : null,
+                        origin(0)));
 
         // If a default value is set we add a synthetic {#let} section to define local variables with default values
         if (defaultValue != null) {
@@ -988,8 +990,11 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
         return character == ')';
     }
 
-    @Override
-    public ExpressionImpl apply(String value) {
+    ExpressionImpl createSectionBlockExpression(BlockInfo block, String value) {
+        return parseExpression(expressionIdGenerator::incrementAndGet, value, scopeStack.peek(), block.getOrigin());
+    }
+
+    ExpressionImpl createExpression(String value) {
         return parseExpression(expressionIdGenerator::incrementAndGet, value, scopeStack.peek(), origin(value.length() + 1));
     }
 

@@ -240,6 +240,25 @@ public class IfSectionTest {
                         .data("user", "Stef", "target", new Target(ContentStatus.NEW)).render());
     }
 
+    @Test
+    public void testParameterOrigin() {
+        Engine engine = Engine.builder().addDefaults().build();
+        Template template = engine.parse("  {#if item.price > 1}{/if}");
+        List<Expression> expressions = template.getExpressions();
+        assertEquals(2, expressions.size());
+        for (Expression expression : expressions) {
+            if (expression.isLiteral()) {
+                assertEquals(1, expression.getLiteralValue().getNow(false));
+                assertEquals(1, expression.getOrigin().getLine());
+                assertEquals(3, expression.getOrigin().getLineCharacterStart());
+            } else {
+                assertEquals("item.price", expression.toOriginalString());
+                assertEquals(1, expression.getOrigin().getLine());
+                assertEquals(3, expression.getOrigin().getLineCharacterStart());
+            }
+        }
+    }
+
     public static class Target {
 
         public ContentStatus status;

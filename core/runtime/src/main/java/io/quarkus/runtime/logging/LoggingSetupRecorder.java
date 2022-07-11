@@ -6,6 +6,7 @@ import static org.wildfly.common.os.Process.getProcessName;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -125,7 +126,8 @@ public class LoggingSetupRecorder {
             handler.setFilter(cleanupFiler);
         }
 
-        final ArrayList<Handler> handlers = new ArrayList<>(3 + additionalHandlers.size());
+        final ArrayList<Handler> handlers = new ArrayList<>(
+                3 + additionalHandlers.size() + (config.handlers.isPresent() ? config.handlers.get().size() : 0));
 
         if (config.console.enable) {
             final Handler consoleHandler = configureConsoleHandler(config.console, consoleRuntimeConfig.getValue(),
@@ -180,11 +182,11 @@ public class LoggingSetupRecorder {
             handlers.add(handler);
         }
 
+        Map<String, Handler> namedHandlers = shouldCreateNamedHandlers(config, additionalNamedHandlers)
+                ? createNamedHandlers(config, consoleRuntimeConfig.getValue(), additionalNamedHandlers,
+                        possibleConsoleFormatters, possibleFileFormatters, errorManager, cleanupFiler, launchMode)
+                : Collections.emptyMap();
         if (!categories.isEmpty()) {
-            Map<String, Handler> namedHandlers = createNamedHandlers(config, consoleRuntimeConfig.getValue(),
-                    possibleConsoleFormatters, possibleFileFormatters, errorManager,
-                    cleanupFiler, launchMode);
-
             Map<String, Handler> additionalNamedHandlersMap;
             if (additionalNamedHandlers.isEmpty()) {
                 additionalNamedHandlersMap = Collections.emptyMap();
@@ -227,7 +229,7 @@ public class LoggingSetupRecorder {
                 handlers.add(handler);
             }
         }
-
+        addNamedHandlersToRootHandlers(config.handlers, namedHandlers, handlers, errorManager);
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
     }
@@ -263,6 +265,7 @@ public class LoggingSetupRecorder {
         }
 
         Map<String, Handler> namedHandlers = createNamedHandlers(config, consoleConfig, Collections.emptyList(),
+                Collections.emptyList(),
                 possibleFileFormatters, errorManager, logCleanupFilter, launchMode);
 
         for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
@@ -292,8 +295,20 @@ public class LoggingSetupRecorder {
                 addNamedHandlersToCategory(categoryConfig, namedHandlers, categoryLogger, errorManager);
             }
         }
+        addNamedHandlersToRootHandlers(config.handlers, namedHandlers, handlers, errorManager);
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
         InitialConfigurator.DELAYED_HANDLER.setBuildTimeHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+    }
+
+    private boolean shouldCreateNamedHandlers(LogConfig logConfig,
+            List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers) {
+        if (!logConfig.categories.isEmpty()) {
+            return true;
+        }
+        if (logConfig.handlers.isPresent()) {
+            return !logConfig.handlers.get().isEmpty();
+        }
+        return !additionalNamedHandlers.isEmpty();
     }
 
     public static <T> Level getLogLevel(String categoryName, Map<String, T> categories,
@@ -329,6 +344,7 @@ public class LoggingSetupRecorder {
     }
 
     private static Map<String, Handler> createNamedHandlers(LogConfig config, ConsoleRuntimeConfig consoleRuntimeConfig,
+            List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
             List<RuntimeValue<Optional<Formatter>>> possibleConsoleFormatters,
             List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
             ErrorManager errorManager,
@@ -363,6 +379,21 @@ public class LoggingSetupRecorder {
                 addToNamedHandlers(namedHandlers, syslogHandler, sysLogConfigEntry.getKey());
             }
         }
+
+        Map<String, Handler> additionalNamedHandlersMap;
+        if (additionalNamedHandlers.isEmpty()) {
+            additionalNamedHandlersMap = Collections.emptyMap();
+        } else {
+            additionalNamedHandlersMap = new HashMap<>();
+            for (RuntimeValue<Map<String, Handler>> runtimeValue : additionalNamedHandlers) {
+                runtimeValue.getValue().forEach(
+                        new AdditionalNamedHandlersConsumer(additionalNamedHandlersMap, errorManager,
+                                cleanupFilter.filterElements.values()));
+            }
+        }
+
+        namedHandlers.putAll(additionalNamedHandlersMap);
+
         return namedHandlers;
     }
 
@@ -396,6 +427,26 @@ public class LoggingSetupRecorder {
             } else {
                 errorManager.error(String.format("Handler with name '%s' is linked to a category but not configured.",
                         categoryNamedHandler), null, ErrorManager.GENERIC_FAILURE);
+            }
+        }
+    }
+
+    private static void addNamedHandlersToRootHandlers(Optional<List<String>> handlerNames, Map<String, Handler> namedHandlers,
+            ArrayList<Handler> effectiveHandlers,
+            ErrorManager errorManager) {
+        if (handlerNames.isEmpty()) {
+            return;
+        }
+        if (handlerNames.get().isEmpty()) {
+            return;
+        }
+        for (String namedHandler : handlerNames.get()) {
+            Handler handler = namedHandlers.get(namedHandler);
+            if (handler != null) {
+                effectiveHandlers.add(handler);
+            } else {
+                errorManager.error(String.format("Handler with name '%s' is linked to a category but not configured.",
+                        namedHandler), null, ErrorManager.GENERIC_FAILURE);
             }
         }
     }
@@ -609,10 +660,10 @@ public class LoggingSetupRecorder {
     private static class AdditionalNamedHandlersConsumer implements BiConsumer<String, Handler> {
         private final Map<String, Handler> additionalNamedHandlersMap;
         private final ErrorManager errorManager;
-        private final List<LogCleanupFilterElement> filterElements;
+        private final Collection<LogCleanupFilterElement> filterElements;
 
         public AdditionalNamedHandlersConsumer(Map<String, Handler> additionalNamedHandlersMap, ErrorManager errorManager,
-                List<LogCleanupFilterElement> filterElements) {
+                Collection<LogCleanupFilterElement> filterElements) {
             this.additionalNamedHandlersMap = additionalNamedHandlersMap;
             this.errorManager = errorManager;
             this.filterElements = filterElements;

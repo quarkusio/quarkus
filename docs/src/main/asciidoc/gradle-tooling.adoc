@@ -517,7 +517,7 @@ This task depends on both `check` and `quarkusBuild` tasks. The final artifact w
 
 `fast-jar` is now the default quarkus package type. The result of `./gradlew build` command is a new directory under `build` named `quarkus-app`.
 
-You can run the application using: `java -jar target/quarkus-app/quarkus-run.jar`.
+You can run the application using: `java -jar build/quarkus-app/quarkus-run.jar`.
 
 WARNING: In order to successfully run the produced jar, you need to have the entire contents of the `quarkus-app` directory. If any of the files are missing, the application will not start or
 might not function correctly.

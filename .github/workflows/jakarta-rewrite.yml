@@ -9,7 +9,7 @@ jobs:
   rewrite:
     runs-on: ubuntu-latest
     name: Rewrite to Jakarta
-    if: github.repository == 'quarkusio/quarkus'
+    if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v3
         with:
@@ -37,6 +37,22 @@ jobs:
           git commit -m 'Transform sources to Jakarta'
           git push --force origin temp-jakarta-rewrite:jakarta-rewrite
         shell: bash
+      - name: Adjust version before pushing snapshots
+        run: |
+          ./update-version.sh 999-jakarta-SNAPSHOT
+        shell: bash
+      - name: Build and Deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
+          SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+        run: |
+          ./mvnw -e -B --settings .github/mvn-settings.xml \
+            -DskipITs -DskipTests -Dskip.gradle.tests -Dno-format -Dinvoker.skip=true \
+            -DretryFailedDeploymentCount=10 \
+            -pl !integration-tests/gradle \
+            -pl '!:quarkus-integration-test-infinispan-client' -pl '!:quarkus-integration-test-kafka-avro' \
+            clean deploy
       - name: Report status
         if: "always() && github.repository == 'quarkusio/quarkus'"
         shell: bash

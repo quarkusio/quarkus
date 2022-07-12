@@ -59,6 +59,7 @@ public class QuarkusTestNestedTestCase {
         assertEquals(0, COUNT_TEST.getAndIncrement(), "COUNT_TEST");
         assertEquals(0, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
         assertEquals(0, COUNT_AFTER_ALL.get(), "COUNT_AFTER_ALL");
+        assertEquals(0, TestContextCheckerBeforeEachCallback.OUTER_INSTANCES.size(), "Found unexpected outer instances");
     }
 
     @Nested
@@ -94,6 +95,18 @@ public class QuarkusTestNestedTestCase {
         }
 
         @Test
+        @Order(3)
+        void testOuterInstancesInBeforeEach() {
+            assertEquals(1, TestContextCheckerBeforeEachCallback.OUTER_INSTANCES.size());
+        }
+
+        @Test
+        @Order(4)
+        void testOuterInstancesInAfterEach() {
+            assertEquals(1, TestContextCheckerAfterEachCallback.OUTER_INSTANCES.size());
+        }
+
+        @Test
         void testInnerAndOuterValues() {
             assertEquals(EXPECTED_INNER_VALUE, innerValue);
             assertEquals(EXPECTED_OUTER_VALUE, outerValue);
@@ -122,7 +135,6 @@ public class QuarkusTestNestedTestCase {
             @Test
             @Order(1)
             void testOne() {
-                // assertEquals(1, SECOND_LEVEL_COUNTER.get(), "SECOND_LEVEL_COUNTER");
                 assertEquals(1, SECOND_LEVEL_COUNTER.get(), "SECOND_LEVEL_COUNTER");
             }
 
@@ -133,6 +145,24 @@ public class QuarkusTestNestedTestCase {
                 assertEquals(EXPECTED_INNER_VALUE, innerValue);
                 assertEquals(EXPECTED_OUTER_VALUE, outerValue);
                 assertEquals(EXPECTED_SECOND_LEVEL_FIRST_INNER_VALUE, secondLevelInnerValue);
+            }
+
+            @Test
+            @Order(3)
+            void testOuterInstancesInBeforeEach() {
+                assertEquals(2, TestContextCheckerBeforeEachCallback.OUTER_INSTANCES.size());
+            }
+
+            @Test
+            @Order(4)
+            void testOuterInstancesInAfterEach() {
+                assertEquals(2, TestContextCheckerAfterEachCallback.OUTER_INSTANCES.size());
+            }
+
+            @Test
+            @Order(5)
+            void testOuterInstancesInAfterAll() {
+                assertEquals(1, TestContextCheckerAfterAllCallback.OUTER_INSTANCES.size());
             }
         }
     }
@@ -185,9 +215,9 @@ public class QuarkusTestNestedTestCase {
     @AfterAll
     static void afterAll() {
         assertEquals(1, COUNT_BEFORE_ALL.get(), "COUNT_BEFORE_ALL");
-        assertEquals(15, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
+        assertEquals(25, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
         assertEquals(4, COUNT_TEST.get(), "COUNT_TEST");
-        assertEquals(15, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
+        assertEquals(25, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
         assertEquals(0, COUNT_AFTER_ALL.getAndIncrement(), "COUNT_AFTER_ALL");
     }
 }

@@ -282,7 +282,7 @@ We recommend using xref:https://quarkus.io/guides/dev-services#databases[Dev Ser
 %prod.quarkus.datasource.db-kind=postgresql
 %prod.quarkus.datasource.username=quarkus
 %prod.quarkus.datasource.password=quarkus
-%prod.quarkus.datasource.jdbc.url=jdbc:postgresql:security_jpa
+%prod.quarkus.datasource.jdbc.url=jdbc:postgresql:elytron_security_jpa
 
 quarkus.hibernate-orm.database.generation=drop-and-create
 ----
@@ -368,7 +368,44 @@ While developing you can also start adding tests one by one and run them with th
 
 === With Curl or Browser
 
-When you application is running in production mode you can test it with `curl` or your favourite browser.
+First, start a PostgreSQL server:
+
+[source,bash]
+----
+docker run --rm=true --name security-getting-started -e POSTGRES_USER=quarkus \
+           -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=elytron_security_jpa \
+           -p 5432:5432 postgres:14.1
+----
+
+Next, compile and run the application in either JVM or Native mode:
+
+==== JVM mode
+
+Compile the application:
+
+include::{includes}/devtools/build.adoc[]
+
+Then run it:
+
+[source,bash]
+----
+java -jar target/quarkus-app/quarkus-run.jar
+----
+
+==== Native Mode
+
+Compile the application:
+
+include::{includes}/devtools/build-native.adoc[]
+
+and run it:
+
+[source,bash]
+----
+./target/security-jpa-quickstart-runner
+----
+
+Now you can test it with `curl` or your favourite browser.
 We will use `curl` in this section but you can try to access the same endpoint URLs from the browser.
 
 The very first thing to check is to ensure the anonymous access works.

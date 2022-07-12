@@ -1,0 +1,19 @@
+name: resteasy-codestart
+ref: resteasy
+type: code
+tags: extension-codestart
+metadata:
+  title: RESTEasy JAX-RS
+  description: Easily start your RESTful Web Services
+  related-guide-section: https://quarkus.io/guides/getting-started#the-jax-rs-resources
+language:
+  base:
+    data:
+      resource:
+        class-name: GreetingResource
+        path: "/hello"
+        response: "Hello RESTEasy"
+    dependencies:
+      - io.quarkus:quarkus-resteasy
+    test-dependencies:
+      - io.rest-assured:rest-assured

@@ -1084,7 +1084,6 @@ public class DevMojo extends AbstractMojo {
                 .setApplicationModel(appModel)
                 .setApplicationRoot(PathsCollection.from(resourceDirs))
                 .setMode(QuarkusBootstrap.Mode.DEV)
-                .addParentFirstArtifacts(appModel.getParentFirst())
                 .build().getParentFirstArtifacts();
 
         for (Artifact appDep : project.getArtifacts()) {

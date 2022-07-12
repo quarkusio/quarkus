@@ -46,6 +46,10 @@ public interface Dependency extends ArtifactCoords {
         return isFlagSet(DependencyFlags.RELOADABLE) && isWorkspaceModule();
     }
 
+    default boolean isClassLoaderParentFirst() {
+        return isFlagSet(DependencyFlags.CLASSLOADER_PARENT_FIRST);
+    }
+
     default boolean isFlagSet(int flag) {
         return (getFlags() & flag) > 0;
     }

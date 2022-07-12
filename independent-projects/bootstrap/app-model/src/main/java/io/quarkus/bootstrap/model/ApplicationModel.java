@@ -14,11 +14,6 @@ import java.util.stream.Collectors;
 
 public interface ApplicationModel {
 
-    String PARENT_FIRST_ARTIFACTS = "parent-first-artifacts";
-    String RUNNER_PARENT_FIRST_ARTIFACTS = "runner-parent-first-artifacts";
-    String EXCLUDED_ARTIFACTS = "excluded-artifacts";
-    String LESSER_PRIORITY_ARTIFACTS = "lesser-priority-artifacts";
-
     ResolvedDependency getAppArtifact();
 
     Collection<ResolvedDependency> getDependencies();

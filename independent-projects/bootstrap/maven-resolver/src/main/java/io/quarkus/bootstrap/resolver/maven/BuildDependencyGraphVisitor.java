@@ -3,14 +3,13 @@
  */
 package io.quarkus.bootstrap.resolver.maven;
 
+import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.bootstrap.util.DependencyUtils;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
-import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
@@ -19,7 +18,7 @@ import org.eclipse.aether.graph.DependencyNode;
 public class BuildDependencyGraphVisitor {
 
     private final MavenArtifactResolver resolver;
-    private final Map<ArtifactKey, ResolvedDependencyBuilder> appDeps;
+    private final ApplicationModelBuilder appBuilder;
     private final StringBuilder buf;
     private final Consumer<String> buildTreeConsumer;
     private final List<Boolean> depth;
@@ -28,10 +27,10 @@ public class BuildDependencyGraphVisitor {
     private DependencyNode currentRuntime;
     private Artifact runtimeArtifactToFind;
 
-    public BuildDependencyGraphVisitor(MavenArtifactResolver resolver, Map<ArtifactKey, ResolvedDependencyBuilder> appDeps,
+    public BuildDependencyGraphVisitor(MavenArtifactResolver resolver, ApplicationModelBuilder appBuilder,
             Consumer<String> buildTreeConsumer) {
         this.resolver = resolver;
-        this.appDeps = appDeps;
+        this.appBuilder = appBuilder;
         this.buildTreeConsumer = buildTreeConsumer;
         if (buildTreeConsumer == null) {
             buf = null;
@@ -133,8 +132,7 @@ public class BuildDependencyGraphVisitor {
         if (currentDeployment == null) {
             return;
         }
-        ArtifactKey key;
-        if (currentRuntime == null && !appDeps.containsKey(key = getKey(node.getArtifact()))) {
+        if (currentRuntime == null && appBuilder.getDependency(getKey(node.getArtifact())) == null) {
 
             Artifact artifact = dep.getArtifact();
             if (artifact.getFile() == null) {
@@ -152,7 +150,7 @@ public class BuildDependencyGraphVisitor {
                     flags |= DependencyFlags.WORKSPACE_MODULE;
                 }
             }
-            appDeps.put(key, ApplicationDependencyTreeResolver.toAppArtifact(artifact, module)
+            appBuilder.addDependency(ApplicationDependencyTreeResolver.toAppArtifact(artifact, module)
                     .setScope(node.getDependency().getScope())
                     .setFlags(flags));
 

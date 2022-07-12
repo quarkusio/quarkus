@@ -30,9 +30,6 @@ public class MutableJarApplicationModel implements Serializable {
     private final SerializedDep appArtifact;
 
     private List<SerializedDep> dependencies;
-    private Set<ArtifactKey> parentFirstArtifacts;
-    private Set<ArtifactKey> runnerParentFirstArtifacts;
-    private Set<ArtifactKey> lesserPriorityArtifacts;
     private Set<ArtifactKey> localProjectArtifacts;
     private Map<ArtifactKey, Set<String>> excludedResources;
     private Collection<ExtensionCapabilities> capabilitiesContracts;
@@ -50,9 +47,6 @@ public class MutableJarApplicationModel implements Serializable {
             dependencies.add(new SerializedDep(i, paths, i.getFlags()));
         }
         localProjectArtifacts = new HashSet<>(appModel.getReloadableWorkspaceDependencies());
-        parentFirstArtifacts = new HashSet<>(appModel.getParentFirst());
-        runnerParentFirstArtifacts = new HashSet<>(appModel.getRunnerParentFirst());
-        lesserPriorityArtifacts = new HashSet<>(appModel.getLowerPriorityArtifacts());
         excludedResources = new HashMap<>(appModel.getRemovedResources());
         capabilitiesContracts = new ArrayList<>(appModel.getExtensionCapabilities());
         this.platformImports = appModel.getPlatforms();
@@ -64,18 +58,9 @@ public class MutableJarApplicationModel implements Serializable {
 
     public ApplicationModel getAppModel(Path root) {
         final ApplicationModelBuilder model = new ApplicationModelBuilder();
-        model.setAppArtifact(appArtifact.getDep(root));
+        model.setAppArtifact(appArtifact.getDep(root).build());
         for (SerializedDep i : dependencies) {
             model.addDependency(i.getDep(root));
-        }
-        for (ArtifactKey i : parentFirstArtifacts) {
-            model.addParentFirstArtifact(i);
-        }
-        for (ArtifactKey i : runnerParentFirstArtifacts) {
-            model.addRunnerParentFirstArtifact(i);
-        }
-        for (ArtifactKey i : lesserPriorityArtifacts) {
-            model.addLesserPriorityArtifact(i);
         }
         model.addReloadableWorkspaceModules(localProjectArtifacts);
         for (Map.Entry<ArtifactKey, Set<String>> i : excludedResources.entrySet()) {
@@ -109,20 +94,18 @@ public class MutableJarApplicationModel implements Serializable {
             this.flags = flags;
         }
 
-        public ResolvedDependency getDep(Path root) {
+        public ResolvedDependencyBuilder getDep(Path root) {
             final PathList.Builder builder = PathList.builder();
             for (String i : paths) {
                 builder.add(root.resolve(i));
             }
-            final ResolvedDependency d = ResolvedDependencyBuilder.newInstance()
+            return ResolvedDependencyBuilder.newInstance()
                     .setGroupId(getGroupId())
                     .setArtifactId(getArtifactId())
                     .setClassifier(getClassifier())
                     .setVersion(getVersion())
                     .setResolvedPaths(builder.build())
-                    .setFlags(flags)
-                    .build();
-            return d;
+                    .setFlags(flags);
         }
     }
 }

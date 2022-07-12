@@ -385,7 +385,6 @@ public class QuarkusDev extends QuarkusTask {
                 .setApplicationModel(appModel)
                 .setApplicationRoot(PathsCollection.from(resourceDirs))
                 .setMode(QuarkusBootstrap.Mode.DEV)
-                .addParentFirstArtifacts(appModel.getParentFirst())
                 .build().getParentFirstArtifacts();
 
         for (io.quarkus.maven.dependency.ResolvedDependency artifact : appModel.getDependencies()) {

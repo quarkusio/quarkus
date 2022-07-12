@@ -83,6 +83,7 @@ import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathVisit;
@@ -817,8 +818,12 @@ public class JarResultBuildStep {
      */
     private Set<ArtifactKey> getParentFirstKeys(CurateOutcomeBuildItem curateOutcomeBuildItem,
             ClassLoadingConfig classLoadingConfig) {
-        final Set<ArtifactKey> parentFirstKeys = new HashSet<>(
-                curateOutcomeBuildItem.getApplicationModel().getRunnerParentFirst());
+        final Set<ArtifactKey> parentFirstKeys = new HashSet<>();
+        curateOutcomeBuildItem.getApplicationModel().getDependencies().forEach(d -> {
+            if (d.isFlagSet(DependencyFlags.CLASSLOADER_RUNNER_PARENT_FIRST)) {
+                parentFirstKeys.add(d.getKey());
+            }
+        });
         classLoadingConfig.parentFirstArtifacts.ifPresent(
                 parentFirstArtifacts -> {
                     for (String artifact : parentFirstArtifacts) {

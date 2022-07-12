@@ -26,6 +26,11 @@ import org.jboss.logging.Logger;
 @Deprecated
 public class AppModel implements ApplicationModel, Serializable {
 
+    public static final String PARENT_FIRST_ARTIFACTS = "parent-first-artifacts";
+    public static final String RUNNER_PARENT_FIRST_ARTIFACTS = "runner-parent-first-artifacts";
+    public static final String EXCLUDED_ARTIFACTS = "excluded-artifacts";
+    public static final String LESSER_PRIORITY_ARTIFACTS = "lesser-priority-artifacts";
+
     private static final long serialVersionUID = 6728602422991848950L;
 
     private static final Logger log = Logger.getLogger(AppModel.class);

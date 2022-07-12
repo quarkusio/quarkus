@@ -190,12 +190,12 @@ public class ConditionalDependenciesEnabler {
 
     private boolean exists(Dependency dependency) {
         return existingArtifacts
-                .contains(ArtifactKey.gact(dependency.getGroup(), dependency.getName(), null, ArtifactCoords.TYPE_JAR));
+                .contains(ArtifactKey.of(dependency.getGroup(), dependency.getName(), null, ArtifactCoords.TYPE_JAR));
     }
 
     public boolean exists(ExtensionDependency dependency) {
         return existingArtifacts
-                .contains(ArtifactKey.gact(dependency.getGroup(), dependency.getName(), null, ArtifactCoords.TYPE_JAR));
+                .contains(ArtifactKey.of(dependency.getGroup(), dependency.getName(), null, ArtifactCoords.TYPE_JAR));
     }
 
     private static GACT getFeatureKey(ModuleVersionIdentifier version) {
@@ -207,6 +207,6 @@ public class ConditionalDependenciesEnabler {
     }
 
     private static ArtifactKey getKey(ResolvedArtifact a) {
-        return ArtifactKey.gact(a.getModuleVersion().getId().getGroup(), a.getName(), a.getClassifier(), a.getType());
+        return ArtifactKey.of(a.getModuleVersion().getId().getGroup(), a.getName(), a.getClassifier(), a.getType());
     }
 }

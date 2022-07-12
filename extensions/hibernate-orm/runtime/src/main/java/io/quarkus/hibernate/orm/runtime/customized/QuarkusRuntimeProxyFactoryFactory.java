@@ -27,12 +27,6 @@ public class QuarkusRuntimeProxyFactoryFactory implements ProxyFactoryFactory {
         return new QuarkusProxyFactory(proxyClassDefinitions);
     }
 
-    @Deprecated
-    @Override
-    public BasicProxyFactory buildBasicProxyFactory(Class superClass, Class[] interfaces) {
-        return null;
-    }
-
     @Override
     public BasicProxyFactory buildBasicProxyFactory(Class aClass) {
         return null;

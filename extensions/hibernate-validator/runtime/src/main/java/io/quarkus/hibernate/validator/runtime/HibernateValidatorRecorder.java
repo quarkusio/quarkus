@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.validator.runtime;
 
+import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -25,6 +26,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.hibernate.validator.HibernateValidatorFactoryCustomizer;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.ShutdownContext;
@@ -146,6 +148,15 @@ public class HibernateValidatorRecorder {
                         // so we need a type literal here.
                         .select(TYPE_LITERAL_VALUE_EXTRACTOR_WITH_WILDCARD)) {
                     configuration.addValueExtractor(valueExtractor);
+                }
+
+                List<InstanceHandle<HibernateValidatorFactoryCustomizer>> constraintMappingProviderList = Arc.container()
+                        .listAll(HibernateValidatorFactoryCustomizer.class);
+                for (InstanceHandle<HibernateValidatorFactoryCustomizer> cmpInstanceHandle : constraintMappingProviderList) {
+                    if (cmpInstanceHandle.isAvailable()) {
+                        final HibernateValidatorFactoryCustomizer hibernateValidatorFactoryCustomizer = cmpInstanceHandle.get();
+                        hibernateValidatorFactoryCustomizer.customize(configuration);
+                    }
                 }
 
                 ValidatorFactory validatorFactory = configuration.buildValidatorFactory();

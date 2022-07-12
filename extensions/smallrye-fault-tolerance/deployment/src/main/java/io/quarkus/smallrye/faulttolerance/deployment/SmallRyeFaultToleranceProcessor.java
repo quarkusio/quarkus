@@ -56,6 +56,7 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusAsyncExecutorProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusExistingCircuitBreakerNames;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
@@ -72,7 +73,6 @@ import io.smallrye.faulttolerance.autoconfig.FaultToleranceMethod;
 import io.smallrye.faulttolerance.core.util.RunnableWrapper;
 import io.smallrye.faulttolerance.internal.RequestContextControllerProvider;
 import io.smallrye.faulttolerance.internal.StrategyCache;
-import io.smallrye.faulttolerance.metrics.MetricsProvider;
 import io.smallrye.faulttolerance.propagation.ContextPropagationRequestContextControllerProvider;
 import io.smallrye.faulttolerance.propagation.ContextPropagationRunnableWrapper;
 
@@ -190,10 +190,18 @@ public class SmallRyeFaultToleranceProcessor {
                         StrategyCache.class,
                         QuarkusFallbackHandlerProvider.class,
                         QuarkusAsyncExecutorProvider.class,
-                        MetricsProvider.class,
                         CircuitBreakerMaintenanceImpl.class,
                         RequestContextIntegration.class,
                         SpecCompatibility.class);
+
+        if (metricsCapability.isEmpty()) {
+            builder.addBeanClass("io.smallrye.faulttolerance.metrics.NoopProvider");
+        } else if (metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
+            builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicroProfileMetricsProvider");
+        } else if (metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
+            builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicrometerProvider");
+        }
+
         beans.produce(builder.build());
 
         // TODO FT should be smart enough and only initialize the stuff in the recorder if it's really needed
@@ -204,11 +212,6 @@ public class SmallRyeFaultToleranceProcessor {
                         QuarkusExistingCircuitBreakerNames.class, CdiFaultToleranceSpi.EagerDependencies.class,
                         CdiFaultToleranceSpi.LazyDependencies.class)
                 .build());
-
-        if (!metricsCapability.isPresent()) {
-            //disable fault tolerance metrics with the MP sys props
-            systemProperty.produce(new SystemPropertyBuildItem("MP_Fault_Tolerance_Metrics_Enabled", "false"));
-        }
 
         config.produce(new RunTimeConfigurationDefaultBuildItem("smallrye.faulttolerance.mp-compatibility", "false"));
     }

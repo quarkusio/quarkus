@@ -1,6 +1,5 @@
 package io.quarkus.oidc.deployment.devservices.keycloak;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -185,17 +184,6 @@ public class DevServicesConfig {
      */
     @ConfigItem
     public OptionalInt port;
-
-    /**
-     * The WebClient timeout.
-     * Use this property to configure how long an HTTP client will wait for a response when requesting
-     * tokens from Keycloak and sending them to the service endpoint.
-     *
-     * @deprecated Use {@link DevUiConfig#webClienTimeout}.
-     */
-    @ConfigItem(defaultValue = "4S")
-    @Deprecated
-    public Duration webClienTimeout;
 
     @Override
     public boolean equals(Object o) {

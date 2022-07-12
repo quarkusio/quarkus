@@ -1,6 +1,5 @@
 package io.quarkus.oidc.deployment.devservices;
 
-import java.time.Duration;
 import java.util.Set;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -104,12 +103,12 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     metadata != null ? metadata.getString("end_session_endpoint") : null,
                     metadata != null ? metadata.containsKey("introspection_endpoint") : false);
 
-            Duration webClientTimeout = oidcConfig.devui.webClienTimeout.isPresent() ? oidcConfig.devui.webClienTimeout.get()
-                    : Duration.ofSeconds(4);
             produceDevConsoleRouteItems(devConsoleRoute,
-                    new OidcTestServiceHandler(vertxInstance, webClientTimeout),
-                    new OidcAuthorizationCodePostHandler(vertxInstance, webClientTimeout, oidcConfig.devui.grantOptions),
-                    new OidcPasswordClientCredHandler(vertxInstance, webClientTimeout, oidcConfig.devui.grantOptions));
+                    new OidcTestServiceHandler(vertxInstance, oidcConfig.devui.webClientTimeout),
+                    new OidcAuthorizationCodePostHandler(vertxInstance, oidcConfig.devui.webClientTimeout,
+                            oidcConfig.devui.grantOptions),
+                    new OidcPasswordClientCredHandler(vertxInstance, oidcConfig.devui.webClientTimeout,
+                            oidcConfig.devui.grantOptions));
         }
     }
 

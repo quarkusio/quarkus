@@ -58,6 +58,7 @@ import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.oidc.deployment.OidcBuildStep.IsEnabled;
+import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.deployment.devservices.OidcDevServicesBuildItem;
 import io.quarkus.oidc.deployment.devservices.OidcDevServicesUtils;
 import io.quarkus.runtime.LaunchMode;
@@ -123,6 +124,8 @@ public class KeycloakDevServicesProcessor {
     static volatile DevServicesConfig capturedDevServicesConfiguration;
     private static volatile boolean first = true;
     private static volatile FileTime capturedRealmFileLastModifiedDate;
+
+    OidcBuildTimeConfig oidcConfig;
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = { IsEnabled.class, GlobalDevServicesConfig.Enabled.class })
     public DevServicesResultBuildItem startKeycloakContainer(
@@ -544,13 +547,13 @@ public class KeycloakDevServicesProcessor {
         try {
             String token = OidcDevServicesUtils.getPasswordAccessToken(client,
                     keycloakUrl + "/realms/master/protocol/openid-connect/token",
-                    "admin-cli", null, "admin", "admin", null, capturedDevServicesConfiguration.webClienTimeout);
+                    "admin-cli", null, "admin", "admin", null, oidcConfig.devui.webClientTimeout);
 
             HttpResponse<Buffer> createRealmResponse = client.postAbs(keycloakUrl + "/admin/realms")
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
                     .putHeader(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + token)
                     .sendBuffer(Buffer.buffer().appendString(JsonSerialization.writeValueAsString(realm)))
-                    .await().atMost(capturedDevServicesConfiguration.webClienTimeout);
+                    .await().atMost(oidcConfig.devui.webClientTimeout);
 
             if (createRealmResponse.statusCode() > 299) {
                 LOG.errorf("Realm %s can not be created %d - %s ", realm.getRealm(), createRealmResponse.statusCode(),

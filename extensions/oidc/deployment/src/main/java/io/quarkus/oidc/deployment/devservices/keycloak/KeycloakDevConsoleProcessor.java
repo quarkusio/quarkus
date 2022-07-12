@@ -1,6 +1,5 @@
 package io.quarkus.oidc.deployment.devservices.keycloak;
 
-import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
@@ -60,13 +59,13 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
         if (configProps.isPresent() && configProps.get().getConfig().containsKey("keycloak.url")) {
             @SuppressWarnings("unchecked")
             Map<String, String> users = (Map<String, String>) configProps.get().getProperties().get("oidc.users");
-            Duration webClientTimeout = oidcConfig.devui.webClienTimeout.isPresent() ? oidcConfig.devui.webClienTimeout.get()
-                    : KeycloakDevServicesProcessor.capturedDevServicesConfiguration.webClienTimeout;
             produceDevConsoleRouteItems(devConsoleRoute,
-                    new OidcTestServiceHandler(KeycloakDevServicesProcessor.vertxInstance, webClientTimeout),
-                    new OidcAuthorizationCodePostHandler(KeycloakDevServicesProcessor.vertxInstance, webClientTimeout,
+                    new OidcTestServiceHandler(KeycloakDevServicesProcessor.vertxInstance, oidcConfig.devui.webClientTimeout),
+                    new OidcAuthorizationCodePostHandler(KeycloakDevServicesProcessor.vertxInstance,
+                            oidcConfig.devui.webClientTimeout,
                             oidcConfig.devui.grantOptions),
-                    new OidcPasswordClientCredHandler(KeycloakDevServicesProcessor.vertxInstance, webClientTimeout, users,
+                    new OidcPasswordClientCredHandler(KeycloakDevServicesProcessor.vertxInstance,
+                            oidcConfig.devui.webClientTimeout, users,
                             oidcConfig.devui.grantOptions));
         }
     }

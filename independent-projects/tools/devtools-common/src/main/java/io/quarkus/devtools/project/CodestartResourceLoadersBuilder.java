@@ -99,16 +99,18 @@ public final class CodestartResourceLoadersBuilder {
             Collection<String> extraCodestartsArtifactCoords,
             ExtensionCatalog catalog,
             MavenArtifactResolver mvn) {
+
         final Map<String, Artifact> codestartsArtifacts = new LinkedHashMap<>();
 
+        // The latest inserted in the Map will have priority over the previous (in case of codestarts name conflicts)
         if (catalog != null) {
             // Load codestarts from each extensions codestart artifacts
             for (Extension e : catalog.getExtensions()) {
-                final String artifactCoords = getCodestartArtifact(e);
-                if (artifactCoords == null || codestartsArtifacts.containsKey(artifactCoords)) {
+                final String coords = getCodestartArtifact(e);
+                if (coords == null || codestartsArtifacts.containsKey(coords)) {
                     continue;
                 }
-                codestartsArtifacts.put(artifactCoords, DependencyUtils.toArtifact(artifactCoords));
+                codestartsArtifacts.put(coords, DependencyUtils.toArtifact(coords));
             }
         }
 
@@ -120,17 +122,22 @@ public final class CodestartResourceLoadersBuilder {
         if (catalog != null) {
             // Load codestarts from catalog codestart artifacts
             final List<String> catalogCodestartArtifacts = getCodestartArtifacts(catalog);
-            for (String artifactCoords : catalogCodestartArtifacts) {
-                if (codestartsArtifacts.containsKey(artifactCoords)) {
-                    continue;
+            for (String coords : catalogCodestartArtifacts) {
+                if (codestartsArtifacts.containsKey(coords)) {
+                    // Make sure it overrides the previous codestarts
+                    codestartsArtifacts.remove(coords);
                 }
-                codestartsArtifacts.put(artifactCoords, DependencyUtils.toArtifact(artifactCoords));
+                codestartsArtifacts.put(coords, DependencyUtils.toArtifact(coords));
             }
         }
 
         // Load codestarts from the given artifacts
-        for (String codestartArtifactCoords : extraCodestartsArtifactCoords) {
-            codestartsArtifacts.put(codestartArtifactCoords, DependencyUtils.toArtifact(codestartArtifactCoords));
+        for (String coords : extraCodestartsArtifactCoords) {
+            if (codestartsArtifacts.containsKey(coords)) {
+                // Make sure it overrides the previous codestarts
+                codestartsArtifacts.remove(coords);
+            }
+            codestartsArtifacts.put(coords, DependencyUtils.toArtifact(coords));
         }
 
         final List<ResourceLoader> codestartResourceLoaders = new ArrayList<>(codestartsArtifacts.size());

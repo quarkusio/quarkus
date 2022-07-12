@@ -51,9 +51,9 @@ import io.quarkus.hibernate.orm.runtime.service.QuarkusStaticDialectFactoryIniti
  */
 public class PreconfiguredServiceRegistryBuilder {
 
-    private final Map configurationValues = new HashMap();
-    private final List<StandardServiceInitiator> initiators;
-    private final List<ProvidedService> providedServices = new ArrayList<ProvidedService>();
+    private final Map<String, Object> configurationValues = new HashMap<>();
+    private final List<StandardServiceInitiator<?>> initiators;
+    private final List<ProvidedService<?>> providedServices = new ArrayList<ProvidedService<?>>();
     private final Collection<Integrator> integrators;
     private final StandardServiceRegistryImpl destroyedRegistry;
 
@@ -76,7 +76,7 @@ public class PreconfiguredServiceRegistryBuilder {
         return this;
     }
 
-    public PreconfiguredServiceRegistryBuilder addInitiator(StandardServiceInitiator initiator) {
+    public PreconfiguredServiceRegistryBuilder addInitiator(StandardServiceInitiator<?> initiator) {
         initiators.add(initiator);
         return this;
     }
@@ -86,7 +86,7 @@ public class PreconfiguredServiceRegistryBuilder {
         return this;
     }
 
-    public PreconfiguredServiceRegistryBuilder addService(ProvidedService providedService) {
+    public PreconfiguredServiceRegistryBuilder addService(ProvidedService<?> providedService) {
         providedServices.add(providedService);
         return this;
     }
@@ -101,7 +101,7 @@ public class PreconfiguredServiceRegistryBuilder {
         // already recorded as part of #applyIntegrator, #addInitiator, #addService
         // applyServiceContributors( bootstrapServiceRegistry );
 
-        final Map settingsCopy = new HashMap();
+        final Map<String, Object> settingsCopy = new HashMap<>();
         settingsCopy.putAll(configurationValues);
 
         destroyedRegistry.resetAndReactivate(bootstrapServiceRegistry, initiators, providedServices, settingsCopy);
@@ -140,8 +140,8 @@ public class PreconfiguredServiceRegistryBuilder {
      *
      * @return
      */
-    private static List<StandardServiceInitiator> buildQuarkusServiceInitiatorList(RecordedState rs) {
-        final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
+    private static List<StandardServiceInitiator<?>> buildQuarkusServiceInitiatorList(RecordedState rs) {
+        final ArrayList<StandardServiceInitiator<?>> serviceInitiators = new ArrayList<StandardServiceInitiator<?>>();
 
         //Enforces no bytecode enhancement will happen at runtime:
         serviceInitiators.add(DisabledBytecodeProviderInitiator.INSTANCE);

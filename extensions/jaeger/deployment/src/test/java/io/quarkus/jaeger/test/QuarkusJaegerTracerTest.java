@@ -26,7 +26,7 @@ public class QuarkusJaegerTracerTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void withzipkinCompatibilityMode() {
+    public void withZipkinCompatibilityMode() {
 
         try (MockedStatic<Configuration> mockedStaticConfiguration = Mockito.mockStatic(Configuration.class);
                 MockedStatic<CDI> mockedStaticCDI = Mockito.mockStatic(CDI.class)) {

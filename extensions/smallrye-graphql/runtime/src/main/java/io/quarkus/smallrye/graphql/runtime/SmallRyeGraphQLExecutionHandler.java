@@ -292,7 +292,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
 
     private void doRequest(JsonObject jsonInput, HttpServerResponse response, RoutingContext ctx,
             String requestedCharset) {
-        VertxExecutionResponseWrtiter writer = new VertxExecutionResponseWrtiter(response, ctx, requestedCharset);
+        VertxExecutionResponseWriter writer = new VertxExecutionResponseWriter(response, ctx, requestedCharset);
         getExecutionService().executeAsync(jsonInput, getMetaData(ctx), writer);
     }
 
@@ -306,13 +306,13 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
         }
     }
 
-    class VertxExecutionResponseWrtiter implements ExecutionResponseWriter {
+    class VertxExecutionResponseWriter implements ExecutionResponseWriter {
 
         HttpServerResponse response;
         String requestedCharset;
         RoutingContext ctx;
 
-        VertxExecutionResponseWrtiter(HttpServerResponse response, RoutingContext ctx, String requestedCharset) {
+        VertxExecutionResponseWriter(HttpServerResponse response, RoutingContext ctx, String requestedCharset) {
             this.response = response;
             this.ctx = ctx;
             this.requestedCharset = requestedCharset;

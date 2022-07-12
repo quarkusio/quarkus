@@ -387,14 +387,14 @@ public class S2iProcessor {
         });
     }
 
-    public static Predicate<HasMetadata> distictByResourceKey() {
+    public static Predicate<HasMetadata> distinctByResourceKey() {
         Map<Object, Boolean> seen = new ConcurrentHashMap<>();
         return t -> seen.putIfAbsent(t.getApiVersion() + "/" + t.getKind() + ":" + t.getMetadata().getName(),
                 Boolean.TRUE) == null;
     }
 
     private static Collection<HasMetadata> distinct(Collection<HasMetadata> resources) {
-        return resources.stream().filter(distictByResourceKey()).collect(Collectors.toList());
+        return resources.stream().filter(distinctByResourceKey()).collect(Collectors.toList());
     }
 
     private static List<Build> buildsOf(OpenShiftClient client, BuildConfig config) {

@@ -104,10 +104,10 @@ public class MockEventServer implements Closeable {
         router.route(INVOCATION + ":requestId" + AmazonLambdaApi.API_PATH_REQUEUE).handler(this::handleRequeue);
         router.route(INVOCATION + ":requestId" + AmazonLambdaApi.API_PATH_RESPONSE).handler(this::handleResponse);
         router.route(INVOCATION + ":requestId" + AmazonLambdaApi.API_PATH_ERROR).handler(this::handleError);
-        defaultHanderSetup();
+        defaultHandlerSetup();
     }
 
-    protected void defaultHanderSetup() {
+    protected void defaultHandlerSetup() {
         router.post().handler(this::postEvent);
     }
 

@@ -292,7 +292,7 @@ public class OidcProvider implements Closeable {
                     if (key == null) {
                         // if only `x5t` was set then the key must exist
                         throw new UnresolvableKeyException(
-                                String.format("JWK with thumprint '%s' is not available", thumbprint));
+                                String.format("JWK with thumbprint '%s' is not available", thumbprint));
                     }
                 }
             }

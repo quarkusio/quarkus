@@ -357,7 +357,7 @@ class HibernateValidatorProcessor {
     }
 
     @BuildStep
-    void optionalResouceBundles(BuildProducer<NativeImageResourceBundleBuildItem> resourceBundles) {
+    void optionalResourceBundles(BuildProducer<NativeImageResourceBundleBuildItem> resourceBundles) {
         String[] potentialHibernateValidatorResourceBundles = {
                 AbstractMessageInterpolator.DEFAULT_VALIDATION_MESSAGES,
                 AbstractMessageInterpolator.USER_VALIDATION_MESSAGES,

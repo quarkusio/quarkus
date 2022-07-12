@@ -275,7 +275,7 @@ public class SmallRyeFaultToleranceProcessor {
         // none of them are application classes
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, false);
 
-        FaultToleranceScanner scaner = new FaultToleranceScanner(index, annotationStore, annotationProxy, classOutput,
+        FaultToleranceScanner scanner = new FaultToleranceScanner(index, annotationStore, annotationProxy, classOutput,
                 recorderContext);
 
         List<FaultToleranceMethod> ftMethods = new ArrayList<>();
@@ -295,9 +295,9 @@ public class SmallRyeFaultToleranceProcessor {
                 }
             }
 
-            if (scaner.hasFTAnnotations(beanClass)) {
-                scaner.forEachMethod(beanClass, method -> {
-                    FaultToleranceMethod ftMethod = scaner.createFaultToleranceMethod(beanClass, method);
+            if (scanner.hasFTAnnotations(beanClass)) {
+                scanner.forEachMethod(beanClass, method -> {
+                    FaultToleranceMethod ftMethod = scanner.createFaultToleranceMethod(beanClass, method);
                     if (ftMethod.isLegitimate()) {
                         ftMethods.add(ftMethod);
 

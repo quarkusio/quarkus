@@ -41,7 +41,7 @@ public class MockRestEventServer extends MockEventServer {
     }
 
     @Override
-    protected void defaultHanderSetup() {
+    protected void defaultHandlerSetup() {
         router.route().handler(this::handleHttpRequests);
     }
 

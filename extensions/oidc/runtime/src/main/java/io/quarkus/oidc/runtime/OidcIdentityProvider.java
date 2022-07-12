@@ -189,7 +189,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
                             builder.addCredential(tokenCred);
                             OidcUtils.setSecurityIdentityUserInfo(builder, userInfo);
-                            OidcUtils.setSecurityIdentityIntrospecton(builder, result.introspectionResult);
+                            OidcUtils.setSecurityIdentityIntrospection(builder, result.introspectionResult);
                             OidcUtils.setSecurityIdentityConfigMetadata(builder, resolvedContext);
                             String principalMember = "";
                             if (result.introspectionResult.contains(OidcConstants.INTROSPECTION_TOKEN_USERNAME)) {
@@ -215,7 +215,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                 OidcUtils.setSecurityIdentityRoles(builder, resolvedContext.oidcConfig,
                                         new JsonObject(userInfo.getJsonObject().toString()));
                             }
-                            OidcUtils.setBlockinApiAttribute(builder, vertxContext);
+                            OidcUtils.setBlockingApiAttribute(builder, vertxContext);
                             OidcUtils.setTenantIdAttribute(builder, resolvedContext.oidcConfig);
                             OidcUtils.setRoutingContextAttribute(builder, vertxContext);
                             return Uni.createFrom().item(builder.build());

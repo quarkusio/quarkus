@@ -859,7 +859,7 @@ public class ArcProcessor {
             }
 
             configurator.creator(mc -> {
-                ResultHandle injetionPointType = Types.getTypeHandle(mc, injectionPoint.getType());
+                ResultHandle injectionPointType = Types.getTypeHandle(mc, injectionPoint.getType());
 
                 // List<T> or List<InstanceHandle<T>
                 ResultHandle requiredType;
@@ -890,7 +890,7 @@ public class ArcProcessor {
                                 : mc.loadNull());
 
                 ResultHandle ret = mc.invokeStaticMethod(instancesMethod, targetBean,
-                        injetionPointType, requiredType, requiredQualifiers, mc.getMethodParam(0),
+                        injectionPointType, requiredType, requiredQualifiers, mc.getMethodParam(0),
                         injectionPointAnnotations,
                         javaMember, mc.load(injectionPoint.getPosition()));
                 mc.returnValue(ret);

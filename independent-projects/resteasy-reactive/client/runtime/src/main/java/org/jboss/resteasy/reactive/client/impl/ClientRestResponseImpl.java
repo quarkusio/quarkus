@@ -41,7 +41,7 @@ public class ClientRestResponseImpl<T> extends RestResponseImpl<T> {
                 entityStream.reset();
             } else if (consumed) {
                 throw new IllegalStateException(
-                        "Entity stream has already been read and is not buffered: call Reponse.bufferEntity()");
+                        "Entity stream has already been read and is not buffered: call Response.bufferEntity()");
             }
         } catch (IOException e) {
             throw new ProcessingException(e);

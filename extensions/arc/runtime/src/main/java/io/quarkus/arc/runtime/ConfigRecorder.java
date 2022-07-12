@@ -36,7 +36,7 @@ public class ConfigRecorder {
             cl = ConfigRecorder.class.getClassLoader();
         }
         Set<String> problems = new HashSet<>();
-        List<Throwable> suppresed = new ArrayList<>();
+        List<Throwable> suppressed = new ArrayList<>();
         StringBuilder msg = new StringBuilder();
 
         for (ConfigValidationMetadata property : properties) {
@@ -62,13 +62,13 @@ public class ConfigRecorder {
                 msg.append("Failed to load config value of type ").append(effectivePropertyType).append(" for: ")
                         .append(property.getName());
                 problems.add(property.getName());
-                suppresed.add(e);
+                suppressed.add(e);
             }
         }
         if (!problems.isEmpty()) {
             DeploymentException deploymentException = new DeploymentException(
                     new ConfigurationException(msg.toString(), problems));
-            for (Throwable i : suppresed) {
+            for (Throwable i : suppressed) {
                 deploymentException.addSuppressed(i);
             }
             throw deploymentException;

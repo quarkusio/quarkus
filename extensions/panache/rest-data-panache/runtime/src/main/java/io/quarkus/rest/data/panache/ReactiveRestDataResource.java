@@ -7,7 +7,7 @@ import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Uni;
 
 /**
- * Base REST Reactive data Panache resource interface.
+ * Base Reactive REST data Panache resource interface.
  * Defines JAX-RS operations that will be implemented by the data store specific extensions such as Hibernate ORM or MongoDB.
  * <p>
  * User shouldn't use this interface directly but rather its sub-interfaces defined by the data store specific extensions.

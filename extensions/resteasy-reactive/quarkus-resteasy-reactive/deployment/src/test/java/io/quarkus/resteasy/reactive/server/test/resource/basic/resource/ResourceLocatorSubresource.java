@@ -19,7 +19,7 @@ public class ResourceLocatorSubresource {
 
     @GET
     public String doGet(@Context UriInfo uri) {
-        LOG.info("Uri Ancesstors for Subresource.doGet():");
+        LOG.info("Uri Ancestors for Subresource.doGet():");
         List<String> matchedURIs = uri.getMatchedURIs();
         Assertions.assertEquals(2, matchedURIs.size());
         Assertions.assertEquals("base/1/resources", matchedURIs.get(0));

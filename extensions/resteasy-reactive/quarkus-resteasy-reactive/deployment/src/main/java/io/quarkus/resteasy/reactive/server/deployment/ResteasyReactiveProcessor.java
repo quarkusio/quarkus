@@ -322,14 +322,14 @@ public class ResteasyReactiveProcessor {
     }
 
     @BuildStep
-    public void unremoveableBeans(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
-            BuildProducer<UnremovableBeanBuildItem> unremoveableBeans) {
+    public void unremovableBeans(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         if (!resourceScanningResultBuildItem.isPresent()) {
             return;
         }
         Set<String> beanParams = resourceScanningResultBuildItem.get().getResult()
                 .getBeanParams();
-        unremoveableBeans.produce(UnremovableBeanBuildItem.beanClassNames(beanParams.toArray(EMPTY_STRING_ARRAY)));
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(beanParams.toArray(EMPTY_STRING_ARRAY)));
     }
 
     @BuildStep

@@ -343,7 +343,7 @@ public class SmallRyeMetricsRecorder {
                                 "observed, while a value of 1.0 means that all CPUs were actively running threads from " +
                                 "the JVM 100% of the time during the recent period being observed. Threads from the JVM " +
                                 "include the application threads as well as the JVM internal threads. " +
-                                "All values betweens 0.0 and 1.0 are possible depending of the activities going on in " +
+                                "All values between 0.0 and 1.0 are possible depending of the activities going on in " +
                                 "the JVM process and the whole system. " +
                                 "If the Java Virtual Machine recent CPU usage is not available, the method returns a negative value.")
                         .build();

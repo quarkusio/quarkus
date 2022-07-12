@@ -81,7 +81,7 @@ public class InterceptedStaticMethodsProcessor {
     static final MethodDescriptor INTERCEPTED_STATIC_METHODS_AROUND_INVOKE = MethodDescriptor
             .ofMethod(InterceptedStaticMethods.class, "aroundInvoke", Object.class, String.class, Object[].class);
 
-    private static final String ORGINAL_METHOD_COPY_SUFFIX = "_orig";
+    private static final String ORIGINAL_METHOD_COPY_SUFFIX = "_orig";
     private static final String INITIALIZER_CLASS_SUFFIX = "_InterceptorInitializer";
 
     @BuildStep
@@ -178,12 +178,12 @@ public class InterceptedStaticMethodsProcessor {
         for (Entry<DotName, List<InterceptedStaticMethodBuildItem>> entry : interceptedStaticMethodsMap.entrySet()) {
 
             String packageName = DotNames.internalPackageNameWithTrailingSlash(entry.getKey());
-            String intializerName = packageName.replace("/", ".") + entry.getKey().withoutPackagePrefix()
+            String initializerName = packageName.replace("/", ".") + entry.getKey().withoutPackagePrefix()
                     + INITIALIZER_CLASS_SUFFIX;
-            initializers.put(entry.getKey(), intializerName);
+            initializers.put(entry.getKey(), initializerName);
 
             ClassCreator initializer = ClassCreator.builder().classOutput(classOutput)
-                    .className(intializerName).setFinal(true).build();
+                    .className(initializerName).setFinal(true).build();
 
             List<String> initMethods = new ArrayList<>();
             for (InterceptedStaticMethodBuildItem interceptedStaticMethod : entry.getValue()) {
@@ -212,7 +212,7 @@ public class InterceptedStaticMethodsProcessor {
 
         // Generate a global initializer that calls all other initializers
         ClassCreator globalInitializer = ClassCreator.builder().classOutput(classOutput)
-                .className(InterceptedStaticMethodsRecorder.INTIALIZER_CLASS_NAME.replace('.', '/')).setFinal(true).build();
+                .className(InterceptedStaticMethodsRecorder.INITIALIZER_CLASS_NAME.replace('.', '/')).setFinal(true).build();
 
         MethodCreator staticInit = globalInitializer.getMethodCreator("<clinit>", void.class)
                 .setModifiers(ACC_STATIC);
@@ -352,10 +352,10 @@ public class InterceptedStaticMethodsProcessor {
     private ResultHandle createInterceptorInvocation(InterceptorInfo interceptor, BytecodeCreator init,
             ResultHandle creationalContext) {
         ResultHandle interceptorBean = getInterceptorBean(interceptor, init);
-        ResultHandle interceptorInstane = createInterceptor(interceptorBean, init, creationalContext);
+        ResultHandle interceptorInstance = createInterceptor(interceptorBean, init, creationalContext);
         return init.invokeStaticMethod(
                 MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
-                interceptorBean, interceptorInstane);
+                interceptorBean, interceptorInstance);
     }
 
     private ResultHandle getInterceptorBean(InterceptorInfo interceptor, BytecodeCreator creator) {
@@ -401,7 +401,7 @@ public class InterceptedStaticMethodsProcessor {
             }
         }
         ResultHandle ret = funcBytecode.invokeStaticMethod(
-                MethodDescriptor.ofMethod(target.name().toString(), method.name() + ORGINAL_METHOD_COPY_SUFFIX,
+                MethodDescriptor.ofMethod(target.name().toString(), method.name() + ORIGINAL_METHOD_COPY_SUFFIX,
                         method.returnType().name().toString(),
                         params),
                 paramHandles);
@@ -447,7 +447,7 @@ public class InterceptedStaticMethodsProcessor {
             InterceptedStaticMethodBuildItem method = findMatchingMethod(access, name, descriptor);
             if (method != null) {
                 MethodVisitor copy = super.visitMethod(access,
-                        name + ORGINAL_METHOD_COPY_SUFFIX,
+                        name + ORIGINAL_METHOD_COPY_SUFFIX,
                         descriptor,
                         signature,
                         exceptions);

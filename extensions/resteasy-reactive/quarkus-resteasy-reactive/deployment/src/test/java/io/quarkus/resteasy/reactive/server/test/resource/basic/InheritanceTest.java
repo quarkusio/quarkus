@@ -16,8 +16,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.InheritenceParentResource;
-import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.InheritenceParentResourceImpl;
+import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.InheritanceParentResource;
+import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.InheritanceParentResourceImpl;
 import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -38,8 +38,8 @@ public class InheritanceTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClass(InheritenceParentResource.class);
-                    war.addClasses(PortProviderUtil.class, InheritenceParentResourceImpl.class);
+                    war.addClass(InheritanceParentResource.class);
+                    war.addClasses(PortProviderUtil.class, InheritanceParentResourceImpl.class);
                     return war;
                 }
             });

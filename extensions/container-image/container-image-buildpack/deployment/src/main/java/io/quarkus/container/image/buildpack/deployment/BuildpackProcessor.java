@@ -82,7 +82,7 @@ public class BuildpackProcessor {
             return;
         }
 
-        log.info("Starting (local) container image build for jar using builpack.");
+        log.info("Starting (local) container image build for jar using buildpack.");
         String targetImageName = runBuildpackBuild(buildpackConfig, containerImage, containerImageConfig, pushRequest,
                 outputTarget, false /* isNative */);
 

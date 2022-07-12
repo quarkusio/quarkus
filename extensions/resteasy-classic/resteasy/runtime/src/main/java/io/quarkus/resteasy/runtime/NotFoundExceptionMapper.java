@@ -65,7 +65,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
 
     private volatile static String httpRoot = "";
     private volatile static List<String> servletMappings = Collections.emptyList();
-    private volatile static Set<java.nio.file.Path> staticResouceRoots = Collections.emptySet();
+    private volatile static Set<java.nio.file.Path> staticResourceRoots = Collections.emptySet();
     private volatile static List<AdditionalRouteDescription> additionalEndpoints = Collections.emptyList();
     private volatile static Map<String, NonJaxRsClassMappings> nonJaxRsClassNameToMethodPaths = Collections.emptyMap();
     private volatile static List<RouteDescription> reactiveRoutes = Collections.emptyList();
@@ -295,7 +295,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
                 sb.resourcesEnd();
             }
 
-            if (!staticResouceRoots.isEmpty()) {
+            if (!staticResourceRoots.isEmpty()) {
                 List<String> resources = findRealResources();
                 if (!resources.isEmpty()) {
                     sb.resourcesStart("Static resources");
@@ -325,7 +325,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         //we need to check for web resources in order to get welcome files to work
         //this kinda sucks
         Set<String> knownFiles = new HashSet<>();
-        for (java.nio.file.Path resource : staticResouceRoots) {
+        for (java.nio.file.Path resource : staticResourceRoots) {
             if (resource != null && Files.exists(resource)) {
                 try (Stream<java.nio.file.Path> fileTreeElements = Files.walk(resource)) {
                     fileTreeElements.forEach(new Consumer<java.nio.file.Path>() {
@@ -395,9 +395,9 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
     }
 
     public static void staticResources(Set<String> knownRoots) {
-        NotFoundExceptionMapper.staticResouceRoots = new HashSet<>();
+        NotFoundExceptionMapper.staticResourceRoots = new HashSet<>();
         for (String i : knownRoots) {
-            staticResouceRoots.add(Paths.get(i));
+            staticResourceRoots.add(Paths.get(i));
         }
     }
 

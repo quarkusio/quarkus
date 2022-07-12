@@ -156,7 +156,7 @@ public class SpringWebResteasyClassicProcessor {
         if (!classesWithoutRestController.isEmpty()) {
             for (DotName dotName : classesWithoutRestController) {
                 LOGGER.warn("Class '" + dotName
-                        + "' uses a mapping annotation but the class itself was not annotated with '@RestContoller'. The mappings will therefore be ignored.");
+                        + "' uses a mapping annotation but the class itself was not annotated with '@RestController'. The mappings will therefore be ignored.");
             }
         }
     }

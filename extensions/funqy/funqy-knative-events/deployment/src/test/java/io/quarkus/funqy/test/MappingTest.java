@@ -139,7 +139,7 @@ public class MappingTest {
                 .then().statusCode(404);
     }
 
-    static final String tolowercaseEvent = "{ \"id\" : \"1234\", " +
+    static final String toLowercaseEvent = "{ \"id\" : \"1234\", " +
             "  \"specversion\": \"1.0\", " +
             "  \"source\": \"test\", " +
             "  \"type\": \"tolower\", " +
@@ -150,7 +150,7 @@ public class MappingTest {
     @Test
     public void testStructuredMapping() {
         RestAssured.given().contentType("application/cloudevents+json")
-                .body(tolowercaseEvent)
+                .body(toLowercaseEvent)
                 .post("/")
                 .then().statusCode(200)
                 .defaultParser(Parser.JSON)

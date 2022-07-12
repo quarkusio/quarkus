@@ -33,9 +33,9 @@ public class HibernateSearchDevConsoleRecorder {
                 if (form.isEmpty()) {
                     return;
                 }
-                Set<String> persitenceUnitNames = form.entries().stream().map(Map.Entry::getValue)
+                Set<String> persistenceUnitNames = form.entries().stream().map(Map.Entry::getValue)
                         .collect(Collectors.toSet());
-                Map<String, SearchMapping> mappings = HibernateSearchSupplier.searchMapping(persitenceUnitNames);
+                Map<String, SearchMapping> mappings = HibernateSearchSupplier.searchMapping(persistenceUnitNames);
                 if (mappings.isEmpty()) {
                     flashMessage(event, "There are no indexed entity types.", FlashScopeUtil.FlashMessageStatus.ERROR);
                     return;

@@ -149,10 +149,10 @@ public class DevReactiveMessagingInfos {
                 }
             }
             // consumer connectors last
-            long consumerConnetors = consumers.stream().filter(Component::isConnector).count();
+            long consumerConnectors = consumers.stream().filter(Component::isConnector).count();
             long otherConsumersConnectors = other.consumers.stream().filter(Component::isConnector).count();
-            if (consumerConnetors != otherConsumersConnectors) {
-                return Long.compare(otherConsumersConnectors, consumerConnetors);
+            if (consumerConnectors != otherConsumersConnectors) {
+                return Long.compare(otherConsumersConnectors, consumerConnectors);
             }
             if (publisher != other.publisher && publisher.type == ComponentType.CONNECTOR
                     && other.publisher.type != ComponentType.CONNECTOR) {

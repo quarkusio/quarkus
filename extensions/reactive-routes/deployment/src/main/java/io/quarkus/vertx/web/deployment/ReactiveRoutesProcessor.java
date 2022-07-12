@@ -703,16 +703,16 @@ class ReactiveRoutesProcessor {
         MethodCreator invoke = invokerCreator.getMethodCreator("invoke", void.class, RoutingContext.class);
         ResultHandle beanHandle = invoke.readInstanceField(beanField.getFieldDescriptor(), invoke.getThis());
         AssignableResultHandle beanInstanceHandle = invoke.createVariable(Object.class);
-        AssignableResultHandle creationlContextHandle = invoke.createVariable(CreationalContextImpl.class);
+        AssignableResultHandle creationalContextHandle = invoke.createVariable(CreationalContextImpl.class);
 
         if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
             // Always create a new dependent instance
-            invoke.assign(creationlContextHandle,
+            invoke.assign(creationalContextHandle,
                     invoke.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
                             beanHandle));
             invoke.assign(beanInstanceHandle, invoke.invokeInterfaceMethod(
                     Methods.INJECTABLE_REF_PROVIDER_GET, beanHandle,
-                    creationlContextHandle));
+                    creationalContextHandle));
         } else {
             ResultHandle contextInvokeHandle;
             if (contextField != null) {
@@ -905,7 +905,7 @@ class ReactiveRoutesProcessor {
         // Destroy dependent instance afterwards
         if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
             invoke.invokeInterfaceMethod(Methods.INJECTABLE_BEAN_DESTROY, beanHandle,
-                    beanInstanceHandle, creationlContextHandle);
+                    beanInstanceHandle, creationalContextHandle);
         }
         invoke.returnValue(null);
     }

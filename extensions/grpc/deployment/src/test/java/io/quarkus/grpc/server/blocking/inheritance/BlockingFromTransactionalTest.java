@@ -35,25 +35,25 @@ public class BlockingFromTransactionalTest {
     @Test
     @Timeout(5)
     void shouldBlockOnInheritedClassLevelTransactional() {
-        assertThat(client.notOverriden1(message()).await().indefinitely().getText()).isEqualTo(BLOCKING);
+        assertThat(client.notOverridden1(message()).await().indefinitely().getText()).isEqualTo(BLOCKING);
     }
 
     @Test
     @Timeout(5)
     void shouldNotBlockOnInheritedTransactionalMarkedNonBlocking() {
-        assertThat(client.notOverriden2(message()).await().indefinitely().getText()).isEqualTo(NON_BLOCKING);
+        assertThat(client.notOverridden2(message()).await().indefinitely().getText()).isEqualTo(NON_BLOCKING);
     }
 
     @Test
     @Timeout(5)
-    void shouldNotBlockOnOverridenTransactionalMarkedNonBlocking() {
-        assertThat(client.overriden1(message()).await().indefinitely().getText()).isEqualTo(NON_BLOCKING);
+    void shouldNotBlockOnOverriddenTransactionalMarkedNonBlocking() {
+        assertThat(client.overridden1(message()).await().indefinitely().getText()).isEqualTo(NON_BLOCKING);
     }
 
     @Test
     @Timeout(5)
-    void shouldBlockOnOverridenTransactional() {
-        assertThat(client.overriden2(message()).await().indefinitely().getText()).isEqualTo(BLOCKING);
+    void shouldBlockOnOverriddenTransactional() {
+        assertThat(client.overridden2(message()).await().indefinitely().getText()).isEqualTo(BLOCKING);
     }
 
     private InheritenceTest.Msg message() {
@@ -63,23 +63,23 @@ public class BlockingFromTransactionalTest {
     @Transactional
     public static class ServiceA implements BlockingTestService {
         @Override
-        public Uni<InheritenceTest.Msg> overriden1(InheritenceTest.Msg request) {
+        public Uni<InheritenceTest.Msg> overridden1(InheritenceTest.Msg request) {
             return isBlocking();
         }
 
         @Override
-        public Uni<InheritenceTest.Msg> overriden2(InheritenceTest.Msg request) {
+        public Uni<InheritenceTest.Msg> overridden2(InheritenceTest.Msg request) {
             return isBlocking();
         }
 
         @Override
-        public Uni<InheritenceTest.Msg> notOverriden1(InheritenceTest.Msg request) {
+        public Uni<InheritenceTest.Msg> notOverridden1(InheritenceTest.Msg request) {
             return isBlocking();
         }
 
         @Override
         @NonBlocking
-        public Uni<InheritenceTest.Msg> notOverriden2(InheritenceTest.Msg request) {
+        public Uni<InheritenceTest.Msg> notOverridden2(InheritenceTest.Msg request) {
             return isBlocking();
         }
 
@@ -94,12 +94,12 @@ public class BlockingFromTransactionalTest {
     public static class ServiceB extends ServiceA {
         @Override
         @NonBlocking
-        public Uni<InheritenceTest.Msg> overriden1(InheritenceTest.Msg request) {
+        public Uni<InheritenceTest.Msg> overridden1(InheritenceTest.Msg request) {
             return isBlocking();
         }
 
         @Override
-        public Uni<InheritenceTest.Msg> overriden2(InheritenceTest.Msg request) {
+        public Uni<InheritenceTest.Msg> overridden2(InheritenceTest.Msg request) {
             return isBlocking();
         }
     }

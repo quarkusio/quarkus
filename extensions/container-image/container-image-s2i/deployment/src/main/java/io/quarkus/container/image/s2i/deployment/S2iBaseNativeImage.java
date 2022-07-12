@@ -35,7 +35,7 @@ public enum S2iBaseNativeImage {
         return image;
     }
 
-    public String getFixedNativeNinaryName() {
+    public String getFixedNativeBinaryName() {
         return this.fixedNativeBinaryName;
     }
 

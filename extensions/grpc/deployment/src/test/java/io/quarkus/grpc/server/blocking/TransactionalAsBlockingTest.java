@@ -67,7 +67,7 @@ public class TransactionalAsBlockingTest {
     }
 
     @Test
-    void shouldNotOffloadNonBlockingMethodOnTransacactionalClass() {
+    void shouldNotOffloadNonBlockingMethodOnTransactionalClass() {
         Uni<ThreadName> reply = client2.returnThread2(EMPTY);
         ThreadName threadName = reply.await().atMost(Duration.ofSeconds(10));
         assertThat(threadName.getName()).contains("eventloop");

@@ -42,7 +42,7 @@ public enum OpenshiftBaseNativeImage {
         return nativeBinaryDirectory;
     }
 
-    public String getFixedNativeNinaryName() {
+    public String getFixedNativeBinaryName() {
         return this.fixedNativeBinaryName;
     }
 

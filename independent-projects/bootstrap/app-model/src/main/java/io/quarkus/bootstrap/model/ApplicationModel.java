@@ -51,13 +51,31 @@ public interface ApplicationModel {
     }
 
     default Collection<WorkspaceModule> getWorkspaceModules() {
-        final Map<WorkspaceModuleId, WorkspaceModule> modules = new HashMap<>();
+        final Map<WorkspaceModuleId, WorkspaceModule> result = new HashMap<>();
+        collectModules(getAppArtifact().getWorkspaceModule(), result);
         for (ResolvedDependency d : getDependencies()) {
-            final WorkspaceModule module = d.getWorkspaceModule();
-            if (module != null) {
-                modules.putIfAbsent(module.getId(), module);
-            }
+            collectModules(d.getWorkspaceModule(), result);
         }
-        return modules.values();
+        return result.values();
+    }
+
+    private static void collectModules(WorkspaceModule module, Map<WorkspaceModuleId, WorkspaceModule> collected) {
+        if (module == null) {
+            return;
+        }
+        collected.putIfAbsent(module.getId(), module);
+
+        WorkspaceModule parent = module.getParent();
+        if (parent != null) {
+            collectModules(parent, collected);
+        }
+
+        for (Dependency d : module.getDirectDependencyConstraints()) {
+            if (!Dependency.SCOPE_IMPORT.equals(d.getScope())
+                    || !(d instanceof ResolvedDependency)) {
+                continue;
+            }
+            collectModules(((ResolvedDependency) d).getWorkspaceModule(), collected);
+        }
     }
 }

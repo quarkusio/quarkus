@@ -1,5 +1,7 @@
 package io.quarkus.maven.utilities;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.Dependency;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -552,7 +554,7 @@ public class PomTransformer {
     public static class Gavtcs {
 
         public static Gavtcs importBom(String groupId, String artifactId, String version) {
-            return new Gavtcs(groupId, artifactId, version, "pom", null, "import");
+            return new Gavtcs(groupId, artifactId, version, ArtifactCoords.TYPE_POM, null, Dependency.SCOPE_IMPORT);
         }
 
         public static Gavtcs of(String rawGavtcs) {

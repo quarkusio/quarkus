@@ -2,6 +2,9 @@ package io.quarkus.maven.dependency;
 
 public interface Dependency extends ArtifactCoords {
 
+    String SCOPE_COMPILE = "compile";
+    String SCOPE_IMPORT = "import";
+
     public static Dependency of(String groupId, String artifactId) {
         return new ArtifactDependency(groupId, artifactId, null, ArtifactCoords.TYPE_JAR, null);
     }
@@ -11,7 +14,7 @@ public interface Dependency extends ArtifactCoords {
     }
 
     public static Dependency pomImport(String groupId, String artifactId, String version) {
-        return new ArtifactDependency(groupId, artifactId, null, ArtifactCoords.TYPE_POM, version, "import", false);
+        return new ArtifactDependency(groupId, artifactId, null, ArtifactCoords.TYPE_POM, version, SCOPE_IMPORT, false);
     }
 
     String getScope();

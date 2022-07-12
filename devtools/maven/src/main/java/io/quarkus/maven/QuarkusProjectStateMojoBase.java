@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.maven.cli.transfer.QuietMavenTransferListener;
@@ -49,20 +48,11 @@ public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase
             throw new MojoExecutionException("This goal requires a Quarkus extension registry client to be enabled");
         }
 
-        // to support profiles
-        final String emb = System.getProperty("quarkus.bootstrap.effective-model-builder");
-        System.setProperty("quarkus.bootstrap.effective-model-builder", "true");
-
         final Collection<Path> createdDirs = ensureResolvable(new DefaultArtifact(project.getGroupId(),
                 project.getArtifactId(), ArtifactCoords.TYPE_POM, project.getVersion()));
         try {
             processProjectState(quarkusProject);
         } finally {
-            if (emb == null) {
-                System.clearProperty("quarkus.bootstrap.effective-model-builder");
-            } else {
-                System.setProperty("quarkus.bootstrap.effective-model-builder", emb);
-            }
             for (Path p : createdDirs) {
                 IoUtils.recursiveDelete(p);
             }
@@ -84,7 +74,7 @@ public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase
     private Collection<Path> ensureResolvable(Artifact a) throws MojoExecutionException {
         final DependencyNode root;
         try {
-            root = artifactResolver().collectDependencies(a, Collections.emptyList()).getRoot();
+            root = artifactResolver().collectDependencies(a, List.of()).getRoot();
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to collect dependencies of " + a, e);
         }
@@ -155,6 +145,10 @@ public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase
                     .setRemoteRepositories(repos)
                     // To support multi-module projects that haven't been installed
                     .setPreferPomsFromWorkspace(true)
+                    // to support profiles
+                    .setEffectiveModelBuilder(true)
+                    // to initialize WorkspaceModule parents and BOM modules
+                    .setWorkspaceModuleParentHierarchy(true)
                     .build();
         } catch (BootstrapMavenException e) {
             throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);

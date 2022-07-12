@@ -55,7 +55,7 @@ public class MavenBuildFile extends BuildFile {
 
     @Override
     protected boolean importBom(ArtifactCoords coords) {
-        if (!"pom".equalsIgnoreCase(coords.getType())) {
+        if (!ArtifactCoords.TYPE_POM.equals(coords.getType())) {
             throw new IllegalArgumentException(coords + " is not a POM");
         }
         Model model = getModel();
@@ -63,7 +63,7 @@ public class MavenBuildFile extends BuildFile {
         d.setGroupId(coords.getGroupId());
         d.setArtifactId(coords.getArtifactId());
         d.setType(coords.getType());
-        d.setScope("import");
+        d.setScope(io.quarkus.maven.dependency.Dependency.SCOPE_IMPORT);
         DependencyManagement dependencyManagement = model.getDependencyManagement();
         if (dependencyManagement == null) {
             dependencyManagement = new DependencyManagement();
@@ -93,8 +93,8 @@ public class MavenBuildFile extends BuildFile {
             d.setClassifier(coords.getClassifier());
         }
         d.setType(coords.getType());
-        if ("pom".equalsIgnoreCase(coords.getType())) {
-            d.setScope("import");
+        if (ArtifactCoords.TYPE_POM.equals(coords.getType())) {
+            d.setScope(io.quarkus.maven.dependency.Dependency.SCOPE_IMPORT);
             DependencyManagement dependencyManagement = model.getDependencyManagement();
             if (dependencyManagement == null) {
                 dependencyManagement = new DependencyManagement();

@@ -8,7 +8,6 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedArtifactDependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
@@ -100,7 +99,7 @@ public class JBangDevModeLauncherImpl implements Closeable {
                     .setMode(QuarkusBootstrap.Mode.DEV)
                     .setTargetDirectory(targetClasses)
                     .setAppArtifact(appArtifact)
-                    .setManagingProject(new GACTV("io.quarkus", "quarkus-bom", "", "pom", getQuarkusVersion()))
+                    .setManagingProject(ArtifactCoords.pom("io.quarkus", "quarkus-bom", getQuarkusVersion()))
                     .setForcedDependencies(deps.entrySet().stream().map(s -> {
                         String[] parts = s.getKey().split(":");
                         Dependency artifact;

@@ -13,6 +13,7 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GAV;
 import io.quarkus.maven.dependency.ResolvedArtifactDependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.DirectoryPathTree;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathFilter;
@@ -23,9 +24,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.maven.model.Build;
@@ -138,7 +139,8 @@ public class LocalProject {
     private final LocalWorkspace workspace;
     final List<LocalProject> modules = new ArrayList<>(0);
     private final ModelBuildingResult modelBuildingResult;
-    private WorkspaceModule module;
+    private volatile LocalProject parent;
+    private volatile WorkspaceModule module;
 
     LocalProject(ModelBuildingResult modelBuildingResult, LocalWorkspace workspace) {
         this.rawModel = modelBuildingResult.getRawModel();
@@ -175,6 +177,9 @@ public class LocalProject {
     }
 
     public LocalProject getLocalParent() {
+        if (parent != null) {
+            return parent;
+        }
         if (workspace == null) {
             return null;
         }
@@ -182,7 +187,7 @@ public class LocalProject {
         if (parent == null) {
             return null;
         }
-        return workspace.getProject(parent.getGroupId(), parent.getArtifactId());
+        return this.parent = workspace.getProject(parent.getGroupId(), parent.getArtifactId());
     }
 
     public String getGroupId() {
@@ -247,7 +252,7 @@ public class LocalProject {
     }
 
     public PathCollection getResourcesSourcesDirs() {
-        final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
+        final List<Resource> resources = rawModel.getBuild() == null ? List.of()
                 : rawModel.getBuild().getResources();
         if (resources.isEmpty()) {
             return PathList.of(resolveRelativeToBaseDir(null, "src/main/resources"));
@@ -259,7 +264,7 @@ public class LocalProject {
     }
 
     public PathCollection getTestResourcesSourcesDirs() {
-        final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
+        final List<Resource> resources = rawModel.getBuild() == null ? List.of()
                 : rawModel.getBuild().getTestResources();
         if (resources.isEmpty()) {
             return PathList.of(resolveRelativeToBaseDir(null, "src/test/resources"));
@@ -330,107 +335,139 @@ public class LocalProject {
     }
 
     public WorkspaceModule toWorkspaceModule() {
+        return toWorkspaceModule(null);
+    }
+
+    public WorkspaceModule toWorkspaceModule(BootstrapMavenContext ctx) {
         if (module != null) {
             return module;
         }
+
         final WorkspaceModule.Mutable moduleBuilder = WorkspaceModule.builder()
                 .setModuleId(new GAV(key.getGroupId(), key.getArtifactId(), getVersion()))
                 .setModuleDir(dir)
+                .setBuildFile(getRawModel().getPomFile().toPath())
                 .setBuildDir(getOutputDir());
 
-        final Build build = (modelBuildingResult == null ? getRawModel() : modelBuildingResult.getEffectiveModel()).getBuild();
-        boolean addDefaultSourceSet = true;
-        if (build != null && !build.getPlugins().isEmpty()) {
-            for (Plugin plugin : build.getPlugins()) {
-                if (plugin.getArtifactId().equals("maven-jar-plugin")) {
-                    if (plugin.getExecutions().isEmpty()) {
-                        final DefaultArtifactSources src = processJarPluginExecutionConfig(plugin.getConfiguration(), false);
-                        if (src != null) {
-                            addDefaultSourceSet = false;
-                            moduleBuilder.addArtifactSources(src);
-                        }
-                    } else {
-                        for (PluginExecution e : plugin.getExecutions()) {
-                            DefaultArtifactSources src = null;
-                            if (e.getGoals().contains(ArtifactCoords.TYPE_JAR)) {
-                                src = processJarPluginExecutionConfig(e.getConfiguration(), false);
-                                addDefaultSourceSet &= !e.getId().equals("default-jar");
-                            } else if (e.getGoals().contains("test-jar")) {
-                                src = processJarPluginExecutionConfig(e.getConfiguration(), true);
-                            }
+        final Model model = modelBuildingResult == null ? getRawModel() : modelBuildingResult.getEffectiveModel();
+        if (!ArtifactCoords.TYPE_POM.equals(model.getPackaging())) {
+            final Build build = model.getBuild();
+            boolean addDefaultSourceSet = true;
+            if (build != null && !build.getPlugins().isEmpty()) {
+                for (Plugin plugin : build.getPlugins()) {
+                    if (plugin.getArtifactId().equals("maven-jar-plugin")) {
+                        if (plugin.getExecutions().isEmpty()) {
+                            final DefaultArtifactSources src = processJarPluginExecutionConfig(plugin.getConfiguration(),
+                                    false);
                             if (src != null) {
+                                addDefaultSourceSet = false;
                                 moduleBuilder.addArtifactSources(src);
                             }
-                        }
-                    }
-                } else if (plugin.getArtifactId().equals("maven-surefire-plugin") && plugin.getConfiguration() != null) {
-                    Object config = plugin.getConfiguration();
-                    if (config == null || !(config instanceof Xpp3Dom)) {
-                        continue;
-                    }
-                    Xpp3Dom dom = (Xpp3Dom) config;
-                    final Xpp3Dom depExcludes = dom.getChild("classpathDependencyExcludes");
-                    if (depExcludes != null) {
-                        final Xpp3Dom[] excludes = depExcludes.getChildren("classpathDependencyExclude");
-                        if (excludes != null) {
-                            final List<String> list = new ArrayList<>(excludes.length);
-                            for (Xpp3Dom exclude : excludes) {
-                                list.add(exclude.getValue());
-                            }
-                            moduleBuilder.setTestClasspathDependencyExclusions(list);
-                        }
-                    }
-                    final Xpp3Dom additionalElements = dom.getChild("additionalClasspathElements");
-                    if (additionalElements != null) {
-                        final Xpp3Dom[] elements = additionalElements.getChildren("additionalClasspathElement");
-                        if (elements != null) {
-                            final List<String> list = new ArrayList<>(elements.length);
-                            for (Xpp3Dom element : elements) {
-                                for (String s : element.getValue().split(",")) {
-                                    list.add(stripProjectBasedirPrefix(s, PROJECT_BASEDIR));
+                        } else {
+                            for (PluginExecution e : plugin.getExecutions()) {
+                                DefaultArtifactSources src = null;
+                                if (e.getGoals().contains(ArtifactCoords.TYPE_JAR)) {
+                                    src = processJarPluginExecutionConfig(e.getConfiguration(), false);
+                                    addDefaultSourceSet &= !e.getId().equals("default-jar");
+                                } else if (e.getGoals().contains("test-jar")) {
+                                    src = processJarPluginExecutionConfig(e.getConfiguration(), true);
+                                }
+                                if (src != null) {
+                                    moduleBuilder.addArtifactSources(src);
                                 }
                             }
-                            moduleBuilder.setAdditionalTestClasspathElements(list);
+                        }
+                    } else if (plugin.getArtifactId().equals("maven-surefire-plugin") && plugin.getConfiguration() != null) {
+                        Object config = plugin.getConfiguration();
+                        if (config == null || !(config instanceof Xpp3Dom)) {
+                            continue;
+                        }
+                        Xpp3Dom dom = (Xpp3Dom) config;
+                        final Xpp3Dom depExcludes = dom.getChild("classpathDependencyExcludes");
+                        if (depExcludes != null) {
+                            final Xpp3Dom[] excludes = depExcludes.getChildren("classpathDependencyExclude");
+                            if (excludes != null) {
+                                final List<String> list = new ArrayList<>(excludes.length);
+                                for (Xpp3Dom exclude : excludes) {
+                                    list.add(exclude.getValue());
+                                }
+                                moduleBuilder.setTestClasspathDependencyExclusions(list);
+                            }
+                        }
+                        final Xpp3Dom additionalElements = dom.getChild("additionalClasspathElements");
+                        if (additionalElements != null) {
+                            final Xpp3Dom[] elements = additionalElements.getChildren("additionalClasspathElement");
+                            if (elements != null) {
+                                final List<String> list = new ArrayList<>(elements.length);
+                                for (Xpp3Dom element : elements) {
+                                    for (String s : element.getValue().split(",")) {
+                                        list.add(stripProjectBasedirPrefix(s, PROJECT_BASEDIR));
+                                    }
+                                }
+                                moduleBuilder.setAdditionalTestClasspathElements(list);
+                            }
                         }
                     }
                 }
             }
+
+            if (addDefaultSourceSet) {
+                moduleBuilder.addArtifactSources(new DefaultArtifactSources(ArtifactSources.MAIN,
+                        List.of(new DefaultSourceDir(getSourcesSourcesDir(), getClassesDir())),
+                        collectMainResources(null)));
+            }
+            if (!moduleBuilder.hasTestSources()) {
+                moduleBuilder.addArtifactSources(new DefaultArtifactSources(ArtifactSources.TEST,
+                        List.of(new DefaultSourceDir(getTestSourcesSourcesDir(), getTestClassesDir())),
+                        collectTestResources(null)));
+            }
         }
 
-        if (addDefaultSourceSet) {
-            moduleBuilder.addArtifactSources(new DefaultArtifactSources(ArtifactSources.MAIN,
-                    Collections.singletonList(new DefaultSourceDir(getSourcesSourcesDir(), getClassesDir())),
-                    collectMainResources(null)));
+        if (ctx != null && ctx.isWorkspaceModuleParentHierarchy()) {
+            final LocalProject parent = getLocalParent();
+            if (parent != null) {
+                moduleBuilder.setParent(parent.toWorkspaceModule(ctx));
+            }
+            moduleBuilder.setDependencyConstraints(getRawModel().getDependencyManagement() == null ? List.of()
+                    : toArtifactDependencies(getRawModel().getDependencyManagement().getDependencies(), ctx));
         }
-        if (!moduleBuilder.hasTestSources()) {
-            moduleBuilder.addArtifactSources(new DefaultArtifactSources(ArtifactSources.TEST,
-                    Collections.singletonList(
-                            new DefaultSourceDir(getTestSourcesSourcesDir(), getTestClassesDir())),
-                    collectTestResources(null)));
-        }
-        moduleBuilder.setBuildFile(getRawModel().getPomFile().toPath());
 
-        moduleBuilder.setDependencyConstraints(getRawModel().getDependencyManagement() == null ? Collections.emptyList()
-                : toArtifactDependencies(getRawModel().getDependencyManagement().getDependencies()));
-
-        final Model model = modelBuildingResult == null ? rawModel : modelBuildingResult.getEffectiveModel();
-        moduleBuilder.setDependencies(toArtifactDependencies(model.getDependencies()));
+        moduleBuilder.setDependencies(toArtifactDependencies(model.getDependencies(), ctx));
 
         return this.module = moduleBuilder.build();
     }
 
-    private List<io.quarkus.maven.dependency.Dependency> toArtifactDependencies(final List<Dependency> rawModelDeps) {
+    private List<io.quarkus.maven.dependency.Dependency> toArtifactDependencies(List<Dependency> rawModelDeps,
+            BootstrapMavenContext ctx) {
         if (rawModelDeps.isEmpty()) {
-            return Collections.emptyList();
+            return List.of();
         }
-        final List<io.quarkus.maven.dependency.Dependency> directDeps = new ArrayList<>(rawModelDeps.size());
+        final List<io.quarkus.maven.dependency.Dependency> result = new ArrayList<>(rawModelDeps.size());
         for (Dependency d : rawModelDeps) {
-            directDeps.add(new ArtifactDependency(resolveElementValue(d.getGroupId()),
-                    resolveElementValue(d.getArtifactId()), resolveElementValue(d.getClassifier()),
-                    resolveElementValue(d.getType()),
-                    resolveElementValue(d.getVersion()), d.getScope(), d.isOptional()));
+            final String groupId = resolveElementValue(d.getGroupId());
+            final String artifactId = resolveElementValue(d.getArtifactId());
+            final LocalProject bomProject;
+            if (workspace != null
+                    && ctx != null && ctx.isWorkspaceModuleParentHierarchy()
+                    && io.quarkus.maven.dependency.Dependency.SCOPE_IMPORT.equals(d.getScope())
+                    && ArtifactCoords.TYPE_POM.equals(d.getType())
+                    && (bomProject = workspace.getProject(groupId, artifactId)) != null
+                    && bomProject.getVersion().equals(d.getVersion())) {
+                result.add(ResolvedDependencyBuilder.newInstance()
+                        .setGroupId(groupId)
+                        .setArtifactId(artifactId)
+                        .setType(ArtifactCoords.TYPE_POM)
+                        .setScope(io.quarkus.maven.dependency.Dependency.SCOPE_IMPORT)
+                        .setVersion(resolveElementValue(d.getVersion()))
+                        .setWorkspaceModule(bomProject.toWorkspaceModule(ctx))
+                        .setResolvedPath(bomProject.getRawModel().getPomFile().toPath())
+                        .build());
+            } else {
+                result.add(new ArtifactDependency(groupId, artifactId, resolveElementValue(d.getClassifier()),
+                        resolveElementValue(d.getType()), resolveElementValue(d.getVersion()), d.getScope(), d.isOptional()));
+            }
         }
-        return directDeps;
+        return result;
     }
 
     private String resolveElementValue(String elementValue) {
@@ -451,10 +488,10 @@ public class LocalProject {
         final List<String> excludes = collectChildValues(dom.getChild("excludes"));
         final PathFilter filter = includes == null && excludes == null ? null : new PathFilter(includes, excludes);
         final String classifier = getClassifier(dom, test);
-        final Collection<SourceDir> sources = Collections.singletonList(
+        final Collection<SourceDir> sources = List.of(
                 new DefaultSourceDir(new DirectoryPathTree(test ? getTestSourcesSourcesDir() : getSourcesSourcesDir()),
                         new DirectoryPathTree(test ? getTestClassesDir() : getClassesDir(), filter),
-                        Collections.emptyMap()));
+                        Map.of()));
         final Collection<SourceDir> resources = test ? collectTestResources(filter) : collectMainResources(filter);
         return new DefaultArtifactSources(classifier, sources, resources);
     }
@@ -477,13 +514,13 @@ public class LocalProject {
     }
 
     private Collection<SourceDir> collectMainResources(PathFilter filter) {
-        final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
+        final List<Resource> resources = rawModel.getBuild() == null ? List.of()
                 : rawModel.getBuild().getResources();
         final Path classesDir = getClassesDir();
         if (resources.isEmpty()) {
-            return Collections.singletonList(new DefaultSourceDir(
+            return List.of(new DefaultSourceDir(
                     new DirectoryPathTree(resolveRelativeToBaseDir(null, "src/main/resources")),
-                    new DirectoryPathTree(classesDir, filter), Collections.emptyMap()));
+                    new DirectoryPathTree(classesDir, filter), Map.of()));
         }
         final List<SourceDir> sourceDirs = new ArrayList<>(resources.size());
         for (Resource r : resources) {
@@ -493,19 +530,19 @@ public class LocalProject {
                             new DirectoryPathTree((r.getTargetPath() == null ? classesDir
                                     : classesDir.resolve(stripProjectBasedirPrefix(r.getTargetPath(), PROJECT_OUTPUT_DIR))),
                                     filter),
-                            Collections.emptyMap()));
+                            Map.of()));
         }
         return sourceDirs;
     }
 
     private Collection<SourceDir> collectTestResources(PathFilter filter) {
-        final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
+        final List<Resource> resources = rawModel.getBuild() == null ? List.of()
                 : rawModel.getBuild().getTestResources();
         final Path testClassesDir = getTestClassesDir();
         if (resources.isEmpty()) {
-            return Collections.singletonList(new DefaultSourceDir(
+            return List.of(new DefaultSourceDir(
                     new DirectoryPathTree(resolveRelativeToBaseDir(null, "src/test/resources")),
-                    new DirectoryPathTree(testClassesDir, filter), Collections.emptyMap()));
+                    new DirectoryPathTree(testClassesDir, filter), Map.of()));
         }
         final List<SourceDir> sourceDirs = new ArrayList<>(resources.size());
         for (Resource r : resources) {
@@ -515,7 +552,7 @@ public class LocalProject {
                             new DirectoryPathTree((r.getTargetPath() == null ? testClassesDir
                                     : testClassesDir.resolve(stripProjectBasedirPrefix(r.getTargetPath(), PROJECT_OUTPUT_DIR))),
                                     filter),
-                            Collections.emptyMap()));
+                            Map.of()));
         }
         return sourceDirs;
     }

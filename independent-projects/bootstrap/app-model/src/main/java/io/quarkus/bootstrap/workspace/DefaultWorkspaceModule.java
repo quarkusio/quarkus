@@ -109,6 +109,12 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
         }
 
         @Override
+        public Builder setParent(WorkspaceModule parent) {
+            DefaultWorkspaceModule.this.parent = parent;
+            return this;
+        }
+
+        @Override
         public WorkspaceModule build() {
             final DefaultWorkspaceModule module = DefaultWorkspaceModule.this;
             if (module.id == null) {
@@ -176,6 +182,11 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
         public Collection<String> getAdditionalTestClasspathElements() {
             return DefaultWorkspaceModule.this.additionalTestClasspathElements;
         }
+
+        @Override
+        public WorkspaceModule getParent() {
+            return parent;
+        }
     }
 
     private WorkspaceModuleId id;
@@ -187,6 +198,7 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
     private List<Dependency> directDeps;
     private Collection<String> testClasspathDependencyExclusions = List.of();
     private Collection<String> additionalTestClasspathElements = List.of();
+    private WorkspaceModule parent;
 
     private DefaultWorkspaceModule() {
     }
@@ -268,6 +280,11 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
     @Override
     public Collection<String> getAdditionalTestClasspathElements() {
         return additionalTestClasspathElements;
+    }
+
+    @Override
+    public WorkspaceModule getParent() {
+        return parent;
     }
 
     @Override

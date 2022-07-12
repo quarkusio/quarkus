@@ -30,6 +30,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     protected Path rootProjectDir;
     protected boolean preferPomsFromWorkspace;
     protected Boolean effectiveModelBuilder;
+    protected Boolean wsModuleParentHierarchy;
 
     /**
      * Local repository location
@@ -242,6 +243,22 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     @SuppressWarnings("unchecked")
     public T setEffectiveModelBuilder(boolean effectiveModelBuilder) {
         this.effectiveModelBuilder = effectiveModelBuilder;
+        return (T) this;
+    }
+
+    /**
+     * Whether to enable initialization of the parent hierarchy for discovered
+     * {@link io.quarkus.bootstrap.workspace.WorkspaceModule}s.
+     * Enabling complete POM hierarchy is useful for project info and update use-cases but not really for runtime be it test or
+     * dev modes.
+     * <p>
+     *
+     * @param wsModuleParentHierarchy whether to initialize parents for {@link io.quarkus.bootstrap.workspace.WorkspaceModule}
+     * @return this instance
+     */
+    @SuppressWarnings("unchecked")
+    public T setWorkspaceModuleParentHierarchy(boolean wsModuleParentHierarchy) {
+        this.wsModuleParentHierarchy = wsModuleParentHierarchy;
         return (T) this;
     }
 

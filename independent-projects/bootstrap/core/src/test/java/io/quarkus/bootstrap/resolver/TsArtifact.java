@@ -48,6 +48,14 @@ public class TsArtifact {
         return new TsArtifact(DEFAULT_GROUP_ID, artifactId, EMPTY, TYPE_JAR, version);
     }
 
+    public static TsArtifact pom(String artifactId) {
+        return new TsArtifact(DEFAULT_GROUP_ID, artifactId, EMPTY, TYPE_POM, DEFAULT_VERSION);
+    }
+
+    public static TsArtifact pom(String artifactId, String version) {
+        return new TsArtifact(DEFAULT_GROUP_ID, artifactId, EMPTY, TYPE_POM, version);
+    }
+
     public static TsArtifact pom(String groupId, String artifactId, String version) {
         return new TsArtifact(groupId, artifactId, EMPTY, TYPE_POM, version);
     }

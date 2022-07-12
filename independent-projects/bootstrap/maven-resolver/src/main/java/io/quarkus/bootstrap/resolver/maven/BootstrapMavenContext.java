@@ -6,7 +6,6 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.GACTV;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -119,6 +118,7 @@ public class BootstrapMavenContext {
     private Path rootProjectDir;
     private boolean preferPomsFromWorkspace;
     private Boolean effectiveModelBuilder;
+    private Boolean wsModuleParentHierarchy;
 
     public static BootstrapMavenContextConfig<?> config() {
         return new BootstrapMavenContextConfig<>();
@@ -160,6 +160,7 @@ public class BootstrapMavenContext {
         }
         this.preferPomsFromWorkspace = config.preferPomsFromWorkspace;
         this.effectiveModelBuilder = config.effectiveModelBuilder;
+        this.wsModuleParentHierarchy = config.wsModuleParentHierarchy;
         this.userSettings = config.userSettings;
         if (config.currentProject != null) {
             this.currentProject = config.currentProject;
@@ -187,8 +188,8 @@ public class BootstrapMavenContext {
         if (model == null) {
             return null;
         }
-        return new GACTV(ModelUtils.getGroupId(model), model.getArtifactId(), "", extension,
-                ModelUtils.getVersion(model));
+        return ArtifactCoords.of(ModelUtils.getGroupId(model), model.getArtifactId(), ArtifactCoords.DEFAULT_CLASSIFIER,
+                extension, ModelUtils.getVersion(model));
     }
 
     public LocalProject getCurrentProject() {
@@ -566,11 +567,11 @@ public class BootstrapMavenContext {
             if (model == null) {
                 return repos;
             }
-            projectArtifact = new DefaultArtifact(ModelUtils.getGroupId(model), model.getArtifactId(), null, "pom",
-                    ModelUtils.getVersion(model));
+            projectArtifact = new DefaultArtifact(ModelUtils.getGroupId(model), model.getArtifactId(),
+                    ArtifactCoords.DEFAULT_CLASSIFIER, ArtifactCoords.TYPE_POM, ModelUtils.getVersion(model));
         } else {
-            projectArtifact = new DefaultArtifact(currentProject.getGroupId(), currentProject.getArtifactId(), null, "pom",
-                    currentProject.getVersion());
+            projectArtifact = new DefaultArtifact(currentProject.getGroupId(), currentProject.getArtifactId(),
+                    ArtifactCoords.DEFAULT_CLASSIFIER, ArtifactCoords.TYPE_POM, currentProject.getVersion());
         }
 
         final List<RemoteRepository> rawRepos;
@@ -791,14 +792,14 @@ public class BootstrapMavenContext {
             // check whether an alternate pom was provided as a CLI arg
             final String cliPomName = getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_POM_FILE);
             if (cliPomName != null) {
-                alternatePom = Paths.get(cliPomName);
+                alternatePom = Path.of(cliPomName);
             }
         }
 
         final String basedirProp = PropertyUtils.getProperty(BASEDIR);
         if (basedirProp != null) {
             // this is the actual current project dir
-            return getPomForDirOrNull(Paths.get(basedirProp), alternatePom);
+            return getPomForDirOrNull(Path.of(basedirProp), alternatePom);
         }
 
         // we are not in the context of a Maven build
@@ -807,7 +808,7 @@ public class BootstrapMavenContext {
         }
 
         // trying the current dir as the basedir
-        final Path basedir = Paths.get("").normalize().toAbsolutePath();
+        final Path basedir = Path.of("").normalize().toAbsolutePath();
         if (alternatePom != null) {
             return pomXmlOrNull(basedir.resolve(alternatePom));
         }
@@ -851,7 +852,7 @@ public class BootstrapMavenContext {
             return currentProject.getDir();
         }
         final String basedirProp = PropertyUtils.getProperty(BASEDIR);
-        return basedirProp == null ? Paths.get("").normalize().toAbsolutePath() : Paths.get(basedirProp);
+        return basedirProp == null ? Path.of("").normalize().toAbsolutePath() : Paths.get(basedirProp);
     }
 
     public Path getRootProjectBaseDir() {
@@ -872,6 +873,10 @@ public class BootstrapMavenContext {
             effectiveModelBuilder = s == null ? false : Boolean.parseBoolean(s);
         }
         return effectiveModelBuilder;
+    }
+
+    public boolean isWorkspaceModuleParentHierarchy() {
+        return wsModuleParentHierarchy == null ? false : wsModuleParentHierarchy;
     }
 
     static final String BOOTSTRAP_MAVEN_REPOS = "BOOTSTRAP_MAVEN_REPOS";

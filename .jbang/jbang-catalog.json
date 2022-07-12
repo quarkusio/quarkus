@@ -1,0 +1,10 @@
+{
+  "catalogs": {},
+  "aliases": {
+    "revapi-update": {
+      "script-ref": "RevapiUpdate.java",
+      "properties": {}
+    }
+  },
+  "templates": {}
+}

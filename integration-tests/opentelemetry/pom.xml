@@ -35,6 +35,12 @@
             <artifactId>quarkus-rest-client</artifactId>
         </dependency>
 
+        <!-- Vertx WebClient -->
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
+        </dependency>
+
         <!-- Needed for InMemorySpanExporter to verify captured traces -->
         <dependency>
             <groupId>io.opentelemetry</groupId>

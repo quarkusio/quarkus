@@ -753,6 +753,27 @@ public class OpenTelemetryTestCase {
         Assertions.assertNotNull(spanData.get("attr_http.user_agent"));
     }
 
+    @Test
+    void testCustomSpanNames() {
+        resetExporter();
+
+        given()
+                .contentType("application/json")
+                .when().get("/client/async-ping-named/one")
+                .then()
+                .statusCode(200)
+                .body(containsString("one"));
+
+        Awaitility.await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() > 2);
+        Map<String, Object> spanData = getSpans().get(1);
+        Assertions.assertNotNull(spanData);
+        Assertions.assertNotNull(spanData.get("spanId"));
+
+        verifyResource(spanData);
+
+        Assertions.assertEquals("Async Ping", spanData.get("name"));
+    }
+
     /**
      * From bug #26149
      * NPE was thrown when HTTP version was not supported with OpenTelemetry

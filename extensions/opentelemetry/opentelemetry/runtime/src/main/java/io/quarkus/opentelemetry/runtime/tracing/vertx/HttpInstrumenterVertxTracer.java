@@ -1,6 +1,5 @@
 package io.quarkus.opentelemetry.runtime.tracing.vertx;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteSource.FILTER;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_CLIENT_IP;
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryConfig.INSTRUMENTATION_NAME;
@@ -17,6 +16,7 @@ import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
+import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteBiGetter;
@@ -31,6 +31,7 @@ import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpVersion;
+import io.vertx.core.http.impl.HttpRequestHead;
 import io.vertx.core.http.impl.headers.HeadersAdaptor;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.net.SocketAddress;
@@ -125,7 +126,7 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
         InstrumenterBuilder<HttpRequest, HttpResponse> clientBuilder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
-                HttpSpanNameExtractor.create(clientAttributesExtractor));
+                new ClientSpanNameExtractor(clientAttributesExtractor));
 
         return clientBuilder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(serverAttributesExtractor))
@@ -357,6 +358,33 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
         }
     }
 
+    private static class ClientSpanNameExtractor implements SpanNameExtractor<HttpRequest> {
+
+        private final SpanNameExtractor<HttpRequest> http;
+
+        ClientSpanNameExtractor(ClientAttributesExtractor clientAttributesExtractor) {
+            this.http = HttpSpanNameExtractor.create(clientAttributesExtractor);
+        }
+
+        @Override
+        public String extract(HttpRequest httpRequest) {
+            if (httpRequest instanceof HttpRequestHead) {
+                HttpRequestHead head = (HttpRequestHead) httpRequest;
+                if (head.traceOperation != null) {
+                    return head.traceOperation;
+                }
+            }
+            if (httpRequest instanceof WriteHeadersHttpRequest) {
+                WriteHeadersHttpRequest writeHeaders = (WriteHeadersHttpRequest) httpRequest;
+                String traceOperation = writeHeaders.traceOperation();
+                if (traceOperation != null) {
+                    return traceOperation;
+                }
+            }
+            return http.extract(httpRequest);
+        }
+    }
+
     private static class HttpRequestTextMapSetter implements TextMapSetter<HttpRequest> {
         @Override
         public void set(final HttpRequest carrier, final String key, final String value) {
@@ -479,6 +507,13 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
         @Override
         public SocketAddress remoteAddress() {
             return httpRequest.remoteAddress();
+        }
+
+        public String traceOperation() {
+            if (httpRequest instanceof HttpRequestHead) {
+                return ((HttpRequestHead) httpRequest).traceOperation;
+            }
+            return null;
         }
 
         static WriteHeadersHttpRequest request(HttpRequest httpRequest, BiConsumer<String, String> headers) {

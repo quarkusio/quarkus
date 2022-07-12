@@ -122,6 +122,8 @@ public class RabbitMQDevServicesBuildTimeConfig {
 
     /**
      * The image to use.
+     * Note that only official RabbitMQ images are supported.
+     * Specifically, the image repository must end with {@code rabbitmq}.
      */
     @ConfigItem(defaultValue = "rabbitmq:3.9-management")
     public String imageName;

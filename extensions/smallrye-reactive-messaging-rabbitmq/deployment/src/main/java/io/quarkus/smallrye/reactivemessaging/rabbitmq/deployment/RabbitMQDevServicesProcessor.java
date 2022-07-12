@@ -374,7 +374,7 @@ public class RabbitMQDevServicesProcessor {
             if (serviceName != null) { // Only adds the label in dev mode.
                 withLabel(DEV_SERVICE_LABEL, serviceName);
             }
-            if (!dockerImageName.getRepository().equals("rabbitmq")) {
+            if (!dockerImageName.getRepository().endsWith("rabbitmq")) {
                 throw new IllegalArgumentException("Only official rabbitmq images are supported");
             }
         }

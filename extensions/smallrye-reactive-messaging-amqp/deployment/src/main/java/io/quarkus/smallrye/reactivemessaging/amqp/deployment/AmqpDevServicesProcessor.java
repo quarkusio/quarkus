@@ -282,7 +282,7 @@ public class AmqpDevServicesProcessor {
             if (serviceName != null) { // Only adds the label in dev mode.
                 withLabel(DEV_SERVICE_LABEL, serviceName);
             }
-            if (dockerImageName.getRepository().equals("artemiscloud/activemq-artemis-broker")) {
+            if (dockerImageName.getRepository().endsWith("artemiscloud/activemq-artemis-broker")) {
                 waitingFor(Wait.forLogMessage(".*AMQ241004.*", 1)); // Artemis console available.
             } else {
                 throw new IllegalArgumentException("Only artemiscloud/activemq-artemis-broker images are supported");

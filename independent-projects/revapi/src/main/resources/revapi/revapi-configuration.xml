@@ -3,7 +3,7 @@
 <analysisConfiguration>
   <revapi.java>
     <missing-classes>
-      <behavior>error</behavior>
+      <behavior>report</behavior>
       <ignoreMissingAnnotations>true</ignoreMissingAnnotations>
     </missing-classes>
     <filter>

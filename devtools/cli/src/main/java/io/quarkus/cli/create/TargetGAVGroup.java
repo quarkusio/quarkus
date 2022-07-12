@@ -1,6 +1,6 @@
 package io.quarkus.cli.create;
 
-import io.quarkus.devtools.project.codegen.CreateProjectHelper;
+import io.quarkus.devtools.commands.CreateProjectHelper;
 import picocli.CommandLine;
 
 public class TargetGAVGroup {

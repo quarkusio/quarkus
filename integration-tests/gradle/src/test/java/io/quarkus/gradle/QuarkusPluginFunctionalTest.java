@@ -1,12 +1,15 @@
 package io.quarkus.gradle;
 
+import static io.quarkus.devtools.commands.SourceType.JAVA;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,9 +20,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 import com.google.common.collect.ImmutableMap;
 
 import io.quarkus.devtools.commands.CreateProject;
+import io.quarkus.devtools.commands.SourceType;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
@@ -34,7 +37,8 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
     @ParameterizedTest(name = "Build {0} project")
     @EnumSource(SourceType.class)
     public void canBuild(SourceType sourceType) throws Exception {
-        createProject(sourceType);
+        Set<String> extensions = JAVA.equals(sourceType) ? Collections.emptySet() : Set.of(sourceType.toString().toLowerCase());
+        createProject(extensions);
 
         BuildResult build = runGradleWrapper(projectRoot, "build", "--stacktrace");
 
@@ -48,7 +52,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
     @Test
     public void canDetectUpToDateBuild() throws Exception {
-        createProject(SourceType.JAVA);
+        createProject();
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
         assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
@@ -59,7 +63,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
     @Test
     public void canDetectResourceChangeWhenBuilding() throws Exception {
-        createProject(SourceType.JAVA);
+        createProject();
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
         assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
@@ -73,7 +77,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
     @Test
     public void canDetectClassChangeWhenBuilding() throws Exception {
-        createProject(SourceType.JAVA);
+        createProject();
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
         assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
@@ -88,7 +92,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
     @Test
     public void canDetectClasspathChangeWhenBuilding() throws Exception {
-        createProject(SourceType.JAVA);
+        createProject();
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
         assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
@@ -100,7 +104,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
     @Test
     public void canDetectOutputChangeWhenBuilding() throws Exception {
-        createProject(SourceType.JAVA);
+        createProject();
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
 
@@ -116,7 +120,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
     @Test
     public void canDetectUpToDateTests() throws Exception {
-        createProject(SourceType.JAVA);
+        createProject();
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "test");
 
@@ -129,7 +133,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
     @Test
     public void canDetectSystemPropertyChangeWhenBuilding() throws Exception {
-        createProject(SourceType.JAVA);
+        createProject();
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
 
@@ -144,7 +148,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
     @Test
     public void canRunTest() throws Exception {
-        createProject(SourceType.JAVA);
+        createProject();
 
         BuildResult buildResult = runGradleWrapper(projectRoot, "test", "--stacktrace");
 
@@ -153,7 +157,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
     @Test
     public void generateCodeBeforeTests() throws Exception {
-        createProject(SourceType.JAVA);
+        createProject();
 
         BuildResult firstBuild = runGradleWrapper(projectRoot, "test", "--stacktrace");
         assertThat(firstBuild.getOutput()).contains("Task :quarkusGenerateCode");
@@ -161,16 +165,20 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
         assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":test"))).isTrue();
     }
 
-    private void createProject(SourceType sourceType) throws Exception {
+    private void createProject() throws Exception {
+        createProject(Collections.emptySet());
+    }
+
+    private void createProject(Set<String> extensions) throws Exception {
         Map<String, Object> context = new HashMap<>();
-        context.put("path", "/greeting");
         assertThat(new CreateProject(QuarkusProjectHelper.getProject(projectRoot.toPath(),
                 BuildTool.GRADLE))
                 .groupId("com.acme.foo")
+                .extensions(extensions)
+                .resourcePath("/greeting")
                 .artifactId("foo")
                 .version("1.0.0-SNAPSHOT")
                 .packageName("org.acme.foo")
-                .sourceType(sourceType)
                 .doCreateProject(context))
                 .withFailMessage("Project was not created")
                 .isTrue();

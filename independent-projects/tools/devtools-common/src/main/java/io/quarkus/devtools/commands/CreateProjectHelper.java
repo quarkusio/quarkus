@@ -1,10 +1,11 @@
-package io.quarkus.devtools.project.codegen;
+package io.quarkus.devtools.commands;
 
 import static java.util.Objects.requireNonNull;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.paths.PathTree;
 import io.quarkus.registry.catalog.Extension;
@@ -17,7 +18,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -174,23 +174,12 @@ public class CreateProjectHelper {
         return outputPath;
     }
 
-    public static SourceType determineSourceType(Set<String> extensions) {
-        Optional<SourceType> sourceType = extensions.stream()
-                .map(SourceType::parse)
-                .filter(Optional::isPresent)
-                .map(e -> e.orElse(SourceType.JAVA))
-                .findAny();
-        return sourceType.orElse(SourceType.JAVA);
-    }
-
-    public static void setJavaVersion(Map<String, Object> values, String javaTarget) {
-        requireNonNull(values, "Must provide values");
-
+    public static String computeJavaVersion(SourceType sourceType, String inputJavaVersion) {
         Integer javaFeatureVersionTarget = null;
 
-        if (javaTarget != null && !DETECT_JAVA_RUNTIME_VERSION.equals(javaTarget)) {
+        if (inputJavaVersion != null && !DETECT_JAVA_RUNTIME_VERSION.equals(inputJavaVersion)) {
             // Probably too much as we should push only the feature version but let's be as thorough as we used to be
-            Matcher matcher = JAVA_VERSION_PATTERN.matcher(javaTarget);
+            Matcher matcher = JAVA_VERSION_PATTERN.matcher(inputJavaVersion);
             if (matcher.matches()) {
                 javaFeatureVersionTarget = Integer.valueOf(matcher.group(1));
             }
@@ -202,12 +191,11 @@ public class CreateProjectHelper {
 
         int bestJavaLtsVersion = determineBestJavaLtsVersion(javaFeatureVersionTarget);
 
-        if (SourceType.KOTLIN.equals(values.get(ProjectGenerator.SOURCE_TYPE))
+        if (SourceType.KOTLIN.equals(sourceType)
                 && bestJavaLtsVersion > MAX_LTS_SUPPORTED_BY_KOTLIN) {
             bestJavaLtsVersion = MAX_LTS_SUPPORTED_BY_KOTLIN;
         }
-
-        values.put(ProjectGenerator.JAVA_TARGET, String.valueOf(bestJavaLtsVersion));
+        return String.valueOf(bestJavaLtsVersion);
     }
 
     public static int determineBestJavaLtsVersion() {
@@ -242,7 +230,7 @@ public class CreateProjectHelper {
 
     public static void handleSpringConfiguration(Map<String, Object> values) {
         @SuppressWarnings("unchecked")
-        Set<String> extensions = (Set<String>) values.get(ProjectGenerator.EXTENSIONS);
+        Set<String> extensions = (Set<String>) values.get(CreateProjectKey.EXTENSIONS);
 
         handleSpringConfiguration(values, extensions);
     }
@@ -252,10 +240,9 @@ public class CreateProjectHelper {
         requireNonNull(extensions, "Must provide extensions");
 
         if (containsSpringWeb(extensions)) {
-            values.put(ProjectGenerator.IS_SPRING, true);
             if (containsRESTEasy(extensions)) {
-                values.remove(ProjectGenerator.CLASS_NAME);
-                values.remove(ProjectGenerator.RESOURCE_PATH);
+                values.remove(CreateProjectKey.RESOURCE_CLASS_NAME);
+                values.remove(CreateProjectKey.RESOURCE_PATH);
             }
         }
     }

@@ -3,7 +3,7 @@ package io.quarkus.cli.create;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.devtools.project.codegen.CreateProjectHelper;
+import io.quarkus.devtools.commands.CreateProjectHelper;
 
 public class TargetGAVGroupTest {
 

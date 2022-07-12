@@ -1,20 +1,24 @@
 package io.quarkus.devtools.commands;
 
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.EXTENSIONS;
+import static io.quarkus.devtools.commands.CreateProjectHelper.computeJavaVersion;
 import static java.util.Objects.requireNonNull;
 
+import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.CreateJBangProjectCommandHandler;
 import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.devtools.project.codegen.CreateProjectHelper;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 public class CreateJBangProject {
+    public interface CreateJBangProjectKey {
+        String NO_JBANG_WRAPPER = "codegen.no-jbang-wrapper";
+    }
+
     public static final String NAME = "create-jbang";
 
     private final QuarkusProject quarkusProject;
@@ -35,7 +39,7 @@ public class CreateJBangProject {
         return this;
     }
 
-    public CreateJBangProject javaTarget(String javaVersion) {
+    public CreateJBangProject javaVersion(String javaVersion) {
         this.javaVersion = javaVersion;
         return this;
     }
@@ -48,8 +52,9 @@ public class CreateJBangProject {
     }
 
     public QuarkusCommandOutcome execute() throws QuarkusCommandException {
-        setValue(EXTENSIONS, extensions);
-        CreateProjectHelper.setJavaVersion(values, javaVersion); // default
+        setValue(CreateProjectKey.EXTENSIONS, extensions);
+        final SourceType sourceType = SourceType.resolve(extensions);
+        setValue(CreateProjectKey.JAVA_VERSION, computeJavaVersion(sourceType, javaVersion)); // default
 
         final QuarkusCommandInvocation invocation = new QuarkusCommandInvocation(quarkusProject, values);
         return new CreateJBangProjectCommandHandler().execute(invocation);

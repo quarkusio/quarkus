@@ -34,12 +34,11 @@ import org.fusesource.jansi.Ansi;
 
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.commands.CreateProject;
+import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.devtools.project.codegen.CreateProjectHelper;
-import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
 import io.quarkus.maven.utilities.MojoUtils;
@@ -109,14 +108,11 @@ public class CreateProjectMojo extends AbstractMojo {
      * <br />
      * If more than one of those extensions are picked, this parameter will be ignored.
      * <br />
-     * This is @Deprecated because using a generic path parameters with multiple example does not make sense and lead to
-     * confusion.
      * More info: https://github.com/quarkusio/quarkus/issues/14437
      * <br />
      * {@code className}
      */
     @Parameter(property = "path")
-    @Deprecated
     private String path;
 
     /**
@@ -125,8 +121,6 @@ public class CreateProjectMojo extends AbstractMojo {
      * <br />
      * If more than one of those extensions are picked, then only the package name part will be used as {@link #packageName}
      * <br />
-     * This is @Deprecated because using a generic className parameters with multiple example does not make sense and lead to
-     * confusion.
      * More info: https://github.com/quarkusio/quarkus/issues/14437
      * <br />
      * By default, the {@link #projectGroupId} is used as package for generated classes (you can also use {@link #packageName}
@@ -135,7 +129,6 @@ public class CreateProjectMojo extends AbstractMojo {
      * {@code className}
      */
     @Parameter(property = "className")
-    @Deprecated
     private String className;
 
     /**
@@ -273,8 +266,7 @@ public class CreateProjectMojo extends AbstractMojo {
         try {
             extensions = CreateProjectHelper.sanitizeExtensions(extensions);
             catalog = CreateProjectHelper.completeCatalog(catalog, extensions, mvn);
-            final SourceType sourceType = CreateProjectHelper.determineSourceType(extensions);
-            sanitizeOptions(sourceType);
+            sanitizeOptions();
 
             final List<ResourceLoader> codestartsResourceLoader = codestartLoadersBuilder()
                     .catalog(catalog)
@@ -286,17 +278,14 @@ public class CreateProjectMojo extends AbstractMojo {
                     .groupId(projectGroupId)
                     .artifactId(projectArtifactId)
                     .version(projectVersion)
-                    .sourceType(sourceType)
-                    .javaTarget(javaVersion)
-                    .className(className)
+                    .javaVersion(javaVersion)
+                    .resourceClassName(className)
                     .packageName(packageName)
                     .extensions(extensions)
+                    .resourcePath(path)
                     .example(example)
                     .noCode(noCode)
                     .appConfig(appConfig);
-            if (path != null) {
-                createProject.setValue("path", path);
-            }
 
             success = createProject.execute().isSuccess();
             if (success && parentPomModel != null && BuildTool.MAVEN.equals(buildToolEnum)) {
@@ -419,10 +408,9 @@ public class CreateProjectMojo extends AbstractMojo {
 
     }
 
-    private void sanitizeOptions(SourceType sourceType) {
+    private void sanitizeOptions() {
         if (className != null) {
-            className = sourceType.stripExtensionFrom(className);
-
+            className = className.replaceAll("\\.(java|kotlin|scala)$", "");
             int idx = className.lastIndexOf('.');
             if (idx >= 0 && isBlank(packageName)) {
                 // if it's a full qualified class name, we use the package name part (only if the packageName wasn't already defined)

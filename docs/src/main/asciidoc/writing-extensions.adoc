@@ -394,8 +394,7 @@ in pulling all the deployment time code into runtime scope, which defeats the pu
 
 ==== Using Maven
 
-You will need to include the `io.quarkus:quarkus-extension-maven-plugin` to generate the Quarkus extension descriptor included into the runtime artifact, if you are using the Quarkus parent pom it will automatically inherit the correct configuration.
-Furthermore, you'll need to configure the `maven-compiler-plugin` to detect the `quarkus-extension-processor` annotation processor.
+You will need to include the `io.quarkus:quarkus-extension-maven-plugin` and configure the `maven-compiler-plugin` to detect the `quarkus-extension-processor` annotation processor to collect and generate the necessary xref:extension-metadata.adoc[Quarkus extension metadata] for the extension artifacts, if you are using the Quarkus parent pom it will automatically inherit the correct configuration.
 
 TIP: You may want to use the `create-extension` mojo of `io.quarkus.platform:quarkus-maven-plugin` to create these Maven modules - see the next section.
 
@@ -518,24 +517,30 @@ The above sequence of commands does the following:
 ** `quarkus-my-ext-deployment` is added to the `<dependencyManagement>` of the Quarkus BOM (Bill of Materials) `bom/application/pom.xml`
 ** `quarkus-my-ext-integration-test` is added to the `<modules>` of `quarkus-integration-tests-parent`
 
-NOTE: You also have to fill the `quarkus-extension.yaml` file that describe your extension inside the runtime module `src/main/resources/META-INF` folder.
+NOTE: You also have to fill the xref:extension-metadata.adoc#quarkus-extension-yaml[quarkus-extension.yaml] template file that describe your extension inside the runtime module `src/main/resources/META-INF` folder.
 
-This is the `quarkus-extension.yaml` of the `quarkus-agroal` extension, you can use it as an example:
+This is the `quarkus-extension.yaml` template of the `quarkus-agroal` extension, you can use it as an example:
 
-[source,yaml]
+[source,yaml,attributes+]
 ----
-name: "Agroal - Database connection pool"
+name: "Agroal - Database connection pool" <1>
 metadata:
-  keywords:
+  keywords: <2>
   - "agroal"
   - "database-connection-pool"
   - "datasource"
   - "jdbc"
-  guide: "https://quarkus.io/guides/datasource"
-  categories:
+  guide: "https://quarkus.io/guides/datasource" <3>
+  categories: <4>
   - "data"
-  status: "stable"
+  status: "stable" <5>
 ----
+
+<1> the name of the extension that will be displayed to users
+<2> keywords that can be used to find the extension in the extension catalog
+<3> link to the extension's guide or documentation
+<4> categories under which the extension should appear on https://code.quarkus.io[code.quarkus.io], could be omitted, in which case the extension will still be listed but not under any specific category
+<5> maturity status, which could be `stable`, `preview` or `experimental`, evaluated by extension maintainers
 
 TIP: The `name` parameter of the mojo is optional.
 If you do not specify it on the command line, the plugin will derive it from `extensionId` by replacing dashes with spaces and uppercasing each token.
@@ -548,7 +553,7 @@ Please refer to https://github.com/quarkusio/quarkus/blob/{quarkus-version}/devt
 
 You will need to apply the `io.quarkus.extension` plugin in the `runtime` module of your extension project.
 The plugin includes the `extensionDescriptor` task that will generate `META-INF/quarkus-extension.properties` and `META-INF/quarkus-extension.yml` files.
-The plugin also enables the `io.quarkus:quarkus-extension-processor` annotation processor in both `deployment` and `runtime` modules.
+The plugin also enables the `io.quarkus:quarkus-extension-processor` annotation processor in both `deployment` and `runtime` modules to collect and generate the rest of the xref:extension-metadata.adoc[Quarkus extension metadata].
 The name of the deployment module can be configured in the plugin by setting the `deploymentModule` property. The property is set to `deployment` by default:
 
 [source,groovy,subs=attributes+]
@@ -3129,7 +3134,7 @@ of what the process looks like.
 
 Before publishing your extension to the xref:tooling.adoc[Quarkus tooling], make sure that the following requirements are met:
 
-* The `quarkus-extension.yaml` file (in the extension's `runtime/` module) has the minimum metadata set:
+* The xref:extension-metadata.adoc#quarkus-extension-yaml[quarkus-extension.yaml] file (in the extension's `runtime/` module) has the minimum metadata set:
 ** `name`
 ** `description` (unless you have it already set in the ``runtime/pom.xml``'s `<description>` element, which is the recommended approach)
 

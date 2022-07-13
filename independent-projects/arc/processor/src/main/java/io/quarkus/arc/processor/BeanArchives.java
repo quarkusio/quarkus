@@ -279,6 +279,10 @@ public final class BeanArchives {
             // Ignore primitives and arrays
             return false;
         }
+        if (isInUnnamedPackage(className)) {
+            LOGGER.debugf("Class %s is defined in an unnamed package; skipping indexing", className);
+            return false;
+        }
         try (InputStream stream = classLoader
                 .getResourceAsStream(className.replace('.', '/') + ".class")) {
             if (stream != null) {
@@ -291,5 +295,9 @@ public final class BeanArchives {
             LOGGER.warnf(e, "Failed to index %s: %s", className, e.getMessage());
         }
         return result;
+    }
+
+    private static boolean isInUnnamedPackage(String className) {
+        return !className.contains(".");
     }
 }

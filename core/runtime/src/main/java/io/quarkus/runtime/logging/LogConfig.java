@@ -1,6 +1,8 @@
 package io.quarkus.runtime.logging;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -101,4 +103,11 @@ public final class LogConfig {
     @ConfigItem(name = "filter")
     @ConfigDocSection
     public Map<String, CleanupFilterConfig> filters;
+
+    /**
+     * The names of additional handlers to link to the root category.
+     * These handlers are defined in consoleHandlers, fileHandlers or syslogHandlers.
+     */
+    @ConfigItem
+    Optional<List<String>> handlers;
 }

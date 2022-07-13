@@ -331,6 +331,22 @@ It is disabled by default.
 
 For details of its configuration options, see link:#quarkus-log-logging-log-config_quarkus.log.syslog-syslog-logging[the Syslog Logging configuration reference].
 
+[NOTE]
+====
+Although the root logger's handlers are usually configured directly via `quarkus.log.console`, `quarkus.log.file` and `quarkus.log.syslog`, it
+can nonetheless have additional named handlers attached to it using the `quarkus.log.handlers` property.
+
+[source,properties]
+----
+quarkus.http.auth.policy.user-policy.roles-allowed=user
+quarkus.http.auth.permission.roles.paths=/api/*
+quarkus.http.auth.permission.roles.policy=user-policy
+
+quarkus.http.auth.permission.public.paths=/api/noauth/*
+quarkus.http.auth.permission.public.policy=permit
+----
+====
+
 == Examples
 
 .Console DEBUG Logging except for Quarkus logs (INFO), No color, Shortened Time, Shortened Category Prefixes
@@ -378,6 +394,17 @@ quarkus.log.handler.file."STRUCTURED_LOGGING_FILE".format=%e%n
 # Configure the category and link the two named handlers to it
 quarkus.log.category."io.quarkus.category".level=INFO
 quarkus.log.category."io.quarkus.category".handlers=STRUCTURED_LOGGING,STRUCTURED_LOGGING_FILE
+----
+
+[#root-category-named-handlers-example]
+.Named handlers attached to the root logger
+[source, properties]
+----
+# configure a named file handler that sends the output to 'quarkus.log'
+quarkus.log.handler.file.CONSOLE_MIRROR.enable=true
+quarkus.log.handler.file.CONSOLE_MIRROR.path=quarkus.log
+# attach the handler to the root logger
+quarkus.log.handlers=CONSOLE_MIRROR
 ----
 
 == Centralized Log Management

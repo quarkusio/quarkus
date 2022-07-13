@@ -13,5 +13,5 @@ import org.hibernate.validator.BaseHibernateValidatorConfiguration;
  */
 public interface HibernateValidatorFactoryCustomizer {
 
-    <T extends BaseHibernateValidatorConfiguration<T>> void customize(T configuration);
+    void customize(BaseHibernateValidatorConfiguration<?> configuration);
 }

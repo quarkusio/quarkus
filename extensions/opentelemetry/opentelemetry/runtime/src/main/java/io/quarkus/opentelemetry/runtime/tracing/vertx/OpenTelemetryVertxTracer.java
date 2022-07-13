@@ -32,6 +32,10 @@ public class OpenTelemetryVertxTracer
             final Iterable<Map.Entry<String, String>> headers,
             final TagExtractor<R> tagExtractor) {
 
+        if (TracingPolicy.IGNORE.equals(policy)) {
+            return null;
+        }
+
         return getTracer(request, tagExtractor).receiveRequest(context, kind, policy, request, operation, headers,
                 tagExtractor);
     }

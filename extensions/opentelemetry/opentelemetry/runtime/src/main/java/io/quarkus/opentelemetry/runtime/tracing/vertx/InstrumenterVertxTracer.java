@@ -32,6 +32,10 @@ interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOperation, 
             final Iterable<Map.Entry<String, String>> headers,
             final TagExtractor<R> tagExtractor) {
 
+        if (TracingPolicy.IGNORE.equals(policy)) {
+            return null;
+        }
+
         Instrumenter<REQ, RESP> instrumenter = getReceiveRequestInstrumenter();
         io.opentelemetry.context.Context parentContext = QuarkusContextStorage.getContext(context);
         if (parentContext == null) {

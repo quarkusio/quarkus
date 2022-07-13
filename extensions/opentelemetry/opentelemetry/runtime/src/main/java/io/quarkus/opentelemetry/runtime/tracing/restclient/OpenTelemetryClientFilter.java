@@ -22,9 +22,9 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
@@ -62,7 +62,7 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         InstrumenterBuilder<ClientRequestContext, ClientResponseContext> builder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
-                new ClientSpanNameExtractor());
+                HttpSpanNameExtractor.create(clientAttributesExtractor));
 
         this.instrumenter = builder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(clientAttributesExtractor))
@@ -124,23 +124,6 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
             if (carrier != null) {
                 carrier.getHeaders().put(key, singletonList(value));
             }
-        }
-    }
-
-    private static class ClientSpanNameExtractor implements SpanNameExtractor<ClientRequestContext> {
-        @Override
-        public String extract(final ClientRequestContext request) {
-            String pathTemplate = (String) request.getProperty("UrlPathTemplate");
-            if (pathTemplate != null && pathTemplate.length() > 1) {
-                return pathTemplate;
-            }
-
-            String uriPath = request.getUri().getPath();
-            if (uriPath != null && uriPath.length() > 1) {
-                return uriPath;
-            }
-
-            return "HTTP " + request.getMethod();
         }
     }
 

@@ -72,10 +72,9 @@ public abstract class NativeImageBuildRunner {
             if (objcopyExists) {
                 if (debugSymbolsEnabled) {
                     splitDebugSymbols(nativeImageName, resultingExecutableName);
-                } else {
-                    // Strip debug symbols regardless, because the underlying JDK might contain them
-                    objcopy("--strip-debug", resultingExecutableName);
                 }
+                // Strip debug symbols regardless, because the underlying JDK might contain them
+                objcopy("--strip-debug", resultingExecutableName);
             } else if (SystemUtils.IS_OS_LINUX) {
                 log.warn(
                         "objcopy executable not found in PATH. Debug symbols will therefore not be separated from the executable.");

@@ -181,6 +181,8 @@ class LiquibaseMongodbProcessor {
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.7.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.8.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.10.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.11.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-3.8.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-3.9.xsd",
@@ -195,6 +197,8 @@ class LiquibaseMongodbProcessor {
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-4.7.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-4.8.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-4.9.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.10.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.11.xsd",
                 "liquibase.build.properties"));
 
         // liquibase resource bundles

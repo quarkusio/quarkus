@@ -7,17 +7,46 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-This document describes the Quarkus built-in authentication mechanisms for HTTP based FORM, BASIC and Mutual TLS authentication as well as the proactive authentication.
+The following section describes the Quarkus built-in authentication mechanisms for HTTP based FORM, BASIC, and Mutual TLS authentication. Proactive authentication is also described.
 
 [[basic-auth]]
 == Basic Authentication
+ 
+HTTP Basic Authentication uses fields in the HTTP header and is the easiest to set up. Also, it is one of the least resource-demanding techniques that enforce access controls to the Web resources without requiring HTTP cookies, session identifiers, or login pages.
 
-To enable basic authentication set `quarkus.http.auth.basic=true`. You must also have at least one extension installed
-that provides a username/password based `IdentityProvider`, such as xref:security-jdbc.adoc[Elytron JDBC].
+In the context of an HTTP request, Basic authentication is a method for an HTTP user agent, such as a web browser, to provide a user name and password when creating a request. In Basic HTTP Authentication, a request contains a header field in the form of `Authorization: Basic <credentials>`, where credentials are the Base64 encoding of a user ID and password joined by a colon as described in the following example.
 
-Please see xref:security.adoc#identity-providers[Security Identity Providers] for more information.
+====
+.Example
+ 
+If the user name is `Alice` and the password is `secret`, the HTTP authorization header looks authorization as `Authorization: Basic  QWxjZTpzZWNyZXQ=`, where `QWxjZTpzZWNyZXQ=` is a Base64 encoded representation of the `Alice:secret` string.
+====
+ 
+The Basic Authentication mechanism does not provide confidentiality protection for the transmitted credentials. The credentials are merely encoded with Base64 when in transit and not encrypted or hashed in any way. Therefore, Basic Authentication is used with HTTPS to provide confidentiality.
+ 
+[[enabling-basic-auth]]
+=== Enabling Basic Authentication
+ 
+.Prerequisites
+ 
+* You have installed at least one extension that provides an `IdentityProvider` based on username and password, such as xref:security-jdbc.adoc[Elytron JDBC].
+ 
+.Procedure
+ 
+* Enable Basic Authentication by setting the value of `quarkus.http.auth.basic` property to `true`.
++
+[source,properties]
+----
+quarkus.http.auth.basic=true
+----
+ 
+For a Basic Authentication configuration walk-through that uses `JPA`, see the xref:security-getting-started.adoc[Getting Started With Security] guide.
+ 
+.Additional resources
+ 
+* xref:security.adoc#identity-providers[Security Identity Providers]
+* xref:security-testing.adoc#configuring-user-information[Configuring User Information in application.properties]
 
-Please also see xref:security-testing.adoc#configuring-user-information[Configuring User Information in application.properties] section.
 
 [[form-auth]]
 == Form Based Authentication
@@ -98,7 +127,7 @@ X509Certificate certificate = credential.getCertificate();
 
 === Authorization
 
-The information from the client certificate can be used to enhance Quarkus `SecurityIdentity`. For example, one can add new roles after checking a client certificate subject name, etc.
+The information from the client certificate can be used to enhance Quarkus `SecurityIdentity`. For example, one can add new roles after checking a client certificate subject name, and so on.
 Please see the xref:security-customization.adoc#security-identity-customization[SecurityIdentity Customization] section for more information about customizing Quarkus `SecurityIdentity`.
 
 [[proactive-authentication]]

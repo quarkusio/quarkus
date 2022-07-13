@@ -38,6 +38,10 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
         return false;
     }
 
+    protected boolean workspaceModuleParentHierarchy() {
+        return false;
+    }
+
     protected void addWorkspaceModule(TsArtifact a) {
         if (wsModules.isEmpty()) {
             wsModules = new ArrayList<>();
@@ -76,14 +80,20 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
             System.setProperty("basedir", ws.toAbsolutePath().toString());
             final Model appPom = appJar.getPomModel();
 
-            final List<Dependency> moduleDeps = appPom.getDependencies().stream()
+            final List<Dependency> bomModules = (appPom.getDependencyManagement() == null ? List.<Dependency> of()
+                    : appPom.getDependencyManagement().getDependencies()).stream()
+                    .filter(d -> "import".equals(d.getScope())
+                            && d.getGroupId().equals(appPom.getGroupId()))
+                    .collect(Collectors.toList());
+
+            final List<Dependency> depModules = appPom.getDependencies().stream()
                     .filter(d -> d.getGroupId().equals(appPom.getGroupId()) &&
                             (d.getType().isEmpty() || ArtifactCoords.TYPE_JAR.equals(d.getType())))
                     .collect(Collectors.toList());
 
             final Path appModule;
             final Path appPomXml;
-            if (moduleDeps.isEmpty() || appPom.getParent() != null) {
+            if (depModules.isEmpty() && bomModules.isEmpty() || appPom.getParent() != null) {
                 appModule = ws;
                 appPomXml = ws.resolve("pom.xml");
                 ModelUtils.persistModel(appPomXml, appPom);
@@ -100,6 +110,19 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
                 parent.setArtifactId(parentPom.getArtifactId());
                 parent.setVersion(parentPom.getVersion());
 
+                // BOM modules
+                for (Dependency bomModule : bomModules) {
+                    parentPom.getModules().add(bomModule.getArtifactId());
+                    final String moduleVersion = bomModule.getVersion();
+                    Model modulePom = ModelUtils.readModel(resolver
+                            .resolve(ArtifactCoords.pom(bomModule.getGroupId(), bomModule.getArtifactId(), moduleVersion))
+                            .getResolvedPaths().getSinglePath());
+                    modulePom.setParent(parent);
+                    final Path moduleDir = IoUtils.mkdirs(ws.resolve(modulePom.getArtifactId()));
+                    ModelUtils.persistModel(moduleDir.resolve("pom.xml"), modulePom);
+                }
+
+                // APP module
                 parentPom.getModules().add(appPom.getArtifactId());
                 appModule = ws.resolve(appPom.getArtifactId());
                 Files.createDirectories(appModule);
@@ -107,9 +130,10 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
                 appPomXml = appModule.resolve("pom.xml");
                 ModelUtils.persistModel(appPomXml, appPom);
 
+                // dependency modules
                 final Map<ArtifactKey, String> managedVersions = new HashMap<>();
                 collectManagedDeps(appPom, managedVersions);
-                for (Dependency moduleDep : moduleDeps) {
+                for (Dependency moduleDep : depModules) {
                     parentPom.getModules().add(moduleDep.getArtifactId());
                     final String moduleVersion = moduleDep.getVersion() == null
                             ? managedVersions.get(ArtifactKey.of(moduleDep.getGroupId(), moduleDep.getArtifactId(),
@@ -196,6 +220,7 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
 
             final LocalProject appProject = new BootstrapMavenContext(BootstrapMavenContext.config()
                     .setWorkspaceDiscovery(true)
+                    .setWorkspaceModuleParentHierarchy(workspaceModuleParentHierarchy())
                     .setRootProjectDir(ws)
                     .setCurrentProject(appPomXml.toString()))
                     .getCurrentProject();

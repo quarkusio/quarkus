@@ -212,7 +212,7 @@ public class MavenProjectBuildFile extends BuildFile {
 
     @Override
     protected boolean importBom(ArtifactCoords coords) {
-        if (!"pom".equalsIgnoreCase(coords.getType())) {
+        if (!ArtifactCoords.TYPE_POM.equals(coords.getType())) {
             throw new IllegalArgumentException(coords + " is not a POM");
         }
         final String depKey = depKey(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType());
@@ -222,14 +222,14 @@ public class MavenProjectBuildFile extends BuildFile {
                     coords.getArtifactId().equals(getProperty("quarkus.platform.artifact-id"))
                             ? "${quarkus.platform.artifact-id}"
                             : coords.getArtifactId(),
-                    "pom", "${quarkus.platform.version}");
+                    ArtifactCoords.TYPE_POM, "${quarkus.platform.version}");
         }
 
         final Dependency d = new Dependency();
         d.setGroupId(coords.getGroupId());
         d.setArtifactId(coords.getArtifactId());
         d.setType(coords.getType());
-        d.setScope("import");
+        d.setScope(io.quarkus.maven.dependency.Dependency.SCOPE_IMPORT);
         d.setVersion(coords.getVersion());
         DependencyManagement dependencyManagement = model().getDependencyManagement();
         if (dependencyManagement == null) {
@@ -238,7 +238,7 @@ public class MavenProjectBuildFile extends BuildFile {
         }
         if (dependencyManagement.getDependencies()
                 .stream()
-                .filter(t -> t.getScope().equals("import"))
+                .filter(t -> t.getScope().equals(io.quarkus.maven.dependency.Dependency.SCOPE_IMPORT))
                 .noneMatch(thisDep -> depKey.equals(resolveKey(thisDep)))) {
             dependencyManagement.addDependency(d);
             // the effective managed dependencies set may already include it
@@ -263,8 +263,8 @@ public class MavenProjectBuildFile extends BuildFile {
             d.setClassifier(coords.getClassifier());
         }
         d.setType(coords.getType());
-        if ("pom".equalsIgnoreCase(coords.getType())) {
-            d.setScope("import");
+        if (ArtifactCoords.TYPE_POM.equals(coords.getType())) {
+            d.setScope(io.quarkus.maven.dependency.Dependency.SCOPE_IMPORT);
             DependencyManagement dependencyManagement = model().getDependencyManagement();
             if (dependencyManagement == null) {
                 dependencyManagement = new DependencyManagement();

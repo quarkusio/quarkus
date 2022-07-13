@@ -242,8 +242,8 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
     }
 
     @Override
-    public WorkspaceModule getProjectModule(ArtifactKey key) {
-        final LocalProject project = getProject(key);
-        return project == null ? null : project.toWorkspaceModule();
+    public WorkspaceModule getProjectModule(String groupId, String artifactId, String version) {
+        final LocalProject project = getProject(groupId, artifactId);
+        return project == null || !project.getVersion().equals(version) ? null : project.toWorkspaceModule(mvnCtx);
     }
 }

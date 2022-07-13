@@ -1,13 +1,28 @@
 package io.quarkus.deployment.runnerjar;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsDependency;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 
 public class DependencyVersionOverridesManagedVersionTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
     protected boolean createWorkspace() {
+        return true;
+    }
+
+    @Override
+    protected boolean workspaceModuleParentHierarchy() {
+        // this is to simply make sure the workspace modules available
+        // through ApplicationModel.getWorkspaceModules() include parent POMs and BOMs
         return true;
     }
 
@@ -22,7 +37,7 @@ public class DependencyVersionOverridesManagedVersionTest extends BootstrapFromO
         final TsArtifact extB_100_rt = extB_100.getRuntime();
         addToExpectedLib(extB_100_rt);
 
-        final TsArtifact bom = new TsArtifact("test.quarkus", "test-bom", null, "pom", "1.0.0");
+        final TsArtifact bom = TsArtifact.pom("test-bom");
         bom.addManagedDependency(platformDescriptor());
         bom.addManagedDependency(platformProperties());
         bom.addManagedDependency(new TsDependency(extA_100.getRuntime()));
@@ -42,5 +57,16 @@ public class DependencyVersionOverridesManagedVersionTest extends BootstrapFromO
                 .addDependency(extA_101.getRuntime());
 
         return appJar;
+    }
+
+    @Override
+    protected void assertAppModel(ApplicationModel model) {
+        assertThat(model.getWorkspaceModules().stream().map(WorkspaceModule::getId).collect(Collectors.toSet()))
+                .isEqualTo(Set.of(
+                        WorkspaceModuleId.of(TsArtifact.DEFAULT_GROUP_ID, "app-parent", TsArtifact.DEFAULT_VERSION),
+                        WorkspaceModuleId.of(TsArtifact.DEFAULT_GROUP_ID, "test-bom", TsArtifact.DEFAULT_VERSION),
+                        WorkspaceModuleId.of(TsArtifact.DEFAULT_GROUP_ID, "app", TsArtifact.DEFAULT_VERSION),
+                        WorkspaceModuleId.of(TsArtifact.DEFAULT_GROUP_ID, "ext-a", "1.0.1"),
+                        WorkspaceModuleId.of(TsArtifact.DEFAULT_GROUP_ID, "ext-b", "1.0.0")));
     }
 }

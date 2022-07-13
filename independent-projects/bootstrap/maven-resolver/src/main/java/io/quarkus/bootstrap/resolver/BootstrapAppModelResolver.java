@@ -41,6 +41,7 @@ import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.VersionRangeResult;
+import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 import org.eclipse.aether.version.Version;
 
@@ -202,7 +203,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
         final Map<ArtifactKey, Dependency> managedMap = new HashMap<>();
         for (io.quarkus.maven.dependency.Dependency d : module.getDirectDependencyConstraints()) {
-            if (d.getScope().equals("import")) {
+            if (io.quarkus.maven.dependency.Dependency.SCOPE_IMPORT.equals(d.getScope())) {
                 mvn.resolveDescriptor(toAetherArtifact(d)).getManagedDependencies()
                         .forEach(dep -> managedMap.putIfAbsent(getKey(dep.getArtifact()), dep));
             } else {
@@ -289,9 +290,9 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             return Set.of();
         }
         if (devmode) {
-            return Set.of("test");
+            return Set.of(JavaScopes.TEST);
         }
-        return Set.of("provided", "test");
+        return Set.of(JavaScopes.PROVIDED, JavaScopes.TEST);
     }
 
     private ApplicationModel buildAppModel(ResolvedDependency appArtifact, CollectRequest collectRtDepsRequest,
@@ -335,7 +336,8 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         }
 
         final WorkspaceModule resolvedModule = mvn.getProjectModuleResolver() == null ? null
-                : mvn.getProjectModuleResolver().getProjectModule(appArtifact.getGroupId(), appArtifact.getArtifactId());
+                : mvn.getProjectModuleResolver().getProjectModule(appArtifact.getGroupId(), appArtifact.getArtifactId(),
+                        appArtifact.getVersion());
         if (resolvedArtifact != null && resolvedModule == null) {
             return resolvedArtifact;
         }
@@ -523,5 +525,4 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             throw new BootstrapMavenException("Failed to read descriptor of " + artifact, e);
         }
     }
-
 }

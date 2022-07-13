@@ -145,7 +145,8 @@ public class BuildDependencyGraphVisitor {
             }
             WorkspaceModule module = null;
             if (resolver.getProjectModuleResolver() != null) {
-                module = resolver.getProjectModuleResolver().getProjectModule(artifact.getGroupId(), artifact.getArtifactId());
+                module = resolver.getProjectModuleResolver().getProjectModule(artifact.getGroupId(), artifact.getArtifactId(),
+                        artifact.getVersion());
                 if (module != null) {
                     flags |= DependencyFlags.WORKSPACE_MODULE;
                 }

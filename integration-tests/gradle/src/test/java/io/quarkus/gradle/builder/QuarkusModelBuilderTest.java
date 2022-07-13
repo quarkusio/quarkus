@@ -34,7 +34,7 @@ class QuarkusModelBuilderTest {
 
         assertNotNull(quarkusModel);
         assertNotNull(quarkusModel.getApplicationModule());
-        assertThat(quarkusModel.getWorkspaceModules()).isEmpty();
+        assertThat(quarkusModel.getWorkspaceModules().size()).isEqualTo(1);
 
         final ResolvedDependency appArtifact = quarkusModel.getAppArtifact();
         assertThat(appArtifact).isNotNull();
@@ -50,7 +50,7 @@ class QuarkusModelBuilderTest {
 
         assertNotNull(quarkusModel);
         assertNotNull(quarkusModel.getApplicationModule());
-        assertThat(quarkusModel.getWorkspaceModules()).isEmpty();
+        assertThat(quarkusModel.getWorkspaceModules().size()).isEqualTo(1);
 
         final ResolvedDependency appArtifact = quarkusModel.getAppArtifact();
         assertThat(appArtifact).isNotNull();
@@ -71,9 +71,10 @@ class QuarkusModelBuilderTest {
                 new File(projectDir, quarkusModel.getApplicationModule().getId().getArtifactId()), true);
 
         final Collection<WorkspaceModule> projectModules = quarkusModel.getWorkspaceModules();
-        assertEquals(projectModules.size(), 1);
+        assertEquals(projectModules.size(), 2);
         for (WorkspaceModule p : projectModules) {
-            assertProjectModule(p, new File(projectDir, p.getId().getArtifactId()), false);
+            assertProjectModule(p, new File(projectDir, p.getId().getArtifactId()),
+                    quarkusModel.getApplicationModule().getId().equals(p.getId()));
         }
 
         final ResolvedDependency appArtifact = quarkusModel.getAppArtifact();
@@ -104,9 +105,10 @@ class QuarkusModelBuilderTest {
                 new File(projectDir, quarkusModel.getApplicationModule().getId().getArtifactId()), true);
 
         final Collection<WorkspaceModule> projectModules = quarkusModel.getWorkspaceModules();
-        assertEquals(projectModules.size(), 1);
+        assertEquals(projectModules.size(), 2);
         for (WorkspaceModule p : projectModules) {
-            assertProjectModule(p, new File(projectDir, p.getId().getArtifactId()), false);
+            assertProjectModule(p, new File(projectDir, p.getId().getArtifactId()),
+                    quarkusModel.getApplicationModule().getId().equals(p.getId()));
         }
 
         final ResolvedDependency appArtifact = quarkusModel.getAppArtifact();

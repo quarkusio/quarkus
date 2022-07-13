@@ -59,6 +59,8 @@ public interface WorkspaceModule {
 
     Collection<String> getAdditionalTestClasspathElements();
 
+    WorkspaceModule getParent();
+
     Mutable mutable();
 
     interface Mutable extends WorkspaceModule {
@@ -84,6 +86,8 @@ public interface WorkspaceModule {
         Mutable setTestClasspathDependencyExclusions(Collection<String> excludes);
 
         Mutable setAdditionalTestClasspathElements(Collection<String> elements);
+
+        Mutable setParent(WorkspaceModule parent);
 
         WorkspaceModule build();
 

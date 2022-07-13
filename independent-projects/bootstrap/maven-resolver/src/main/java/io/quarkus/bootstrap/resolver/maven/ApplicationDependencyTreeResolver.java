@@ -355,7 +355,7 @@ public class ApplicationDependencyTreeResolver {
                 WorkspaceModule module = null;
                 if (resolver.getProjectModuleResolver() != null) {
                     module = resolver.getProjectModuleResolver().getProjectModule(artifact.getGroupId(),
-                            artifact.getArtifactId());
+                            artifact.getArtifactId(), artifact.getVersion());
                 }
                 dep = toAppArtifact(artifact, module)
                         .setRuntimeCp()

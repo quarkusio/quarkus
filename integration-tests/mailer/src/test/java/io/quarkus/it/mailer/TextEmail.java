@@ -2,6 +2,9 @@ package io.quarkus.it.mailer;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TextEmail {
 
     public String subject;

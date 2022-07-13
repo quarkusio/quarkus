@@ -12,13 +12,23 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.config.ObjectMapperConfig;
+import io.restassured.mapper.ObjectMapperType;
 
 @QuarkusTest
 public class KafkaSnappyProducerTest {
+
+    @BeforeAll
+    public static void configureMapper() {
+        // We have JSON-B and Jackson around, we want to ensure REST Assured uses Jackson and not JSON-B
+        RestAssured.config = RestAssured.config.objectMapperConfig(ObjectMapperConfig.objectMapperConfig()
+                .defaultObjectMapperType(ObjectMapperType.JACKSON_2));
+    }
 
     public static KafkaConsumer<Integer, String> createConsumer() {
         Properties props = new Properties();

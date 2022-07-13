@@ -93,7 +93,7 @@ public class MovieResource {
     @GET
     @Path("/title/like/{title}")
     @Produces("application/json")
-    public List<Object[]> someFieldsWithTitleLike(@PathParam("title") String title) {
+    public List<Movie> someFieldsWithTitleLike(@PathParam("title") String title) {
         return movieRepository.someFieldsWithTitleLike(title, Sort.by(new Sort.Order(Sort.Direction.ASC, "duration")));
     }
 

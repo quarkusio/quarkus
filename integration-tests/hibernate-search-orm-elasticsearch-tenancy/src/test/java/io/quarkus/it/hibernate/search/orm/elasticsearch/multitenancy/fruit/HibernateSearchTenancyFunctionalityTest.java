@@ -8,16 +8,12 @@ import java.util.List;
 
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
-import io.restassured.config.ObjectMapperConfig;
 import io.restassured.config.RestAssuredConfig;
 import io.restassured.http.ContentType;
-import io.restassured.mapper.ObjectMapperType;
 import io.restassured.response.Response;
 
 /**
@@ -29,11 +25,6 @@ public class HibernateSearchTenancyFunctionalityTest {
     };
 
     private static RestAssuredConfig config;
-
-    @BeforeAll
-    public static void beforeClass() {
-        config = RestAssured.config().objectMapperConfig(new ObjectMapperConfig(ObjectMapperType.JSONB));
-    }
 
     @Test
     public void test() {

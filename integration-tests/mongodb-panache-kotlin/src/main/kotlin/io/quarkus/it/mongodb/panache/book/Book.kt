@@ -5,7 +5,8 @@ import org.bson.codecs.pojo.annotations.BsonIgnore
 import org.bson.codecs.pojo.annotations.BsonProperty
 import org.bson.types.ObjectId
 import java.time.LocalDate
-import javax.json.bind.annotation.JsonbDateFormat
+import com.fasterxml.jackson.annotation.JsonFormat
+import com.fasterxml.jackson.annotation.JsonFormat.Shape
 
 @MongoEntity(collection = "TheBook", clientName = "cl2")
 class Book {
@@ -20,7 +21,7 @@ class Book {
     var transientDescription: String? = null
         private set
 
-    @JsonbDateFormat("yyyy-MM-dd")
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
     var creationDate: LocalDate? = null
     var categories = listOf<String>()
         private set

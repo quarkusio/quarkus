@@ -204,9 +204,16 @@ Some extensions such as `OIDC`, `OAuth2`, `SmallRye JWT` have the inlined `Ident
 For example, `quarkus-oidc` uses its own `IdentityProvider` to convert a token to `SecurityIdentity`. 
 
 If you use `Basic` or `Form` HTTP-based authentication then you have to add an `IdentityProvider` which can convert a username and password to `SecurityIdentity`.
-See xref:security-getting-started.adoc[JPA IdentityProvider], xref:security-jdbc.adoc[JDBC IdentityProvider] and xref:security-ldap.adoc[LDAP IdentityProvider] for more information.
 
-You can also use xref:security-testing.adoc#configuring-user-information[User Properties IdentityProvider] for testing.
+* For more information about `Basic` or `Form` HTTP-based authentication, see: 
+** xref:security-getting-started.adoc[JPA IdentityProvider]
+** xref:security-jdbc.adoc[JDBC IdentityProvider]
+** xref:security-ldap.adoc[LDAP IdentityProvider]
+
+* For a a Basic Authentication configuration walk-through using JPA, see:
+** xref:security-getting-started.adoc[Getting Started With Security] guide.
+
+* For testing, use the xref:security-testing.adoc#configuring-user-information[User Properties IdentityProvider] section with the `IdentityProvider` with already set usernames, passwords, and roles in `application.properties`.
 
 == Combining Authentication Mechanisms
 

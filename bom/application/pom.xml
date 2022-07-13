@@ -24,7 +24,7 @@
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
-        <opentelemetry.version>1.15.0</opentelemetry.version>
+        <opentelemetry.version>1.16.0</opentelemetry.version>
         <opentelemetry-alpha.version>1.15.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.8.1</jaeger.version>
         <quarkus-http.version>4.1.9</quarkus-http.version>
@@ -158,7 +158,7 @@
         <jboss-logmanager.version>1.0.10</jboss-logmanager.version>
         <flyway.version>8.5.13</flyway.version>
         <yasson.version>1.0.11</yasson.version>
-        <liquibase.version>4.12.0</liquibase.version>
+        <liquibase.version>4.13.0</liquibase.version>
         <snakeyaml.version>1.30</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>4.6.1</mongo-client.version>

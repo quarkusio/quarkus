@@ -1,6 +1,7 @@
 package io.quarkus.liquibase.mongodb;
 
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
@@ -20,7 +21,8 @@ public class LiquibaseMongodbFactory {
     private final LiquibaseMongodbBuildTimeConfig liquibaseMongodbBuildTimeConfig;
 
     //connection-string format, see https://docs.mongodb.com/manual/reference/connection-string/
-    Pattern HAS_DB = Pattern.compile("(mongodb|mongodb\\+srv)://[^/]*/.*");
+    Pattern HAS_DB = Pattern
+            .compile("(?<prefix>mongodb://|mongodb\\+srv://)(?<hosts>[^/]*)(?<slash>[/]?)(?<db>[^?]*)(?<options>\\??.*)");
 
     public LiquibaseMongodbFactory(LiquibaseMongodbConfig config,
             LiquibaseMongodbBuildTimeConfig liquibaseMongodbBuildTimeConfig, MongoClientConfig mongoClientConfig) {
@@ -33,11 +35,15 @@ public class LiquibaseMongodbFactory {
         try (ClassLoaderResourceAccessor resourceAccessor = new ClassLoaderResourceAccessor(
                 Thread.currentThread().getContextClassLoader())) {
             String connectionString = this.mongoClientConfig.connectionString.orElse("mongodb://localhost:27017");
-            if (!HAS_DB.matcher(connectionString).matches()) {
-                connectionString += "/" + this.mongoClientConfig.database.orElseThrow(
-                        () -> new IllegalArgumentException(
-                                "Config property 'quarkus.mongodb.database' must be defined when no database " +
-                                        "exist in the connection string"));
+
+            Matcher matcher = HAS_DB.matcher(connectionString);
+            if (!matcher.matches() || matcher.group("db") == null || matcher.group("db").isEmpty()) {
+                connectionString = matcher.replaceFirst(
+                        "${prefix}${hosts}/"
+                                + this.mongoClientConfig.database
+                                        .orElseThrow(() -> new IllegalArgumentException("Config property " +
+                                                "'quarkus.mongodb.database' must be defined when no database exist in the connection string"))
+                                + "${options}");
             }
             if (mongoClientConfig.credentials.authSource.isPresent()) {
                 connectionString += "?authSource=" + mongoClientConfig.credentials.authSource.get();

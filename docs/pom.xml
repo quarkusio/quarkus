@@ -17,6 +17,9 @@
     <properties>
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <asciidoctorj-pdf.version>1.5.0-beta.8</asciidoctorj-pdf.version>
+        <roaster-jdt.version>2.26.0.Final</roaster-jdt.version>
+        <maven-model-helper.version>19</maven-model-helper.version>
+        <eclipse-collections.version>10.4.0</eclipse-collections.version>
         <quarkus-home-url>https://quarkus.io</quarkus-home-url>
         <quarkus-base-url>https://github.com/quarkusio/quarkus</quarkus-base-url>
         <quickstarts-base-url>https://github.com/quarkusio/quarkus-quickstarts</quickstarts-base-url>
@@ -33,6 +36,21 @@
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.forge.roaster</groupId>
+            <artifactId>roaster-jdt</artifactId>
+            <version>${roaster-jdt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>maven-model-helper</artifactId>
+            <version>${maven-model-helper.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.collections</groupId>
+            <artifactId>eclipse-collections</artifactId>
+            <version>${eclipse-collections.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -2734,27 +2752,6 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>dev.jbang</groupId>
-                <artifactId>jbang-maven-plugin</artifactId>
-                <version>0.0.7</version>
-                <executions>
-                    <execution>
-                        <id>generate-build-item-doc</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <script>${project.basedir}/../.github/quarkusbuilditemdoc.java</script>
-                            <args>
-                                <arg>--outputFile ${project.basedir}/../target/asciidoc/generated/config/quarkus-all-build-items.adoc</arg>
-                                <arg>--dirs ${project.basedir}/../core/deployment ${project.basedir}/../extensions</arg>
-                            </args>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <configuration>
@@ -2772,6 +2769,25 @@
                             <mainClass>io.quarkus.docs.generation.AllConfigGenerator</mainClass>
                             <arguments>
                                 <argument>${project.basedir}/../devtools/bom-descriptor-json/target/quarkus-bom-quarkus-platform-descriptor-${project.version}-${project.version}.json</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>all-build-item-classes</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipDocs}</skip>
+                            <mainClass>io.quarkus.docs.generation.QuarkusBuildItemDoc</mainClass>
+                            <arguments>
+                                <argument>${project.basedir}/../target/asciidoc/generated/config/quarkus-all-build-items.adoc</argument>
+                                <argument>${project.basedir}/../core/deployment</argument>
+                                <argument>${project.basedir}/../extensions</argument>
                             </arguments>
                             <environmentVariables>
                                 <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>

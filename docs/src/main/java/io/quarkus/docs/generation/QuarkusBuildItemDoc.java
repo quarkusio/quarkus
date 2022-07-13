@@ -1,9 +1,4 @@
-//usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS info.picocli:picocli:4.5.0
-//DEPS org.jboss.forge.roaster:roaster-jdt:2.22.2.Final
-//DEPS org.eclipse.collections:eclipse-collections:10.4.0
-//DEPS org.yaml:snakeyaml:1.27
-//DEPS io.fabric8:maven-model-helper:16
+package io.quarkus.docs.generation;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,13 +9,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
-import io.fabric8.maven.Maven;
 import org.eclipse.collections.api.multimap.Multimap;
 import org.eclipse.collections.api.multimap.MutableMultimap;
 import org.eclipse.collections.api.tuple.Pair;
@@ -32,29 +27,39 @@ import org.jboss.forge.roaster.model.source.FieldSource;
 import org.jboss.forge.roaster.model.source.JavaClassSource;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
-import picocli.CommandLine;
-import picocli.CommandLine.Command;
 
-@Command(name = "builditemdoc", mixinStandardHelpOptions = true, version = "builditemdoc 0.1",
-        description = "builditemdoc made with jbang")
-class quarkusbuilditemdoc implements Callable<Integer> {
+import io.fabric8.maven.Maven;
 
-    @CommandLine.Option(names = {"--outputFile"})
+public class QuarkusBuildItemDoc {
+
     public Path outputFile;
-
-    @CommandLine.Option(names = {"--dirs"}, required = true, arity = "1..*")
     public List<Path> paths;
 
     private PrintStream out = System.out;
 
-    public static void main(String... args) {
-        int exitCode = new CommandLine(new quarkusbuilditemdoc()).execute(args);
-        System.exit(exitCode);
+    // target/asciidoc/generated/config/quarkus-all-build-items.adoc core/deployment core/test-extension extensions
+    public static void main(String[] args) throws Exception {
+        if (args.length < 2) {
+            System.err.println("Must specify output file (first) followed by at least one source directory");
+            System.exit(1);
+        }
+        QuarkusBuildItemDoc buildItemDoc = new QuarkusBuildItemDoc();
+
+        buildItemDoc.outputFile = Path.of(args[0]);
+        buildItemDoc.paths = Arrays.stream(args).skip(1)
+                .map(Path::of)
+                .collect(Collectors.toList());
+
+        try {
+            buildItemDoc.run();
+        } catch (Exception e) {
+            System.err.println("Exception occurred while trying to collect build item documentation");
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 
-    // jbang .github/quarkusbuilditemdoc.java --outputFile target/asciidoc/generated/config/quarkus-all-build-items.adoc --dirs core/deployment core/test-extension extensions
-    @Override
-    public Integer call() throws Exception {
+    public void run() throws Exception {
         if (outputFile != null) {
             Files.createDirectories(outputFile.getParent());
             out = new PrintStream(Files.newOutputStream(outputFile));
@@ -76,7 +81,6 @@ class quarkusbuilditemdoc implements Callable<Integer> {
             }
             printTableFooter();
         });
-        return 0;
     }
 
     private String getJavaDoc(JavaDocCapable<?> source) {
@@ -89,9 +93,8 @@ class quarkusbuilditemdoc implements Callable<Integer> {
     private Multimap<String, Pair<Path, JavaClassSource>> collect() throws IOException {
         MutableMultimap<String, Pair<Path, JavaClassSource>> multimap = Multimaps.mutable.sortedSet
                 .with(Comparator.comparing(o -> o.getTwo().getName()));
-        String line;
         for (Path path : paths) {
-            Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+            Files.walkFileTree(path, new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     if (file.toString().endsWith("BuildItem.java")) {
@@ -149,12 +152,12 @@ class quarkusbuilditemdoc implements Callable<Integer> {
         return pom;
     }
 
-
     private Map<String, String> extractNames(Path root, Iterable<String> extensionDirs) throws IOException {
         Map<String, String> names = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         Yaml yaml = new Yaml(new SafeConstructor());
         for (String extension : extensionDirs) {
-            Path yamlPath = root.resolve("extensions/" + extension + "/runtime/src/main/resources/META-INF/quarkus-extension.yaml");
+            Path yamlPath = root
+                    .resolve("extensions/" + extension + "/runtime/src/main/resources/META-INF/quarkus-extension.yaml");
             if (Files.exists(yamlPath)) {
                 try (InputStream is = Files.newInputStream(yamlPath)) {
                     Map<String, String> map = yaml.load(is);
@@ -184,7 +187,7 @@ class quarkusbuilditemdoc implements Callable<Integer> {
         String description = getJavaDoc(source);
 
         out.println("a| " + link + "[`" + className + "`, window=\"_blank\"] :: +++" +
-                            javadocToHTML(description) + "+++");
+                javadocToHTML(description) + "+++");
         out.println("a| " + attributes);
     }
 
@@ -194,8 +197,8 @@ class quarkusbuilditemdoc implements Callable<Integer> {
             if (field.isStatic()) {
                 continue;
             }
-            sb.append("`" + field.getType().getName() + " " + field.getName() + "` :: ");
-            sb.append("+++" + javadocToHTML(getJavaDoc(field)) + "+++");
+            sb.append("`").append(field.getType().getName()).append(" ").append(field.getName()).append("` :: ");
+            sb.append("+++").append(javadocToHTML(getJavaDoc(field))).append("+++");
             sb.append("\n");
         }
         return sb.length() == 0 ? "None" : sb.toString();
@@ -224,6 +227,4 @@ class quarkusbuilditemdoc implements Callable<Integer> {
                 .replaceAll("</pre>", "\n```")
                 .replaceAll(" ?}", "```");
     }
-
-
 }

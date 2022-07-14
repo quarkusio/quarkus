@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.hibernate.boot.cfgxml.internal.ConfigLoader;
 import org.hibernate.boot.cfgxml.spi.LoadedConfig;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceInitiator;
@@ -29,7 +30,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 
     private static final String DISABLED_FEATURE_MSG = "This feature was disabled in Quarkus - this method should not have invoked, please report";
 
-    private final Map settings;
+    private final Map<String, Object> settings;
     private final List<StandardServiceInitiator<?>> initiators;
     private final List<ProvidedService<?>> providedServices = new ArrayList<>();
     private final List<Class<? extends Service>> postBuildProvidedServices = new ArrayList<>();
@@ -41,12 +42,12 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 
     public RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry,
             InitialInitiatorListProvider initialInitiatorsProvider) {
-        this(bootstrapServiceRegistry, new HashMap(), LoadedConfig.baseline(), initialInitiatorsProvider);
+        this(bootstrapServiceRegistry, new HashMap<String, Object>(), LoadedConfig.baseline(), initialInitiatorsProvider);
     }
 
-    private RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry, Map properties,
+    private RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry, Map<String, Object> properties,
             LoadedConfig loadedConfigBaseline, InitialInitiatorListProvider initialInitiatorsProvider) {
-        super(bootstrapServiceRegistry, properties, loadedConfigBaseline, null);
+        super(bootstrapServiceRegistry, properties, new ConfigLoader(bootstrapServiceRegistry), loadedConfigBaseline, null);
         this.settings = properties;
         this.bootstrapServiceRegistry = bootstrapServiceRegistry;
         this.aggregatedCfgXml = loadedConfigBaseline;
@@ -67,13 +68,11 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     }
 
     @Override
-    @SuppressWarnings({ "unchecked" })
     public StandardServiceRegistryBuilder loadProperties(String resourceName) {
         throw new UnsupportedOperationException(DISABLED_FEATURE_MSG);
     }
 
     @Override
-    @SuppressWarnings({ "unchecked" })
     public StandardServiceRegistryBuilder loadProperties(File file) {
         throw new UnsupportedOperationException(DISABLED_FEATURE_MSG);
     }
@@ -109,7 +108,6 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     }
 
     @Override
-    @SuppressWarnings({ "unchecked" })
     public StandardServiceRegistryBuilder configure(LoadedConfig loadedConfig) {
         throw new UnsupportedOperationException(DISABLED_FEATURE_MSG);
     }
@@ -123,7 +121,6 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
      * @return this, for method chaining
      */
     @Override
-    @SuppressWarnings({ "unchecked", "UnusedDeclaration" })
     public StandardServiceRegistryBuilder applySetting(String settingName, Object value) {
         settings.put(settingName, value);
         return this;
@@ -137,8 +134,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
      * @return this, for method chaining
      */
     @Override
-    @SuppressWarnings({ "unchecked", "UnusedDeclaration" })
-    public StandardServiceRegistryBuilder applySettings(Map settings) {
+    public StandardServiceRegistryBuilder applySettings(Map<String, Object> settings) {
         this.settings.putAll(settings);
         return this;
     }
@@ -156,8 +152,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
      * @return this, for method chaining
      */
     @Override
-    @SuppressWarnings({ "UnusedDeclaration" })
-    public StandardServiceRegistryBuilder addInitiator(StandardServiceInitiator initiator) {
+    public StandardServiceRegistryBuilder addInitiator(StandardServiceInitiator<?> initiator) {
         initiators.add(initiator);
         postBuildProvidedServices.add(initiator.getServiceInitiated());
         return this;
@@ -172,9 +167,8 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
      * @return this, for method chaining
      */
     @Override
-    @SuppressWarnings({ "unchecked" })
-    public StandardServiceRegistryBuilder addService(final Class serviceRole, final Service service) {
-        providedServices.add(new ProvidedService(serviceRole, service));
+    public <T extends Service> StandardServiceRegistryBuilder addService(final Class<T> serviceRole, final T service) {
+        providedServices.add(new ProvidedService<>(serviceRole, service));
         return this;
     }
 
@@ -215,11 +209,10 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
      * @return The StandardServiceRegistry.
      */
     @Override
-    @SuppressWarnings("unchecked")
     public StandardServiceRegistry build() {
         applyServiceContributors();
 
-        final Map settingsCopy = new HashMap();
+        final Map<String, Object> settingsCopy = new HashMap<>();
         settingsCopy.putAll(settings);
         settingsCopy.put(org.hibernate.boot.cfgxml.spi.CfgXmlAccessService.LOADED_CONFIG_KEY, aggregatedCfgXml);
 
@@ -253,7 +246,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
      */
     @Override
     @Deprecated
-    public Map getSettings() {
+    public Map<String, Object> getSettings() {
         return settings;
     }
 

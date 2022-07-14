@@ -32,7 +32,7 @@ import org.w3c.dom.NodeList;
  *
  * This script record/update the suggestions that are in the api-changes-suggestions.xml into api-changes.xml.
  */
-class jbangscript {
+public class RevapiUpdate {
     public static void main(String[] args) {
 
         Path currDir = Path.of(System.getProperty("user.dir"));

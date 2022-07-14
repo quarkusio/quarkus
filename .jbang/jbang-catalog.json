@@ -2,7 +2,7 @@
   "catalogs": {},
   "aliases": {
     "revapi-update": {
-      "script-ref": "apply-revapi-suggestions.java",
+      "script-ref": "RevapiUpdate.java",
       "properties": {}
     }
   },

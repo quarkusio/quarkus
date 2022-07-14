@@ -279,7 +279,7 @@ public class QuarkusDev extends QuarkusTask {
             String outputFile = System.getProperty(IO_QUARKUS_DEVMODE_ARGS);
             if (outputFile == null) {
                 getProject().exec(action -> {
-                    action.commandLine(runner.args()).workingDir(QuarkusPluginExtension.getLastFile(getCompilationOutput()));
+                    action.commandLine(runner.args()).workingDir(getWorkingDirectory().get());
                     action.setStandardInput(System.in)
                             .setErrorOutput(System.out)
                             .setStandardOutput(System.out);

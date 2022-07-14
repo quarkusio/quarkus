@@ -489,12 +489,13 @@ public class JibProcessor {
                             "fast-jar-deployment-libs", true, now);
                 }
 
+                Instant libModificationTime = jibConfig.useCurrentTimestampLib ? now : Instant.EPOCH;
                 AbsoluteUnixPath libsMainPath = workDirInContainer.resolve(JarResultBuildStep.LIB)
                         .resolve(JarResultBuildStep.MAIN);
                 addLayer(jibContainerBuilder, nonFastChangingLibPaths, libsMainPath, "fast-jar-normal-libs",
-                        isMutableJar, Instant.EPOCH);
+                        isMutableJar, libModificationTime);
                 addLayer(jibContainerBuilder, new ArrayList<>(fastChangingLibPaths), libsMainPath, "fast-jar-changing-libs",
-                        isMutableJar, Instant.EPOCH);
+                        isMutableJar, libModificationTime);
             }
 
             if (appCDSResult.isPresent()) {

@@ -2,6 +2,11 @@ package io.quarkus.test.junit.main;
 
 import java.util.List;
 
+/**
+ * Contains information about a run (via {@link Launch}) of a command line application.
+ * The class is meant to be used as a test method parameter giving the test the ability
+ * to assert various aspects of the run.
+ */
 public interface LaunchResult {
 
     default String getOutput() {

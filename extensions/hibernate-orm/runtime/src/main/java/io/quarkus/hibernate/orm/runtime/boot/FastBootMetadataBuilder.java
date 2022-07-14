@@ -419,8 +419,8 @@ public class FastBootMetadataBuilder {
         MetadataImpl replacement = new MetadataImpl(
                 fullMeta.getUUID(),
                 fullMeta.getMetadataBuildingOptions(), //TODO Replace this
-                fullMeta.getIdentifierGeneratorFactory(),
                 fullMeta.getEntityBindingMap(),
+                fullMeta.getComposites(),
                 fullMeta.getMappedSuperclassMap(),
                 fullMeta.getCollectionBindingMap(),
                 fullMeta.getTypeDefinitionMap(),

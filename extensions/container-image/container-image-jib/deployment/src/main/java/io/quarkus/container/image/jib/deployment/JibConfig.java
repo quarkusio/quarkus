@@ -217,4 +217,19 @@ public class JibConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean useCurrentTimestamp;
+
+    /**
+     * Whether to set the modification time (last modified time) of the files put by Jib in the image to the actual
+     * build time. Otherwise, the modification time will be set to the Unix epoch (00:00:00, January 1st, 1970 in UTC).
+     *
+     * If the modification time is constant (flag is set to false so Unix epoch is used) across two consecutive builds,
+     * the docker layer sha256 digest will be different only if the actual files added by Jib to the docker layer were
+     * changed. More exactly, having 2 consecutive builds will generate different docker layers only if the actual
+     * content of the files within the docker layer was changed.
+     *
+     * If the current timestamp is used the sha256 digest of the docker layer will always be different even if the
+     * content of the files didn't change.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean useCurrentTimestampFileModification;
 }

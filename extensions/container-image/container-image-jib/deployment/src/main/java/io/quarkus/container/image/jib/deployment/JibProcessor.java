@@ -492,9 +492,9 @@ public class JibProcessor {
                 AbsoluteUnixPath libsMainPath = workDirInContainer.resolve(JarResultBuildStep.LIB)
                         .resolve(JarResultBuildStep.MAIN);
                 addLayer(jibContainerBuilder, nonFastChangingLibPaths, libsMainPath, "fast-jar-normal-libs",
-                        isMutableJar, now);
+                        isMutableJar, Instant.EPOCH);
                 addLayer(jibContainerBuilder, new ArrayList<>(fastChangingLibPaths), libsMainPath, "fast-jar-changing-libs",
-                        isMutableJar, now);
+                        isMutableJar, Instant.EPOCH);
             }
 
             if (appCDSResult.isPresent()) {

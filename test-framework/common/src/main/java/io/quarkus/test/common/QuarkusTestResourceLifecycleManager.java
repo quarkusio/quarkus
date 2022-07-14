@@ -28,7 +28,7 @@ public interface QuarkusTestResourceLifecycleManager {
     /**
      * Start the test resource.
      *
-     * @return A map of system properties that should be set for the running test
+     * @return A map of configuration properties that will be set for the running test
      */
     Map<String, String> start();
 

@@ -4,8 +4,8 @@
 :idprefix:
 :idseparator: -
 :icons: font
-// tag::xref-attributes[]
+:code-examples: ../../../../target/asciidoc/examples
+:doc-guides: ./
 :doc-examples: ./_examples
 :imagesdir: ./images
 :includes: ./includes
-// end::xref-attributes[]

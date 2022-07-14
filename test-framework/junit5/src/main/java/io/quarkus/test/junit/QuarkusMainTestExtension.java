@@ -35,9 +35,6 @@ import io.quarkus.test.junit.main.QuarkusMainLauncher;
 public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         implements BeforeEachCallback, AfterEachCallback, ParameterResolver, BeforeAllCallback, AfterAllCallback {
 
-    public static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace
-            .create("io.quarkus.test.main.jvm");
-
     PrepareResult prepareResult;
     private static boolean hasPerTestResources;
 

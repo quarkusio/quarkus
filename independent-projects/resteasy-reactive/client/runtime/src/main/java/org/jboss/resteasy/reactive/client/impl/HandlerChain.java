@@ -51,11 +51,11 @@ class HandlerChain {
         }
         List<ClientRestHandler> result = new ArrayList<>(
                 (preClientSendHandler != null ? 4 : 3) + requestFilters.size() + responseFilters.size());
-        for (int i = 0; i < requestFilters.size(); i++) {
-            result.add(new ClientRequestFilterRestHandler(requestFilters.get(i)));
-        }
         if (preClientSendHandler != null) {
             result.add(preClientSendHandler);
+        }
+        for (int i = 0; i < requestFilters.size(); i++) {
+            result.add(new ClientRequestFilterRestHandler(requestFilters.get(i)));
         }
         result.add(clientSendHandler);
         result.add(clientSetResponseEntityRestHandler);

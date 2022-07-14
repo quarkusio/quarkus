@@ -65,16 +65,6 @@ public class ArtifactDependency extends GACTV implements Dependency, Serializabl
         return flags;
     }
 
-    public void setFlag(int flag) {
-        flags |= flag;
-    }
-
-    public void clearFlag(int flag) {
-        if ((flags & flag) > 0) {
-            flags ^= flag;
-        }
-    }
-
     @Override
     public int hashCode() {
         final int prime = 31;

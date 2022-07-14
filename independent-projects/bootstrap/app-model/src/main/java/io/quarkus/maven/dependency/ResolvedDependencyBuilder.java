@@ -13,6 +13,7 @@ public class ResolvedDependencyBuilder extends AbstractDependencyBuilder<Resolve
 
     PathCollection resolvedPaths;
     WorkspaceModule workspaceModule;
+    private volatile ArtifactCoords coords;
 
     public PathCollection getResolvedPaths() {
         return resolvedPaths;
@@ -38,6 +39,10 @@ public class ResolvedDependencyBuilder extends AbstractDependencyBuilder<Resolve
             setWorkspaceModule();
         }
         return this;
+    }
+
+    public ArtifactCoords getArtifactCoords() {
+        return coords == null ? coords = ArtifactCoords.of(groupId, artifactId, classifier, type, version) : coords;
     }
 
     @Override

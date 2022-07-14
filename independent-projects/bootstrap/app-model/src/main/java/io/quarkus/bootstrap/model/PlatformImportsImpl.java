@@ -3,7 +3,6 @@ package io.quarkus.bootstrap.model;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.GACTV;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -77,10 +76,9 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
     }
 
     public void addPlatformDescriptor(String groupId, String artifactId, String classifier, String type, String version) {
-        final ArtifactCoords bomCoords = new GACTV(groupId,
+        final ArtifactCoords bomCoords = ArtifactCoords.pom(groupId,
                 artifactId.substring(0,
                         artifactId.length() - BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()),
-                null, "pom",
                 version);
         platformImports.computeIfAbsent(bomCoords, c -> new PlatformImport()).descriptorFound = true;
         platformBoms.add(bomCoords);
@@ -88,10 +86,9 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
 
     public void addPlatformProperties(String groupId, String artifactId, String classifier, String type, String version,
             Path propsPath) throws AppModelResolverException {
-        final ArtifactCoords bomCoords = new GACTV(groupId,
+        final ArtifactCoords bomCoords = ArtifactCoords.pom(groupId,
                 artifactId.substring(0,
                         artifactId.length() - BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX.length()),
-                null, "pom",
                 version);
         platformImports.computeIfAbsent(bomCoords, c -> new PlatformImport());
         importedPlatformBoms.computeIfAbsent(groupId, g -> new ArrayList<>()).add(bomCoords);

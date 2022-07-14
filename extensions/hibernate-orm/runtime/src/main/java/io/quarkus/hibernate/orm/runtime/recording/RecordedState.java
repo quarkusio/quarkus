@@ -18,7 +18,7 @@ public final class RecordedState {
     private final PrevalidatedQuarkusMetadata metadata;
     private final BuildTimeSettings settings;
     private final Collection<Integrator> integrators;
-    private final Collection<ProvidedService> providedServices;
+    private final Collection<ProvidedService<?>> providedServices;
     private final IntegrationSettings integrationSettings;
     private final ProxyDefinitions proxyClassDefinitions;
     private final boolean isReactive;
@@ -26,7 +26,7 @@ public final class RecordedState {
 
     public RecordedState(Dialect dialect, PrevalidatedQuarkusMetadata metadata,
             BuildTimeSettings settings, Collection<Integrator> integrators,
-            Collection<ProvidedService> providedServices, IntegrationSettings integrationSettings,
+            Collection<ProvidedService<?>> providedServices, IntegrationSettings integrationSettings,
             ProxyDefinitions classDefinitions, Optional<String> dataSource, boolean isReactive,
             boolean fromPersistenceXml) {
         this.dialect = dialect;
@@ -57,7 +57,7 @@ public final class RecordedState {
         return integrators;
     }
 
-    public Collection<ProvidedService> getProvidedServices() {
+    public Collection<ProvidedService<?>> getProvidedServices() {
         return providedServices;
     }
 

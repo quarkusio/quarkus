@@ -107,7 +107,7 @@ public class FastBootMetadataBuilder {
     private final ManagedResources managedResources;
     private final MetadataBuilderImplementor metamodelBuilder;
     private final Collection<Class<? extends Integrator>> additionalIntegrators;
-    private final Collection<ProvidedService> providedServices;
+    private final Collection<ProvidedService<?>> providedServices;
     private final PreGeneratedProxies preGeneratedProxies;
     private final Optional<String> dataSource;
     private final boolean isReactive;

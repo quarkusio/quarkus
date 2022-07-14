@@ -36,13 +36,13 @@ import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
 public final class StandardHibernateORMInitiatorListProvider implements InitialInitiatorListProvider {
 
     @Override
-    public List<StandardServiceInitiator> initialInitiatorList() {
+    public List<StandardServiceInitiator<?>> initialInitiatorList() {
 
         // Note to maintainers: always remember to check for consistency needs with both:
         // io.quarkus.hibernate.orm.runtime.boot.registry.PreconfiguredServiceRegistryBuilder#buildQuarkusServiceInitiatorList(RecordedState)
         // and ReactiveHibernateInitiatorListProvider
 
-        final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
+        final ArrayList<StandardServiceInitiator<?>> serviceInitiators = new ArrayList<>();
 
         //This one needs to be replaced after Metadata has been recorded:
         serviceInitiators.add(BootstrapOnlyProxyFactoryFactoryInitiator.INSTANCE);

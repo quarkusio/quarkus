@@ -30,8 +30,8 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     private static final String DISABLED_FEATURE_MSG = "This feature was disabled in Quarkus - this method should not have invoked, please report";
 
     private final Map settings;
-    private final List<StandardServiceInitiator> initiators;
-    private final List<ProvidedService> providedServices = new ArrayList<ProvidedService>();
+    private final List<StandardServiceInitiator<?>> initiators;
+    private final List<ProvidedService<?>> providedServices = new ArrayList<>();
     private final List<Class<? extends Service>> postBuildProvidedServices = new ArrayList<>();
 
     private boolean autoCloseRegistry = true;
@@ -236,7 +236,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
         }
     }
 
-    public List<ProvidedService> getProvidedServices() {
+    public List<ProvidedService<?>> getProvidedServices() {
         return providedServices;
     }
 

@@ -3,7 +3,9 @@ package io.quarkus.hibernate.orm.runtime.dialect;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 
+import org.hibernate.dialect.DatabaseVersion;
 import org.hibernate.dialect.PostgreSQL95Dialect;
+import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.engine.jdbc.env.spi.IdentifierCaseStrategy;
 import org.hibernate.engine.jdbc.env.spi.IdentifierHelper;
 import org.hibernate.engine.jdbc.env.spi.IdentifierHelperBuilder;
@@ -16,7 +18,12 @@ import org.hibernate.engine.jdbc.env.spi.IdentifierHelperBuilder;
  * @author Stephane Epardaud
  * @author Emmanuel Bernard emmanuel@hibernate.org
  */
-public class QuarkusPostgreSQL95Dialect extends PostgreSQL95Dialect {
+public class QuarkusPostgreSQL95Dialect extends PostgreSQLDialect {
+
+    public QuarkusPostgreSQL95Dialect() {
+        super(DatabaseVersion.make(9, 5));
+    }
+
     @Override
     public IdentifierHelper buildIdentifierHelper(IdentifierHelperBuilder builder, DatabaseMetaData dbMetaData)
             throws SQLException {

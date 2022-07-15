@@ -48,6 +48,8 @@ import sun.misc.SignalHandler;
  */
 public class ApplicationLifecycleManager {
 
+    // used by ShutdownEvent to propagate the information about shutdown reason
+    public static volatile ShutdownEvent.ShutdownReason shutdownReason = ShutdownEvent.ShutdownReason.STANDARD;
     private static volatile BiConsumer<Integer, Throwable> defaultExitCodeHandler = new BiConsumer<Integer, Throwable>() {
         @Override
         public void accept(Integer integer, Throwable cause) {
@@ -408,6 +410,8 @@ public class ApplicationLifecycleManager {
             //we let the application main thread take care of actually exiting
             //TODO: if the main thread is not actively waiting to exit should we interrupt it?
             shutdownRequested = true;
+            // so long as this thread is invoked, the app shutdown is considered non-standard
+            shutdownReason = ShutdownEvent.ShutdownReason.NON_STANDARD;
             try {
                 stateCond.signalAll();
             } finally {

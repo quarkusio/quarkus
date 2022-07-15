@@ -57,7 +57,8 @@ public class UnsupportedPropertiesTest {
                     "some-value-2")
             // This should be ignored with a warning
             .overrideConfigKey(
-                    "quarkus.hibernate-orm.unsupported-properties.\"" + AvailableSettings.HBM2DDL_DATABASE_ACTION + "\"",
+                    "quarkus.hibernate-orm.unsupported-properties.\"" + AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION
+                            + "\"",
                     "drop-and-create")
             // Expect warnings on startup
             .setLogRecordPredicate(record -> FastBootHibernatePersistenceProvider.class.getName().equals(record.getLoggerName())
@@ -72,15 +73,16 @@ public class UnsupportedPropertiesTest {
                                 "may change when upgrading to a newer version of Quarkus (even just a micro/patch version)",
                                 "Consider using a supported configuration property",
                                 "make sure to file a feature request so that a supported configuration property can be added to Quarkus")
-                        .contains(AvailableSettings.ORDER_INSERTS, AvailableSettings.HBM2DDL_DATABASE_ACTION,
+                        .contains(AvailableSettings.ORDER_INSERTS, AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION,
                                 "hibernate.some.unknown.key.static-and-runtime", "hibernate.some.unknown.key.runtime-only")
                         // We should not log property values, that could be a security breach for some properties.
                         .doesNotContain("some-value"));
                 assertion.element(1).satisfies(record -> assertThat(LOG_FORMATTER.formatMessage(record))
                         .contains(
-                                "Persistence-unit [<default>] sets property '" + AvailableSettings.HBM2DDL_DATABASE_ACTION
+                                "Persistence-unit [<default>] sets property '"
+                                        + AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION
                                         + "' to a custom value through 'quarkus.hibernate-orm.unsupported-properties.\""
-                                        + AvailableSettings.HBM2DDL_DATABASE_ACTION + "\"'",
+                                        + AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION + "\"'",
                                 "Quarkus already set that property independently",
                                 "The custom value will be ignored"));
             });

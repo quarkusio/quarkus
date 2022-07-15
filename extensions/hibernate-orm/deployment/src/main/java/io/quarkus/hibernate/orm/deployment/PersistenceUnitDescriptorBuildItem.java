@@ -67,7 +67,7 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     }
 
     public String getExplicitSqlImportScriptResourceName() {
-        return descriptor.getProperties().getProperty("javax.persistence.sql-load-script-source");
+        return descriptor.getProperties().getProperty("jakarta.persistence.sql-load-script-source");
     }
 
     public String getPersistenceUnitName() {

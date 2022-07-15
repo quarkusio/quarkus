@@ -7,6 +7,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.TracerRouter;
 import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
@@ -15,9 +18,14 @@ public class OpenTelemetryContinuousTestingTest {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
-                    .addClass(TestSpanExporter.class)
                     .addClass(TracerRouter.class)
-                    .add(new StringAsset(ContinuousTestingTestUtils.appProperties("")), "application.properties"))
+                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+                    .add(new StringAsset(ContinuousTestingTestUtils.appProperties(
+                            "otel.traces.exporter=test-span-exporter",
+                            "otel.metrics.exporter=none",
+                            "otel.logs.exporter=none")), "application.properties"))
             .setTestArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(TracerRouterUT.class));
 

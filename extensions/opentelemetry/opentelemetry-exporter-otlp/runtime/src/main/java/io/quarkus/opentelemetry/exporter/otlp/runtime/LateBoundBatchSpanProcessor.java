@@ -14,6 +14,7 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
  * is started, enabling Quarkus to instantiate a {@link io.opentelemetry.api.trace.TracerProvider}
  * during static initialization and set a {@link BatchSpanProcessor} delegate during runtime initialization.
  */
+@Deprecated // we want to remove CDI wiring, just use the autoconfigure
 public class LateBoundBatchSpanProcessor implements SpanProcessor {
     private static final Logger log = Logger.getLogger(LateBoundBatchSpanProcessor.class);
 

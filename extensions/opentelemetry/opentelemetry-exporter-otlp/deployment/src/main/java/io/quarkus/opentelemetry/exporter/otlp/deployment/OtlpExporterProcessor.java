@@ -8,18 +8,25 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.opentelemetry.exporter.otlp.runtime.OtlpExporterConfig;
+import io.quarkus.opentelemetry.exporter.otlp.runtime.OtlpExporterBuildConfig;
 import io.quarkus.opentelemetry.exporter.otlp.runtime.OtlpExporterProvider;
+import io.quarkus.opentelemetry.exporter.otlp.runtime.OtlpExporterRuntimeConfig;
 import io.quarkus.opentelemetry.exporter.otlp.runtime.OtlpRecorder;
+import io.quarkus.opentelemetry.runtime.config.OtelBuildConfig;
+import io.quarkus.opentelemetry.runtime.config.OtelRuntimeConfig;
 
 @BuildSteps(onlyIf = OtlpExporterProcessor.OtlpExporterEnabled.class)
 public class OtlpExporterProcessor {
 
     static class OtlpExporterEnabled implements BooleanSupplier {
-        OtlpExporterConfig.OtlpExporterBuildConfig otlpExporterConfig;
+        OtlpExporterBuildConfig exporBuildConfig;
+        OtelBuildConfig otelBuildConfig;
 
         public boolean getAsBoolean() {
-            return otlpExporterConfig.enabled;
+            return otelBuildConfig.enabled() &&
+                    otelBuildConfig.traces().enabled().orElse(Boolean.TRUE) &&
+                    //                    otelBuildConfig.traces().exporter().contains("otlp") &&
+                    exporBuildConfig.enabled().orElse(Boolean.TRUE);
         }
     }
 
@@ -34,7 +41,10 @@ public class OtlpExporterProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void installBatchSpanProcessorForOtlp(OtlpRecorder recorder,
             LaunchModeBuildItem launchModeBuildItem,
-            OtlpExporterConfig.OtlpExporterRuntimeConfig runtimeConfig) {
-        recorder.installBatchSpanProcessorForOtlp(runtimeConfig, launchModeBuildItem.getLaunchMode());
+            OtelRuntimeConfig otelRuntimeConfig,
+            OtlpExporterRuntimeConfig exporterRuntimeConfig) {
+        recorder.installBatchSpanProcessorForOtlp(otelRuntimeConfig,
+                exporterRuntimeConfig,
+                launchModeBuildItem.getLaunchMode());
     }
 }

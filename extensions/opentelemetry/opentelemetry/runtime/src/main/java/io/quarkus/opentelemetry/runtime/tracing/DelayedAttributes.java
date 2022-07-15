@@ -14,6 +14,7 @@ import io.opentelemetry.api.common.AttributesBuilder;
  * Class enabling Quarkus to instantiate a {@link io.opentelemetry.api.trace.TracerProvider}
  * during static initialization and set a {@link Attributes} delegate during runtime initialization.
  */
+@Deprecated() // CDI beans will be dropped from OTel Autoconfig
 public class DelayedAttributes implements Attributes {
     private static final Logger log = Logger.getLogger(DelayedAttributes.class);
     private boolean warningLogged = false;

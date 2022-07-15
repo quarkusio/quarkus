@@ -109,23 +109,6 @@
             <artifactId>opentelemetry-jdbc</artifactId>
             <scope>test</scope>
         </dependency>
-
-
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-extension-aws</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-sdk-extension-aws</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-sdk-extension-resources</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>

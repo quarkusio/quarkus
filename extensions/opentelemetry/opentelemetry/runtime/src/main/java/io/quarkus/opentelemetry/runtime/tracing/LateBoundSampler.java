@@ -16,6 +16,7 @@ import io.opentelemetry.sdk.trace.samplers.SamplingResult;
  * Class enabling Quarkus to instantiate a {@link io.opentelemetry.api.trace.TracerProvider}
  * during static initialization and set a {@link Sampler} delegate during runtime initialization.
  */
+@Deprecated() // CDI beans will be dropped from OTel Autoconfig
 public class LateBoundSampler implements Sampler {
     private static final Logger log = Logger.getLogger(LateBoundSampler.class);
     private boolean warningLogged = false;

@@ -14,6 +14,7 @@ import java.util.Map;
 
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -49,6 +50,7 @@ public class OpenTelemetryTestCase {
                 .when().get("/export/clear")
                 .then()
                 .statusCode(204);
+        Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> getSpans().size() == 0);
     }
 
     private List<Map<String, Object>> getSpans() {
@@ -56,10 +58,13 @@ public class OpenTelemetryTestCase {
         });
     }
 
+    @BeforeEach
+    void setup() {
+        resetExporter();
+    }
+
     @Test
     void testResourceTracing() {
-        resetExporter();
-
         given()
                 .contentType("application/json")
                 .when().get("/direct")
@@ -95,8 +100,6 @@ public class OpenTelemetryTestCase {
 
     @Test
     void testEmptyClientPath() {
-        resetExporter();
-
         given()
                 .contentType("application/json")
                 .when().get("/nopath")
@@ -209,8 +212,6 @@ public class OpenTelemetryTestCase {
 
     @Test
     void testSlashClientPath() {
-        resetExporter();
-
         given()
                 .contentType("application/json")
                 .when().get("/slashpath")
@@ -323,8 +324,6 @@ public class OpenTelemetryTestCase {
 
     @Test
     void testChainedResourceTracing() {
-        resetExporter();
-
         given()
                 .contentType("application/json")
                 .when().get("/chained")
@@ -367,8 +366,6 @@ public class OpenTelemetryTestCase {
     @Test
     void testTracingWithParentHeaders() {
         buildGlobalTelemetryInstance();
-        resetExporter();
-
         Span parentSpan = GlobalOpenTelemetry.getTracer("io.quarkus.opentelemetry")
                 .spanBuilder("testTracingWithParentHeaders")
                 .setNoParent()
@@ -417,8 +414,6 @@ public class OpenTelemetryTestCase {
 
     @Test
     void testDeepPathNaming() {
-        resetExporter();
-
         given()
                 .contentType("application/json")
                 .when().get("/deep/path")
@@ -454,8 +449,6 @@ public class OpenTelemetryTestCase {
 
     @Test
     void testPathParameter() {
-        resetExporter();
-
         given()
                 .contentType("application/json")
                 .when().get("/param/12345")
@@ -492,8 +485,6 @@ public class OpenTelemetryTestCase {
 
     @Test
     void testClientTracing() {
-        resetExporter();
-
         given()
                 .when().get("/client/ping/one")
                 .then()
@@ -605,8 +596,6 @@ public class OpenTelemetryTestCase {
 
     @Test
     void testAsyncClientTracing() {
-        resetExporter();
-
         given()
                 .when().get("/client/async-ping/one")
                 .then()
@@ -718,8 +707,6 @@ public class OpenTelemetryTestCase {
 
     @Test
     void testTemplatedPathOnClass() {
-        resetExporter();
-
         given()
                 .contentType("application/json")
                 .when().get("/template/path/something")
@@ -755,8 +742,6 @@ public class OpenTelemetryTestCase {
 
     @Test
     void testCustomSpanNames() {
-        resetExporter();
-
         given()
                 .contentType("application/json")
                 .when().get("/client/async-ping-named/one")
@@ -789,6 +774,7 @@ public class OpenTelemetryTestCase {
         } catch (IOException e) {
             Assertions.fail("Not failing graciously. Got: " + e.getMessage());
         }
+        Awaitility.await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() == 1);
     }
 
     private void verifyResource(Map<String, Object> spanData) {

@@ -15,7 +15,7 @@ public class TracerDisabledTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withEmptyApplication()
-            .overrideConfigKey("quarkus.opentelemetry.tracer.enabled", "false")
+            .overrideConfigKey("quarkus.opentelemetry.tracer.enabled", "false")// TODO create test with new property
             .assertException(t -> Assertions.assertEquals(DeploymentException.class, t.getClass()));
 
     @Inject

@@ -1,16 +1,15 @@
 package io.quarkus.opentelemetry.runtime.tracing;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.spi.CDI;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryUtil;
+import io.quarkus.opentelemetry.runtime.tracing.config.TracesBuildConfig;
 
 public class TracerUtil {
     private TracerUtil() {
@@ -24,32 +23,52 @@ public class TracerUtil {
         return Resource.create(attributesBuilder.build());
     }
 
+    public static Resource mapResourceAttributes(Map<String, String> resourceAttributes) {
+        AttributesBuilder attributesBuilder = Attributes.builder();
+
+        resourceAttributes.forEach(attributesBuilder::put);
+
+        return Resource.create(attributesBuilder.build());
+    }
+
     private static Sampler getBaseSampler(String samplerName, Optional<Double> ratio) {
         switch (samplerName) {
             case "on":
+            case "always_on":
+            case "parentbased_always_on":
                 return Sampler.alwaysOn();
             case "off":
+            case "always_off":
+            case "parentbased_always_off":
                 return Sampler.alwaysOff();
             case "ratio":
+            case "traceidratio":
+            case "parentbased_traceidratio":
                 return Sampler.traceIdRatioBased(ratio.orElse(1.0d));
             default:
                 throw new IllegalArgumentException("Unrecognized value for sampler: " + samplerName);
         }
     }
 
-    public static Sampler mapSampler(TracerRuntimeConfig.SamplerConfig samplerConfig,
-            List<String> dropTargets) {
-        Sampler sampler = CDI.current()
-                .select(Sampler.class, Any.Literal.INSTANCE)
-                .stream()
-                .filter(o -> !(o instanceof LateBoundSampler))
-                .findFirst().orElseGet(() -> getBaseSampler(samplerConfig.samplerName, samplerConfig.ratio));
+    private static boolean getParentSampler(TracesBuildConfig.SamplerConfig samplerConfig) {
+        switch (samplerConfig.sampler()) {
+            case "parentbased_always_on":
+            case "parentbased_always_off":
+            case "parentbased_traceidratio":
+                return true;
+            default:
+                return false;
+        }
+    }
 
-        if (!dropTargets.isEmpty()) {
-            sampler = new DropTargetsSampler(sampler, dropTargets);
+    public static Sampler mapSampler(TracesBuildConfig.SamplerConfig samplerConfig, List<String> dropNames) {
+        Sampler sampler = getBaseSampler(samplerConfig.sampler(), samplerConfig.arg());
+
+        if (!dropNames.isEmpty()) {
+            sampler = new DropTargetsSampler(sampler, dropNames);
         }
 
-        if (samplerConfig.parentBased) {
+        if (getParentSampler(samplerConfig)) {
             return Sampler.parentBased(sampler);
         }
 

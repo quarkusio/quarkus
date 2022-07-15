@@ -6,6 +6,10 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.opentelemetry.deployment.common.HelloResource;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.TracerRouter;
 import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
@@ -14,8 +18,14 @@ public class OpenTelemetryDevModeTest {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(TestSpanExporter.class, TracerRouter.class, HelloResource.class)
-                    .add(new StringAsset(ContinuousTestingTestUtils.appProperties("")), "application.properties"));
+                    .addClasses(TracerRouter.class, HelloResource.class)
+                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+                    .add(new StringAsset(ContinuousTestingTestUtils.appProperties(
+                            "otel.traces.exporter=test-span-exporter",
+                            "otel.metrics.exporter=none",
+                            "otel.logs.exporter=none")), "application.properties"));
 
     @Test
     void testDevMode() {

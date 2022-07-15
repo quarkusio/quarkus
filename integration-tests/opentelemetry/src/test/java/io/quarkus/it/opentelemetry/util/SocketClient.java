@@ -19,7 +19,7 @@ public class SocketClient implements AutoCloseable {
 
     public SocketClient(String ip, int port) throws IOException {
         socket = new Socket(ip, port);
-        socket.setSoTimeout(1000);// making sure we don't hang the build
+        socket.setSoTimeout(100);// making sure we don't hang the build
         socket.setKeepAlive(false);
         out = new PrintWriter(socket.getOutputStream(), true);
         readIn = new InputStreamReader(socket.getInputStream());

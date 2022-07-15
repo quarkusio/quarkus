@@ -14,6 +14,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -21,8 +22,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.smallrye.config.SmallRyeConfig;
 
 public class OpenTelemetryHttpCDITest {
     @RegisterExtension
@@ -31,7 +35,14 @@ public class OpenTelemetryHttpCDITest {
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClass(HelloResource.class)
                             .addClass(HelloBean.class)
-                            .addClass(TestSpanExporter.class));
+                            .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+                            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+            .overrideConfigKey(SmallRyeConfig.SMALLRYE_CONFIG_MAPPING_VALIDATE_UNKNOWN, "false")// FIXME default config mapping
+            .overrideConfigKey("otel.traces.exporter", "test-span-exporter")
+            .overrideConfigKey("otel.metrics.exporter", "none")
+            .overrideConfigKey("otel.logs.exporter", "none")
+            .overrideConfigKey("otel.bsp.schedule.delay", "200");
 
     @Inject
     TestSpanExporter spanExporter;

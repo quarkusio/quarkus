@@ -1,12 +1,9 @@
 package io.quarkus.opentelemetry.deployment.tracing;
 
-import static io.quarkus.opentelemetry.deployment.OpenTelemetryProcessor.isClassPresent;
-import static javax.interceptor.Interceptor.Priority.LIBRARY_AFTER;
+import static io.quarkus.bootstrap.classloading.QuarkusClassLoader.isClassPresentAtRuntime;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -39,16 +36,11 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.opentelemetry.runtime.config.OtelBuildConfig;
+import io.quarkus.opentelemetry.runtime.config.OtelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.tracing.TracerProducer;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
-import io.quarkus.opentelemetry.runtime.tracing.TracerRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.tracing.grpc.GrpcTracingClientInterceptor;
-import io.quarkus.opentelemetry.runtime.tracing.grpc.GrpcTracingServerInterceptor;
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
-import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
-import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
 
 @BuildSteps(onlyIf = TracerEnabled.class)
 public class TracerProcessor {
@@ -59,7 +51,7 @@ public class TracerProcessor {
     private static final DotName SPAN_PROCESSOR = DotName.createSimple(SpanProcessor.class.getName());
 
     static class MetricsExtensionAvailable implements BooleanSupplier {
-        private static final boolean IS_MICROMETER_EXTENSION_AVAILABLE = isClassPresent(
+        private static final boolean IS_MICROMETER_EXTENSION_AVAILABLE = isClassPresentAtRuntime(
                 "io.quarkus.micrometer.runtime.binder.vertx.VertxHttpServerMetrics");
 
         @Override
@@ -81,7 +73,7 @@ public class TracerProcessor {
     }
 
     static class GrpcExtensionAvailable implements BooleanSupplier {
-        private static final boolean IS_GRPC_EXTENSION_AVAILABLE = isClassPresent(
+        private static final boolean IS_GRPC_EXTENSION_AVAILABLE = isClassPresentAtRuntime(
                 "io.quarkus.grpc.runtime.GrpcServerRecorder");
 
         @Override
@@ -154,71 +146,70 @@ public class TracerProcessor {
         return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(retainProducers));
     }
 
+    //    @BuildStep(onlyIf = TracerEnabled.class)
+    //    @Record(ExecutionTime.STATIC_INIT)
+    //    TracerProviderBuildItem createTracerProvider(
+    //            TracerRecorder recorder,
+    //            ApplicationInfoBuildItem appInfo,
+    //            ShutdownContextBuildItem shutdownContext,
+    //            BeanContainerBuildItem beanContainerBuildItem) {
+    //        String serviceName = appInfo.getName();
+    //        String serviceVersion = appInfo.getVersion();
+    //        return new TracerProviderBuildItem(
+    //                recorder.createTracerProvider(Version.getVersion(), serviceName, serviceVersion, shutdownContext));
+    //    }
+
     @BuildStep
-    void dropNames(
-            Optional<FrameworkEndpointsBuildItem> frameworkEndpoints,
-            Optional<StaticResourcesBuildItem> staticResources,
-            BuildProducer<DropNonApplicationUrisBuildItem> dropNonApplicationUris,
-            BuildProducer<DropStaticResourcesBuildItem> dropStaticResources) {
-
-        // Drop framework paths
-        List<String> nonApplicationUris = new ArrayList<>();
-        frameworkEndpoints.ifPresent(
-                frameworkEndpointsBuildItem -> nonApplicationUris.addAll(frameworkEndpointsBuildItem.getEndpoints()));
-        dropNonApplicationUris.produce(new DropNonApplicationUrisBuildItem(nonApplicationUris));
-
-        // Drop Static Resources
-        List<String> resources = new ArrayList<>();
-        if (staticResources.isPresent()) {
-            for (StaticResourcesBuildItem.Entry entry : staticResources.get().getEntries()) {
-                if (!entry.isDirectory()) {
-                    resources.add(entry.getPath());
-                }
-            }
-        }
-        dropStaticResources.produce(new DropStaticResourcesBuildItem(resources));
-    }
-
-    @BuildStep(onlyIf = GrpcExtensionAvailable.class)
-    void grpcTracers(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingServerInterceptor.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingClientInterceptor.class));
+    @Record(ExecutionTime.STATIC_INIT)
+    TracerIdGeneratorBuildItem createIdGenerator(TracerRecorder recorder,
+            BeanContainerBuildItem beanContainerBuildItem) {
+        return new TracerIdGeneratorBuildItem(recorder.createIdGenerator());
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    VertxOptionsConsumerBuildItem vertxTracingOptions(TracerRecorder recorder) {
-        return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingOptions(), LIBRARY_AFTER);
-    }
-
-    @BuildStep(onlyIfNot = MetricsExtensionAvailable.class)
-    @Record(ExecutionTime.STATIC_INIT)
-    VertxOptionsConsumerBuildItem vertxTracingMetricsOptions(TracerRecorder recorder) {
-        return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingMetricsOptions(), LIBRARY_AFTER + 1);
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    TracerProviderBuildItem createTracerProvider(
-            TracerRecorder recorder,
+    TracerResourceBuildItem createResource(TracerRecorder recorder,
             ApplicationInfoBuildItem appInfo,
-            ShutdownContextBuildItem shutdownContext,
             BeanContainerBuildItem beanContainerBuildItem) {
         String serviceName = appInfo.getName();
         String serviceVersion = appInfo.getVersion();
-        return new TracerProviderBuildItem(
-                recorder.createTracerProvider(Version.getVersion(), serviceName, serviceVersion, shutdownContext));
+        return new TracerResourceBuildItem(recorder.createResource(Version.getVersion(), serviceName, serviceVersion));
+    }
+
+    @BuildStep(onlyIf = TracerEnabled.class)
+    @Record(ExecutionTime.STATIC_INIT)
+    TracerSamplerBuildItem createSampler(TracerRecorder recorder,
+            BeanContainerBuildItem beanContainerBuildItem) {
+        return new TracerSamplerBuildItem(recorder.createLateBoundSampler());
+    }
+
+    @BuildStep(onlyIf = TracerEnabled.class)
+    @Record(ExecutionTime.STATIC_INIT)
+    TracerSpanExportersBuildItem createSpanExporters(TracerRecorder recorder,
+            BeanContainerBuildItem beanContainerBuildItem) {
+        return new TracerSpanExportersBuildItem(recorder.createSpanExporter());
+    }
+
+    @BuildStep(onlyIf = TracerEnabled.class)
+    @Record(ExecutionTime.STATIC_INIT)
+    TracerSpanProcessorsBuildItem createSpanProcessors(TracerRecorder recorder,
+            BeanContainerBuildItem beanContainerBuildItem) {
+        return new TracerSpanProcessorsBuildItem(recorder.createSpanProcessors());
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupTracer(
             TracerRecorder recorder,
-            TracerRuntimeConfig runtimeConfig,
+            OtelRuntimeConfig runtimeConfig,
+            OtelBuildConfig buildConfig,
             DropNonApplicationUrisBuildItem dropNonApplicationUris,
             DropStaticResourcesBuildItem dropStaticResources) {
 
         recorder.setupResources(runtimeConfig);
-        recorder.setupSampler(runtimeConfig, dropNonApplicationUris.getDropNames(), dropStaticResources.getDropNames());
+        recorder.setupSampler(runtimeConfig,
+                buildConfig,
+                dropNonApplicationUris.getDropNames(),
+                dropStaticResources.getDropNames());
     }
 }

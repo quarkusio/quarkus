@@ -12,6 +12,8 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 import io.smallrye.config.SmallRyeConfig;
@@ -21,9 +23,18 @@ public class OpenTelemetryDevServicesDatasourcesTest {
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(DevResource.class)
+                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                     .add(new StringAsset(
                             "quarkus.datasource.db-kind=h2\n" +
-                                    "quarkus.datasource.jdbc.driver=io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver"),
+                                    "quarkus.datasource.jdbc.driver=io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver\n"
+                                    +
+                                    "smallrye.config.mapping.validate-unknown=false\n" + // FIXME remove
+                                    "otel.traces.exporter=test-span-exporter\n" +
+                                    "otel.metrics.exporter=none\n" +
+                                    "otel.logs.exporter=none\n" +
+                                    "otel.bsp.schedule.delay=200\n"),
                             "application.properties"));
 
     @Test
@@ -33,14 +44,24 @@ public class OpenTelemetryDevServicesDatasourcesTest {
                 .body(Matchers.startsWith("jdbc:otel:h2"));
 
         // Test a change in resources that disables OTEL
-        TEST.modifyResourceFile("application.properties", s -> "quarkus.datasource.db-kind=h2\n");
+        TEST.modifyResourceFile("application.properties", s -> "quarkus.datasource.db-kind=h2\n" +
+                "smallrye.config.mapping.validate-unknown=false\n" + // FIXME remove
+                "otel.traces.exporter=test-span-exporter\n" +
+                "otel.metrics.exporter=none\n" +
+                "otel.logs.exporter=none\n" +
+                "otel.bsp.schedule.delay=200\n");
         RestAssured.when().get("/config/{name}", "quarkus.datasource.jdbc.url").then()
                 .statusCode(200)
                 .body(Matchers.startsWith("jdbc:h2"));
 
         // Test a change in resources that enables OTEL
         TEST.modifyResourceFile("application.properties", s -> "quarkus.datasource.db-kind=h2\n" +
-                "quarkus.datasource.jdbc.driver=io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver");
+                "quarkus.datasource.jdbc.driver=io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver\n" +
+                "smallrye.config.mapping.validate-unknown=false\n" + // FIXME remove
+                "otel.traces.exporter=test-span-exporter\n" +
+                "otel.metrics.exporter=none\n" +
+                "otel.logs.exporter=none\n" +
+                "otel.bsp.schedule.delay=200\n");
         RestAssured.when().get("/config/{name}", "quarkus.datasource.jdbc.url").then()
                 .statusCode(200)
                 .body(Matchers.startsWith("jdbc:otel:h2"));

@@ -12,6 +12,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
+import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,8 +24,13 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.trace.data.LinkData;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.sdk.trace.samplers.SamplingResult;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.TestUtil;
+import io.quarkus.opentelemetry.deployment.common.TracerRouter;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.smallrye.config.SmallRyeConfig;
 
 public class OpenTelemetryCustomSamplerBeanTest {
 
@@ -34,13 +41,26 @@ public class OpenTelemetryCustomSamplerBeanTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(TracerRouter.class)
                     .addClass(TestSpanExporter.class)
-                    .addClass(TestUtil.class));
+                    .addClass(TestSpanExporterProvider.class)
+                    .addClass(TestUtil.class)
+                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+            .overrideConfigKey(SmallRyeConfig.SMALLRYE_CONFIG_MAPPING_VALIDATE_UNKNOWN, "false")// FIXME default config mapping
+            .overrideConfigKey("otel.traces.exporter", "test-span-exporter")
+            .overrideConfigKey("otel.metrics.exporter", "none")
+            .overrideConfigKey("otel.logs.exporter", "none")
+            .overrideConfigKey("otel.bsp.schedule.delay", "200");
 
     @Inject
     OpenTelemetry openTelemetry;
 
     @Inject
     TestSpanExporter testSpanExporter;
+
+    @AfterEach
+    void tearDown() {
+        testSpanExporter.reset();
+    }
 
     @Test
     void testHealthEndpointNotTraced() {
@@ -60,7 +80,7 @@ public class OpenTelemetryCustomSamplerBeanTest {
                 .statusCode(200)
                 .body(is("Hello Tracer!"));
 
-        testSpanExporter.assertSpanCount(2);
+        testSpanExporter.assertSpanCount(5); //Bean from OtelCDISamplerProvider will not filter out healthcheck endpoints
     }
 
     @Test
@@ -71,7 +91,7 @@ public class OpenTelemetryCustomSamplerBeanTest {
     }
 
     @ApplicationScoped
-    public static class OtelConfiguration {
+    public static class OtelCDISamplerProvider {
 
         @Produces
         public Sampler sampler() {

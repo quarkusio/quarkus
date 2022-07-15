@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing;
 
-import static io.quarkus.opentelemetry.runtime.OpenTelemetryConfig.INSTRUMENTATION_NAME;
+import static io.quarkus.opentelemetry.runtime.config.OtelBuildConfig.INSTRUMENTATION_NAME;
 
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;

@@ -25,6 +25,8 @@ import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.extension.annotations.SpanAttribute;
 import io.opentelemetry.extension.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.config.SmallRyeConfig;
@@ -34,7 +36,13 @@ public class WithSpanLegacyInterceptorTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class).addClass(SpanBean.class).addClass(TestSpanExporter.class));
+                    () -> ShrinkWrap.create(JavaArchive.class)
+                            .addClass(SpanBean.class)
+                            .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+                            .addAsManifestResource(
+                                    "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
+                                    "services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+                            .addAsResource("resource-config/application.properties", "application.properties"));
 
     @Inject
     SpanBean spanBean;

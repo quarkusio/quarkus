@@ -17,6 +17,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.smallrye.config.SmallRyeConfig;
@@ -26,7 +29,11 @@ public class OpenTelemetryResourceTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(TestSpanExporter.class)
-                    .addAsResource("resource-config/application.properties", "application.properties"));
+                    .addClass(TestSpanExporterProvider.class)
+                    .addAsResource("resource-config/application.properties", "application.properties")
+                    .addAsResource(
+                            "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"));
 
     @Inject
     SmallRyeConfig config;
@@ -43,9 +50,9 @@ public class OpenTelemetryResourceTest {
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
         assertEquals("/hello", spans.get(0).getName());
         assertEquals(SERVER, spans.get(0).getKind());
-        assertEquals("authservice", spans.get(0).getResource().getAttribute(AttributeKey.stringKey("service.name")));
-        assertEquals(config.getRawValue("quarkus.uuid"),
-                spans.get(0).getResource().getAttribute(AttributeKey.stringKey("service.instance.id")));
+        assertEquals("resource-test", spans.get(0).getResource().getAttribute(AttributeKey.stringKey("service.name")));
+        assertEquals("quarkus-test-device-id",
+                spans.get(0).getResource().getAttribute(ResourceAttributes.DEVICE_ID));
     }
 
     @Path("/hello")

@@ -14,6 +14,8 @@ public class JaegerExporterBadEndpointTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withEmptyApplication()
+            .overrideConfigKey("otel.traces.exporter", "cdi")
+            .overrideConfigKey("otel.metrics.exporter", "none")
             .overrideConfigKey("quarkus.opentelemetry.tracer.exporter.jaeger.endpoint", "httz://nada:zero")
             .setExpectedException(IllegalStateException.class);
 

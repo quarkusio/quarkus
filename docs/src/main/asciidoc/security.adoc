@@ -291,6 +291,19 @@ You can add `OWASP Dependency Check Plugin` to your project's `pom.xml` like thi
     <groupId>org.owasp</groupId>
     <artifactId>dependency-check-maven</artifactId>
     <version>${owasp-dependency-check-plugin.version}</version>
+</plugin>
+----
+
+where `owasp-dependency-check-plugin.version` should be set to `7.1.1` or later.
+
+You can configure the plugin like this:
+
+[source,xml]
+----
+<plugin>
+    <groupId>org.owasp</groupId>
+    <artifactId>dependency-check-maven</artifactId>
+    <version>${owasp-dependency-check-plugin.version}</version>
     <configuration>
         <!-- Fail only when detecting High Vulnerability issues -->
         <failBuildOnCVSS>7</failBuildOnCVSS>
@@ -374,4 +387,3 @@ For example, it can look like this:
 
 Such a suppression list has to be carefully prepared and revisited from time to time. You should consider making individual suppressions time limited by adding an `until` tribute, for example: `<suppress until="2022-01-01Z">...</suppress>`. It will let you doublecheck that only the same known false positives are reported when the suppression period expires, and after reviewing the report you can set a new expiry date.
 
-Note link:https://jeremylong.github.io/DependencyCheck/dependency-check-maven/[OWASP Dependency Check Plugin] `6.5.3` or later should be used with Quarkus.

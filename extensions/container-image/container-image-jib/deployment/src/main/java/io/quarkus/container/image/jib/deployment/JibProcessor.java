@@ -444,8 +444,8 @@ public class JibProcessor {
         }
 
         try {
-			Instant now = Instant.now();
-			Instant modificationTime = jibConfig.useCurrentTimestampFileModification ? now : Instant.EPOCH;
+            Instant now = Instant.now();
+            Instant modificationTime = jibConfig.useCurrentTimestampFileModification ? now : Instant.EPOCH;
 
             JibContainerBuilder jibContainerBuilder = Jib
                     .from(toRegistryImage(ImageReference.parse(baseJvmImage), jibConfig.baseRegistryUsername,
@@ -559,7 +559,7 @@ public class JibProcessor {
                     .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
 
             if (jibConfig.useCurrentTimestamp) {
-				jibContainerBuilder.setCreationTime(now);
+                jibContainerBuilder.setCreationTime(now);
             }
 
             for (int port : jibConfig.ports) {

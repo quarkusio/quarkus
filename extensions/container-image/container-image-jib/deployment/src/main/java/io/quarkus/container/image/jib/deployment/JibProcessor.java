@@ -444,7 +444,7 @@ public class JibProcessor {
         }
 
         try {
-            Instant now = Instant.now();
+            Instant modificationTime = jibConfig.useCurrentTimestampFileModification ? Instant.now() : Instant.EPOCH;
 
             JibContainerBuilder jibContainerBuilder = Jib
                     .from(toRegistryImage(ImageReference.parse(baseJvmImage), jibConfig.baseRegistryUsername,
@@ -452,7 +452,7 @@ public class JibProcessor {
             if (fastChangingLibPaths.isEmpty()) {
                 // just create a layer with the entire lib structure intact
                 addLayer(jibContainerBuilder, Collections.singletonList(componentsPath.resolve(JarResultBuildStep.LIB)),
-                        workDirInContainer, "fast-jar-lib", isMutableJar, now);
+                        workDirInContainer, "fast-jar-lib", isMutableJar, modificationTime);
             } else {
                 // we need to manually create each layer
                 // the idea here is that the fast changing libraries are created in a later layer, thus when they do change,
@@ -486,16 +486,15 @@ public class JibProcessor {
                             .resolve(JarResultBuildStep.DEPLOYMENT_LIB);
                     addLayer(jibContainerBuilder, Collections.singletonList(deploymentPath),
                             workDirInContainer.resolve(JarResultBuildStep.LIB),
-                            "fast-jar-deployment-libs", true, now);
+                            "fast-jar-deployment-libs", true, modificationTime);
                 }
 
-                Instant libModificationTime = jibConfig.useCurrentTimestampLib ? now : Instant.EPOCH;
                 AbsoluteUnixPath libsMainPath = workDirInContainer.resolve(JarResultBuildStep.LIB)
                         .resolve(JarResultBuildStep.MAIN);
                 addLayer(jibContainerBuilder, nonFastChangingLibPaths, libsMainPath, "fast-jar-normal-libs",
-                        isMutableJar, libModificationTime);
+                        isMutableJar,modificationTime );
                 addLayer(jibContainerBuilder, new ArrayList<>(fastChangingLibPaths), libsMainPath, "fast-jar-changing-libs",
-                        isMutableJar, libModificationTime);
+                        isMutableJar, modificationTime );
             }
 
             if (appCDSResult.isPresent()) {
@@ -513,15 +512,15 @@ public class JibProcessor {
                                 componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
                                 workDirInContainer.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
                                 isMutableJar ? REMOTE_DEV_FILE_PERMISSIONS : DEFAULT_FILE_PERMISSIONS,
-                                now,
+                                modificationTime,
                                 isMutableJar ? DEFAULT_BASE_IMAGE_USER : "")
                         .build());
             }
 
             addLayer(jibContainerBuilder, Collections.singletonList(componentsPath.resolve(JarResultBuildStep.APP)),
-                    workDirInContainer, "fast-jar-quarkus-app", isMutableJar, now);
+                    workDirInContainer, "fast-jar-quarkus-app", isMutableJar, modificationTime);
             addLayer(jibContainerBuilder, Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS)),
-                    workDirInContainer, "fast-jar-quarkus", isMutableJar, now);
+                    workDirInContainer, "fast-jar-quarkus", isMutableJar, modificationTime);
             if (JibConfig.DEFAULT_WORKING_DIR.equals(jibConfig.workingDirectory)) {
                 // this layer ensures that the working directory is writeable
                 // see https://github.com/GoogleContainerTools/jib/issues/1270
@@ -531,7 +530,7 @@ public class JibProcessor {
                                 Files.createTempDirectory("jib"),
                                 AbsoluteUnixPath.get(jibConfig.workingDirectory),
                                 FilePermissions.DEFAULT_FOLDER_PERMISSIONS,
-                                now, DEFAULT_BASE_IMAGE_USER))
+                                modificationTime, DEFAULT_BASE_IMAGE_USER))
                         .build());
             }
             if (isMutableJar) {
@@ -542,13 +541,13 @@ public class JibProcessor {
                                         Files.createTempDirectory("jib"),
                                         workDirInContainer.resolve("dev"),
                                         REMOTE_DEV_FOLDER_PERMISSIONS,
-                                        now, DEFAULT_BASE_IMAGE_USER))
+                                        modificationTime, DEFAULT_BASE_IMAGE_USER))
                         .addEntry(
                                 new FileEntry(
                                         componentsPath.resolve(JarResultBuildStep.QUARKUS_APP_DEPS),
                                         workDirInContainer.resolve(JarResultBuildStep.QUARKUS_APP_DEPS),
                                         REMOTE_DEV_FOLDER_PERMISSIONS,
-                                        now, DEFAULT_BASE_IMAGE_USER))
+                                        modificationTime, DEFAULT_BASE_IMAGE_USER))
                         .build());
             }
 
@@ -559,7 +558,7 @@ public class JibProcessor {
                     .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
 
             if (jibConfig.useCurrentTimestamp) {
-                jibContainerBuilder.setCreationTime(now);
+                jibContainerBuilder.setCreationTime(modificationTime);
             }
 
             for (int port : jibConfig.ports) {

@@ -219,9 +219,9 @@ public class JibConfig {
     public boolean useCurrentTimestamp;
 
     /**
-     * Whether to set the modification time (last modified time) of lib files in the image put by Jib to the actual
-     * build time. Otherwise, the the modification time will be set to the Unix epoch (00:00:00, January 1st, 1970 in UTC).
+     * Whether to set the modification time (last modified time) of the files put by Jib in the image to the actual
+     * build time. Otherwise, the modification time will be set to the Unix epoch (00:00:00, January 1st, 1970 in UTC).
      */
     @ConfigItem(defaultValue = "true")
-    public boolean useCurrentTimestampLib;
+    public boolean useCurrentTimestampFileModification;
 }

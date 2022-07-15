@@ -3,7 +3,7 @@ package io.quarkus.hibernate.orm.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.quarkus.hibernate.orm.deployment.HibernateConfigUtil.firstPresent;
-import static org.hibernate.cfg.AvailableSettings.JPA_SHARED_CACHE_MODE;
+import static org.hibernate.cfg.AvailableSettings.JAKARTA_SHARED_CACHE_MODE;
 import static org.hibernate.cfg.AvailableSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES;
 import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
 import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
@@ -1167,7 +1167,7 @@ public final class HibernateOrmProcessor {
             p.putIfAbsent(USE_DIRECT_REFERENCE_CACHE_ENTRIES, Boolean.TRUE);
             p.putIfAbsent(USE_SECOND_LEVEL_CACHE, Boolean.TRUE);
             p.putIfAbsent(USE_QUERY_CACHE, Boolean.TRUE);
-            p.putIfAbsent(JPA_SHARED_CACHE_MODE, SharedCacheMode.ENABLE_SELECTIVE);
+            p.putIfAbsent(JAKARTA_SHARED_CACHE_MODE, SharedCacheMode.ENABLE_SELECTIVE);
             Map<String, String> cacheConfigEntries = HibernateConfigUtil.getCacheConfigEntries(persistenceUnitConfig);
             for (Entry<String, String> entry : cacheConfigEntries.entrySet()) {
                 descriptor.getProperties().setProperty(entry.getKey(), entry.getValue());
@@ -1178,16 +1178,16 @@ public final class HibernateOrmProcessor {
             p.put(USE_DIRECT_REFERENCE_CACHE_ENTRIES, Boolean.FALSE);
             p.put(USE_SECOND_LEVEL_CACHE, Boolean.FALSE);
             p.put(USE_QUERY_CACHE, Boolean.FALSE);
-            p.put(JPA_SHARED_CACHE_MODE, SharedCacheMode.NONE);
+            p.put(JAKARTA_SHARED_CACHE_MODE, SharedCacheMode.NONE);
         }
 
         // Hibernate Validator integration: we force the callback mode to have bootstrap errors reported rather than validation ignored
         // if there is any issue when bootstrapping Hibernate Validator.
         if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
             if (persistenceUnitConfig.validation.enabled) {
-                descriptor.getProperties().setProperty(AvailableSettings.JPA_VALIDATION_MODE, ValidationMode.CALLBACK.name());
+                descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_VALIDATION_MODE, ValidationMode.CALLBACK.name());
             } else {
-                descriptor.getProperties().setProperty(AvailableSettings.JPA_VALIDATION_MODE, ValidationMode.NONE.name());
+                descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_VALIDATION_MODE, ValidationMode.NONE.name());
             }
         }
 

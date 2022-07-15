@@ -326,7 +326,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         if (integration == null) {
             return null;
         }
-        final String setting = (String) integration.get(AvailableSettings.JPA_PERSISTENCE_PROVIDER);
+        final String setting = (String) integration.get(AvailableSettings.JAKARTA_PERSISTENCE_PROVIDER);
         return setting == null ? null : setting.trim();
     }
 
@@ -351,7 +351,9 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         if (runtimeSettingsBuilder.isConfigured(AvailableSettings.URL) ||
                 runtimeSettingsBuilder.isConfigured(AvailableSettings.DATASOURCE) ||
                 runtimeSettingsBuilder.isConfigured(AvailableSettings.JPA_JTA_DATASOURCE) ||
-                runtimeSettingsBuilder.isConfigured(AvailableSettings.JPA_NON_JTA_DATASOURCE)) {
+                runtimeSettingsBuilder.isConfigured(AvailableSettings.JPA_NON_JTA_DATASOURCE) ||
+                runtimeSettingsBuilder.isConfigured(AvailableSettings.JAKARTA_JTA_DATASOURCE) ||
+                runtimeSettingsBuilder.isConfigured(AvailableSettings.JAKARTA_NON_JTA_DATASOURCE)) {
             // the datasource has been defined in the persistence unit, we can bail out
             return;
         }
@@ -384,7 +386,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION,
                 persistenceUnitConfig.database.generation.generation);
 
-        runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_CREATE_SCHEMAS,
+        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_CREATE_SCHEMAS,
                 String.valueOf(persistenceUnitConfig.database.generation.createSchemas));
 
         if (persistenceUnitConfig.database.generation.haltOnError) {
@@ -394,7 +396,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         //Never append on existing scripts:
         runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_SCRIPTS_CREATE_APPEND, "false");
 
-        runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_SCRIPTS_ACTION,
+        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_SCRIPTS_ACTION,
                 persistenceUnitConfig.scripts.generation.generation);
 
         if (persistenceUnitConfig.scripts.generation.createTarget.isPresent()) {

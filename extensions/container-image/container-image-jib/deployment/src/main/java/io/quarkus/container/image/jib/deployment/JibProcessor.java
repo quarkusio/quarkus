@@ -492,9 +492,9 @@ public class JibProcessor {
                 AbsoluteUnixPath libsMainPath = workDirInContainer.resolve(JarResultBuildStep.LIB)
                         .resolve(JarResultBuildStep.MAIN);
                 addLayer(jibContainerBuilder, nonFastChangingLibPaths, libsMainPath, "fast-jar-normal-libs",
-                        isMutableJar,modificationTime );
+                        isMutableJar, modificationTime);
                 addLayer(jibContainerBuilder, new ArrayList<>(fastChangingLibPaths), libsMainPath, "fast-jar-changing-libs",
-                        isMutableJar, modificationTime );
+                        isMutableJar, modificationTime);
             }
 
             if (appCDSResult.isPresent()) {
@@ -558,7 +558,7 @@ public class JibProcessor {
                     .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
 
             if (jibConfig.useCurrentTimestamp) {
-                jibContainerBuilder.setCreationTime(modificationTime);
+                jibContainerBuilder.setCreationTime(Instant.now());
             }
 
             for (int port : jibConfig.ports) {

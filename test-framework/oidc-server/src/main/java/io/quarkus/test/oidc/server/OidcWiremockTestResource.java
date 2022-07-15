@@ -273,8 +273,8 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
     public static String getEncryptedIdToken(String userName, Set<String> groups) {
         return Jwt.preferredUserName(userName)
                 .groups(groups)
-                .issuer("quarkus.test.oidc.token.issuer")
-                .audience("quarkus.test.oidc.token.audience")
+                .issuer(TOKEN_ISSUER)
+                .audience(TOKEN_AUDIENCE)
                 .subject("123456")
                 .jws()
                 .keyId("1")

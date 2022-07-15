@@ -48,9 +48,6 @@ import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.console.ConsoleRuntimeConfig;
 import io.quarkus.runtime.util.ColorSupport;
 
-/**
- *
- */
 @Recorder
 public class LoggingSetupRecorder {
 
@@ -113,7 +110,7 @@ public class LoggingSetupRecorder {
             filterElements = Collections.emptyList();
         } else {
             filterElements = new ArrayList<>(filters.size());
-            filters.forEach(new BiConsumer<String, CleanupFilterConfig>() {
+            filters.forEach(new BiConsumer<>() {
                 @Override
                 public void accept(String loggerName, CleanupFilterConfig config) {
                     filterElements.add(
@@ -200,7 +197,7 @@ public class LoggingSetupRecorder {
 
             namedHandlers.putAll(additionalNamedHandlersMap);
 
-            categories.forEach(new BiConsumer<String, CategoryConfig>() {
+            categories.forEach(new BiConsumer<>() {
                 @Override
                 public void accept(String categoryName, CategoryConfig config) {
                     final Level logLevel = getLogLevel(categoryName, categories, CategoryConfig::getLevel,

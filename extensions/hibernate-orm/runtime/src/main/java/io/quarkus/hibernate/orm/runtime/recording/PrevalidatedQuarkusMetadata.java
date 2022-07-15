@@ -68,9 +68,10 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
                 metadata.getBootstrapContext());
         // This would normally be done by the constructor of SessionFactoryBuilderImpl,
         // but we don't use a builder to create the session factory, for some reason.
-        Map<String, SQLFunction> sqlFunctions = metadata.getSqlFunctionMap();
+
+        Map<String, SqmFunctionDescriptor> sqlFunctions = metadata.getSqlFunctionMap();
         if (sqlFunctions != null) {
-            for (Map.Entry<String, SQLFunction> entry : sqlFunctions.entrySet()) {
+            for (Map.Entry<String, SqmFunctionDescriptor> entry : sqlFunctions.entrySet()) {
                 builder.applySqlFunction(entry.getKey(), entry.getValue());
             }
         }
@@ -214,7 +215,7 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
     }
 
     @Override
-    public Map<String, SQLFunction> getSqlFunctionMap() {
+    public Map<String, SqmFunctionDescriptor> getSqlFunctionMap() {
         return metadata.getSqlFunctionMap();
     }
 

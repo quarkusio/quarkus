@@ -1039,3 +1039,25 @@ java.lang.IllegalStateException: Failed to create cache dir
 ----
 
 Assuming `/tmp/` is writable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in OpenShift by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`.
+
+== Customizing the Vert.x configuration
+
+The configuration of the managed Vert.x instance can be provided using the `application.properties` file, but also using _special beans_.
+CDI beans exposing the `io.quarkus.vertx.VertxOptionsCustomizer` interface can be used to customize the Vert.x configuration.
+For example, the following customizer change the `tmp` base directory:
+
+[source, java]
+----
+@ApplicationScoped
+public class MyCustomizer implements VertxOptionsCustomizer {
+
+    @Override
+    public void accept(VertxOptions options) {
+        options.setFileSystemOptions(new FileSystemOptions().setFileCacheDir("target"));
+    }
+}
+----
+
+The _customizer_ beans received the `VertxOptions` (coming from the application configuration), and can modify them.
+
+

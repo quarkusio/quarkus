@@ -471,7 +471,7 @@ public class PersonResource {
 
     @GET
     @Path("/{id}")
-    public Person get(Long id) {
+    public Person get(@PathParam Long id) {
         return Person.findById(id);
     }
 
@@ -485,7 +485,7 @@ public class PersonResource {
     @PUT
     @Path("/{id}")
     @Transactional
-    public Person update(Long id, Person person) {
+    public Person update(@PathParam Long id, Person person) {
         Person entity = Person.findById(id);
         if(entity == null) {
             throw new NotFoundException();
@@ -500,7 +500,7 @@ public class PersonResource {
     @DELETE
     @Path("/{id}")
     @Transactional
-    public void delete(Long id) {
+    public void delete(@PathParam Long id) {
         Person entity = Person.findById(id);
         if(entity == null) {
             throw new NotFoundException();
@@ -510,7 +510,7 @@ public class PersonResource {
 
     @GET
     @Path("/search/{name}")
-    public Person search(String name) {
+    public Person search(@PathParam String name) {
         return Person.findByName(name);
     }
 

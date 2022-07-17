@@ -69,13 +69,13 @@ public class InfinispanDevServicesConfig {
      * <p>
      * To configure a cache, you would use one of the enum values from {@code org.infinispan.client.hotrod.DefaultTemplate}
      * <p>
-     * quarkus.infinispan-client.devservices.cache-templates.cache1=DIST_SYNC
-     * quarkus.infinispan-client.devservices.cache-templates.cache2=REPL_SYNC
+     * quarkus.infinispan-client.devservices.caches.cache1=DIST_SYNC
+     * quarkus.infinispan-client.devservices.caches.cache2=REPL_SYNC
      * <p>
      * If an invalid cache template is passed, the Infinispan server will throw an error when trying to start.
      */
     @ConfigItem
-    public Map<String, String> cacheTemplates;
+    public Map<String, String> caches;
 
     @Override
     public boolean equals(Object o) {
@@ -89,11 +89,11 @@ public class InfinispanDevServicesConfig {
                 Objects.equals(shared, that.shared) &&
                 Objects.equals(serviceName, that.serviceName) &&
                 Objects.equals(artifacts, this.artifacts) &&
-                Objects.equals(cacheTemplates, this.cacheTemplates);
+                Objects.equals(caches, this.caches);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enabled, port, shared, serviceName, artifacts, cacheTemplates);
+        return Objects.hash(enabled, port, shared, serviceName, artifacts, caches);
     }
 }

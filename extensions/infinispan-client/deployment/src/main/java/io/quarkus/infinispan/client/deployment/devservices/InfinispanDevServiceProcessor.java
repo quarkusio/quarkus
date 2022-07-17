@@ -162,11 +162,11 @@ public class InfinispanDevServiceProcessor {
             timeout.ifPresent(infinispanContainer::withStartupTimeout);
             infinispanContainer.start();
 
-            if (!devServicesConfig.cacheTemplates.isEmpty()) {
+            if (!devServicesConfig.caches.isEmpty()) {
                 ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
                 configurationBuilder.security().authentication().saslMechanism("DIGEST-MD5");
                 RemoteCacheManager remoteCacheManager = infinispanContainer.getRemoteCacheManager(configurationBuilder);
-                devServicesConfig.cacheTemplates.forEach((cacheName, templateName) -> remoteCacheManager.administration()
+                devServicesConfig.caches.forEach((cacheName, templateName) -> remoteCacheManager.administration()
                         .createCache(cacheName, Enum.valueOf(DefaultTemplate.class, templateName)));
             }
 

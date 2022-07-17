@@ -32,7 +32,7 @@ public interface MovieRepository extends CrudRepository<Movie, Long> {
     List<Movie> withRatingAndDurationLargerThan(@Param("duration") int duration, @Param("rating") String rating);
 
     @Query("from Movie where title like concat('%', ?1, '%')")
-    List<Object[]> someFieldsWithTitleLike(String title, Sort sort);
+    List<Movie> someFieldsWithTitleLike(String title, Sort sort);
 
     @Modifying
     @Query("delete from Movie where rating = :rating")

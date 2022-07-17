@@ -14,6 +14,6 @@ public class CaffeineTestCase {
     public void test() {
         given().when().get("/caffeine/hasLoadAll").then().statusCode(200).body(
                 "loader", is(false),
-                "bulk-loader", is(true));
+                "bulkLoader", is(true));
     }
 }

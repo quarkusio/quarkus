@@ -4,8 +4,6 @@ import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.json.Json;
-import javax.json.JsonObjectBuilder;
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 import javax.validation.constraints.NotNull;
@@ -188,20 +186,22 @@ public class FruitResource {
                 code = ((WebApplicationException) exception).getResponse().getStatus();
             }
 
-            JsonObjectBuilder entityBuilder = Json.createObjectBuilder()
-                    .add("exceptionType", exception.getClass().getName())
-                    .add("code", code);
-
-            if (exception.getMessage() != null) {
-                entityBuilder.add("error", exception.getMessage());
-            }
+            Error error = new Error();
+            error.exceptionType = exception.getClass().getName();
+            error.code = code;
+            error.error = exception.getMessage();
 
             return Response.status(code)
                     .type(MediaType.APPLICATION_JSON)
-                    .entity(entityBuilder.build())
+                    .entity(error)
                     .build();
-
         }
+    }
 
+    public static class Error {
+
+        public String exceptionType;
+        public int code;
+        public String error;
     }
 }

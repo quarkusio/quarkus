@@ -2,15 +2,25 @@ package io.quarkus.it.kafka;
 
 import static org.hamcrest.Matchers.is;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.config.ObjectMapperConfig;
+import io.restassured.mapper.ObjectMapperType;
 
 @QuarkusTestResource(KafkaTestResource.class)
 @QuarkusTest
 public class KafkaSnappyCodecTest {
+
+    @BeforeAll
+    public static void configureMapper() {
+        // We have JSON-B and Jackson around, we want to ensure REST Assured uses Jackson and not JSON-B
+        RestAssured.config = RestAssured.config.objectMapperConfig(ObjectMapperConfig.objectMapperConfig()
+                .defaultObjectMapperType(ObjectMapperType.JACKSON_2));
+    }
 
     @Test
     public void testCustomCodec() {

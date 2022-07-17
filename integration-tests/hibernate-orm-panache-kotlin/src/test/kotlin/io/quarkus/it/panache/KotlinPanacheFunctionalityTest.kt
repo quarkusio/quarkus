@@ -31,10 +31,6 @@ open class KotlinPanacheFunctionalityTest {
 
     @Test
     fun testPanacheSerialisation() {
-        RestAssured.given().accept(ContentType.JSON)
-                .`when`()["/test/ignored-properties"]
-                .then()
-                .body(Matchers.`is`("{\"id\":666,\"dogs\":[],\"name\":\"Eddie\",\"serialisationTrick\":1,\"status\":\"DECEASED\"}"))
         RestAssured.given().accept(ContentType.XML)
                 .`when`()["/test/ignored-properties"]
                 .then().body(Matchers.`is`(

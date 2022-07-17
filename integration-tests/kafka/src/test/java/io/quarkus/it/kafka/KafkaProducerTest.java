@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.is;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -13,6 +14,8 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
 import io.quarkus.test.kafka.KafkaCompanionResource;
 import io.restassured.RestAssured;
+import io.restassured.config.ObjectMapperConfig;
+import io.restassured.mapper.ObjectMapperType;
 import io.smallrye.reactive.messaging.kafka.companion.ConsumerTask;
 import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
 
@@ -22,6 +25,13 @@ public class KafkaProducerTest {
 
     @InjectKafkaCompanion
     KafkaCompanion companion;
+
+    @BeforeAll
+    public static void configureMapper() {
+        // We have JSON-B and Jackson around, we want to ensure REST Assured uses Jackson and not JSON-B
+        RestAssured.config = RestAssured.config.objectMapperConfig(ObjectMapperConfig.objectMapperConfig()
+                .defaultObjectMapperType(ObjectMapperType.JACKSON_2));
+    }
 
     @Test
     public void test() {

@@ -9,7 +9,7 @@ public class Animal {
 
     @Id
     @GeneratedValue
-    public long id;
+    private long id;
 
     public long getId() {
         return id;

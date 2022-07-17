@@ -1,10 +1,12 @@
 package io.quarkus.hibernate.orm.rest.data.panache.deployment.entity;
 
-import javax.json.bind.annotation.JsonbTransient;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
@@ -18,19 +20,6 @@ public class EmptyListItem extends PanacheEntityBase {
     public String name;
 
     @ManyToOne(optional = false)
+    @JsonProperty(access = Access.WRITE_ONLY)
     public Collection collection;
-
-    public Long getCid() {
-        return cid;
-    }
-
-    public void setCid(Long cid) {
-        this.cid = cid;
-    }
-
-    @JsonbTransient // Avoid infinite loop when serializing
-    public Collection getCollection() {
-        return collection;
-    }
-
 }

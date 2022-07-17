@@ -8,7 +8,6 @@ import java.util.List;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -19,8 +18,6 @@ import com.google.common.reflect.TypeToken;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
-import io.restassured.config.ObjectMapperConfig;
-import io.restassured.mapper.ObjectMapperType;
 
 @DisabledOnOs(OS.WINDOWS)
 @QuarkusTest
@@ -28,12 +25,6 @@ import io.restassured.mapper.ObjectMapperType;
 public class MailerTest {
     public static final String LOREM_CHECKSUM = "386e8d6ae186eacb5b60fac15ed140cd";
     private String mailServer;
-
-    @BeforeAll
-    public static void configureMapper() {
-        RestAssured.config = RestAssured.config.objectMapperConfig(ObjectMapperConfig.objectMapperConfig()
-                .defaultObjectMapperType(ObjectMapperType.JSONB));
-    }
 
     @BeforeEach
     public void init() {
@@ -161,7 +152,7 @@ public class MailerTest {
     private TextEmail getLastEmail() {
         Type t = new TypeToken<List<TextEmail>>() {
         }.getType();
-        List<TextEmail> emails = RestAssured.get(mailServer).as(t, ObjectMapperType.JSONB);
+        List<TextEmail> emails = RestAssured.get(mailServer).as(t);
         if (emails == null || emails.isEmpty()) {
             return null;
         }
@@ -172,7 +163,7 @@ public class MailerTest {
     private HtmlEmail getLastHtmlEmail() {
         Type t = new TypeToken<List<HtmlEmail>>() {
         }.getType();
-        List<HtmlEmail> emails = RestAssured.get(mailServer).as(t, ObjectMapperType.JSONB);
+        List<HtmlEmail> emails = RestAssured.get(mailServer).as(t);
         if (emails == null || emails.isEmpty()) {
             return null;
         }

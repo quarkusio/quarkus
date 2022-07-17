@@ -1,12 +1,14 @@
 package io.quarkus.it.spring.data.jpa;
 
-import javax.json.bind.annotation.JsonbTransient;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
 
 @Entity(name = "PostComment")
 @Table(name = "post_comment")
@@ -16,7 +18,7 @@ public class PostComment {
     @GeneratedValue
     private Long id;
 
-    @JsonbTransient
+    @JsonProperty(access = Access.WRITE_ONLY)
     @ManyToOne(fetch = FetchType.LAZY)
     private Post post;
 

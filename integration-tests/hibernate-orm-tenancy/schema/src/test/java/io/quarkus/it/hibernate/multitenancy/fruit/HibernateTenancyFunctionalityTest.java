@@ -10,16 +10,11 @@ import static org.hamcrest.Matchers.nullValue;
 
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.RestAssured;
-import io.restassured.config.ObjectMapperConfig;
-import io.restassured.config.RestAssuredConfig;
 import io.restassured.http.ContentType;
-import io.restassured.mapper.ObjectMapperType;
 import io.restassured.response.Response;
 
 /**
@@ -27,13 +22,6 @@ import io.restassured.response.Response;
  */
 @QuarkusTest
 public class HibernateTenancyFunctionalityTest {
-
-    private static RestAssuredConfig config;
-
-    @BeforeAll
-    public static void beforeClass() {
-        config = RestAssured.config().objectMapperConfig(new ObjectMapperConfig(ObjectMapperType.JSONB));
-    }
 
     @BeforeEach
     public void cleanup() {
@@ -49,14 +37,14 @@ public class HibernateTenancyFunctionalityTest {
     public void testAddDeleteDefaultTenant() throws Exception {
 
         // Create fruit for default 'base' tenant
-        given().config(config).with().body(new Fruit("Delete")).contentType(ContentType.JSON).when().post("/fruits").then()
+        given().with().body(new Fruit("Delete")).contentType(ContentType.JSON).when().post("/fruits").then()
                 .assertThat().statusCode(is(Status.CREATED.getStatusCode()));
 
         // Get it
         Fruit newFruit = findByName("", "Delete");
 
         // Delete it
-        given().config(config).pathParam("id", newFruit.getId()).contentType("application/json").accept("application/json")
+        given().pathParam("id", newFruit.getId()).contentType("application/json").accept("application/json")
                 .when().delete("/fruits/{id}").then().assertThat().statusCode(is(Status.NO_CONTENT.getStatusCode()));
 
     }
@@ -64,7 +52,7 @@ public class HibernateTenancyFunctionalityTest {
     @Test
     public void testGetFruitsDefaultTenant() throws Exception {
 
-        Fruit[] fruits = given().config(config).when().get("/fruits").then().assertThat()
+        Fruit[] fruits = given().when().get("/fruits").then().assertThat()
                 .statusCode(is(Status.OK.getStatusCode())).extract()
                 .as(Fruit[].class);
         assertThat(fruits, arrayContaining(new Fruit(2, "Apple"), new Fruit(3, "Banana"), new Fruit(1, "Cherry")));
@@ -74,7 +62,7 @@ public class HibernateTenancyFunctionalityTest {
     @Test
     public void testGetFruitsTenantMycompany() throws Exception {
 
-        Fruit[] fruits = given().config(config).when().get("/mycompany/fruits").then().assertThat()
+        Fruit[] fruits = given().when().get("/mycompany/fruits").then().assertThat()
                 .statusCode(is(Status.OK.getStatusCode())).extract()
                 .as(Fruit[].class);
         assertThat(fruits, arrayWithSize(3));
@@ -87,7 +75,7 @@ public class HibernateTenancyFunctionalityTest {
 
         // Create fruit for default 'base' tenant
         Fruit newFruit = new Fruit("Dragonfruit");
-        given().config(config).with().body(newFruit).contentType(ContentType.JSON).when().post("/fruits").then()
+        given().with().body(newFruit).contentType(ContentType.JSON).when().post("/fruits").then()
                 .assertThat()
                 .statusCode(is(Status.CREATED.getStatusCode()));
 
@@ -96,7 +84,7 @@ public class HibernateTenancyFunctionalityTest {
         assertThat(dragonFruit, not(is(nullValue())));
 
         // Getting fruit list should also contain the new fruit
-        Fruit[] baseFruits = given().config(config).when().get("/fruits").then().assertThat()
+        Fruit[] baseFruits = given().when().get("/fruits").then().assertThat()
                 .statusCode(is(Status.OK.getStatusCode())).extract()
                 .as(Fruit[].class);
         assertThat(baseFruits, arrayWithSize(4));
@@ -104,7 +92,7 @@ public class HibernateTenancyFunctionalityTest {
                 arrayContaining(new Fruit(2, "Apple"), new Fruit(3, "Banana"), new Fruit(1, "Cherry"), dragonFruit));
 
         // The other tenant should NOT have the new fruit
-        Fruit[] mycompanyFruits = given().config(config).when().get("/mycompany/fruits").then().assertThat()
+        Fruit[] mycompanyFruits = given().when().get("/mycompany/fruits").then().assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
                 .extract().as(Fruit[].class);
         assertThat(mycompanyFruits, arrayWithSize(3));
@@ -122,14 +110,14 @@ public class HibernateTenancyFunctionalityTest {
         // Create fruits for both tenants
 
         Fruit newFruitBase = new Fruit("Dragonfruit");
-        given().config(config).with().body(newFruitBase).contentType(ContentType.JSON).when().post("/fruits").then()
+        given().with().body(newFruitBase).contentType(ContentType.JSON).when().post("/fruits").then()
                 .assertThat()
                 .statusCode(is(Status.CREATED.getStatusCode()));
         Fruit baseFruit = findByName("", newFruitBase.getName());
         assertThat(baseFruit, not(is(nullValue())));
 
         Fruit newFruitMycompany = new Fruit("Damson");
-        given().config(config).with().body(newFruitMycompany).contentType(ContentType.JSON).when().post("/mycompany/fruits")
+        given().with().body(newFruitMycompany).contentType(ContentType.JSON).when().post("/mycompany/fruits")
                 .then().assertThat()
                 .statusCode(is(Status.CREATED.getStatusCode()));
         Fruit mycompanyFruit = findByName("/mycompany", newFruitMycompany.getName());
@@ -139,13 +127,13 @@ public class HibernateTenancyFunctionalityTest {
 
         String baseFruitName = "Gooseberry";
         baseFruit.setName(baseFruitName);
-        given().config(config).with().body(baseFruit).contentType(ContentType.JSON).when()
+        given().with().body(baseFruit).contentType(ContentType.JSON).when()
                 .put("/fruits/{id}", baseFruit.getId()).then().assertThat()
                 .statusCode(is(Status.OK.getStatusCode()));
 
         String mycompanyFruitName = "Grapefruit";
         mycompanyFruit.setName(mycompanyFruitName);
-        given().config(config).with().body(mycompanyFruit).contentType(ContentType.JSON).when()
+        given().with().body(mycompanyFruit).contentType(ContentType.JSON).when()
                 .put("/mycompany/fruits/{id}", mycompanyFruit.getId())
                 .then().assertThat().statusCode(is(Status.OK.getStatusCode()));
 
@@ -160,7 +148,7 @@ public class HibernateTenancyFunctionalityTest {
     }
 
     private Fruit findByName(String tenantPath, String name) {
-        Response response = given().config(config).when().get(tenantPath + "/fruitsFindBy?type=name&value={name}", name);
+        Response response = given().when().get(tenantPath + "/fruitsFindBy?type=name&value={name}", name);
         if (response.getStatusCode() == Status.OK.getStatusCode()) {
             return response.as(Fruit.class);
         }
@@ -170,7 +158,7 @@ public class HibernateTenancyFunctionalityTest {
     private void deleteIfExists(String tenantPath, String name) {
         Fruit dragonFruit = findByName(tenantPath, name);
         if (dragonFruit != null) {
-            given().config(config).pathParam("id", dragonFruit.getId()).when().delete(tenantPath + "/fruits/{id}").then()
+            given().pathParam("id", dragonFruit.getId()).when().delete(tenantPath + "/fruits/{id}").then()
                     .assertThat()
                     .statusCode(is(Status.NO_CONTENT.getStatusCode()));
         }

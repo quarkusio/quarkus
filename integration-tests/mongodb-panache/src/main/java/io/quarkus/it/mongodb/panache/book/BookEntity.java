@@ -4,10 +4,11 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.json.bind.annotation.JsonbDateFormat;
-
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.codecs.pojo.annotations.BsonProperty;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonFormat.Shape;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
@@ -19,7 +20,7 @@ public class BookEntity extends PanacheMongoEntity {
     private String author;
     @BsonIgnore
     private String transientDescription;
-    @JsonbDateFormat("yyyy-MM-dd")
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate creationDate;
 
     private List<String> categories = new ArrayList<>();

@@ -8,7 +8,8 @@ import org.bson.codecs.pojo.annotations.BsonIgnore
 import org.bson.codecs.pojo.annotations.BsonProperty
 import java.time.LocalDate
 import java.util.ArrayList
-import javax.json.bind.annotation.JsonbDateFormat
+import com.fasterxml.jackson.annotation.JsonFormat
+import com.fasterxml.jackson.annotation.JsonFormat.Shape
 
 @MongoEntity(collection = "TheBookEntity", clientName = "cl2")
 class ReactiveBookEntity : ReactivePanacheMongoEntity() {
@@ -23,7 +24,7 @@ class ReactiveBookEntity : ReactivePanacheMongoEntity() {
     @BsonIgnore
     var transientDescription: String? = null
 
-    @JsonbDateFormat("yyyy-MM-dd")
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
     var creationDate: LocalDate? = null
     var categories: List<String> = ArrayList()
         private set

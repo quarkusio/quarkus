@@ -18,6 +18,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -46,6 +47,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
+import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
 import io.quarkus.vertx.http.deployment.devmode.HttpRemoteDevClientProvider;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
@@ -111,6 +113,11 @@ class VertxHttpProcessor {
                 .addBeanClass(CurrentVertxRequest.class)
                 .addBeanClass(CurrentRequestProducer.class)
                 .build();
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem shouldNotRemoveHttpServerOptionsCustomizers() {
+        return UnremovableBeanBuildItem.beanTypes(HttpServerOptionsCustomizer.class);
     }
 
     /**

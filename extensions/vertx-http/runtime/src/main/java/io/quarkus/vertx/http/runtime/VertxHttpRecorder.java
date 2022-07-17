@@ -47,6 +47,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.credentials.CredentialsProvider;
@@ -69,6 +70,7 @@ import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
+import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
 import io.quarkus.vertx.http.runtime.HttpConfiguration.InsecureRequests;
 import io.quarkus.vertx.http.runtime.devmode.RemoteSyncHandler;
 import io.quarkus.vertx.http.runtime.devmode.VertxHttpHotReplacementSetup;
@@ -125,13 +127,19 @@ public class VertxHttpRecorder {
 
     public static final String MAX_REQUEST_SIZE_KEY = "io.quarkus.max-request-size";
 
-    /** Order mark for route with priority over the default route (add an offset from this mark) **/
+    /**
+     * Order mark for route with priority over the default route (add an offset from this mark)
+     **/
     public static final int BEFORE_DEFAULT_ROUTE_ORDER_MARK = 1_000;
 
-    /** Default route order (i.e. Static Resources, Servlet) **/
+    /**
+     * Default route order (i.e. Static Resources, Servlet)
+     **/
     public static final int DEFAULT_ROUTE_ORDER = 10_000;
 
-    /** Order mark for route without priority over the default route (add an offset from this mark) **/
+    /**
+     * Order mark for route without priority over the default route (add an offset from this mark)
+     **/
     public static final int AFTER_DEFAULT_ROUTE_ORDER_MARK = 20_000;
 
     private static final Logger LOGGER = Logger.getLogger(VertxHttpRecorder.class.getName());
@@ -629,6 +637,7 @@ public class VertxHttpRecorder {
     private static void doServerStart(Vertx vertx, HttpBuildTimeConfig httpBuildTimeConfig,
             HttpConfiguration httpConfiguration, LaunchMode launchMode,
             Supplier<Integer> eventLoops, List<String> websocketSubProtocols, boolean auxiliaryApplication) throws IOException {
+
         // Http server configuration
         HttpServerOptions httpServerOptions = createHttpServerOptions(httpBuildTimeConfig, httpConfiguration, launchMode,
                 websocketSubProtocols);
@@ -636,6 +645,24 @@ public class VertxHttpRecorder {
                 websocketSubProtocols);
         HttpServerOptions sslConfig = createSslOptions(httpBuildTimeConfig, httpConfiguration, launchMode,
                 websocketSubProtocols);
+
+        // Customize
+        if (Arc.container() != null) {
+            List<InstanceHandle<HttpServerOptionsCustomizer>> instances = Arc.container()
+                    .listAll(HttpServerOptionsCustomizer.class);
+            for (InstanceHandle<HttpServerOptionsCustomizer> instance : instances) {
+                HttpServerOptionsCustomizer customizer = instance.get();
+                if (httpServerOptions != null) {
+                    customizer.customizeHttpServer(httpServerOptions);
+                }
+                if (sslConfig != null) {
+                    customizer.customizeHttpsServer(sslConfig);
+                }
+                if (domainSocketOptions != null) {
+                    customizer.customizeDomainSocketServer(domainSocketOptions);
+                }
+            }
+        }
 
         if (httpConfiguration.insecureRequests != HttpConfiguration.InsecureRequests.ENABLED && sslConfig == null) {
             throw new IllegalStateException("Cannot set quarkus.http.redirect-insecure-requests without enabling SSL.");

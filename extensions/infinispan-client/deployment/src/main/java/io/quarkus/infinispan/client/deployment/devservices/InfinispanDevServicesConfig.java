@@ -1,9 +1,6 @@
 package io.quarkus.infinispan.client.deployment.devservices;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalInt;
+import java.util.*;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -67,6 +64,19 @@ public class InfinispanDevServicesConfig {
     @ConfigItem
     public Optional<List<String>> artifacts;
 
+    /**
+     * List of the caches to be created and their associated cache templates.
+     * <p>
+     * To configure a cache, you would use one of the enum values from {@code org.infinispan.client.hotrod.DefaultTemplate}
+     * <p>
+     * quarkus.infinispan-client.devservices.cache-templates.cache1=DIST_SYNC
+     * quarkus.infinispan-client.devservices.cache-templates.cache2=REPL_SYNC
+     * <p>
+     * If an invalid cache template is passed, the Infinispan server will throw an error when trying to start.
+     */
+    @ConfigItem
+    public Map<String, String> cacheTemplates;
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -78,11 +88,12 @@ public class InfinispanDevServicesConfig {
                 Objects.equals(port, that.port) &&
                 Objects.equals(shared, that.shared) &&
                 Objects.equals(serviceName, that.serviceName) &&
-                Objects.equals(artifacts, this.artifacts);
+                Objects.equals(artifacts, this.artifacts) &&
+                Objects.equals(cacheTemplates, this.cacheTemplates);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enabled, port, shared, serviceName, artifacts);
+        return Objects.hash(enabled, port, shared, serviceName, artifacts, cacheTemplates);
     }
 }

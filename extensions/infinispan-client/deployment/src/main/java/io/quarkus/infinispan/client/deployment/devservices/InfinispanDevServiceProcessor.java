@@ -14,6 +14,9 @@ import java.util.OptionalInt;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.infinispan.client.hotrod.DefaultTemplate;
+import org.infinispan.client.hotrod.RemoteCacheManager;
+import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.server.test.core.InfinispanContainer;
 import org.jboss.logging.Logger;
@@ -158,6 +161,14 @@ public class InfinispanDevServiceProcessor {
                     devServicesConfig.artifacts);
             timeout.ifPresent(infinispanContainer::withStartupTimeout);
             infinispanContainer.start();
+
+            if (!devServicesConfig.cacheTemplates.isEmpty()) {
+                ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
+                configurationBuilder.security().authentication().saslMechanism("DIGEST-MD5");
+                RemoteCacheManager remoteCacheManager = infinispanContainer.getRemoteCacheManager(configurationBuilder);
+                devServicesConfig.cacheTemplates.forEach((cacheName, templateName) -> remoteCacheManager.administration()
+                        .createCache(cacheName, Enum.valueOf(DefaultTemplate.class, templateName)));
+            }
 
             return getRunningDevService(infinispanContainer.getContainerId(), infinispanContainer::close,
                     infinispanContainer.getHost() + ":" + infinispanContainer.getPort(),

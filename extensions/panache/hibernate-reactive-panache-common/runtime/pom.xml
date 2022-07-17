@@ -10,7 +10,7 @@
 
     <artifactId>quarkus-hibernate-reactive-panache-common</artifactId>
     <name>Quarkus - Hibernate Reactive with Panache - Common - Runtime</name>
-    <description>Simplify your persistence code for Hibernate Reactive via the active record or the repository pattern</description>
+    <description>Common module to simplify your persistence code for Hibernate Reactive via the active record or the repository pattern</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

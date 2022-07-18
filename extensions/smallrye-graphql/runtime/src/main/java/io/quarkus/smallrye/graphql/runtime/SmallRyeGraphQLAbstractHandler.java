@@ -72,6 +72,7 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
                 handleWithIdentity(ctx);
             } catch (Throwable t) {
                 currentManagedContext.terminate();
+                throw t;
             }
         }
     }

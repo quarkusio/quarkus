@@ -15,6 +15,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.redis.client.RedisHostsProvider;
+import io.quarkus.redis.client.RedisOptionsCustomizer;
 import io.quarkus.redis.runtime.client.config.NetConfig;
 import io.quarkus.redis.runtime.client.config.RedisClientConfig;
 import io.quarkus.redis.runtime.client.config.TlsConfig;
@@ -38,7 +39,7 @@ public class VertxRedisClientFactory {
         // Avoid direct instantiation.
     }
 
-    public static Redis create(Vertx vertx, RedisClientConfig config) {
+    public static Redis create(String name, Vertx vertx, RedisClientConfig config) {
         RedisOptions options = new RedisOptions();
 
         List<URI> hosts = new ArrayList<>();
@@ -81,7 +82,21 @@ public class VertxRedisClientFactory {
         config.replicas.ifPresent(options::setUseReplicas);
 
         options.setNetClientOptions(toNetClientOptions(config));
+
+        customize(name, options);
+
         return Redis.createClient(vertx, options);
+    }
+
+    private static void customize(String name, RedisOptions options) {
+        if (Arc.container() != null) {
+            InjectableInstance<RedisOptionsCustomizer> customizers = Arc.container().select(RedisOptionsCustomizer.class);
+            if (!customizers.isUnsatisfied()) {
+                for (RedisOptionsCustomizer customizer : customizers) {
+                    customizer.customize(name, options);
+                }
+            }
+        }
     }
 
     private static NetClientOptions toNetClientOptions(RedisClientConfig config) {

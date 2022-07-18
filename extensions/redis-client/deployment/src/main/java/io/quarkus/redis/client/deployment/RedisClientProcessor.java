@@ -33,6 +33,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.client.RedisHostsProvider;
+import io.quarkus.redis.client.RedisOptionsCustomizer;
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;
 import io.quarkus.redis.runtime.client.RedisClientRecorder;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -89,8 +90,8 @@ public class RedisClientProcessor {
     }
 
     @BuildStep
-    UnremovableBeanBuildItem makeHostsProviderUnremovable() {
-        return UnremovableBeanBuildItem.beanTypes(RedisHostsProvider.class);
+    UnremovableBeanBuildItem makeHostsProviderAndOptionsCustomizerUnremovable() {
+        return UnremovableBeanBuildItem.beanTypes(RedisHostsProvider.class, RedisOptionsCustomizer.class);
     }
 
     @BuildStep

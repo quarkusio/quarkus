@@ -31,9 +31,8 @@ public class RedisClientRecorder {
     // Split client and DS recorders
 
     private final RedisConfig config;
-    private final Map<String, RedisClientAndApi> clients = new HashMap<>();
-
-    private final Map<String, ReactiveRedisDataSourceImpl> dataSources = new HashMap<>();
+    private static final Map<String, RedisClientAndApi> clients = new HashMap<>();
+    private static final Map<String, ReactiveRedisDataSourceImpl> dataSources = new HashMap<>();
 
     public RedisClientRecorder(RedisConfig rc) {
         this.config = rc;
@@ -42,6 +41,14 @@ public class RedisClientRecorder {
     public void initialize(RuntimeValue<io.vertx.core.Vertx> vertx, Set<String> names) {
         Vertx v = Vertx.newInstance(vertx.getValue());
         _initialize(v, names);
+    }
+
+    private void closeAllClients() {
+        for (Map.Entry<String, RedisClientAndApi> entry : clients.entrySet()) {
+            entry.getValue().redis.close();
+        }
+        clients.clear();
+        dataSources.clear();
     }
 
     public void _initialize(Vertx vertx, Set<String> names) {
@@ -63,9 +70,11 @@ public class RedisClientRecorder {
                                         "You must at least configure `quarkus.redis." + name + ".hosts`.");
                             }
                         });
-                clients.computeIfAbsent(name, x -> new RedisClientAndApi(VertxRedisClientFactory.create(vertx, actualConfig)));
+                clients.computeIfAbsent(name,
+                        x -> new RedisClientAndApi(VertxRedisClientFactory.create(name, vertx, actualConfig)));
             } else if (DEFAULT_CLIENT_NAME.equalsIgnoreCase(name) && maybe.isPresent()) {
-                clients.computeIfAbsent(name, x -> new RedisClientAndApi(VertxRedisClientFactory.create(vertx, maybe.get())));
+                clients.computeIfAbsent(name,
+                        x -> new RedisClientAndApi(VertxRedisClientFactory.create(DEFAULT_CLIENT_NAME, vertx, maybe.get())));
             }
             // Do not throw an error. We would need to check if the default redis client is used.
         }
@@ -188,6 +197,7 @@ public class RedisClientRecorder {
                     value.redis.close();
                 }
                 clients.clear();
+                dataSources.clear();
             }
         });
     }

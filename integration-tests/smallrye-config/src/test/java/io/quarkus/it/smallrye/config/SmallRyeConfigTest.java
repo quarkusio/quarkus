@@ -2,6 +2,7 @@ package io.quarkus.it.smallrye.config;
 
 import static io.restassured.RestAssured.given;
 import static javax.ws.rs.core.Response.Status.OK;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 
 import org.junit.jupiter.api.Test;
@@ -97,5 +98,20 @@ public class SmallRyeConfigTest {
                 .statusCode(OK.getStatusCode())
                 .body("value", equalTo("1234"))
                 .body("sourceName", equalTo("UserConfigSource"));
+    }
+
+    @Test
+    void profiles() {
+        given()
+                .get("/config/profiles")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body(containsString("parent-common"));
+
+        given()
+                .get("/config/{name}", "parent.common.prop")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("value", equalTo("parent-common"));
     }
 }

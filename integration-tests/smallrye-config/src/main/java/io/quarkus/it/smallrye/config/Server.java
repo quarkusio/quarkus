@@ -153,11 +153,14 @@ public interface Server extends Alias {
         Optional<List<@Size(max = 3) String>> alias();
 
         @JsonProperty
-        Map<String, Admin> admins();
+        Map<String, List<Admin>> admins();
+
+        @JsonProperty
+        Map<String, List<@Size(min = 8, max = 15) String>> firewall();
 
         interface Admin {
             @JsonProperty
-            @Size(max = 3)
+            @Size(max = 4)
             String username();
         }
     }

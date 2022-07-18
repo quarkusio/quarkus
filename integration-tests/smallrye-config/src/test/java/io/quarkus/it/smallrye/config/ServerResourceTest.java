@@ -102,13 +102,14 @@ class ServerResourceTest {
         given().get("/server/validator/{prefix}", "cloud")
                 .then()
                 .statusCode(OK.getStatusCode())
-                .body("errors", hasSize(7))
+                .body("errors", hasSize(8))
                 .body("errors", hasItem("cloud.log.days must be less than or equal to 15"))
                 .body("errors", hasItem("cloud.cors.origins[1].port must be greater than or equal to 8000"))
                 .body("errors", hasItem("cloud.info.name size must be between 0 and 3"))
                 .body("errors", hasItem("cloud.info.code must be less than or equal to 3"))
                 .body("errors", hasItem("cloud.info.alias[0] size must be between 0 and 3"))
-                .body("errors", hasItem("cloud.info.admins.root.username size must be between 0 and 3"))
+                .body("errors", hasItem("cloud.info.admins.root[1].username size must be between 0 and 4"))
+                .body("errors", hasItem("cloud.info.firewall.accepted[1] size must be between 8 and 15"))
                 .body("errors", hasItem("cloud.proxy.timeout must be less than or equal to 10"));
     }
 }

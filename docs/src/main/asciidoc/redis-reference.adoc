@@ -639,6 +639,29 @@ The host provider can be used to configure the redis client like shown below
 quarkus.redis.hosts-provider-name=hosts-provider
 ----
 
+== Customizing the Redis options programmatically
+
+You can expose a bean implementing the `io.quarkus.redis.client.RedisOptionsCustomizer` interface to customize the Redis client options.
+The bean is called for each configured Redis client:
+
+[source, java]
+----
+@ApplicationScoped
+public static class MyExampleCustomizer implements RedisOptionsCustomizer {
+
+    @Override
+    public void customize(String clientName, RedisOptions options) {
+        if (clientName.equalsIgnoreCase("my-redis")
+                || clientName.equalsIgnoreCase(RedisConfig.DEFAULT_CLIENT_NAME)) {
+            // modify the given options
+        } else {
+            throw new IllegalStateException("Unknown client name: " + clientName);
+        }
+    }
+}
+----
+
+
 === Dev Services
 
 See link:redis-dev-services.adoc[Redis Dev Service].

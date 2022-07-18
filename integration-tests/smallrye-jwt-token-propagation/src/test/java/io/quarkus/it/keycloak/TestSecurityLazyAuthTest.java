@@ -20,7 +20,7 @@ public class TestSecurityLazyAuthTest {
     @TestSecurity(user = "user1", roles = "viewer")
     public void testWithDummyUser() {
         RestAssured.when().get("test-security").then()
-                .body(is("user1"));
+                .body(is("user1:user1:user1"));
     }
 
     @Test
@@ -50,7 +50,7 @@ public class TestSecurityLazyAuthTest {
     })
     public void testJwtGetWithDummyUser() {
         RestAssured.when().get("test-security-jwt").then()
-                .body(is("userJwt:viewer:user@gmail.com"));
+                .body(is("userJwt:userJwt:userJwt:viewer:user@gmail.com"));
     }
 
 }

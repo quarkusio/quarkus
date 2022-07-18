@@ -148,7 +148,7 @@
         <aws-lambda-java-events.version>3.11.0</aws-lambda-java-events.version>
         <aws-xray.version>2.11.2</aws-xray.version>
         <azure-functions-java-library.version>1.4.2</azure-functions-java-library.version>
-        <kotlin.version>1.6.21</kotlin.version>
+        <kotlin.version>1.7.10</kotlin.version>
         <kotlin.coroutine.version>1.6.4</kotlin.coroutine.version>
         <kotlin-serialization.version>1.3.3</kotlin-serialization.version>
         <kubernetes-client.version>5.12.3</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->

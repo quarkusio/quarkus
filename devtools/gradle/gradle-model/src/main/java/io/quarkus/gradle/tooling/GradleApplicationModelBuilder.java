@@ -30,6 +30,7 @@ import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.compile.AbstractCompile;
 import org.gradle.language.jvm.tasks.ProcessResources;
 import org.gradle.tooling.provider.model.ParameterizedToolingModelBuilder;
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -436,6 +437,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
         final List<SourceDir> sourceDirs = new ArrayList<>(1);
         final List<SourceDir> resourceDirs = new ArrayList<>(1);
+
         project.getTasks().withType(AbstractCompile.class, t -> {
             if (!t.getEnabled()) {
                 return;
@@ -448,19 +450,45 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             if (!allClassesDirs.contains(destDir)) {
                 return;
             }
-            final List<File> srcDirs = new ArrayList<>(1);
             source.visit(a -> {
                 // we are looking for the root dirs containing sources
                 if (a.getRelativePath().getSegments().length == 1) {
                     final File srcDir = a.getFile().getParentFile();
-                    if (srcDirs.add(srcDir)) {
+                    DefaultSourceDir sources = new DefaultSourceDir(srcDir.toPath(), destDir.toPath(),
+                            Collections.singletonMap("compiler", t.getName()));
+                    sourceDirs.add(sources);
+                }
+            });
+        });
+
+        // This "try/catch" is needed because of the way the "quarkus-cli" Gradle tests work. Without it, the tests fail.
+        try {
+            Class.forName("org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile");
+            project.getTasks().withType(KotlinJvmCompile.class, t -> {
+                if (!t.getEnabled()) {
+                    return;
+                }
+                final FileTree source = t.getSources().getAsFileTree();
+                if (source.isEmpty()) {
+                    return;
+                }
+                final File destDir = t.getDestinationDirectory().getAsFile().get();
+                if (!allClassesDirs.contains(destDir)) {
+                    return;
+                }
+                source.visit(a -> {
+                    // we are looking for the root dirs containing sources
+                    if (a.getRelativePath().getSegments().length == 1) {
+                        final File srcDir = a.getFile().getParentFile();
                         DefaultSourceDir sources = new DefaultSourceDir(srcDir.toPath(), destDir.toPath(),
                                 Collections.singletonMap("compiler", t.getName()));
                         sourceDirs.add(sources);
                     }
-                }
+                });
             });
-        });
+        } catch (ClassNotFoundException e) {
+            // ignore
+        }
 
         final File resourcesOutputDir = sourceSet.getOutput().getResourcesDir();
 
@@ -476,14 +504,11 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 return;
             }
             final Path destDir = t.getDestinationDir().toPath();
-            final List<File> srcDirs = new ArrayList<>(1);
             source.getAsFileTree().visit(a -> {
                 // we are looking for the root dirs containing sources
                 if (a.getRelativePath().getSegments().length == 1) {
                     final File srcDir = a.getFile().getParentFile();
-                    if (srcDirs.add(srcDir)) {
-                        resourceDirs.add(new DefaultSourceDir(srcDir.toPath(), destDir));
-                    }
+                    resourceDirs.add(new DefaultSourceDir(srcDir.toPath(), destDir));
                 }
             });
         });

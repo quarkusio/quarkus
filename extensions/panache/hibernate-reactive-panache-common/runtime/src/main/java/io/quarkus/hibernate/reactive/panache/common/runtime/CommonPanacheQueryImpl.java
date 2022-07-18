@@ -69,6 +69,35 @@ public class CommonPanacheQueryImpl<Entity> {
             throw new PanacheQueryException("Unable to perform a projection on a named query");
         }
 
+        String lowerCasedTrimmedQuery = query.trim().toLowerCase();
+        if (lowerCasedTrimmedQuery.startsWith("select new ")) {
+            throw new PanacheQueryException("Unable to perform a projection on a 'select new' query: " + query);
+        }
+
+        // If the query starts with a select clause, we generate an HQL query
+        // using the fields in the select clause:
+        // Initial query: select e.field1, e.field2 from EntityClass e
+        // New query: SELECT new org.acme.ProjectionClass(e.field1, e.field2) from EntityClass e
+        if (lowerCasedTrimmedQuery.startsWith("select ")) {
+            int endSelect = lowerCasedTrimmedQuery.indexOf(" from ");
+            String trimmedQuery = query.trim();
+            // 7 is the length of "select "
+            String selectClause = trimmedQuery.substring(7, endSelect);
+            String from = trimmedQuery.substring(endSelect);
+            StringBuilder newQuery = new StringBuilder("select ");
+            // Handle select-distinct. HQL example: select distinct new org.acme.ProjectionClass...
+            String lowerCasedTrimmedSelect = selectClause.trim().toLowerCase();
+            boolean distinctQuery = lowerCasedTrimmedSelect.startsWith("distinct ");
+            if (distinctQuery) {
+                // 9 is the length of "distinct "
+                selectClause = lowerCasedTrimmedSelect.substring(9).trim();
+                newQuery.append("distinct ");
+            }
+
+            newQuery.append("new ").append(type.getName()).append("(").append(selectClause).append(")").append(from);
+            return new CommonPanacheQueryImpl<>(this, newQuery.toString(), "select count(*) " + from);
+        }
+
         // We use the first constructor that we found and use the parameter names,
         // so the projection class must have only one constructor,
         // and the application must be built with parameter names.

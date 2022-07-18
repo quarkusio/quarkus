@@ -7,9 +7,9 @@ import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.cli.create.BaseCreateCommand;
+import io.quarkus.cli.create.ExtensionCodeGenerationGroup;
 import io.quarkus.cli.create.ExtensionGAVMixin;
 import io.quarkus.cli.create.ExtensionNameGenerationGroup;
-import io.quarkus.cli.create.ExtensionTestGenerationGroup;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.CreateExtensionCommandHandler;
 import io.quarkus.devtools.project.BuildTool;
@@ -81,7 +81,7 @@ public class CreateExtension extends BaseCreateCommand {
     ExtensionNameGenerationGroup nameGeneration = new ExtensionNameGenerationGroup();
 
     @CommandLine.ArgGroup(order = 3, exclusive = false, heading = "%nCode Generation (Optional):%n")
-    ExtensionTestGenerationGroup testGeneration = new ExtensionTestGenerationGroup();
+    ExtensionCodeGenerationGroup codeGeneration = new ExtensionCodeGenerationGroup();
 
     @CommandLine.ArgGroup(order = 4, exclusive = false, validate = false)
     PropertiesOptions propertiesOptions = new PropertiesOptions();
@@ -117,9 +117,10 @@ public class CreateExtension extends BaseCreateCommand {
                     .quarkusBomGroupId(quarkusBom.getGroupId())
                     .quarkusBomArtifactId(quarkusBom.getArtifactId())
                     .quarkusBomVersion(quarkusBom.getVersion())
-                    .withoutUnitTest(testGeneration.skipUnitTest())
-                    .withoutDevModeTest(testGeneration.skipDevModeTest())
-                    .withoutIntegrationTests(testGeneration.skipIntegrationTests())
+                    .withCodestart(codeGeneration.withCodestart())
+                    .withoutUnitTest(codeGeneration.skipUnitTest())
+                    .withoutDevModeTest(codeGeneration.skipDevModeTest())
+                    .withoutIntegrationTests(codeGeneration.skipIntegrationTests())
                     .prepare();
 
             QuarkusCommandOutcome outcome = QuarkusCommandOutcome.success();
@@ -156,9 +157,10 @@ public class CreateExtension extends BaseCreateCommand {
         for (Map.Entry<String, Object> entry : invocation.getData().entrySet()) {
             dryRunOutput.put(prettyName(entry.getKey()), entry.getValue().toString());
         }
-        dryRunOutput.put("Skip Unit Test", "" + testGeneration.skipUnitTest());
-        dryRunOutput.put("Skip Dev-mode Test", "" + testGeneration.skipDevModeTest());
-        dryRunOutput.put("Skip Integration Test", "" + testGeneration.skipIntegrationTests());
+        dryRunOutput.put("Extension Codestart", "" + codeGeneration.withCodestart());
+        dryRunOutput.put("Skip Unit Test", "" + codeGeneration.skipUnitTest());
+        dryRunOutput.put("Skip Dev-mode Test", "" + codeGeneration.skipDevModeTest());
+        dryRunOutput.put("Skip Integration Test", "" + codeGeneration.skipIntegrationTests());
         output.info(help.createTextTable(dryRunOutput).toString());
     }
 
@@ -167,7 +169,7 @@ public class CreateExtension extends BaseCreateCommand {
         return "CreateExtension{" + "gav=" + gav
                 + ", quarkusVersion=" + targetQuarkusVersion
                 + ", nameGeneration=" + nameGeneration
-                + ", testGeneration=" + testGeneration
+                + ", testGeneration=" + codeGeneration
                 + '}';
     }
 }

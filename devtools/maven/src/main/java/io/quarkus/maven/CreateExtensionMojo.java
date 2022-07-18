@@ -171,6 +171,12 @@ public class CreateExtensionMojo extends AbstractMojo {
     String quarkusBomVersion;
 
     /**
+     * Indicates whether to generate an extension codestart
+     */
+    @Parameter(property = "withCodestart")
+    boolean withCodestart;
+
+    /**
      * Indicates whether to generate a unit test class for the extension
      */
     @Parameter(property = "withoutUnitTest")
@@ -241,6 +247,7 @@ public class CreateExtensionMojo extends AbstractMojo {
                 .quarkusBomGroupId(quarkusBomGroupId)
                 .quarkusBomArtifactId(quarkusBomArtifactId)
                 .quarkusBomGroupId(quarkusBomVersion)
+                .withCodestart(withCodestart)
                 .withoutUnitTest(withoutTests || withoutUnitTest)
                 .withoutDevModeTest(withoutTests || withoutDevModeTest)
                 .withoutIntegrationTests(withoutTests || withoutIntegrationTests);

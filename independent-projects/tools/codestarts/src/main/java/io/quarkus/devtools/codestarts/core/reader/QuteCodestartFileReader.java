@@ -27,15 +27,20 @@ final class QuteCodestartFileReader implements CodestartFileReader {
     private static final String TPL_QUTE_FLAG = ".tpl.qute";
     private static final String ENTRY_QUTE_FLAG = ".entry.qute";
     public static final String INCLUDE_QUTE_FLAG = ".include.qute";
+    public static final String SKIP_TAG = "<SKIP>";
 
     @Override
     public boolean matches(String fileName) {
-        return fileName.contains(TPL_QUTE_FLAG) || fileName.contains(ENTRY_QUTE_FLAG) || fileName.contains(INCLUDE_QUTE_FLAG);
+        return fileName.contains(TPL_QUTE_FLAG)
+                || fileName.contains(ENTRY_QUTE_FLAG)
+                || fileName.contains(INCLUDE_QUTE_FLAG);
     }
 
     @Override
     public String cleanFileName(String fileName) {
-        return fileName.replaceAll(TPL_QUTE_FLAG, "").replace(ENTRY_QUTE_FLAG, "");
+        return fileName
+                .replaceAll(TPL_QUTE_FLAG, "")
+                .replace(ENTRY_QUTE_FLAG, "");
     }
 
     @Override
@@ -45,7 +50,11 @@ final class QuteCodestartFileReader implements CodestartFileReader {
         if (FilenameUtils.getName(source.path()).contains(INCLUDE_QUTE_FLAG)) {
             return Optional.empty();
         }
-        return Optional.of(readQuteFile(projectResource, source, languageName, data));
+        final String value = readQuteFile(projectResource, source, languageName, data);
+        if (SKIP_TAG.equals(value)) {
+            return Optional.empty();
+        }
+        return Optional.of(value);
     }
 
     public static String readQuteFile(CodestartResource projectResource, Source source, String languageName,

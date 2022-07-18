@@ -96,6 +96,7 @@ public class CreateExtensionMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("quarkusVersion", "2.10.5.Final");
         properties.put("extensionName", "My Quarkiverse extension");
         properties.put("extensionDescription", "My Quarkiverse extension description");
+        properties.put("withCodestart", "true");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isZero();
@@ -104,6 +105,7 @@ public class CreateExtensionMojoIT extends QuarkusPlatformAwareMojoTestBase {
         assertThatDirectoryTreeMatchSnapshots(testInfo, testDirPath)
                 .contains(
                         "quarkus-my-quarkiverse-ext/pom.xml",
+                        "quarkus-my-quarkiverse-ext/runtime/src/main/codestarts/quarkus/my-quarkiverse-ext-codestart/codestart.yml",
                         "quarkus-my-quarkiverse-ext/deployment/src/main/java/io/quarkiverse/my/quarkiverse/ext/deployment/MyQuarkiverseExtProcessor.java",
                         "quarkus-my-quarkiverse-ext/integration-tests/pom.xml",
                         "quarkus-my-quarkiverse-ext/integration-tests/src/test/java/io/quarkiverse/my/quarkiverse/ext/it/MyQuarkiverseExtResourceTest.java");

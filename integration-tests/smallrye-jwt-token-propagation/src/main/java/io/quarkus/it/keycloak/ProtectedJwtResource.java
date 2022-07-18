@@ -1,5 +1,7 @@
 package io.quarkus.it.keycloak;
 
+import java.security.Principal;
+
 import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -22,6 +24,9 @@ public class ProtectedJwtResource {
     SecurityIdentity identity;
 
     @Inject
+    Principal principal;
+
+    @Inject
     JsonWebToken accessToken;
 
     @Context
@@ -31,7 +36,8 @@ public class ProtectedJwtResource {
     @Path("test-security")
     @RolesAllowed("viewer")
     public String testSecurity() {
-        return securityContext.getUserPrincipal().getName();
+        return securityContext.getUserPrincipal().getName() + ":" + identity.getPrincipal().getName() + ":"
+                + principal.getName();
     }
 
     @POST
@@ -46,7 +52,7 @@ public class ProtectedJwtResource {
     @Path("test-security-jwt")
     @RolesAllowed("viewer")
     public String testSecurityJwt() {
-        return accessToken.getName() + ":" + accessToken.getGroups().iterator().next()
-                + ":" + accessToken.getClaim("email");
+        return accessToken.getName() + ":" + identity.getPrincipal().getName() + ":" + principal.getName()
+                + ":" + accessToken.getGroups().iterator().next() + ":" + accessToken.getClaim("email");
     }
 }

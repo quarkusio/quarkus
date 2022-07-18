@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import java.security.Principal;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -33,6 +34,9 @@ public class ProtectedResource {
     SecurityIdentity identity;
 
     @Inject
+    Principal principal;
+
+    @Inject
     OidcConfigurationMetadata configMetadata;
 
     @Inject
@@ -63,13 +67,15 @@ public class ProtectedResource {
     @GET
     @Path("test-security")
     public String testSecurity() {
-        return securityContext.getUserPrincipal().getName();
+        return securityContext.getUserPrincipal().getName() + ":" + identity.getPrincipal().getName() + ":"
+                + principal.getName();
     }
 
     @GET
     @Path("test-security-oidc")
     public String testSecurityJwt() {
-        return idToken.getName() + ":" + idToken.getGroups().iterator().next()
+        return idToken.getName() + ":" + identity.getPrincipal().getName() + ":" + principal.getName()
+                + ":" + idToken.getGroups().iterator().next()
                 + ":" + idToken.getClaim("email")
                 + ":" + userInfo.getString("sub")
                 + ":" + configMetadata.get("audience");

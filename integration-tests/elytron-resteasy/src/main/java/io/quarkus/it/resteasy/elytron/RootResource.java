@@ -1,5 +1,6 @@
 package io.quarkus.it.resteasy.elytron;
 
+import java.security.Principal;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -21,6 +22,8 @@ import io.quarkus.security.identity.SecurityIdentity;
 public class RootResource {
     @Inject
     SecurityIdentity identity;
+    @Inject
+    Principal principal;
 
     @POST
     @Consumes(MediaType.TEXT_PLAIN)
@@ -54,7 +57,7 @@ public class RootResource {
     @Path("/user")
     @RolesAllowed("user")
     public String user(@Context SecurityContext sec) {
-        return sec.getUserPrincipal().getName();
+        return sec.getUserPrincipal().getName() + ":" + identity.getPrincipal().getName() + ":" + principal.getName();
     }
 
     @GET

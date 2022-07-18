@@ -6,7 +6,6 @@ import org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.selector.StrategyRegistration;
 import org.hibernate.boot.registry.selector.StrategyRegistrationProvider;
-import org.hibernate.boot.registry.selector.internal.DefaultDialectSelector;
 import org.hibernate.boot.registry.selector.internal.DefaultJtaPlatformSelector;
 import org.hibernate.boot.registry.selector.internal.StrategySelectorImpl;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
@@ -56,7 +55,7 @@ public final class QuarkusStrategySelectorBuilder {
         // build the baseline...
         strategySelector.registerStrategyLazily(
                 Dialect.class,
-                new DefaultDialectSelector());
+                new QuarkusDialectSelector());
         strategySelector.registerStrategyLazily(JtaPlatform.class, new DefaultJtaPlatformSelector());
         addTransactionCoordinatorBuilders(strategySelector);
         addSqmMultiTableMutationStrategies(strategySelector);

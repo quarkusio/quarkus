@@ -977,7 +977,7 @@ public final class HibernateOrmProcessor {
             // The datasource is optional for the DATABASE multi-tenancy strategy,
             // since the datasource will be resolved separately for each tenant.
             if (explicitDialect.isPresent()) {
-                dialect = explicitDialect.get();
+                dialect = explicitDialectSet(explicitDialect.get());
             } else if (jdbcDataSource.isPresent()) {
                 dialect = Dialects.guessDialect(persistenceUnitName, jdbcDataSource.get().getDbKind(),
                         dbKindMetadataBuildItems);
@@ -1001,7 +1001,7 @@ public final class HibernateOrmProcessor {
                                 "quarkus.datasource.password", "quarkus.datasource.jdbc.url")));
             }
             if (explicitDialect.isPresent()) {
-                dialect = explicitDialect.get();
+                dialect = explicitDialectSet(explicitDialect.get());
             } else {
                 dialect = Dialects.guessDialect(persistenceUnitName, jdbcDataSource.get().getDbKind(),
                         dbKindMetadataBuildItems);
@@ -1208,6 +1208,15 @@ public final class HibernateOrmProcessor {
                         xmlMappings,
                         persistenceUnitConfig.unsupportedProperties,
                         false, false));
+    }
+
+    private static String explicitDialectSet(String configuredDialectName) {
+        if ("org.hibernate.dialect.H2Dialect".equals(configuredDialectName)) {
+            LOG.warn(
+                    "The dialect property of Hibernate ORM was explicitly set to 'org.hibernate.dialect.H2Dialect'; this won't work in Quarkus - overriding to 'io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect'.");
+            return "io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect";
+        }
+        return configuredDialectName;
     }
 
     private static Optional<JdbcDataSourceBuildItem> findJdbcDataSource(String persistenceUnitName,

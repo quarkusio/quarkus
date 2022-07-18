@@ -82,7 +82,8 @@ public class CommonPanacheQueryImpl<Entity> {
             throw new PanacheQueryException("Unable to perform a projection on a named query");
         }
 
-        if (query.trim().toLowerCase().startsWith("select new ")) {
+        String lowerCasedTrimmedQuery = query.trim().toLowerCase();
+        if (lowerCasedTrimmedQuery.startsWith("select new ")) {
             throw new PanacheQueryException("Unable to perform a projection on a 'select new' query: " + query);
         }
 
@@ -90,26 +91,23 @@ public class CommonPanacheQueryImpl<Entity> {
         // using the fields in the select clause:
         // Initial query: select e.field1, e.field2 from EntityClass e
         // New query: SELECT new org.acme.ProjectionClass(e.field1, e.field2) from EntityClass e
-        if (query.trim().toLowerCase().startsWith("select ")) {
+        if (lowerCasedTrimmedQuery.startsWith("select ")) {
+            int endSelect = lowerCasedTrimmedQuery.indexOf(" from ");
             String trimmedQuery = query.trim();
-            int endSelect = trimmedQuery.toLowerCase().indexOf(" from ");
-            String selectClause = trimmedQuery.substring("SELECT ".length(), endSelect);
+            // 7 is the length of "select "
+            String selectClause = trimmedQuery.substring(7, endSelect);
             String from = trimmedQuery.substring(endSelect);
             StringBuilder newQuery = new StringBuilder("select ");
             // Handle select-distinct. HQL example: select distinct new org.acme.ProjectionClass...
-            boolean distinctQuery = selectClause.trim().toLowerCase().startsWith("distinct ");
+            String lowerCasedTrimmedSelect = selectClause.trim().toLowerCase();
+            boolean distinctQuery = lowerCasedTrimmedSelect.startsWith("distinct ");
             if (distinctQuery) {
-                selectClause = selectClause.trim().substring("distinct ".length()).trim();
+                // 9 is the length of "distinct "
+                selectClause = lowerCasedTrimmedSelect.substring(9).trim();
                 newQuery.append("distinct ");
             }
-            newQuery
-                    .append("new ")
-                    .append(type.getName())
-                    .append("(")
-                    .append(selectClause)
-                    .append(")")
-                    .append(from);
 
+            newQuery.append("new ").append(type.getName()).append("(").append(selectClause).append(")").append(from);
             return new CommonPanacheQueryImpl<>(this, newQuery.toString(), "select count(*) " + from);
         }
 

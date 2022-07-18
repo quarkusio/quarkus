@@ -1612,17 +1612,70 @@ public class TestEndpoint {
     public Uni<String> testProjection2() {
         String ownerName = "Julie";
         String catName = "Bubulle";
+        Double catWeight = 8.5d;
         CatOwner catOwner = new CatOwner(ownerName);
         return catOwner.persist()
-                .chain(() -> new Cat(catName, catOwner).persist())
+                .chain(() -> new Cat(catName, catOwner, catWeight).persist())
                 .chain(() -> Cat.find("name", catName)
                         .project(CatDto.class)
                         .<CatDto> firstResult())
-                .map(cat -> {
+                .invoke(cat -> {
                     Assertions.assertEquals(catName, cat.name);
                     Assertions.assertEquals(ownerName, cat.ownerName);
-                    return "OK";
-                });
+                })
+                .chain(() -> Cat.find("select c.name, c.owner.name as ownerName from Cat c where c.name = :name",
+                        Parameters.with("name", catName))
+                        .project(CatProjectionBean.class)
+                        .<CatProjectionBean> singleResult())
+                .invoke(catView -> {
+                    Assertions.assertEquals(catName, catView.name);
+                    Assertions.assertEquals(ownerName, catView.ownerName);
+                    Assertions.assertNull(catView.weight);
+                })
+                .chain(() -> Cat.find("select 'fake_cat', 'fake_owner', 12.5 from Cat c")
+                        .project(CatProjectionBean.class)
+                        .<CatProjectionBean> firstResult())
+                .invoke(catView -> {
+                    Assertions.assertEquals("fake_cat", catView.name);
+                    Assertions.assertEquals("fake_owner", catView.ownerName);
+                    Assertions.assertEquals(12.5d, catView.weight);
+                })
+                // The spaces at the beginning are intentional
+                .replaceWith(() -> Cat.find(
+                        "   SELECT c.name, cast(null as string), SUM(c.weight) from Cat c where name = :name group by name  ",
+                        Parameters.with("name", catName))
+                        .project(CatProjectionBean.class))
+                .invoke(projectionQuery -> projectionQuery
+                        .<CatProjectionBean> firstResult()
+                        .invoke(catView -> {
+                            Assertions.assertEquals(catName, catView.name);
+                            Assertions.assertNull(catView.ownerName);
+                            Assertions.assertEquals(catWeight, catView.weight);
+                        })
+                        .replaceWith(() -> projectionQuery.count()
+                                .invoke(count -> Assertions.assertEquals(1L, count))))
+                // The spaces at the beginning are intentional
+                .replaceWith(() -> Cat.find(
+                        "   SELECT   disTINct  c.name, cast(null as string), SUM(c.weight) from Cat c where name = :name group by name  ",
+                        Parameters.with("name", catName))
+                        .project(CatProjectionBean.class))
+                .invoke(projectionQuery -> projectionQuery
+                        .<CatProjectionBean> firstResult()
+                        .invoke(catView -> {
+                            Assertions.assertEquals(catName, catView.name);
+                            Assertions.assertNull(catView.ownerName);
+                            Assertions.assertEquals(catWeight, catView.weight);
+                        })
+                        .replaceWith(() -> projectionQuery.count()
+                                .invoke(count -> Assertions.assertEquals(1L, count))))
+                .invoke(() -> {
+                    PanacheQueryException exception = Assertions.assertThrows(PanacheQueryException.class,
+                            () -> Cat.find("select new FakeClass('fake_cat', 'fake_owner', 12.5) from Cat c")
+                                    .project(CatProjectionBean.class));
+                    Assertions.assertTrue(
+                            exception.getMessage().startsWith("Unable to perform a projection on a 'select new' query"));
+                })
+                .replaceWith("OK");
     }
 
     @ReactiveTransactional

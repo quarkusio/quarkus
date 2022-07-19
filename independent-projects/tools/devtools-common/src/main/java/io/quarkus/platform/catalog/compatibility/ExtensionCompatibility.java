@@ -1,6 +1,6 @@
 package io.quarkus.platform.catalog.compatibility;
 
-import io.quarkus.maven.ArtifactKey;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.registry.catalog.Extension;
 import java.util.Collection;
 import java.util.Map;

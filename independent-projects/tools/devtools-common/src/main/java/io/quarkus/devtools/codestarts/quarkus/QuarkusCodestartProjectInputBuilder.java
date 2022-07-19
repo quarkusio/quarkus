@@ -6,8 +6,8 @@ import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.AppContent
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.extensions.Extensions;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;

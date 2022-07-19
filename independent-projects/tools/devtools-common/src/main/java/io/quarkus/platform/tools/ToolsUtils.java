@@ -5,8 +5,7 @@ import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.CatalogMergeUtility;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.selection.OriginPreference;
@@ -115,7 +114,7 @@ public class ToolsUtils {
             if (platformJson == null) {
                 final StringBuilder sb = new StringBuilder();
                 sb.append("Failed to resolve extension catalog for ");
-                sb.append(PlatformArtifacts.ensureBomArtifact(new ArtifactCoords(catalogCoords.getGroupId(),
+                sb.append(PlatformArtifacts.ensureBomArtifact(ArtifactCoords.of(catalogCoords.getGroupId(),
                         catalogCoords.getArtifactId(), catalogCoords.getClassifier(), catalogCoords.getExtension(),
                         catalogCoords.getVersion())).toCompactCoords());
                 sb.append(
@@ -185,7 +184,7 @@ public class ToolsUtils {
         for (ArtifactCoords platform : platforms) {
             final Path json;
             try {
-                json = artifactResolver.resolve(new GACTV(platform.getGroupId(), platform.getArtifactId(),
+                json = artifactResolver.resolve(ArtifactCoords.of(platform.getGroupId(), platform.getArtifactId(),
                         platform.getClassifier(), platform.getType(), platform.getVersion())).getResolvedPaths()
                         .getSinglePath();
             } catch (Exception e) {

@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.cli.Version;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.registry.catalog.PlatformStreamCoords;
 

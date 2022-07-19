@@ -1,7 +1,7 @@
 package io.quarkus.registry;
 
 import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.Platform;
 import io.quarkus.registry.catalog.PlatformCatalog;

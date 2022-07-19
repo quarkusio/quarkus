@@ -3,7 +3,7 @@ package io.quarkus.registry.catalog.platform;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.Constants;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.catalog.CatalogMapperHelper;

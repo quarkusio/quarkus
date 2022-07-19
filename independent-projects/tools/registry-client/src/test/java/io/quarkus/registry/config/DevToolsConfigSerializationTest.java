@@ -2,7 +2,7 @@ package io.quarkus.registry.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;

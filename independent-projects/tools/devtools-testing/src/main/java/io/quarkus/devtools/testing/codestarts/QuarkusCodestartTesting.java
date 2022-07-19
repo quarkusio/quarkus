@@ -3,7 +3,7 @@ package io.quarkus.devtools.testing.codestarts;
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.*;
 
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.catalog.ExtensionCatalog;

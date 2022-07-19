@@ -32,6 +32,7 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsConstants;
@@ -207,7 +208,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
                         && d.getArtifactId().endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX))) {
                     continue;
                 }
-                final ArtifactCoords a = new ArtifactCoords(d.getGroupId(), d.getArtifactId(), d.getClassifier(),
+                final ArtifactCoords a = ArtifactCoords.of(d.getGroupId(), d.getArtifactId(), d.getClassifier(),
                         d.getType(), d.getVersion());
                 descriptors.add(a);
                 log.debug("Found platform descriptor %s", a);

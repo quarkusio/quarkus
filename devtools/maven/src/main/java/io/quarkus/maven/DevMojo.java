@@ -97,6 +97,7 @@ import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
 import io.quarkus.maven.MavenDevModeLauncher.Builder;
 import io.quarkus.maven.components.CompilerOptions;
 import io.quarkus.maven.components.MavenVersionEnforcer;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;

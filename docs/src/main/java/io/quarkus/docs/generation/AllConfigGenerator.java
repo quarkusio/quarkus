@@ -28,7 +28,7 @@ import io.quarkus.annotation.processor.generate_doc.ConfigDocSection;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocWriter;
 import io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 

@@ -25,7 +25,7 @@ import io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataConverter
 import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.extensions.Extensions;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.CatalogMergeUtility;
 import io.quarkus.registry.catalog.Extension;

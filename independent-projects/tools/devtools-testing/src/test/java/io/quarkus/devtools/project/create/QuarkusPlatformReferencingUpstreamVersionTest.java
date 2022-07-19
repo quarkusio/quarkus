@@ -1,9 +1,10 @@
 package io.quarkus.devtools.project.create;
 
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -86,19 +87,19 @@ public class QuarkusPlatformReferencingUpstreamVersionTest extends MultiplePlatf
 
         assertModel(projectDir,
                 toPlatformBomCoords("acme-foo-bom"),
-                Arrays.asList(new ArtifactCoords("io.acme", "ext-a", null)),
+                List.of(ArtifactCoords.jar("io.acme", "ext-a", null)),
                 "2.0.4-downstream");
 
         addExtensions(projectDir, Arrays.asList("ext-b", "ext-c", "ext-d", "ext-e"));
         assertModel(projectDir,
-                Arrays.asList(mainPlatformBom(), platformMemberBomCoords("acme-foo-bom"),
-                        new ArtifactCoords(UPSTREAM_PLATFORM_KEY, "acme-bar-bom", "pom", "2.0.4"),
-                        new ArtifactCoords(UPSTREAM_PLATFORM_KEY, "acme-e-bom", "pom", "2.0.4")),
-                Arrays.asList(new ArtifactCoords("io.acme", "ext-a", null),
-                        new ArtifactCoords("io.acme", "ext-b", null),
-                        new ArtifactCoords("io.acme", "ext-e", null),
-                        new ArtifactCoords("io.acme", "ext-c", "jar", "5.1"),
-                        new ArtifactCoords("io.acme", "ext-d", "jar", "6.0")),
+                List.of(mainPlatformBom(), platformMemberBomCoords("acme-foo-bom"),
+                        ArtifactCoords.pom(UPSTREAM_PLATFORM_KEY, "acme-bar-bom", "2.0.4"),
+                        ArtifactCoords.pom(UPSTREAM_PLATFORM_KEY, "acme-e-bom", "2.0.4")),
+                List.of(ArtifactCoords.jar("io.acme", "ext-a", null),
+                        ArtifactCoords.jar("io.acme", "ext-b", null),
+                        ArtifactCoords.jar("io.acme", "ext-e", null),
+                        ArtifactCoords.jar("io.acme", "ext-c", "5.1"),
+                        ArtifactCoords.jar("io.acme", "ext-d", "6.0")),
                 "2.0.4-downstream");
     }
 
@@ -108,9 +109,10 @@ public class QuarkusPlatformReferencingUpstreamVersionTest extends MultiplePlatf
         createProject(projectDir, Arrays.asList("ext-a", "ext-b"));
 
         assertModel(projectDir,
-                Arrays.asList(mainPlatformBom(), platformMemberBomCoords("acme-foo-bom"),
-                        new ArtifactCoords(UPSTREAM_PLATFORM_KEY, "acme-bar-bom", "pom", "2.0.4")),
-                Arrays.asList(new ArtifactCoords("io.acme", "ext-a", null), new ArtifactCoords("io.acme", "ext-b", null)),
+                List.of(mainPlatformBom(), platformMemberBomCoords("acme-foo-bom"),
+                        ArtifactCoords.pom(UPSTREAM_PLATFORM_KEY, "acme-bar-bom", "2.0.4")),
+                List.of(ArtifactCoords.jar("io.acme", "ext-a", null),
+                        ArtifactCoords.jar("io.acme", "ext-b", null)),
                 "2.0.4-downstream");
     }
 
@@ -120,10 +122,11 @@ public class QuarkusPlatformReferencingUpstreamVersionTest extends MultiplePlatf
         createProject(projectDir, Arrays.asList("ext-a", "ext-b", "ext-e"));
 
         assertModel(projectDir,
-                Arrays.asList(mainPlatformBom(), platformMemberBomCoords("acme-foo-bom"), platformMemberBomCoords("acme-e-bom"),
-                        new ArtifactCoords(UPSTREAM_PLATFORM_KEY, "acme-bar-bom", "pom", "1.0.4")),
-                Arrays.asList(new ArtifactCoords("io.acme", "ext-a", null), new ArtifactCoords("io.acme", "ext-b", null),
-                        new ArtifactCoords("io.acme", "ext-e", null)),
+                List.of(mainPlatformBom(), platformMemberBomCoords("acme-foo-bom"), platformMemberBomCoords("acme-e-bom"),
+                        ArtifactCoords.pom(UPSTREAM_PLATFORM_KEY, "acme-bar-bom", "1.0.4")),
+                List.of(ArtifactCoords.jar("io.acme", "ext-a", null),
+                        ArtifactCoords.jar("io.acme", "ext-b", null),
+                        ArtifactCoords.jar("io.acme", "ext-e", null)),
                 "1.0.4-downstream");
     }
 }

@@ -8,7 +8,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.testing.PlatformAwareTestBase;
-import io.quarkus.maven.ArtifactKey;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.platform.catalog.processor.ExtendedKeywords;
 import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 import io.quarkus.registry.catalog.Extension;

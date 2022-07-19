@@ -6,14 +6,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
-import io.quarkus.maven.ArtifactKey;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 public class HibernateOrmCodestartTest {
 
     @RegisterExtension
     public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
             .codestarts("hibernate-orm")
-            .extension(new ArtifactKey("io.quarkus", "quarkus-jdbc-h2"))
+            .extension(ArtifactKey.ga("io.quarkus", "quarkus-jdbc-h2"))
             .languages(JAVA)
             .build();
 

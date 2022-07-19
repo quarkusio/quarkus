@@ -1,8 +1,8 @@
 package io.quarkus.devtools.project.extensions;
 
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Objects;

@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.IOException;
@@ -89,7 +89,7 @@ public class ExtensionCatalogFromProvidedPlatformsTest extends MultiplePlatformB
 
         p = TestRegistryClientBuilder.getRegistryMemberCatalogPath(
                 TestRegistryClientBuilder.getRegistryDir(configDir(), "registry.acme.org"),
-                new ArtifactCoords(MAIN_PLATFORM_KEY, memberArtifactId, null, "pom", baseRecommendedVersion));
+                ArtifactCoords.pom(MAIN_PLATFORM_KEY, memberArtifactId, baseRecommendedVersion));
         final String jsonContent = Files.readString(p).replace(baseRecommendedVersion, nonRecommendedVersion);
         String jsonName = p.getFileName().toString().replace(baseRecommendedVersion, nonRecommendedVersion);
         Files.writeString(p.getParent().resolve(jsonName), jsonContent);

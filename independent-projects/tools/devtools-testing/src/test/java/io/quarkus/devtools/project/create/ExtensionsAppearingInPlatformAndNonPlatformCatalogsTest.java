@@ -7,7 +7,7 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.ExtensionOrigin;
 import java.nio.file.Path;
@@ -115,7 +115,7 @@ public class ExtensionsAppearingInPlatformAndNonPlatformCatalogsTest extends Mul
                 }
             }
             expectedExtensions.add(platform
-                    ? new ArtifactCoords(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType(),
+                    ? ArtifactCoords.of(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType(),
                             null)
                     : coords);
         });
@@ -130,7 +130,7 @@ public class ExtensionsAppearingInPlatformAndNonPlatformCatalogsTest extends Mul
         createProject(projectDir, Arrays.asList("acme-foo", "other-extension", "other-five-zero"));
 
         final List<ArtifactCoords> expectedExtensions = toPlatformExtensionCoords("acme-foo");
-        expectedExtensions.add(new ArtifactCoords("org.other", "other-extension", null));
+        expectedExtensions.add(ArtifactCoords.jar("org.other", "other-extension", null));
         expectedExtensions.add(ArtifactCoords.fromString("org.other:other-five-zero:5.0"));
         assertModel(projectDir, toPlatformBomCoords("acme-foo-bom"), expectedExtensions, "1.0.0");
     }
@@ -141,7 +141,7 @@ public class ExtensionsAppearingInPlatformAndNonPlatformCatalogsTest extends Mul
         createProject(projectDir, Arrays.asList("acme-foo", "other-extension", "other-six-zero"));
 
         final List<ArtifactCoords> expectedExtensions = toPlatformExtensionCoords("acme-foo");
-        expectedExtensions.add(new ArtifactCoords("org.other", "other-extension", null));
+        expectedExtensions.add(ArtifactCoords.jar("org.other", "other-extension", null));
         expectedExtensions.add(ArtifactCoords.fromString("org.other:other-six-zero:6.0"));
         assertModel(projectDir, toPlatformBomCoords("acme-foo-bom"), expectedExtensions, "2.0.4");
     }
@@ -152,7 +152,7 @@ public class ExtensionsAppearingInPlatformAndNonPlatformCatalogsTest extends Mul
         createProject(projectDir, Arrays.asList("acme-foo", "other-extension", "other-five-one"));
 
         final List<ArtifactCoords> expectedExtensions = toPlatformExtensionCoords("acme-foo");
-        expectedExtensions.add(new ArtifactCoords("org.other", "other-extension", null));
+        expectedExtensions.add(ArtifactCoords.jar("org.other", "other-extension", null));
         expectedExtensions.add(ArtifactCoords.fromString("org.other:other-five-one:5.1"));
         assertModel(projectDir, toPlatformBomCoords("acme-foo-bom"), expectedExtensions, "1.0.1");
     }
@@ -163,7 +163,7 @@ public class ExtensionsAppearingInPlatformAndNonPlatformCatalogsTest extends Mul
         createProject(projectDir, Arrays.asList("acme-foo", "other-extension"));
 
         final List<ArtifactCoords> expectedExtensions = toPlatformExtensionCoords("acme-foo");
-        expectedExtensions.add(new ArtifactCoords("org.other", "other-extension", null));
+        expectedExtensions.add(ArtifactCoords.jar("org.other", "other-extension", null));
         assertModel(projectDir, toPlatformBomCoords("acme-foo-bom"), expectedExtensions, "2.0.4");
     }
 
@@ -173,7 +173,7 @@ public class ExtensionsAppearingInPlatformAndNonPlatformCatalogsTest extends Mul
         createProject(projectDir, Arrays.asList("acme-baz", "acme-foo", "other-extension"));
 
         final List<ArtifactCoords> expectedExtensions = toPlatformExtensionCoords("acme-foo", "acme-baz");
-        expectedExtensions.add(new ArtifactCoords("org.other", "other-extension", null));
+        expectedExtensions.add(ArtifactCoords.jar("org.other", "other-extension", null));
         assertModel(projectDir, toPlatformBomCoords("acme-foo-bom", "acme-baz-bom"), expectedExtensions, "1.0.1");
     }
 
@@ -183,7 +183,7 @@ public class ExtensionsAppearingInPlatformAndNonPlatformCatalogsTest extends Mul
         createProject(projectDir, Arrays.asList("acme-bar", "acme-foo", "other-extension"));
 
         final List<ArtifactCoords> expectedExtensions = toPlatformExtensionCoords("acme-foo", "acme-bar");
-        expectedExtensions.add(new ArtifactCoords("org.other", "other-extension", null));
+        expectedExtensions.add(ArtifactCoords.jar("org.other", "other-extension", null));
         assertModel(projectDir, toPlatformBomCoords("acme-foo-bom", "acme-bar-bom"),
                 expectedExtensions, "1.0.0");
     }

@@ -2,7 +2,7 @@ package io.quarkus.devtools.testing;
 
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,7 +44,7 @@ public class RegistryClientTestHelper {
 
         final Path toolsConfigPath = outputDir.resolve(RegistriesConfigLocator.CONFIG_RELATIVE_PATH);
 
-        final ArtifactCoords bom = new ArtifactCoords(quarkusBomGroupId, "quarkus-bom", null, "pom", quarkusBomVersion);
+        final ArtifactCoords bom = ArtifactCoords.pom(quarkusBomGroupId, "quarkus-bom", quarkusBomVersion);
 
         TestRegistryClientBuilder.newInstance()
                 .baseDir(toolsConfigPath.getParent())

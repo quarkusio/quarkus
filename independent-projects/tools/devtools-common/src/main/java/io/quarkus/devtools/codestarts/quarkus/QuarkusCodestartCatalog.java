@@ -14,7 +14,7 @@ import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.codestarts.DataKey;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
 import io.quarkus.devtools.project.extensions.Extensions;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.registry.catalog.Extension;

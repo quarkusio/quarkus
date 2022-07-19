@@ -41,6 +41,7 @@ import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsUtils;
@@ -323,7 +324,7 @@ public class CreateProjectMojo extends AbstractMojo {
                 return isBlank(groupId) && isBlank(artifactId) && isBlank(version)
                         ? catalogResolver.resolveExtensionCatalog()
                         : catalogResolver.resolveExtensionCatalog(Collections.singletonList(
-                                new ArtifactCoords(getPlatformGroupId(mojo, groupId), getPlatformArtifactId(artifactId), "pom",
+                                ArtifactCoords.pom(getPlatformGroupId(mojo, groupId), getPlatformArtifactId(artifactId),
                                         getPlatformVersion(mojo, version))));
             } catch (RegistryResolutionException e) {
                 log.warn(e.getLocalizedMessage());

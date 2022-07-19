@@ -11,8 +11,8 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsUtils;
@@ -150,7 +150,7 @@ public class MavenProjectBuildFile extends BuildFile {
         final List<ArtifactCoords> result = new ArrayList<>(deps.size());
         for (org.eclipse.aether.graph.Dependency dep : deps) {
             org.eclipse.aether.artifact.Artifact a = dep.getArtifact();
-            result.add(new ArtifactCoords(a.getGroupId(), a.getArtifactId(), a.getClassifier(),
+            result.add(ArtifactCoords.of(a.getGroupId(), a.getArtifactId(), a.getClassifier(),
                     a.getExtension(), a.getVersion()));
         }
         return result;
@@ -218,11 +218,11 @@ public class MavenProjectBuildFile extends BuildFile {
         final String depKey = depKey(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType());
         if (coords.getGroupId().equals(getProperty("quarkus.platform.group-id"))
                 && coords.getVersion().equals(getProperty("quarkus.platform.version"))) {
-            coords = new ArtifactCoords("${quarkus.platform.group-id}",
+            coords = ArtifactCoords.pom("${quarkus.platform.group-id}",
                     coords.getArtifactId().equals(getProperty("quarkus.platform.artifact-id"))
                             ? "${quarkus.platform.artifact-id}"
                             : coords.getArtifactId(),
-                    ArtifactCoords.TYPE_POM, "${quarkus.platform.version}");
+                    "${quarkus.platform.version}");
         }
 
         final Dependency d = new Dependency();

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
-import io.quarkus.maven.ArtifactKey;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 public class ReactiveMessagingCodestartIT {
 

@@ -2,7 +2,7 @@ package io.quarkus.registry.catalog;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.json.JsonBuilder;
 import io.quarkus.registry.json.JsonEntityWithAnySupport;
 import java.util.ArrayList;

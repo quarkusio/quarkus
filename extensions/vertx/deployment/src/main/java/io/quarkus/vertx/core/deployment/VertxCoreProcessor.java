@@ -28,6 +28,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -50,6 +51,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
+import io.quarkus.vertx.VertxOptionsCustomizer;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.VertxLocalsHelper;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
@@ -245,6 +247,11 @@ class VertxCoreProcessor {
                 .getAllKnownSubclasses(DotName.createSimple(AbstractVerticle.class.getName()))) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ci.toString()));
         }
+    }
+
+    @BuildStep
+    void doNotRemoveVertxOptionsCustomizers(BuildProducer<UnremovableBeanBuildItem> unremovable) {
+        unremovable.produce(UnremovableBeanBuildItem.beanTypes(VertxOptionsCustomizer.class));
     }
 
     @BuildStep

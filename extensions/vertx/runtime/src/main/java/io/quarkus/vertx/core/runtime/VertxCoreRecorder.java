@@ -32,6 +32,8 @@ import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.FastThreadLocal;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.IOThreadDetector;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
@@ -597,6 +599,13 @@ public class VertxCoreRecorder {
 
         VertxOptionsCustomizer(List<Consumer<VertxOptions>> customizers) {
             this.customizers = customizers;
+            if (Arc.container() != null) {
+                List<InstanceHandle<io.quarkus.vertx.VertxOptionsCustomizer>> instances = Arc.container()
+                        .listAll(io.quarkus.vertx.VertxOptionsCustomizer.class);
+                for (InstanceHandle<io.quarkus.vertx.VertxOptionsCustomizer> customizer : instances) {
+                    customizers.add(customizer.get());
+                }
+            }
         }
 
         VertxOptions customize(VertxOptions options) {

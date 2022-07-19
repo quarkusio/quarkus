@@ -118,7 +118,6 @@ jobs:
         run: |
           echo "EXCLUDE_JAKARTA_INCOMPATIBLE_MODULES=-pl "'!'":quarkus-integration-test-infinispan-client -pl "'!'":quarkus-integration-test-kafka-avro" >> $GITHUB_ENV
         if: github.ref_name == 'jakarta-rewrite'
-
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -317,7 +316,9 @@ jobs:
         run: |
           ss -ln
           sudo service mysql stop || true
-
+      - name: Support longpaths on Windows
+        if: "startsWith(matrix.java.os-name, 'windows')"
+        run: git config --global core.longpaths true
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -418,6 +419,9 @@ jobs:
             os-name: "windows-latest"
           }
     steps:
+      - name: Support longpaths on Windows
+        if: "startsWith(matrix.java.os-name, 'windows')"
+        run: git config --global core.longpaths true
       - uses: actions/checkout@v2
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
@@ -490,6 +494,9 @@ jobs:
             os-name: "windows-latest"
           }
     steps:
+      - name: Support longpaths on Windows
+        if: "startsWith(matrix.java.os-name, 'windows')"
+        run: git config --global core.longpaths true
       - uses: actions/checkout@v2
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
@@ -553,6 +560,9 @@ jobs:
             os-name: "windows-latest"
           }
     steps:
+      - name: Support longpaths on Windows
+        if: "startsWith(matrix.java.os-name, 'windows')"
+        run: git config --global core.longpaths true
       - uses: actions/checkout@v2
       - name: Download Maven Repo
         uses: actions/download-artifact@v1

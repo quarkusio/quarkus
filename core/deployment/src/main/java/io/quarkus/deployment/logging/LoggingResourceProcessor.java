@@ -222,7 +222,7 @@ public final class LoggingResourceProcessor {
             }
             ConsoleRuntimeConfig crc = new ConsoleRuntimeConfig();
             ConfigInstantiator.handleObject(crc);
-            LoggingSetupRecorder.initializeBuildTimeLogging(logConfig, buildLog, crc, possibleFileFormatters,
+            LoggingSetupRecorder.initializeBuildTimeLogging(logConfig, buildLog, crc,
                     launchModeBuildItem.getLaunchMode());
             ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(new Runnable() {
                 @Override

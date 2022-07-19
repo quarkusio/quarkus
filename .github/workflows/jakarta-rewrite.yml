@@ -3,8 +3,8 @@ name: Jakarta Rewrite
 on:
   workflow_dispatch:
   schedule:
-    # 4am every weekday + saturday
-    - cron: '0 4 * * 1-6'
+    # 22pm every weekday + saturday
+    - cron: '0 22 * * 1-6'
 jobs:
   rewrite:
     runs-on: ubuntu-latest

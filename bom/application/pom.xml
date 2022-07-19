@@ -162,7 +162,7 @@
         <snakeyaml.version>1.30</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>4.6.1</mongo-client.version>
-        <mongo-crypt.version>1.4.1</mongo-crypt.version>
+        <mongo-crypt.version>1.5.1.1</mongo-crypt.version>
         <proton-j.version>0.33.10</proton-j.version>
         <javaparser.version>3.24.2</javaparser.version>
         <okhttp.version>3.14.9</okhttp.version><!-- keep in sync with okio -->

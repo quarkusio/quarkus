@@ -68,7 +68,7 @@ class DevServicesConfigBuildStep {
         // On contrary to dev services config, "additional" config build items are
         // produced on each restart, so we don't want to remember them from one restart to the next.
         for (DevServicesAdditionalConfigBuildItem item : devServicesAdditionalConfigBuildItems) {
-            if (newProperties.containsKey(item.getTriggeringKey())) {
+            if (item.getTriggeringKeys().stream().anyMatch(newProperties::containsKey)) {
                 var callback = item.getCallbackWhenEnabled();
                 if (callback != null) {
                     callback.run(); // This generally involves logging

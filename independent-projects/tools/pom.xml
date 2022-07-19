@@ -65,7 +65,6 @@
         <jandex-maven-plugin.version>1.2.3</jandex-maven-plugin.version>
     </properties>
     <modules>
-        <module>artifact-api</module>
         <module>registry-client</module>
         <module>message-writer</module>
         <module>devtools-testing</module>
@@ -100,11 +99,6 @@
                 <version>${smallrye-common.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-devtools-artifact-api</artifactId>
-                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>

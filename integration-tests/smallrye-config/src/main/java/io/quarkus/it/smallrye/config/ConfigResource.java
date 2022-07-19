@@ -23,6 +23,12 @@ public class ConfigResource {
         return Response.ok(config.getConfigValue(name)).build();
     }
 
+    @GET
+    @Path("/profiles")
+    public Response profiles() {
+        return Response.ok(config.getProfiles()).build();
+    }
+
     @RegisterForReflection(targets = {
             org.eclipse.microprofile.config.ConfigValue.class,
             io.smallrye.config.ConfigValue.class

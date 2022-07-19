@@ -20,4 +20,10 @@ public class AppConfigResouce {
     public String getAlias() {
         return appConfig.info().alias();
     }
+
+    @GET
+    @Path("/toString")
+    public String getToString() {
+        return appConfig.toString();
+    }
 }

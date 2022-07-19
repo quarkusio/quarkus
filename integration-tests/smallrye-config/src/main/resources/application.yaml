@@ -74,7 +74,14 @@ cloud:
       - James
     admins:
       root:
-        username: root
+        -
+          username: root
+        -
+          username: super
+    firewall:
+      accepted:
+        - 127.0.0.1
+        - 8.8.8
 
 profile:
   main:

@@ -231,9 +231,13 @@ public class LoggingSetupRecorder {
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
     }
 
+    /**
+     * WARNING: this method is part of the recorder but is actually called statically at build time.
+     * You may not push RuntimeValue's to it.
+     */
     public static void initializeBuildTimeLogging(LogConfig config, LogBuildTimeConfig buildConfig,
             Map<String, InheritableLevel> categoryDefaultMinLevels,
-            ConsoleRuntimeConfig consoleConfig, List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
+            ConsoleRuntimeConfig consoleConfig,
             LaunchMode launchMode) {
 
         final Map<String, CategoryConfig> categories = config.categories;
@@ -263,7 +267,7 @@ public class LoggingSetupRecorder {
 
         Map<String, Handler> namedHandlers = createNamedHandlers(config, consoleConfig, Collections.emptyList(),
                 Collections.emptyList(),
-                possibleFileFormatters, errorManager, logCleanupFilter, launchMode);
+                Collections.emptyList(), errorManager, logCleanupFilter, launchMode);
 
         for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
             final String categoryName = entry.getKey();

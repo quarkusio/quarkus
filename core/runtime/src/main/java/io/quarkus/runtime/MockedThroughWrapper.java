@@ -8,4 +8,6 @@ package io.quarkus.runtime;
  */
 public interface MockedThroughWrapper {
     void setMock(Object mock);
+
+    void clearMock();
 }

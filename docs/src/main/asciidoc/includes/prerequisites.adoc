@@ -13,7 +13,7 @@ ifndef::prerequisites-no-maven[]
 * Apache Maven {maven-version}
 endif::[]
 ifdef::prerequisites-docker[]
-* A working container runtime (Docker or Podman)
+* A working container runtime (Docker or xref:podman.adoc[Podman])
 endif::[]
 ifdef::prerequisites-docker-compose[]
 * Docker and Docker Compose or xref:podman.adoc[Podman], and Docker Compose

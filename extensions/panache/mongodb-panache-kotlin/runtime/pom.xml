@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-mongodb-panache-kotlin</artifactId>
     <name>Quarkus - MongoDB with Panache - Kotlin Runtime</name>
-    <description>Simplify your persistence code for MongoDB via the active record or the repository pattern</description>
+    <description>Simplify your persistence code for MongoDB in Kotlin via the active record or the repository pattern</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

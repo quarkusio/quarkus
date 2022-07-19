@@ -466,7 +466,7 @@ public class GrpcServerProcessor {
         if (!bindables.isEmpty()) {
             int port = ConfigProvider.getConfig().getOptionalValue("quarkus.grpc.server.port", Integer.class)
                     .orElse(9000);
-            return new KubernetesPortBuildItem(port, GRPC_SERVER);
+            return new KubernetesPortBuildItem(port, "grpc");
         }
         return null;
     }

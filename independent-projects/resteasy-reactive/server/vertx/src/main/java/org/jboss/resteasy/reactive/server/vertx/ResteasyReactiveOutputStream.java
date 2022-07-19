@@ -236,22 +236,38 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                 } else {
                     context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, "" + buffer.readableBytes());
                 }
-            } else if (!contentLengthSet()) {
-                request.response().setChunked(true);
+            } else {
+                var contentLengthSet = contentLengthSet();
+                if (contentLengthSet == ContentLengthSetResult.NOT_SET) {
+                    request.response().setChunked(true);
+                } else if (contentLengthSet == ContentLengthSetResult.IN_JAX_RS_HEADER) {
+                    // we need to make sure the content-length header is copied to Vert.x headers
+                    // otherwise we could run into a race condition: see https://github.com/quarkusio/quarkus/issues/26599
+                    Object contentLength = context.getResponse().get().getHeaders().getFirst(HttpHeaders.CONTENT_LENGTH);
+                    context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, contentLength.toString());
+                }
             }
         }
     }
 
-    private boolean contentLengthSet() {
+    private ContentLengthSetResult contentLengthSet() {
         if (request.response().headers().contains(HttpHeaderNames.CONTENT_LENGTH)) {
-            return true;
+            return ContentLengthSetResult.IN_VERTX_HEADER;
         }
         LazyResponse lazyResponse = context.getResponse();
         if (!lazyResponse.isCreated()) {
-            return false;
+            return ContentLengthSetResult.NOT_SET;
         }
         MultivaluedMap<String, Object> responseHeaders = lazyResponse.get().getHeaders();
-        return (responseHeaders != null) && responseHeaders.containsKey(HttpHeaders.CONTENT_LENGTH);
+        return (responseHeaders != null) && responseHeaders.containsKey(HttpHeaders.CONTENT_LENGTH)
+                ? ContentLengthSetResult.IN_JAX_RS_HEADER
+                : ContentLengthSetResult.NOT_SET;
+    }
+
+    private enum ContentLengthSetResult {
+        NOT_SET,
+        IN_VERTX_HEADER,
+        IN_JAX_RS_HEADER
     }
 
     /**

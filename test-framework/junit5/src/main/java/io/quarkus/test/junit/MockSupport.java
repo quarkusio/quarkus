@@ -24,11 +24,14 @@ class MockSupport {
         List<Object> val = contexts.pop();
         for (Object i : val) {
             try {
-                i.getClass().getDeclaredMethod("arc$clearMock").invoke(i);
+                if (i instanceof MockedThroughWrapper) {
+                    ((MockedThroughWrapper) i).clearMock();
+                } else {
+                    i.getClass().getDeclaredMethod("arc$clearMock").invoke(i);
 
-                // Enable all observers declared on the mocked bean
-                mockObservers(i, false);
-
+                    // Enable all observers declared on the mocked bean
+                    mockObservers(i, false);
+                }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -44,6 +47,7 @@ class MockSupport {
         try {
             if (instance instanceof MockedThroughWrapper) {
                 ((MockedThroughWrapper) instance).setMock(mock);
+                inst.add(instance);
             } else {
 
                 Method setMethod = instance.getClass().getDeclaredMethod("arc$setMock", Object.class);

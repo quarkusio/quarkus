@@ -1317,6 +1317,9 @@ public class CustomResource implements QuarkusTestResourceLifecycleManager, DevS
         // apply the network to the container
         containerNetworkId.ifPresent(container::withNetworkMode);
 
+        // start container before retrieving its URL or other properties
+        container.start();
+
         String jdbcUrl = container.getJdbcUrl();
         if (containerNetworkId.isPresent()) {
             // Replace hostname + port in the provided JDBC URL with the hostname of the Docker container

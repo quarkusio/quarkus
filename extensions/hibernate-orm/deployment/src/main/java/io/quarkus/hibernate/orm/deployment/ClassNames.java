@@ -45,10 +45,7 @@ public class ClassNames {
     public static final DotName PROXY = createConstant("org.hibernate.annotations.Proxy");
     public static final DotName HIBERNATE_PROXY = createConstant("org.hibernate.proxy.HibernateProxy");
     public static final DotName TYPE = createConstant("org.hibernate.annotations.Type");
-    public static final DotName TYPE_DEFINITION = createConstant("org.hibernate.annotations.TypeDef");
-    public static final DotName TYPE_DEFINITIONS = createConstant("org.hibernate.annotations.TypeDefs");
     public static final DotName INJECT_SERVICE = createConstant("org.hibernate.service.spi.InjectService");
-
     public static final DotName ENTITY_MANAGER_FACTORY = createConstant("jakarta.persistence.EntityManagerFactory");
     public static final DotName SESSION_FACTORY = createConstant("org.hibernate.SessionFactory");
     public static final DotName ENTITY_MANAGER = createConstant("jakarta.persistence.EntityManager");

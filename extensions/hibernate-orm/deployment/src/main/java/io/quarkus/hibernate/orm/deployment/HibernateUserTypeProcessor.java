@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -28,20 +27,6 @@ public final class HibernateUserTypeProcessor {
         final Set<String> userTypes = new HashSet<>();
 
         Collection<AnnotationInstance> typeAnnotationInstances = index.getAnnotations(ClassNames.TYPE);
-        Collection<AnnotationInstance> typeDefinitionAnnotationInstances = index.getAnnotations(ClassNames.TYPE_DEFINITION);
-        Collection<AnnotationInstance> typeDefinitionsAnnotationInstances = index.getAnnotations(ClassNames.TYPE_DEFINITIONS);
-
-        userTypes.addAll(getUserTypes(typeDefinitionAnnotationInstances));
-
-        for (AnnotationInstance typeDefinitionAnnotationInstance : typeDefinitionsAnnotationInstances) {
-            final AnnotationValue typeDefinitionsAnnotationValue = typeDefinitionAnnotationInstance.value();
-
-            if (typeDefinitionsAnnotationValue == null) {
-                continue;
-            }
-
-            userTypes.addAll(getUserTypes(Arrays.asList(typeDefinitionsAnnotationValue.asNestedArray())));
-        }
 
         for (AnnotationInstance typeAnnotationInstance : typeAnnotationInstances) {
             final AnnotationValue typeValue = typeAnnotationInstance.value(TYPE_VALUE);

@@ -149,7 +149,7 @@ public final class FlywayDataSourceRuntimeConfig {
      * the validation step will fail.
      */
     @ConfigItem
-    public boolean ignoreFutureMigrations;
+    public boolean ignoreFutureMigrations = true;
 
     /**
      * Sets the placeholders to replace in SQL migration scripts.

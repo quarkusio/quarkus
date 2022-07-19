@@ -1,8 +1,10 @@
 package io.quarkus.flyway.runtime;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import javax.sql.DataSource;
 
@@ -57,8 +59,16 @@ class FlywayCreator {
         configure.cleanDisabled(flywayRuntimeConfig.cleanDisabled);
         configure.baselineOnMigrate(flywayRuntimeConfig.baselineOnMigrate);
         configure.validateOnMigrate(flywayRuntimeConfig.validateOnMigrate);
-        configure.ignoreMissingMigrations(flywayRuntimeConfig.ignoreMissingMigrations);
-        configure.ignoreFutureMigrations(flywayRuntimeConfig.ignoreFutureMigrations);
+        List<String> patterns = new ArrayList<>(2);
+        //https://flywaydb.org/documentation/configuration/parameters/ignoreMigrationPatterns
+        if (flywayRuntimeConfig.ignoreMissingMigrations) {
+            patterns.add("*:Missing");
+        }
+        if (flywayRuntimeConfig.ignoreFutureMigrations) {
+            patterns.add("*:Future");
+        }
+        // Default is *:Future
+        configure.ignoreMigrationPatterns(patterns.toArray(new String[0]));
         configure.cleanOnValidationError(flywayRuntimeConfig.cleanOnValidationError);
         configure.outOfOrder(flywayRuntimeConfig.outOfOrder);
         if (flywayRuntimeConfig.baselineVersion.isPresent()) {

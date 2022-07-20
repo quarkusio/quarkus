@@ -160,7 +160,7 @@ class HibernateSearchElasticsearchProcessor {
             // we need a runtime listener even when Hibernate Search is disabled,
             // just to let Hibernate Search boot up until the point where it checks whether it's enabled or not
             runtimeIntegrations.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                    persistenceUnitName).setInitListener(recorder.createDisabledRuntimeInitListener(persistenceUnitName)));
+                    persistenceUnitName).setInitListener(recorder.createDisabledRuntimeInitListener()));
             return;
         }
 

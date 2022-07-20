@@ -74,9 +74,8 @@ public class HibernateSearchElasticsearchRecorder {
                 backendAndIndexNamesForSearchExtensions, integrationRuntimeInitListeners);
     }
 
-    public HibernateOrmIntegrationRuntimeInitListener createDisabledRuntimeInitListener(String persistenceUnitName) {
-        return new HibernateSearchIntegrationRuntimeInitListener(persistenceUnitName, null, Collections.emptyMap(),
-                Collections.emptyList());
+    public HibernateOrmIntegrationRuntimeInitListener createDisabledRuntimeInitListener() {
+        return new HibernateSearchIntegrationRuntimeInitDisabledListener();
     }
 
     public Supplier<SearchMapping> searchMappingSupplier(HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
@@ -258,6 +257,28 @@ public class HibernateSearchElasticsearchRecorder {
                     HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
                             indexConfig == null ? Optional.empty() : indexConfig.analysis.configurer,
                             ElasticsearchAnalysisConfigurer.class, persistenceUnitName, backendName, indexName));
+        }
+    }
+
+    private static final class HibernateSearchIntegrationRuntimeInitDisabledListener
+            implements HibernateOrmIntegrationRuntimeInitListener {
+
+        private HibernateSearchIntegrationRuntimeInitDisabledListener() {
+        }
+
+        @Override
+        public void contributeRuntimeProperties(BiConsumer<String, Object> propertyCollector) {
+            // Not strictly necessary since this should be set during static init,
+            // but let's be on the safe side.
+            propertyCollector.accept(HibernateOrmMapperSettings.ENABLED, false);
+        }
+
+        @Override
+        public List<StandardServiceInitiator<?>> contributeServiceInitiators() {
+            return List.of(
+                    // The service must be initiated even if Hibernate Search is disabled,
+                    // because it's also responsible for determining that Hibernate Search is disabled.
+                    new HibernateSearchPreIntegrationService.Initiator());
         }
     }
 

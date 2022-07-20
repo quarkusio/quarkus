@@ -281,41 +281,43 @@ public class HibernateSearchElasticsearchRecorder {
 
         @Override
         public void contributeRuntimeProperties(BiConsumer<String, Object> propertyCollector) {
-            if (runtimeConfig == null) {
-                return;
-            }
-            if (!runtimeConfig.enabled) {
-                addConfig(propertyCollector, HibernateOrmMapperSettings.ENABLED, false);
-                // Do not process other properties: Hibernate Search is disabled anyway.
-                return;
+            if (runtimeConfig != null) {
+                if (!runtimeConfig.enabled) {
+                    addConfig(propertyCollector, HibernateOrmMapperSettings.ENABLED, false);
+                    // Do not process other properties: Hibernate Search is disabled anyway.
+                    return;
+                }
+
+                addConfig(propertyCollector,
+                        HibernateOrmMapperSettings.SCHEMA_MANAGEMENT_STRATEGY,
+                        runtimeConfig.schemaManagement.strategy);
+                addConfig(propertyCollector,
+                        HibernateOrmMapperSettings.AUTOMATIC_INDEXING_ENABLE_DIRTY_CHECK,
+                        runtimeConfig.automaticIndexing.enableDirtyCheck);
+                addConfig(propertyCollector,
+                        HibernateOrmMapperSettings.QUERY_LOADING_CACHE_LOOKUP_STRATEGY,
+                        runtimeConfig.queryLoading.cacheLookup.strategy);
+                addConfig(propertyCollector,
+                        HibernateOrmMapperSettings.QUERY_LOADING_FETCH_SIZE,
+                        runtimeConfig.queryLoading.fetchSize);
+                addConfig(propertyCollector,
+                        HibernateOrmMapperSettings.MULTI_TENANCY_TENANT_IDS,
+                        runtimeConfig.multiTenancy.tenantIds);
             }
 
             addConfig(propertyCollector,
-                    HibernateOrmMapperSettings.SCHEMA_MANAGEMENT_STRATEGY,
-                    runtimeConfig.schemaManagement.strategy);
-            addConfig(propertyCollector,
                     HibernateOrmMapperSettings.AUTOMATIC_INDEXING_SYNCHRONIZATION_STRATEGY,
                     HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
-                            runtimeConfig.automaticIndexing.synchronization.strategy,
+                            runtimeConfig == null ? Optional.empty() : runtimeConfig.automaticIndexing.synchronization.strategy,
                             AutomaticIndexingSynchronizationStrategy.class, persistenceUnitName, null, null));
-            addConfig(propertyCollector,
-                    HibernateOrmMapperSettings.AUTOMATIC_INDEXING_ENABLE_DIRTY_CHECK,
-                    runtimeConfig.automaticIndexing.enableDirtyCheck);
-            addConfig(propertyCollector,
-                    HibernateOrmMapperSettings.QUERY_LOADING_CACHE_LOOKUP_STRATEGY,
-                    runtimeConfig.queryLoading.cacheLookup.strategy);
-            addConfig(propertyCollector,
-                    HibernateOrmMapperSettings.QUERY_LOADING_FETCH_SIZE,
-                    runtimeConfig.queryLoading.fetchSize);
-            addConfig(propertyCollector,
-                    HibernateOrmMapperSettings.MULTI_TENANCY_TENANT_IDS,
-                    runtimeConfig.multiTenancy.tenantIds);
 
             // We need this weird collecting of names from both @SearchExtension and the configuration properties
             // because a backend/index could potentially be configured exclusively through configuration properties,
             // or exclusively through @SearchExtension.
             // (Well maybe not for backends, but... let's keep it simple.)
-            Map<String, ElasticsearchBackendRuntimeConfig> backendConfigs = runtimeConfig.getAllBackendConfigsAsMap();
+            Map<String, ElasticsearchBackendRuntimeConfig> backendConfigs = runtimeConfig == null
+                    ? Collections.emptyMap()
+                    : runtimeConfig.getAllBackendConfigsAsMap();
             Map<String, Set<String>> backendAndIndexNames = new LinkedHashMap<>();
             mergeInto(backendAndIndexNames, backendAndIndexNamesForSearchExtensions);
             for (Entry<String, ElasticsearchBackendRuntimeConfig> entry : backendConfigs.entrySet()) {

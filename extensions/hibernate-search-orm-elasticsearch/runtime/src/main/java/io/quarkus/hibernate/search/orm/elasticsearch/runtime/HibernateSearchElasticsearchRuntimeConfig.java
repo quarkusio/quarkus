@@ -1,6 +1,8 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
@@ -26,6 +28,15 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     @ConfigItem(name = ConfigItem.PARENT)
     public Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> persistenceUnits;
 
+    public Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> getAllPersistenceUnitConfigsAsMap() {
+        Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> map = new TreeMap<>();
+        if (defaultPersistenceUnit != null) {
+            map.put(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, defaultPersistenceUnit);
+        }
+        map.putAll(persistenceUnits);
+        return map;
+    }
+
     public static String elasticsearchVersionPropertyKey(String persistenceUnitName, String backendName) {
         return backendPropertyKey(persistenceUnitName, backendName, null, "version");
     }
@@ -42,7 +53,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     public static String backendPropertyKey(String persistenceUnitName, String backendName, String indexName, String radical) {
         StringBuilder keyBuilder = new StringBuilder("quarkus.hibernate-search-orm.");
         if (!PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
-            keyBuilder.append(persistenceUnitName).append(".");
+            keyBuilder.append("\"").append(persistenceUnitName).append("\".");
         }
         keyBuilder.append("elasticsearch.");
         if (backendName != null) {
@@ -53,5 +64,15 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         }
         keyBuilder.append(radical);
         return keyBuilder.toString();
+    }
+
+    public static List<String> defaultBackendPropertyKeys(String persistenceUnitName, String radical) {
+        if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
+            return List.of("quarkus.hibernate-search-orm.elasticsearch." + radical);
+        } else {
+            // Two possible syntaxes: with or without quotes
+            return List.of("quarkus.hibernate-search-orm.\"" + persistenceUnitName + "\".elasticsearch." + radical,
+                    "quarkus.hibernate-search-orm." + persistenceUnitName + ".elasticsearch." + radical);
+        }
     }
 }

@@ -720,8 +720,6 @@ and sets the Elasticsearch host for that persistence unit to `es1.mycompany.com:
 quarkus.datasource.db-kind=h2
 quarkus.datasource.jdbc.url=jdbc:h2:mem:default;DB_CLOSE_DELAY=-1
 
-quarkus.hibernate-orm.dialect=org.hibernate.dialect.H2Dialect
-
 quarkus.hibernate-search-orm.elasticsearch.hosts=es1.mycompany.com:9200
 quarkus.hibernate-search-orm.elasticsearch.version=7
 ----

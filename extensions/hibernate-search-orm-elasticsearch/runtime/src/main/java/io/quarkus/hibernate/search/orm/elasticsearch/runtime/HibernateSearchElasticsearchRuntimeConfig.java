@@ -52,7 +52,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     public static String backendPropertyKey(String persistenceUnitName, String backendName, String indexName, String radical) {
         StringBuilder keyBuilder = new StringBuilder("quarkus.hibernate-search-orm.");
         if (!PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
-            keyBuilder.append(persistenceUnitName).append(".");
+            keyBuilder.append("\"").append(persistenceUnitName).append("\".");
         }
         keyBuilder.append("elasticsearch.");
         if (backendName != null) {

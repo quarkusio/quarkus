@@ -273,22 +273,18 @@ public final class HibernateOrmProcessor {
                 .collect(HashSet::new, Collection::addAll, Collection::addAll);
 
         for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.getAllPersistenceUnitConfigsAsMap().entrySet()) {
-            String propertyKeyIndicatingDataSourceConfigured;
             Optional<String> dataSourceName = entry.getValue().datasource;
-            if (dataSourceName.isEmpty()) {
-                propertyKeyIndicatingDataSourceConfigured = "quarkus.datasource.username";
-            } else {
-                propertyKeyIndicatingDataSourceConfigured = "quarkus.datasource." + dataSourceName.get() + ".username";
-            }
+            List<String> propertyKeysIndicatingDataSourceConfigured = DataSourceUtil
+                    .dataSourcePropertyKeys(dataSourceName.orElse(null), "username");
 
             if (!managedSources.contains(dataSourceName.orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME))) {
                 String databaseGenerationPropertyKey = HibernateOrmRuntimeConfig.puPropertyKey(entry.getKey(),
                         "database.generation");
-                if (!ConfigUtils.isPropertyPresent(propertyKeyIndicatingDataSourceConfigured)
+                if (!ConfigUtils.isAnyPropertyPresent(propertyKeysIndicatingDataSourceConfigured)
                         && !ConfigUtils.isPropertyPresent(databaseGenerationPropertyKey)) {
                     String forcedValue = "drop-and-create";
                     devServicesAdditionalConfigProducer
-                            .produce(new DevServicesAdditionalConfigBuildItem(propertyKeyIndicatingDataSourceConfigured,
+                            .produce(new DevServicesAdditionalConfigBuildItem(propertyKeysIndicatingDataSourceConfigured,
                                     databaseGenerationPropertyKey, forcedValue,
                                     () -> LOG.infof("Setting %s=%s to initialize Dev Services managed database",
                                             databaseGenerationPropertyKey, forcedValue)));

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
@@ -35,6 +36,7 @@ import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ConfigUtils;
 
 public class DevServicesDatasourceProcessor {
 
@@ -257,11 +259,6 @@ public class DevServicesDatasourceProcessor {
                 consoleInstalledBuildItem,
                 loggingSetupBuildItem);
         try {
-            String prefix = "quarkus.datasource.";
-            if (dbName != null) {
-                prefix = prefix + dbName + ".";
-            }
-
             DevServicesDatasourceContainerConfig containerConfig = new DevServicesDatasourceContainerConfig(
                     dataSourceBuildTimeConfig.devservices.imageName,
                     dataSourceBuildTimeConfig.devservices.containerProperties,
@@ -273,26 +270,34 @@ public class DevServicesDatasourceProcessor {
                     dataSourceBuildTimeConfig.devservices.password);
 
             DevServicesDatasourceProvider.RunningDevServicesDatasource datasource = devDbProvider
-                    .startDatabase(ConfigProvider.getConfig().getOptionalValue(prefix + "username", String.class),
-                            ConfigProvider.getConfig().getOptionalValue(prefix + "password", String.class),
+                    .startDatabase(
+                            ConfigUtils.getFirstOptionalValue(DataSourceUtil.dataSourcePropertyKeys(dbName, "username"),
+                                    String.class),
+                            ConfigUtils.getFirstOptionalValue(DataSourceUtil.dataSourcePropertyKeys(dbName, "password"),
+                                    String.class),
                             Optional.ofNullable(dbName), containerConfig,
                             launchMode, globalDevServicesConfig.timeout);
 
-            propertiesMap.put(prefix + "db-kind", dataSourceBuildTimeConfig.dbKind.orElse(null));
-            String devServicesPrefix = prefix + "devservices.";
+            for (String key : DataSourceUtil.dataSourcePropertyKeys(dbName, "db-kind")) {
+                propertiesMap.put(key, dataSourceBuildTimeConfig.dbKind.orElse(null));
+            }
+            String devServicesPrefix = "devservices.";
             if (dataSourceBuildTimeConfig.devservices.command.isPresent()) {
-                propertiesMap.put(devServicesPrefix + "command", dataSourceBuildTimeConfig.devservices.command.get());
+                setDataSourceProperties(propertiesMap, dbName, devServicesPrefix + "command",
+                        dataSourceBuildTimeConfig.devservices.command.get());
             }
             if (dataSourceBuildTimeConfig.devservices.imageName.isPresent()) {
-                propertiesMap.put(devServicesPrefix + "image-name", dataSourceBuildTimeConfig.devservices.imageName.get());
+                setDataSourceProperties(propertiesMap, dbName, devServicesPrefix + "image-name",
+                        dataSourceBuildTimeConfig.devservices.imageName.get());
             }
             if (dataSourceBuildTimeConfig.devservices.port.isPresent()) {
-                propertiesMap.put(devServicesPrefix + "port",
+                setDataSourceProperties(propertiesMap, dbName, devServicesPrefix + "port",
                         Integer.toString(dataSourceBuildTimeConfig.devservices.port.getAsInt()));
             }
             if (!dataSourceBuildTimeConfig.devservices.properties.isEmpty()) {
                 for (var e : dataSourceBuildTimeConfig.devservices.properties.entrySet()) {
-                    propertiesMap.put(devServicesPrefix + "properties." + e.getKey(), e.getValue());
+                    setDataSourceProperties(propertiesMap, dbName, devServicesPrefix + "properties." + e.getKey(),
+                            e.getValue());
                 }
             }
 
@@ -301,27 +306,36 @@ public class DevServicesDatasourceProcessor {
                 devDebProperties.putAll(devDbConfigurationHandlerBuildItem.getConfigProviderFunction()
                         .apply(dbName, datasource));
             }
-            devDebProperties.put(prefix + "db-kind", defaultDbKind.get());
+            setDataSourceProperties(devDebProperties, dbName, "db-kind", defaultDbKind.get());
             if (datasource.getUsername() != null) {
-                devDebProperties.put(prefix + "username", datasource.getUsername());
+                setDataSourceProperties(devDebProperties, dbName, "username", datasource.getUsername());
             }
             if (datasource.getPassword() != null) {
-                devDebProperties.put(prefix + "password", datasource.getPassword());
+                setDataSourceProperties(devDebProperties, dbName, "password", datasource.getPassword());
             }
             compressor.close();
             log.info("Dev Services for " + prettyName
                     + " (" + defaultDbKind.get() + ") started.");
 
-            String devservices = prefix + "devservices.";
+            List<String> devservicesPrefixes = DataSourceUtil.dataSourcePropertyKeys(dbName, "devservices.");
             for (var name : ConfigProvider.getConfig().getPropertyNames()) {
-                if (name.startsWith(devservices)) {
-                    devDebProperties.put(name, ConfigProvider.getConfig().getValue(name, String.class));
+                for (String prefix : devservicesPrefixes) {
+                    if (name.startsWith(prefix)) {
+                        devDebProperties.put(name, ConfigProvider.getConfig().getValue(name, String.class));
+                    }
                 }
             }
             return new RunningDevService(defaultDbKind.get(), datasource.getId(), datasource.getCloseTask(), devDebProperties);
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
             throw new RuntimeException(t);
+        }
+    }
+
+    private void setDataSourceProperties(Map<String, String> propertiesMap, String dbName, String propertyKeyRadical,
+            String value) {
+        for (String key : DataSourceUtil.dataSourcePropertyKeys(dbName, propertyKeyRadical)) {
+            propertiesMap.put(key, value);
         }
     }
 

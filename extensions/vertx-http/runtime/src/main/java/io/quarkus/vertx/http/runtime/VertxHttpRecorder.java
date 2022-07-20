@@ -110,6 +110,7 @@ import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.core.net.impl.VertxHandler;
+import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -895,6 +896,7 @@ public class VertxHttpRecorder {
         httpServerOptions.setDecompressionSupported(buildTimeConfig.enableDecompression);
         httpServerOptions.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
         httpServerOptions.setHandle100ContinueAutomatically(httpConfiguration.handle100ContinueAutomatically);
+        httpServerOptions.setTracingPolicy(TracingPolicy.valueOf(httpConfiguration.tracingPolicy));
     }
 
     private static KeyStoreOptions createKeyStoreOptions(Path path, String password, Optional<String> fileType,

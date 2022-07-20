@@ -10,6 +10,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.vertx.http.runtime.cors.CORSConfig;
+import io.vertx.core.tracing.TracingPolicy;
 
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public class HttpConfiguration {
@@ -229,6 +230,13 @@ public class HttpConfiguration {
     public Map<String, FilterConfig> filter;
 
     public ProxyConfig proxy;
+
+    /**
+     * Configuration that allows setting the tracing policy.
+     * Also (see {@link TracingPolicy})
+     */
+    @ConfigItem(defaultValue = "ALWAYS")
+    public String tracingPolicy;
 
     public int determinePort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testPort : port;

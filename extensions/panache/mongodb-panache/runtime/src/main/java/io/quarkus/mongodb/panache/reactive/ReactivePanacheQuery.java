@@ -45,7 +45,7 @@ public interface ReactivePanacheQuery<Entity> {
     /**
      * Sets the current page.
      *
-     * @param pageIndex the page index
+     * @param pageIndex the page index (0-based)
      * @param pageSize the page size
      * @return this query, modified
      * @see #page(Page)

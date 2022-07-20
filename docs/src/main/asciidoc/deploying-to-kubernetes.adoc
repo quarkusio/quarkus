@@ -590,6 +590,76 @@ containers:
       memory: 64Mi
 ----
 
+=== Exposing with Secured Ingress
+
+Kubernetes exposes applications using https://kubernetes.io/docs/concepts/services-networking/ingress[Ingress resources]. To generate the Ingress resource, just apply the following configuration:
+
+[source]
+----
+quarkus.kubernetes.ingress.expose=true
+----
+
+This would generate the following Ingress resource:
+
+[source, yaml]
+----
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    app.quarkus.io/commit-id: a58d2211c86f07a47d4b073ea9ce000d2c6828d5
+    app.quarkus.io/build-timestamp: 2022-06-29 - 13:22:41 +0000
+  labels:
+    app.kubernetes.io/name: kubernetes-with-ingress
+    app.kubernetes.io/version: 0.1-SNAPSHOT
+  name: kubernetes-with-ingress
+spec:
+  rules:
+    - http:
+        paths:
+          - backend:
+              service:
+                name: kubernetes-with-ingress
+                port:
+                  name: http
+            path: /
+            pathType: Prefix
+----
+
+After deploying these resources to Kubernetes, the Ingress resource will allow unsecured connections to reach out your application. 
+
+To secure the incoming connections, Kubernetes allows enabling https://kubernetes.io/docs/concepts/services-networking/ingress/#tls[TLS] within the Ingress resource by specifying a Secret that contains a TLS private key and certificate. You can generate a secured Ingress resource by simply adding the "tls.secret-name" properties:
+
+[source]
+----
+quarkus.kubernetes.ingress.expose=true
+## Ingress TLS configuration:
+quarkus.kubernetes.ingress.tls.my-secret.enabled=true
+----
+
+This configuration will generate the following secured Ingress resource:
+
+[source, yaml]
+----
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  ...
+  name: kubernetes-with-secure-ingress
+spec:
+  rules:
+    ...
+  tls:
+    - secretName: my-secret
+----
+
+Now, Kubernetes will validate all the incoming connections using SSL with the certificates provided within the secret with name "my-secret".
+
+[NOTE]
+====
+More information about how to create the secret in https://kubernetes.io/docs/concepts/services-networking/ingress/#tls[here].
+====
+
 === Using the Kubernetes client
 
 Applications that are deployed to Kubernetes and need to access the API server will usually make use of the `kubernetes-client` extension:

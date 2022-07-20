@@ -74,10 +74,6 @@ public interface PlatformConfiguration extends EnvVarHolder {
 
     ResourcesConfig getResources();
 
-    default Optional<ExpositionConfig> getExposition() {
-        return Optional.empty();
-    }
-
     default boolean isExpose() {
         return false;
     }

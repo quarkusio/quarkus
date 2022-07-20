@@ -9,6 +9,8 @@ public final class Constants {
     public static final String DEPLOYMENT = "Deployment";
     public static final String DEPLOYMENT_GROUP = "apps";
     public static final String DEPLOYMENT_VERSION = "v1";
+    public static final String INGRESS = "Ingress";
+
     static final String DOCKER = "docker";
 
     public static final String OPENSHIFT = "openshift";

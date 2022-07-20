@@ -161,6 +161,11 @@ public abstract class Application implements Closeable {
      * stop, that exception is propagated.
      */
     public final void stop(Runnable afterStopTask) {
+        Logger logger = Logger.getLogger(Application.class);
+        logger.debugf("Stopping application");
+        if (logger.isTraceEnabled()) {
+            logger.tracef(new RuntimeException("Application Stop Stack Trace"), "Application shutting down");
+        }
         final Lock stateLock = this.stateLock;
         stateLock.lock();
         try {

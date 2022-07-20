@@ -172,6 +172,7 @@ updates:
       - dependency-name: com.github.javaparser:javaparser-core
       - dependency-name: org.jboss.jdeparser:jdeparser
       - dependency-name: com.github.javaparser:javaparser-core
+      - dependency-name: com.h2database:h2
     ignore:
       # this one cannot be upgraded due to the usage of proxies in new versions
       # the proxy implements interfaces in a random order which causes issues

@@ -441,6 +441,9 @@ The `name` field will contain the data contained in the part of HTTP request cal
 link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestForm.html[`@RestForm`] does not define a value, the field name is used),
 while the `file` field will contain data about the uploaded file in the `image` part of HTTP request.
 
+The size of every part in a multipart request must conform to the value of `quarkus.http.limits.max-form-attribute-size`, for which the default is 2048 bytes.
+Any request with a part size exceeding this configuration will result in HTTP status code 413.
+
 NOTE: link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/multipart/FileUpload.html[`FileUpload`]
 provides access to various metadata of the uploaded file. If however all you need is a handle to the uploaded file, `java.nio.file.Path` or `java.io.File` could be used.
 

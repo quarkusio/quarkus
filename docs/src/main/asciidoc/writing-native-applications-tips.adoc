@@ -330,6 +330,17 @@ and in the case of using the Maven configuration instead of `application.propert
 ----
 ====
 
+=== Working with Random and SplittableRandom
+
+If your native application is initialized at build time and has static `java.util.Random` or `java.util.SplittableRandom` instances then its native build will fail because embedding such instances in native image will result in the same cached seed value be reused which will negatively affect the entropy (randomness) quality of the produced values.
+
+There is a number of techniques that can be used to have static `Random` and `SplittableRandom` instances securely used in native images:
+ * Do the runtime initialization instead of the build-time initialization
+ * Keep the build-time initialization but request a runtime re-inititalization of the affected classes
+ * Substitute instances of `Random` and `SplittableRandom` with `null`
+
+Please follow a link:https://foivos.zakkak.net/tutorials/working-with-randoms-native-images/[Working with Random/SplittableRandom instances in GraalVM and Mandrel native images] tutorial for more information.
+
 === Managing Proxy Classes
 
 While writing native application you'll need to define proxy classes at image build time by specifying the list of interfaces that they implement.

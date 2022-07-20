@@ -18,6 +18,7 @@ import io.quarkus.hibernate.search.orm.coordination.outboxpolling.runtime.Hibern
 import io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem;
 import io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchIntegrationStaticConfiguredBuildItem;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit;
 
 class HibernateSearchOutboxPollingProcessor {
 
@@ -76,7 +77,11 @@ class HibernateSearchOutboxPollingProcessor {
     }
 
     private boolean isUsingOutboxPolling(HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem persistenceUnit) {
-        Optional<String> configuredStrategy = persistenceUnit.getBuildTimeConfig().coordination.strategy;
+        HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit puConfig = persistenceUnit.getBuildTimeConfig();
+        if (puConfig == null) {
+            return false;
+        }
+        Optional<String> configuredStrategy = puConfig.coordination.strategy;
         return configuredStrategy.isPresent()
                 && configuredStrategy.get().equals(HibernateOrmMapperOutboxPollingSettings.COORDINATION_STRATEGY_NAME);
     }

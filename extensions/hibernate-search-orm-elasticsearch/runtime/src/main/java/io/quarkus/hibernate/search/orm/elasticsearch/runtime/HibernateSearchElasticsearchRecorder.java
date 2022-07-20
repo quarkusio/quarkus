@@ -163,19 +163,23 @@ public class HibernateSearchElasticsearchRecorder {
         public void contributeBootProperties(BiConsumer<String, Object> propertyCollector) {
             addConfig(propertyCollector,
                     EngineSettings.BACKGROUND_FAILURE_HANDLER,
-                    HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(buildTimeConfig.backgroundFailureHandler,
+                    HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
+                            buildTimeConfig == null ? Optional.empty() : buildTimeConfig.backgroundFailureHandler,
                             FailureHandler.class, persistenceUnitName, null, null));
 
             addConfig(propertyCollector,
                     HibernateOrmMapperSettings.COORDINATION_STRATEGY,
-                    HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(buildTimeConfig.coordination.strategy,
+                    HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
+                            buildTimeConfig == null ? Optional.empty() : buildTimeConfig.coordination.strategy,
                             CoordinationStrategy.class, persistenceUnitName, null, null));
 
             // We need this weird collecting of names from both @SearchExtension and the configuration properties
             // because a backend/index could potentially be configured exclusively through configuration properties,
             // or exclusively through @SearchExtension.
             // (Well maybe not for backends, but... let's keep it simple.)
-            Map<String, ElasticsearchBackendBuildTimeConfig> backendConfigs = buildTimeConfig.getAllBackendConfigsAsMap();
+            Map<String, ElasticsearchBackendBuildTimeConfig> backendConfigs = buildTimeConfig == null
+                    ? Collections.emptyMap()
+                    : buildTimeConfig.getAllBackendConfigsAsMap();
             Map<String, Set<String>> backendAndIndexNames = new LinkedHashMap<>();
             mergeInto(backendAndIndexNames, backendAndIndexNamesForSearchExtensions);
             for (Entry<String, ElasticsearchBackendBuildTimeConfig> entry : backendConfigs.entrySet()) {

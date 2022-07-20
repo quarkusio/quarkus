@@ -1,6 +1,6 @@
 package io.quarkus.registry.catalog.selection;
 
-import io.quarkus.maven.ArtifactKey;
+import io.quarkus.maven.dependency.ArtifactKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;

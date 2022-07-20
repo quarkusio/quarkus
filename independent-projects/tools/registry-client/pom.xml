@@ -16,10 +16,6 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devtools-artifact-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-message-writer</artifactId>
         </dependency>
         <dependency>

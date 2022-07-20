@@ -2,7 +2,7 @@ package io.quarkus.platform.catalog.predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.Extension;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
@@ -13,7 +13,7 @@ class ExtensionPredicateTest {
     void rejectUnlisted() {
         ExtensionPredicate predicate = new ExtensionPredicate("foo");
         Extension extension = Extension.builder()
-                .setArtifact(new ArtifactCoords("g", "a", null, "jar", "v"))
+                .setArtifact(ArtifactCoords.jar("g", "a", "v"))
                 .setMetadata(Extension.MD_UNLISTED, true);
         assertThat(predicate).rejects(extension);
     }
@@ -22,7 +22,7 @@ class ExtensionPredicateTest {
     void acceptKeywordInArtifactId() {
         ExtensionPredicate predicate = new ExtensionPredicate("foo");
         Extension extension = Extension.builder()
-                .setArtifact(new ArtifactCoords("g", "foo-bar", null, "jar", "1.0"))
+                .setArtifact(ArtifactCoords.jar("g", "foo-bar", "1.0"))
                 .build();
         assertThat(predicate).accepts(extension);
     }
@@ -31,7 +31,7 @@ class ExtensionPredicateTest {
     void acceptKeywordInLabel() {
         ExtensionPredicate predicate = new ExtensionPredicate("foo");
         Extension extension = Extension.builder()
-                .setArtifact(new ArtifactCoords("g", "a", null, "jar", "1.0"))
+                .setArtifact(ArtifactCoords.jar("g", "a", "1.0"))
                 .setMetadata(Extension.MD_KEYWORDS, Arrays.asList("foo", "bar"))
                 .build();
         assertThat(predicate).accepts(extension);

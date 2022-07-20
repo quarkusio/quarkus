@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.Constants;
 import io.quarkus.registry.json.JsonBooleanTrueFilter;
 import io.quarkus.registry.json.JsonBuilder;
@@ -128,7 +128,7 @@ public class RegistryConfigImpl implements RegistryConfig {
         while (--i >= 0) {
             buf.append('.').append(parts[i]);
         }
-        return new ArtifactCoords(buf.toString(), Constants.DEFAULT_REGISTRY_DESCRIPTOR_ARTIFACT_ID,
+        return ArtifactCoords.of(buf.toString(), Constants.DEFAULT_REGISTRY_DESCRIPTOR_ARTIFACT_ID,
                 null, Constants.JSON, Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION);
     }
 
@@ -460,7 +460,7 @@ public class RegistryConfigImpl implements RegistryConfig {
                     .setId(Constants.DEFAULT_REGISTRY_ID)
 
                     .setDescriptor(RegistryDescriptorConfig.builder()
-                            .setArtifact(new ArtifactCoords(Constants.DEFAULT_REGISTRY_GROUP_ID,
+                            .setArtifact(ArtifactCoords.of(Constants.DEFAULT_REGISTRY_GROUP_ID,
                                     Constants.DEFAULT_REGISTRY_DESCRIPTOR_ARTIFACT_ID, null,
                                     Constants.JSON, Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION))
                             .build())
@@ -473,13 +473,13 @@ public class RegistryConfigImpl implements RegistryConfig {
                             .build())
 
                     .setPlatforms(RegistryPlatformsConfig.builder()
-                            .setArtifact(new ArtifactCoords(Constants.DEFAULT_REGISTRY_GROUP_ID,
+                            .setArtifact(ArtifactCoords.of(Constants.DEFAULT_REGISTRY_GROUP_ID,
                                     Constants.DEFAULT_REGISTRY_PLATFORMS_CATALOG_ARTIFACT_ID, null, Constants.JSON,
                                     Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION))
                             .build())
 
                     .setNonPlatformExtensions(RegistryNonPlatformExtensionsConfig.builder()
-                            .setArtifact(new ArtifactCoords(Constants.DEFAULT_REGISTRY_GROUP_ID,
+                            .setArtifact(ArtifactCoords.of(Constants.DEFAULT_REGISTRY_GROUP_ID,
                                     Constants.DEFAULT_REGISTRY_NON_PLATFORM_EXTENSIONS_CATALOG_ARTIFACT_ID, null,
                                     Constants.JSON,
                                     Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION))

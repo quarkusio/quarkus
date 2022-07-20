@@ -13,7 +13,7 @@ import org.gradle.api.attributes.Category;
 import org.gradle.api.plugins.JavaPlugin;
 
 import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.util.PlatformArtifacts;
 
@@ -35,7 +35,7 @@ public abstract class GradleProjectBuildFile extends AbstractGradleBuildFile {
 
         final List<ArtifactCoords> coords = new ArrayList<>();
         boms.forEach(d -> {
-            coords.add(new ArtifactCoords(d.getGroup(), d.getName(), null, "pom", d.getVersion()));
+            coords.add(ArtifactCoords.pom(d.getGroup(), d.getName(), d.getVersion()));
         });
         project.getConfigurations()
                 .getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME).getIncoming().getDependencies().forEach(d -> {
@@ -43,7 +43,7 @@ public abstract class GradleProjectBuildFile extends AbstractGradleBuildFile {
                         return;
                     }
                     final ModuleDependency module = (ModuleDependency) d;
-                    coords.add(new ArtifactCoords(module.getGroup(), module.getName(), module.getVersion()));
+                    coords.add(ArtifactCoords.jar(module.getGroup(), module.getName(), module.getVersion()));
                     // why is the following code does not return any artifact?
                     //module.getArtifacts().forEach(a -> {
                     //    coords.add(new ArtifactCoords(module.getGroup(), module.getName(), a.getClassifier(),
@@ -62,11 +62,10 @@ public abstract class GradleProjectBuildFile extends AbstractGradleBuildFile {
     protected ArtifactCoords toBomImportCoords(ArtifactCoords rawBomCoords) {
         if (rawBomCoords.getGroupId().equals(getProperty("quarkusPlatformGroupId"))
                 && rawBomCoords.getVersion().equals(getProperty("quarkusPlatformVersion"))) {
-            return new ArtifactCoords("${quarkusPlatformGroupId}",
+            return ArtifactCoords.pom("${quarkusPlatformGroupId}",
                     rawBomCoords.getArtifactId().equals(getProperty("quarkusPlatformArtifactId"))
                             ? "${quarkusPlatformArtifactId}"
                             : rawBomCoords.getArtifactId(),
-                    "pom",
                     "${quarkusPlatformVersion}");
         }
         return rawBomCoords;
@@ -104,8 +103,8 @@ public abstract class GradleProjectBuildFile extends AbstractGradleBuildFile {
             if (!d.getTarget().getName().endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX)) {
                 return;
             }
-            final ArtifactCoords platform = new ArtifactCoords(d.getTarget().getGroup(),
-                    PlatformArtifacts.ensureBomArtifactId(d.getTarget().getName()), null, "pom", d.getTarget().getVersion());
+            final ArtifactCoords platform = ArtifactCoords.pom(d.getTarget().getGroup(),
+                    PlatformArtifacts.ensureBomArtifactId(d.getTarget().getName()), d.getTarget().getVersion());
             platforms.add(platform);
         });
         boms.getResolvedConfiguration();

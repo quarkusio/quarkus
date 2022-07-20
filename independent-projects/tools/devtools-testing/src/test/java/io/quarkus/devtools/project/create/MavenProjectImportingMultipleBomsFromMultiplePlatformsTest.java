@@ -1,10 +1,10 @@
 package io.quarkus.devtools.project.create;
 
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -60,15 +60,15 @@ public class MavenProjectImportingMultipleBomsFromMultiplePlatformsTest extends 
 
         assertModel(projectDir,
                 toPlatformBomCoords("acme-foo-bom"),
-                Collections.singletonList(new ArtifactCoords("io.acme", "ext-a", "jar", null)),
+                List.of(ArtifactCoords.jar("io.acme", "ext-a", null)),
                 "1.0.1");
 
         addExtensions(projectDir, Arrays.asList("ext-b", "ext-c"));
         assertModel(projectDir,
                 toPlatformBomCoords("acme-foo-bom", "acme-baz-bom"),
-                Arrays.asList(new ArtifactCoords("io.acme", "ext-a", "jar", null),
-                        new ArtifactCoords("io.acme", "ext-b", "jar", null),
-                        new ArtifactCoords("io.acme", "ext-c", "jar", "5.0")),
+                List.of(ArtifactCoords.jar("io.acme", "ext-a", null),
+                        ArtifactCoords.jar("io.acme", "ext-b", null),
+                        ArtifactCoords.jar("io.acme", "ext-c", "5.0")),
                 "1.0.1");
     }
 }

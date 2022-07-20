@@ -10,7 +10,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.testing.PlatformAwareTestBase;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.platform.catalog.processor.ProcessedCategory;
 import io.quarkus.registry.catalog.Category;
 import io.quarkus.registry.catalog.Extension;

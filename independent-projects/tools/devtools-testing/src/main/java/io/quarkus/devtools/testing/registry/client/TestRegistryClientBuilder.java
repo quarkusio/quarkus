@@ -10,7 +10,7 @@ import io.quarkus.devtools.codestarts.CodestartCatalogLoader;
 import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.codestarts.core.CodestartSpec;
 import io.quarkus.fs.util.ZipUtils;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.Constants;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -84,7 +84,7 @@ public class TestRegistryClientBuilder {
     }
 
     private Extension.Mutable addExternalExtensionInternal(String groupId, String artifactId, String version) {
-        final ArtifactCoords coords = new ArtifactCoords(groupId, artifactId, null, "jar", version);
+        final ArtifactCoords coords = ArtifactCoords.jar(groupId, artifactId, version);
         final Extension.Mutable e = Extension.builder()
                 .setArtifact(coords)
                 .setName(artifactId);
@@ -126,8 +126,8 @@ public class TestRegistryClientBuilder {
             }
             install(e.getArtifact(), jarPath);
 
-            final ArtifactCoords runtimePomCoords = new ArtifactCoords(e.getArtifact().getGroupId(),
-                    e.getArtifact().getArtifactId(), null, ArtifactCoords.TYPE_POM, e.getArtifact().getVersion());
+            final ArtifactCoords runtimePomCoords = ArtifactCoords.pom(e.getArtifact().getGroupId(),
+                    e.getArtifact().getArtifactId(), e.getArtifact().getVersion());
             jarPath = getTmpPath(runtimePomCoords);
             Model model = initModel(runtimePomCoords);
             try {
@@ -137,7 +137,7 @@ public class TestRegistryClientBuilder {
             }
             install(runtimePomCoords, jarPath);
 
-            final ArtifactCoords deploymentJarCoords = new ArtifactCoords(e.getArtifact().getGroupId(),
+            final ArtifactCoords deploymentJarCoords = ArtifactCoords.of(e.getArtifact().getGroupId(),
                     e.getArtifact().getArtifactId() + "-deployment", e.getArtifact().getClassifier(),
                     e.getArtifact().getType(), e.getArtifact().getVersion());
             jarPath = getTmpPath(deploymentJarCoords);
@@ -147,8 +147,8 @@ public class TestRegistryClientBuilder {
             }
             install(deploymentJarCoords, jarPath);
 
-            final ArtifactCoords deploymentPomCoords = new ArtifactCoords(deploymentJarCoords.getGroupId(),
-                    deploymentJarCoords.getArtifactId(), null, ArtifactCoords.TYPE_POM, deploymentJarCoords.getVersion());
+            final ArtifactCoords deploymentPomCoords = ArtifactCoords.pom(deploymentJarCoords.getGroupId(),
+                    deploymentJarCoords.getArtifactId(), deploymentJarCoords.getVersion());
             jarPath = getTmpPath(deploymentPomCoords);
             model = initModel(deploymentPomCoords);
             Dependency dep = new Dependency();
@@ -264,7 +264,7 @@ public class TestRegistryClientBuilder {
             config.setId(Objects.requireNonNull(id));
 
             registryGroupId = registryIdToGroupId(id);
-            descrConfig.setArtifact(new ArtifactCoords(registryGroupId, Constants.DEFAULT_REGISTRY_DESCRIPTOR_ARTIFACT_ID, null,
+            descrConfig.setArtifact(ArtifactCoords.of(registryGroupId, Constants.DEFAULT_REGISTRY_DESCRIPTOR_ARTIFACT_ID, null,
                     "json", Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION));
         }
 
@@ -368,7 +368,7 @@ public class TestRegistryClientBuilder {
             }
 
             final RegistryPlatformsConfig.Mutable platformConfig = RegistryPlatformsConfig.builder()
-                    .setArtifact(new ArtifactCoords(registryGroupId, Constants.DEFAULT_REGISTRY_PLATFORMS_CATALOG_ARTIFACT_ID,
+                    .setArtifact(ArtifactCoords.of(registryGroupId, Constants.DEFAULT_REGISTRY_PLATFORMS_CATALOG_ARTIFACT_ID,
                             null, "json", Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION));
 
             if (platformCatalog == null && archivedPlatformCatalog == null) {
@@ -479,7 +479,7 @@ public class TestRegistryClientBuilder {
         }
 
         private ArtifactCoords getRegistryNonPlatformCatalogArtifact() {
-            return new ArtifactCoords(registryGroupId, Constants.DEFAULT_REGISTRY_NON_PLATFORM_EXTENSIONS_CATALOG_ARTIFACT_ID,
+            return ArtifactCoords.of(registryGroupId, Constants.DEFAULT_REGISTRY_NON_PLATFORM_EXTENSIONS_CATALOG_ARTIFACT_ID,
                     null, "json", Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION);
         }
     }
@@ -607,8 +607,8 @@ public class TestRegistryClientBuilder {
         }
 
         public TestPlatformCatalogMemberBuilder newMember(String artifactId) {
-            final ArtifactCoords bom = new ArtifactCoords(stream.platform.platform.getPlatformKey(),
-                    artifactId, null, ArtifactCoords.TYPE_POM, release.getVersion().toString());
+            final ArtifactCoords bom = ArtifactCoords.pom(stream.platform.platform.getPlatformKey(),
+                    artifactId, release.getVersion().toString());
             addMemberBomInternal(bom);
             return new TestPlatformCatalogMemberBuilder(this, bom);
         }
@@ -732,7 +732,7 @@ public class TestRegistryClientBuilder {
         }
 
         public TestPlatformCatalogMemberBuilder addExtension(String groupId, String artifactId, String version) {
-            final ArtifactCoords coords = new ArtifactCoords(groupId, artifactId, null, "jar", version);
+            final ArtifactCoords coords = ArtifactCoords.jar(groupId, artifactId, version);
             final Extension.Mutable e = Extension.builder()
                     .setArtifact(coords)
                     .setName(artifactId)
@@ -803,11 +803,11 @@ public class TestRegistryClientBuilder {
         private TestNonPlatformCatalogBuilder(TestRegistryBuilder registry, String quarkusVersion) {
             this.registry = registry;
             final ArtifactCoords baseCoords = registry.getRegistryNonPlatformCatalogArtifact();
-            extensions.setId(new ArtifactCoords(baseCoords.getGroupId(), baseCoords.getArtifactId(), quarkusVersion,
+            extensions.setId(ArtifactCoords.of(baseCoords.getGroupId(), baseCoords.getArtifactId(), quarkusVersion,
                     baseCoords.getType(), baseCoords.getVersion()).toString());
             extensions.setPlatform(false);
             extensions.setQuarkusCoreVersion(quarkusVersion);
-            extensions.setBom(new ArtifactCoords("io.quarkus", "quarkus-bom", null, "pom", quarkusVersion));
+            extensions.setBom(ArtifactCoords.pom("io.quarkus", "quarkus-bom", quarkusVersion));
         }
 
         public TestNonPlatformCatalogBuilder addExtension(String groupId, String artifactId, String version) {
@@ -817,7 +817,7 @@ public class TestRegistryClientBuilder {
 
         private Extension.Mutable addExtensionToCatalog(String groupId, String artifactId, String version) {
             Extension.Mutable e = Extension.builder()
-                    .setArtifact(new ArtifactCoords(groupId, artifactId, null, "jar", version))
+                    .setArtifact(ArtifactCoords.jar(groupId, artifactId, version))
                     .setName(artifactId)
                     .setOrigins(Collections.singletonList(extensions));
             extensions.addExtension(e);
@@ -873,8 +873,8 @@ public class TestRegistryClientBuilder {
                 metadata.put("languages", List.of("java"));
             }
             final ArtifactCoords extCoords = ext.getArtifact();
-            final ArtifactCoords codestartCoords = new ArtifactCoords(extCoords.getGroupId(), extCoords.getArtifactId(),
-                    "codestart", ArtifactCoords.TYPE_JAR, extCoords.getVersion());
+            final ArtifactCoords codestartCoords = ArtifactCoords.jar(extCoords.getGroupId(), extCoords.getArtifactId(),
+                    "codestart", extCoords.getVersion());
             if (!metadata.containsKey("artifact")) {
                 metadata.put("artifact", codestartCoords.toString());
             }

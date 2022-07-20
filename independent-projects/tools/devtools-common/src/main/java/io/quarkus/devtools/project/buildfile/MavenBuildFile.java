@@ -4,8 +4,8 @@ import static io.quarkus.devtools.project.extensions.Extensions.toKey;
 
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.extensions.Extensions;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.registry.Constants;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -149,10 +149,10 @@ public class MavenBuildFile extends BuildFile {
             if (!PlatformArtifacts.isCatalogArtifactId(c.getArtifactId())) {
                 continue;
             }
-            tmp.add(new ArtifactCoords(c.getGroupId(),
+            tmp.add(ArtifactCoords.pom(c.getGroupId(),
                     c.getArtifactId().substring(0,
                             c.getArtifactId().length() - Constants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()),
-                    null, "pom", c.getVersion()));
+                    c.getVersion()));
         }
         return tmp;
     }

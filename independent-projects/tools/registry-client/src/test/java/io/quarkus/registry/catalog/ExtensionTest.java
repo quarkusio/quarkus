@@ -2,7 +2,7 @@ package io.quarkus.registry.catalog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -20,7 +20,7 @@ public class ExtensionTest {
         assertThat(extYaml).exists();
 
         final Extension e = Extension.fromFile(extYaml);
-        assertThat(e.getArtifact()).isEqualTo(new ArtifactCoords("io.quarkus", "quarkus-resteasy-reactive", "999-PLACEHOLDER"));
+        assertThat(e.getArtifact()).isEqualTo(ArtifactCoords.jar("io.quarkus", "quarkus-resteasy-reactive", "999-PLACEHOLDER"));
         final Map<String, Object> metadata = e.getMetadata();
         assertThat(metadata.get("short-name")).isEqualTo("resteasy-reactive");
     }

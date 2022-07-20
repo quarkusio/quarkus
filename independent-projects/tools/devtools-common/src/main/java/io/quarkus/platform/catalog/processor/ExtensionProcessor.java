@@ -3,7 +3,7 @@ package io.quarkus.platform.catalog.processor;
 import static io.quarkus.registry.catalog.Extension.*;
 import static java.util.stream.Collectors.toMap;
 
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.Extension;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -220,5 +220,4 @@ public final class ExtensionProcessor {
     public static MetadataValue getMetadataValue(Extension extension, String path) {
         return MetadataValue.get(extension.getMetadata(), path);
     }
-
 }

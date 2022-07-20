@@ -2,7 +2,7 @@ package io.quarkus.registry.client.maven;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.config.RegistryConfig;
 import io.quarkus.registry.config.RegistryDescriptorConfig;
 import io.quarkus.registry.config.RegistryPlatformsConfig;

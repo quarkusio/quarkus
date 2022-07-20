@@ -24,9 +24,8 @@ import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.buildfile.BuildFile;
 import io.quarkus.devtools.project.buildfile.GradleGroovyProjectBuildFile;
 import io.quarkus.devtools.project.buildfile.GradleKotlinProjectBuildFile;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.GACT;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
@@ -80,10 +79,10 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
         List<ArtifactCoords> platforms = new ArrayList<>();
         boms.getResolutionStrategy().eachDependency(d -> {
             if (!d.getTarget().getName().endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX)
-                    || !processedKeys.add(new GACT(d.getTarget().getGroup(), d.getTarget().getName()))) {
+                    || !processedKeys.add(ArtifactKey.ga(d.getTarget().getGroup(), d.getTarget().getName()))) {
                 return;
             }
-            final ArtifactCoords platform = new ArtifactCoords(d.getTarget().getGroup(), d.getTarget().getName(),
+            final ArtifactCoords platform = ArtifactCoords.of(d.getTarget().getGroup(), d.getTarget().getName(),
                     d.getTarget().getVersion(), "json", d.getTarget().getVersion());
             platforms.add(platform);
         });

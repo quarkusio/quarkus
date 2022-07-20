@@ -2,7 +2,7 @@ package io.quarkus.devtools.project.buildfile;
 
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.buildfile.AbstractGradleBuildFile.Model;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.ByteArrayInputStream;

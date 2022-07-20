@@ -8,7 +8,7 @@ import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.testing.SnapshotTesting;
-import io.quarkus.maven.ArtifactKey;
+import io.quarkus.maven.dependency.ArtifactKey;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;

@@ -12,7 +12,7 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.PlatformStreamCoords;
 import io.quarkus.registry.config.RegistriesConfigLocator;
@@ -142,8 +142,7 @@ public abstract class MultiplePlatformBomsTestBase {
     }
 
     protected ArtifactCoords mainPlatformBom() {
-        return new ArtifactCoords(PLATFORM_GROUP_ID_POM_EXPR, PLATFORM_ARTIFACT_ID_POM_EXPR, "pom",
-                PLATFORM_VERSION_POM_EXPR);
+        return ArtifactCoords.pom(PLATFORM_GROUP_ID_POM_EXPR, PLATFORM_ARTIFACT_ID_POM_EXPR, PLATFORM_VERSION_POM_EXPR);
     }
 
     protected void assertModel(final Path projectDir, final List<ArtifactCoords> expectedBoms,
@@ -154,7 +153,7 @@ public abstract class MultiplePlatformBomsTestBase {
         assertThat(model.getProperties().getProperty(PLATFORM_VERSION_POM_PROP)).isEqualTo(platformVersion);
 
         final List<ArtifactCoords> actualBoms = model.getDependencyManagement().getDependencies().stream()
-                .map(d -> new ArtifactCoords(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(),
+                .map(d -> ArtifactCoords.of(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(),
                         d.getVersion()))
                 .collect(Collectors.toList());
         // TODO the order should be predictable
@@ -164,16 +163,16 @@ public abstract class MultiplePlatformBomsTestBase {
 
         // TODO the order should be predictable
         assertThat(model.getDependencies().stream()
-                .map(d -> new ArtifactCoords(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()))
+                .map(d -> ArtifactCoords.of(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()))
                 .collect(Collectors.toSet())).containsAll(expectedExtensions);
     }
 
     ArtifactCoords platformExtensionCoords(String artifactId) {
-        return new ArtifactCoords(getMainPlatformKey(), artifactId, "jar", null);
+        return ArtifactCoords.jar(getMainPlatformKey(), artifactId, null);
     }
 
     static ArtifactCoords platformMemberBomCoords(String artifactId) {
-        return new ArtifactCoords(PLATFORM_GROUP_ID_POM_EXPR, artifactId, "pom", PLATFORM_VERSION_POM_EXPR);
+        return ArtifactCoords.pom(PLATFORM_GROUP_ID_POM_EXPR, artifactId, PLATFORM_VERSION_POM_EXPR);
     }
 
     protected QuarkusProject getQuarkusProject(Path projectDir) {

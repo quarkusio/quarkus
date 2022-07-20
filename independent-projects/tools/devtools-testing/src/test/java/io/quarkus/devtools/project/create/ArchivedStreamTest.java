@@ -1,7 +1,7 @@
 package io.quarkus.devtools.project.create;
 
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.PlatformStreamCoords;
 import java.nio.file.Path;
 import java.util.List;
@@ -55,7 +55,7 @@ public class ArchivedStreamTest extends MultiplePlatformBomsTestBase {
 
         assertModel(projectDir,
                 List.of(mainPlatformBom(), platformMemberBomCoords("acme-a-bom")),
-                List.of(new ArtifactCoords("io.test.platform", "ext-a", null)),
+                List.of(ArtifactCoords.jar("io.test.platform", "ext-a", null)),
                 "0.5.1");
     }
 }

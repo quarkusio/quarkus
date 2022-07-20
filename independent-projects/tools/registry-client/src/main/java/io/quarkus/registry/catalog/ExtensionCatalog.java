@@ -1,6 +1,6 @@
 package io.quarkus.registry.catalog;
 
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;

@@ -1,6 +1,6 @@
 package io.quarkus.devtools.project.extensions;
 
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;

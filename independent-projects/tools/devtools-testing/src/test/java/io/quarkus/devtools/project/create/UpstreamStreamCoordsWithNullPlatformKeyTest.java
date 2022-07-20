@@ -1,7 +1,7 @@
 package io.quarkus.devtools.project.create;
 
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.PlatformStreamCoords;
 import java.nio.file.Path;
 import java.util.List;
@@ -70,7 +70,7 @@ public class UpstreamStreamCoordsWithNullPlatformKeyTest extends MultiplePlatfor
 
         assertModel(projectDir,
                 List.of(mainPlatformBom(), platformMemberBomCoords("acme-a-bom")),
-                List.of(new ArtifactCoords("io.acme", "ext-a", null)),
+                List.of(ArtifactCoords.jar("io.acme", "ext-a", null)),
                 "2.0.5");
     }
 }

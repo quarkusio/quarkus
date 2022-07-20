@@ -26,6 +26,7 @@ import org.hibernate.search.backend.elasticsearch.index.layout.IndexLayoutStrate
 import org.hibernate.search.engine.reporting.FailureHandler;
 import org.hibernate.search.mapper.orm.automaticindexing.session.AutomaticIndexingSynchronizationStrategy;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
@@ -163,17 +164,16 @@ class HibernateSearchElasticsearchProcessor {
             return;
         }
 
-        boolean defaultBackendIsUsed = false;
+        Set<String> backendNamesForIndexedEntities = new LinkedHashSet<>();
         for (AnnotationInstance indexedAnnotation : indexedAnnotationsForPU) {
-            if (indexedAnnotation.value("backend") == null) {
-                defaultBackendIsUsed = true;
-                break;
-            }
+            AnnotationValue backendNameValue = indexedAnnotation.value("backend");
+            String backendName = backendNameValue == null ? null : backendNameValue.asString();
+            backendNamesForIndexedEntities.add(backendName);
         }
 
         configuredPersistenceUnits
                 .produce(new HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem(persistenceUnitName, puConfig,
-                        defaultBackendIsUsed, backendAndIndexNamesForSearchExtensions));
+                        backendNamesForIndexedEntities, backendAndIndexNamesForSearchExtensions));
     }
 
     @BuildStep
@@ -276,25 +276,21 @@ class HibernateSearchElasticsearchProcessor {
         Map<String, ElasticsearchBackendBuildTimeConfig> backends = buildTimeConfig != null
                 ? buildTimeConfig.getAllBackendConfigsAsMap()
                 : Collections.emptyMap();
-        if (configuredPersistenceUnit.isDefaultBackendUsed()) {
-            ElasticsearchBackendBuildTimeConfig backendConfig = backends.get(null);
-            // we validate that the default backend is configured and the version is present
-            if (backendConfig == null || !backendConfig.version.isPresent()) {
-                propertyKeysWithNoVersion.add(elasticsearchVersionPropertyKey(persistenceUnitName, null));
-            }
-        }
 
-        // we validate that the version is present for all backends
-        for (Entry<String, ElasticsearchBackendBuildTimeConfig> entry : backends.entrySet()) {
-            String backendName = entry.getKey();
-            ElasticsearchBackendBuildTimeConfig backendConfig = entry.getValue();
-            if (!backendConfig.version.isPresent()) {
-                propertyKeysWithNoVersion
-                        .add(elasticsearchVersionPropertyKey(persistenceUnitName, backendName));
+        Set<String> allBackendNames = new LinkedHashSet<>(configuredPersistenceUnit.getBackendNamesForIndexedEntities());
+        allBackendNames.addAll(backends.keySet());
+        // For all backends referenced either through @Indexed(backend = ...) or configuration...
+        for (String backendName : allBackendNames) {
+            ElasticsearchBackendBuildTimeConfig backendConfig = backends.get(backendName);
+            // ... we validate that the backend is configured and the version is present
+            if (backendConfig == null || backendConfig.version.isEmpty()) {
+                propertyKeysWithNoVersion.add(elasticsearchVersionPropertyKey(persistenceUnitName, backendName));
             }
-            // we register files referenced from backends configuration
-            registerClasspathFileFromBackendConfig(persistenceUnitName, backendName, backendConfig,
-                    applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
+            // ... we register files referenced from backends configuration
+            if (backendConfig != null) {
+                registerClasspathFileFromBackendConfig(persistenceUnitName, backendName, backendConfig,
+                        applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
+            }
         }
         if (!propertyKeysWithNoVersion.isEmpty()) {
             throw new ConfigurationException(

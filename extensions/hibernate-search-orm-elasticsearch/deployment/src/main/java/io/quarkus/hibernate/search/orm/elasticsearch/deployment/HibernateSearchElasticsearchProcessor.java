@@ -2,6 +2,7 @@ package io.quarkus.hibernate.search.orm.elasticsearch.deployment;
 
 import static io.quarkus.hibernate.search.orm.elasticsearch.deployment.ClassNames.INDEXED;
 import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.backendPropertyKey;
+import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.defaultBackendPropertyKeys;
 import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.elasticsearchVersionPropertyKey;
 import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.mapperPropertyKey;
 
@@ -385,14 +386,14 @@ class HibernateSearchElasticsearchProcessor {
             BuildProducer<DevServicesAdditionalConfigBuildItem> devServicesAdditionalConfigProducer) {
         for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit : configuredPersistenceUnits) {
             String puName = configuredPersistenceUnit.getPersistenceUnitName();
-            String propertyKeyIndicatingHostsConfigured = backendPropertyKey(puName, null, null, "hosts");
+            List<String> propertyKeysIndicatingHostsConfigured = defaultBackendPropertyKeys(puName, "hosts");
 
-            if (!ConfigUtils.isPropertyPresent(propertyKeyIndicatingHostsConfigured)) {
+            if (!ConfigUtils.isAnyPropertyPresent(propertyKeysIndicatingHostsConfigured)) {
                 String schemaManagementStrategyPropertyKey = mapperPropertyKey(puName, "schema-management.strategy");
                 if (!ConfigUtils.isPropertyPresent(schemaManagementStrategyPropertyKey)) {
                     String forcedValue = "drop-and-create-and-drop";
                     devServicesAdditionalConfigProducer
-                            .produce(new DevServicesAdditionalConfigBuildItem(propertyKeyIndicatingHostsConfigured,
+                            .produce(new DevServicesAdditionalConfigBuildItem(propertyKeysIndicatingHostsConfigured,
                                     schemaManagementStrategyPropertyKey, forcedValue,
                                     () -> LOG.infof("Setting %s=%s to initialize Dev Services managed Elasticsearch server",
                                             schemaManagementStrategyPropertyKey, forcedValue)));

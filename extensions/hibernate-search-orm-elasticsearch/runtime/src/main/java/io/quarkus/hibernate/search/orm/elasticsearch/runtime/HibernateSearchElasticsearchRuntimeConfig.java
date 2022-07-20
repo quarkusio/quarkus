@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -63,5 +64,15 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         }
         keyBuilder.append(radical);
         return keyBuilder.toString();
+    }
+
+    public static List<String> defaultBackendPropertyKeys(String persistenceUnitName, String radical) {
+        if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
+            return List.of("quarkus.hibernate-search-orm.elasticsearch." + radical);
+        } else {
+            // Two possible syntaxes: with or without quotes
+            return List.of("quarkus.hibernate-search-orm.\"" + persistenceUnitName + "\".elasticsearch." + radical,
+                    "quarkus.hibernate-search-orm." + persistenceUnitName + ".elasticsearch." + radical);
+        }
     }
 }

@@ -104,6 +104,9 @@ class HibernateSearchElasticsearchProcessor {
         Map<String, Map<String, Set<String>>> persistenceUnitAndBackendAndIndexNamesForSearchExtensions = collectPersistenceUnitAndBackendAndIndexNamesForSearchExtensions(
                 index);
 
+        Map<String, HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit> configByPU = buildTimeConfig
+                .getAllPersistenceUnitConfigsAsMap();
+
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
             Collection<AnnotationInstance> indexedAnnotationsForPU = new ArrayList<>();
             for (AnnotationInstance indexedAnnotation : indexedAnnotations) {
@@ -114,7 +117,8 @@ class HibernateSearchElasticsearchProcessor {
             }
             Map<String, Set<String>> backendAndIndexNamesForSearchExtensions = persistenceUnitAndBackendAndIndexNamesForSearchExtensions
                     .getOrDefault(puDescriptor.getPersistenceUnitName(), Collections.emptyMap());
-            buildForPersistenceUnit(recorder, indexedAnnotationsForPU, puDescriptor.getPersistenceUnitName(),
+            String puName = puDescriptor.getPersistenceUnitName();
+            buildForPersistenceUnit(recorder, indexedAnnotationsForPU, puName, configByPU.get(puName),
                     backendAndIndexNamesForSearchExtensions,
                     configuredPersistenceUnits, staticIntegrations, runtimeIntegrations);
         }
@@ -142,6 +146,7 @@ class HibernateSearchElasticsearchProcessor {
 
     private void buildForPersistenceUnit(HibernateSearchElasticsearchRecorder recorder,
             Collection<AnnotationInstance> indexedAnnotationsForPU, String persistenceUnitName,
+            HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit puConfig,
             Map<String, Set<String>> backendAndIndexNamesForSearchExtensions,
             BuildProducer<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticIntegrations,
@@ -156,11 +161,6 @@ class HibernateSearchElasticsearchProcessor {
                     persistenceUnitName).setInitListener(recorder.createDisabledRuntimeInitListener(persistenceUnitName)));
             return;
         }
-
-        HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit puConfig = PersistenceUnitUtil
-                .isDefaultPersistenceUnit(persistenceUnitName)
-                        ? buildTimeConfig.defaultPersistenceUnit
-                        : buildTimeConfig.persistenceUnits.get(persistenceUnitName);
 
         boolean defaultBackendIsUsed = false;
         for (AnnotationInstance indexedAnnotation : indexedAnnotationsForPU) {

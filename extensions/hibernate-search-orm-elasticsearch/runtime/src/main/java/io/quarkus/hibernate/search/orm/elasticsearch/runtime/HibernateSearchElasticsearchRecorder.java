@@ -40,7 +40,6 @@ import org.hibernate.search.mapper.orm.session.SearchSession;
 import org.hibernate.search.util.common.reflect.spi.ValueReadHandleFactory;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit.ElasticsearchBackendBuildTimeConfig;
@@ -69,7 +68,8 @@ public class HibernateSearchElasticsearchRecorder {
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig, String persistenceUnitName,
             Map<String, Set<String>> backendAndIndexNamesForSearchExtensions,
             List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners) {
-        HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puConfig = runtimePuConfig(runtimeConfig, persistenceUnitName);
+        HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puConfig = runtimeConfig.getAllPersistenceUnitConfigsAsMap()
+                .get(persistenceUnitName);
         return new HibernateSearchIntegrationRuntimeInitListener(persistenceUnitName, puConfig,
                 backendAndIndexNamesForSearchExtensions, integrationRuntimeInitListeners);
     }
@@ -84,8 +84,8 @@ public class HibernateSearchElasticsearchRecorder {
         return new Supplier<SearchMapping>() {
             @Override
             public SearchMapping get() {
-                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit config = runtimePuConfig(runtimeConfig,
-                        persistenceUnitName);
+                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit config = runtimeConfig
+                        .getAllPersistenceUnitConfigsAsMap().get(persistenceUnitName);
                 if (config != null && !config.enabled) {
                     throw new IllegalStateException(
                             "Cannot retrieve the SearchMapping: Hibernate Search was disabled through configuration properties");
@@ -107,8 +107,8 @@ public class HibernateSearchElasticsearchRecorder {
         return new Supplier<SearchSession>() {
             @Override
             public SearchSession get() {
-                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit config = runtimePuConfig(runtimeConfig,
-                        persistenceUnitName);
+                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit config = runtimeConfig
+                        .getAllPersistenceUnitConfigsAsMap().get(persistenceUnitName);
                 if (config != null && !config.enabled) {
                     throw new IllegalStateException(
                             "Cannot retrieve the SearchSession: Hibernate Search was disabled through configuration properties");
@@ -123,13 +123,6 @@ public class HibernateSearchElasticsearchRecorder {
                 return Search.session(session);
             }
         };
-    }
-
-    private HibernateSearchElasticsearchRuntimeConfigPersistenceUnit runtimePuConfig(
-            HibernateSearchElasticsearchRuntimeConfig runtimeConfig, String persistenceUnitName) {
-        return PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)
-                ? runtimeConfig.defaultPersistenceUnit
-                : runtimeConfig.persistenceUnits.get(persistenceUnitName);
     }
 
     private static final class HibernateSearchIntegrationDisabledListener

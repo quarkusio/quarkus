@@ -4858,7 +4858,6 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-            <!-- TODO current infinispan-client is using 6.0.8 and isn't breaking with the following constraints
             <dependency>
                 <groupId>org.hibernate.search</groupId>
                 <artifactId>hibernate-search-engine</artifactId>
@@ -4874,7 +4873,6 @@
                 <artifactId>hibernate-search-util-common</artifactId>
                 <version>${hibernate-search.version}</version>
             </dependency>
-            -->
             <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>

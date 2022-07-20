@@ -15,6 +15,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
+import org.infinispan.commons.util.Version;
 import org.infinispan.server.test.core.InfinispanContainer;
 import org.jboss.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -153,9 +154,8 @@ public class InfinispanDevServiceProcessor {
         }
 
         Supplier<RunningDevService> defaultInfinispanServerSupplier = () -> {
-            QuarkusInfinispanContainer infinispanContainer = new QuarkusInfinispanContainer(devServicesConfig.port,
-                    launchMode == DEVELOPMENT ? devServicesConfig.serviceName : null, useSharedNetwork,
-                    devServicesConfig.artifacts);
+            QuarkusInfinispanContainer infinispanContainer = new QuarkusInfinispanContainer(devServicesConfig, launchMode,
+                    useSharedNetwork);
             timeout.ifPresent(infinispanContainer::withStartupTimeout);
             infinispanContainer.start();
 
@@ -191,17 +191,17 @@ public class InfinispanDevServiceProcessor {
 
         private String hostName = null;
 
-        public QuarkusInfinispanContainer(OptionalInt fixedExposedPort, String serviceName, boolean useSharedNetwork,
-                Optional<List<String>> artifacts) {
-            super();
-            this.fixedExposedPort = fixedExposedPort;
+        public QuarkusInfinispanContainer(InfinispanDevServicesConfig config,
+                LaunchMode launchMode, boolean useSharedNetwork) {
+            super(config.imageName.orElse(IMAGE_BASENAME + ":" + Version.getMajorMinor()));
+            this.fixedExposedPort = config.port;
             this.useSharedNetwork = useSharedNetwork;
-            if (serviceName != null) {
-                withLabel(DEV_SERVICE_LABEL, serviceName);
+            if (launchMode == DEVELOPMENT) {
+                withLabel(DEV_SERVICE_LABEL, config.serviceName);
             }
             withUser(DEFAULT_USERNAME);
             withPassword(InfinispanDevServiceProcessor.DEFAULT_PASSWORD);
-            artifacts.ifPresent(a -> withArtifacts(a.toArray(new String[0])));
+            config.artifacts.ifPresent(a -> withArtifacts(a.toArray(new String[0])));
         }
 
         @Override

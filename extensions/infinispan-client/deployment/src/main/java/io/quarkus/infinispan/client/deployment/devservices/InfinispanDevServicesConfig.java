@@ -57,6 +57,13 @@ public class InfinispanDevServicesConfig {
     public String serviceName;
 
     /**
+     * The image to use.
+     * Note that only official Infinispan images are supported.
+     */
+    @ConfigItem
+    public Optional<String> imageName = Optional.empty();
+
+    /**
      * List of the artifacts to automatically download and add to the Infinispan server libraries.
      * <p>
      * For example a Maven coordinate
@@ -78,11 +85,12 @@ public class InfinispanDevServicesConfig {
                 Objects.equals(port, that.port) &&
                 Objects.equals(shared, that.shared) &&
                 Objects.equals(serviceName, that.serviceName) &&
+                Objects.equals(imageName, that.imageName) &&
                 Objects.equals(artifacts, this.artifacts);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enabled, port, shared, serviceName, artifacts);
+        return Objects.hash(enabled, port, shared, serviceName, imageName, artifacts);
     }
 }

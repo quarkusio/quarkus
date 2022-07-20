@@ -156,11 +156,11 @@ class HibernateSearchElasticsearchProcessor {
         if (indexedAnnotationsForPU.isEmpty()) {
             // we don't have any indexed entity, we can disable Hibernate Search
             staticIntegrations.produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                    persistenceUnitName).setInitListener(recorder.createDisabledStaticInitListener()));
+                    persistenceUnitName).setInitListener(recorder.createStaticInitInactiveListener()));
             // we need a runtime listener even when Hibernate Search is disabled,
             // just to let Hibernate Search boot up until the point where it checks whether it's enabled or not
             runtimeIntegrations.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                    persistenceUnitName).setInitListener(recorder.createDisabledRuntimeInitListener()));
+                    persistenceUnitName).setInitListener(recorder.createRuntimeInitInactiveListener()));
             return;
         }
 

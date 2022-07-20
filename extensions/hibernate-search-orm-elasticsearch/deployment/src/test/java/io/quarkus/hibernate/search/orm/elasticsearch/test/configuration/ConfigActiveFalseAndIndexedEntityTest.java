@@ -18,23 +18,23 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class ConfigDisabledAndIndexedEntityTest {
+public class ConfigActiveFalseAndIndexedEntityTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
             .withConfigurationResource("application.properties")
-            .overrideConfigKey("quarkus.hibernate-search-orm.enabled", "false");
+            .overrideConfigKey("quarkus.hibernate-search-orm.active", "false");
 
     @Inject
     SessionFactory sessionFactory;
 
     @Test
-    public void testDisabled() {
+    public void test() {
         assertThatThrownBy(() -> Arc.container().instance(SearchMapping.class).get())
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining(
-                        "Cannot retrieve the SearchMapping: Hibernate Search was disabled through configuration properties");
+                        "Cannot retrieve the SearchMapping: Hibernate Search was deactivated through configuration properties");
 
         assertThatThrownBy(() -> Search.mapping(sessionFactory))
                 .isInstanceOf(SearchException.class)
@@ -43,7 +43,7 @@ public class ConfigDisabledAndIndexedEntityTest {
         assertThatThrownBy(() -> Arc.container().instance(SearchSession.class).get())
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining(
-                        "Cannot retrieve the SearchSession: Hibernate Search was disabled through configuration properties");
+                        "Cannot retrieve the SearchSession: Hibernate Search was deactivated through configuration properties");
 
         try (Session session = sessionFactory.openSession()) {
             assertThatThrownBy(() -> Search.session(session).search(IndexedEntity.class))

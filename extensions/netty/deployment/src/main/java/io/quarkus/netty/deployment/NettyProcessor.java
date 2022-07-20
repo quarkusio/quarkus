@@ -106,6 +106,8 @@ class NettyProcessor {
                 .addRuntimeInitializedClass("io.netty.buffer.PooledByteBufAllocator")
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufAllocator")
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil")
+                // The default channel id uses the process id, it should not be cached in the native image.
+                .addRuntimeInitializedClass("io.netty.channel.DefaultChannelId")
                 .addNativeImageSystemProperty("io.netty.leakDetection.level", "DISABLED");
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.http.HttpObjectEncoder")) {

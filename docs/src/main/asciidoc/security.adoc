@@ -204,9 +204,16 @@ Some extensions such as `OIDC`, `OAuth2`, `SmallRye JWT` have the inlined `Ident
 For example, `quarkus-oidc` uses its own `IdentityProvider` to convert a token to `SecurityIdentity`. 
 
 If you use `Basic` or `Form` HTTP-based authentication then you have to add an `IdentityProvider` which can convert a username and password to `SecurityIdentity`.
-See xref:security-getting-started.adoc[JPA IdentityProvider], xref:security-jdbc.adoc[JDBC IdentityProvider] and xref:security-ldap.adoc[LDAP IdentityProvider] for more information.
 
-You can also use xref:security-testing.adoc#configuring-user-information[User Properties IdentityProvider] for testing.
+* For more information about `Basic` or `Form` HTTP-based authentication, see: 
+** xref:security-getting-started.adoc[JPA IdentityProvider]
+** xref:security-jdbc.adoc[JDBC IdentityProvider]
+** xref:security-ldap.adoc[LDAP IdentityProvider]
+
+* For a a Basic Authentication configuration walk-through using JPA, see:
+** xref:security-getting-started.adoc[Getting Started With Security] guide.
+
+* For testing, use the xref:security-testing.adoc#configuring-user-information[User Properties IdentityProvider] section with the `IdentityProvider` with already set usernames, passwords, and roles in `application.properties`.
 
 == Combining Authentication Mechanisms
 
@@ -284,6 +291,19 @@ We will be asking the NVD CPE team to update the list as well as link Quarkus CP
 If you work with the link:https://jeremylong.github.io/DependencyCheck/dependency-check-maven/[OWASP Dependency Check Plugin] which is using NVD feeds to detect the vulnerabilities at the application build time and see a false positive reported then please re-open link:https://github.com/quarkusio/quarkus/issues/2611[this issue] and provide the details.
 
 You can add `OWASP Dependency Check Plugin` to your project's `pom.xml` like this:
+
+[source,xml]
+----
+<plugin>
+    <groupId>org.owasp</groupId>
+    <artifactId>dependency-check-maven</artifactId>
+    <version>${owasp-dependency-check-plugin.version}</version>
+</plugin>
+----
+
+where `owasp-dependency-check-plugin.version` should be set to `7.1.1` or later.
+
+You can configure the plugin like this:
 
 [source,xml]
 ----
@@ -374,4 +394,3 @@ For example, it can look like this:
 
 Such a suppression list has to be carefully prepared and revisited from time to time. You should consider making individual suppressions time limited by adding an `until` attribute, for example: `<suppress until="2022-01-01Z">...</suppress>`. It will let you doublecheck that only the same known false positives are reported when the suppression period expires, and after reviewing the report you can set a new expiry date.
 
-Note link:https://jeremylong.github.io/DependencyCheck/dependency-check-maven/[OWASP Dependency Check Plugin] `6.5.3` or later should be used with Quarkus.

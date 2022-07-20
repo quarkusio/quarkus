@@ -47,26 +47,26 @@ public class OidcConfigurationMetadata {
         this(wellKnownConfig, null);
     }
 
-    public OidcConfigurationMetadata(JsonObject wellKnownConfig, OidcConfigurationMetadata fallbackConfig) {
+    public OidcConfigurationMetadata(JsonObject wellKnownConfig, OidcConfigurationMetadata localMetadataConfig) {
         this.tokenUri = getMetadataValue(wellKnownConfig, TOKEN_ENDPOINT,
-                fallbackConfig == null ? null : fallbackConfig.tokenUri);
+                localMetadataConfig == null ? null : localMetadataConfig.tokenUri);
         this.introspectionUri = getMetadataValue(wellKnownConfig, INTROSPECTION_ENDPOINT,
-                fallbackConfig == null ? null : fallbackConfig.introspectionUri);
+                localMetadataConfig == null ? null : localMetadataConfig.introspectionUri);
         this.authorizationUri = getMetadataValue(wellKnownConfig, AUTHORIZATION_ENDPOINT,
-                fallbackConfig == null ? null : fallbackConfig.authorizationUri);
+                localMetadataConfig == null ? null : localMetadataConfig.authorizationUri);
         this.jsonWebKeySetUri = getMetadataValue(wellKnownConfig, JWKS_ENDPOINT,
-                fallbackConfig == null ? null : fallbackConfig.jsonWebKeySetUri);
+                localMetadataConfig == null ? null : localMetadataConfig.jsonWebKeySetUri);
         this.userInfoUri = getMetadataValue(wellKnownConfig, USERINFO_ENDPOINT,
-                fallbackConfig == null ? null : fallbackConfig.userInfoUri);
+                localMetadataConfig == null ? null : localMetadataConfig.userInfoUri);
         this.endSessionUri = getMetadataValue(wellKnownConfig, END_SESSION_ENDPOINT,
-                fallbackConfig == null ? null : fallbackConfig.endSessionUri);
-        this.issuer = getMetadataValue(wellKnownConfig, ISSUER, fallbackConfig == null ? null : fallbackConfig.issuer);
+                localMetadataConfig == null ? null : localMetadataConfig.endSessionUri);
+        this.issuer = getMetadataValue(wellKnownConfig, ISSUER,
+                localMetadataConfig == null ? null : localMetadataConfig.issuer);
         this.json = wellKnownConfig;
     }
 
-    private static String getMetadataValue(JsonObject wellKnownConfig, String propertyName, String fallbackValue) {
-        String value = wellKnownConfig.getString(propertyName);
-        return value != null ? value : fallbackValue;
+    private static String getMetadataValue(JsonObject wellKnownConfig, String propertyName, String localValue) {
+        return localValue != null ? localValue : wellKnownConfig.getString(propertyName);
     }
 
     public String getTokenUri() {

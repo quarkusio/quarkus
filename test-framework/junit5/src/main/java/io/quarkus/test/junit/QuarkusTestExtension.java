@@ -771,20 +771,15 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     outerInstances.add(actualTestInstance);
                     actualTestInstance = declaredConstructor.newInstance(actualTestInstance);
                 } else {
-                    Object outerInstance = runningQuarkusApplication.instance(outerClass);
+                    Object outerInstance = createActualTestInstance(outerClass, state);
                     actualTestInstance = declaredConstructor.newInstance(outerInstance);
                     outerInstances.add(outerInstance);
                 }
             } else {
                 outerInstances.clear();
-                actualTestInstance = runningQuarkusApplication.instance(actualTestClass);
+                actualTestInstance = createActualTestInstance(actualTestClass, state);
             }
 
-            Class<?> resM = Thread.currentThread().getContextClassLoader().loadClass(TestHTTPResourceManager.class.getName());
-            resM.getDeclaredMethod("inject", Object.class, List.class).invoke(null, actualTestInstance,
-                    testHttpEndpointProviders);
-            state.testResourceManager.getClass().getMethod("inject", Object.class).invoke(state.testResourceManager,
-                    actualTestInstance);
             for (Object afterConstructCallback : afterConstructCallbacks) {
                 afterConstructCallback.getClass().getMethod("afterConstruct", Object.class).invoke(afterConstructCallback,
                         actualTestInstance);
@@ -799,6 +794,19 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             throw new TestInstantiationException("Failed to create test instance",
                     e instanceof InvocationTargetException ? e.getCause() : e);
         }
+    }
+
+    private Object createActualTestInstance(Class<?> testClass, ExtensionState state)
+            throws ClassNotFoundException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+        Object testInstance = runningQuarkusApplication.instance(testClass);
+
+        Class<?> resM = Thread.currentThread().getContextClassLoader().loadClass(TestHTTPResourceManager.class.getName());
+        resM.getDeclaredMethod("inject", Object.class, List.class).invoke(null, testInstance,
+                testHttpEndpointProviders);
+        state.testResourceManager.getClass().getMethod("inject", Object.class).invoke(state.testResourceManager,
+                testInstance);
+
+        return testInstance;
     }
 
     @Override

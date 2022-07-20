@@ -13,7 +13,7 @@ import io.quarkus.hibernate.validator.HibernateValidatorFactoryCustomizer;
 public class MyMultipleHibernateValidatorFactoryCustomizer implements HibernateValidatorFactoryCustomizer {
 
     @Override
-    public <T extends BaseHibernateValidatorConfiguration<T>> void customize(T configuration) {
+    public void customize(BaseHibernateValidatorConfiguration<?> configuration) {
         ConstraintMapping constraintMapping = configuration.createConstraintMapping();
 
         constraintMapping

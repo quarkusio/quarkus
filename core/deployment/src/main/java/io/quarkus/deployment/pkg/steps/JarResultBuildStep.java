@@ -568,7 +568,11 @@ public class JarResultBuildStep {
                 Files.createDirectories(userProviders);
                 //we add this dir so that it can be copied into container images if required
                 //and will still be copied even if empty
-                Files.createFile(userProviders.resolve(".keep"));
+                Path keepFile = userProviders.resolve(".keep");
+                if (!keepFile.toFile().exists()) {
+                    // check if the file exists to avoid a FileAlreadyExistsException
+                    Files.createFile(keepFile);
+                }
             }
         } else {
             IoUtils.createOrEmptyDir(quarkus);

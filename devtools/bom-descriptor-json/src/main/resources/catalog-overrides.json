@@ -139,6 +139,7 @@
   ],
   "metadata":{
     "project": {
+      "default-codestart": "resteasy-reactive",
       "properties": {
         "doc-root": "https://quarkus.io",
         "rest-assured-version": "${rest-assured.version}",

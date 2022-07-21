@@ -275,9 +275,9 @@ curl http://localhost:8080/graphql/schema.graphql
 The server will return the complete schema of the GraphQL API.
 
 [[ui]]
-==  GraphiQL UI
+== GraphiQL UI
 
-NOTE: Experimental - not included in the MicroProfile specification 
+NOTE: Experimental - not included in the MicroProfile specification
 
 GraphiQL UI is a great tool permitting easy interaction with your GraphQL APIs.
 
@@ -348,7 +348,7 @@ WARNING: Notice how we have excluded the value in the `@Query` annotation.
 Therefore, the name of the query is implicitly set as the method name
 excluding the `get`.
 
-This query will allow the client to retrieve the film by id, and the `@Name` annotation on the parameter 
+This query will allow the client to retrieve the film by id, and the `@Name` annotation on the parameter
 changes the parameter name to `filmId` rather than the default `id` that it would be if you omit the `@Name` annotation.
 
 Enter the following into `GraphiQL` and make a request.
@@ -479,10 +479,10 @@ Or you can use `@NonBlocking`:
         // ...
     }
 ----
- 
+
 Using `Uni` or `@NonBlocking` means that the request will be executed on Event-loop threads rather than Worker threads.
 
-You can mix Blocking and Non-blocking in one request, 
+You can mix Blocking and Non-blocking in one request,
 
 [source, java]
 ----
@@ -493,12 +493,293 @@ You can mix Blocking and Non-blocking in one request,
         // ...
     }
 
-    public List<Hero> heroes(@Source Film film) { 
+    public List<Hero> heroes(@Source Film film) {
         return service.getHeroesByFilm(film);
     }
 ----
 
 Above will fetch the film on the event-loop threads, but switch to the worker thread to fetch the heroes.
+
+== Abstract Types
+
+The current schema is simple with only two concrete types, `Hero` and `Film`.
+Now we want to expand our API with additional types and add some abstractions
+that make interacting with them easy for clients.
+
+=== Interfaces
+
+Let's give our heroes some allies.
+
+First, create a new entity to represent our `Ally`.
+
+[source,java]
+----
+public class Ally {
+
+    public String name;
+    public String surname;
+    public Hero partner;
+}
+----
+
+Update the `GalaxyService` to have some allies.
+
+[source,java]
+----
+    private List<Ally> allies = new ArrayList();
+
+    public GalaxyService() {
+        // ...
+
+        Ally jarjar = new Ally();
+        jarjar.name = "Jar Jar";
+        jarjar.surname = "Binks";
+        allies.add(jarjar);
+    }
+
+    public List<Ally> getAllAllies() {
+        return allies;
+    }
+----
+
+Let's also update `FilmResource` to allow clients to query for all allies:
+
+[source,java]
+----
+    @Query
+    public List<Ally> allies() {
+        return service.getAllAllies();
+    }
+----
+
+Enter the following into `GraphiQL` and make a request.
+
+[source,graphql]
+----
+query getAllies {
+    allies {
+        name
+        surname
+    }
+}
+----
+
+Notice that `Ally` has a some of the same fields as a `Hero`.
+To better make queries easier for clients, let's create an abstraction for any character.
+
+Create a new Java interface that defines our common character traits.
+
+[source,java]
+----
+public interface Character {
+
+    // <1>
+    String getName();
+    String getSurname();
+}
+----
+
+<1> Getters defined in an interface will define the GraphQL fields that it contains
+
+Now, update our `Hero` and `Ally` entities to implement this interface.
+
+[source,java]
+----
+public class Hero implements Character {
+    // ...
+
+    // <1>
+    public String getName() {
+        return name;
+    }
+
+    // <1>
+    public String getSurname() {
+        return surname;
+    }
+}
+
+public class Ally implements Character {
+    // ...
+
+    // <1>
+    public String getName() {
+        return name;
+    }
+
+    // <1>
+    public String getSurname() {
+        return surname;
+    }
+}
+----
+
+<1> Because interfaces can't define fields, we have to implement the getters
+
+By adding an interface and updating existing entities to implement it, we have effectively changed the schema.
+The updated schema will now include the new `Ally` type and `Character` interface.
+
+[source,graphql]
+----
+# <1>
+interface Character {
+    name: String
+    surname: String
+}
+
+# <2>
+type Ally implements Character {
+    name: String
+    surname: String
+    partner: Hero
+}
+
+# <3>
+type Hero implements Character {
+    name: String
+    surname: String
+    # ...
+}
+----
+
+<1> The `Character` interface was defined with the getters as fields
+<2> The `Ally` type was added and it implements `Character`
+<3> The `Hero` type was updated to implement `Character`
+
+Update our `GalaxyService` to provide all characters.
+
+[source,java]
+----
+    public List<Character> getAllCharacters() {
+        List<Character> characters = new ArrayList<>();
+        characters.addAll(heroes);
+        characters.addAll(allies);
+        return characters;
+    }
+----
+
+Now we can allow clients to query for all characters, not just heroes.
+
+Add the following to our `FilmResource` class:
+
+[source,java]
+----
+    @Query
+    @Description("Get all characters from a galaxy far far away")
+    public List<Characters> characters() {
+        return service.getAllCharacters();
+    }
+----
+
+Enter the following into `GraphiQL` and make a request.
+
+[source,graphql]
+----
+query getCharacters {
+    characters {
+        name
+        surname
+    }
+}
+----
+
+=== Unions
+
+NOTE: Experimental - not included in the MicroProfile specification
+
+So far, our API has only allowed us to query directly for an entity or list of entities.
+Now we want to allow clients to search all of our entities.
+While `Hero` and `Ally` have a shared abstract type of `Character`, there is no abstraction that also includes `Film`.
+
+First, create this new abstract type representing the possible return types for a search result.
+
+[source,java]
+----
+package org.acme.microprofile.graphql;
+
+import io.smallrye.graphql.api.Union;
+
+@Union // <1>
+public interface SearchResult {
+
+}
+----
+
+<1> `@Union` is required to indicate this Java interface represents a GraphQL union, not a GraphQL interface
+
+TIP: The Java interface representing the GraphQL union does not have to be empty,
+but any getters defined will not explicitly change the GraphQL schema.
+
+Update our entities to implement `SearchResult`:
+
+[source,java]
+----
+public class Film implements SearchResult {
+    // ...
+}
+
+public class Hero implements Character, SearchResult {
+    // ...
+}
+
+public class Ally implements Character, SearchResult {
+    // ...
+}
+----
+
+TIP: We can also leverage inheritance and have `interface Character extends SearchResult`.
+This will result in all implementations of `Character` being added as members of the `SearchResult` union in the schema.
+
+Update `GalaxyService` to provide search:
+
+[source,java]
+----
+    public List<SearchResult> search(String query) {
+        List<SearchResult> results = new ArrayList<>();
+        List<Film> matchingFilms = films.stream()
+            .filter(film -> film.title.contains(query)
+                || film.director.contains(query))
+            .collect(Collectors.toList());
+        results.addAll(matchingFilms);
+        List<Character> matchingCharacters = getAllCharacters().stream()
+            .filter(character -> character.name.contains(query)
+                || character.surname.contains(query))
+            .collect(Collectors.toList());
+        results.addAll(matchingCharacters);
+        return results;
+    }
+----
+
+Add the following to our `FilmResource` class:
+
+[source, java]
+----
+    @Query
+    @Description("Search for heroes or films")
+    public List<SearchResult> search(String query) {
+        return service.search(query);
+    }
+----
+
+Enter the following into `GraphiQL` and make a request.
+
+[source,graphql]
+----
+query searchTheGalaxy {
+    search(query: "a") {
+        ... on Film {
+            title
+            director
+        }
+        ... on Character {
+            name
+            surname
+        }
+    }
+}
+----
+
+NOTE: We are able to use the `Character` interface because the `SearchResult` union contains members that implement it.
 
 == Mutations
 
@@ -707,7 +988,7 @@ public GraphQLSchema.Builder addMyOwnEnum(@Observes GraphQLSchema.Builder builde
 }
 ----
 
-By using the `@Observer` you can add anything to the Schema builder. 
+By using the `@Observer` you can add anything to the Schema builder.
 
 NOTE: For the Observer to work, you need to enable events. In `application.properties`, add the following: `quarkus.smallrye-graphql.events.enabled=true`.
 
@@ -726,7 +1007,7 @@ public class Movie {
 
     @AdaptToScalar(Scalar.Int.class)
     Long idLongThatShouldChangeToInt;
-    
+
     // ....
 }
 ----
@@ -741,14 +1022,14 @@ public class Person {
 
     @AdaptToScalar(Scalar.String.class)
     Phone phone;
-    
+
     // ....
 }
 ----
 
 This will, rather than creating a `Type` or `Input` in GraphQL, map to a String scalar.
 
-To be able to do the above, the `Phone` object needs to have a constructor that takes a String (or `Int` / `Date` / etc.), 
+To be able to do the above, the `Phone` object needs to have a constructor that takes a String (or `Int` / `Date` / etc.),
 or have a setter method for the String  (or `Int` / `Date` / etc.),
 or have a `fromString` (or `fromInt` / `fromDate` - depending on the Scalar type) static method.
 
@@ -759,9 +1040,9 @@ For example:
 public class Phone {
 
     private String number;
-    
+
     // Getters and setters....
-    
+
     public static Phone fromString(String number) {
         Phone phone = new Phone();
         phone.setNumber(number);
@@ -774,7 +1055,7 @@ See more about the `@AdaptToScalar` feature in the https://javadoc.io/static/io.
 
 === Adapt with
 
-Another option for more complex cases is to provide an Adapter. You can then do the mapping yourself in the adapter. 
+Another option for more complex cases is to provide an Adapter. You can then do the mapping yourself in the adapter.
 
 See more about the `AdaptWith` feature in the https://javadoc.io/static/io.smallrye/smallrye-graphql-api/1.5.0/io/smallrye/graphql/api/AdaptWith.html[JavaDoc].
 
@@ -816,7 +1097,7 @@ NOTE: `@JsonbTypeAdapter` is also supported.
 === Built-in support for Maps
 
 By default, due to the fact that maps are hard to model in a schema (as the keys and values can be dynamic at runtime) GraphQL does not support maps by default.
-Using the above adaption, `Map` support is added for Quarkus and are mapped to an `Entry<Key,Value>` with an optional key parameter. 
+Using the above adaption, `Map` support is added for Quarkus and are mapped to an `Entry<Key,Value>` with an optional key parameter.
 This allows you to return a map, and optionally query it by key.
 
 Example:

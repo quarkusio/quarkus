@@ -66,6 +66,11 @@ public class TestResource {
         return characters;
     }
 
+    @Query
+    public TestUnion testUnion() {
+        return new TestUnionMember("what is my name");
+    }
+
     // <placeholder>
 
     public TestRandom getRandomNumber(@Source TestPojo testPojo) {

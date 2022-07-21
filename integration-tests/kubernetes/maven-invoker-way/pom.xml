@@ -289,7 +289,7 @@
                                 <!-- this is on purpose to make sure the property is expanded -->
                                 <kubernetes-client-master-url>-Dinvalid-on-purpose</kubernetes-client-master-url>
                                 <build-result>success</build-result>
-                                <container-image.registry>image-registry.openshift-image-registry.svc:5000</container-image.registry>
+                                <container-image.registry>docker.io</container-image.registry>
                             </filterProperties>
                         </configuration>
                     </plugin>
@@ -316,7 +316,7 @@
                                 <!-- this is on purpose to make sure the property is expanded -->
                                 <kubernetes-client-master-url>-Dinvalid-on-purpose</kubernetes-client-master-url>
                                 <build-result>success</build-result>
-                                <container-image.registry>image-registry.openshift-image-registry.svc:5000</container-image.registry>
+                                <container-image.registry>docker.io</container-image.registry>
                             </filterProperties>
                         </configuration>
                     </plugin>
@@ -343,7 +343,7 @@
                                 <!-- this is on purpose to make sure the property is expanded -->
                                 <kubernetes-client-master-url>-Dinvalid-on-purpose</kubernetes-client-master-url>
                                 <build-result>success</build-result>
-                                <container-image.registry>image-registry.openshift-image-registry.svc:5000</container-image.registry>
+                                <container-image.registry>docker.io</container-image.registry>
                             </filterProperties>
                         </configuration>
                     </plugin>

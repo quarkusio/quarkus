@@ -739,7 +739,7 @@ public class DevMojo extends AbstractMojo {
 
     private void addProject(MavenDevModeLauncher.Builder builder, ResolvedDependency module, boolean root) throws Exception {
 
-        if (!ArtifactCoords.TYPE_JAR.equals(module.getType())) {
+        if (!module.isJar()) {
             return;
         }
 

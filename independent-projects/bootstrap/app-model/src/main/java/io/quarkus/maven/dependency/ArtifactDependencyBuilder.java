@@ -5,7 +5,7 @@ abstract class AbstractDependencyBuilder<B extends AbstractDependencyBuilder<B, 
     String groupId;
     String artifactId;
     String classifier = ArtifactCoords.DEFAULT_CLASSIFIER;
-    String type = GACTV.TYPE_JAR;
+    String type = ArtifactCoords.TYPE_JAR;
     String version;
     String scope = "compile";
     int flags;

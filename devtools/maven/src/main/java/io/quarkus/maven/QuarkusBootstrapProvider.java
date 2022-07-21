@@ -327,7 +327,7 @@ public class QuarkusBootstrapProvider implements Closeable {
             if (coordsArr.length == 3) {
                 version = coordsArr[2];
             } else if (coordsArr.length > 3) {
-                classifier = coordsArr[2] == null ? "" : coordsArr[2];
+                classifier = coordsArr[2] == null ? ArtifactCoords.DEFAULT_CLASSIFIER : coordsArr[2];
                 type = coordsArr[3] == null ? ArtifactCoords.TYPE_JAR : coordsArr[3];
                 if (coordsArr.length > 4) {
                     version = coordsArr[4];

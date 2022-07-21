@@ -494,11 +494,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             }
         }
         if (artifactNode == null || groupId == null || artifactId == null || version == null) {
-            final ArtifactCoords coords = new GACTV(
+            final ArtifactCoords coords = ArtifactCoords.jar(
                     groupId == null ? project.getGroupId() : groupId,
                     artifactId == null ? project.getArtifactId() : artifactId,
-                    null,
-                    ArtifactCoords.TYPE_JAR,
                     version == null ? project.getVersion() : version);
             extObject.put("artifact", coords.toString());
         }

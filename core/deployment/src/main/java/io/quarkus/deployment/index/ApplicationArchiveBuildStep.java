@@ -37,9 +37,9 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
-import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.DirectoryPathTree;
 import io.quarkus.paths.MultiRootPathTree;
@@ -176,10 +176,10 @@ public class ApplicationArchiveBuildStep {
         }
         try {
             for (IndexDependencyBuildItem indexDependencyBuildItem : indexDependencyBuildItems) {
-                final ArtifactKey key = new GACT(indexDependencyBuildItem.getGroupId(),
+                final ArtifactKey key = ArtifactKey.of(indexDependencyBuildItem.getGroupId(),
                         indexDependencyBuildItem.getArtifactId(),
                         indexDependencyBuildItem.getClassifier(),
-                        GACTV.TYPE_JAR);
+                        ArtifactCoords.TYPE_JAR);
                 final ResolvedDependency artifact = userMap.get(key);
                 if (artifact == null) {
                     throw new RuntimeException(

@@ -597,6 +597,36 @@ public class CacheKeysService {
 }
 ----
 
+=== Retrieving a value if a key is present from a `CaffeineCache`
+
+The cache value from a specific `CaffeineCache` can be retrieved as an `Uni` as shown below.
+If the given key is contained in the cache, the returned `Uni` will emit the value to which the specified key is mapped to.
+Otherwise, the `Uni` will emit the `null` value.
+
+[source,java]
+----
+package org.acme.cache;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheName;
+import io.quarkus.cache.CaffeineCache;
+
+import java.util.Set;
+
+@ApplicationScoped
+public class CacheKeysService {
+
+    @CacheName("my-cache")
+    Cache cache;
+
+    public Uni<Object> getIfPresent(Object key) {
+        return cache.as(CaffeineCache.class).getIfPresent(key);
+    }
+}
+----
+
 == Configuring the underlying caching provider
 
 This extension uses https://github.com/ben-manes/caffeine[Caffeine] as its underlying caching provider.

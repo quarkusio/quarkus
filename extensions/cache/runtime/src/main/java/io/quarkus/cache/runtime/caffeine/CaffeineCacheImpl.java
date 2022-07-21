@@ -89,6 +89,20 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                 });
     }
 
+    @Override
+    public <K, V> Uni<V> getIfPresent(K key) {
+        Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
+        CompletableFuture<Object> caffeineValue = getFromCaffeineIfPresent(key);
+
+        // emit null if key is not in cache
+        if (null == caffeineValue) {
+            return Uni.createFrom().nullItem();
+        }
+
+        // otherwise cast and emit the value
+        return Uni.createFrom().completionStage(() -> cast(caffeineValue));
+    }
+
     /**
      * Returns a {@link CompletableFuture} holding the cache value identified by {@code key}, obtaining that value from
      * {@code valueLoader} if necessary. The value computation is done synchronously on the calling thread and the
@@ -112,6 +126,26 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                 newCacheValue.complete(new CaffeineComputationThrowable(t));
             }
             return unwrapCacheValueOrThrowable(newCacheValue);
+        } else {
+            LOGGER.tracef("Key [%s] found in cache [%s]", key, cacheInfo.name);
+            statsCounter.recordHits(1);
+            return unwrapCacheValueOrThrowable(existingCacheValue);
+        }
+    }
+
+    /**
+     * Returns a {@link CompletableFuture} holding the cache value identified by {@code key}, if the key is contained in this
+     * cache.
+     *
+     * @param key cache key
+     * @return a {@link CompletableFuture} holding the cache value or <code>null</code> if the cache contains no mapping for the
+     *         key
+     */
+    private <K, V> CompletableFuture<Object> getFromCaffeineIfPresent(K key) {
+        CompletableFuture<Object> existingCacheValue = cache.getIfPresent(key);
+        if (existingCacheValue == null) {
+            statsCounter.recordMisses(1);
+            return null;
         } else {
             LOGGER.tracef("Key [%s] found in cache [%s]", key, cacheInfo.name);
             statsCounter.recordHits(1);

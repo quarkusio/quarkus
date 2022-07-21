@@ -43,6 +43,8 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
+import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -586,15 +588,32 @@ public class NativeImageFeatureStep {
         //register serialization feature as requested
         MethodCreator requiredFeatures = file.getMethodCreator("getRequiredFeatures", "java.util.List");
 
-        TryBlock requiredCatch = requiredFeatures.tryBlock();
+        TryBlock requiredTryCatch = requiredFeatures.tryBlock();
 
-        ResultHandle serializationFeatureClass = requiredCatch
-                .loadClassFromTCCL("com.oracle.svm.reflect.serialize.hosted.SerializationFeature");
-        ResultHandle requiredFeaturesList = requiredCatch.invokeStaticMethod(
+        AssignableResultHandle serializationFeatureClass = requiredTryCatch.createVariable(Class.class);
+
+        BranchResult graalVm22_3Test = requiredTryCatch.ifGreaterEqualZero(
+                requiredTryCatch.invokeVirtualMethod(VERSION_COMPARE_TO,
+                        requiredTryCatch.invokeStaticMethod(VERSION_CURRENT),
+                        requiredTryCatch.marshalAsArray(int.class, requiredTryCatch.load(22), requiredTryCatch.load(3))));
+        /* GraalVM >= 22.3 */
+        BytecodeCreator greaterThan22_2 = graalVm22_3Test.trueBranch();
+        greaterThan22_2.assign(serializationFeatureClass,
+                greaterThan22_2.loadClassFromTCCL("com.oracle.svm.hosted.reflect.serialize.SerializationFeature"));
+        /* GraalVM < 22.3 */
+        BytecodeCreator smallerThan22_3 = graalVm22_3Test.falseBranch();
+        smallerThan22_3.assign(serializationFeatureClass,
+                smallerThan22_3.loadClassFromTCCL("com.oracle.svm.reflect.serialize.hosted.SerializationFeature"));
+
+        ResultHandle requiredFeaturesList = requiredTryCatch.invokeStaticMethod(
                 ofMethod("java.util.Collections", "singletonList", List.class, Object.class),
                 serializationFeatureClass);
 
-        requiredCatch.returnValue(requiredFeaturesList);
+        requiredTryCatch.returnValue(requiredFeaturesList);
+
+        CatchBlockCreator cc = requiredTryCatch.addCatch(Throwable.class);
+        cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+        cc.throwException(cc.getCaughtException());
 
         // method to register class for registration
         MethodCreator addSerializationForClass = file.getMethodCreator("registerSerializationForClass", "V", Class.class);

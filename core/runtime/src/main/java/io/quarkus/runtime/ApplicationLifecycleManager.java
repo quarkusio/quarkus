@@ -53,6 +53,11 @@ public class ApplicationLifecycleManager {
     private static volatile BiConsumer<Integer, Throwable> defaultExitCodeHandler = new BiConsumer<Integer, Throwable>() {
         @Override
         public void accept(Integer integer, Throwable cause) {
+            Logger logger = Logger.getLogger(Application.class);
+            logger.debugf("Shutting down with exit code %s", integer);
+            if (logger.isTraceEnabled()) {
+                logger.tracef(new RuntimeException("Shutdown Stack Trace"), "Shutdown triggered");
+            }
             System.exit(integer);
         }
     };
@@ -275,6 +280,8 @@ public class ApplicationLifecycleManager {
         final SignalHandler exitHandler = new SignalHandler() {
             @Override
             public void handle(Signal signal) {
+                Logger applicationLogger = Logger.getLogger(Application.class);
+                applicationLogger.debugf("Received signed %s, shutting down", signal.getNumber());
                 exitCodeHandler.accept(signal.getNumber() + 0x80, null);
             }
         };

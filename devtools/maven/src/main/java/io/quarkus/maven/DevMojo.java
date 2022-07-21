@@ -36,6 +36,7 @@ import org.aesh.readline.terminal.impl.ExecPty;
 import org.aesh.readline.terminal.impl.Pty;
 import org.aesh.terminal.Attributes;
 import org.aesh.terminal.utils.ANSI;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.BuildBase;
@@ -515,7 +516,13 @@ public class DevMojo extends AbstractMojo {
         String jandexGoalPhase = getGoalPhaseOrNull(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, "jandex", "process-classes");
         boolean indexClassNeeded = jandexGoalPhase != null;
 
-        for (String goal : session.getGoals()) {
+        List<String> goals = session.getGoals();
+        // check for default goal(s) if none were specified explicitly,
+        // see also org.apache.maven.lifecycle.internal.DefaultLifecycleTaskSegmentCalculator
+        if (goals.isEmpty() && !StringUtils.isEmpty(project.getDefaultGoal())) {
+            goals = List.of(StringUtils.split(project.getDefaultGoal()));
+        }
+        for (String goal : goals) {
             if (goal.endsWith("quarkus:generate-code")) {
                 prepareNeeded = false;
             }

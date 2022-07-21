@@ -3,7 +3,7 @@
 :idprefix:
 :idseparator: -
 :icons: font
-:doc-guides: ../
+:doc-guides: ..
 :doc-examples: ../_examples
 :imagesdir: ../../asciidoc/images
 :includes: ../includes

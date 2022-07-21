@@ -816,6 +816,8 @@ To isolate profile-specific dependencies from other profiles, the JDBC drivers c
 <2> For backward compatibility reasons, it is necessary to explicitly indicate that the optional dependencies need to be filtered.
 <3> Only the optional dependency corresponding to the JDBC driver of PostgreSQL is expected in the final artifact.
 
+NOTE: If you have more than one optional dependency to declare in the `quarkus.package.included-optional-dependencies` tag, make sure they are separated with `,` (e.g. `org.postgresql:postgresql::jar,com.foo:bar::jar`).
+
 [[configuration-reference]]
 == Configuring the Project Output
 

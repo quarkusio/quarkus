@@ -27,7 +27,7 @@ public class AvailableConfigSourcesTest {
     void sources() {
         ConfigValue value = config.getConfigValue("my.prop");
         assertEquals("1234", value.getValue());
-        assertEquals("PropertiesConfigSource[source=Specified default values]", value.getConfigSourceName());
+        assertEquals("RunTime Defaults", value.getConfigSourceName());
 
         for (final ConfigSource configSource : config.getConfigSources()) {
             if (configSource.getName().contains("application.properties")) {

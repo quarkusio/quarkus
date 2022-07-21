@@ -52,7 +52,7 @@ public class RenameConfigTest {
         assertEquals("old-default", renameConfig.withDefault);
 
         // Make sure we only record the actual properties in the sources (and not renamed properties)
-        Optional<ConfigSource> configSource = config.getConfigSource("PropertiesConfigSource[source=Build time config]");
+        Optional<ConfigSource> configSource = config.getConfigSource("BuildTime RunTime Fixed");
         assertTrue(configSource.isPresent());
         ConfigSource buildTimeRunTimeDefaults = configSource.get();
 

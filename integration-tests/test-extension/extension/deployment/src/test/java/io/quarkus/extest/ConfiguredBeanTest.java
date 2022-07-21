@@ -3,7 +3,6 @@ package io.quarkus.extest;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -320,7 +319,7 @@ public class ConfiguredBeanTest {
 
         ConfigValue value = config.getConfigValue("quarkus.btrt.all-values.long-primitive");
         Assertions.assertEquals("1234567891", value.getValue());
-        Assertions.assertEquals("PropertiesConfigSource[source=Build time config]", value.getConfigSourceName());
+        Assertions.assertEquals("BuildTime RunTime Fixed", value.getConfigSourceName());
         Assertions.assertEquals(Integer.MAX_VALUE, value.getConfigSourceOrdinal());
     }
 
@@ -333,7 +332,7 @@ public class ConfiguredBeanTest {
 
     @Test
     public void testConfigDefaultValuesSourceOrdinal() {
-        Optional<ConfigSource> source = config.getConfigSource("PropertiesConfigSource[source=Specified default values]");
+        Optional<ConfigSource> source = config.getConfigSource("RunTime Defaults");
         assertTrue(source.isPresent());
         ConfigSource defaultValues = source.get();
         assertEquals(Integer.MIN_VALUE + 100, defaultValues.getOrdinal());
@@ -355,7 +354,7 @@ public class ConfiguredBeanTest {
 
     @Test
     public void testProfileDefaultValuesSource() {
-        Optional<ConfigSource> source = config.getConfigSource("PropertiesConfigSource[source=Specified default values]");
+        Optional<ConfigSource> source = config.getConfigSource("RunTime Defaults");
         assertTrue(source.isPresent());
         ConfigSource defaultValues = source.get();
 
@@ -388,15 +387,9 @@ public class ConfiguredBeanTest {
         assertEquals("5678", anotherPrefixConfig.prop);
         assertEquals("5678", anotherPrefixConfig.map.get("prop"));
 
-        ConfigSource defaultValues = null;
-        for (ConfigSource configSource : config.getConfigSources()) {
-            if (configSource.getName().contains("PropertiesConfigSource[source=Specified default values]")) {
-                defaultValues = configSource;
-                break;
-            }
-        }
-        assertNotNull(defaultValues);
+        Optional<ConfigSource> runTimeDefaults = config.getConfigSource("RunTime Defaults");
+        assertTrue(runTimeDefaults.isPresent());
         // java.version should not be recorded
-        assertFalse(defaultValues.getPropertyNames().contains("java.version"));
+        assertFalse(runTimeDefaults.get().getPropertyNames().contains("java.version"));
     }
 }

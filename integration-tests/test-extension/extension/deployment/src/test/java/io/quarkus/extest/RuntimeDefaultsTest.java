@@ -29,16 +29,14 @@ public class RuntimeDefaultsTest {
 
     @Test
     void doNotRecordEnvRuntimeDefaults() {
-        Optional<ConfigSource> defaultValues = config
-                .getConfigSource("PropertiesConfigSource[source=Specified default values]");
+        Optional<ConfigSource> defaultValues = config.getConfigSource("RunTime Defaults");
         assertTrue(defaultValues.isPresent());
         assertEquals("properties", defaultValues.get().getValue("bt.do.not.record"));
     }
 
     @Test
     void doNotRecordActiveUnprofiledPropertiesDefaults() {
-        Optional<ConfigSource> defaultValues = config
-                .getConfigSource("PropertiesConfigSource[source=Specified default values]");
+        Optional<ConfigSource> defaultValues = config.getConfigSource("RunTime Defaults");
         assertTrue(defaultValues.isPresent());
         assertEquals("properties", config.getRawValue("bt.profile.record"));
         assertEquals("properties", defaultValues.get().getValue("%test.bt.profile.record"));

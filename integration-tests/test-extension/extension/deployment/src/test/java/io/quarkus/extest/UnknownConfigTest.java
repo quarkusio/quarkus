@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -27,7 +28,8 @@ public class UnknownConfigTest {
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
             .assertLogRecords(logRecords -> {
                 Set<String> properties = logRecords.stream().flatMap(
-                        logRecord -> Stream.of(logRecord.getParameters())).map(Object::toString).collect(Collectors.toSet());
+                        logRecord -> Stream.of(Optional.ofNullable(logRecord.getParameters()).orElse(new Object[0])))
+                        .map(Object::toString).collect(Collectors.toSet());
                 assertTrue(properties.contains("quarkus.unknown.prop"));
                 assertFalse(properties.contains("quarkus.build.unknown.prop"));
             });

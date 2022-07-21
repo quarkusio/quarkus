@@ -261,7 +261,6 @@
                             <filterProperties>
                                 <kubernetes-client-master-url>-Dquarkus.kubernetes-client.master-url=http://localhost:12345</kubernetes-client-master-url>
                                 <build-result>failure</build-result>
-                                <container-image.registry>docker.io</container-image.registry>
                             </filterProperties>
                         </configuration>
                     </plugin>
@@ -289,7 +288,6 @@
                                 <!-- this is on purpose to make sure the property is expanded -->
                                 <kubernetes-client-master-url>-Dinvalid-on-purpose</kubernetes-client-master-url>
                                 <build-result>success</build-result>
-                                <container-image.registry>docker.io</container-image.registry>
                             </filterProperties>
                         </configuration>
                     </plugin>
@@ -316,7 +314,6 @@
                                 <!-- this is on purpose to make sure the property is expanded -->
                                 <kubernetes-client-master-url>-Dinvalid-on-purpose</kubernetes-client-master-url>
                                 <build-result>success</build-result>
-                                <container-image.registry>docker.io</container-image.registry>
                             </filterProperties>
                         </configuration>
                     </plugin>
@@ -343,7 +340,6 @@
                                 <!-- this is on purpose to make sure the property is expanded -->
                                 <kubernetes-client-master-url>-Dinvalid-on-purpose</kubernetes-client-master-url>
                                 <build-result>success</build-result>
-                                <container-image.registry>docker.io</container-image.registry>
                             </filterProperties>
                         </configuration>
                     </plugin>

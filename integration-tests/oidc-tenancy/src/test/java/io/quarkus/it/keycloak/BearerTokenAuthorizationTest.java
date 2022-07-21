@@ -298,6 +298,7 @@ public class BearerTokenAuthorizationTest {
     public void testSimpleOidcJwtWithJwkRefresh() {
         RestAssured.when().post("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
         RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/revoke-endpoint-call-count").then().body(equalTo("0"));
         RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
         RestAssured.when().post("/oidc/disable-discovery").then().body(equalTo("false"));
         // Quarkus OIDC is initialized with JWK set with kid '1' as part of the discovery process
@@ -322,7 +323,7 @@ public class BearerTokenAuthorizationTest {
         RestAssured.when().post("/oidc/enable-introspection").then().body(equalTo("true"));
         // No timeout is required
         RestAssured.given().auth().oauth2(getAccessTokenFromSimpleOidc("3"))
-                .when().get("/tenant/tenant-oidc/api/user")
+                .when().get("/tenant/tenant-oidc/api/user?revoke=true")
                 .then()
                 .statusCode(200)
                 .body(equalTo("tenant-oidc:alice"));
@@ -340,6 +341,7 @@ public class BearerTokenAuthorizationTest {
         RestAssured.when().get("/oidc/jwk-endpoint-call-count").then().body(equalTo("2"));
         // both requests with kid `3` and with the opaque token required the remote introspection
         RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("3"));
+        RestAssured.when().get("/oidc/revoke-endpoint-call-count").then().body(equalTo("1"));
         RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
         RestAssured.when().post("/oidc/enable-discovery").then().body(equalTo("true"));
         RestAssured.when().post("/oidc/disable-rotate").then().body(equalTo("false"));

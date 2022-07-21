@@ -16,7 +16,6 @@ import io.quarkus.oidc.client.OidcClientConfig.Grant;
 import io.quarkus.oidc.client.OidcClientException;
 import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.Tokens;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.runtime.TlsConfig;
@@ -121,28 +120,32 @@ public class OidcClientRecorder {
 
         WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx.get()), options);
 
-        Uni<String> tokenRequestUriUni = null;
+        Uni<OidcConfigurationMetadata> tokenUrisUni = null;
         if (OidcCommonUtils.isAbsoluteUrl(oidcConfig.tokenPath)) {
-            tokenRequestUriUni = Uni.createFrom().item(oidcConfig.tokenPath.get());
+            tokenUrisUni = Uni.createFrom().item(
+                    new OidcConfigurationMetadata(oidcConfig.tokenPath.get(),
+                            OidcCommonUtils.isAbsoluteUrl(oidcConfig.revokePath) ? oidcConfig.revokePath.get() : null));
         } else {
             String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
             if (!oidcConfig.discoveryEnabled.orElse(true)) {
-                tokenRequestUriUni = Uni.createFrom()
-                        .item(OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.tokenPath));
+                tokenUrisUni = Uni.createFrom()
+                        .item(new OidcConfigurationMetadata(
+                                OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.tokenPath),
+                                OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.revokePath)));
             } else {
-                tokenRequestUriUni = discoverTokenRequestUri(client, authServerUriString.toString(), oidcConfig);
+                tokenUrisUni = discoverTokenUris(client, authServerUriString.toString(), oidcConfig);
             }
         }
-        return tokenRequestUriUni.onItemOrFailure()
-                .transform(new BiFunction<String, Throwable, OidcClient>() {
+        return tokenUrisUni.onItemOrFailure()
+                .transform(new BiFunction<OidcConfigurationMetadata, Throwable, OidcClient>() {
 
                     @Override
-                    public OidcClient apply(String tokenRequestUri, Throwable t) {
+                    public OidcClient apply(OidcConfigurationMetadata metadata, Throwable t) {
                         if (t != null) {
                             throw toOidcClientException(getEndpointUrl(oidcConfig), t);
                         }
 
-                        if (tokenRequestUri == null) {
+                        if (metadata.tokenRequestUri == null) {
                             throw new ConfigurationException(
                                     "OpenId Connect Provider token endpoint URL is not configured and can not be discovered");
                         }
@@ -182,7 +185,8 @@ public class OidcClientRecorder {
                         MultiMap commonRefreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
                         setGrantClientParams(oidcConfig, commonRefreshGrantParams, OidcConstants.REFRESH_TOKEN_GRANT);
 
-                        return new OidcClientImpl(client, tokenRequestUri, grantType, tokenGrantParams,
+                        return new OidcClientImpl(client, metadata.tokenRequestUri, metadata.tokenRevokeUri, grantType,
+                                tokenGrantParams,
                                 commonRefreshGrantParams,
                                 oidcConfig);
                     }
@@ -196,20 +200,17 @@ public class OidcClientRecorder {
 
     private static void setGrantClientParams(OidcClientConfig oidcConfig, MultiMap grantParams, String grantType) {
         grantParams.add(OidcConstants.GRANT_TYPE, grantType);
-        Credentials creds = oidcConfig.getCredentials();
-        if (OidcCommonUtils.isClientSecretPostAuthRequired(creds)) {
-            grantParams.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
-            grantParams.add(OidcConstants.CLIENT_SECRET, OidcCommonUtils.clientSecret(creds));
-        }
         if (oidcConfig.getScopes().isPresent()) {
             grantParams.add(OidcConstants.TOKEN_SCOPE, oidcConfig.getScopes().get().stream().collect(Collectors.joining(" ")));
         }
     }
 
-    private static Uni<String> discoverTokenRequestUri(WebClient client, String authServerUrl, OidcClientConfig oidcConfig) {
+    private static Uni<OidcConfigurationMetadata> discoverTokenUris(WebClient client, String authServerUrl,
+            OidcClientConfig oidcConfig) {
         final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
         return OidcCommonUtils.discoverMetadata(client, authServerUrl, connectionDelayInMillisecs)
-                .onItem().transform(json -> json.getString("token_endpoint"));
+                .onItem().transform(json -> new OidcConfigurationMetadata(json.getString("token_endpoint"),
+                        json.getString("revocation_endpoint")));
     }
 
     protected static OidcClientException toOidcClientException(String authServerUrlString, Throwable cause) {
@@ -234,7 +235,23 @@ public class OidcClientRecorder {
         }
 
         @Override
+        public Uni<Boolean> revokeAccessToken(String accessToken) {
+            throw new DisabledOidcClientException(message);
+        }
+
+        @Override
         public void close() throws IOException {
+        }
+
+    }
+
+    private static class OidcConfigurationMetadata {
+        private final String tokenRequestUri;
+        private final String tokenRevokeUri;
+
+        OidcConfigurationMetadata(String tokenRequestUri, String tokenRevokeUri) {
+            this.tokenRequestUri = tokenRequestUri;
+            this.tokenRevokeUri = tokenRevokeUri;
         }
     }
 }

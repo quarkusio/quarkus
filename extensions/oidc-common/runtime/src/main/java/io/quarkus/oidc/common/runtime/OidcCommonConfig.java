@@ -33,6 +33,12 @@ public class OidcCommonConfig {
     public Optional<String> tokenPath = Optional.empty();
 
     /**
+     * Relative path or absolute URL of the OIDC token revocation endpoint.
+     */
+    @ConfigItem
+    public Optional<String> revokePath = Optional.empty();
+
+    /**
      * The client-id of the application. Each application has a client-id that is used to identify the application
      */
     @ConfigItem
@@ -603,6 +609,14 @@ public class OidcCommonConfig {
 
     public void setTokenPath(String tokenPath) {
         this.tokenPath = Optional.of(tokenPath);
+    }
+
+    public Optional<String> getRevokePath() {
+        return revokePath;
+    }
+
+    public void setRevokePath(String revokePath) {
+        this.revokePath = Optional.of(revokePath);
     }
 
     public Optional<String> getClientId() {

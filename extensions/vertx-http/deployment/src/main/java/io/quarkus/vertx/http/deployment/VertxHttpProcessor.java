@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.deployment;
 
+import static io.quarkus.runtime.TemplateHtmlBuilder.adjustRoot;
 import static io.quarkus.vertx.http.deployment.RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
 
 import java.io.IOException;
@@ -51,6 +52,7 @@ import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
 import io.quarkus.vertx.http.deployment.devmode.HttpRemoteDevClientProvider;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
+import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.CurrentRequestProducer;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -93,8 +95,19 @@ class VertxHttpProcessor {
             List<RouteBuildItem> routes) {
         List<String> frameworkEndpoints = new ArrayList<>();
         for (RouteBuildItem route : routes) {
-            if (FRAMEWORK_ROUTE.equals(route.getRouteType()) && route.getConfiguredPathInfo() != null) {
-                frameworkEndpoints.add(route.getConfiguredPathInfo().getEndpointPath(nonApplicationRootPath));
+            if (FRAMEWORK_ROUTE.equals(route.getRouteType())) {
+                if (route.getConfiguredPathInfo() != null) {
+                    frameworkEndpoints.add(route.getConfiguredPathInfo().getEndpointPath(nonApplicationRootPath));
+                    continue;
+                }
+                if (route.getRouteFunction() != null && route.getRouteFunction() instanceof BasicRoute) {
+                    BasicRoute basicRoute = (BasicRoute) route.getRouteFunction();
+                    if (basicRoute.getPath() != null) {
+                        // Calling TemplateHtmlBuilder does not see very correct here, but it is the underlying API for ConfiguredPathInfo
+                        frameworkEndpoints
+                                .add(adjustRoot(nonApplicationRootPath.getNonApplicationRootPath(), basicRoute.getPath()));
+                    }
+                }
             }
         }
         return new FrameworkEndpointsBuildItem(frameworkEndpoints);

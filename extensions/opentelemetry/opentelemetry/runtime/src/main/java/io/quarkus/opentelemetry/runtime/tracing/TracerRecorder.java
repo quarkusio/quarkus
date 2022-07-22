@@ -139,14 +139,14 @@ public class TracerRecorder {
             List<String> dropStaticResources) {
 
         LateBoundSampler lateBoundSampler = CDI.current().select(LateBoundSampler.class, Any.Literal.INSTANCE).get();
-        List<String> dropNames = new ArrayList<>();
+        List<String> dropTargets = new ArrayList<>();
         if (config.suppressNonApplicationUris) {
-            dropNames.addAll(dropNonApplicationUris);
+            dropTargets.addAll(dropNonApplicationUris);
         }
         if (!config.includeStaticResources) {
-            dropNames.addAll(dropStaticResources);
+            dropTargets.addAll(dropStaticResources);
         }
-        Sampler samplerBean = TracerUtil.mapSampler(config.sampler, dropNames);
+        Sampler samplerBean = TracerUtil.mapSampler(config.sampler, dropTargets);
         lateBoundSampler.setSamplerDelegate(samplerBean);
     }
 }

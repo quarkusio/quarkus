@@ -11,6 +11,7 @@ public class HelloResource {
 
     @GET
     public String get() {
+        // The span name is not updated with the route yet.
         return ((ReadableSpan) Span.current()).getName();
     }
 }

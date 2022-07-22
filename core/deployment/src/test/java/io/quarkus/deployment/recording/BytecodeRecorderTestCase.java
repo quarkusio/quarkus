@@ -341,19 +341,19 @@ public class BytecodeRecorderTestCase {
     public void testJavaBeanWithBoolean() throws Exception {
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
-            TestJavaBeanWithBoolean newBean = new TestJavaBeanWithBoolean(true, true, true);
+            TestJavaBeanWithBoolean newBean = new TestJavaBeanWithBoolean(true, true, true, true);
             recorder.bean(newBean);
-        }, new TestJavaBeanWithBoolean(true, true, true));
+        }, new TestJavaBeanWithBoolean(true, true, true, true));
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
-            TestJavaBeanWithBoolean newBean = new TestJavaBeanWithBoolean(false, false, false);
+            TestJavaBeanWithBoolean newBean = new TestJavaBeanWithBoolean(false, false, false, false);
             recorder.bean(newBean);
-        }, new TestJavaBeanWithBoolean(false, false, false));
+        }, new TestJavaBeanWithBoolean(false, false, false, false));
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
-            TestJavaBeanWithBoolean newBean = new TestJavaBeanWithBoolean(true, null, null);
+            TestJavaBeanWithBoolean newBean = new TestJavaBeanWithBoolean(true, null, null, null);
             recorder.bean(newBean);
-        }, new TestJavaBeanWithBoolean(true, null, null));
+        }, new TestJavaBeanWithBoolean(true, null, null, null));
     }
 
     void runTest(Consumer<BytecodeRecorderImpl> generator, Object... expected) throws Exception {

@@ -19,6 +19,7 @@ import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.datasource.search.ReactiveSearchCommands;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveSortedSetCommands;
+import io.quarkus.redis.datasource.stream.ReactiveStreamCommands;
 import io.quarkus.redis.datasource.string.ReactiveStringCommands;
 import io.quarkus.redis.datasource.timeseries.ReactiveTimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.ReactiveTopKCommands;
@@ -379,6 +380,29 @@ public interface ReactiveRedisDataSource {
      */
     default ReactiveBitMapCommands<String> bitmap() {
         return bitmap(String.class);
+    }
+
+    /**
+     * Gets the object to execute commands manipulating streams.
+     *
+     * @param redisKeyType the class of the keys
+     * @param fieldType the class of the fields included in the message exchanged on the streams
+     * @param valueType the class of the values included in the message exchanged on the streams
+     * @param <K> the type of the redis key
+     * @param <F> the type of the fields (map's keys)
+     * @param <V> the type of the value
+     * @return the object to execute commands manipulating streams.
+     */
+    <K, F, V> ReactiveStreamCommands<K, F, V> stream(Class<K> redisKeyType, Class<F> fieldType, Class<V> valueType);
+
+    /**
+     * Gets the object to execute commands manipulating streams, using a string key, and string fields.
+     *
+     * @param <V> the type of the value
+     * @return the object to execute commands manipulating streams.
+     */
+    default <V> ReactiveStreamCommands<String, String, V> stream(Class<V> typeOfValue) {
+        return stream(String.class, String.class, typeOfValue);
     }
 
     /**

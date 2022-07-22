@@ -17,6 +17,7 @@ import io.quarkus.redis.datasource.list.TransactionalListCommands;
 import io.quarkus.redis.datasource.search.TransactionalSearchCommands;
 import io.quarkus.redis.datasource.set.TransactionalSetCommands;
 import io.quarkus.redis.datasource.sortedset.TransactionalSortedSetCommands;
+import io.quarkus.redis.datasource.stream.TransactionalStreamCommands;
 import io.quarkus.redis.datasource.string.TransactionalStringCommands;
 import io.quarkus.redis.datasource.timeseries.TransactionalTimeSeriesCommands;
 import io.quarkus.redis.datasource.topk.TransactionalTopKCommands;
@@ -96,6 +97,13 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
     @Override
     public <K> TransactionalBitMapCommands<K> bitmap(Class<K> redisKeyType) {
         return new BlockingTransactionalBitMapCommandsImpl<>(this, reactive.bitmap(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K, F, V> TransactionalStreamCommands<K, F, V> stream(Class<K> redisKeyType, Class<F> typeOfField,
+            Class<V> typeOfValue) {
+        return new BlockingTransactionalStreamCommandsImpl<>(this, reactive.stream(redisKeyType, typeOfField, typeOfValue),
+                timeout);
     }
 
     @Override

@@ -38,15 +38,15 @@ public class TracerUtil {
     }
 
     public static Sampler mapSampler(TracerRuntimeConfig.SamplerConfig samplerConfig,
-            List<String> dropNames) {
+            List<String> dropTargets) {
         Sampler sampler = CDI.current()
                 .select(Sampler.class, Any.Literal.INSTANCE)
                 .stream()
                 .filter(o -> !(o instanceof LateBoundSampler))
                 .findFirst().orElseGet(() -> getBaseSampler(samplerConfig.samplerName, samplerConfig.ratio));
 
-        if (!dropNames.isEmpty()) {
-            sampler = new DropNamesSampler(sampler, dropNames);
+        if (!dropTargets.isEmpty()) {
+            sampler = new DropTargetsSampler(sampler, dropTargets);
         }
 
         if (samplerConfig.parentBased) {

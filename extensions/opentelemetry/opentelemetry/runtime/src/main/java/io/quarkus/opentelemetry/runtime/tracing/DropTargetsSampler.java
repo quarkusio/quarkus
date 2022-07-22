@@ -8,14 +8,15 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.trace.data.LinkData;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.sdk.trace.samplers.SamplingResult;
+import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 
-public class DropNamesSampler implements Sampler {
+public class DropTargetsSampler implements Sampler {
     private final Sampler sampler;
-    private final List<String> dropNames;
+    private final List<String> dropTargets;
 
-    public DropNamesSampler(Sampler sampler, List<String> dropNames) {
+    public DropTargetsSampler(Sampler sampler, List<String> dropTargets) {
         this.sampler = sampler;
-        this.dropNames = dropNames;
+        this.dropTargets = dropTargets;
     }
 
     @Override
@@ -23,10 +24,10 @@ public class DropNamesSampler implements Sampler {
             Attributes attributes, List<LinkData> parentLinks) {
 
         if (spanKind.equals(SpanKind.SERVER)) {
-            for (String dropName : dropNames) {
-                if (name.startsWith(dropName)) {
-                    return SamplingResult.drop();
-                }
+            String target = attributes.get(SemanticAttributes.HTTP_TARGET);
+            // TODO - radcortez - Match /* endpoints
+            if (target != null && dropTargets.contains(target)) {
+                return SamplingResult.drop();
             }
         }
 

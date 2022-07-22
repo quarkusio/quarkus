@@ -22,6 +22,7 @@ import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.runtime.client.config.RedisConfig;
+import io.smallrye.mutiny.TimeoutException;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.Request;
@@ -88,7 +89,12 @@ class RedisHealthCheck implements HealthCheck {
                 Duration timeout = getTimeout(client.getKey());
                 Response response = redisClient.send(Request.cmd(Command.PING)).await().atMost(timeout);
                 builder.up().withData(redisClientName, response.toString());
+            } catch (TimeoutException e) {
+                return builder.down().withData("reason", "client [" + client.getKey() + "]: timeout").build();
             } catch (Exception e) {
+                if (e.getMessage() == null) {
+                    return builder.down().withData("reason", "client [" + client.getKey() + "]: " + e).build();
+                }
                 return builder.down().withData("reason", "client [" + client.getKey() + "]: " + e.getMessage()).build();
             }
         }

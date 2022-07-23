@@ -15,6 +15,9 @@ endif::[]
 ifeval::["{extension-status}" == "stable"]
 Being _stable_, backward compatibility and presence in the ecosystem are taken very seriously.
 endif::[]
+ifeval::["{extension-status}" == "deprecated"]
+Being _deprecated_ means that this extension is likely to be replaced or removed in a future version of Quarkus.
+endif::[]
 
-For a full list of possible statuses, check our https://quarkus.io/faq/#extension-status[FAQ entry].
+For a full list of possible statuses, check our https://quarkus.io/faq/#what-are-the-extension-statuses[FAQ entry].
 ====

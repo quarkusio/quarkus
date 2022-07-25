@@ -205,6 +205,8 @@ quarkus.mailer.mock=false
 
 Once you have configured the mailer, if you call the HTTP endpoint as shown above, you will send emails.
 
+Other popular mail services are covered in xref:mailer-reference.adoc#popular[the reference guide].
+
 == Conclusion
 
 This guide has shown how to send emails from your Quarkus application.

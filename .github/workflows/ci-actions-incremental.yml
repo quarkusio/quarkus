@@ -116,7 +116,7 @@ jobs:
     steps:
       - name: Skip non-compilable modules for jakarta-rewrite branch
         run: |
-          echo "EXCLUDE_JAKARTA_INCOMPATIBLE_MODULES=-pl "'!'":quarkus-integration-test-infinispan-client -pl "'!'":quarkus-integration-test-kafka-avro" >> $GITHUB_ENV
+          echo "EXCLUDE_JAKARTA_INCOMPATIBLE_MODULES=-pl "'!'":quarkus-integration-test-infinispan-client -pl "'!'":quarkus-integration-test-kafka-avro -pl "'!'":quarkus-integration-test-kafka-avro-apicurio2" >> $GITHUB_ENV
         if: github.ref_name == 'jakarta-rewrite'
 
       - uses: actions/checkout@v2

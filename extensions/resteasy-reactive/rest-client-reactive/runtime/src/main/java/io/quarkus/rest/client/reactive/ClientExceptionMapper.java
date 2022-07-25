@@ -22,13 +22,13 @@ import javax.ws.rs.Priorities;
  *
  * <pre>
  * {@code
- *         &#64;ClientExceptionMapper
- *         static DummyException map(Response response) {
- *             if (response.getStatus() == 404) {
- *                 return new DummyException();
- *             }
- *             return null;
- *         }
+ * &#64;ClientExceptionMapper
+ * static DummyException map(Response response) {
+ *     if (response.getStatus() == 404) {
+ *         return new DummyException();
+ *     }
+ *     return null;
+ * }
  *
  * }
  * </pre>

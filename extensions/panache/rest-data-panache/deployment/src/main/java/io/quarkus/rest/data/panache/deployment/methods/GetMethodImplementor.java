@@ -40,25 +40,22 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
      *
      * <pre>
      * {@code
-     *     &#64;GET
-     *     &#64;Produces({"application/json"})
-     *     &#64;Path("{id}")
-     *     &#64;LinkResource(
-     *         rel = "self",
-     *         entityClassName = "com.example.Entity"
-     *     )
-     *     public Response get(@PathParam("id") ID id) {
-     *         try {
-     *             Entity entity = restDataResource.get(id);
-     *             if (entity != null) {
-     *                 return entity;
-     *             } else {
-     *                 return Response.status(404).build();
-     *             }
-     *         } catch (Throwable t) {
-     *             throw new RestDataPanacheException(t);
+     * &#64;GET
+     * &#64;Produces({ "application/json" })
+     * &#64;Path("{id}")
+     * &#64;LinkResource(rel = "self", entityClassName = "com.example.Entity")
+     * public Response get(@PathParam("id") ID id) {
+     *     try {
+     *         Entity entity = restDataResource.get(id);
+     *         if (entity != null) {
+     *             return entity;
+     *         } else {
+     *             return Response.status(404).build();
      *         }
+     *     } catch (Throwable t) {
+     *         throw new RestDataPanacheException(t);
      *     }
+     * }
      * }
      * </pre>
      *
@@ -67,20 +64,18 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
      *
      * <pre>
      * {@code
-     *     &#64;GET
-     *     &#64;Produces({"application/json"})
-     *     &#64;Path("{id}")
-     *     &#64;LinkResource(
-     *         rel = "self",
-     *         entityClassName = "com.example.Entity"
-     *     )
-     *     public Uni<Response> get(@PathParam("id") ID id) {
-     *         try {
-     *             return restDataResource.get(id).map(entity -> entity == null ? Response.status(404).build() : Response.ok(entity).build());
-     *         } catch (Throwable t) {
-     *             throw new RestDataPanacheException(t);
-     *         }
+     * &#64;GET
+     * &#64;Produces({ "application/json" })
+     * &#64;Path("{id}")
+     * &#64;LinkResource(rel = "self", entityClassName = "com.example.Entity")
+     * public Uni<Response> get(@PathParam("id") ID id) {
+     *     try {
+     *         return restDataResource.get(id)
+     *                 .map(entity -> entity == null ? Response.status(404).build() : Response.ok(entity).build());
+     *     } catch (Throwable t) {
+     *         throw new RestDataPanacheException(t);
      *     }
+     * }
      * }
      * </pre>
      */

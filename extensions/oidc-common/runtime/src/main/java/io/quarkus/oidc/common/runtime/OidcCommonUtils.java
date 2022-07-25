@@ -373,12 +373,15 @@ public class OidcCommonUtils {
 
     public static String initClientSecretBasicAuth(OidcCommonConfig oidcConfig) {
         if (isClientSecretBasicAuthRequired(oidcConfig.credentials)) {
-            return OidcConstants.BASIC_SCHEME + " "
-                    + Base64.getEncoder().encodeToString(
-                            (oidcConfig.getClientId().get() + ":"
-                                    + clientSecret(oidcConfig.credentials)).getBytes(StandardCharsets.UTF_8));
+            return basicSchemeValue(oidcConfig.getClientId().get(), clientSecret(oidcConfig.credentials));
         }
         return null;
+    }
+
+    public static String basicSchemeValue(String name, String secret) {
+        return OidcConstants.BASIC_SCHEME + " "
+                + Base64.getEncoder().encodeToString((name + ":" + secret).getBytes(StandardCharsets.UTF_8));
+
     }
 
     public static Key initClientJwtKey(OidcCommonConfig oidcConfig) {

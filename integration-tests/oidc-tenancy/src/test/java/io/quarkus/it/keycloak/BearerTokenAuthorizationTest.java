@@ -396,7 +396,8 @@ public class BearerTokenAuthorizationTest {
                     .then()
                     .statusCode(200)
                     .body(equalTo(
-                            "tenant-oidc-introspection-only:alice,client_id:client-introspection-only,active:true,cache-size:0"));
+                            "tenant-oidc-introspection-only:alice,client_id:client-introspection-only,"
+                                    + "introspection_client_id:none,introspection_client_secret:none,active:true,cache-size:0"));
         }
 
         RestAssured.when().get("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
@@ -441,7 +442,8 @@ public class BearerTokenAuthorizationTest {
                     .then()
                     .statusCode(200)
                     .body(equalTo(
-                            "tenant-oidc-introspection-only-cache:alice,client_id:client-introspection-only,active:true,cache-size:"
+                            "tenant-oidc-introspection-only-cache:alice,client_id:client-introspection-only-cache,"
+                                    + "introspection_client_id:bob,introspection_client_secret:bob_secret,active:true,cache-size:"
                                     + expectedCacheSize));
         }
         RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("1"));

@@ -86,6 +86,49 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public Optional<String> publicKey = Optional.empty();
 
     /**
+     * Introspection Basic Authentication which must be configured only if the introspection is required
+     * and OpenId Connect Provider does not support the OIDC client authentication configured with
+     * {@link OidcCommonConfig#credentials} for its introspection endpoint.
+     */
+    @ConfigItem
+    public IntrospectionCredentials introspectionCredentials = new IntrospectionCredentials();
+
+    /**
+     * Introspection Basic Authentication configuration
+     */
+    @ConfigGroup
+    public static class IntrospectionCredentials {
+        /**
+         * Name
+         */
+        @ConfigItem
+        public Optional<String> name = Optional.empty();
+
+        /**
+         * Secret
+         */
+        @ConfigItem
+        public Optional<String> secret = Optional.empty();
+
+        public Optional<String> getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = Optional.of(name);
+        }
+
+        public Optional<String> getSecret() {
+            return secret;
+        }
+
+        public void setSecret(String secret) {
+            this.secret = Optional.of(secret);
+        }
+
+    }
+
+    /**
      * Configuration to find and parse a custom claim containing the roles information.
      */
     @ConfigItem
@@ -1202,5 +1245,13 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
     public void setCacheUserInfoInIdtoken(boolean cacheUserInfoInIdtoken) {
         this.cacheUserInfoInIdtoken = cacheUserInfoInIdtoken;
+    }
+
+    public IntrospectionCredentials getIntrospectionCredentials() {
+        return introspectionCredentials;
+    }
+
+    public void setIntrospectionCredentials(IntrospectionCredentials introspectionCredentials) {
+        this.introspectionCredentials = introspectionCredentials;
     }
 }

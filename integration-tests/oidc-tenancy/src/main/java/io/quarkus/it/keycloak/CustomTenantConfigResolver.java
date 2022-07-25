@@ -87,17 +87,21 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.setAuthServerUrl(authServerUri);
                     config.setDiscoveryEnabled(false);
                     config.authentication.setUserInfoRequired(true);
-                    if ("tenant-oidc-introspection-only".equals(tenantId)) {
-                        config.setAllowTokenIntrospectionCache(false);
-                        config.setAllowUserInfoCache(false);
-                    }
                     config.setIntrospectionPath("introspect");
                     config.setUserInfoPath("userinfo");
-                    config.setClientId("client-introspection-only");
-                    Credentials creds = config.getCredentials();
-                    creds.clientSecret.setMethod(Credentials.Secret.Method.POST_JWT);
-                    creds.getJwt().setKeyFile("ecPrivateKey.pem");
-                    creds.getJwt().setSignatureAlgorithm(SignatureAlgorithm.ES256.getAlgorithm());
+                    if ("tenant-oidc-introspection-only".equals(tenantId)) {
+                        config.setClientId("client-introspection-only");
+                        config.setAllowTokenIntrospectionCache(false);
+                        config.setAllowUserInfoCache(false);
+                        Credentials creds = config.getCredentials();
+                        creds.clientSecret.setMethod(Credentials.Secret.Method.POST_JWT);
+                        creds.getJwt().setKeyFile("ecPrivateKey.pem");
+                        creds.getJwt().setSignatureAlgorithm(SignatureAlgorithm.ES256.getAlgorithm());
+                    } else {
+                        config.setClientId("client-introspection-only-cache");
+                        config.getIntrospectionCredentials().setName("bob");
+                        config.getIntrospectionCredentials().setSecret("bob_secret");
+                    }
                     return config;
                 } else if ("tenant-oidc-no-opaque-token".equals(tenantId)) {
                     OidcTenantConfig config = new OidcTenantConfig();

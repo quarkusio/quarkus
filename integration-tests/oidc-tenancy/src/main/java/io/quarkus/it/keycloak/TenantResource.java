@@ -66,6 +66,8 @@ public class TenantResource {
         if (tenant.startsWith("tenant-oidc-introspection-only")) {
             TokenIntrospection introspection = securityIdentity.getAttribute("introspection");
             response += (",client_id:" + introspection.getString("client_id"));
+            response += (",introspection_client_id:" + introspection.getString("introspection_client_id"));
+            response += (",introspection_client_secret:" + introspection.getString("introspection_client_secret"));
             response += (",active:" + introspection.getBoolean("active"));
             response += (",cache-size:" + tokenCache.getCacheSize());
         }

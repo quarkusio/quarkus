@@ -119,7 +119,7 @@
         <h2.version>2.1.214</h2.version>
         <postgresql-jdbc.version>42.4.1</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.0.6</mariadb-jdbc.version>
-        <mysql-jdbc.version>8.0.29</mysql-jdbc.version>
+        <mysql-jdbc.version>8.0.30</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>21.5.0.0</oracle-jdbc.version>

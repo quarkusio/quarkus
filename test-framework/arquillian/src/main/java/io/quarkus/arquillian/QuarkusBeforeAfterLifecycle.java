@@ -4,6 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import org.jboss.arquillian.container.spi.context.annotation.DeploymentScoped;
+import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.core.api.InstanceProducer;
 import org.jboss.arquillian.core.api.annotation.Inject;
 import org.jboss.arquillian.core.api.annotation.Observes;
@@ -27,21 +28,25 @@ public class QuarkusBeforeAfterLifecycle {
 
     public void on(@Observes(precedence = DEFAULT_PRECEDENCE) org.jboss.arquillian.test.spi.event.suite.Before event)
             throws Throwable {
-        if (isJunitAvailable()) {
-            invokeCallbacks(JUNIT_INVOKE_BEFORES, JUNIT_CALLBACKS);
-        }
-        if (isTestNGAvailable()) {
-            invokeCallbacks(TESTNG_INVOKE_BEFORE_METHOD, TESTNG_CALLBACKS);
+        if (!event.getTestClass().isAnnotationPresent(RunAsClient.class)) {
+            if (isJunitAvailable()) {
+                invokeCallbacks(JUNIT_INVOKE_BEFORES, JUNIT_CALLBACKS);
+            }
+            if (isTestNGAvailable()) {
+                invokeCallbacks(TESTNG_INVOKE_BEFORE_METHOD, TESTNG_CALLBACKS);
+            }
         }
     }
 
     public void on(@Observes(precedence = DEFAULT_PRECEDENCE) org.jboss.arquillian.test.spi.event.suite.After event)
             throws Throwable {
-        if (isJunitAvailable()) {
-            invokeCallbacks(JUNIT_INVOKE_AFTERS, JUNIT_CALLBACKS);
-        }
-        if (isTestNGAvailable()) {
-            invokeCallbacks(TESTNG_INVOKE_AFTER_METHOD, TESTNG_CALLBACKS);
+        if (!event.getTestClass().isAnnotationPresent(RunAsClient.class)) {
+            if (isJunitAvailable()) {
+                invokeCallbacks(JUNIT_INVOKE_AFTERS, JUNIT_CALLBACKS);
+            }
+            if (isTestNGAvailable()) {
+                invokeCallbacks(TESTNG_INVOKE_AFTER_METHOD, TESTNG_CALLBACKS);
+            }
         }
     }
 

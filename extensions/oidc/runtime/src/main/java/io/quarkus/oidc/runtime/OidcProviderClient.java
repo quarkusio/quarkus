@@ -40,6 +40,7 @@ public class OidcProviderClient implements Closeable {
     private final OidcConfigurationMetadata metadata;
     private final OidcTenantConfig oidcConfig;
     private final String clientSecretBasicAuthScheme;
+    private final String introspectionBasicAuthScheme;
     private final Key clientJwtKey;
 
     public OidcProviderClient(WebClient client,
@@ -50,6 +51,17 @@ public class OidcProviderClient implements Closeable {
         this.oidcConfig = oidcConfig;
         this.clientSecretBasicAuthScheme = OidcCommonUtils.initClientSecretBasicAuth(oidcConfig);
         this.clientJwtKey = OidcCommonUtils.initClientJwtKey(oidcConfig);
+        this.introspectionBasicAuthScheme = initIntrospectionBasicAuthScheme(oidcConfig);
+    }
+
+    private static String initIntrospectionBasicAuthScheme(OidcTenantConfig oidcConfig) {
+        if (oidcConfig.getIntrospectionCredentials().name.isPresent()
+                && oidcConfig.getIntrospectionCredentials().secret.isPresent()) {
+            return OidcCommonUtils.basicSchemeValue(oidcConfig.getIntrospectionCredentials().name.get(),
+                    oidcConfig.getIntrospectionCredentials().secret.get());
+        } else {
+            return null;
+        }
     }
 
     public OidcConfigurationMetadata getMetadata() {
@@ -72,7 +84,7 @@ public class OidcProviderClient implements Closeable {
         MultiMap introspectionParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN, token);
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN_TYPE_HINT, OidcConstants.ACCESS_TOKEN_VALUE);
-        return getHttpResponse(metadata.getIntrospectionUri(), introspectionParams)
+        return getHttpResponse(metadata.getIntrospectionUri(), introspectionParams, true)
                 .transform(resp -> getTokenIntrospection(resp));
     }
 
@@ -96,21 +108,28 @@ public class OidcProviderClient implements Closeable {
         if (codeVerifier != null) {
             codeGrantParams.add(OidcConstants.PKCE_CODE_VERIFIER, codeVerifier);
         }
-        return getHttpResponse(metadata.getTokenUri(), codeGrantParams).transform(resp -> getAuthorizationCodeTokens(resp));
+        return getHttpResponse(metadata.getTokenUri(), codeGrantParams, false)
+                .transform(resp -> getAuthorizationCodeTokens(resp));
     }
 
     public Uni<AuthorizationCodeTokens> refreshAuthorizationCodeTokens(String refreshToken) {
         MultiMap refreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
         refreshGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.REFRESH_TOKEN_GRANT);
         refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, refreshToken);
-        return getHttpResponse(metadata.getTokenUri(), refreshGrantParams).transform(resp -> getAuthorizationCodeTokens(resp));
+        return getHttpResponse(metadata.getTokenUri(), refreshGrantParams, false)
+                .transform(resp -> getAuthorizationCodeTokens(resp));
     }
 
-    private UniOnItem<HttpResponse<Buffer>> getHttpResponse(String uri, MultiMap formBody) {
+    private UniOnItem<HttpResponse<Buffer>> getHttpResponse(String uri, MultiMap formBody, boolean introspect) {
         HttpRequest<Buffer> request = client.postAbs(uri);
         request.putHeader(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
         request.putHeader(ACCEPT_HEADER, APPLICATION_JSON);
-        if (clientSecretBasicAuthScheme != null) {
+        if (introspect && introspectionBasicAuthScheme != null) {
+            request.putHeader(AUTHORIZATION_HEADER, introspectionBasicAuthScheme);
+            if (oidcConfig.clientId.isPresent()) {
+                formBody.set(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+            }
+        } else if (clientSecretBasicAuthScheme != null) {
             request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
         } else if (clientJwtKey != null) {
             String jwt = OidcCommonUtils.signJwtWithKey(oidcConfig, metadata.getTokenUri(), clientJwtKey);

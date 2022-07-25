@@ -1,10 +1,12 @@
 package io.quarkus.it.keycloak;
 
 import java.security.PublicKey;
+import java.util.Base64;
 
 import javax.annotation.PostConstruct;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -106,19 +108,28 @@ public class OidcResource {
     @POST
     @Produces("application/json")
     @Path("introspect")
-    public String introspect(@FormParam("client_secret") String secret) throws Exception {
+    public String introspect(@FormParam("client_id") String clientId, @FormParam("client_secret") String clientSecret,
+            @HeaderParam("Authorization") String authorization) throws Exception {
         introspectionEndpointCallCount++;
 
-        String clientId = "undefined";
-        if (secret != null) {
+        String introspectionClientId = "none";
+        String introspectionClientSecret = "none";
+        if (clientSecret != null) {
             // Secret is expected to be a JWT
             PublicKey verificationKey = KeyUtils.readPublicKey("ecPublicKey.pem", SignatureAlgorithm.ES256);
             JWTParser parser = new DefaultJWTParser();
             // "client-introspection-only" is a client id, set as an issuer by default
             JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(verificationKey, "client-introspection-only");
             contextInfo.setSignatureAlgorithm(SignatureAlgorithm.ES256);
-            JsonWebToken jwt = parser.parse(secret, contextInfo);
+            JsonWebToken jwt = parser.parse(clientSecret, contextInfo);
             clientId = jwt.getIssuer();
+        } else if (authorization != null) {
+            String plainChallenge = new String(Base64.getDecoder().decode(authorization.substring("Basic ".length())));
+            int colonPos;
+            if ((colonPos = plainChallenge.indexOf(":")) > -1) {
+                introspectionClientId = plainChallenge.substring(0, colonPos);
+                introspectionClientSecret = plainChallenge.substring(colonPos + 1);
+            }
         }
 
         return "{" +
@@ -126,6 +137,8 @@ public class OidcResource {
                 "   \"scope\": \"user\"," +
                 "   \"email\": \"user@gmail.com\"," +
                 "   \"username\": \"alice\"," +
+                "   \"introspection_client_id\": \"" + introspectionClientId + "\"," +
+                "   \"introspection_client_secret\": \"" + introspectionClientSecret + "\"," +
                 "   \"client_id\": \"" + clientId + "\"" +
                 "  }";
     }

@@ -1101,6 +1101,18 @@ quarkus.oidc.tls.trust-store-password=${trust-store-password}
 #quarkus.oidc.tls.trust-store-alias=certAlias
 ----
 
+=== Introspection Endpoint Authentication
+
+Some OpenID Connect Providers may require authenticating to its introspection endpoint using Basic Authentication with the credentials different to `client_id` and `client_secret` which may have already been configured to support `client_secret_basic` or `client_secret_post` client authentication methods described in the <<oidc-provider-client-authentication, Oidc Provider Client Authentication>> section.
+
+If the tokens have to be introspected and the introspection endpoint specific authentication mechanism is required then you can configure `quarkus-oidc` like this:
+
+[source,properties]
+----
+quarkus.oidc.introspection-credentials.name=introspection-user-name
+quarkus.oidc.introspection-credentials.secret=introspection-user-secret
+----
+
 [[integration-testing]]
 === Testing
 

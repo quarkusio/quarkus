@@ -6,6 +6,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiFunction;
 
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
@@ -28,7 +31,7 @@ import io.quarkus.gizmo.Gizmo;
  */
 public class ClassTransformerProcessor {
 
-    private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
+    private static final DotName PATH = DotName.createSimple(Path.class.getName());
 
     @BuildStep
     public void build(CombinedIndexBuildItem combinedIndex,
@@ -55,10 +58,11 @@ public class ClassTransformerProcessor {
                                 MethodVisitor mv = visitMethod(Modifier.PUBLIC, "transformed", "()Ljava/lang/String;", null,
                                         null);
 
-                                AnnotationVisitor annotation = mv.visitAnnotation("Ljavax/ws/rs/Path;", true);
+                                AnnotationVisitor annotation = mv
+                                        .visitAnnotation("L" + Path.class.getName().replace('.', '/') + ";", true);
                                 annotation.visit("value", "/transformed");
                                 annotation.visitEnd();
-                                annotation = mv.visitAnnotation("Ljavax/ws/rs/GET;", true);
+                                annotation = mv.visitAnnotation("L" + GET.class.getName().replace('.', '/') + ";", true);
                                 annotation.visitEnd();
 
                                 mv.visitLdcInsn("Transformed Endpoint");

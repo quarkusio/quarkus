@@ -283,6 +283,7 @@ transform_module "tcks"
 
 sed -i 's/@javax.annotation.Generated/@jakarta.annotation.Generated/g' extensions/grpc/protoc/src/main/resources/*.mustache
 sed -i 's/javax.ws.rs.core.Application/jakarta.ws.rs.core.Application/g' integration-tests/elytron-undertow/src/main/resources/META-INF/web.xml
+sed -i 's/javax.inject.Singleton/jakarta.inject.Singleton/g' integration-tests/main/src/main/resources/application.properties
 
 transform_documentation
 sed -i 's@javax/ws/rs@jakarta/ws/rs@g' docs/src/main/asciidoc/resteasy-reactive.adoc

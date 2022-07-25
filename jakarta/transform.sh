@@ -282,6 +282,7 @@ transform_kotlin_module "integration-tests"
 transform_module "tcks"
 
 sed -i 's/@javax.annotation.Generated/@jakarta.annotation.Generated/g' extensions/grpc/protoc/src/main/resources/*.mustache
+sed -i 's/javax.ws.rs.core.Application/jakarta.ws.rs.core.Application/g' integration-tests/elytron-undertow/src/main/resources/META-INF/web.xml
 
 transform_documentation
 sed -i 's@javax/ws/rs@jakarta/ws/rs@g' docs/src/main/asciidoc/resteasy-reactive.adoc

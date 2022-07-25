@@ -154,6 +154,10 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: jaxb-runtime.version
       newValue: 3.0.2
+  # WildFly Security
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: wildfly-elytron.version
+      newValue: 2.0.0.Beta1
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-jaxrs-jaxb

@@ -11,7 +11,7 @@ metadata:
   guide: "https://quarkus.io/guides/hibernate-orm-panache-kotlin"
   categories:
   - "data"
-  status: "experimental"
+  status: "stable"
   config:
   - "quarkus.datasource."
   - "quarkus.hibernate-orm."

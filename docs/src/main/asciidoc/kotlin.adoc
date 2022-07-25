@@ -5,14 +5,11 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Kotlin
 
-:extension-status: preview
 include::./attributes.adoc[]
 
 https://kotlinlang.org/[Kotlin] is a very popular programming language that targets the JVM (amongst other environments). Kotlin has experienced a surge in popularity the last few years making it the most popular JVM language, except for Java of course.
 
 Quarkus provides first class support for using Kotlin as will be explained in this guide.
-
-include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 

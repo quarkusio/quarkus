@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Rewrite to Jakarta
     if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'
+    env:
+      MAVEN_OPTS: -Xmx3g -XX:MaxMetaspaceSize=1g
     steps:
       - uses: actions/checkout@v3
         with:

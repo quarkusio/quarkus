@@ -25,27 +25,6 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   #mvn clean install -DskipTests -DskipITs
   #popd
 
-  # Build Quarkus HTTP (temporary)
-  rm -rf target/quarkus-http
-  git clone -b jakarta-rewrite --depth 1 https://github.com/quarkusio/quarkus-http.git target/quarkus-http
-  pushd target/quarkus-http
-  mvn -B clean install -DskipTests -DskipITs
-  popd
-
-  # Build Quarkus Security (temporary)
-  rm -rf target/quarkus-security
-  git clone -b jakarta-rewrite --depth 1 https://github.com/quarkusio/quarkus-security.git target/quarkus-security
-  pushd target/quarkus-security
-  mvn -B clean install -DskipTests -DskipITs
-  popd
-
-  # Build Keycloak (temporary)
-  rm -rf target/keycloak
-  git clone -b jakarta --depth 1 https://github.com/gsmet/keycloak.git target/keycloak
-  pushd target/keycloak
-  mvn -B -pl ':keycloak-admin-client-jakarta' -am clean install -DskipTests -DskipITs
-  popd
-
   # Build Narayana (temporary)
   rm -rf target/narayana
   git clone -b JBTM-3595-martin --depth 1 https://github.com/mmusgrov/narayana.git target/narayana

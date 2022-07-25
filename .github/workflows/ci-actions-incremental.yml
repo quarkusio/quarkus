@@ -311,6 +311,11 @@ jobs:
           }
 
     steps:
+      - name: Skip non-compilable modules for jakarta-rewrite branch
+        run: |
+          echo "EXCLUDE_JAKARTA_INCOMPATIBLE_MODULES=-pl "'!'":quarkus-integration-test-infinispan-client -pl "'!'":quarkus-integration-test-kafka-avro -pl "'!'":quarkus-integration-test-kafka-avro-apicurio2" >> $GITHUB_ENV
+        if: github.ref_name == 'jakarta-rewrite'
+
       - name: Stop mysql
         if: "!startsWith(matrix.java.os-name, 'windows')"
         shell: bash
@@ -351,7 +356,7 @@ jobs:
       - name: Build
         shell: bash
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools -pl !docs ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS $EXCLUDE_JAKARTA_INCOMPATIBLE_MODULES install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools -pl !docs ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Clean Gradle temp directory
         if: always()
         shell: bash

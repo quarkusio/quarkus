@@ -16,7 +16,7 @@ package io.quarkus.runtime;
  */
 public class ShutdownEvent {
 
-    private ShutdownReason shutdownReason;
+    private final ShutdownReason shutdownReason;
 
     public ShutdownEvent() {
         this.shutdownReason = ShutdownReason.STANDARD;

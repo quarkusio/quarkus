@@ -16,6 +16,7 @@ import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.search.orm.coordination.outboxpolling.runtime.HibernateSearchOutboxPollingRecorder;
 import io.quarkus.hibernate.search.orm.coordination.outboxpolling.runtime.HibernateSearchOutboxPollingRuntimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem;
+import io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchEnabled;
 import io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchIntegrationStaticConfiguredBuildItem;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit;
@@ -24,11 +25,7 @@ class HibernateSearchOutboxPollingProcessor {
 
     private static final String HIBERNATE_SEARCH_ORM_COORDINATION_OUTBOX_POLLING = "Hibernate Search ORM - Coordination - Outbox polling";
 
-    @BuildStep
-    void registerIndexedClasses() {
-    }
-
-    @BuildStep
+    @BuildStep(onlyIf = HibernateSearchEnabled.class)
     void registerInternalModel(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<AdditionalJpaModelBuildItem> additionalJpaModel) {
@@ -41,7 +38,7 @@ class HibernateSearchOutboxPollingProcessor {
         }
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = HibernateSearchEnabled.class)
     @Record(ExecutionTime.STATIC_INIT)
     void setStaticConfig(HibernateSearchOutboxPollingRecorder recorder,
             List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
@@ -59,7 +56,7 @@ class HibernateSearchOutboxPollingProcessor {
         }
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = HibernateSearchEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void setRuntimeConfig(HibernateSearchOutboxPollingRecorder recorder,
             HibernateSearchOutboxPollingRuntimeConfig runtimeConfig,

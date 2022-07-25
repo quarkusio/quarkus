@@ -53,7 +53,7 @@ public class HibernateSearchSupplier implements Supplier<HibernateSearchSupplier
     }
 
     private boolean isActive() {
-        return runtimeConfig.defaultPersistenceUnit.active;
+        return runtimeConfig.defaultPersistenceUnit.active.orElse(true);
     }
 
     public static Map<String, SearchMapping> searchMapping(Set<String> persistenceUnitNames) {

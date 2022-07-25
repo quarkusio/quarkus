@@ -48,6 +48,7 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElas
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfigPersistenceUnit.ElasticsearchIndexRuntimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.bean.HibernateSearchBeanUtil;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 @Recorder
 public class HibernateSearchElasticsearchRecorder {
@@ -74,6 +75,25 @@ public class HibernateSearchElasticsearchRecorder {
                 backendAndIndexNamesForSearchExtensions, integrationRuntimeInitListeners);
     }
 
+    public void checkNoExplicitActiveTrue(HibernateSearchElasticsearchRuntimeConfig runtimeConfig) {
+        for (var entry : runtimeConfig.getAllPersistenceUnitConfigsAsMap().entrySet()) {
+            var config = entry.getValue();
+            if (config.active.orElse(false)) {
+                var puName = entry.getKey();
+                String enabledPropertyKey = HibernateSearchElasticsearchRuntimeConfig.extensionPropertyKey("enabled");
+                String activePropertyKey = HibernateSearchElasticsearchRuntimeConfig.mapperPropertyKey(puName, "active");
+                throw new ConfigurationException(
+                        "Hibernate Search activated explicitly, but Hibernate Search was disabled at build time."
+                                + " If you want Hibernate Search to be active at runtime, you must set '" + enabledPropertyKey
+                                + "' to 'true' at build time."
+                                + " If you don't want Hibernate Search to be active at runtime, you must leave '"
+                                + activePropertyKey
+                                + "' unset or set it to 'false'.",
+                        Set.of(enabledPropertyKey, activePropertyKey));
+            }
+        }
+    }
+
     public HibernateOrmIntegrationRuntimeInitListener createRuntimeInitInactiveListener() {
         return new HibernateSearchIntegrationRuntimeInitInactiveListener();
     }
@@ -83,9 +103,9 @@ public class HibernateSearchElasticsearchRecorder {
         return new Supplier<SearchMapping>() {
             @Override
             public SearchMapping get() {
-                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit config = runtimeConfig
+                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puRuntimeConfig = runtimeConfig
                         .getAllPersistenceUnitConfigsAsMap().get(persistenceUnitName);
-                if (config != null && !config.active) {
+                if (puRuntimeConfig != null && !puRuntimeConfig.active.orElse(true)) {
                     throw new IllegalStateException(
                             "Cannot retrieve the SearchMapping: Hibernate Search was deactivated through configuration properties");
                 }
@@ -106,9 +126,9 @@ public class HibernateSearchElasticsearchRecorder {
         return new Supplier<SearchSession>() {
             @Override
             public SearchSession get() {
-                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit config = runtimeConfig
+                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puRuntimeConfig = runtimeConfig
                         .getAllPersistenceUnitConfigsAsMap().get(persistenceUnitName);
-                if (config != null && !config.active) {
+                if (puRuntimeConfig != null && !puRuntimeConfig.active.orElse(true)) {
                     throw new IllegalStateException(
                             "Cannot retrieve the SearchSession: Hibernate Search was deactivated through configuration properties");
                 }
@@ -303,7 +323,7 @@ public class HibernateSearchElasticsearchRecorder {
         @Override
         public void contributeRuntimeProperties(BiConsumer<String, Object> propertyCollector) {
             if (runtimeConfig != null) {
-                if (!runtimeConfig.active) {
+                if (!runtimeConfig.active.orElse(true)) {
                     addConfig(propertyCollector, HibernateOrmMapperSettings.ENABLED, false);
                     // Do not process other properties: Hibernate Search is disabled anyway.
                     return;

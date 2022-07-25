@@ -67,7 +67,8 @@ public final class QuarkusExtensionCodestartCatalog extends GenericCodestartCata
         QUARKIVERSE,
         DEVMODE_TEST,
         INTEGRATION_TESTS,
-        UNIT_TEST
+        UNIT_TEST,
+        EXTENSION_CODESTART
     }
 
     public enum Tooling implements DataKey {

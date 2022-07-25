@@ -46,6 +46,13 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
+{#if input.extra-codestarts.contains("extension-codestart")}
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devtools-testing</artifactId>
+            <scope>test</scope>
+        </dependency>
+{/if}
     </dependencies>
 
     <build>

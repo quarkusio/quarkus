@@ -4,7 +4,11 @@ import java.util.Optional;
 
 import picocli.CommandLine;
 
-public class ExtensionTestGenerationGroup {
+public class ExtensionCodeGenerationGroup {
+    @CommandLine.Option(names = { "-C",
+            "--codestart" }, description = "Generate extension codestart", negatable = true)
+    boolean codestart = false;
+
     @CommandLine.Option(names = { "--no-unit-test" }, description = "Generate unit tests", negatable = true)
     boolean unitTest = true;
 
@@ -20,6 +24,10 @@ public class ExtensionTestGenerationGroup {
             "--without-tests" }, description = "Do not generate any tests (disable all)")
     Optional<Boolean> withoutTests;
 
+    public boolean withCodestart() {
+        return codestart;
+    }
+
     public boolean skipUnitTest() {
         return withoutTests.orElse(!unitTest);
     }
@@ -34,7 +42,13 @@ public class ExtensionTestGenerationGroup {
 
     @Override
     public String toString() {
-        return "ExtensionTestGenerationGroup [devModeTest=" + devModeTest + ", integrationTests=" + integrationTests
-                + ", unitTest=" + unitTest + ", withoutTests=" + withoutTests + "]";
+        final StringBuilder sb = new StringBuilder("ExtensionCodeGenerationGroup{");
+        sb.append("codestart=").append(codestart);
+        sb.append(", unitTest=").append(unitTest);
+        sb.append(", integrationTests=").append(integrationTests);
+        sb.append(", devModeTest=").append(devModeTest);
+        sb.append(", withoutTests=").append(withoutTests);
+        sb.append('}');
+        return sb.toString();
     }
 }

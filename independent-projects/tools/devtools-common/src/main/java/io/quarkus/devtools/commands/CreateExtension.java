@@ -69,6 +69,7 @@ public class CreateExtension {
     private String itTestRelativeDir = "integration-tests";
     private String bomRelativeDir = "bom/application";
     private String extensionsRelativeDir = "extensions";
+    private boolean withCodestart;
 
     public CreateExtension(final Path baseDir) {
         this.baseDir = requireNonNull(baseDir, "extensionDirPath is required");
@@ -161,6 +162,11 @@ public class CreateExtension {
         return this;
     }
 
+    public CreateExtension withCodestart(boolean withCodestart) {
+        this.withCodestart = withCodestart;
+        return this;
+    }
+
     public CreateExtension withoutUnitTest(boolean withoutUnitTest) {
         this.builder.withoutUnitTest(withoutUnitTest);
         return this;
@@ -241,6 +247,12 @@ public class CreateExtension {
 
                 data.putIfAbsent(PARENT_RELATIVE_PATH, "../pom.xml");
                 itTestModel = readPom(workingDir.resolve(itTestRelativeDir));
+
+                if (withCodestart) {
+                    log.warn("\nExtension Codestart is not yet available for '%s' extension (skipped).\n",
+                            layoutType.toString().toLowerCase());
+                }
+
                 break;
             case QUARKIVERSE:
                 defaultVersion = DEFAULT_QUARKIVERSE_VERSION;
@@ -262,6 +274,9 @@ public class CreateExtension {
                 // TODO: Support Quarkiverse multi extensions repo
                 builder.addCodestart(QuarkusExtensionCodestartCatalog.Code.QUARKIVERSE.key());
                 builder.addCodestart(QuarkusExtensionCodestartCatalog.Tooling.GIT.key());
+                if (withCodestart) {
+                    builder.addCodestart(QuarkusExtensionCodestartCatalog.Code.EXTENSION_CODESTART.key());
+                }
                 itTestModel = getStandaloneTempModel(workingDir, runtimeArtifactId, defaultVersion);
                 break;
             default:
@@ -272,6 +287,10 @@ public class CreateExtension {
                 data.putIfAbsent(MAVEN_SUREFIRE_PLUGIN_VERSION, DEFAULT_SUREFIRE_PLUGIN_VERSION);
                 data.putIfAbsent(MAVEN_COMPILER_PLUGIN_VERSION, DEFAULT_COMPILER_PLUGIN_VERSION);
                 ensureRequiredStringData(QUARKUS_VERSION);
+
+                if (withCodestart) {
+                    builder.addCodestart(QuarkusExtensionCodestartCatalog.Code.EXTENSION_CODESTART.key());
+                }
 
                 // In standalone mode, the base pom is used as parent for integration tests
                 itTestModel = getStandaloneTempModel(workingDir, runtimeArtifactId, defaultVersion);

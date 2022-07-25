@@ -7,3 +7,10 @@ metadata:
 #  categories:
 #    - "miscellaneous"
 #  status: "preview"
+{#if input.extra-codestarts.contains("extension-codestart")}
+  codestart:
+    name: {extension.id}
+    languages:
+      - "java"
+    artifact: "{group-id}:{namespace.id}{extension.id}:codestarts:jar:$\{project.version}"
+{/if}

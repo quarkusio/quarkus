@@ -48,6 +48,7 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElas
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfigPersistenceUnit.ElasticsearchIndexRuntimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.bean.HibernateSearchBeanUtil;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 @Recorder
 public class HibernateSearchElasticsearchRecorder {
@@ -60,8 +61,8 @@ public class HibernateSearchElasticsearchRecorder {
                 backendAndIndexNamesForSearchExtensions, integrationStaticInitListeners);
     }
 
-    public HibernateOrmIntegrationStaticInitListener createDisabledStaticInitListener() {
-        return new HibernateSearchIntegrationDisabledListener();
+    public HibernateOrmIntegrationStaticInitListener createStaticInitInactiveListener() {
+        return new HibernateSearchIntegrationStaticInitInactiveListener();
     }
 
     public HibernateOrmIntegrationRuntimeInitListener createRuntimeInitListener(
@@ -74,8 +75,27 @@ public class HibernateSearchElasticsearchRecorder {
                 backendAndIndexNamesForSearchExtensions, integrationRuntimeInitListeners);
     }
 
-    public HibernateOrmIntegrationRuntimeInitListener createDisabledRuntimeInitListener() {
-        return new HibernateSearchIntegrationRuntimeInitDisabledListener();
+    public void checkNoExplicitActiveTrue(HibernateSearchElasticsearchRuntimeConfig runtimeConfig) {
+        for (var entry : runtimeConfig.getAllPersistenceUnitConfigsAsMap().entrySet()) {
+            var config = entry.getValue();
+            if (config.active.orElse(false)) {
+                var puName = entry.getKey();
+                String enabledPropertyKey = HibernateSearchElasticsearchRuntimeConfig.extensionPropertyKey("enabled");
+                String activePropertyKey = HibernateSearchElasticsearchRuntimeConfig.mapperPropertyKey(puName, "active");
+                throw new ConfigurationException(
+                        "Hibernate Search activated explicitly, but Hibernate Search was disabled at build time."
+                                + " If you want Hibernate Search to be active at runtime, you must set '" + enabledPropertyKey
+                                + "' to 'true' at build time."
+                                + " If you don't want Hibernate Search to be active at runtime, you must leave '"
+                                + activePropertyKey
+                                + "' unset or set it to 'false'.",
+                        Set.of(enabledPropertyKey, activePropertyKey));
+            }
+        }
+    }
+
+    public HibernateOrmIntegrationRuntimeInitListener createRuntimeInitInactiveListener() {
+        return new HibernateSearchIntegrationRuntimeInitInactiveListener();
     }
 
     public Supplier<SearchMapping> searchMappingSupplier(HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
@@ -83,11 +103,11 @@ public class HibernateSearchElasticsearchRecorder {
         return new Supplier<SearchMapping>() {
             @Override
             public SearchMapping get() {
-                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit config = runtimeConfig
+                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puRuntimeConfig = runtimeConfig
                         .getAllPersistenceUnitConfigsAsMap().get(persistenceUnitName);
-                if (config != null && !config.enabled) {
+                if (puRuntimeConfig != null && !puRuntimeConfig.active.orElse(true)) {
                     throw new IllegalStateException(
-                            "Cannot retrieve the SearchMapping: Hibernate Search was disabled through configuration properties");
+                            "Cannot retrieve the SearchMapping: Hibernate Search was deactivated through configuration properties");
                 }
                 SessionFactory sessionFactory;
                 if (isDefaultPersistenceUnit) {
@@ -106,11 +126,11 @@ public class HibernateSearchElasticsearchRecorder {
         return new Supplier<SearchSession>() {
             @Override
             public SearchSession get() {
-                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit config = runtimeConfig
+                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puRuntimeConfig = runtimeConfig
                         .getAllPersistenceUnitConfigsAsMap().get(persistenceUnitName);
-                if (config != null && !config.enabled) {
+                if (puRuntimeConfig != null && !puRuntimeConfig.active.orElse(true)) {
                     throw new IllegalStateException(
-                            "Cannot retrieve the SearchSession: Hibernate Search was disabled through configuration properties");
+                            "Cannot retrieve the SearchSession: Hibernate Search was deactivated through configuration properties");
                 }
                 Session session;
                 if (isDefaultPersistenceUnit) {
@@ -124,9 +144,9 @@ public class HibernateSearchElasticsearchRecorder {
         };
     }
 
-    private static final class HibernateSearchIntegrationDisabledListener
+    private static final class HibernateSearchIntegrationStaticInitInactiveListener
             implements HibernateOrmIntegrationStaticInitListener {
-        private HibernateSearchIntegrationDisabledListener() {
+        private HibernateSearchIntegrationStaticInitInactiveListener() {
         }
 
         @Override
@@ -260,10 +280,10 @@ public class HibernateSearchElasticsearchRecorder {
         }
     }
 
-    private static final class HibernateSearchIntegrationRuntimeInitDisabledListener
+    private static final class HibernateSearchIntegrationRuntimeInitInactiveListener
             implements HibernateOrmIntegrationRuntimeInitListener {
 
-        private HibernateSearchIntegrationRuntimeInitDisabledListener() {
+        private HibernateSearchIntegrationRuntimeInitInactiveListener() {
         }
 
         @Override
@@ -276,8 +296,8 @@ public class HibernateSearchElasticsearchRecorder {
         @Override
         public List<StandardServiceInitiator<?>> contributeServiceInitiators() {
             return List.of(
-                    // The service must be initiated even if Hibernate Search is disabled,
-                    // because it's also responsible for determining that Hibernate Search is disabled.
+                    // The service must be initiated even if Hibernate Search is not supposed to start,
+                    // because it's also responsible for determining that Hibernate Search should not start.
                     new HibernateSearchPreIntegrationService.Initiator());
         }
     }
@@ -303,7 +323,7 @@ public class HibernateSearchElasticsearchRecorder {
         @Override
         public void contributeRuntimeProperties(BiConsumer<String, Object> propertyCollector) {
             if (runtimeConfig != null) {
-                if (!runtimeConfig.enabled) {
+                if (!runtimeConfig.active.orElse(true)) {
                     addConfig(propertyCollector, HibernateOrmMapperSettings.ENABLED, false);
                     // Do not process other properties: Hibernate Search is disabled anyway.
                     return;
@@ -436,8 +456,8 @@ public class HibernateSearchElasticsearchRecorder {
             return List.of(
                     // One of the purposes of this service is to provide configuration to Hibernate Search,
                     // so it absolutely must be updated with the runtime configuration.
-                    // The service must be initiated even if Hibernate Search is disabled,
-                    // because it's also responsible for determining that Hibernate Search is disabled.
+                    // The service must be initiated even if Hibernate Search is not supposed to start,
+                    // because it's also responsible for determining that Hibernate Search should not start.
                     new HibernateSearchPreIntegrationService.Initiator());
         }
     }

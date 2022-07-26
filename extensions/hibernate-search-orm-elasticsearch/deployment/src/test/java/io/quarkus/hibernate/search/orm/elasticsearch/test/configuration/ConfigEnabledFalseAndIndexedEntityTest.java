@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.test.configuration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import javax.inject.Inject;
@@ -18,7 +19,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class ConfigDisabledAndIndexedEntityTest {
+public class ConfigEnabledFalseAndIndexedEntityTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
@@ -30,20 +31,16 @@ public class ConfigDisabledAndIndexedEntityTest {
     SessionFactory sessionFactory;
 
     @Test
-    public void testDisabled() {
-        assertThatThrownBy(() -> Arc.container().instance(SearchMapping.class).get())
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining(
-                        "Cannot retrieve the SearchMapping: Hibernate Search was disabled through configuration properties");
+    public void test() {
+        assertThat(Arc.container().instance(SearchMapping.class).get())
+                .isNull();
 
         assertThatThrownBy(() -> Search.mapping(sessionFactory))
                 .isInstanceOf(SearchException.class)
                 .hasMessageContaining("Hibernate Search was not initialized.");
 
-        assertThatThrownBy(() -> Arc.container().instance(SearchSession.class).get())
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining(
-                        "Cannot retrieve the SearchSession: Hibernate Search was disabled through configuration properties");
+        assertThat(Arc.container().instance(SearchSession.class).get())
+                .isNull();
 
         try (Session session = sessionFactory.openSession()) {
             assertThatThrownBy(() -> Search.session(session).search(IndexedEntity.class))

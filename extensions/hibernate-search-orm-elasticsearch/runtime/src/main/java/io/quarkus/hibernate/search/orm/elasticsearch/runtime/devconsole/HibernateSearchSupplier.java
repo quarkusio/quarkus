@@ -34,7 +34,7 @@ public class HibernateSearchSupplier implements Supplier<HibernateSearchSupplier
 
     @Override
     public IndexedPersistenceUnits get() {
-        if (!isEnabled()) {
+        if (!isActive()) {
             return new IndexedPersistenceUnits();
         }
         Map<String, SearchMapping> mappings = searchMapping(persistenceUnitNames);
@@ -52,8 +52,8 @@ public class HibernateSearchSupplier implements Supplier<HibernateSearchSupplier
                         }));
     }
 
-    private boolean isEnabled() {
-        return runtimeConfig.defaultPersistenceUnit.enabled;
+    private boolean isActive() {
+        return runtimeConfig.defaultPersistenceUnit.active.orElse(true);
     }
 
     public static Map<String, SearchMapping> searchMapping(Set<String> persistenceUnitNames) {

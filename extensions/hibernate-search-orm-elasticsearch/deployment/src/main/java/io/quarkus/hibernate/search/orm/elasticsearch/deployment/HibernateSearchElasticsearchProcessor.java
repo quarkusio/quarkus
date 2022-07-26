@@ -74,11 +74,13 @@ class HibernateSearchElasticsearchProcessor {
 
     HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig;
 
+    // Note this is necessary even if Hibernate Search is disabled
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     NativeImageFeatureBuildItem nativeImageFeature() {
         return new NativeImageFeatureBuildItem(DisableLoggingFeature.class);
     }
 
+    // Note this is necessary even if Hibernate Search is disabled
     @BuildStep
     void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
         // if the category changes, please also update DisableLoggingFeature in the runtime module
@@ -86,7 +88,33 @@ class HibernateSearchElasticsearchProcessor {
                 "org.hibernate.search.mapper.orm.bootstrap.impl.HibernateSearchPreIntegrationService", "HSEARCH000034"));
     }
 
-    @BuildStep
+    @BuildStep(onlyIfNot = HibernateSearchEnabled.class)
+    @Record(ExecutionTime.STATIC_INIT)
+    public void disableHibernateSearchStaticInit(HibernateSearchElasticsearchRecorder recorder,
+            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
+            BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticIntegrations) {
+        for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
+            String puName = puDescriptor.getPersistenceUnitName();
+            staticIntegrations.produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
+                    puName).setInitListener(recorder.createStaticInitInactiveListener()));
+        }
+    }
+
+    @BuildStep(onlyIfNot = HibernateSearchEnabled.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void disableHibernateSearchRuntimeInit(HibernateSearchElasticsearchRecorder recorder,
+            HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
+            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
+            BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeIntegrations) {
+        recorder.checkNoExplicitActiveTrue(runtimeConfig);
+        for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
+            String puName = puDescriptor.getPersistenceUnitName();
+            runtimeIntegrations.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
+                    puName).setInitListener(recorder.createRuntimeInitInactiveListener()));
+        }
+    }
+
+    @BuildStep(onlyIf = HibernateSearchEnabled.class)
     @Record(ExecutionTime.STATIC_INIT)
     public void build(HibernateSearchElasticsearchRecorder recorder,
             CombinedIndexBuildItem combinedIndexBuildItem,
@@ -156,11 +184,12 @@ class HibernateSearchElasticsearchProcessor {
         if (indexedAnnotationsForPU.isEmpty()) {
             // we don't have any indexed entity, we can disable Hibernate Search
             staticIntegrations.produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                    persistenceUnitName).setInitListener(recorder.createDisabledStaticInitListener()));
+                    persistenceUnitName).setInitListener(recorder.createStaticInitInactiveListener()));
             // we need a runtime listener even when Hibernate Search is disabled,
             // just to let Hibernate Search boot up until the point where it checks whether it's enabled or not
             runtimeIntegrations.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                    persistenceUnitName).setInitListener(recorder.createDisabledRuntimeInitListener()));
+                    persistenceUnitName)
+                    .setInitListener(recorder.createRuntimeInitInactiveListener()));
             return;
         }
 
@@ -176,7 +205,7 @@ class HibernateSearchElasticsearchProcessor {
                         backendNamesForIndexedEntities, backendAndIndexNamesForSearchExtensions));
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = HibernateSearchEnabled.class)
     void registerBeans(List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> searchEnabledPUs,
             BuildProducer<UnremovableBeanBuildItem> unremovableBean) {
         if (searchEnabledPUs.isEmpty()) {
@@ -189,7 +218,7 @@ class HibernateSearchElasticsearchProcessor {
                 ElasticsearchAnalysisConfigurer.class, IndexLayoutStrategy.class));
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = HibernateSearchEnabled.class)
     @Record(ExecutionTime.STATIC_INIT)
     void setStaticConfig(RecorderContext recorderContext, HibernateSearchElasticsearchRecorder recorder,
             List<HibernateSearchIntegrationStaticConfiguredBuildItem> integrationStaticConfigBuildItems,
@@ -224,7 +253,7 @@ class HibernateSearchElasticsearchProcessor {
         }
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = HibernateSearchEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void setRuntimeConfig(HibernateSearchElasticsearchRecorder recorder,
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
@@ -251,7 +280,7 @@ class HibernateSearchElasticsearchProcessor {
         }
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = HibernateSearchEnabled.class)
     public void processPersistenceUnitBuildTimeConfig(
             List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
@@ -358,7 +387,7 @@ class HibernateSearchElasticsearchProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, reflectiveClasses));
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = HibernateSearchEnabled.class)
     DevservicesElasticsearchBuildItem devServices(HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig) {
         if (buildTimeConfig.defaultPersistenceUnit != null && buildTimeConfig.defaultPersistenceUnit.defaultBackend != null
         // If the version is not set, the default backend is not in use.
@@ -376,7 +405,7 @@ class HibernateSearchElasticsearchProcessor {
         }
     }
 
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIf = HibernateSearchEnabled.class, onlyIfNot = IsNormal.class)
     void devServicesDropAndCreateAndDropByDefault(
             List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<DevServicesAdditionalConfigBuildItem> devServicesAdditionalConfigProducer) {

@@ -667,7 +667,6 @@ recipeList:
       oldArtifactId: keycloak-admin-client
       newGroupId: org.keycloak
       newArtifactId: keycloak-admin-client-jakarta
-      newVersion: 999-SNAPSHOT
   - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
       oldGroupId: org.keycloak
       oldArtifactId: keycloak-admin-client

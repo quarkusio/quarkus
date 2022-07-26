@@ -167,8 +167,12 @@ public class QuarkusMainIntegrationTestExtension implements BeforeEachCallback, 
                         System.setProperty(i.getKey(), i.getValue());
                     }
                 }
-                if (testResourceManager != null) {
-                    testResourceManager.close();
+                try {
+                    if (testResourceManager != null) {
+                        testResourceManager.close();
+                    }
+                } catch (Exception e) {
+                    System.err.println("Unable to shutdown resource: " + e.getMessage());
                 }
             }
         } catch (Exception e) {

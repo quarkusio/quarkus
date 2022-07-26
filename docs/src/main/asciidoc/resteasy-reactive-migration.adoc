@@ -104,8 +104,10 @@ RESTEasy Reactive does not support this feature. Instead, users that have provid
 using one of the methods described in the xref:cdi-reference.adoc#bean_discovery[Bean Discovery] section of the CDI guide.
 
 === Multipart support
-
 HTTP Multipart support in RESTEasy Reactive does **not** reuse the same types or annotations as RESTEasy Classic and thus users are encouraged to read <<resteasy-reactive#multipart,this>> part of the reference documentation.
+
+NOTE: Users migrating multipart resources to RESTEasy Reactive should be aware of the configuration parameter `quarkus.http.limits.max-form-attribute-size`, as this poses an upper limit to the size of each part.
+Any request with a part size exceeding this configuration value will result in HTTP status code 413.
 
 === Default media types
 

@@ -12,11 +12,11 @@
     <artifactId>quarkus-integration-test-jpa-db2</artifactId>
     <name>Quarkus - Integration Tests - JPA - DB2</name>
     <description>Module that contains JPA related tests running with the DB2 database</description>
-    
+
     <properties>
         <jdbc-db2.url>jdbc:db2://localhost:50000/hreact</jdbc-db2.url>
     </properties>
-    
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -188,7 +188,7 @@
                                             <color>cyan</color>
                                         </log>
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
+                                            <!-- good docs found at: https://dmp.fabric8.io/#build-healthcheck -->
                                             <log>.*INSTANCE.*</log>
                                             <!-- Unfortunately booting DB2 is slow, needs to set a generous (15m) timeout;
                                              it generally starts in 2-3 minutes, but it's been occasionally slightly above 10m -->

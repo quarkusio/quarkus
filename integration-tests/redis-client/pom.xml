@@ -173,7 +173,7 @@
                                         </log>
                                         <!-- Speed things up a bit by not actually flushing writes to disk -->
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#start-wait -->
+                                            <!-- good docs found at: https://dmp.fabric8.io/#start-wait -->
                                             <time>5000</time>
                                             <!-- wait until Redis is actually up by checking if we can ping the server-->
                                             <exec>

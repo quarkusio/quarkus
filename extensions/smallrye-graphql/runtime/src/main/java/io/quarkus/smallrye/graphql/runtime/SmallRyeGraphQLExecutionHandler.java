@@ -196,8 +196,8 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     }
 
     private String readBody(RoutingContext ctx) {
-        if (ctx.getBody() != null) {
-            return ctx.getBodyAsString();
+        if (ctx.body() != null) {
+            return ctx.body().asString();
         }
         return null;
     }

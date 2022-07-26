@@ -28,7 +28,7 @@ public class GraphQLTest extends AbstractGraphQLTest {
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
-                            CustomDirective.class, BusinessException.class)
+                            TestUnion.class, TestUnionMember.class, CustomDirective.class, BusinessException.class)
                     .addAsResource(new StringAsset(getPropertyAsString(configuration())), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
@@ -51,6 +51,8 @@ public class GraphQLTest extends AbstractGraphQLTest {
         Assertions.assertTrue(body.contains("enum Number {"));
         Assertions.assertTrue(body.contains("type TestPojo @customDirective(fields : [\"test-pojo\"])"));
         Assertions.assertTrue(body.contains("message: String @customDirective(fields : [\"message\"])"));
+        Assertions.assertTrue(body.contains("union TestUnion = TestUnionMember"));
+        Assertions.assertTrue(body.contains("testUnion: TestUnion"));
     }
 
     @Test
@@ -248,6 +250,30 @@ public class GraphQLTest extends AbstractGraphQLTest {
                 .statusCode(200)
                 .and()
                 .body(CoreMatchers.containsString("{\"data\":{\"context\":\"/context\"}}"));
+    }
+
+    @Test
+    public void testUnion() {
+        String unionRequest = getPayload("{\n" +
+                "  testUnion {\n" +
+                "    __typename\n" +
+                "    ... on TestUnionMember {\n" +
+                "      name\n" +
+                "    }\n" +
+                "  }\n" +
+                "}");
+
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(unionRequest)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body(CoreMatchers.containsString(
+                        "{\"data\":{\"testUnion\":{\"__typename\":\"TestUnionMember\",\"name\":\"what is my name\"}}}"));
     }
 
     private static Map<String, String> configuration() {

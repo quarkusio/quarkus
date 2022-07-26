@@ -83,6 +83,7 @@ import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Reference;
 import io.smallrye.graphql.schema.model.Schema;
 import io.smallrye.graphql.schema.model.Type;
+import io.smallrye.graphql.schema.model.UnionType;
 import io.smallrye.graphql.spi.EventingService;
 import io.smallrye.graphql.spi.LookupService;
 import io.vertx.core.Handler;
@@ -404,6 +405,7 @@ public class SmallRyeGraphQLProcessor {
         classes.addAll(getTypeClassNames(schema.getTypes().values()));
         classes.addAll(getInputClassNames(schema.getInputs().values()));
         classes.addAll(getInterfaceClassNames(schema.getInterfaces().values()));
+        classes.addAll(getUnionClassNames(schema.getUnions().values()));
         classes.addAll(getDirectiveTypeClassNames(schema.getDirectiveTypes()));
 
         return classes.toArray(String[]::new);
@@ -420,6 +422,7 @@ public class SmallRyeGraphQLProcessor {
         classes.add(graphql.schema.GraphQLInputObjectType.class);
         classes.add(graphql.schema.GraphQLInputType.class);
         classes.add(graphql.schema.GraphQLInterfaceType.class);
+        classes.add(graphql.schema.GraphQLUnionType.class);
         classes.add(graphql.schema.GraphQLList.class);
         classes.add(graphql.schema.GraphQLNonNull.class);
         classes.add(graphql.schema.GraphQLObjectType.class);
@@ -486,6 +489,14 @@ public class SmallRyeGraphQLProcessor {
         for (Type complexGraphQLType : complexGraphQLTypes) {
             classes.add(complexGraphQLType.getClassName());
             classes.addAll(getFieldClassNames(complexGraphQLType.getFields()));
+        }
+        return classes;
+    }
+
+    private Set<String> getUnionClassNames(Collection<UnionType> unionTypes) {
+        Set<String> classes = new HashSet<>();
+        for (UnionType unionType : unionTypes) {
+            classes.add(unionType.getClassName());
         }
         return classes;
     }

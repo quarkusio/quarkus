@@ -2,6 +2,7 @@ package io.quarkus.test.junit.mockito.internal;
 
 import java.lang.reflect.Field;
 
+import org.mockito.AdditionalAnswers;
 import org.mockito.Mockito;
 
 import io.quarkus.arc.runtime.ClientProxyUnwrapper;
@@ -18,7 +19,7 @@ public class CreateMockitoSpiesCallback implements QuarkusTestAfterConstructCall
                 InjectSpy injectSpyAnnotation = field.getAnnotation(InjectSpy.class);
                 if (injectSpyAnnotation != null) {
                     Object beanInstance = CreateMockitoMocksCallback.getBeanInstance(testInstance, field, InjectSpy.class);
-                    Object spy = createSpyAndSetTestField(testInstance, field, beanInstance);
+                    Object spy = createSpyAndSetTestField(testInstance, field, beanInstance, injectSpyAnnotation.delegate());
                     MockitoMocksTracker.track(testInstance, spy, beanInstance);
                 }
             }
@@ -26,9 +27,10 @@ public class CreateMockitoSpiesCallback implements QuarkusTestAfterConstructCall
         }
     }
 
-    private Object createSpyAndSetTestField(Object testInstance, Field field, Object beanInstance) {
-        ClientProxyUnwrapper unwrapper = new ClientProxyUnwrapper();
-        Object spy = Mockito.spy(unwrapper.apply(beanInstance));
+    private Object createSpyAndSetTestField(Object testInstance, Field field, Object beanInstance, boolean delegate) {
+        Object unwrapped = new ClientProxyUnwrapper().apply(beanInstance);
+        Object spy = delegate ? Mockito.mock(unwrapped.getClass(), AdditionalAnswers.delegatesTo(unwrapped))
+                : Mockito.spy(unwrapped);
         field.setAccessible(true);
         try {
             field.set(testInstance, spy);

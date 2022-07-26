@@ -13,6 +13,6 @@ public class RabbitHttpPortFinder {
     String httpPort;
 
     void collect(@Observes StartupEvent event, Config config) {
-        httpPort = config.getValue("rabbitmq-http-port", String.class);
+        httpPort = config.getOptionalValue("rabbitmq-http-port", String.class).orElse(null);
     }
 }

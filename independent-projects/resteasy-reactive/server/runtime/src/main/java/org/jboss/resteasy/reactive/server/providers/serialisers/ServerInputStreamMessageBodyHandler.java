@@ -10,11 +10,12 @@ import javax.ws.rs.ext.Provider;
 import org.jboss.resteasy.reactive.common.providers.serialisers.InputStreamMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 @Provider
 public class ServerInputStreamMessageBodyHandler extends InputStreamMessageBodyHandler
-        implements ServerMessageBodyReader<InputStream> {
+        implements ServerMessageBodyReader<InputStream>, ServerMessageBodyWriter<InputStream> {
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
@@ -33,4 +34,15 @@ public class ServerInputStreamMessageBodyHandler extends InputStreamMessageBodyH
         return -1;
     }
 
+    @Override
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+            MediaType mediaType) {
+        return super.isWriteable(type, null, null, null);
+    }
+
+    @Override
+    public void writeResponse(InputStream is, Type genericType, ServerRequestContext context)
+            throws WebApplicationException, IOException {
+        writeTo(is, context.getOrCreateOutputStream());
+    }
 }

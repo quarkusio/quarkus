@@ -3,8 +3,10 @@ package io.quarkus.it.rest.client.multipart;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +27,7 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestQuery;
+import org.jboss.resteasy.reactive.RestResponse;
 
 import io.quarkus.it.rest.client.multipart.MultipartClient.FileWithPojo;
 import io.quarkus.it.rest.client.multipart.MultipartClient.Pojo;
@@ -141,12 +144,7 @@ public class MultipartResource {
         WithFileAsBinaryFile data = new WithFileAsBinaryFile();
 
         if (!nullFile) {
-            File tempFile = File.createTempFile("quarkus-test", ".bin");
-            tempFile.deleteOnExit();
-
-            try (FileOutputStream fileOutputStream = new FileOutputStream(tempFile)) {
-                fileOutputStream.write(HELLO_WORLD.getBytes());
-            }
+            File tempFile = createTempHelloWorldFile();
 
             data.file = tempFile;
         }
@@ -163,12 +161,7 @@ public class MultipartResource {
         WithPathAsBinaryFile data = new WithPathAsBinaryFile();
 
         if (!nullFile) {
-            File tempFile = File.createTempFile("quarkus-test", ".bin");
-            tempFile.deleteOnExit();
-
-            try (FileOutputStream fileOutputStream = new FileOutputStream(tempFile)) {
-                fileOutputStream.write(HELLO_WORLD.getBytes());
-            }
+            File tempFile = createTempHelloWorldFile();
 
             data.file = tempFile.toPath();
         }
@@ -206,12 +199,7 @@ public class MultipartResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Blocking
     public String sendFileAsText() throws IOException {
-        File tempFile = File.createTempFile("quarkus-test", ".bin");
-        tempFile.deleteOnExit();
-
-        try (FileOutputStream fileOutputStream = new FileOutputStream(tempFile)) {
-            fileOutputStream.write(HELLO_WORLD.getBytes());
-        }
+        File tempFile = createTempHelloWorldFile();
 
         WithFileAsTextFile data = new WithFileAsTextFile();
         data.file = tempFile;
@@ -225,12 +213,7 @@ public class MultipartResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Blocking
     public String sendPathAsText() throws IOException {
-        File tempFile = File.createTempFile("quarkus-test", ".bin");
-        tempFile.deleteOnExit();
-
-        try (FileOutputStream fileOutputStream = new FileOutputStream(tempFile)) {
-            fileOutputStream.write(HELLO_WORLD.getBytes());
-        }
+        File tempFile = createTempHelloWorldFile();
 
         WithPathAsTextFile data = new WithPathAsTextFile();
         data.file = tempFile.toPath();
@@ -276,17 +259,33 @@ public class MultipartResource {
     @Path("/produces/multipart")
     @Produces(MediaType.MULTIPART_FORM_DATA)
     public MultipartBodyWithTextFile produceMultipart() throws IOException {
+        File tempFile = createTempHelloWorldFile();
+
+        MultipartBodyWithTextFile data = new MultipartBodyWithTextFile();
+        data.file = tempFile;
+        data.number = String.valueOf(NUMBER);
+        return data;
+    }
+
+    @GET
+    @Path("/produces/input-stream-rest-response")
+    public RestResponse<? extends InputStream> produceInputStreamRestResponse() throws IOException {
+        File tempFile = createTempHelloWorldFile();
+        FileInputStream is = new FileInputStream(tempFile);
+        return RestResponse.ResponseBuilder
+                .ok(is)
+                .type(MediaType.TEXT_PLAIN_TYPE)
+                .build();
+    }
+
+    private File createTempHelloWorldFile() throws IOException {
         File tempFile = File.createTempFile("quarkus-test", ".bin");
         tempFile.deleteOnExit();
 
         try (FileOutputStream fileOutputStream = new FileOutputStream(tempFile)) {
             fileOutputStream.write(HELLO_WORLD.getBytes());
         }
-
-        MultipartBodyWithTextFile data = new MultipartBodyWithTextFile();
-        data.file = tempFile;
-        data.number = String.valueOf(NUMBER);
-        return data;
+        return tempFile;
     }
 
     private boolean containsHelloWorld(File file) {

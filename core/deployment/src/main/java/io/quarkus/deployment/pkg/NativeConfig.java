@@ -16,7 +16,7 @@ import io.quarkus.runtime.util.ContainerRuntimeUtil;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class NativeConfig {
 
-    public static final String DEFAULT_GRAALVM_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-native-image:22.1-java17";
+    public static final String DEFAULT_GRAALVM_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-native-image:22.2-java17";
     public static final String DEFAULT_MANDREL_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-mandrel:22.1-java17";
 
     /**

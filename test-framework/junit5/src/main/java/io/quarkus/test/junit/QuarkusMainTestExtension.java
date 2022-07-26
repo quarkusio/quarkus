@@ -214,16 +214,16 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
             if (!InitialConfigurator.DELAYED_HANDLER.isActivated()) {
                 activateLogging();
             }
-
+            throw e;
+        } finally {
             try {
                 if (testResourceManager != null) {
                     testResourceManager.close();
                 }
-            } catch (Exception ex) {
-                e.addSuppressed(ex);
+            } catch (Exception e) {
+                System.err.println("Unable to shutdown resource: " + e.getMessage());
             }
-            throw e;
-        } finally {
+
             uninstallLoggerRedirect();
             QuarkusConsole.uninstallRedirects();
             if (originalCl != null) {

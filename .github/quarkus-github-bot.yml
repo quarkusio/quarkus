@@ -363,6 +363,7 @@ triage:
         - .github/dependabot.yml
         - bom/
         - build-parent/
+      allowSecondPass: true
     - labels: [area/devtools]
       directories:
         - devtools/

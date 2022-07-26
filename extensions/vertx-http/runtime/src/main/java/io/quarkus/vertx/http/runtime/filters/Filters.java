@@ -14,11 +14,11 @@ import io.vertx.ext.web.RoutingContext;
  * <pre>
  * {@code
  * public void init(@Observes Filters filters) {
- *      filters.register(rc -> {
- *          // Do something before the next filter or route
- *          rc.next();
+ *     filters.register(rc -> {
+ *         // Do something before the next filter or route
+ *         rc.next();
  *         // Do something after
- *      }, 10);
+ *     }, 10);
  * }
  * }
  * </pre>

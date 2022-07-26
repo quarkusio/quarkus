@@ -40,24 +40,21 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
      *
      * <pre>
      * {@code
-     *     &#64;DELETE
-     *     &#64;Path("{id}")
-     *     &#64;LinkResource(
-     *         rel = "remove",
-     *         entityClassName = "com.example.Entity"
-     *     )
-     *     public Response delete(@PathParam("id") ID id) throws RestDataPanacheException {
-     *         try {
-     *             boolean deleted = restDataResource.delete(id);
-     *             if (deleted) {
-     *                 return Response.noContent().build();
-     *             } else {
-     *                 return Response.status(404).build();
-     *             }
-     *         } catch (Throwable t) {
-     *             throw new RestDataPanacheException(t);
+     * &#64;DELETE
+     * &#64;Path("{id}")
+     * &#64;LinkResource(rel = "remove", entityClassName = "com.example.Entity")
+     * public Response delete(@PathParam("id") ID id) throws RestDataPanacheException {
+     *     try {
+     *         boolean deleted = restDataResource.delete(id);
+     *         if (deleted) {
+     *             return Response.noContent().build();
+     *         } else {
+     *             return Response.status(404).build();
      *         }
+     *     } catch (Throwable t) {
+     *         throw new RestDataPanacheException(t);
      *     }
+     * }
      * }
      * </pre>
      *
@@ -66,19 +63,17 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
      *
      * <pre>
      * {@code
-     *     &#64;DELETE
-     *     &#64;Path("{id}")
-     *     &#64;LinkResource(
-     *         rel = "remove",
-     *         entityClassName = "com.example.Entity"
-     *     )
-     *     public Uni<Response> delete(@PathParam("id") ID id) throws RestDataPanacheException {
-     *         try {
-     *             return restDataResource.delete(id).map(deleted -> deleted ? Response.noContent().build() : Response.status(404).build());
-     *         } catch (Throwable t) {
-     *             throw new RestDataPanacheException(t);
-     *         }
+     * &#64;DELETE
+     * &#64;Path("{id}")
+     * &#64;LinkResource(rel = "remove", entityClassName = "com.example.Entity")
+     * public Uni<Response> delete(@PathParam("id") ID id) throws RestDataPanacheException {
+     *     try {
+     *         return restDataResource.delete(id)
+     *                 .map(deleted -> deleted ? Response.noContent().build() : Response.status(404).build());
+     *     } catch (Throwable t) {
+     *         throw new RestDataPanacheException(t);
      *     }
+     * }
      * }
      * </pre>
      */

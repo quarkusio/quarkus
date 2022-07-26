@@ -29,6 +29,10 @@ public class InputStreamMessageBodyHandler implements MessageBodyWriter<InputStr
     @Override
     public void writeTo(InputStream inputStream, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+        writeTo(inputStream, entityStream);
+    }
+
+    protected void writeTo(InputStream inputStream, OutputStream entityStream) throws IOException {
         try {
             byte[] buffer = new byte[8192];
             int c;

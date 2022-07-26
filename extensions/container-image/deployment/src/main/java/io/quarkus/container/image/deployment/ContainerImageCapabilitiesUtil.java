@@ -1,6 +1,5 @@
 package io.quarkus.container.image.deployment;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -11,14 +10,12 @@ import io.quarkus.deployment.Capability;
 
 public final class ContainerImageCapabilitiesUtil {
 
-    public final static Map<String, String> CAPABILITY_TO_EXTENSION_NAME = new HashMap<>();
-    static {
-        CAPABILITY_TO_EXTENSION_NAME.put(Capability.CONTAINER_IMAGE_JIB, "quarkus-container-image-jib");
-        CAPABILITY_TO_EXTENSION_NAME.put(Capability.CONTAINER_IMAGE_DOCKER, "quarkus-container-image-docker");
-        CAPABILITY_TO_EXTENSION_NAME.put(Capability.CONTAINER_IMAGE_S2I, "quarkus-container-image-s2i");
-        CAPABILITY_TO_EXTENSION_NAME.put(Capability.CONTAINER_IMAGE_OPENSHIFT, "quarkus-container-image-openshift");
-        CAPABILITY_TO_EXTENSION_NAME.put(Capability.CONTAINER_IMAGE_BUILDPACK, "quarkus-container-image-buildpack");
-    }
+    public final static Map<String, String> CAPABILITY_TO_EXTENSION_NAME = Map.of(
+            Capability.CONTAINER_IMAGE_JIB, "quarkus-container-image-jib",
+            Capability.CONTAINER_IMAGE_DOCKER, "quarkus-container-image-docker",
+            Capability.CONTAINER_IMAGE_S2I, "quarkus-container-image-s2i",
+            Capability.CONTAINER_IMAGE_OPENSHIFT, "quarkus-container-image-openshift",
+            Capability.CONTAINER_IMAGE_BUILDPACK, "quarkus-container-image-buildpack");
 
     private ContainerImageCapabilitiesUtil() {
     }

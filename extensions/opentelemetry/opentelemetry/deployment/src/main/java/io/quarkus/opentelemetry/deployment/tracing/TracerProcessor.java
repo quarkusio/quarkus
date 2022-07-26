@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -61,8 +62,19 @@ public class TracerProcessor {
 
         @Override
         public boolean getAsBoolean() {
-            return IS_MICROMETER_EXTENSION_AVAILABLE && ConfigProvider.getConfig()
-                    .getOptionalValue("quarkus.micrometer.binder.http-server.enabled", Boolean.class).orElse(true);
+            Config config = ConfigProvider.getConfig();
+            if (IS_MICROMETER_EXTENSION_AVAILABLE) {
+                if (config.getOptionalValue("quarkus.micrometer.enabled", Boolean.class).orElse(true)) {
+                    Optional<Boolean> httpServerEnabled = config
+                            .getOptionalValue("quarkus.micrometer.binder.http-server.enabled", Boolean.class);
+                    if (httpServerEnabled.isPresent()) {
+                        return httpServerEnabled.get();
+                    } else {
+                        return config.getOptionalValue("quarkus.micrometer.binder-enabled-default", Boolean.class).orElse(true);
+                    }
+                }
+            }
+            return false;
         }
     }
 

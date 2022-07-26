@@ -429,6 +429,16 @@ The generated manifest can be applied to the cluster from the project root using
 kubectl apply -f target/kubernetes/kubernetes.yml -n=development
 ----
 
+
+[NOTE]
+====
+Please note that if you use Elliptic Curve keys with Stork and are getting exceptions like `java.lang.ClassNotFoundException: org.bouncycastle.jce.provider.BouncyCastleProvider`, then adding a BouncyCastle PKIX dependency (`org.bouncycastle:bcpkix-jdk15on`) is required.
+
+Note that internally an `org.bouncycastle.jce.provider.BouncyCastleProvider` provider will be registered if it has not already been registered.
+
+You can have this provider registered as described in the xref:security-customization.adoc#bouncy-castle[BouncyCastle] or xref:security-customization.adoc#bouncy-castle-fips[BouncyCastle FIPS] sections.
+====
+
 We're done!
 So, let's see if it works.
 

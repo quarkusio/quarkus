@@ -43,7 +43,7 @@
         <smallrye-config.version>2.10.1</smallrye-config.version>
         <smallrye-health.version>3.2.1</smallrye-health.version>
         <smallrye-metrics.version>3.0.5</smallrye-metrics.version>
-        <smallrye-open-api.version>2.1.22</smallrye-open-api.version>
+        <smallrye-open-api.version>2.1.23</smallrye-open-api.version>
         <smallrye-graphql.version>1.6.0</smallrye-graphql.version>
         <smallrye-opentracing.version>2.1.0</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>5.5.0</smallrye-fault-tolerance.version>
@@ -116,7 +116,7 @@
         <httpasync.version>4.1.5</httpasync.version>
         <cronutils.version>9.1.6</cronutils.version>
         <quartz.version>2.3.2</quartz.version>
-        <h2.version>2.1.210</h2.version>
+        <h2.version>2.1.214</h2.version>
         <postgresql-jdbc.version>42.4.0</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.0.6</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.29</mysql-jdbc.version>

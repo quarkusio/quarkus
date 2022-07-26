@@ -71,7 +71,7 @@ public class RestClientOpenTelemetryTest {
 
         SpanData client = spans.get(1);
         assertEquals(CLIENT, client.getKind());
-        assertEquals("/hello", client.getName());
+        assertEquals("HTTP GET", client.getName());
         assertEquals(HTTP_OK, client.getAttributes().get(HTTP_STATUS_CODE));
         assertEquals(HttpMethod.GET, client.getAttributes().get(HTTP_METHOD));
         assertEquals(uri.toString() + "hello", client.getAttributes().get(HTTP_URL));
@@ -89,7 +89,7 @@ public class RestClientOpenTelemetryTest {
 
         SpanData client = spans.get(1);
         assertEquals(CLIENT, client.getKind());
-        assertEquals("/hello", client.getName());
+        assertEquals("HTTP GET", client.getName());
         assertEquals(HTTP_OK, client.getAttributes().get(HTTP_STATUS_CODE));
         assertEquals(HttpMethod.GET, client.getAttributes().get(HTTP_METHOD));
         assertEquals(uri.toString() + "hello?query=1", client.getAttributes().get(HTTP_URL));
@@ -109,7 +109,7 @@ public class RestClientOpenTelemetryTest {
 
         SpanData client = spans.get(1);
         assertEquals(CLIENT, client.getKind());
-        assertEquals("/hello", client.getName());
+        assertEquals("HTTP GET", client.getName());
         assertEquals(HTTP_OK, client.getAttributes().get(HTTP_STATUS_CODE));
         assertEquals(HttpMethod.GET, client.getAttributes().get(HTTP_METHOD));
         assertEquals(uri.toString() + "hello?query=1", client.getAttributes().get(HTTP_URL));
@@ -136,7 +136,7 @@ public class RestClientOpenTelemetryTest {
 
         SpanData client = spans.get(1);
         assertEquals(CLIENT, client.getKind());
-        assertEquals("/hello/{path}", client.getName());
+        assertEquals("HTTP GET", client.getName());
         assertEquals(HTTP_OK, client.getAttributes().get(HTTP_STATUS_CODE));
         assertEquals(HttpMethod.GET, client.getAttributes().get(HTTP_METHOD));
         assertEquals(uri.toString() + "hello/another", client.getAttributes().get(HTTP_URL));

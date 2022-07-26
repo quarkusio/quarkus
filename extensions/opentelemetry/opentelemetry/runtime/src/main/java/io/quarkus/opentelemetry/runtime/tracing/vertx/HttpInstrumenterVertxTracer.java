@@ -5,6 +5,7 @@ import static io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteSo
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_CLIENT_IP;
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryConfig.INSTRUMENTATION_NAME;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -150,7 +151,7 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
                 return route;
             }
 
-            if (HttpResponseStatus.NOT_FOUND.code() == response.statusCode()) {
+            if (response != null && HttpResponseStatus.NOT_FOUND.code() == response.statusCode()) {
                 return "/*";
             }
 
@@ -230,12 +231,12 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
 
         @Override
         public Integer statusCode(final HttpRequest request, final HttpResponse response) {
-            return response.statusCode();
+            return response != null ? response.statusCode() : null;
         }
 
         @Override
         public Long responseContentLength(final HttpRequest request, final HttpResponse response) {
-            return getContentLength(response.headers());
+            return response != null ? getContentLength(response.headers()) : null;
         }
 
         @Override
@@ -245,7 +246,7 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
 
         @Override
         public List<String> responseHeader(final HttpRequest request, final HttpResponse response, final String name) {
-            return response.headers().getAll(name);
+            return response != null ? response.headers().getAll(name) : Collections.emptyList();
         }
 
         private static Long getContentLength(final MultiMap headers) {

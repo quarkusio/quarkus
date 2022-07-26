@@ -394,8 +394,8 @@ The following parameter types will be supported out of the box:
 |link:{jdkapi}/java/math/BigDecimal.html[`BigDecimal`], link:{jdkapi}/java/math/BigInteger.html[`BigInteger`]
 |Large integers and decimals.
 
-|link:{jsonpapi}/javax/json/JsonArray.html[`JsonArray`], link:{jsonpapi}/javax/json/JsonArray.html[`JsonObject`],
-link:{jsonpapi}/javax/json/JsonArray.html[`JsonStructure`], link:{jsonpapi}/javax/json/JsonArray.html[`JsonValue`]
+|link:{jsonpapi}/javax/json/JsonArray.html[`JsonArray`], link:{jsonpapi}/javax/json/JsonObject.html[`JsonObject`],
+link:{jsonpapi}/javax/json/JsonStructure.html[`JsonStructure`], link:{jsonpapi}/javax/json/JsonValue.html[`JsonValue`]
 |JSON value types  
 
 |link:{vertxapi}io/vertx/core/buffer/Buffer.html[`Buffer`]

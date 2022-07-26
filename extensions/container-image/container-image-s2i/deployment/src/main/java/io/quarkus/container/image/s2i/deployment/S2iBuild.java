@@ -6,7 +6,7 @@ import io.quarkus.container.image.deployment.ContainerImageConfig;
 
 public class S2iBuild implements BooleanSupplier {
 
-    private ContainerImageConfig containerImageConfig;
+    private final ContainerImageConfig containerImageConfig;
 
     S2iBuild(ContainerImageConfig containerImageConfig) {
         this.containerImageConfig = containerImageConfig;

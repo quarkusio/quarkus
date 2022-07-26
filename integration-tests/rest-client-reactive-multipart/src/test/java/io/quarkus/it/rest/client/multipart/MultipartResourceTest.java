@@ -229,6 +229,15 @@ public class MultipartResourceTest {
         // @formatter:on
     }
 
+    @Test
+    public void shouldProducesInputStreamRestResponse() {
+        RestAssured.get("/produces/input-stream-rest-response")
+                .then()
+                .contentType(ContentType.TEXT)
+                .statusCode(200)
+                .body(equalTo("HELLO WORLD"));
+    }
+
     private void assertMultipartResponseContains(String response, String name, String contentType, Object value) {
         String[] lines = response.split("--");
         assertThat(lines).anyMatch(line -> line.contains(String.format(EXPECTED_CONTENT_DISPOSITION_PART, name))

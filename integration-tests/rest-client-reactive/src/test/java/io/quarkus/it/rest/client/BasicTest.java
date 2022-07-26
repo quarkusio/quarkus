@@ -154,10 +154,10 @@ public class BasicTest {
                 Assertions.assertNotNull(spanData.get("attr_http.client_ip"));
                 Assertions.assertNotNull(spanData.get("attr_http.user_agent"));
             } else if (spanData.get("kind").equals(SpanKind.CLIENT.toString())
-                    && spanData.get("name").equals("/hello")) {
+                    && spanData.get("name").equals("HTTP POST")) {
                 clientFound = true;
                 // Client span
-                Assertions.assertEquals("/hello", spanData.get("name"));
+                Assertions.assertEquals("HTTP POST", spanData.get("name"));
 
                 Assertions.assertEquals(SpanKind.CLIENT.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));

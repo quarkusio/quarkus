@@ -59,7 +59,7 @@ public class ExtensionProcessorTest extends PlatformAwareTestBase {
         final Extension kotlin = findExtension(catalog, "quarkus-kotlin");
         final ExtensionProcessor extensionProcessor = ExtensionProcessor.of(kotlin);
         assertThat(extensionProcessor.getSyntheticMetadata())
-                .containsEntry("status", List.of("preview"))
+                .containsEntry("status", List.of("stable"))
                 .containsEntry("origin", List.of("platform"));
         assertThat(extensionProcessor.getShortName()).contains("");
         assertThat(extensionProcessor.getCategories()).contains("alt-languages");

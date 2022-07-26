@@ -368,7 +368,7 @@ public class ExtensionsResourceTest {
 }
 ----
 
-The code above uses link:http://rest-assured.io/[REST Assured]'s link:https://github.com/rest-assured/rest-assured/wiki/GettingStarted#jsonpath[json-path] capabilities.
+The code above uses link:https://rest-assured.io/[REST Assured]'s link:https://github.com/rest-assured/rest-assured/wiki/GettingStarted#jsonpath[json-path] capabilities.
 
 
 [#async-support]

@@ -72,7 +72,7 @@ public class HttpRequestMessageMock implements HttpRequestMessage<Optional<Strin
     public void setBody(String body) {
         this.body = body;
         if (body != null) {
-            // See http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.3
+            // See https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.3
             getHeaders().put("Content-Length", Integer.toString(body.length()));
         }
     }

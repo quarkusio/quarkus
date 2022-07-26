@@ -198,7 +198,7 @@
                                         </log>
                                         <!-- Speed things up a bit by not actually flushing writes to disk -->
                                         <tmpfs>/var/lib/mysql</tmpfs>
-                                        <!-- good docs found at: http://dmp.fabric8.io/#start-wait -->
+                                        <!-- good docs found at: https://dmp.fabric8.io/#start-wait -->
                                         <wait>
                                             <time>20000</time>
                                             <healthy>true</healthy>

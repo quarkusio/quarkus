@@ -195,7 +195,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
 
         HttpContent requestContent = LastHttpContent.EMPTY_LAST_CONTENT;
         if (request.getBody() != null) {
-            // See http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.3
+            // See https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.3
             nettyRequest.headers().add(HttpHeaderNames.TRANSFER_ENCODING, "chunked");
             if (request.isBase64Encoded()) {
                 ByteBuf body = Unpooled.wrappedBuffer(Base64.getDecoder().decode(request.getBody()));

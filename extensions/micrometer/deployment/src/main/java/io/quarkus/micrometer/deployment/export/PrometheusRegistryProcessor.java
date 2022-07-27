@@ -7,6 +7,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.micrometer.deployment.MicrometerRegistryProviderBuildItem;
@@ -22,6 +23,7 @@ import io.quarkus.vertx.http.deployment.RouteBuildItem;
  * be available at deployment time for some projects: Avoid direct class
  * references.
  */
+@BuildSteps(onlyIf = PrometheusRegistryProcessor.PrometheusEnabled.class)
 public class PrometheusRegistryProcessor {
     private static final Logger log = Logger.getLogger(PrometheusRegistryProcessor.class);
 
@@ -36,7 +38,7 @@ public class PrometheusRegistryProcessor {
         }
     }
 
-    @BuildStep(onlyIf = PrometheusEnabled.class)
+    @BuildStep
     MicrometerRegistryProviderBuildItem createPrometheusRegistry(MicrometerConfig config,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
@@ -53,7 +55,7 @@ public class PrometheusRegistryProcessor {
         return new MicrometerRegistryProviderBuildItem(REGISTRY_CLASS);
     }
 
-    @BuildStep(onlyIf = PrometheusEnabled.class)
+    @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT)
     void createPrometheusRoute(BuildProducer<RouteBuildItem> routes,
             MicrometerConfig mConfig,

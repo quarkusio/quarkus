@@ -31,6 +31,7 @@ import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -53,6 +54,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 
+@BuildSteps(onlyIf = MicrometerProcessor.MicrometerEnabled.class)
 public class MicrometerProcessor {
     private static final DotName METER_REGISTRY = DotName.createSimple(MeterRegistry.class.getName());
     private static final DotName METER_BINDER = DotName.createSimple(MeterBinder.class.getName());
@@ -75,33 +77,25 @@ public class MicrometerProcessor {
 
     MicrometerConfig mConfig;
 
-    /**
-     * config objects are beans, but they are not unremovable by default
-     */
     @BuildStep
-    UnremovableBeanBuildItem mpConfigAsBean() {
-        return UnremovableBeanBuildItem.beanTypes(MicrometerConfig.class);
-    }
-
-    @BuildStep(onlyIf = MicrometerEnabled.class)
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.MICROMETER);
     }
 
-    @BuildStep(onlyIf = MicrometerEnabled.class, onlyIfNot = PrometheusRegistryProcessor.PrometheusEnabled.class)
+    @BuildStep(onlyIfNot = PrometheusRegistryProcessor.PrometheusEnabled.class)
     MetricsCapabilityBuildItem metricsCapabilityBuildItem() {
         return new MetricsCapabilityBuildItem(MetricsFactory.MICROMETER::equals,
                 null);
     }
 
-    @BuildStep(onlyIf = { MicrometerEnabled.class, PrometheusRegistryProcessor.PrometheusEnabled.class })
+    @BuildStep(onlyIf = { PrometheusRegistryProcessor.PrometheusEnabled.class })
     MetricsCapabilityBuildItem metricsCapabilityPrometheusBuildItem(
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         return new MetricsCapabilityBuildItem(MetricsFactory.MICROMETER::equals,
                 nonApplicationRootPathBuildItem.resolvePath(mConfig.export.prometheus.path));
     }
 
-    @BuildStep(onlyIf = MicrometerEnabled.class)
+    @BuildStep
     UnremovableBeanBuildItem registerAdditionalBeans(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<MicrometerRegistryProviderBuildItem> providerClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -147,7 +141,7 @@ public class MicrometerProcessor {
         return UnremovableBeanBuildItem.beanTypes(METER_REGISTRY, METER_BINDER, METER_FILTER, NAMING_CONVENTION);
     }
 
-    @BuildStep(onlyIf = MicrometerEnabled.class)
+    @BuildStep
     AnnotationsTransformerBuildItem processAnnotatedMetrics(
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers) {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
@@ -171,7 +165,7 @@ public class MicrometerProcessor {
         });
     }
 
-    @BuildStep(onlyIf = MicrometerEnabled.class)
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     RootMeterRegistryBuildItem createRootRegistry(MicrometerRecorder recorder,
             MicrometerConfig config,
@@ -185,7 +179,7 @@ public class MicrometerProcessor {
         return new RootMeterRegistryBuildItem(registry);
     }
 
-    @BuildStep(onlyIf = MicrometerEnabled.class)
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void registerExtensionMetrics(MicrometerRecorder recorder,
             RootMeterRegistryBuildItem rootMeterRegistryBuildItem,
@@ -199,7 +193,7 @@ public class MicrometerProcessor {
         }
     }
 
-    @BuildStep(onlyIf = MicrometerEnabled.class)
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void configureRegistry(MicrometerRecorder recorder,
             MicrometerConfig config,

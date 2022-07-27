@@ -6,6 +6,7 @@ import javax.interceptor.Interceptor;
 
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
@@ -20,6 +21,7 @@ import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
  *
  * Avoid referencing classes that in turn import optional dependencies.
  */
+@BuildSteps(onlyIf = VertxBinderProcessor.VertxBinderEnabled.class)
 public class VertxBinderProcessor {
     static final String METRIC_OPTIONS_CLASS_NAME = "io.vertx.core.metrics.MetricsOptions";
     static final Class<?> METRIC_OPTIONS_CLASS = MicrometerRecorder.getClassForName(METRIC_OPTIONS_CLASS_NAME);
@@ -32,13 +34,13 @@ public class VertxBinderProcessor {
         }
     }
 
-    @BuildStep(onlyIf = VertxBinderEnabled.class)
+    @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT)
     VertxOptionsConsumerBuildItem build(VertxMeterBinderRecorder recorder) {
         return new VertxOptionsConsumerBuildItem(recorder.setVertxMetricsOptions(), Interceptor.Priority.LIBRARY_AFTER);
     }
 
-    @BuildStep(onlyIf = VertxBinderEnabled.class)
+    @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     void setVertxConfig(VertxMeterBinderRecorder recorder) {

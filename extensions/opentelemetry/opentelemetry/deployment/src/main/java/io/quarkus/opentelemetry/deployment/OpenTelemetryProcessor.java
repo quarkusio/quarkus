@@ -18,6 +18,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
@@ -36,6 +37,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
+@BuildSteps(onlyIf = OpenTelemetryEnabled.class)
 public class OpenTelemetryProcessor {
     static class RestClientAvailable implements BooleanSupplier {
         private static final boolean IS_REST_CLIENT_AVAILABLE = isClassPresent("javax.ws.rs.client.ClientRequestFilter");
@@ -46,12 +48,12 @@ public class OpenTelemetryProcessor {
         }
     }
 
-    @BuildStep(onlyIf = OpenTelemetryEnabled.class)
+    @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.OPENTELEMETRY);
     }
 
-    @BuildStep(onlyIf = OpenTelemetryEnabled.class)
+    @BuildStep
     AdditionalBeanBuildItem ensureProducerIsRetained() {
         return AdditionalBeanBuildItem.builder()
                 .setUnremovable()
@@ -59,7 +61,7 @@ public class OpenTelemetryProcessor {
                 .build();
     }
 
-    @BuildStep(onlyIf = OpenTelemetryEnabled.class)
+    @BuildStep
     void registerOpenTelemetryContextStorage(
             BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
@@ -69,7 +71,7 @@ public class OpenTelemetryProcessor {
                 .produce(new ReflectiveClassBuildItem(true, true, QuarkusContextStorage.class));
     }
 
-    @BuildStep(onlyIf = OpenTelemetryEnabled.class)
+    @BuildStep
     void registerWithSpan(
             BuildProducer<InterceptorBindingRegistrarBuildItem> interceptorBindingRegistrar,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -85,7 +87,7 @@ public class OpenTelemetryProcessor {
         additionalBeans.produce(new AdditionalBeanBuildItem(WithSpanInterceptor.class));
     }
 
-    @BuildStep(onlyIf = OpenTelemetryEnabled.class)
+    @BuildStep
     void transformWithSpan(
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
 
@@ -99,14 +101,14 @@ public class OpenTelemetryProcessor {
         }));
     }
 
-    @BuildStep(onlyIf = { OpenTelemetryEnabled.class, RestClientAvailable.class })
+    @BuildStep(onlyIf = RestClientAvailable.class)
     void registerProvider(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexed,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(OpenTelemetryClientFilter.class.getName()));
         additionalBeans.produce(new AdditionalBeanBuildItem(OpenTelemetryClientFilter.class));
     }
 
-    @BuildStep(onlyIf = OpenTelemetryEnabled.class)
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void createOpenTelemetry(
             OpenTelemetryConfig openTelemetryConfig,
@@ -124,7 +126,7 @@ public class OpenTelemetryProcessor {
         recorder.eagerlyCreateContextStorage();
     }
 
-    @BuildStep(onlyIf = OpenTelemetryEnabled.class)
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void storeVertxOnContextStorage(OpenTelemetryRecorder recorder, CoreVertxBuildItem vertx) {
         recorder.storeVertxOnContextStorage(vertx.getVertx());

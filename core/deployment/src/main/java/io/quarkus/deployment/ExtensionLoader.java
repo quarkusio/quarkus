@@ -331,8 +331,6 @@ public final class ExtensionLoader {
             for (Parameter parameter : ctorParameters) {
                 Type parameterType = parameter.getParameterizedType();
                 final Class<?> parameterClass = parameter.getType();
-                final boolean weak = parameter.isAnnotationPresent(Weak.class);
-                final boolean overridable = parameter.isAnnotationPresent(Overridable.class);
                 if (rawTypeExtends(parameterType, SimpleBuildItem.class)) {
                     final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOf(parameterType)
                             .asSubclass(SimpleBuildItem.class);
@@ -349,44 +347,9 @@ public final class ExtensionLoader {
                             .asSubclass(MultiBuildItem.class);
                     stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
                     ctorParamFns.add(bc -> bc.consumeMulti(buildItemClass));
-                } else if (isConsumerOf(parameterType, BuildItem.class)) {
-                    deprecatedProducer(parameter);
-                    final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
-                            .asSubclass(BuildItem.class);
-                    if (overridable) {
-                        if (weak) {
-                            stepConfig = stepConfig
-                                    .andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE, ProduceFlag.WEAK));
-                        } else {
-                            stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE));
-                        }
-                    } else {
-                        if (weak) {
-                            stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.WEAK));
-                        } else {
-                            stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass));
-                        }
-                    }
-                    ctorParamFns.add(bc -> (Consumer<? extends BuildItem>) bc::produce);
-                } else if (isBuildProducerOf(parameterType, BuildItem.class)) {
-                    deprecatedProducer(parameter);
-                    final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
-                            .asSubclass(BuildItem.class);
-                    if (overridable) {
-                        if (weak) {
-                            stepConfig = stepConfig
-                                    .andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE, ProduceFlag.WEAK));
-                        } else {
-                            stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE));
-                        }
-                    } else {
-                        if (weak) {
-                            stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.WEAK));
-                        } else {
-                            stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass));
-                        }
-                    }
-                    ctorParamFns.add(bc -> (BuildProducer<? extends BuildItem>) bc::produce);
+                } else if (isConsumerOf(parameterType, BuildItem.class)
+                        || isBuildProducerOf(parameterType, BuildItem.class)) {
+                    throw unsupportedConstructorOrFieldProducer(parameter);
                 } else if (isOptionalOf(parameterType, SimpleBuildItem.class)) {
                     final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
                             .asSubclass(SimpleBuildItem.class);
@@ -447,8 +410,6 @@ public final class ExtensionLoader {
             // next, determine the type
             final Type fieldType = field.getGenericType();
             final Class<?> fieldClass = field.getType();
-            final boolean weak = field.isAnnotationPresent(Weak.class);
-            final boolean overridable = field.isAnnotationPresent(Overridable.class);
             if (rawTypeExtends(fieldType, SimpleBuildItem.class)) {
                 final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOf(fieldType).asSubclass(SimpleBuildItem.class);
                 stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
@@ -464,44 +425,9 @@ public final class ExtensionLoader {
                 stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
                 stepInstanceSetup = stepInstanceSetup
                         .andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, bc.consumeMulti(buildItemClass)));
-            } else if (isConsumerOf(fieldType, BuildItem.class)) {
-                deprecatedProducer(field);
-                final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0).asSubclass(BuildItem.class);
-                if (overridable) {
-                    if (weak) {
-                        stepConfig = stepConfig
-                                .andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE, ProduceFlag.WEAK));
-                    } else {
-                        stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE));
-                    }
-                } else {
-                    if (weak) {
-                        stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.WEAK));
-                    } else {
-                        stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass));
-                    }
-                }
-                stepInstanceSetup = stepInstanceSetup
-                        .andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, (Consumer<? extends BuildItem>) bc::produce));
-            } else if (isBuildProducerOf(fieldType, BuildItem.class)) {
-                deprecatedProducer(field);
-                final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0).asSubclass(BuildItem.class);
-                if (overridable) {
-                    if (weak) {
-                        stepConfig = stepConfig
-                                .andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE, ProduceFlag.WEAK));
-                    } else {
-                        stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE));
-                    }
-                } else {
-                    if (weak) {
-                        stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.WEAK));
-                    } else {
-                        stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass));
-                    }
-                }
-                stepInstanceSetup = stepInstanceSetup.andThen(
-                        (bc, o) -> ReflectUtil.setFieldVal(field, o, (BuildProducer<? extends BuildItem>) bc::produce));
+            } else if (isConsumerOf(fieldType, BuildItem.class)
+                    || isBuildProducerOf(fieldType, BuildItem.class)) {
+                throw unsupportedConstructorOrFieldProducer(field);
             } else if (isOptionalOf(fieldType, SimpleBuildItem.class)) {
                 final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0)
                         .asSubclass(SimpleBuildItem.class);
@@ -1042,10 +968,9 @@ public final class ExtensionLoader {
                 || isConsumerOf(parameterType, EmptyBuildItem.class);
     }
 
-    private static void deprecatedProducer(final Object element) {
-        loadLog.warnf(
-                "Producing values from constructors and fields is no longer supported and will be removed in a future release: %s",
-                element);
+    private static IllegalArgumentException unsupportedConstructorOrFieldProducer(final AnnotatedElement element) {
+        return reportError(element, "Producing values from constructors or fields is no longer supported."
+                + " Inject the BuildProducer/Consumer through arguments of relevant @BuildStep methods instead.");
     }
 
     protected static List<Method> getMethods(Class<?> clazz) {

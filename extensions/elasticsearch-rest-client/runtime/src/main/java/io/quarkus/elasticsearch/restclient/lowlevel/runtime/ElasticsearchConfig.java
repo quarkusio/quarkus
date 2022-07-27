@@ -69,8 +69,8 @@ public class ElasticsearchConfig {
      * Thread counts higher than the number of processors should not be necessary because the I/O threads rely on non-blocking
      * operations, but you may want to use a thread count lower than the number of processors.
      *
-     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/_number_of_threads.html">number of
-     *      threads</a>
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/client/java-api-client/current/_number_of_threads.html">
+     *      number of threads</a>
      */
     @ConfigItem
     public Optional<Integer> ioThreadCounts;

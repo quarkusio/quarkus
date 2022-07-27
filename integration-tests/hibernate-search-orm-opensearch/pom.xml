@@ -186,7 +186,7 @@
                                             <discovery.type>single-node</discovery.type>
                                             <plugins.security.disabled>true</plugins.security.disabled>
                                             <!-- ISM floods the logs with errors, and we don't need it.
-                                                 See https://docs-beta.opensearch.org/im-plugin/ism/settings/
+                                                 See https://opensearch.org/docs/latest/im-plugin/ism/settings/
                                              -->
                                             <plugins.index_state_management.enabled>false</plugins.index_state_management.enabled>
                                         </env>

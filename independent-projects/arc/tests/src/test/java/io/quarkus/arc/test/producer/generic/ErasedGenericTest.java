@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
- * Test for https://github.com/quarkus-project/quarkus/issues/120
+ * Test for https://github.com/quarkusio/quarkus/issues/120
  */
 public class ErasedGenericTest {
     @RegisterExtension

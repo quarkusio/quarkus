@@ -50,7 +50,7 @@ fixes, documentation, examples... But first, read this page (including the small
 * [The small print](#the-small-print)
 * [Frequently Asked Questions](#frequently-asked-questions)
 
-<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with
+<small><i><a href='https://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with
 markdown-toc</a></i></small>
 
 ## Legal

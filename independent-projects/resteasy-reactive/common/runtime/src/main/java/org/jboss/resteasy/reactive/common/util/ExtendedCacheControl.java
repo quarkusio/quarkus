@@ -7,7 +7,7 @@ import javax.ws.rs.core.CacheControl;
  *
  * @author <a href="http://community.jboss.org/people/jharting">Jozef Hartinger</a>
  *
- * @see <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1">RFC-2616 Section 14</a>
+ * @see <a href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1">RFC-2616 Section 14</a>
  */
 public class ExtendedCacheControl extends CacheControl {
 

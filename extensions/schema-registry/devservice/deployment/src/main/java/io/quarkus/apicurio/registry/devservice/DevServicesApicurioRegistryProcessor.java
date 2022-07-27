@@ -15,6 +15,7 @@ import org.testcontainers.utility.DockerImageName;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
@@ -33,6 +34,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 /**
  * Starts Apicurio Registry as dev service if needed.
  */
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
 public class DevServicesApicurioRegistryProcessor {
 
     private static final Logger log = Logger.getLogger(DevServicesApicurioRegistryProcessor.class);
@@ -54,7 +56,7 @@ public class DevServicesApicurioRegistryProcessor {
     static volatile ApicurioRegistryDevServiceCfg cfg;
     static volatile boolean first = true;
 
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
+    @BuildStep
     public DevServicesResultBuildItem startApicurioRegistryDevService(LaunchModeBuildItem launchMode,
             DockerStatusBuildItem dockerStatusBuildItem,
             ApicurioRegistryDevServicesBuildTimeConfig apicurioRegistryDevServices,

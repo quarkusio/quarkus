@@ -23,6 +23,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
@@ -38,6 +39,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 /**
  * Starts a RabbitMQ broker as dev service if needed.
  */
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
 public class RabbitMQDevServicesProcessor {
 
     private static final Logger log = Logger.getLogger(RabbitMQDevServicesProcessor.class);
@@ -62,7 +64,7 @@ public class RabbitMQDevServicesProcessor {
     static volatile RabbitMQDevServiceCfg cfg;
     static volatile boolean first = true;
 
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
+    @BuildStep
     public DevServicesResultBuildItem startRabbitMQDevService(
             DockerStatusBuildItem dockerStatusBuildItem,
             LaunchModeBuildItem launchMode,

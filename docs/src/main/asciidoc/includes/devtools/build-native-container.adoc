@@ -15,10 +15,10 @@ ifdef::devtools-wrapped[+]
 .Maven
 ----
 ifdef::build-additional-parameters[]
-./mvnw package -Dnative -Dquarkus.native.container-build=true {build-additional-parameters}
+./mvnw package -Pnative -Dquarkus.native.container-build=true {build-additional-parameters}
 endif::[]
 ifndef::build-additional-parameters[]
-./mvnw package -Dnative -Dquarkus.native.container-build=true
+./mvnw package -Pnative -Dquarkus.native.container-build=true
 endif::[]
 ----
 endif::[]

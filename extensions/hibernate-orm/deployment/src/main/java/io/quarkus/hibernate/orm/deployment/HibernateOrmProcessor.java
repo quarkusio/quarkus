@@ -77,6 +77,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanTypeExclusion;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.builder.item.EmptyBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
@@ -87,6 +88,7 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
@@ -197,6 +199,7 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
+    @Produce(EmptyBuildItem.class)
     void checkTransactionsSupport(Capabilities capabilities) {
         // JTA is necessary for blocking Hibernate ORM but not necessarily for Hibernate Reactive
         if (capabilities.isMissing(Capability.TRANSACTIONS)

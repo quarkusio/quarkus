@@ -221,7 +221,7 @@ public class PolicyEnforcerTest {
                 .statusCode(404);
     }
 
-    private String getAccessToken(String userName) {
+    protected String getAccessToken(String userName) {
         return RestAssured
                 .given()
                 .param("grant_type", "password")

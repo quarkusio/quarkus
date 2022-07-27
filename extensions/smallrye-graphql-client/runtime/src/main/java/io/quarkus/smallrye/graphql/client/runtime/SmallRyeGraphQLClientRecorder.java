@@ -34,9 +34,11 @@ public class SmallRyeGraphQLClientRecorder {
         configBean.addTypesafeClientApis(classes);
     }
 
-    public RuntimeValue<GraphQLClientSupport> clientSupport(Map<String, String> shortNamesToQualifiedNames) {
+    public RuntimeValue<GraphQLClientSupport> clientSupport(Map<String, String> shortNamesToQualifiedNames,
+            List<String> knownConfigKeys) {
         GraphQLClientSupport support = new GraphQLClientSupport();
         support.setShortNamesToQualifiedNamesMapping(shortNamesToQualifiedNames);
+        support.setKnownConfigKeys(knownConfigKeys);
         return new RuntimeValue<>(support);
     }
 

@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.graphql.client.runtime;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -14,11 +15,26 @@ public class GraphQLClientSupport {
      */
     private Map<String, String> shortNamesToQualifiedNamesMapping;
 
+    /**
+     * All config keys of clients found in the application. The reason for having this is that in TEST mode,
+     * if a config key is used but doesn't have any associated configuration, we can automatically generate a configuration
+     * containing a guess of the target URL.
+     */
+    private List<String> knownConfigKeys;
+
     public Map<String, String> getShortNamesToQualifiedNamesMapping() {
         return shortNamesToQualifiedNamesMapping;
     }
 
     public void setShortNamesToQualifiedNamesMapping(Map<String, String> shortNamesToQualifiedNamesMapping) {
         this.shortNamesToQualifiedNamesMapping = shortNamesToQualifiedNamesMapping;
+    }
+
+    public void setKnownConfigKeys(List<String> knownConfigKeys) {
+        this.knownConfigKeys = knownConfigKeys;
+    }
+
+    public List<String> getKnownConfigKeys() {
+        return knownConfigKeys;
     }
 }

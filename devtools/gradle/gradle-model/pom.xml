@@ -10,7 +10,6 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.quarkus</groupId>
     <artifactId>quarkus-gradle-model</artifactId>
     <packaging>pom</packaging>
     <name>Quarkus - Gradle Model</name>

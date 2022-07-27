@@ -114,10 +114,6 @@ jobs:
       gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
       gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
     steps:
-      - name: Skip non-compilable modules for jakarta-rewrite branch
-        run: |
-          echo "EXCLUDE_JAKARTA_INCOMPATIBLE_MODULES=-pl "'!'":quarkus-integration-test-infinispan-client -pl "'!'":quarkus-integration-test-kafka-avro -pl "'!'":quarkus-integration-test-kafka-avro-apicurio2" >> $GITHUB_ENV
-        if: github.ref_name == 'jakarta-rewrite'
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -154,7 +150,7 @@ jobs:
         run: ./jakarta/prepare.sh
       - name: Build
         run: |
-          ./mvnw -T1C $COMMON_MAVEN_ARGS $EXCLUDE_JAKARTA_INCOMPATIBLE_MODULES -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dtcks clean install
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dtcks clean install
       - name: Verify extension dependencies
         shell: bash
         run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
@@ -185,17 +181,10 @@ jobs:
         id: get-gib-impacted
         # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
         run: |
-          ./mvnw -q -T1C $COMMON_MAVEN_ARGS $EXCLUDE_JAKARTA_INCOMPATIBLE_MODULES -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
+          ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
           if [ -s gib-impacted.log ]
           then
-            # TODO: for now, we don't run TCKs and for the jakarta-rewrite branch
-            # we filter them here so that it cascades to all the builds
-            if [ "${GITHUB_REF_NAME}" == "jakarta-rewrite" ]
-            then
-              GIB_IMPACTED=$(sed -E '/^(integration-tests\/infinispan-client|integration-tests\/kafka-avro)/d' gib-impacted.log)
-            else
-              GIB_IMPACTED=$(cat gib-impacted.log)
-            fi
+            GIB_IMPACTED=$(cat gib-impacted.log)
           else
             GIB_IMPACTED=''
           fi
@@ -310,11 +299,6 @@ jobs:
           }
 
     steps:
-      - name: Skip non-compilable modules for jakarta-rewrite branch
-        run: |
-          echo "EXCLUDE_JAKARTA_INCOMPATIBLE_MODULES=-pl "'!'":quarkus-integration-test-infinispan-client -pl "'!'":quarkus-integration-test-kafka-avro -pl "'!'":quarkus-integration-test-kafka-avro-apicurio2" >> $GITHUB_ENV
-        if: github.ref_name == 'jakarta-rewrite'
-
       - name: Stop mysql
         if: "!startsWith(matrix.java.os-name, 'windows')"
         shell: bash
@@ -357,7 +341,7 @@ jobs:
       - name: Build
         shell: bash
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS $EXCLUDE_JAKARTA_INCOMPATIBLE_MODULES install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools -pl !docs ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools -pl !docs ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Clean Gradle temp directory
         if: always()
         shell: bash

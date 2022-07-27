@@ -8,6 +8,7 @@ import org.hibernate.search.mapper.orm.coordination.outboxpolling.mapping.spi.Hi
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
@@ -21,11 +22,12 @@ import io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchI
 import io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchIntegrationStaticConfiguredBuildItem;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit;
 
+@BuildSteps(onlyIf = HibernateSearchEnabled.class)
 class HibernateSearchOutboxPollingProcessor {
 
     private static final String HIBERNATE_SEARCH_ORM_COORDINATION_OUTBOX_POLLING = "Hibernate Search ORM - Coordination - Outbox polling";
 
-    @BuildStep(onlyIf = HibernateSearchEnabled.class)
+    @BuildStep
     void registerInternalModel(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<AdditionalJpaModelBuildItem> additionalJpaModel) {
@@ -38,7 +40,7 @@ class HibernateSearchOutboxPollingProcessor {
         }
     }
 
-    @BuildStep(onlyIf = HibernateSearchEnabled.class)
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void setStaticConfig(HibernateSearchOutboxPollingRecorder recorder,
             List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
@@ -56,7 +58,7 @@ class HibernateSearchOutboxPollingProcessor {
         }
     }
 
-    @BuildStep(onlyIf = HibernateSearchEnabled.class)
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void setRuntimeConfig(HibernateSearchOutboxPollingRecorder recorder,
             HibernateSearchOutboxPollingRuntimeConfig runtimeConfig,

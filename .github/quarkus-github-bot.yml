@@ -72,6 +72,7 @@ triage:
         && !matches("hibernate.search", titleBody)
         && !matches("hibernate.reactive", titleBody)
       notify: [gsmet, Sanne, yrodiere]
+      notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
         - extensions/hibernate-orm
@@ -84,6 +85,7 @@ triage:
     - labels: [area/hibernate-search]
       title: "hibernate.search"
       notify: [gsmet, yrodiere]
+      notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
         - extensions/hibernate-search
@@ -91,6 +93,7 @@ triage:
     - labels: [area/elasticsearch]
       title: "elasticsearch"
       notify: [gsmet, yrodiere, loicmathieu]
+      notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
         - extensions/elasticsearch

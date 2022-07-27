@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.orm.runtime;
 
 import java.util.Map;
+import java.util.TreeMap;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -24,6 +25,15 @@ public class HibernateOrmRuntimeConfig {
     @ConfigDocMapKey("persistence-unit-name")
     @ConfigItem(name = ConfigItem.PARENT)
     public Map<String, HibernateOrmRuntimeConfigPersistenceUnit> persistenceUnits;
+
+    public Map<String, HibernateOrmRuntimeConfigPersistenceUnit> getAllPersistenceUnitConfigsAsMap() {
+        Map<String, HibernateOrmRuntimeConfigPersistenceUnit> map = new TreeMap<>();
+        if (defaultPersistenceUnit != null) {
+            map.put(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, defaultPersistenceUnit);
+        }
+        map.putAll(persistenceUnits);
+        return map;
+    }
 
     public static String puPropertyKey(String puName, String radical) {
         String prefix = PersistenceUnitUtil.isDefaultPersistenceUnit(puName)

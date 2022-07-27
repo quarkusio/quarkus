@@ -146,6 +146,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             throw new PersistenceException("No name provided and multiple persistence units found");
         }
 
+        Map<String, HibernateOrmRuntimeConfigPersistenceUnit> puConfigMap = hibernateOrmRuntimeConfig
+                .getAllPersistenceUnitConfigsAsMap();
         for (PersistenceUnitDescriptor persistenceUnit : units) {
             log.debugf(
                     "Checking persistence-unit [name=%s, explicit-provider=%s] against incoming persistence unit name [%s]",
@@ -171,7 +173,9 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                         "Attempting to boot a blocking Hibernate ORM instance on a reactive RecordedState");
             }
             final PrevalidatedQuarkusMetadata metadata = recordedState.getMetadata();
-            RuntimeSettings runtimeSettings = buildRuntimeSettings(persistenceUnitName, recordedState);
+            var puConfig = puConfigMap.getOrDefault(persistenceUnitName,
+                    new HibernateOrmRuntimeConfigPersistenceUnit());
+            RuntimeSettings runtimeSettings = buildRuntimeSettings(persistenceUnitName, recordedState, puConfig);
 
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(runtimeSettings,
                     recordedState, persistenceUnitName);
@@ -191,7 +195,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         return null;
     }
 
-    private RuntimeSettings buildRuntimeSettings(String persistenceUnitName, RecordedState recordedState) {
+    private RuntimeSettings buildRuntimeSettings(String persistenceUnitName, RecordedState recordedState,
+            HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig) {
         final BuildTimeSettings buildTimeSettings = recordedState.getBuildTimeSettings();
         final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
         Builder runtimeSettingsBuilder = new Builder(buildTimeSettings, integrationSettings);
@@ -200,14 +205,6 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         if (dataSourceName.isPresent()) {
             // Inject the datasource
             injectDataSource(persistenceUnitName, dataSourceName.get(), runtimeSettingsBuilder);
-        }
-
-        HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig;
-        if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
-            persistenceUnitConfig = hibernateOrmRuntimeConfig.defaultPersistenceUnit;
-        } else {
-            persistenceUnitConfig = hibernateOrmRuntimeConfig.persistenceUnits.getOrDefault(persistenceUnitName,
-                    new HibernateOrmRuntimeConfigPersistenceUnit());
         }
 
         // Inject runtime configuration if the persistence unit was defined by Quarkus configuration

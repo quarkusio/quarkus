@@ -116,6 +116,8 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             throw new PersistenceException("No name provided and multiple persistence units found");
         }
 
+        Map<String, HibernateOrmRuntimeConfigPersistenceUnit> puConfigMap = hibernateOrmRuntimeConfig
+                .getAllPersistenceUnitConfigsAsMap();
         for (PersistenceUnitDescriptor persistenceUnit : units) {
             log.debugf(
                     "Checking persistence-unit [name=%s, explicit-provider=%s] against incoming persistence unit name [%s]",
@@ -144,7 +146,9 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
 
             // Inject runtime configuration if the persistence unit was defined by Quarkus configuration
             if (!recordedState.isFromPersistenceXml()) {
-                injectRuntimeConfiguration(persistenceUnitName, hibernateOrmRuntimeConfig, runtimeSettingsBuilder);
+                var puConfig = puConfigMap.getOrDefault(persistenceUnitName,
+                        new HibernateOrmRuntimeConfigPersistenceUnit());
+                injectRuntimeConfiguration(puConfig, runtimeSettingsBuilder);
             }
 
             for (HibernateOrmIntegrationRuntimeDescriptor descriptor : integrationRuntimeDescriptors
@@ -261,10 +265,8 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         serviceRegistry.addInitiator(new VertxInstanceInitiator(vertxHandle.get()));
     }
 
-    private static void injectRuntimeConfiguration(String persistenceUnitName,
-            HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig, Builder runtimeSettingsBuilder) {
-        HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig = hibernateOrmRuntimeConfig.defaultPersistenceUnit;
-
+    private static void injectRuntimeConfiguration(HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,
+            Builder runtimeSettingsBuilder) {
         // Database
         runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_DATABASE_ACTION,
                 persistenceUnitConfig.database.generation.generation);

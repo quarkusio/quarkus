@@ -10,10 +10,13 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import javax.enterprise.inject.Instance;
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 
+import io.smallrye.graphql.client.GraphQLClient;
 import io.smallrye.graphql.client.Response;
 import io.smallrye.graphql.client.core.Document;
 import io.smallrye.graphql.client.core.OperationType;
@@ -146,6 +149,24 @@ public class GraphQLClientTester {
                 }
             }
         }
+    }
+
+    @GraphQLClient("some-key")
+    Instance<DynamicGraphQLClient> autowiredDynamicClient;
+
+    @GET
+    @Path("/autowired-dynamic")
+    public void autowiredDynamicClient() throws ExecutionException, InterruptedException {
+        testSingleResultOperationsWithDynamicClient(autowiredDynamicClient.get());
+    }
+
+    @Inject
+    Instance<LuckyNumbersClientApi> autowiredTypesafeClient;
+
+    @GET
+    @Path("/autowired-typesafe")
+    public void autowiredTypesafeClient() throws Exception {
+        testSingleResultOperationsWithTypesafeClient(autowiredTypesafeClient.get());
     }
 
 }

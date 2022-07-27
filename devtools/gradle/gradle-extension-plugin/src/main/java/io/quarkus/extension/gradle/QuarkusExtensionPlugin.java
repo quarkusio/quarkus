@@ -12,8 +12,8 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.testing.Test;
@@ -49,8 +49,8 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
     private void registerTasks(Project project, QuarkusExtensionConfiguration quarkusExt) {
         TaskContainer tasks = project.getTasks();
 
-        JavaPluginConvention convention = project.getConvention().getPlugin(JavaPluginConvention.class);
-        SourceSet mainSourceSet = convention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
+        SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
         Configuration runtimeModuleClasspath = project.getConfigurations()
                 .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
 
@@ -65,7 +65,7 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
                 javaPlugin -> {
                     tasks.named(JavaPlugin.PROCESS_RESOURCES_TASK_NAME, task -> task.finalizedBy(extensionDescriptorTask));
                     tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, task -> task.dependsOn(extensionDescriptorTask));
-                    tasks.withType(Test.class, test -> test.useJUnitPlatform());
+                    tasks.withType(Test.class).configureEach(Test::useJUnitPlatform);
                     addAnnotationProcessorDependency(project);
                 });
 
@@ -84,7 +84,7 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
                     task.setDeploymentModuleClasspath(deploymentModuleClasspath);
                 });
 
-                deploymentProject.getTasks().withType(Test.class, test -> {
+                deploymentProject.getTasks().withType(Test.class).configureEach(test -> {
                     test.useJUnitPlatform();
                     test.doFirst(task -> {
                         final Map<String, Object> props = test.getSystemProperties();

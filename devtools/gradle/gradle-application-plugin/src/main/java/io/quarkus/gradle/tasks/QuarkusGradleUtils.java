@@ -12,8 +12,8 @@ import java.util.Set;
 
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
 
 import io.quarkus.bootstrap.util.IoUtils;
 
@@ -21,12 +21,12 @@ public class QuarkusGradleUtils {
 
     private static final String ERROR_COLLECTING_PROJECT_CLASSES = "Failed to collect project's classes in a temporary dir";
 
+    public static SourceSetContainer getSourceSets(Project project) {
+        return project.getExtensions().getByType(SourceSetContainer.class);
+    }
+
     public static SourceSet getSourceSet(Project project, String sourceSetName) {
-        final JavaPluginConvention javaConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
-        if (javaConvention == null) {
-            throw new IllegalArgumentException("The project does not include the Java plugin");
-        }
-        return javaConvention.getSourceSets().getByName(sourceSetName);
+        return getSourceSets(project).getByName(sourceSetName);
     }
 
     public static String getClassesDir(SourceSet sourceSet, File tmpDir, boolean test) {

@@ -940,7 +940,7 @@ public class DevConsoleProcessor {
                 for (Path sourcePaths : sourcesDir) {
                     List<String> packages = sourcePackagesForRoot(sourcePaths);
                     if (!packages.isEmpty()) {
-                        sourcePackagesByDir.put(sourcePaths.toAbsolutePath().toString(), packages);
+                        sourcePackagesByDir.put(sourcePaths.toAbsolutePath().toString().replace("\\", "/"), packages);
                     }
                 }
                 return sourcePackagesByDir;

@@ -3,11 +3,9 @@ package io.quarkus.oidc.client.filter.deployment;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.oidc.client.deployment.OidcClientBuildStep.IsEnabled;
 import io.quarkus.oidc.client.filter.OidcClientFilter;
@@ -22,11 +20,6 @@ public class OidcClientFilterBuildStep {
     private static final DotName OIDC_CLIENT_FILTER = DotName.createSimple(OidcClientFilter.class.getName());
 
     OidcClientFilterConfig config;
-
-    @BuildStep
-    FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(Feature.OIDC_CLIENT_FILTER);
-    }
 
     @BuildStep
     void registerProvider(BuildProducer<AdditionalBeanBuildItem> additionalBeans,

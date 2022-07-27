@@ -8,7 +8,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
@@ -47,11 +46,6 @@ public class JaegerProcessor {
 
         // Indicates that this extension would like the SSL support to be enabled
         return new ExtensionSslNativeSupportBuildItem(Feature.JAEGER.getName());
-    }
-
-    @BuildStep
-    public FeatureBuildItem build() {
-        return new FeatureBuildItem(Feature.JAEGER);
     }
 
     @BuildStep

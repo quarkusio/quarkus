@@ -12,7 +12,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerAuthorizer;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerBuildTimeConfig;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerConfig;
@@ -26,11 +25,6 @@ import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 
 public class KeycloakPolicyEnforcerBuildStep {
-
-    @BuildStep
-    FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(Feature.KEYCLOAK_AUTHORIZATION);
-    }
 
     @BuildStep(onlyIf = IsEnabled.class)
     RequireBodyHandlerBuildItem requireBody(OidcBuildTimeConfig oidcBuildTimeConfig, KeycloakPolicyEnforcerConfig config) {

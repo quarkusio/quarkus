@@ -20,7 +20,6 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.oidc.SecurityEvent;
@@ -50,11 +49,6 @@ import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
 @BuildSteps(onlyIf = OidcBuildStep.IsEnabled.class)
 public class OidcBuildStep {
     public static final DotName DOTNAME_SECURITY_EVENT = DotName.createSimple(SecurityEvent.class.getName());
-
-    @BuildStep
-    FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(Feature.OIDC);
-    }
 
     @BuildStep
     public void provideSecurityInformation(BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {

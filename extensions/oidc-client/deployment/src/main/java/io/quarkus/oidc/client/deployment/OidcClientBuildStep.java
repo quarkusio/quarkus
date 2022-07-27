@@ -27,7 +27,6 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -49,11 +48,6 @@ import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
 @BuildSteps(onlyIf = OidcClientBuildStep.IsEnabled.class)
 public class OidcClientBuildStep {
-
-    @BuildStep
-    FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(Feature.OIDC_CLIENT);
-    }
 
     @BuildStep
     ExtensionSslNativeSupportBuildItem enableSslInNative() {

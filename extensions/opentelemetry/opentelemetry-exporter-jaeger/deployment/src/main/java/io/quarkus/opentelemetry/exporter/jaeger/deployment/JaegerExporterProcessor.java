@@ -3,12 +3,10 @@ package io.quarkus.opentelemetry.exporter.jaeger.deployment;
 import java.util.function.BooleanSupplier;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.opentelemetry.exporter.jaeger.runtime.JaegerExporterConfig;
 import io.quarkus.opentelemetry.exporter.jaeger.runtime.JaegerExporterProvider;
@@ -23,11 +21,6 @@ public class JaegerExporterProcessor {
         public boolean getAsBoolean() {
             return jaegerExporterConfig.enabled;
         }
-    }
-
-    @BuildStep
-    FeatureBuildItem feature() {
-        return new FeatureBuildItem(Feature.OPENTELEMETRY_JAEGER_EXPORTER);
     }
 
     @BuildStep

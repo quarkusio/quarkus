@@ -577,7 +577,7 @@ public class CodecFruitService {
 
 == The POJO Codec
 
-The link:http://mongodb.github.io/mongo-java-driver/3.12/bson/pojos[POJO Codec] provides a set of annotations that enable the customization of
+The link:https://mongodb.github.io/mongo-java-driver/3.12/bson/pojos/[POJO Codec] provides a set of annotations that enable the customization of
 the way a POJO is mapped to a MongoDB collection and this codec is initialized automatically by Quarkus
 
 One of these annotations is the `@BsonDiscriminator` annotation that allows to storage multiple Java types in a single MongoDB collection by adding

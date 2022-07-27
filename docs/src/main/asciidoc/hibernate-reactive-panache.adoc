@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::./attributes.adoc[]
 :config-file: application.properties
 
-link:http://hibernate.org/reactive/[Hibernate Reactive] is the only reactive JPA implementation and offers you the full 
+link:https://hibernate.org/reactive/[Hibernate Reactive] is the only reactive JPA implementation and offers you the full
 breadth of an Object Relational Mapper allowing you to access your database over reactive drivers.
 It makes complex mappings possible, but it does not make simple and common mappings trivial.
 Hibernate Reactive with Panache focuses on making your entities trivial and fun to write in Quarkus.

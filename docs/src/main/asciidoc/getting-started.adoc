@@ -37,7 +37,7 @@ include::{includes}/prerequisites.adoc[]
 ====
 If you have multiple JDK's installed, it is not certain Maven will pick up the expected java
 and you could end up with unexpected results.
-You can verify which JDK Maven uses by running `mvn --version`. 
+You can verify which JDK Maven uses by running `mvn --version`.
 ====
 
 
@@ -407,7 +407,7 @@ public class GreetingResourceTest {
 <1> By using the `QuarkusTest` runner, you instruct JUnit to start the application before the tests.
 <2> Check the HTTP response status code and content
 
-These tests use http://rest-assured.io/[RestAssured], but feel free to use your favorite library.
+These tests use https://rest-assured.io/[RestAssured], but feel free to use your favorite library.
 
 You can run these using Maven:
 

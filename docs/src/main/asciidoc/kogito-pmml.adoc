@@ -86,7 +86,7 @@ implementation("org.kie.kogito:kogito-quarkus")
 
 == Writing the application
 
-Predictions are evaluated based on a PMML model, whose standard and specifications may be read http://dmg.org/pmml/v4-4-1/GeneralStructure.html[here]. 
+Predictions are evaluated based on a PMML model, whose standard and specifications may be read https://dmg.org/pmml/v4-4-1/GeneralStructure.html[here].
 Let's start by adding a simple PMML file: `LogisticRegressionIrisData.pmml`. It contains a _Regression_ model named `LogisticRegressionIrisData`, and it uses a regression function to predict plant species from sepal and petal dimensions:
 
 [source,xml]

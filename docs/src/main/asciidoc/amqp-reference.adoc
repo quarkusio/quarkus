@@ -14,7 +14,7 @@ TIP: This documentation does not cover all the details of the connector.
 Refer to the https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging website] for further details.
 
 The AMQP connector allows Quarkus applications to send and receive messages using the AMQP 1.0 protocol.
-More details about the protocol can be found in http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-overview-v1.0-os.html[the AMQP 1.0 specification].
+More details about the protocol can be found in https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-overview-v1.0-os.html[the AMQP 1.0 specification].
 It's important to note that AMQP 1.0 and AMQP 0.9.1 (implemented by RabbitMQ) are incompatible.
 Check <<using-rabbitmq,Using RabbitMQ>> to get more details.
 
@@ -163,12 +163,12 @@ metadata.ifPresent(meta -> {
 The connector converts incoming AMQP Messages into Reactive Messaging `Message<T>` instances.
 `T` depends on the _body_ of the received AMQP Message.
 
-The http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-types-v1.0-os.html[AMQP Type System] defines the supported types.
+The https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-types-v1.0-os.html[AMQP Type System] defines the supported types.
 
 [options="header"]
 |===
 | AMQP Body Type | `<T>`
-| AMQP Value containing a http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-types-v1.0-os.html#section-primitive-type-definitions[AMQP Primitive Type] | the corresponding Java type
+| AMQP Value containing a https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-types-v1.0-os.html#section-primitive-type-definitions[AMQP Primitive Type] | the corresponding Java type
 | AMQP Value using the `Binary` type | `byte[]`
 | AMQP Sequence | `List`
 | AMQP Data (with binary content) and the `content-type` is set to `application/json` | https://vertx.io/docs/apidocs/io/vertx/core/json/JsonObject.html[`JsonObject`]
@@ -207,7 +207,7 @@ NOTE: The `mapTo` method uses the Quarkus Jackson mapper. Check xref:rest-json.a
 
 === Acknowledgement
 
-When a Reactive Messaging Message associated with an AMQP Message is acknowledged, it informs the broker that the message has been http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-accepted[accepted].
+When a Reactive Messaging Message associated with an AMQP Message is acknowledged, it informs the broker that the message has been https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-accepted[accepted].
 
 === Failure Management
 
@@ -217,16 +217,16 @@ The AMQP connector supports six strategies:
 * `fail` - fail the application; no more AMQP messages will be processed (default).
 The AMQP message is marked as rejected.
 * `accept` - this strategy marks the AMQP message as _accepted_. The processing continues ignoring the failure.
-Refer to the http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-accepted[accepted delivery state documentation].
+Refer to the https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-accepted[accepted delivery state documentation].
 * `release` - this strategy marks the AMQP message as _released_. The processing continues with the next message. The broker can redeliver the message.
-Refer to the http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-released[released delivery state documentation].
+Refer to the https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-released[released delivery state documentation].
 * `reject` - this strategy marks the AMQP message as rejected. The processing continues with the next message.
-Refer to the http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-rejected[rejected delivery state documentation].
+Refer to the https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-rejected[rejected delivery state documentation].
 * `modified-failed` - this strategy marks the AMQP
 message as _modified_ and indicates that it failed (with the `delivery-failed` attribute). The processing continues with the next message, but the broker may attempt to redeliver the message.
-Refer to the http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-modified[modified delivery state documentation]
+Refer to the https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-modified[modified delivery state documentation]
 * `modified-failed-undeliverable-here` - this strategy marks the AMQP message as _modified_ and indicates that it failed (with the `delivery-failed` attribute). It also indicates that the application cannot process the message, meaning that the broker will not attempt to redeliver the message to this node. The processing continues with the next message.
-Refer to the http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-modified[modified delivery state documentation]
+Refer to the https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-modified[modified delivery state documentation]
 
 == Sending AMQP messages
 

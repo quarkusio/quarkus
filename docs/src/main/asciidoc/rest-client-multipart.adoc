@@ -39,7 +39,7 @@ The solution is located in the `rest-client-multipart-quickstart` {quickstarts-t
 
 First, we need a new project. Create a new project with the following command:
 
- 
+
 
 :create-app-artifact-id: rest-client-multipart-quickstart
 :create-app-extensions: rest-client,resteasy,resteasy-multipart
@@ -260,7 +260,7 @@ public class MultipartClientResourceTest {
 }
 ----
 
-The code above uses link:http://rest-assured.io/[REST Assured] to assert that the returned content from the echo service contains multipart elements
+The code above uses link:https://rest-assured.io/[REST Assured] to assert that the returned content from the echo service contains multipart elements
 
 Because the test runs in a different port, we also need to include an `application.properties` in our `src/test/resources` with the following content:
 

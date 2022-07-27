@@ -8,6 +8,7 @@ import javax.ws.rs.core.Response;
 
 import org.awaitility.Awaitility;
 import org.awaitility.core.ThrowingRunnable;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -75,14 +76,20 @@ public class SimpleContextPropagationTest {
 
     @Test()
     public void testArcMEContextPropagationDisabled() {
+        // reset state
+        RequestBean.DESTROY_INVOKED = 0;
         RestAssured.when().get("/context/noarc").then()
                 .statusCode(Response.Status.OK.getStatusCode());
+        Assertions.assertEquals(2, RequestBean.DESTROY_INVOKED);
     }
 
     @Test()
     public void testArcTCContextPropagationDisabled() {
+        // reset state
+        RequestBean.DESTROY_INVOKED = 0;
         RestAssured.when().get("/context/noarc-tc").then()
                 .statusCode(Response.Status.OK.getStatusCode());
+        Assertions.assertEquals(2, RequestBean.DESTROY_INVOKED);
     }
 
     @Test()

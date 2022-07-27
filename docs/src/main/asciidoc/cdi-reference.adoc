@@ -44,8 +44,11 @@ NOTE: Quarkus extensions may declare additional discovery rules. For example, `@
 === How to Generate a Jandex Index
 
 A dependency with a Jandex index is automatically scanned for beans.
-To generate the index just add the following to your `pom.xml`:
+To generate the index just add the following plugin to your build file :
 
+[role="primary asciidoc-tabs-sync-maven"]
+.Maven
+****
 [source,xml,subs="attributes+"]
 ----
 <build>
@@ -66,15 +69,33 @@ To generate the index just add the following to your `pom.xml`:
   </plugins>
 </build>
 ----
+****
 
-If you are using gradle, you can apply the following plugin to your `build.gradle`:
+[role="secondary asciidoc-tabs-sync-gradle-groovy"]
+.Gradle (Groovy DSL)
+****
 
-[source,groovy]
+[source,groovy,subs=attributes+]
 ----
 plugins {
-    id 'org.kordamp.gradle.jandex' version '0.11.0'
+    id 'org.kordamp.gradle.jandex' version '{jandex-gradle-plugin-version}'
 }
 ----
+
+****
+
+[role="secondary asciidoc-tabs-sync-gradle-kotlin"]
+.Gradle (Kotlin DSL)
+****
+
+[source,kotlin,subs=attributes+]
+----
+plugins {
+    id("org.kordamp.gradle.jandex") version '{jandex-gradle-plugin-version}'
+}
+----
+****
+
 
 If you can't modify the dependency, you can still index it by adding `quarkus.index-dependency` entries to your `application.properties`:
 

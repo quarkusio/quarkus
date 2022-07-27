@@ -115,7 +115,7 @@ triage:
         - integration-tests/jackson/
     - labels: [area/kotlin]
       titleBody: "kotlin"
-      notify: [evanchooly]
+      notify: [evanchooly, geoand]
       directories:
         - extensions/kotlin/
         - integration-tests/kotlin/

@@ -1310,10 +1310,7 @@ public final class RunTimeConfigurationGenerator {
                         if (matched instanceof FieldContainer) {
                             final FieldContainer fieldContainer = (FieldContainer) matched;
                             if (dynamic) {
-                                if (!itemMember.getPropertyName().isEmpty()) {
-                                    // consume segment
-                                    matchedBody.invokeVirtualMethod(NI_PREVIOUS, keyIter);
-                                }
+                                generateConsumeSegments(matchedBody, keyIter, itemMember.getPropertyName());
                                 // we have to get or create all containing (and contained) groups of this member
                                 matchedBody.invokeStaticMethod(generateGetEnclosing(fieldContainer, type), keyIter,
                                         config);
@@ -1467,10 +1464,7 @@ public final class RunTimeConfigurationGenerator {
                     // get the parent
                     final FieldContainer fieldContainer = (FieldContainer) parent;
                     final ClassDefinition.ClassMember classMember = fieldContainer.getClassMember();
-                    if (!classMember.getPropertyName().isEmpty()) {
-                        // consume segment
-                        mc.invokeVirtualMethod(NI_PREVIOUS, keyIter);
-                    }
+                    int consumedSegmentsCount = generateConsumeSegments(mc, keyIter, classMember.getPropertyName());
                     final ResultHandle enclosing = mc.invokeStaticMethod(generateGetEnclosing(fieldContainer, type),
                             keyIter, config);
 
@@ -1518,10 +1512,7 @@ public final class RunTimeConfigurationGenerator {
                     } else {
                         mc.assign(group, fieldVal);
                     }
-                    if (!classMember.getPropertyName().isEmpty()) {
-                        // restore
-                        mc.invokeVirtualMethod(NI_NEXT, keyIter);
-                    }
+                    generateRestoreSegments(mc, keyIter, consumedSegmentsCount);
                     mc.returnValue(group);
                 } else {
                     assert parent instanceof MapContainer;
@@ -1576,16 +1567,11 @@ public final class RunTimeConfigurationGenerator {
                 if (parent instanceof FieldContainer) {
                     // get the parent
                     final FieldContainer fieldContainer = (FieldContainer) parent;
-                    if (!fieldContainer.getClassMember().getPropertyName().isEmpty()) {
-                        // consume segment
-                        mc.invokeVirtualMethod(NI_PREVIOUS, keyIter);
-                    }
+                    int consumedSegmentsCount = generateConsumeSegments(mc, keyIter,
+                            fieldContainer.getClassMember().getPropertyName());
                     final ResultHandle enclosing = mc.invokeStaticMethod(generateGetEnclosing(fieldContainer, type),
                             keyIter, config);
-                    if (!fieldContainer.getClassMember().getPropertyName().isEmpty()) {
-                        // restore
-                        mc.invokeVirtualMethod(NI_NEXT, keyIter);
-                    }
+                    generateRestoreSegments(mc, keyIter, consumedSegmentsCount);
 
                     final ResultHandle result;
                     if (isFieldEligibleForDirectAccess(fieldContainer.getClassMember())) {
@@ -1617,6 +1603,29 @@ public final class RunTimeConfigurationGenerator {
             }
             enclosingMemberMethods.put(matchNode, md);
             return md;
+        }
+
+        private int generateConsumeSegments(BytecodeCreator bc, ResultHandle keyIter, String propertyName) {
+            if (propertyName.isEmpty()) {
+                return 0;
+            }
+            bc.invokeVirtualMethod(NI_PREVIOUS, keyIter);
+            int consumedSegmentsCount = 1;
+            // For properties whose name contains dots,
+            // we need to call previous() multiple times
+            int dotIndex = propertyName.indexOf('.');
+            while (dotIndex >= 0) {
+                bc.invokeVirtualMethod(NI_PREVIOUS, keyIter);
+                ++consumedSegmentsCount;
+                dotIndex = propertyName.indexOf('.', dotIndex + 1);
+            }
+            return consumedSegmentsCount;
+        }
+
+        private void generateRestoreSegments(BytecodeCreator bc, ResultHandle keyIter, int consumedSegmentsCount) {
+            for (int i = 0; i < consumedSegmentsCount; i++) {
+                bc.invokeVirtualMethod(NI_NEXT, keyIter);
+            }
         }
 
         private FieldDescriptor getOrCreateConverterInstance(Field field) {

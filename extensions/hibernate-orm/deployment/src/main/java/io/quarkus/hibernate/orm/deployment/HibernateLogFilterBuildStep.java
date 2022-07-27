@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.deployment;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
@@ -10,6 +11,7 @@ import io.quarkus.hibernate.orm.runtime.graal.DisableLoggingFeature;
 /**
  * Processor that sets up log filters for Hibernate
  */
+@BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public final class HibernateLogFilterBuildStep {
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)

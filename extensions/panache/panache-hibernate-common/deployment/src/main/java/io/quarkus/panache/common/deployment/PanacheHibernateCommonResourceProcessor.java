@@ -5,6 +5,7 @@ import static io.quarkus.panache.common.deployment.PanacheConstants.META_INF_PAN
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.persistence.Transient;
@@ -37,13 +38,18 @@ public final class PanacheHibernateCommonResourceProcessor {
     // needed for HibernateEnhancersRegisteredBuildItem
     @BuildStep
     void findEntityClasses(CombinedIndexBuildItem index,
-            HibernateModelClassCandidatesForFieldAccessBuildItem candidatesForFieldAccess,
+            Optional<HibernateModelClassCandidatesForFieldAccessBuildItem> candidatesForFieldAccess,
             BuildProducer<HibernateMetamodelForFieldAccessBuildItem> modelInfoBuildItem,
             BuildProducer<PanacheEntityClassesBuildItem> fieldAccessEnhancedEntityClasses) {
+        if (candidatesForFieldAccess.isEmpty()) {
+            // Hibernate ORM is disabled
+            return;
+        }
+
         MetamodelInfo modelInfo = new MetamodelInfo();
 
         // Technically we wouldn't need to process embeddables, but we don't have an easy way to exclude them.
-        for (String entityClassName : candidatesForFieldAccess.getAllModelClassNames()) {
+        for (String entityClassName : candidatesForFieldAccess.get().getAllModelClassNames()) {
             ClassInfo entityClass = index.getIndex().getClassByName(DotName.createSimple(entityClassName));
             if (entityClass == null) {
                 // Probably a synthetic entity, such as Envers' DefaultRevisionEntity.
@@ -77,9 +83,14 @@ public final class PanacheHibernateCommonResourceProcessor {
     @Consume(HibernateEnhancersRegisteredBuildItem.class)
     void replaceFieldAccesses(CombinedIndexBuildItem index,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            HibernateMetamodelForFieldAccessBuildItem modelInfoBuildItem,
+            Optional<HibernateMetamodelForFieldAccessBuildItem> modelInfoBuildItem,
             BuildProducer<BytecodeTransformerBuildItem> transformers) {
-        MetamodelInfo modelInfo = modelInfoBuildItem.getMetamodelInfo();
+        if (modelInfoBuildItem.isEmpty()) {
+            // Hibernate ORM is disabled
+            return;
+        }
+
+        MetamodelInfo modelInfo = modelInfoBuildItem.get().getMetamodelInfo();
         Set<String> entitiesWithPublicFields = modelInfo.getEntitiesWithPublicFields();
         if (entitiesWithPublicFields.isEmpty()) {
             // There are no public fields to be accessed in the first place.

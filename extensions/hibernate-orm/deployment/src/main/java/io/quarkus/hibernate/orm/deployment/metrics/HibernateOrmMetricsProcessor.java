@@ -7,10 +7,12 @@ import java.util.Optional;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
 import io.quarkus.hibernate.orm.deployment.PersistenceProviderSetUpBuildItem;
 import io.quarkus.hibernate.orm.runtime.metrics.HibernateMetricsRecorder;
 
@@ -18,6 +20,7 @@ import io.quarkus.hibernate.orm.runtime.metrics.HibernateMetricsRecorder;
  * Produce metrics for Hibernate ORM
  * Avoid hard dependencies in main processor
  */
+@BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public final class HibernateOrmMetricsProcessor {
 
     @BuildStep

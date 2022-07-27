@@ -29,12 +29,14 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Transformation;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 
+@BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public class HibernateOrmCdiProcessor {
 
     private static final List<DotName> SESSION_FACTORY_EXPOSED_TYPES = Arrays.asList(ClassNames.ENTITY_MANAGER_FACTORY,
@@ -168,8 +170,6 @@ public class HibernateOrmCdiProcessor {
                 .build());
 
         // Register the default scope for @PersistenceUnitExtension and make such beans unremovable by default
-        // TODO make @PUExtension beans unremovable only if the corresponding PU actually exists and is enabled
-        //   (I think there's a feature request for a configuration property to disable a PU at runtime?)
         beanDefiningAnnotations
                 .produce(new BeanDefiningAnnotationBuildItem(ClassNames.PERSISTENCE_UNIT_EXTENSION, DotNames.APPLICATION_SCOPED,
                         false));

@@ -2,8 +2,10 @@ package io.quarkus.hibernate.reactive.deployment;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 
+@BuildSteps(onlyIf = HibernateReactiveEnabled.class)
 public final class HibernateReactiveLogFilter {
 
     @BuildStep

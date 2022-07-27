@@ -126,7 +126,7 @@ it should be invoked as soon as possible. The invocation of the scheduled method
 Edit the `application.properties` file and add the `cron.expr` configuration:
 [source,properties]
 ----
-# By default, the syntax used for cron expressions is based on Quartz - http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html
+# By default, the syntax used for cron expressions is based on Quartz - https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html
 # You can change the syntax using the following property:
 # quarkus.scheduler.cron-type=unix
 cron.expr=*/5 * * * * ?

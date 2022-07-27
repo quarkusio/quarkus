@@ -1,6 +1,6 @@
 # Test application
 
-The test application broadens the coverage for a basic watermarking endpoint: [awt-graphics-rest-quickstart](https://github.com/quarkus/quarkus-quickstarts/tree/main/awt-graphics-rest-quickstart).
+The test application broadens the coverage for a basic watermarking endpoint: [awt-graphics-rest-quickstart](https://github.com/quarkusio/quarkus-quickstarts/tree/main/awt-graphics-rest-quickstart).
 
 ## [Image decoders](../src/test/java/io/quarkus/awt/it/ImageDecodersTest.java)
 ![Decoders](./decoders.png)
@@ -8,7 +8,7 @@ The test application broadens the coverage for a basic watermarking endpoint: [a
 The test suite iterates over two sets of images, [ordinary](../src/test/resources/ordinary)
 and [complex](../src/test/resources/complex).
 
-**Ordinary** images are all valid, either 
+**Ordinary** images are all valid, either
 converted with ImageMagic or manually edited with GIMP or Fiji. They cover all JDK's built-in decoders.
 The decoder test reads not only the image data, but also metadata, exercising metadata related code paths.
 The test is not exhaustive, e.g. embedded thumbnails for containers that support those are not covered.
@@ -18,7 +18,7 @@ The template for many image data was [Commodore Grace M. Hopper, USN](https://en
 **Complex** images set contains some outright incorrect images created with Radamsa fuzzing ImageMagic output.
 They test e.g. error messages i18n properties, throwing ImageIO exceptions in native-image etc.
 
-## [Image encoders](../src/test/java/io/quarkus/awt/it/ImageEncodersTest.java) 
+## [Image encoders](../src/test/java/io/quarkus/awt/it/ImageEncodersTest.java)
 ![Decoders](./encoders.png)
 
 A simple, easily testable image is generated and encoded into a wide variety of valid image type,

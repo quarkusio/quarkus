@@ -9,7 +9,7 @@ include::./attributes.adoc[]
 :jaxrsapi: https://javadoc.io/doc/javax.ws.rs/javax.ws.rs-api/2.1.1
 :jaxrsspec: /specs/jaxrs/2.1/index.html
 :jdkapi: https://docs.oracle.com/en/java/javase/11/docs/api/java.base
-:mutinyapi: https://smallrye.io/smallrye-mutiny/apidocs
+:mutinyapi: https://javadoc.io/doc/io.smallrye.reactive/mutiny/1.6.0
 :httpspec: https://tools.ietf.org/html/rfc7231
 :jsonpapi: https://javadoc.io/doc/javax.json/javax.json-api/1.1.4
 :vertxapi: https://javadoc.io/doc/io.vertx/vertx-core/latest/index.html

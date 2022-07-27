@@ -12,7 +12,7 @@ The following IDEs have support for the community developed Quarkus Tools:
 * https://marketplace.visualstudio.com/items?itemName=redhat.vscode-quarkus[Quarkus Tools for Visual Studio Code]
 * https://marketplace.eclipse.org/content/quarkus-tools[Quarkus Tools for Eclipse]
 * https://plugins.jetbrains.com/plugin/13234-quarkus/versions[Quarkus Tools for IntelliJ IDEA]
-* https://github.com/eclipse/che-devfile-registry/blob/main/devfiles/quarkus/devfile.yaml[Quarkus Tools for Eclipse Che]
+* https://github.com/eclipse-che/che-devfile-registry/tree/main/devfiles/quarkus[Quarkus Tools for Eclipse Che]
 
 In addition, IntelliJ IDEA has additional support for Quarkus in their Ultimate non-open source version.
 
@@ -20,7 +20,7 @@ In addition, IntelliJ IDEA has additional support for Quarkus in their Ultimate 
 
 The table below gives an overview of the current IDEs with links and a high-level overview of their features.
 
-:vscode-logo: https://simpleicons.org/icons/visualstudiocode.svg 
+:vscode-logo: https://simpleicons.org/icons/visualstudiocode.svg
 :eclipse-logo: https://simpleicons.org/icons/eclipseide.svg
 :intellij-logo: https://simpleicons.org/icons/intellijidea.svg
 :che-logo: https://simpleicons.org/icons/eclipseche.svg
@@ -44,7 +44,7 @@ IntelliJ IDEA Ultimate
 Eclipse Che
 
 |Description
-|Visual Studio Code extension to install using the marketplace  
+|Visual Studio Code extension to install using the marketplace
 |Eclipse plugin to install into Eclipse using an update-site
 |IntelliJ IDEA plugin that works in IntelliJ IDEA Community and Ultimate. Available from Marketplace.
 |Built-in Quarkus features available only in IntelliJ IDEA Ultimate
@@ -131,7 +131,7 @@ https://download.jboss.org/jbosstools/intellij/snapshots/intellij-quarkus/[Devel
 |icon:check[]
 |icon:check[]
 
-|Config outline 
+|Config outline
 |icon:check[]
 |icon:check[]
 |icon:check[]

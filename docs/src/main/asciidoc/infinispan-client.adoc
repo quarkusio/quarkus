@@ -437,7 +437,7 @@ production, so you can disable this from occurring by configuring the
 `quarkus.infinispan-client.use-schema-registration` to `false`.
 
 To configure the schema manually
-please use https://infinispan.org/docs/infinispan-operator/master/operator.html[Infinispan Operator]
+please use https://infinispan.org/docs/infinispan-operator/main/operator.html[Infinispan Operator]
 for Kubernetes deployments, Infinispan Console,
 https://infinispan.org/docs/stable/titles/rest/rest.html#rest_v2_protobuf_schemas[REST API] or the
 https://infinispan.org/docs/stable/titles/encoding/encoding.html#registering-sci-remote-caches_marshalling[Hot Rod Java Client].

@@ -199,7 +199,7 @@ Similar to the Maven configuration, when using Gradle, the following modificatio
 ----
 plugins {
     id 'java'
-    id 'io.quarkus' 
+    id 'io.quarkus'
 
     id "org.jetbrains.kotlin.jvm" version "{kotlin-version}" // <1>
     id "org.jetbrains.kotlin.plugin.allopen" version "{kotlin-version}" // <1>
@@ -210,11 +210,11 @@ repositories {
     mavenCentral()
 }
 
-dependencies { 
+dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:{kotlin-version}'
 
    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
- 
+
     implementation 'io.quarkus:quarkus-resteasy-reactive'
     implementation 'io.quarkus:quarkus-resteasy-reactive-jackson'
     implementation 'io.quarkus:quarkus-kotlin'
@@ -510,14 +510,14 @@ The following extensions provide support for Kotlin Coroutines by allowing the u
 === Kotlin coroutines and Mutiny
 
 Kotlin coroutines provide an imperative programming model that actually gets executed in an asynchronous, reactive manner.
-To simplify the interoperability between Mutiny and Kotlin there is the module `io.smallrye.reactive:mutiny-kotlin`, described link:https://smallrye.io/smallrye-mutiny/guides/kotlin[here].
+To simplify the interoperability between Mutiny and Kotlin there is the module `io.smallrye.reactive:mutiny-kotlin`, described link:https://smallrye.io/smallrye-mutiny/latest/guides/kotlin/[here].
 
 == CDI @Inject with Kotlin
 
 Kotlin reflection annotation processing differs from Java.  You may experience an error when using CDI @Inject such as:
 "kotlin.UninitializedPropertyAccessException: lateinit property xxx has not been initialized"
 
-In the example below, this can be easily solved by adapting the annotation, adding @field: Default, to handle the lack of a @Target on the Kotlin reflection annotation definition. 
+In the example below, this can be easily solved by adapting the annotation, adding @field: Default, to handle the lack of a @Target on the Kotlin reflection annotation definition.
 
 [source,kotlin]
 ----
@@ -545,7 +545,7 @@ class GreetingService {
 class ReactiveGreetingResource {
 
     @Inject
-    @field: Default // <1> 
+    @field: Default // <1>
     lateinit var service: GreetingService
 
     @GET

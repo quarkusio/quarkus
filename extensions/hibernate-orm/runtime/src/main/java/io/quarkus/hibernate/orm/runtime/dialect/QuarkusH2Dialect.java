@@ -21,9 +21,9 @@ public class QuarkusH2Dialect extends H2Dialect {
             throws SQLException {
         // H2 by default consider identifiers as upper case
         // unless DATABASE_TO_UPPER=false but that's not the default
-        // and Thomas Mueller says it's normal ANSI-SQL SQL-92 behavior
-        // http://h2-database.66688.n3.nabble.com/Case-of-column-name-td3485519.html
-        // http://www.h2database.com/html/grammar.html#name
+        // and it's normal ANSI-SQL SQL-92 behavior
+        // https://groups.google.com/g/h2-database/c/0gHNCR0yo_s/m/g9nkLh2uvS8J
+        // https://www.h2database.com/html/grammar.html#name
         // DATABASE_TO_LOWER=TRUE will come with H2's next version as of Feb 2019 but only for PostgreSQL compat
         builder.setUnquotedCaseStrategy(IdentifierCaseStrategy.UPPER);
         // then delegate to the database metadata driver identifier casing selection

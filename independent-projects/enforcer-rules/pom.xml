@@ -76,7 +76,7 @@
             <plugin>
                 <artifactId>maven-invoker-plugin</artifactId>
                 <version>${maven-invoker-plugin.version}</version>
-                <!-- http://maven.apache.org/plugins/maven-invoker-plugin/usage.html -->
+                <!-- https://maven.apache.org/plugins/maven-invoker-plugin/usage.html -->
                 <configuration>
                     <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
                     <settingsFile>src/it/settings.xml</settingsFile>

@@ -251,7 +251,7 @@ The file containing the custom TrustStore does *not* (and probably should not) h
 
 === Run time configuration
 
-Using the runtime certificate configuration, supported by GraalVM since 21.3 does not require any special or additional configuration compared to regular java programs or Quarkus in jvm mode. See the https://www.graalvm.org/reference-manual/native-image/CertificateManagement/#run-time-options[GraalVM documentation] for more information.
+Using the runtime certificate configuration, supported by GraalVM since 21.3 does not require any special or additional configuration compared to regular java programs or Quarkus in jvm mode. See the https://www.graalvm.org/22.2/reference-manual/native-image/CertificateManagement/#run-time-options[GraalVM documentation] for more information.
 
 [#working-with-containers]
 === Working with containers

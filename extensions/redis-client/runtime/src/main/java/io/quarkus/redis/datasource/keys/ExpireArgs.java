@@ -7,7 +7,7 @@ import io.quarkus.redis.datasource.RedisCommandExtraArguments;
 
 /**
  * Argument for the Redis <a href="https://redis.io/commands/expire">EXPIRE</a> and
- * <a href="https://redis.io/commands/expireeat">EXPIREAT</a> commands.
+ * <a href="https://redis.io/commands/expireat">EXPIREAT</a> commands.
  */
 public class ExpireArgs implements RedisCommandExtraArguments {
     private boolean xx;

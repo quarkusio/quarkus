@@ -22,6 +22,7 @@ import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -46,29 +47,30 @@ import io.quarkus.oidc.client.runtime.TokensProducer;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
+@BuildSteps(onlyIf = OidcClientBuildStep.IsEnabled.class)
 public class OidcClientBuildStep {
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     FeatureBuildItem featureBuildItem() {
         return new FeatureBuildItem(Feature.OIDC_CLIENT);
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     ExtensionSslNativeSupportBuildItem enableSslInNative() {
         return new ExtensionSslNativeSupportBuildItem(Feature.OIDC_CLIENT);
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     void registerProvider(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(TokensProducer.class));
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     void runtimeInitializeTokenHelper(BuildProducer<RuntimeInitializedClassBuildItem> runtime) {
         runtime.produce(new RuntimeInitializedClassBuildItem(TokensHelper.class.getName()));
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     void extractInjectedOidcClientNames(
             ApplicationArchivesBuildItem beanArchiveIndex,
             BuildProducer<OidcClientNamesBuildItem> oidcClientNames) {
@@ -86,7 +88,7 @@ public class OidcClientBuildStep {
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     public void setup(
             OidcClientsConfig oidcConfig,
             TlsConfig tlsConfig,
@@ -136,7 +138,7 @@ public class OidcClientBuildStep {
                 .done();
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     public void createNonDefaultTokensProducers(
             BuildProducer<GeneratedBeanBuildItem> generatedBean,
             OidcClientNamesBuildItem oidcClientNames) {

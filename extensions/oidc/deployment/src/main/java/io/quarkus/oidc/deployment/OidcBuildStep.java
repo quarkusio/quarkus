@@ -15,6 +15,7 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
@@ -46,15 +47,16 @@ import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
 import io.smallrye.jwt.auth.cdi.JsonValueProducer;
 import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
 
+@BuildSteps(onlyIf = OidcBuildStep.IsEnabled.class)
 public class OidcBuildStep {
     public static final DotName DOTNAME_SECURITY_EVENT = DotName.createSimple(SecurityEvent.class.getName());
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     FeatureBuildItem featureBuildItem() {
         return new FeatureBuildItem(Feature.OIDC);
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     public void provideSecurityInformation(BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
         // TODO: By default quarkus.oidc.application-type = service
         // Also look at other options (web-app, hybrid)
@@ -62,7 +64,7 @@ public class OidcBuildStep {
                 .produce(SecurityInformationBuildItem.OPENIDCONNECT("quarkus.oidc.auth-server-url"));
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     AdditionalBeanBuildItem jwtClaimIntegration(Capabilities capabilities) {
         if (!capabilities.isPresent(Capability.JWT)) {
             AdditionalBeanBuildItem.Builder removable = AdditionalBeanBuildItem.builder();
@@ -76,7 +78,7 @@ public class OidcBuildStep {
         return null;
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     public void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
@@ -106,13 +108,13 @@ public class OidcBuildStep {
                 .done();
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     ExtensionSslNativeSupportBuildItem enableSslInNative() {
         return new ExtensionSslNativeSupportBuildItem(Feature.OIDC);
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     public SyntheticBeanBuildItem setup(
             OidcConfig config,
             OidcRecorder recorder,
@@ -128,7 +130,7 @@ public class OidcBuildStep {
 
     // Note that DefaultTenantConfigResolver injects quarkus.http.proxy.enable-forwarded-prefix
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     public void findSecurityEventObservers(
             OidcRecorder recorder,

@@ -108,7 +108,7 @@ public class ClientSerialisers extends Serialisers {
             throws IOException {
 
         if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
-            if (writerInterceptors == null) {
+            if ((writerInterceptors == null) || writerInterceptors.length == 0) {
                 VertxBufferOutputStream out = new VertxBufferOutputStream();
                 writer.writeTo(entityObject, entityClass, entityType, entity.getAnnotations(),
                         entity.getMediaType(), headerMap, out);

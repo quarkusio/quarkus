@@ -684,7 +684,7 @@ jobs:
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
     steps:
       - name: Support longpaths on Windows
-        if: "startsWith(matrix.os-name, 'windows')"
+        if: startsWith(matrix.os-name, 'windows')
         run: git config --global core.longpaths true
       - uses: actions/checkout@v2
       - name: Reclaim Disk Space

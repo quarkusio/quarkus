@@ -11,6 +11,7 @@ import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 
@@ -89,5 +90,13 @@ public class ProtectedResource {
     @GET
     public String getEntitlements() {
         return authzClient.authorization().authorize().getToken();
+    }
+
+    @Produces("application/json")
+    @Path("/party-token-permissions-size")
+    @GET
+    public int getPartyTokenPermissionsSize() {
+        return authzClient.protection().introspectRequestingPartyToken(authzClient.authorization().authorize().getToken())
+                .getPermissions().size();
     }
 }

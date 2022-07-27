@@ -8,6 +8,7 @@ import org.keycloak.adapters.authorization.ClaimInformationPointProviderFactory;
 import org.keycloak.adapters.authorization.cip.ClaimsInformationPointProviderFactory;
 import org.keycloak.adapters.authorization.cip.HttpClaimInformationPointProviderFactory;
 import org.keycloak.authorization.client.representation.ServerConfiguration;
+import org.keycloak.authorization.client.representation.TokenIntrospectionResponse;
 import org.keycloak.jose.jwk.JSONWebKeySet;
 import org.keycloak.jose.jwk.JWK;
 import org.keycloak.jose.jws.JWSHeader;
@@ -42,6 +43,7 @@ public class KeycloakReflectionBuildStep {
     public void registerReflectionItems(BuildProducer<ReflectiveClassBuildItem> reflectiveItems) {
         reflectiveItems.produce(new ReflectiveClassBuildItem(true, true,
                 JsonWebToken.class.getName(),
+                TokenIntrospectionResponse.class.getName(),
                 JWSHeader.class.getName(),
                 AccessToken.class.getName(),
                 IDToken.class.getName(),

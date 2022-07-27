@@ -52,12 +52,12 @@ public class InterceptorGenerator extends BeanGenerator {
     }
 
     /**
+     * Precompute the generated name for the given interceptor so that the {@link ComponentsProviderGenerator} can be executed
+     * before all interceptors metadata are generated.
      *
-     * @param interceptor bean
-     * @return a collection of resources
+     * @param interceptor
      */
-    Collection<Resource> generate(InterceptorInfo interceptor) {
-
+    void precomputeGeneratedName(InterceptorInfo interceptor) {
         ProviderType providerType = new ProviderType(interceptor.getProviderType());
         ClassInfo interceptorClass = interceptor.getTarget().get().asClass();
         String baseName;
@@ -66,9 +66,23 @@ public class InterceptorGenerator extends BeanGenerator {
         } else {
             baseName = DotNames.simpleName(interceptorClass);
         }
+        beanToGeneratedBaseName.put(interceptor, baseName);
         String targetPackage = DotNames.packageName(providerType.name());
         String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
         beanToGeneratedName.put(interceptor, generatedName);
+    }
+
+    /**
+     *
+     * @param interceptor bean
+     * @return a collection of resources
+     */
+    Collection<Resource> generate(InterceptorInfo interceptor) {
+        ProviderType providerType = new ProviderType(interceptor.getProviderType());
+        String baseName = beanToGeneratedBaseName.get(interceptor);
+        String targetPackage = DotNames.packageName(providerType.name());
+        String generatedName = beanToGeneratedName.get(interceptor);
+
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();
         }

@@ -35,9 +35,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -67,8 +67,10 @@ public class ObserverGenerator extends AbstractGenerator {
     private final PrivateMembersCollector privateMembers;
     private final Set<String> existingClasses;
     private final Map<ObserverInfo, String> observerToGeneratedName;
+    private final Map<ObserverInfo, String> observerToGeneratedBaseName;
     private final Predicate<DotName> injectionPointAnnotationsPredicate;
     private final boolean mockable;
+    private final ConcurrentMap<String, ObserverInfo> generatedClasses;
 
     public ObserverGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
             PrivateMembersCollector privateMembers, boolean generateSources, ReflectionRegistration reflectionRegistration,
@@ -80,16 +82,20 @@ public class ObserverGenerator extends AbstractGenerator {
         this.privateMembers = privateMembers;
         this.existingClasses = existingClasses;
         this.observerToGeneratedName = observerToGeneratedName;
+        this.observerToGeneratedBaseName = new HashMap<>();
         this.injectionPointAnnotationsPredicate = injectionPointAnnotationsPredicate;
         this.mockable = mockable;
+        this.generatedClasses = new ConcurrentHashMap<>();
     }
 
     /**
+     * Precompute the generated name for the given observer so that the {@link ComponentsProviderGenerator} can be executed
+     * before
+     * all observers metadata are generated.
      *
      * @param observer
-     * @return a collection of resources
      */
-    Collection<Resource> generate(ObserverInfo observer) {
+    void precomputeGeneratedName(ObserverInfo observer) {
         // The name of the generated class differs:
         // "org.acme.Foo_Observer_fooMethod_hash" for normal observer where hash represents the signature of the observer method
         // "org.acme.Registrar_Observer_Synthetic_hash" for synthetic observer where hash represents the basic attrs of the observer
@@ -124,14 +130,16 @@ public class ObserverGenerator extends AbstractGenerator {
             sigBuilder.append(observer.getDeclaringBean().getIdentifier());
         }
 
-        StringBuilder baseName = new StringBuilder();
-        baseName.append(classBase).append(OBSERVER_SUFFIX).append(UNDERSCORE);
+        StringBuilder baseNameBuilder = new StringBuilder();
+        baseNameBuilder.append(classBase).append(OBSERVER_SUFFIX).append(UNDERSCORE);
         if (observer.isSynthetic()) {
-            baseName.append(SYNTHETIC_SUFFIX);
+            baseNameBuilder.append(SYNTHETIC_SUFFIX);
         } else {
-            baseName.append(observer.getObserverMethod().name());
+            baseNameBuilder.append(observer.getObserverMethod().name());
         }
-        baseName.append(UNDERSCORE).append(Hashes.sha1(sigBuilder.toString()));
+        baseNameBuilder.append(UNDERSCORE).append(Hashes.sha1(sigBuilder.toString()));
+        String baseName = baseNameBuilder.toString();
+        this.observerToGeneratedBaseName.put(observer, baseName);
 
         // No suffix added at the end of generated name because it's already
         // included in a baseName, e.g. Foo_Observer_fooMethod_hash
@@ -142,17 +150,25 @@ public class ObserverGenerator extends AbstractGenerator {
         } else {
             targetPackage = DotNames.packageName(observer.getObserverMethod().declaringClass().name());
         }
-        String generatedName = generatedNameFromTarget(targetPackage, baseName.toString(), "");
+        String generatedName = generatedNameFromTarget(targetPackage, baseName, "");
+        this.observerToGeneratedName.put(observer, generatedName);
+    }
 
-        Optional<Entry<ObserverInfo, String>> generatedClass = observerToGeneratedName.entrySet().stream()
-                .filter(e -> e.getValue().equals(generatedName)).findAny();
+    /**
+     *
+     * @param observer
+     * @return a collection of resources
+     */
+    Collection<Resource> generate(ObserverInfo observer) {
+        String baseName = observerToGeneratedBaseName.get(observer);
+        String generatedName = observerToGeneratedName.get(observer);
 
-        observerToGeneratedName.put(observer, generatedName);
-        if (generatedClass.isPresent()) {
+        ObserverInfo generatedObserver = generatedClasses.putIfAbsent(generatedName, observer);
+        if (generatedObserver != null) {
             if (observer.isSynthetic()) {
                 throw new IllegalStateException(
                         "A synthetic observer with the generated class name " + generatedName + " already exists for "
-                                + generatedClass.get().getKey());
+                                + generatedObserver);
             } else {
                 // Inherited observer methods share the same generated class
                 return Collections.emptyList();
@@ -193,7 +209,7 @@ public class ObserverGenerator extends AbstractGenerator {
         initMaps(observer, injectionPointToProviderField);
 
         createProviderFields(observerCreator, observer, injectionPointToProviderField);
-        createConstructor(classOutput, observerCreator, observer, baseName.toString(), injectionPointToProviderField,
+        createConstructor(classOutput, observerCreator, observer, baseName, injectionPointToProviderField,
                 annotationLiterals, reflectionRegistration);
 
         implementGetObservedType(observerCreator, observedType.getFieldDescriptor());

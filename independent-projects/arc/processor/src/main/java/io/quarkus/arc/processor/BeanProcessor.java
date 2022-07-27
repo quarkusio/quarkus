@@ -19,7 +19,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -148,102 +154,246 @@ public class BeanProcessor {
     }
 
     public List<Resource> generateResources(ReflectionRegistration reflectionRegistration, Set<String> existingClasses,
-            Consumer<BytecodeTransformer> bytecodeTransformerConsumer, boolean detectUnusedFalsePositives)
-            throws IOException {
-        if (reflectionRegistration == null) {
-            reflectionRegistration = this.reflectionRegistration;
-        }
+            Consumer<BytecodeTransformer> bytecodeTransformerConsumer, boolean detectUnusedFalsePositives,
+            ExecutorService executor)
+            throws IOException, InterruptedException, ExecutionException {
+
+        ReflectionRegistration refReg = reflectionRegistration != null ? reflectionRegistration : this.reflectionRegistration;
         PrivateMembersCollector privateMembers = new PrivateMembersCollector();
+
+        // These maps are precomputed and then used in the ComponentsProviderGenerator which is generated first
         Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
         Map<ObserverInfo, String> observerToGeneratedName = new HashMap<>();
 
         BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate, privateMembers,
-                generateSources, reflectionRegistration, existingClasses, beanToGeneratedName,
+                generateSources, refReg, existingClasses, beanToGeneratedName,
                 injectionPointAnnotationsPredicate, suppressConditionGenerators);
+        Collection<BeanInfo> beans = beanDeployment.getBeans();
+        for (BeanInfo bean : beans) {
+            beanGenerator.precomputeGeneratedName(bean);
+        }
+
         ClientProxyGenerator clientProxyGenerator = new ClientProxyGenerator(applicationClassPredicate, generateSources,
-                allowMocking, reflectionRegistration, existingClasses);
+                allowMocking, refReg, existingClasses);
+
         InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals, applicationClassPredicate,
-                privateMembers, generateSources, reflectionRegistration, existingClasses, beanToGeneratedName,
+                privateMembers, generateSources, refReg, existingClasses, beanToGeneratedName,
                 injectionPointAnnotationsPredicate);
+        Collection<InterceptorInfo> interceptors = beanDeployment.getInterceptors();
+        for (InterceptorInfo interceptor : interceptors) {
+            interceptorGenerator.precomputeGeneratedName(interceptor);
+        }
+        interceptors.forEach(interceptorGenerator::precomputeGeneratedName);
+
         DecoratorGenerator decoratorGenerator = new DecoratorGenerator(annotationLiterals, applicationClassPredicate,
-                privateMembers, generateSources, reflectionRegistration, existingClasses, beanToGeneratedName,
+                privateMembers, generateSources, refReg, existingClasses, beanToGeneratedName,
                 injectionPointAnnotationsPredicate);
+        Collection<DecoratorInfo> decorators = beanDeployment.getDecorators();
+        for (DecoratorInfo decorator : decorators) {
+            decoratorGenerator.precomputeGeneratedName(decorator);
+        }
+
         SubclassGenerator subclassGenerator = new SubclassGenerator(annotationLiterals, applicationClassPredicate,
-                generateSources, reflectionRegistration, existingClasses);
+                generateSources, refReg, existingClasses);
+
         ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals, applicationClassPredicate,
-                privateMembers, generateSources, reflectionRegistration, existingClasses, observerToGeneratedName,
+                privateMembers, generateSources, refReg, existingClasses, observerToGeneratedName,
                 injectionPointAnnotationsPredicate, allowMocking);
+        Collection<ObserverInfo> observers = beanDeployment.getObservers();
+        for (ObserverInfo observer : observers) {
+            observerGenerator.precomputeGeneratedName(observer);
+        }
 
         List<Resource> resources = new ArrayList<>();
 
-        // Generate interceptors
-        for (InterceptorInfo interceptor : beanDeployment.getInterceptors()) {
-            for (Resource resource : interceptorGenerator.generate(interceptor)) {
-                resources.add(resource);
+        if (executor != null) {
+            LOGGER.debug("Generating resources in parallel");
+
+            // Primary tasks include interceptors, decorators, beans and observers
+            List<Future<Collection<Resource>>> primaryTasks = new ArrayList<>();
+            // Secondary tasks include client proxies and subclasses - this queue is accessed concurrently
+            ConcurrentLinkedQueue<Future<Collection<Resource>>> secondaryTasks = new ConcurrentLinkedQueue<>();
+
+            // Generate _ComponentsProvider
+            primaryTasks.add(executor.submit(new Callable<Collection<Resource>>() {
+                @Override
+                public Collection<Resource> call() throws Exception {
+                    return new ComponentsProviderGenerator(annotationLiterals, generateSources, detectUnusedFalsePositives)
+                            .generate(
+                                    name,
+                                    beanDeployment,
+                                    beanToGeneratedName,
+                                    observerToGeneratedName);
+                }
+            }));
+
+            // Generate interceptors
+            for (InterceptorInfo interceptor : interceptors) {
+                primaryTasks.add(executor.submit(new Callable<Collection<Resource>>() {
+                    @Override
+                    public Collection<Resource> call() throws Exception {
+                        return interceptorGenerator.generate(interceptor);
+                    }
+                }));
             }
-        }
-        // Generate decorators
-        for (DecoratorInfo decorator : beanDeployment.getDecorators()) {
-            for (Resource resource : decoratorGenerator.generate(decorator)) {
-                resources.add(resource);
+            // Generate decorators
+            for (DecoratorInfo decorator : decorators) {
+                primaryTasks.add(executor.submit(new Callable<Collection<Resource>>() {
+                    @Override
+                    public Collection<Resource> call() throws Exception {
+                        return decoratorGenerator.generate(decorator);
+                    }
+                }));
             }
-        }
-        // Generate beans
-        for (BeanInfo bean : beanDeployment.getBeans()) {
-            for (Resource resource : beanGenerator.generate(bean)) {
-                resources.add(resource);
-                if (SpecialType.BEAN.equals(resource.getSpecialType())) {
-                    if (bean.getScope().isNormal()) {
-                        // Generate client proxy
-                        Collection<Resource> proxyResources = clientProxyGenerator.generate(bean,
-                                resource.getFullyQualifiedName(),
-                                bytecodeTransformerConsumer, transformUnproxyableClasses);
-                        if (bean.isClassBean()) {
-                            for (Resource r : proxyResources) {
-                                if (r.getSpecialType() == SpecialType.CLIENT_PROXY) {
-                                    reflectionRegistration.registerClientProxy(bean.getBeanClass(), r.getFullyQualifiedName());
-                                    break;
+            // Generate beans
+            for (BeanInfo bean : beans) {
+
+                primaryTasks.add(executor.submit(new Callable<Collection<Resource>>() {
+                    @Override
+                    public Collection<Resource> call() throws Exception {
+
+                        Collection<Resource> beanResources = beanGenerator.generate(bean);
+                        for (Resource resource : beanResources) {
+                            if (SpecialType.BEAN == resource.getSpecialType()) {
+
+                                if (bean.getScope().isNormal()) {
+                                    // Generate client proxy
+                                    secondaryTasks.add(executor.submit(new Callable<Collection<Resource>>() {
+                                        @Override
+                                        public Collection<Resource> call() throws Exception {
+                                            Collection<Resource> proxyResources = clientProxyGenerator.generate(bean,
+                                                    resource.getFullyQualifiedName(),
+                                                    bytecodeTransformerConsumer, transformUnproxyableClasses);
+                                            if (bean.isClassBean()) {
+                                                for (Resource r : proxyResources) {
+                                                    if (r.getSpecialType() == SpecialType.CLIENT_PROXY) {
+                                                        refReg.registerClientProxy(bean.getBeanClass(),
+                                                                r.getFullyQualifiedName());
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                            return proxyResources;
+                                        }
+                                    }));
+                                }
+
+                                if (bean.isSubclassRequired()) {
+                                    // Generate subclass
+                                    secondaryTasks.add(executor.submit(new Callable<Collection<Resource>>() {
+                                        @Override
+                                        public Collection<Resource> call() throws Exception {
+                                            Collection<Resource> subclassResources = subclassGenerator.generate(bean,
+                                                    resource.getFullyQualifiedName());
+                                            for (Resource r : subclassResources) {
+                                                if (r.getSpecialType() == SpecialType.SUBCLASS) {
+                                                    refReg.registerSubclass(bean.getBeanClass(), r.getFullyQualifiedName());
+                                                    break;
+                                                }
+                                            }
+                                            return subclassResources;
+                                        }
+                                    }));
                                 }
                             }
                         }
-                        resources.addAll(proxyResources);
+                        return beanResources;
                     }
-                    if (bean.isSubclassRequired()) {
-                        Collection<Resource> subclassResources = subclassGenerator.generate(bean,
-                                resource.getFullyQualifiedName());
-                        for (Resource r : subclassResources) {
-                            if (r.getSpecialType() == SpecialType.SUBCLASS) {
-                                reflectionRegistration.registerSubclass(bean.getBeanClass(), r.getFullyQualifiedName());
-                                break;
+                }));
+            }
+
+            // Generate observers
+            for (ObserverInfo observer : observers) {
+                primaryTasks.add(executor.submit(new Callable<Collection<Resource>>() {
+                    @Override
+                    public Collection<Resource> call() throws Exception {
+                        return observerGenerator.generate(observer);
+                    }
+                }));
+            }
+
+            for (Future<Collection<Resource>> future : primaryTasks) {
+                resources.addAll(future.get());
+            }
+            for (Future<Collection<Resource>> future : secondaryTasks) {
+                resources.addAll(future.get());
+            }
+
+        } else {
+            LOGGER.debug("Generating resources in series");
+
+            // Generate interceptors
+            for (InterceptorInfo interceptor : interceptors) {
+                resources.addAll(interceptorGenerator.generate(interceptor));
+            }
+            // Generate decorators
+            for (DecoratorInfo decorator : decorators) {
+                resources.addAll(decoratorGenerator.generate(decorator));
+            }
+            // Generate beans
+            for (BeanInfo bean : beans) {
+                for (Resource resource : beanGenerator.generate(bean)) {
+                    resources.add(resource);
+                    if (SpecialType.BEAN.equals(resource.getSpecialType())) {
+                        if (bean.getScope().isNormal()) {
+                            // Generate client proxy
+                            Collection<Resource> proxyResources = clientProxyGenerator.generate(bean,
+                                    resource.getFullyQualifiedName(),
+                                    bytecodeTransformerConsumer, transformUnproxyableClasses);
+                            if (bean.isClassBean()) {
+                                for (Resource r : proxyResources) {
+                                    if (r.getSpecialType() == SpecialType.CLIENT_PROXY) {
+                                        refReg.registerClientProxy(bean.getBeanClass(),
+                                                r.getFullyQualifiedName());
+                                        break;
+                                    }
+                                }
                             }
+                            resources.addAll(proxyResources);
                         }
-                        resources.addAll(subclassResources);
+                        if (bean.isSubclassRequired()) {
+                            Collection<Resource> subclassResources = subclassGenerator.generate(bean,
+                                    resource.getFullyQualifiedName());
+                            for (Resource r : subclassResources) {
+                                if (r.getSpecialType() == SpecialType.SUBCLASS) {
+                                    refReg.registerSubclass(bean.getBeanClass(), r.getFullyQualifiedName());
+                                    break;
+                                }
+                            }
+                            resources.addAll(subclassResources);
+                        }
                     }
                 }
             }
+            // Generate observers
+            for (ObserverInfo observer : observers) {
+                resources.addAll(observerGenerator.generate(observer));
+            }
+
+            // Generate _ComponentsProvider
+            resources.addAll(
+                    new ComponentsProviderGenerator(annotationLiterals, generateSources, detectUnusedFalsePositives).generate(
+                            name,
+                            beanDeployment,
+                            beanToGeneratedName,
+                            observerToGeneratedName));
         }
 
-        // Generate observers
-        for (ObserverInfo observer : beanDeployment.getObservers()) {
-            for (Resource resource : observerGenerator.generate(observer)) {
-                resources.add(resource);
+        // Generate AnnotationLiterals - at this point all annotation literals must be processed
+        if (annotationLiterals.hasLiteralsToGenerate()) {
+            AnnotationLiteralGenerator generator = new AnnotationLiteralGenerator(generateSources);
+            if (executor != null) {
+                Collection<Future<Collection<Resource>>> annotationTasks = generator.generate(annotationLiterals.getCache(),
+                        existingClasses, executor);
+                for (Future<Collection<Resource>> future : annotationTasks) {
+                    resources.addAll(future.get());
+                }
+            } else {
+                resources.addAll(generator.generate(annotationLiterals.getCache(), existingClasses));
             }
         }
 
         privateMembers.log();
-
-        // Generate _ComponentsProvider
-        resources.addAll(
-                new ComponentsProviderGenerator(annotationLiterals, generateSources, detectUnusedFalsePositives).generate(name,
-                        beanDeployment,
-                        beanToGeneratedName,
-                        observerToGeneratedName));
-
-        // Generate AnnotationLiterals
-        if (annotationLiterals.hasLiteralsToGenerate()) {
-            AnnotationLiteralGenerator generator = new AnnotationLiteralGenerator(generateSources);
-            resources.addAll(generator.generate(annotationLiterals.getCache(), existingClasses));
-        }
 
         if (output != null) {
             for (Resource resource : resources) {
@@ -261,7 +411,7 @@ public class BeanProcessor {
         return annotationLiterals;
     }
 
-    public BeanDeployment process() throws IOException {
+    public BeanDeployment process() throws IOException, InterruptedException, ExecutionException {
         Consumer<BytecodeTransformer> unsupportedBytecodeTransformer = new Consumer<BytecodeTransformer>() {
             @Override
             public void accept(BytecodeTransformer transformer) {
@@ -276,7 +426,7 @@ public class BeanProcessor {
         initialize(unsupportedBytecodeTransformer, Collections.emptyList());
         ValidationContext validationContext = validate(unsupportedBytecodeTransformer);
         processValidationErrors(validationContext);
-        generateResources(null, new HashSet<>(), unsupportedBytecodeTransformer, true);
+        generateResources(null, new HashSet<>(), unsupportedBytecodeTransformer, true, null);
         return beanDeployment;
     }
 
@@ -625,8 +775,8 @@ public class BeanProcessor {
         private final List<String> fwkDescriptions;
 
         public PrivateMembersCollector() {
-            this.appDescriptions = new ArrayList<>();
-            this.fwkDescriptions = LOGGER.isDebugEnabled() ? new ArrayList<>() : null;
+            this.appDescriptions = new CopyOnWriteArrayList<>();
+            this.fwkDescriptions = LOGGER.isDebugEnabled() ? new CopyOnWriteArrayList<>() : null;
         }
 
         void add(boolean isApplicationClass, String description) {

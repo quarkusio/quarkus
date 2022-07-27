@@ -439,7 +439,11 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             if (shouldFail) {
                 buildFailure.set(e);
             } else {
-                throw e;
+                if (e instanceof RuntimeException) {
+                    throw (RuntimeException) e;
+                } else {
+                    throw new RuntimeException(e);
+                }
             }
         }
         return old;

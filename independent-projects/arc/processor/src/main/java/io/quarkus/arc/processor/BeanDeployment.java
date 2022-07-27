@@ -369,8 +369,10 @@ public class BeanDeployment {
         if (!removableInterceptors.isEmpty()) {
             removedInterceptors.addAll(removableInterceptors);
             this.interceptors.removeAll(removableInterceptors);
-            List<InjectionPointInfo> removableInjectionPoints = removableInterceptors.stream()
-                    .flatMap(d -> d.getAllInjectionPoints().stream()).collect(Collectors.toList());
+            List<InjectionPointInfo> removableInjectionPoints = new ArrayList<>();
+            for (BeanInfo interceptor : removableInterceptors) {
+                removableInjectionPoints.addAll(interceptor.getAllInjectionPoints());
+            }
             injectionPoints.removeAll(removableInjectionPoints);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debugf(removableInterceptors.stream().map(i -> "Removed unused interceptor " + i)
@@ -406,8 +408,10 @@ public class BeanDeployment {
         if (!removableDecorators.isEmpty()) {
             removedDecorators.addAll(removableDecorators);
             this.decorators.removeAll(removableDecorators);
-            List<InjectionPointInfo> removableInjectionPoints = removableDecorators.stream()
-                    .flatMap(d -> d.getAllInjectionPoints().stream()).collect(Collectors.toList());
+            List<InjectionPointInfo> removableInjectionPoints = new ArrayList<>();
+            for (BeanInfo decorator : removableDecorators) {
+                removableInjectionPoints.addAll(decorator.getAllInjectionPoints());
+            }
             injectionPoints.removeAll(removableInjectionPoints);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debugf(removableDecorators.stream().map(i -> "Removed unused decorator " + i)
@@ -423,8 +427,10 @@ public class BeanDeployment {
         if (!removableBeans.isEmpty()) {
             this.beans.removeAll(removableBeans);
             this.removedBeans.addAll(removableBeans);
-            List<InjectionPointInfo> removableInjectionPoints = removableBeans.stream()
-                    .flatMap(d -> d.getAllInjectionPoints().stream()).collect(Collectors.toList());
+            List<InjectionPointInfo> removableInjectionPoints = new ArrayList<>();
+            for (BeanInfo bean : removableBeans) {
+                removableInjectionPoints.addAll(bean.getAllInjectionPoints());
+            }
             injectionPoints.removeAll(removableInjectionPoints);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debugf(removedBeans.stream().map(b -> "Removed unused " + b).collect(Collectors.joining("\n")));

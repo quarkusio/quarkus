@@ -23,6 +23,8 @@ public class MethodParameter {
     private String defaultValue;
     private boolean optional;
     private boolean isObtainedAsCollection;
+    public String mimeType;
+    public String partFileName;
 
     public MethodParameter() {
     }
@@ -30,7 +32,8 @@ public class MethodParameter {
     public MethodParameter(String name, String type, String declaredType, String declaredUnresolvedType, String signature,
             ParameterType parameterType,
             boolean single,
-            String defaultValue, boolean isObtainedAsCollection, boolean optional, boolean encoded) {
+            String defaultValue, boolean isObtainedAsCollection, boolean optional, boolean encoded,
+            String mimeType, String partFileName) {
         this.name = name;
         this.type = type;
         this.declaredType = declaredType;
@@ -42,6 +45,8 @@ public class MethodParameter {
         this.isObtainedAsCollection = isObtainedAsCollection;
         this.optional = optional;
         this.encoded = encoded;
+        this.mimeType = mimeType;
+        this.partFileName = partFileName;
     }
 
     public String getName() {
@@ -132,12 +137,14 @@ public class MethodParameter {
                 && Objects.equals(type, that.type) && Objects.equals(declaredType, that.declaredType)
                 && Objects.equals(declaredUnresolvedType, that.declaredUnresolvedType)
                 && Objects.equals(signature, that.signature) && parameterType == that.parameterType
-                && Objects.equals(defaultValue, that.defaultValue);
+                && Objects.equals(defaultValue, that.defaultValue)
+                && Objects.equals(mimeType, that.mimeType)
+                && Objects.equals(partFileName, that.partFileName);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(name, type, declaredType, declaredUnresolvedType, signature, parameterType, encoded, single,
-                defaultValue, optional, isObtainedAsCollection);
+                defaultValue, optional, isObtainedAsCollection, mimeType, partFileName);
     }
 }

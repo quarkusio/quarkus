@@ -1,8 +1,11 @@
 package io.quarkus.resteasy.reactive.server.test.multipart;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.List;
 
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.POST;
@@ -11,8 +14,10 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.jboss.resteasy.reactive.MultipartForm;
+import org.jboss.resteasy.reactive.PartType;
+import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.RestQuery;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.common.annotation.Blocking;
@@ -26,7 +31,7 @@ public class MultipartResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Path("/simple/{times}")
     @NonBlocking
-    public String simple(@MultipartForm FormData formData, Integer times) {
+    public String simple(@BeanParam FormData formData, Integer times) {
         if (BlockingOperationControl.isBlockingAllowed()) {
             throw new RuntimeException("should not have dispatched");
         }
@@ -34,6 +39,43 @@ public class MultipartResource {
                 + " - "
                 + formData.getHtmlPart().contentType() + " - " + Files.exists(formData.xmlPart) + " - "
                 + formData.txtFile.exists();
+    }
+
+    @POST
+    @Path("/implicit/simple/{times}")
+    @NonBlocking
+    public String simpleImplicit(FormData formData, Integer times) {
+        if (BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("should not have dispatched");
+        }
+        return formData.getName() + " - " + formData.active + " - " + times * formData.getNum() + " - " + formData.getStatus()
+                + " - "
+                + formData.getHtmlPart().contentType() + " - " + Files.exists(formData.xmlPart) + " - "
+                + formData.txtFile.exists();
+    }
+
+    @POST
+    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Path("/param/simple/{times}")
+    @NonBlocking
+    public String simple(
+            // don't set a part type, use the default
+            @RestForm String name,
+            @RestForm @PartType(MediaType.TEXT_PLAIN) Status status,
+            @RestForm("htmlFile") FileUpload htmlPart,
+            @RestForm("xmlFile") java.nio.file.Path xmlPart,
+            @RestForm File txtFile,
+            @RestForm @PartType(MediaType.TEXT_PLAIN) boolean active,
+            @RestForm @PartType(MediaType.TEXT_PLAIN) int num,
+            Integer times) {
+        if (BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("should not have dispatched");
+        }
+        return name + " - " + active + " - " + times * num + " - " + status
+                + " - "
+                + htmlPart.contentType() + " - " + Files.exists(xmlPart) + " - "
+                + txtFile.exists();
     }
 
     @POST
@@ -70,9 +112,24 @@ public class MultipartResource {
     @POST
     @Produces(MediaType.TEXT_PLAIN)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Path("/param/same-name")
+    public String sameName(@RestForm @PartType(MediaType.TEXT_PLAIN) Status status,
+            @RestForm("htmlFile") List<File> htmlFiles,
+            @RestForm("txtFile") List<FileUpload> txtFiles,
+            @RestForm("xmlFile") List<java.nio.file.Path> xmlFiles) {
+        if (!BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("should have dispatched");
+        }
+        return status + " - " + htmlFiles.size() + " - " + txtFiles.size() + " - "
+                + xmlFiles.size();
+    }
+
+    @POST
+    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Path("/optional")
     @NonBlocking
-    public String optional(@MultipartForm FormData formData) {
+    public String optional(FormData formData) {
         if (BlockingOperationControl.isBlockingAllowed()) {
             throw new RuntimeException("should not have dispatched");
         }

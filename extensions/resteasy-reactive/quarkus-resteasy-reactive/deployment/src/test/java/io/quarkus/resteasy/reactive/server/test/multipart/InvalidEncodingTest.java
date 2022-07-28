@@ -5,13 +5,13 @@ import static org.hamcrest.CoreMatchers.not;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
@@ -60,7 +60,7 @@ public class InvalidEncodingTest {
         @Path("/multipart-encoding")
         @Produces(MediaType.TEXT_PLAIN)
         @Consumes(MediaType.MULTIPART_FORM_DATA + ";charset=UTF-8")
-        public String postForm(@MultipartForm final FeedbackBody feedback) {
+        public String postForm(@BeanParam final FeedbackBody feedback) {
             return feedback.content;
         }
     }

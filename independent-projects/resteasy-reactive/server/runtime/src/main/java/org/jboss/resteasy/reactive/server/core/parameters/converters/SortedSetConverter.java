@@ -59,6 +59,7 @@ public class SortedSetConverter implements ParameterConverter {
         public SortedSetSupplier() {
         }
 
+        // invoked by reflection for BeanParam in ClassInjectorTransformer
         public SortedSetSupplier(ParameterConverterSupplier delegate) {
             this.delegate = delegate;
         }

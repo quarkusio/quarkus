@@ -9,13 +9,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.function.Supplier;
 
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -101,7 +101,7 @@ public class TooLargeFormAttributeMultipartFormInputTest extends AbstractMultipa
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
         @Produces(MediaType.TEXT_PLAIN)
-        public String hello(@MultipartForm FormData data) {
+        public String hello(@BeanParam FormData data) {
             return data.getName();
         }
     }

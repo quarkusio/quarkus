@@ -6,6 +6,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
@@ -205,6 +206,28 @@ public final class Types {
             return getRawType(((WildcardType) returnType).getUpperBounds()[0]);
         }
         throw new UnsupportedOperationException("Endpoint return type not supported yet: " + returnType);
+    }
+
+    public static Type getMultipartElementType(Type paramType) {
+        if (paramType instanceof Class) {
+            if (((Class) paramType).isArray()) {
+                return ((Class) paramType).getComponentType();
+            }
+            return paramType;
+        }
+        if (paramType instanceof ParameterizedType) {
+            ParameterizedType type = (ParameterizedType) paramType;
+            Type firstTypeArgument = type.getActualTypeArguments()[0];
+            if (type.getRawType() == List.class) {
+                return firstTypeArgument;
+            }
+            return paramType;
+        }
+        if (paramType instanceof GenericArrayType) {
+            GenericArrayType type = (GenericArrayType) paramType;
+            return type.getGenericComponentType();
+        }
+        throw new UnsupportedOperationException("Endpoint return type not supported yet: " + paramType);
     }
 
     public static Class<?> getRawType(Type type) {

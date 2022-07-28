@@ -89,6 +89,29 @@ public class MultipartResource {
     }
 
     @GET
+    @Path("/client/params/byte-array-as-binary-file-with-pojo")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Blocking
+    public String sendByteArrayWithPojoParams(@RestQuery @DefaultValue("true") Boolean withPojo) {
+        FileWithPojo data = new FileWithPojo();
+        byte[] file = HELLO_WORLD.getBytes(UTF_8);
+        String fileName = GREETING_TXT;
+        Pojo pojo = null;
+        if (withPojo) {
+            pojo = new Pojo();
+            pojo.setName("some-name");
+            pojo.setValue("some-value");
+        }
+        try {
+            return client.sendFileWithPojo(file, fileName, pojo);
+        } catch (WebApplicationException e) {
+            String responseAsString = e.getResponse().readEntity(String.class);
+            return String.format("Error: %s statusCode %s", responseAsString, e.getResponse().getStatus());
+        }
+    }
+
+    @GET
     @Path("/client/byte-array-as-binary-file")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
@@ -100,6 +123,20 @@ public class MultipartResource {
         }
         data.fileName = GREETING_TXT;
         return client.sendByteArrayAsBinaryFile(data);
+    }
+
+    @GET
+    @Path("/client/params/byte-array-as-binary-file")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Blocking
+    public String sendByteArrayParams(@QueryParam("nullFile") @DefaultValue("false") boolean nullFile) {
+        byte[] file = null;
+        if (!nullFile) {
+            file = HELLO_WORLD.getBytes(UTF_8);
+        }
+        String fileName = GREETING_TXT;
+        return client.sendByteArrayAsBinaryFile(file, fileName);
     }
 
     @GET
@@ -122,6 +159,25 @@ public class MultipartResource {
     }
 
     @GET
+    @Path("/client/params/multi-byte-as-binary-file")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Blocking
+    public String sendMultiByteParams(@QueryParam("nullFile") @DefaultValue("false") boolean nullFile) {
+        Multi<Byte> file = null;
+        if (!nullFile) {
+            List<Byte> bytes = new ArrayList<>();
+            for (byte b : HELLO_WORLD.getBytes(UTF_8)) {
+                bytes.add(b);
+            }
+
+            file = Multi.createFrom().iterable(bytes);
+        }
+        String fileName = GREETING_TXT;
+        return client.sendMultiByteAsBinaryFile(file, fileName);
+    }
+
+    @GET
     @Path("/client/buffer-as-binary-file")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
@@ -133,6 +189,20 @@ public class MultipartResource {
         }
         data.fileName = GREETING_TXT;
         return client.sendBufferAsBinaryFile(data);
+    }
+
+    @GET
+    @Path("/client/params/buffer-as-binary-file")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Blocking
+    public String sendBufferParams(@QueryParam("nullFile") @DefaultValue("false") boolean nullFile) {
+        Buffer file = null;
+        if (!nullFile) {
+            file = Buffer.buffer(HELLO_WORLD);
+        }
+        String fileName = GREETING_TXT;
+        return client.sendBufferAsBinaryFile(file, fileName);
     }
 
     @GET
@@ -153,6 +223,22 @@ public class MultipartResource {
     }
 
     @GET
+    @Path("/client/params/file-as-binary-file")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Blocking
+    public String sendFileAsBinaryParams(@QueryParam("nullFile") @DefaultValue("false") boolean nullFile) throws IOException {
+        File file = null;
+        if (!nullFile) {
+            File tempFile = createTempHelloWorldFile();
+
+            file = tempFile;
+        }
+        String fileName = GREETING_TXT;
+        return client.sendFileAsBinaryFile(file, fileName);
+    }
+
+    @GET
     @Path("/client/path-as-binary-file")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
@@ -170,6 +256,22 @@ public class MultipartResource {
     }
 
     @GET
+    @Path("/client/params/path-as-binary-file")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Blocking
+    public String sendPathAsBinaryParams(@QueryParam("nullFile") @DefaultValue("false") boolean nullFile) throws IOException {
+        java.nio.file.Path file = null;
+        if (!nullFile) {
+            File tempFile = createTempHelloWorldFile();
+
+            file = tempFile.toPath();
+        }
+        String fileName = GREETING_TXT;
+        return client.sendPathAsBinaryFile(file, fileName);
+    }
+
+    @GET
     @Path("/client/byte-array-as-text-file")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
@@ -182,6 +284,17 @@ public class MultipartResource {
     }
 
     @GET
+    @Path("/client/params/byte-array-as-text-file")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Blocking
+    public String sendByteArrayAsTextFileParams() {
+        byte[] file = HELLO_WORLD.getBytes(UTF_8);
+        int number = NUMBER;
+        return client.sendByteArrayAsTextFile(file, number);
+    }
+
+    @GET
     @Path("/client/buffer-as-text-file")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
@@ -191,6 +304,17 @@ public class MultipartResource {
         data.file = Buffer.buffer(HELLO_WORLD);
         data.number = NUMBER;
         return client.sendBufferAsTextFile(data);
+    }
+
+    @GET
+    @Path("/client/params/buffer-as-text-file")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Blocking
+    public String sendBufferAsTextFileParams() {
+        Buffer file = Buffer.buffer(HELLO_WORLD);
+        int number = NUMBER;
+        return client.sendBufferAsTextFile(file, number);
     }
 
     @GET
@@ -208,6 +332,19 @@ public class MultipartResource {
     }
 
     @GET
+    @Path("/client/params/file-as-text-file")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Blocking
+    public String sendFileAsTextParams() throws IOException {
+        File tempFile = createTempHelloWorldFile();
+
+        File file = tempFile;
+        int number = NUMBER;
+        return client.sendFileAsTextFile(file, number);
+    }
+
+    @GET
     @Path("/client/path-as-text-file")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
@@ -219,6 +356,19 @@ public class MultipartResource {
         data.file = tempFile.toPath();
         data.number = NUMBER;
         return client.sendPathAsTextFile(data);
+    }
+
+    @GET
+    @Path("/client/params/path-as-text-file")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Blocking
+    public String sendPathAsTextParams() throws IOException {
+        File tempFile = createTempHelloWorldFile();
+
+        java.nio.file.Path file = tempFile.toPath();
+        int number = NUMBER;
+        return client.sendPathAsTextFile(file, number);
     }
 
     @POST

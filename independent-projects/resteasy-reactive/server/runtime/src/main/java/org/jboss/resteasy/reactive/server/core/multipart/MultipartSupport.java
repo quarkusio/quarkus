@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 
 import javax.ws.rs.BadRequestException;
@@ -23,6 +24,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
@@ -108,43 +110,146 @@ public final class MultipartSupport {
         throw new NotSupportedException("Media type '" + mediaType + "' in multipart request is not supported");
     }
 
-    public static String getSingleFileUploadAsString(String formName, ResteasyReactiveRequestContext context) {
-        DefaultFileUpload upload = getSingleFileUpload(formName, context);
-        if (upload != null) {
-            try {
-                return Files.readString(upload.filePath(), Charset.defaultCharset());
-            } catch (IOException e) {
-                throw new MultipartPartReadingException(e);
-            }
+    private static FormData.FormValue getFirstValue(String formName, ResteasyReactiveRequestContext context) {
+        Deque<FormValue> values = getValues(formName, context);
+        if (values != null && !values.isEmpty()) {
+            return values.getFirst();
         }
-
         return null;
     }
 
-    public static byte[] getSingleFileUploadAsArrayBytes(String formName, ResteasyReactiveRequestContext context) {
-        DefaultFileUpload upload = getSingleFileUpload(formName, context);
-        if (upload != null) {
-            try {
-                return Files.readAllBytes(upload.filePath());
-            } catch (IOException e) {
-                throw new MultipartPartReadingException(e);
-            }
+    private static Deque<FormData.FormValue> getValues(String formName, ResteasyReactiveRequestContext context) {
+        FormData form = context.getFormData();
+        if (form != null) {
+            return form.get(formName);
         }
-
         return null;
     }
 
-    public static InputStream getSingleFileUploadAsInputStream(String formName, ResteasyReactiveRequestContext context) {
-        DefaultFileUpload upload = getSingleFileUpload(formName, context);
-        if (upload != null) {
+    public static String getString(String formName, ResteasyReactiveRequestContext context) {
+        return getString(formName, context, false);
+    }
+
+    public static String getString(String formName, ResteasyReactiveRequestContext context, boolean encoded) {
+        FormData.FormValue value = getFirstValue(formName, context);
+        if (value == null) {
+            return null;
+        }
+        // NOTE: we're not encoding it in case of file items, because multipart doesn't even use urlencoding,
+        // this is only for the TCK and regular form params
+        if (value.isFileItem()) {
             try {
-                return new FileInputStream(upload.filePath().toFile());
+                return Files.readString(value.getFileItem().getFile(), Charset.defaultCharset());
             } catch (IOException e) {
                 throw new MultipartPartReadingException(e);
             }
+        } else {
+            if (encoded)
+                return Encode.encodeQueryParam(value.getValue());
+            return value.getValue();
         }
+    }
 
-        return null;
+    public static List<String> getStrings(String formName, ResteasyReactiveRequestContext context) {
+        return getStrings(formName, context, false);
+    }
+
+    public static List<String> getStrings(String formName, ResteasyReactiveRequestContext context, boolean encoded) {
+        Deque<FormData.FormValue> values = getValues(formName, context);
+        if (values == null) {
+            return Collections.emptyList();
+        }
+        List<String> ret = new ArrayList<String>();
+        // NOTE: we're not encoding it in case of file items, because multipart doesn't even use urlencoding,
+        // this is only for the TCK and regular form params
+        for (FormValue value : values) {
+            if (value.isFileItem()) {
+                try {
+                    ret.add(Files.readString(value.getFileItem().getFile(), Charset.defaultCharset()));
+                } catch (IOException e) {
+                    throw new MultipartPartReadingException(e);
+                }
+            } else {
+                if (encoded) {
+                    ret.add(Encode.encodeQueryParam(value.getValue()));
+                } else {
+                    ret.add(value.getValue());
+                }
+            }
+        }
+        return ret;
+    }
+
+    public static byte[] getByteArray(String formName, ResteasyReactiveRequestContext context) {
+        FormData.FormValue value = getFirstValue(formName, context);
+        if (value == null) {
+            return null;
+        }
+        if (value.isFileItem()) {
+            try {
+                return Files.readAllBytes(value.getFileItem().getFile());
+            } catch (IOException e) {
+                throw new MultipartPartReadingException(e);
+            }
+        } else {
+            return value.getValue().getBytes(Charset.defaultCharset());
+        }
+    }
+
+    public static List<byte[]> getByteArrays(String formName, ResteasyReactiveRequestContext context) {
+        Deque<FormData.FormValue> values = getValues(formName, context);
+        if (values == null) {
+            return Collections.emptyList();
+        }
+        List<byte[]> ret = new ArrayList<byte[]>();
+        for (FormValue value : values) {
+            if (value.isFileItem()) {
+                try {
+                    ret.add(Files.readAllBytes(value.getFileItem().getFile()));
+                } catch (IOException e) {
+                    throw new MultipartPartReadingException(e);
+                }
+            } else {
+                ret.add(value.getValue().getBytes(Charset.defaultCharset()));
+            }
+        }
+        return ret;
+    }
+
+    public static InputStream getInputStream(String formName, ResteasyReactiveRequestContext context) {
+        FormData.FormValue value = getFirstValue(formName, context);
+        if (value == null) {
+            return null;
+        }
+        if (value.isFileItem()) {
+            try {
+                return new FileInputStream(value.getFileItem().getFile().toFile());
+            } catch (IOException e) {
+                throw new MultipartPartReadingException(e);
+            }
+        } else {
+            return new ByteArrayInputStream(value.getValue().getBytes(Charset.defaultCharset()));
+        }
+    }
+
+    public static List<InputStream> getInputStreams(String formName, ResteasyReactiveRequestContext context) {
+        Deque<FormData.FormValue> values = getValues(formName, context);
+        if (values == null) {
+            return Collections.emptyList();
+        }
+        List<InputStream> ret = new ArrayList<InputStream>();
+        for (FormValue value : values) {
+            if (value.isFileItem()) {
+                try {
+                    ret.add(new FileInputStream(value.getFileItem().getFile().toFile()));
+                } catch (IOException e) {
+                    throw new MultipartPartReadingException(e);
+                }
+            } else {
+                ret.add(new ByteArrayInputStream(value.getValue().getBytes(Charset.defaultCharset())));
+            }
+        }
+        return ret;
     }
 
     public static DefaultFileUpload getSingleFileUpload(String formName, ResteasyReactiveRequestContext context) {
@@ -155,6 +260,17 @@ public final class MultipartSupport {
             return uploads.get(0);
         }
         return null;
+    }
+
+    public static List<Object> convertFormAttributes(List<String> params, Class<Object> typeClass, Type genericType,
+            MediaType mimeType, ResteasyReactiveRequestContext context, String name) {
+        List<Object> ret = new ArrayList<>(params.size());
+        for (String param : params) {
+            ret.add(MultipartSupport.convertFormAttribute(param, typeClass, genericType,
+                    mimeType, context,
+                    name));
+        }
+        return ret;
     }
 
     public static DefaultFileUpload getFileUpload(String formName, ResteasyReactiveRequestContext context) {
@@ -218,5 +334,4 @@ public final class MultipartSupport {
     private static ByteArrayInputStream formAttributeValueToInputStream(String formAttributeValue) {
         return new ByteArrayInputStream(formAttributeValue.getBytes(StandardCharsets.UTF_8));
     }
-
 }

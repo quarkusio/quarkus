@@ -7,16 +7,23 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 import io.vertx.core.eventbus.MessageCodec;
+import io.vertx.mutiny.core.eventbus.Message;
 
 /**
  * Marks a business method to be automatically registered as a Vertx message consumer.
  * <p>
- * The method must accept exactly one parameter. If it accepts {@link io.vertx.core.eventbus.Message} or
- * {@link io.vertx.mutiny.core.eventbus.Message} then the return type must be void. For any other type the
- * {@link io.vertx.core.eventbus.Message#body()} is passed as the parameter value and the method
- * may return an object that is passed to {@link io.vertx.core.eventbus.Message#reply(Object)}, either directly or via
- * {@link java.util.concurrent.CompletionStage#thenAccept(java.util.function.Consumer)} in case of the method returns a
- * completion stage.
+ * The method can accept the following parameters:
+ * <ul>
+ * <li>{@link io.vertx.core.eventbus.Message io.vertx.core.eventbus.Message} message</li>
+ * <li>{@link io.vertx.mutiny.core.eventbus.Message io.vertx.mutiny.core.eventbus.Message} message</li>
+ * <li>{@link Message#headers() MultiMap} headers, {@link Message#body() T} body</li>
+ * <li>{@link Message#body() T} body</li>
+ * </ul>
+ *
+ * If it accepts a {@link Message} then the return type must be void. For any other type the {@link Message#body()}
+ * is passed as the parameter value and the method may return an object that is passed to {@link Message#reply(Object)},
+ * either directly or via {@link java.util.concurrent.CompletionStage#thenAccept(java.util.function.Consumer)}
+ * in case of the method returns a completion stage.
  *
  * <pre>
  * &#64;ApplicationScoped
@@ -24,6 +31,11 @@ import io.vertx.core.eventbus.MessageCodec;
  *
  *     &#64;ConsumeEvent("echo")
  *     String echo(String msg) {
+ *         return msg.toUpperCase();
+ *     }
+ *
+ *     &#64;ConsumeEvent("echoHeaders")
+ *     String echo(MultiMap headers, String msg) {
  *         return msg.toUpperCase();
  *     }
  *
@@ -39,7 +51,17 @@ import io.vertx.core.eventbus.MessageCodec;
  * }
  * </pre>
  *
- * <p>
+ * If it accepts a {@link Message#headers()} then the first parameters must be the headers
+ * and the second parameter must be the {@link Message#body()}.
+ *
+ * <pre>
+ * &#64;ConsumeEvent("echoHeaders")
+ * String event(MultiMap headers, String msg) {
+ *     String traceId = headers.get("traceId");
+ *     return "Message is: " + msg + ", trace is: " + traceId;
+ * }
+ * </pre>
+ *
  * The CDI request context is always active during notification of the registered message consumer.
  * <p>
  * If a method annotated with {@link ConsumeEvent} throws an exception then:

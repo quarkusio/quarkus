@@ -55,7 +55,7 @@ clean_project () {
 
 clean_maven_repository () {
   if [ -d ~/.m2/repository/io/quarkus ]; then
-    find ~/.m2/repository/io/quarkus -name '999-SNAPSHOT' -exec rm -rf {} +
+    find ~/.m2/repository/io/quarkus -name '999-jakarta-SNAPSHOT' -exec rm -rf {} +
   fi
 }
 
@@ -190,7 +190,8 @@ set_property () {
 
 # OpenRewrite phase - we rewrite the whole repository in one go
 clean_maven_repository
-clean_project
+./mvnw -Dtcks clean
+./update-version.sh 999-jakarta-SNAPSHOT
 
 ## let's build what's required to be able to run the rewrite
 ./mvnw -B -pl :quarkus-bootstrap-maven-plugin -pl :quarkus-enforcer-rules -pl :quarkus-maven-plugin -pl :quarkus-bom-test -am clean install -DskipTests -DskipITs -Dinvoker.skip
@@ -293,7 +294,9 @@ sed -i 's@https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/2.1.1@https://j
 sed -i 's@/specs/jaxrs/2.1/index.html@https://jakarta.ee/specifications/restful-ws/3.1/jakarta-restful-ws-spec-3.1.html@g' docs/src/main/asciidoc/resteasy-reactive.adoc
 
 # Clean some Transformer issues
-git checkout -- devtools/gradle/
+git checkout -- devtools/gradle/gradle-application-plugin/src/main/java
+git checkout -- devtools/gradle/gradle-extension-plugin/src/main/java
+git checkout -- devtools/gradle/gradle/wrapper/
 git checkout -- integration-tests/gradle/gradle/wrapper/gradle-wrapper.jar
 git checkout -- independent-projects/tools/base-codestarts/src/main/resources/codestarts/quarkus/tooling/gradle-wrapper/base/gradle/wrapper/gradle-wrapper.jar
 git checkout -- extensions/kubernetes-service-binding/runtime/src/test/resources/k8s/test-k8s/
@@ -308,9 +311,13 @@ else
   ./mvnw -B clean install -Dno-test-modules -DskipTests -DskipITs
 fi
 
+# Disable non-compilable ITs
 # - Infinispan uses the @javax.annotation.Generated annotation in code generation and it's not available
 # - Confluent registry client doesn't have a version supporting Jakarta packages
-./mvnw -B clean install -f integration-tests -DskipTests -DskipITs -pl '!:quarkus-integration-test-infinispan-client' -pl '!:quarkus-integration-test-kafka-avro'
+sed -i 's@<module>kafka-avro</module>@<!-- <module>kafka-avro</module> -->@g' integration-tests/pom.xml
+sed -i 's@<module>infinispan-client</module>@<!-- <module>infinispan-client</module> -->@g' integration-tests/pom.xml
+
+./mvnw -B clean install -f integration-tests -DskipTests -DskipITs
 
 exit 0
 

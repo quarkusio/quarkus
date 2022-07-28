@@ -214,6 +214,7 @@ public class ParserTest {
         assertParams("(item.name != 'foo') || (item.name == false)", "(item.name != 'foo')", "||", "(item.name == false)");
         assertParams("foo.codePointCount(0, foo.length) baz=bar", "foo.codePointCount(0, foo.length)", "baz=bar");
         assertParams("foo.codePointCount( 0 , foo.length( 1)) baz=bar", "foo.codePointCount( 0 , foo.length( 1))", "baz=bar");
+        assertParams("item.name = 'foo' item.surname  = 'bar'", "item.name='foo'", "item.surname='bar'");
     }
 
     @Test

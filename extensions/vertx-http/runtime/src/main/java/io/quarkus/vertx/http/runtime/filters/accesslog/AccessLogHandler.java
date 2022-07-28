@@ -85,6 +85,7 @@ import io.vertx.ext.web.RoutingContext;
  * <li><code>%{r,xxx}</code> xxx is an attribute in the ServletRequest
  * <li><code>%{s,xxx}</code> xxx is an attribute in the HttpSession
  * <li><code>%{d,xxx}</code> xxx is a data item in the exchange</li>
+ * <li><code>%{X,xxx}</code> xxx is a key in the Vert.X MDC</li>
  * </ul>
  *
  * @author Stuart Douglas

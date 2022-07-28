@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.interceptor.InvocationContext;
 import javax.validation.ConstraintViolation;
@@ -14,6 +15,8 @@ import javax.validation.ElementKind;
 import javax.validation.Path;
 import javax.validation.Validator;
 import javax.validation.executable.ExecutableValidator;
+
+import io.quarkus.arc.WithCaching;
 
 /**
  * NOTE: this is a copy of the interceptor present in hibernate-validator-cdi.
@@ -37,9 +40,12 @@ public abstract class AbstractMethodValidationInterceptor implements Serializabl
      * field here. Upon passivation not the validator itself will be serialized, but
      * the proxy injected here, which in turn is serializable.
      * </p>
+     * {@link Instance} is used to make the resolution dynamic and working at runtime, this delays {@link Validator}
+     * injection enough to enable it to work for beans that observe {@code @Initialized(ApplicationScoped.class)} event.
      */
     @Inject
-    Validator validator;
+    @WithCaching
+    Instance<Validator> validatorInstance;
 
     /**
      * Validates the Bean Validation constraints specified at the parameters and/or
@@ -56,7 +62,7 @@ public abstract class AbstractMethodValidationInterceptor implements Serializabl
      */
     protected Object validateMethodInvocation(InvocationContext ctx) throws Exception {
 
-        ExecutableValidator executableValidator = validator.forExecutables();
+        ExecutableValidator executableValidator = validatorInstance.get().forExecutables();
         Set<ConstraintViolation<Object>> violations = executableValidator.validateParameters(ctx.getTarget(),
                 ctx.getMethod(), ctx.getParameters());
 
@@ -89,7 +95,7 @@ public abstract class AbstractMethodValidationInterceptor implements Serializabl
      *         parameter or return value validation.
      */
     protected void validateConstructorInvocation(InvocationContext ctx) throws Exception {
-        ExecutableValidator executableValidator = validator.forExecutables();
+        ExecutableValidator executableValidator = validatorInstance.get().forExecutables();
         Set<? extends ConstraintViolation<?>> violations = executableValidator
                 .validateConstructorParameters(ctx.getConstructor(), ctx.getParameters());
 
@@ -101,7 +107,8 @@ public abstract class AbstractMethodValidationInterceptor implements Serializabl
         ctx.proceed();
         Object createdObject = ctx.getTarget();
 
-        violations = validator.forExecutables().validateConstructorReturnValue(ctx.getConstructor(), createdObject);
+        violations = validatorInstance.get().forExecutables().validateConstructorReturnValue(ctx.getConstructor(),
+                createdObject);
 
         if (!violations.isEmpty()) {
             throw new ConstraintViolationException(getMessage(ctx.getConstructor(), ctx.getParameters(), violations),

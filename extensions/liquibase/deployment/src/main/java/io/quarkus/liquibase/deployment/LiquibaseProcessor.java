@@ -1,6 +1,7 @@
 package io.quarkus.liquibase.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static java.util.function.Predicate.not;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -119,11 +120,10 @@ class LiquibaseProcessor {
                 liquibase.command.CommandFactory.class.getName()));
 
         reflective.produce(new ReflectiveClassBuildItem(true, true, true,
-                liquibase.parser.ChangeLogParserCofiguration.class.getName(),
+                liquibase.parser.ChangeLogParserConfiguration.class.getName(),
                 liquibase.hub.HubServiceFactory.class.getName(),
                 liquibase.logging.core.DefaultLoggerConfiguration.class.getName(),
-                liquibase.configuration.GlobalConfiguration.class.getName(),
-                com.datical.liquibase.ext.config.LiquibaseProConfiguration.class.getName(),
+                liquibase.GlobalConfiguration.class.getName(),
                 liquibase.license.LicenseServiceFactory.class.getName(),
                 liquibase.executor.ExecutorService.class.getName(),
                 liquibase.change.ChangeFactory.class.getName(),
@@ -154,7 +154,7 @@ class LiquibaseProcessor {
                 new ReflectiveClassBuildItem(true, true, true, classesMarkedWithDatabaseChangeProperty.toArray(new String[0])));
 
         Collection<String> dataSourceNames = jdbcDataSourceBuildItems.stream()
-                .map(i -> i.getName())
+                .map(JdbcDataSourceBuildItem::getName)
                 .collect(Collectors.toSet());
 
         resource.produce(
@@ -162,7 +162,6 @@ class LiquibaseProcessor {
 
         Stream.of(liquibase.change.Change.class,
                 liquibase.changelog.ChangeLogHistoryService.class,
-                liquibase.command.LiquibaseCommand.class,
                 liquibase.database.Database.class,
                 liquibase.database.DatabaseConnection.class,
                 liquibase.datatype.LiquibaseDataType.class,
@@ -198,9 +197,12 @@ class LiquibaseProcessor {
 
         // CommandStep implementations are needed
         consumeService(liquibase.command.CommandStep.class, (serviceClass, implementations) -> {
-            services.produce(new ServiceProviderBuildItem(serviceClass.getName(), implementations.toArray(new String[0])));
-            reflective.produce(new ReflectiveClassBuildItem(true, false, false, implementations.toArray(new String[0])));
-            for (String implementation : implementations) {
+            var filteredImpls = implementations.stream()
+                    .filter(not("liquibase.command.core.StartH2CommandStep"::equals))
+                    .toArray(String[]::new);
+            services.produce(new ServiceProviderBuildItem(serviceClass.getName(), filteredImpls));
+            reflective.produce(new ReflectiveClassBuildItem(true, false, false, filteredImpls));
+            for (String implementation : filteredImpls) {
                 runtimeInitialized.produce(new RuntimeInitializedClassBuildItem(implementation));
             }
         });
@@ -214,14 +216,9 @@ class LiquibaseProcessor {
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.11.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.12.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.13.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.14.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.7.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.8.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.9.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.10.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.11.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.12.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.13.xsd",
                 "liquibase.build.properties"));
 
         // liquibase resource bundles

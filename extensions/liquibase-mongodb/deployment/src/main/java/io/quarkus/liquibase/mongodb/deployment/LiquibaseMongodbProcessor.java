@@ -5,6 +5,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -96,11 +97,12 @@ class LiquibaseMongodbProcessor {
                 liquibase.database.jvm.JdbcConnection.class.getName()));
 
         reflective.produce(new ReflectiveClassBuildItem(true, true, true,
-                liquibase.parser.ChangeLogParserCofiguration.class.getName(),
+                liquibase.parser.ChangeLogParserConfiguration.class.getName(),
                 liquibase.hub.HubServiceFactory.class.getName(),
                 liquibase.logging.core.DefaultLoggerConfiguration.class.getName(),
+                // deprecated, but still used by liquibase.nosql.lockservice.AbstractNoSqlLockService
                 liquibase.configuration.GlobalConfiguration.class.getName(),
-                com.datical.liquibase.ext.config.LiquibaseProConfiguration.class.getName(),
+                liquibase.GlobalConfiguration.class.getName(),
                 liquibase.license.LicenseServiceFactory.class.getName(),
                 liquibase.executor.ExecutorService.class.getName(),
                 liquibase.change.ChangeFactory.class.getName(),
@@ -136,7 +138,6 @@ class LiquibaseMongodbProcessor {
 
         Stream.of(liquibase.change.Change.class,
                 liquibase.changelog.ChangeLogHistoryService.class,
-                liquibase.command.LiquibaseCommand.class,
                 liquibase.database.Database.class,
                 liquibase.database.DatabaseConnection.class,
                 liquibase.datatype.LiquibaseDataType.class,
@@ -163,6 +164,10 @@ class LiquibaseMongodbProcessor {
         // Register Precondition services, and the implementation class for reflection while also registering fields for reflection
         addService(services, reflective, liquibase.precondition.Precondition.class, true);
 
+        // CommandStep implementations are needed (just like in non-mongodb variant)
+        addService(services, reflective, liquibase.command.CommandStep.class, false,
+                "liquibase.command.core.StartH2CommandStep");
+
         // liquibase XSD
         resource.produce(new NativeImageResourceBuildItem(
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.7.xsd",
@@ -172,14 +177,9 @@ class LiquibaseMongodbProcessor {
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.11.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.12.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.13.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.14.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.7.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.8.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.9.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.10.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.11.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.12.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.13.xsd",
                 "liquibase.build.properties"));
 
         // liquibase resource bundles
@@ -188,11 +188,15 @@ class LiquibaseMongodbProcessor {
 
     private void addService(BuildProducer<ServiceProviderBuildItem> services,
             BuildProducer<ReflectiveClassBuildItem> reflective, Class<?> serviceClass,
-            boolean shouldRegisterFieldForReflection) {
+            boolean shouldRegisterFieldForReflection, String... excludedImpls) {
         try {
             String service = "META-INF/services/" + serviceClass.getName();
             Set<String> implementations = ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
                     service);
+            if (excludedImpls.length > 0) {
+                implementations = new HashSet<>(implementations);
+                implementations.removeAll(Arrays.asList(excludedImpls));
+            }
             services.produce(new ServiceProviderBuildItem(serviceClass.getName(), implementations.toArray(new String[0])));
 
             reflective.produce(new ReflectiveClassBuildItem(true, true, shouldRegisterFieldForReflection,

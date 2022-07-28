@@ -1394,8 +1394,39 @@ static class IsDevMode implements BooleanSupplier {
 }
 ----
 
-If you need to make your build step conditional on the presence or absence of another extension, you can
+TIP: If you need to make your build step conditional on the presence or absence of another extension, you can
 use <<capabilities>> for that.
+
+You can also apply a set of conditions to all build steps in a given class with `@BuildSteps`:
+
+.Class-wide condition for build step with @BuildSteps
+[source%nowrap,java]
+----
+@BuildSteps(onlyIf = MyDevModeProcessor.IsDevMode.class) // <1>
+class MyDevModeProcessor {
+
+    @BuildStep
+    SomeOutputBuildItem mainBuildStep(SomeOtherBuildItem input) { // <2>
+        return new SomeOutputBuildItem(input.getValue());
+    }
+
+    @BuildStep
+    SomeOtherOutputBuildItem otherBuildStep(SomeOtherInputBuildItem input) { // <3>
+        return new SomeOtherOutputBuildItem(input.getValue());
+    }
+
+    static class IsDevMode implements BooleanSupplier {
+        LaunchMode launchMode;
+
+        public boolean getAsBoolean() {
+            return launchMode == LaunchMode.DEVELOPMENT;
+        }
+    }
+}
+----
+<1> This condition will apply to all methods defined in `MyDevModeProcessor`
+<2> The main build step will only be executed in dev mode.
+<3> The other build step will only be executed in dev mode.
 
 [id='bytecode-recording']
 === Bytecode Recording

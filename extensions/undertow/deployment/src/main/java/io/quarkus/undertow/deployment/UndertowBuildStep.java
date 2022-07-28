@@ -79,6 +79,7 @@ import org.jboss.metadata.web.spec.WebResourceCollectionMetaData;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.ConfigInjectionStaticInitBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
 import io.quarkus.arc.deployment.CustomScopeBuildItem;
@@ -637,6 +638,11 @@ public class UndertowBuildStep {
             UndertowDeploymentRecorder recorder) {
         return SyntheticBeanBuildItem.configure(ServletContext.class).scope(ApplicationScoped.class)
                 .supplier(recorder.servletContextSupplier()).done();
+    }
+
+    @BuildStep
+    ConfigInjectionStaticInitBuildItem configInjectionStaticInitAnnotations() {
+        return new ConfigInjectionStaticInitBuildItem(WEB_FILTER);
     }
 
     /**

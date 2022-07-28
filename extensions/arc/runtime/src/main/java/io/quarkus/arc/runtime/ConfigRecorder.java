@@ -75,15 +75,6 @@ public class ConfigRecorder {
         }
     }
 
-    public void registerConfigMappings(final Set<ConfigClassWithPrefix> configClasses) {
-        try {
-            SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
-            ConfigMappings.registerConfigMappings(config, configClasses);
-        } catch (ConfigValidationException e) {
-            throw new DeploymentException(e.getMessage(), e);
-        }
-    }
-
     public void registerConfigProperties(final Set<ConfigClassWithPrefix> configClasses) {
         try {
             SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();

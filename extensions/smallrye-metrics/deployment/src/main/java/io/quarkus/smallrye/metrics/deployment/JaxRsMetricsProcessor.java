@@ -11,6 +11,7 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
@@ -21,6 +22,7 @@ import io.quarkus.undertow.deployment.FilterBuildItem;
  * If resteasy metrics are enabled, register additional filters specific to smallrye metrics.
  *
  */
+@BuildSteps(onlyIf = JaxRsMetricsProcessor.RestMetricsEnabled.class)
 public class JaxRsMetricsProcessor {
     static final String SMALLRYE_JAXRS_FILTER_CLASS_NAME = "io.smallrye.metrics.jaxrs.JaxRsMetricsFilter";
     static final String SMALLRYE_JAXRS_SERVLET_FILTER_CLASS_NAME = "io.smallrye.metrics.jaxrs.JaxRsMetricsServletFilter";
@@ -39,7 +41,7 @@ public class JaxRsMetricsProcessor {
     }
 
     // Ensure class is present (smallrye metrics extension) and resteasy metrics are enabled
-    @BuildStep(onlyIf = RestMetricsEnabled.class)
+    @BuildStep
     void enableMetrics(Optional<MetricsCapabilityBuildItem> metricsCapabilityBuildItem,
             BuildProducer<ResteasyJaxrsProviderBuildItem> jaxRsProviders,
             BuildProducer<FilterBuildItem> servletFilters,

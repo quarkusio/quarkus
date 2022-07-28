@@ -7,6 +7,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.micrometer.deployment.MicrometerRegistryProviderBuildItem;
@@ -17,6 +18,7 @@ import io.quarkus.micrometer.runtime.registry.json.JsonMeterRegistry;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 
+@BuildSteps(onlyIf = JsonRegistryProcessor.JsonRegistryEnabled.class)
 public class JsonRegistryProcessor {
 
     private static final Logger log = Logger.getLogger(JsonRegistryProcessor.class);
@@ -29,7 +31,7 @@ public class JsonRegistryProcessor {
         }
     }
 
-    @BuildStep(onlyIf = JsonRegistryEnabled.class)
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public void initializeJsonRegistry(MicrometerConfig config,
             BuildProducer<MicrometerRegistryProviderBuildItem> registryProviders,

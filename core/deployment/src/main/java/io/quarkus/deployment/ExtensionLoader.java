@@ -64,6 +64,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Overridable;
@@ -112,12 +113,15 @@ import io.smallrye.config.SmallRyeConfigBuilder;
  * Utility class to load build steps, runtime recorders, and configuration roots from a given extension class.
  */
 public final class ExtensionLoader {
+
     private ExtensionLoader() {
     }
 
     private static final Logger loadLog = Logger.getLogger("io.quarkus.deployment");
     private static final Logger cfgLog = Logger.getLogger("io.quarkus.configuration");
     private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
+    @SuppressWarnings("unchecked")
+    private static final Class<? extends BooleanSupplier>[] EMPTY_BOOLEAN_SUPPLIER_CLASS_ARRAY = new Class[0];
 
     @SuppressWarnings("deprecation")
     private static boolean isRecorder(AnnotatedElement element) {
@@ -545,6 +549,13 @@ public final class ExtensionLoader {
             }
         }
 
+        // get class-level configuration, if any
+        final BuildSteps buildSteps = clazz.getAnnotation(BuildSteps.class);
+        final Class<? extends BooleanSupplier>[] classOnlyIf = buildSteps == null ? EMPTY_BOOLEAN_SUPPLIER_CLASS_ARRAY
+                : buildSteps.onlyIf();
+        final Class<? extends BooleanSupplier>[] classOnlyIfNot = buildSteps == null ? EMPTY_BOOLEAN_SUPPLIER_CLASS_ARRAY
+                : buildSteps.onlyIfNot();
+
         // now iterate the methods
         final List<Method> methods = getMethods(clazz);
         final Map<String, List<Method>> nameToMethods = methods.stream().collect(Collectors.groupingBy(m -> m.getName()));
@@ -581,17 +592,10 @@ public final class ExtensionLoader {
             final List<BiFunction<BuildContext, BytecodeRecorderImpl, Object>> methodParamFns;
             Consumer<BuildStepBuilder> methodStepConfig = Functions.discardingConsumer();
             BooleanSupplier addStep = () -> true;
-            for (boolean inv : new boolean[] { false, true }) {
-                Class<? extends BooleanSupplier>[] testClasses = inv ? onlyIfNot : onlyIf;
-                for (Class<? extends BooleanSupplier> testClass : testClasses) {
-                    BooleanSupplier bs = supplierFactory.get((Class<? extends BooleanSupplier>) testClass);
-                    if (inv) {
-                        addStep = and(addStep, not(bs));
-                    } else {
-                        addStep = and(addStep, bs);
-                    }
-                }
-            }
+            addStep = and(addStep, supplierFactory, classOnlyIf, false);
+            addStep = and(addStep, supplierFactory, classOnlyIfNot, true);
+            addStep = and(addStep, supplierFactory, onlyIf, false);
+            addStep = and(addStep, supplierFactory, onlyIfNot, true);
             final BooleanSupplier finalAddStep = addStep;
 
             if (isRecorder) {
@@ -1011,6 +1015,19 @@ public final class ExtensionLoader {
                     });
         }
         return chainConfig;
+    }
+
+    private static BooleanSupplier and(BooleanSupplier addStep, BooleanSupplierFactoryBuildItem supplierFactory,
+            Class<? extends BooleanSupplier>[] testClasses, boolean inv) {
+        for (Class<? extends BooleanSupplier> testClass : testClasses) {
+            BooleanSupplier bs = supplierFactory.get((Class<? extends BooleanSupplier>) testClass);
+            if (inv) {
+                addStep = and(addStep, not(bs));
+            } else {
+                addStep = and(addStep, bs);
+            }
+        }
+        return addStep;
     }
 
     private static boolean isAnEmptyBuildItemProducer(Type parameterType) {

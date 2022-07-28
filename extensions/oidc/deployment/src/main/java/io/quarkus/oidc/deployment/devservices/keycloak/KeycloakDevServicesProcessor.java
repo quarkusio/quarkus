@@ -44,6 +44,7 @@ import org.testcontainers.utility.DockerImageName;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
@@ -70,6 +71,7 @@ import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { IsEnabled.class, GlobalDevServicesConfig.Enabled.class })
 public class KeycloakDevServicesProcessor {
     static volatile Vertx vertxInstance;
 
@@ -127,7 +129,7 @@ public class KeycloakDevServicesProcessor {
 
     OidcBuildTimeConfig oidcConfig;
 
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = { IsEnabled.class, GlobalDevServicesConfig.Enabled.class })
+    @BuildStep
     public DevServicesResultBuildItem startKeycloakContainer(
             DockerStatusBuildItem dockerStatusBuildItem,
             BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,

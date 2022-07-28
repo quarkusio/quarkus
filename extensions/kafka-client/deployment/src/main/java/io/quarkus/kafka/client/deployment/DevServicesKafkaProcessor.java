@@ -27,6 +27,7 @@ import org.testcontainers.utility.DockerImageName;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
@@ -47,6 +48,7 @@ import io.strimzi.test.container.StrimziKafkaContainer;
 /**
  * Starts a Kafka broker as dev service if needed.
  */
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
 public class DevServicesKafkaProcessor {
 
     private static final Logger log = Logger.getLogger(DevServicesKafkaProcessor.class);
@@ -65,7 +67,7 @@ public class DevServicesKafkaProcessor {
     static volatile KafkaDevServiceCfg cfg;
     static volatile boolean first = true;
 
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
+    @BuildStep
     public DevServicesResultBuildItem startKafkaDevService(
             DockerStatusBuildItem dockerStatusBuildItem,
             LaunchModeBuildItem launchMode,

@@ -8,6 +8,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.oidc.token.propagation.AccessToken;
@@ -19,6 +20,7 @@ import io.quarkus.oidc.token.propagation.runtime.OidcTokenPropagationConfig;
 import io.quarkus.restclient.deployment.RestClientAnnotationProviderBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 
+@BuildSteps(onlyIf = OidcTokenPropagationBuildStep.IsEnabled.class)
 public class OidcTokenPropagationBuildStep {
 
     private static final DotName ACCESS_TOKEN_CREDENTIAL = DotName.createSimple(AccessToken.class.getName());
@@ -26,12 +28,12 @@ public class OidcTokenPropagationBuildStep {
 
     OidcTokenPropagationConfig config;
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     FeatureBuildItem featureBuildItem() {
         return new FeatureBuildItem(Feature.OIDC_TOKEN_PROPAGATION);
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     void registerProvider(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ResteasyJaxrsProviderBuildItem> jaxrsProviders,

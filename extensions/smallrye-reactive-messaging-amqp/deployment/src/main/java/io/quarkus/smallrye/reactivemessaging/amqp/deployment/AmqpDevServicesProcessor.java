@@ -19,6 +19,7 @@ import org.testcontainers.utility.DockerImageName;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
@@ -37,6 +38,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
  * It uses https://quay.io/repository/artemiscloud/activemq-artemis-broker as image.
  * See https://artemiscloud.io/ for details.
  */
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
 public class AmqpDevServicesProcessor {
 
     private static final Logger log = Logger.getLogger(AmqpDevServicesProcessor.class);
@@ -62,7 +64,7 @@ public class AmqpDevServicesProcessor {
     static volatile AmqpDevServiceCfg cfg;
     static volatile boolean first = true;
 
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
+    @BuildStep
     public DevServicesResultBuildItem startAmqpDevService(
             DockerStatusBuildItem dockerStatusBuildItem,
             LaunchModeBuildItem launchMode,

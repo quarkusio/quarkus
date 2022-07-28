@@ -15,6 +15,7 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.hibernate.orm.PersistenceUnit;
@@ -22,10 +23,11 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRecorder;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
 
+@BuildSteps(onlyIf = HibernateSearchEnabled.class)
 public class HibernateSearchElasticsearchCdiProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep(onlyIf = HibernateSearchEnabled.class)
+    @BuildStep
     void generateSearchBeans(HibernateSearchElasticsearchRecorder recorder,
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
             List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
@@ -67,7 +69,7 @@ public class HibernateSearchElasticsearchCdiProcessor {
         return configurator.done();
     }
 
-    @BuildStep(onlyIf = HibernateSearchEnabled.class)
+    @BuildStep
     void registerAnnotations(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
         // add the @SearchExtension class

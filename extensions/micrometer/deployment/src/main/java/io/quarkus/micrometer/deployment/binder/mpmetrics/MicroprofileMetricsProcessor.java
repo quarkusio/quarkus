@@ -28,6 +28,7 @@ import io.quarkus.micrometer.runtime.config.MicrometerConfig;
  *
  * Avoid importing classes that import MP Metrics API classes.
  */
+@BuildSteps(onlyIf = MicroprofileMetricsProcessor.MicroprofileMetricsEnabled.class)
 public class MicroprofileMetricsProcessor {
     private static final Logger log = Logger.getLogger(MicroprofileMetricsProcessor.class);
     static final Class<?> METRIC_ANNOTATION_CLASS = MicrometerRecorder
@@ -41,17 +42,17 @@ public class MicroprofileMetricsProcessor {
         }
     }
 
-    @BuildStep(onlyIf = MicroprofileMetricsEnabled.class)
+    @BuildStep
     IndexDependencyBuildItem addDependencies() {
         return new IndexDependencyBuildItem("org.eclipse.microprofile.metrics", "microprofile-metrics-api");
     }
 
-    @BuildStep(onlyIf = MicroprofileMetricsEnabled.class)
+    @BuildStep
     AutoInjectAnnotationBuildItem autoInjectMetric() {
         return new AutoInjectAnnotationBuildItem(MetricDotNames.METRIC);
     }
 
-    @BuildStep(onlyIf = MicroprofileMetricsEnabled.class)
+    @BuildStep
     AdditionalBeanBuildItem registerBeanClasses() {
         return AdditionalBeanBuildItem.builder()
                 .setUnremovable()
@@ -64,7 +65,7 @@ public class MicroprofileMetricsProcessor {
                 .build();
     }
 
-    @BuildStep(onlyIf = MicroprofileMetricsEnabled.class)
+    @BuildStep
     void logWarningForMpMetricsUsage(CombinedIndexBuildItem combinedIndexBuildItem,
             BeanRegistrationPhaseBuildItem beanRegistrationPhase,
             BuildProducer<BeanConfiguratorBuildItem> errors) {
@@ -105,7 +106,7 @@ public class MicroprofileMetricsProcessor {
     /**
      * Make sure all classes containing metrics annotations have a bean scope.
      */
-    @BuildStep(onlyIf = MicroprofileMetricsEnabled.class)
+    @BuildStep
     AnnotationsTransformerBuildItem transformBeanScope(BeanArchiveIndexBuildItem index,
             CustomScopeAnnotationsBuildItem scopes) {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
@@ -143,7 +144,7 @@ public class MicroprofileMetricsProcessor {
         });
     }
 
-    @BuildStep(onlyIf = MicroprofileMetricsEnabled.class)
+    @BuildStep
     UnremovableBeanBuildItem processAnnotatedMetrics(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
             CombinedIndexBuildItem indexBuildItem) {
@@ -183,7 +184,7 @@ public class MicroprofileMetricsProcessor {
         });
     }
 
-    @BuildStep(onlyIf = MicroprofileMetricsEnabled.class)
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void configureRegistry(MpMetricsRecorder recorder,
             RootMeterRegistryBuildItem rootMeterRegistryBuildItem) {

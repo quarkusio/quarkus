@@ -11,13 +11,15 @@ import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 import io.quarkus.opentelemetry.deployment.OpenTelemetryEnabled;
 
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { OpenTelemetryEnabled.class, GlobalDevServicesConfig.Enabled.class })
 public class DevServicesOpenTelemetryProcessor {
 
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = { OpenTelemetryEnabled.class, GlobalDevServicesConfig.Enabled.class })
+    @BuildStep
     void devServicesDatasources(
             Optional<DevServicesDatasourceResultBuildItem> devServicesDatasources,
             BuildProducer<DevServicesAdditionalConfigBuildItem> devServicesAdditionalConfig) {

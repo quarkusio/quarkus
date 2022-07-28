@@ -34,6 +34,7 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
@@ -49,6 +50,7 @@ import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
 import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
 
+@BuildSteps(onlyIf = TracerEnabled.class)
 public class TracerProcessor {
     private static final DotName ID_GENERATOR = DotName.createSimple(IdGenerator.class.getName());
     private static final DotName RESOURCE = DotName.createSimple(Resource.class.getName());
@@ -88,7 +90,7 @@ public class TracerProcessor {
         }
     }
 
-    @BuildStep(onlyIf = TracerEnabled.class)
+    @BuildStep
     UnremovableBeanBuildItem ensureProducersAreRetained(
             CombinedIndexBuildItem indexBuildItem,
             Capabilities capabilities,
@@ -152,7 +154,7 @@ public class TracerProcessor {
         return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(retainProducers));
     }
 
-    @BuildStep(onlyIf = TracerEnabled.class)
+    @BuildStep
     void dropNames(
             Optional<FrameworkEndpointsBuildItem> frameworkEndpoints,
             Optional<StaticResourcesBuildItem> staticResources,
@@ -177,25 +179,25 @@ public class TracerProcessor {
         dropStaticResources.produce(new DropStaticResourcesBuildItem(resources));
     }
 
-    @BuildStep(onlyIf = { TracerEnabled.class, GrpcExtensionAvailable.class })
+    @BuildStep(onlyIf = GrpcExtensionAvailable.class)
     void grpcTracers(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingServerInterceptor.class));
         additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingClientInterceptor.class));
     }
 
-    @BuildStep(onlyIf = TracerEnabled.class)
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     VertxOptionsConsumerBuildItem vertxTracingOptions(TracerRecorder recorder) {
         return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingOptions(), LIBRARY_AFTER);
     }
 
-    @BuildStep(onlyIf = TracerEnabled.class, onlyIfNot = MetricsExtensionAvailable.class)
+    @BuildStep(onlyIfNot = MetricsExtensionAvailable.class)
     @Record(ExecutionTime.STATIC_INIT)
     VertxOptionsConsumerBuildItem vertxTracingMetricsOptions(TracerRecorder recorder) {
         return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingMetricsOptions(), LIBRARY_AFTER + 1);
     }
 
-    @BuildStep(onlyIf = TracerEnabled.class)
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     TracerProviderBuildItem createTracerProvider(
             TracerRecorder recorder,
@@ -208,7 +210,7 @@ public class TracerProcessor {
                 recorder.createTracerProvider(Version.getVersion(), serviceName, serviceVersion, shutdownContext));
     }
 
-    @BuildStep(onlyIf = TracerEnabled.class)
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupTracer(
             TracerRecorder recorder,

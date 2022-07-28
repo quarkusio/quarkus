@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class MultipleHibernateFactoryCustomizersTest {
+public class MultipleHibernateValidatorFactoryCustomizersTest {
 
     @Inject
     ValidatorFactory validatorFactory;

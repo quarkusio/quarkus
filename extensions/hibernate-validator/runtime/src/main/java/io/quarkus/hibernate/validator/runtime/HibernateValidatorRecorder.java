@@ -26,7 +26,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
-import io.quarkus.hibernate.validator.HibernateValidatorFactoryCustomizer;
+import io.quarkus.hibernate.validator.ValidatorFactoryCustomizer;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.ShutdownContext;
@@ -150,12 +150,12 @@ public class HibernateValidatorRecorder {
                     configuration.addValueExtractor(valueExtractor);
                 }
 
-                List<InstanceHandle<HibernateValidatorFactoryCustomizer>> constraintMappingProviderList = Arc.container()
-                        .listAll(HibernateValidatorFactoryCustomizer.class);
-                for (InstanceHandle<HibernateValidatorFactoryCustomizer> cmpInstanceHandle : constraintMappingProviderList) {
-                    if (cmpInstanceHandle.isAvailable()) {
-                        final HibernateValidatorFactoryCustomizer hibernateValidatorFactoryCustomizer = cmpInstanceHandle.get();
-                        hibernateValidatorFactoryCustomizer.customize(configuration);
+                List<InstanceHandle<ValidatorFactoryCustomizer>> validatorFactoryCustomizers = Arc.container()
+                        .listAll(ValidatorFactoryCustomizer.class);
+                for (InstanceHandle<ValidatorFactoryCustomizer> validatorFactoryInstanceHandle : validatorFactoryCustomizers) {
+                    if (validatorFactoryInstanceHandle.isAvailable()) {
+                        final ValidatorFactoryCustomizer validatorFactoryCustomizer = validatorFactoryInstanceHandle.get();
+                        validatorFactoryCustomizer.customize(configuration);
                     }
                 }
 

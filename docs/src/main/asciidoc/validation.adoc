@@ -333,13 +333,16 @@ public class MyConstraintValidator implements ConstraintValidator<MyConstraint, 
 ----
 
 When initializing a constraint validator of a given type,
-Quarkus will check if a bean of this type is available and, if so, it will use it instead of instantiating one.
+Quarkus will check if a bean of this type is available and, if so, it will use it instead of instantiating a `ConstraintValidator`.
 
 Thus, as demonstrated in our example, you can fully use injection in your constraint validator beans.
 
-[NOTE]
+[WARNING]
 ====
-Except in very specific situations, it is recommended to make the said beans `@ApplicationScoped`.
+The scope you choose for your `ConstraintValidator` bean is important:
+
+- If the same instance of the `ConstraintValidator` bean can be used across the whole application, use the `@ApplicationScoped` scope.
+- If the `ConstraintValidator` bean implements the `initialize(A constraintAnnotation)` method and depends on the state of the constraint annotation, use the `@Dependent` scope to make sure each annotation context has a separate and properly configured instance of the `ConstraintValidator` bean.
 ====
 
 === Validation and localization

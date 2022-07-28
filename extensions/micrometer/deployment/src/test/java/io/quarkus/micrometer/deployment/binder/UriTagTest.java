@@ -75,6 +75,8 @@ public class UriTagTest {
         when().get("/ping/one").then().statusCode(200);
         when().get("/ping/two").then().statusCode(200);
         when().get("/ping/three").then().statusCode(200);
+        when().get("/ping/400").then().statusCode(200);
+        when().get("/ping/500").then().statusCode(200);
         when().get("/async-ping/one").then().statusCode(200);
         when().get("/async-ping/two").then().statusCode(200);
         when().get("/async-ping/three").then().statusCode(200);
@@ -116,11 +118,36 @@ public class UriTagTest {
                 Util.foundServerRequests(registry, "/ping/{message} should be returned by JAX-RS."));
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/async-ping/{message}").timers().size(),
                 Util.foundServerRequests(registry, "/async-ping/{message} should be returned by JAX-RS."));
-        Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/pong/{message}").timers().size(),
-                Util.foundServerRequests(registry, "/pong/{message} should be returned by JAX-RS."));
+
+        // Server response for /pong/{message}
+        Assertions.assertEquals(1,
+                registry.find("http.server.requests").tag("uri", "/pong/{message}").tag("outcome", "SUCCESS").timers().size(),
+                Util.foundServerRequests(registry, "/pong/{message} with tag outcome=SUCCESS should be returned by JAX-RS."));
+        Assertions.assertEquals(1,
+                registry.find("http.server.requests").tag("uri", "/pong/{message}").tag("outcome", "CLIENT_ERROR").timers()
+                        .size(),
+                Util.foundServerRequests(registry,
+                        "/pong/{message} with tag outcome=CLIENT_ERROR should be returned by JAX-RS."));
+        Assertions.assertEquals(1,
+                registry.find("http.server.requests").tag("uri", "/pong/{message}").tag("outcome", "SERVER_ERROR").timers()
+                        .size(),
+                Util.foundServerRequests(registry,
+                        "/pong/{message} with tag outcome=SERVER_ERROR should be returned by JAX-RS."));
 
         // URI for outbound client request: /pong/{message}
-        Assertions.assertEquals(1, registry.find("http.client.requests").tag("uri", "/pong/{message}").timers().size(),
-                Util.foundClientRequests(registry, "/pong/{message} should be returned by Rest client."));
+        Assertions.assertEquals(1,
+                registry.find("http.client.requests").tag("uri", "/pong/{message}").tag("outcome", "SUCCESS").timers().size(),
+                Util.foundClientRequests(registry,
+                        "/pong/{message} with tag outcome=SUCCESS should be returned by Rest client."));
+        Assertions.assertEquals(1,
+                registry.find("http.client.requests").tag("uri", "/pong/{message}").tag("outcome", "CLIENT_ERROR").timers()
+                        .size(),
+                Util.foundClientRequests(registry,
+                        "/pong/{message} with tag outcome=CLIENT_ERROR should be returned by Rest client."));
+        Assertions.assertEquals(1,
+                registry.find("http.client.requests").tag("uri", "/pong/{message}").tag("outcome", "SERVER_ERROR").timers()
+                        .size(),
+                Util.foundClientRequests(registry,
+                        "/pong/{message} with tag outcome=SERVER_ERROR should be returned by Rest client."));
     }
 }

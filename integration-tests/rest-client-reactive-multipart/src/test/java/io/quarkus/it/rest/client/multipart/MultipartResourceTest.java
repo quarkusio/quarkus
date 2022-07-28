@@ -29,6 +29,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,nameOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/byte-array-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,nameOk:true"));
         // @formatter:on
     }
 
@@ -42,6 +48,13 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:null,nameOk:true"));
+        given()
+        .queryParam("nullFile", "true")
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/byte-array-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:null,nameOk:true"));
         // @formatter:on
     }
 
@@ -54,6 +67,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,nameOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/buffer-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,nameOk:true"));
         // @formatter:on
     }
 
@@ -67,6 +86,13 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:null,nameOk:true"));
+        given()
+        .queryParam("nullFile", "true")
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/buffer-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:null,nameOk:true"));
         // @formatter:on
     }
 
@@ -79,6 +105,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,nameOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/file-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,nameOk:true"));
         // @formatter:on
     }
 
@@ -91,6 +123,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,nameOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/multi-byte-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,nameOk:true"));
         // @formatter:on
     }
 
@@ -104,6 +142,13 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:null,nameOk:true"));
+        given()
+        .queryParam("nullFile", "true")
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/file-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:null,nameOk:true"));
         // @formatter:on
     }
 
@@ -116,6 +161,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,nameOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/path-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,nameOk:true"));
         // @formatter:on
     }
 
@@ -129,6 +180,13 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:null,nameOk:true"));
+        given()
+        .queryParam("nullFile", "true")
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/path-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:null,nameOk:true"));
         // @formatter:on
     }
 
@@ -141,6 +199,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,numberOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/byte-array-as-text-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,numberOk:true"));
         // @formatter:on
     }
 
@@ -153,6 +217,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,numberOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/buffer-as-text-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,numberOk:true"));
         // @formatter:on
     }
 
@@ -165,6 +235,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,numberOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/file-as-text-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,numberOk:true"));
         // @formatter:on
     }
 
@@ -177,6 +253,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,numberOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/path-as-text-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,numberOk:true"));
         // @formatter:on
     }
 
@@ -189,6 +271,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,nameOk:true,pojoOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/byte-array-as-binary-file-with-pojo")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,nameOk:true,pojoOk:true"));
         // @formatter:on
     }
 
@@ -202,6 +290,13 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,nameOk:true,pojoOk:null"));
+        given()
+        .queryParam("withPojo", "false")
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/byte-array-as-binary-file-with-pojo")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,nameOk:true,pojoOk:null"));
         // @formatter:on
     }
 

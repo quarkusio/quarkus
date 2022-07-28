@@ -31,7 +31,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
@@ -154,6 +153,7 @@ import io.quarkus.jaxrs.client.reactive.runtime.RestClientBase;
 import io.quarkus.jaxrs.client.reactive.runtime.ToObjectArray;
 import io.quarkus.jaxrs.client.reactive.runtime.impl.MultipartResponseDataBase;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
+import io.quarkus.resteasy.reactive.common.deployment.ParameterContainersBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
@@ -170,6 +170,12 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
 
 public class JaxrsClientReactiveProcessor {
+
+    private static final String MULTI_BYTE_SIGNATURE = "L" + Multi.class.getName().replace('.', '/') + "<Ljava/lang/Byte;>;";
+    private static final String FILE_SIGNATURE = "L" + File.class.getName().replace('.', '/') + ";";
+    private static final String PATH_SIGNATURE = "L" + java.nio.file.Path.class.getName().replace('.', '/') + ";";
+    private static final String BUFFER_SIGNATURE = "L" + Buffer.class.getName().replace('.', '/') + ";";
+    private static final String BYTE_ARRAY_SIGNATURE = "[B";
 
     private static final Logger log = Logger.getLogger(JaxrsClientReactiveProcessor.class);
 
@@ -245,7 +251,8 @@ public class JaxrsClientReactiveProcessor {
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer,
             List<RestClientDefaultProducesBuildItem> defaultConsumes,
             List<RestClientDefaultConsumesBuildItem> defaultProduces,
-            List<RestClientDisableSmartDefaultProduces> disableSmartDefaultProduces) {
+            List<RestClientDisableSmartDefaultProduces> disableSmartDefaultProduces,
+            List<ParameterContainersBuildItem> parameterContainersBuildItems) {
         String defaultConsumesType = defaultMediaType(defaultConsumes, MediaType.APPLICATION_OCTET_STREAM);
         String defaultProducesType = defaultMediaType(defaultProduces, MediaType.TEXT_PLAIN);
 
@@ -255,6 +262,14 @@ public class JaxrsClientReactiveProcessor {
                 messageBodyWriterBuildItems, messageBodyReaderOverrideBuildItems, messageBodyWriterOverrideBuildItems,
                 beanContainerBuildItem, applicationResultBuildItem, serialisers,
                 RuntimeType.CLIENT);
+        Set<DotName> scannedParameterContainers = new HashSet<>();
+
+        for (ParameterContainersBuildItem parameterContainersBuildItem : parameterContainersBuildItems) {
+            scannedParameterContainers.addAll(parameterContainersBuildItem.getClassNames());
+        }
+        reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(false, true,
+                scannedParameterContainers.stream().map(name -> name.toString()).collect(Collectors.toSet())
+                        .toArray(new String[0])));
 
         if (resourceScanningResultBuildItem.isEmpty()
                 || resourceScanningResultBuildItem.get().getResult().getClientInterfaces().isEmpty()) {
@@ -271,6 +286,7 @@ public class JaxrsClientReactiveProcessor {
                 .setIndex(index)
                 .setApplicationIndex(applicationIndexBuildItem.getIndex())
                 .setExistingConverters(new HashMap<>())
+                .addParameterContainerTypes(scannedParameterContainers)
                 .setScannedResourcePaths(result.getScannedResourcePaths())
                 .setConfig(createRestReactiveConfig(config))
                 .setAdditionalReaders(additionalReaders)
@@ -840,7 +856,9 @@ public class JaxrsClientReactiveProcessor {
                     Integer bodyParameterIdx = null;
                     Map<MethodDescriptor, ResultHandle> invocationBuilderEnrichers = new HashMap<>();
 
-                    ResultHandle multipartForm = null;
+                    String[] consumes = extractProducesConsumesValues(
+                            jandexMethod.declaringClass().classAnnotation(CONSUMES), method.getConsumes());
+                    boolean multipart = isMultipart(consumes, method.getParameters());
 
                     AssignableResultHandle formParams = null;
 
@@ -857,7 +875,8 @@ public class JaxrsClientReactiveProcessor {
                                             methodCreator.readStaticField(methodGenericParametersField.get()),
                                             methodCreator.readStaticField(methodParamAnnotationsField.get()),
                                             paramIdx));
-                        } else if (param.parameterType == ParameterType.BEAN) {
+                        } else if (param.parameterType == ParameterType.BEAN
+                                || param.parameterType == ParameterType.MULTI_PART_FORM) {
                             // bean params require both, web-target and Invocation.Builder, modifications
                             // The web target changes have to be done on the method level.
                             // Invocation.Builder changes are offloaded to a separate method
@@ -880,7 +899,8 @@ public class JaxrsClientReactiveProcessor {
                                     restClientInterface.getClassName(),
                                     methodCreator.getThis(),
                                     handleBeanParamMethod.getThis(),
-                                    formParams, methodGenericParametersField, methodParamAnnotationsField, paramIdx);
+                                    formParams, methodGenericParametersField, methodParamAnnotationsField, paramIdx, multipart,
+                                    beanParam.type);
 
                             handleBeanParamMethod.returnValue(invocationBuilderRef);
                             invocationBuilderEnrichers.put(handleBeanParamDescriptor, methodCreator.getMethodParam(paramIdx));
@@ -931,19 +951,16 @@ public class JaxrsClientReactiveProcessor {
                             handleCookieMethod.returnValue(invocationBuilderRef);
                             invocationBuilderEnrichers.put(handleHeaderDescriptor, methodCreator.getMethodParam(paramIdx));
                         } else if (param.parameterType == ParameterType.FORM) {
-                            formParams = createIfAbsent(methodCreator, formParams);
-                            addFormParam(methodCreator, param.name, methodCreator.getMethodParam(paramIdx), param.type,
+                            formParams = createFormDataIfAbsent(methodCreator, formParams, multipart);
+                            // NOTE: don't use type here, because we're not going through the collection converters and stuff
+                            addFormParam(methodCreator, param.name, methodCreator.getMethodParam(paramIdx), param.declaredType,
+                                    param.signature,
                                     restClientInterface.getClassName(), methodCreator.getThis(), formParams,
                                     methodCreator.readStaticField(methodGenericParametersField.get()),
                                     methodCreator.readStaticField(methodParamAnnotationsField.get()),
-                                    paramIdx);
-                        } else if (param.parameterType == ParameterType.MULTI_PART_FORM) {
-                            if (multipartForm != null) {
-                                throw new IllegalArgumentException("MultipartForm data set twice for method "
-                                        + jandexMethod.declaringClass().name() + "#" + jandexMethod.name());
-                            }
-                            multipartForm = createMultipartForm(methodCreator, methodCreator.getMethodParam(paramIdx),
-                                    jandexMethod.parameterType(paramIdx), index);
+                                    paramIdx, multipart,
+                                    param.mimeType, param.partFileName,
+                                    jandexMethod.declaringClass().name() + "." + jandexMethod.name());
                         }
                     }
 
@@ -977,8 +994,9 @@ public class JaxrsClientReactiveProcessor {
                     }
 
                     handleReturn(interfaceClass, defaultMediaType, method.getHttpMethod(),
-                            method.getConsumes(), jandexMethod, methodCreator, formParams, multipartForm,
-                            bodyParameterIdx == null ? null : methodCreator.getMethodParam(bodyParameterIdx), builder);
+                            method.getConsumes(), jandexMethod, methodCreator, formParams,
+                            bodyParameterIdx == null ? null : methodCreator.getMethodParam(bodyParameterIdx), builder,
+                            multipart);
                 }
             }
 
@@ -1009,6 +1027,57 @@ public class JaxrsClientReactiveProcessor {
 
         return recorderContext.newInstance(creatorName);
 
+    }
+
+    private boolean isMultipart(String[] consumes, MethodParameter[] methodParameters) {
+        if (consumes != null) {
+            for (String mimeType : consumes) {
+                if (mimeType.startsWith(MediaType.MULTIPART_FORM_DATA)) {
+                    return true;
+                }
+            }
+        }
+        // see if the parameters require a multipart form
+        for (MethodParameter methodParameter : methodParameters) {
+            if (methodParameter.parameterType == ParameterType.FORM) {
+                if (isMultipartRequiringType(methodParameter.signature, methodParameter.mimeType)) {
+                    return true;
+                }
+            } else if (methodParameter.parameterType == ParameterType.BEAN
+                    || methodParameter.parameterType == ParameterType.MULTI_PART_FORM) {
+                ClientBeanParamInfo beanParam = (ClientBeanParamInfo) methodParameter;
+                if (isMultipartRequiringBeanParam(beanParam.getItems())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isMultipartRequiringType(String signature, String partType) {
+        return (signature.equals(FILE_SIGNATURE)
+                || signature.equals(PATH_SIGNATURE)
+                || signature.equals(BUFFER_SIGNATURE)
+                || signature.equals(BYTE_ARRAY_SIGNATURE)
+                || signature.equals(MULTI_BYTE_SIGNATURE)
+                || partType != null);
+    }
+
+    private boolean isMultipartRequiringBeanParam(List<Item> beanItems) {
+        for (Item beanItem : beanItems) {
+            if (beanItem instanceof FormParamItem) {
+                FormParamItem formParamItem = (FormParamItem) beanItem;
+                if (isMultipartRequiringType(formParamItem.getParamSignature(), formParamItem.getMimeType())) {
+                    return true;
+                }
+            } else if (beanItem instanceof BeanParamItem) {
+                BeanParamItem beanParamItem = (BeanParamItem) beanItem;
+                if (isMultipartRequiringBeanParam(beanParamItem.items())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void addResponseTypeIfMultipart(Set<ClassInfo> multipartResponseTypes, MethodInfo method, IndexView index) {
@@ -1123,8 +1192,6 @@ public class JaxrsClientReactiveProcessor {
                         i));
             }
 
-            ResultHandle multipartForm = null;
-
             int subMethodIndex = 0;
             for (ResourceMethod subMethod : method.getSubResourceMethods()) {
                 MethodInfo jandexSubMethod = getJavaMethod(subInterface, subMethod,
@@ -1134,6 +1201,10 @@ public class JaxrsClientReactiveProcessor {
                                         + subInterface
                                         + ". It may have unresolved parameter types (generics)"));
                 subMethodIndex++;
+                String[] consumes = extractProducesConsumesValues(
+                        jandexSubMethod.declaringClass().classAnnotation(CONSUMES), method.getConsumes());
+                consumes = extractProducesConsumesValues(jandexSubMethod.annotation(CONSUMES), consumes);
+                boolean multipart = isMultipart(consumes, subMethod.getParameters());
 
                 boolean isSubResourceMethod = subMethod.getHttpMethod() == null;
                 if (!isSubResourceMethod) {
@@ -1187,7 +1258,8 @@ public class JaxrsClientReactiveProcessor {
                                             subMethodCreator.readStaticField(subParamField.genericsParametersField.get()),
                                             subMethodCreator.readStaticField(subParamField.paramAnnotationsField.get()),
                                             subParamField.paramIndex));
-                        } else if (param.parameterType == ParameterType.BEAN) {
+                        } else if (param.parameterType == ParameterType.BEAN
+                                || param.parameterType == ParameterType.MULTI_PART_FORM) {
                             // bean params require both, web-target and Invocation.Builder, modifications
                             // The web target changes have to be done on the method level.
                             // Invocation.Builder changes are offloaded to a separate method
@@ -1212,7 +1284,8 @@ public class JaxrsClientReactiveProcessor {
                                     subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
                                     handleBeanParamMethod.readInstanceField(clientField, handleBeanParamMethod.getThis()),
                                     formParams,
-                                    methodGenericParametersField, methodParamAnnotationsField, subParamField.paramIndex);
+                                    methodGenericParametersField, methodParamAnnotationsField, subParamField.paramIndex,
+                                    multipart, beanParam.type);
 
                             handleBeanParamMethod.returnValue(invocationBuilderRef);
                             invocationBuilderEnrichers.put(handleBeanParamDescriptor, paramValue);
@@ -1272,15 +1345,10 @@ public class JaxrsClientReactiveProcessor {
                             handleCookieMethod.returnValue(invocationBuilderRef);
                             invocationBuilderEnrichers.put(handleCookieDescriptor, paramValue);
                         } else if (param.parameterType == ParameterType.FORM) {
-                            formParams = createIfAbsent(subMethodCreator, formParams);
+                            formParams = createFormDataIfAbsent(subMethodCreator, formParams, multipart);
+                            // FIXME: this is weird, it doesn't go via converter nor multipart, looks like a bug
                             subMethodCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
                                     subMethodCreator.load(param.name), paramValue);
-                        } else if (param.parameterType == ParameterType.MULTI_PART_FORM) {
-                            if (multipartForm != null) {
-                                throw new IllegalArgumentException("MultipartForm data set twice for method "
-                                        + jandexSubMethod.declaringClass().name() + "#" + jandexSubMethod.name());
-                            }
-                            multipartForm = createMultipartForm(subMethodCreator, paramValue, subParamField.type, index);
                         }
                     }
                     // handle sub-method parameters:
@@ -1298,7 +1366,8 @@ public class JaxrsClientReactiveProcessor {
                                             subMethodCreator.readStaticField(subMethodGenericParametersField.get()),
                                             subMethodCreator.readStaticField(subMethodParamAnnotationsField.get()),
                                             paramIdx));
-                        } else if (param.parameterType == ParameterType.BEAN) {
+                        } else if (param.parameterType == ParameterType.BEAN
+                                || param.parameterType == ParameterType.MULTI_PART_FORM) {
                             // bean params require both, web-target and Invocation.Builder, modifications
                             // The web target changes have to be done on the method level.
                             // Invocation.Builder changes are offloaded to a separate method
@@ -1322,7 +1391,8 @@ public class JaxrsClientReactiveProcessor {
                                     subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
                                     handleBeanParamMethod.readInstanceField(clientField, handleBeanParamMethod.getThis()),
                                     formParams,
-                                    subMethodGenericParametersField, subMethodParamAnnotationsField, paramIdx);
+                                    subMethodGenericParametersField, subMethodParamAnnotationsField, paramIdx, multipart,
+                                    beanParam.type);
 
                             handleBeanParamMethod.returnValue(invocationBuilderRef);
                             invocationBuilderEnrichers.put(handleBeanParamDescriptor,
@@ -1375,18 +1445,11 @@ public class JaxrsClientReactiveProcessor {
                             handleCookieMethod.returnValue(invocationBuilderRef);
                             invocationBuilderEnrichers.put(handleCookieDescriptor, subMethodCreator.getMethodParam(paramIdx));
                         } else if (param.parameterType == ParameterType.FORM) {
-                            formParams = createIfAbsent(subMethodCreator, formParams);
+                            formParams = createFormDataIfAbsent(subMethodCreator, formParams, multipart);
+                            // FIXME: this is weird, it doesn't go via converter nor multipart, looks like a bug
                             subMethodCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
                                     subMethodCreator.load(param.name),
                                     subMethodCreator.getMethodParam(paramIdx));
-                        } else if (param.parameterType == ParameterType.MULTI_PART_FORM) {
-                            if (multipartForm != null) {
-                                throw new IllegalArgumentException("MultipartForm data set twice for method "
-                                        + jandexSubMethod.declaringClass().name() + "#" + jandexSubMethod.name());
-                            }
-                            multipartForm = createMultipartForm(subMethodCreator,
-                                    subMethodCreator.getMethodParam(paramIdx),
-                                    jandexSubMethod.parameterType(paramIdx), index);
                         }
 
                     }
@@ -1428,13 +1491,10 @@ public class JaxrsClientReactiveProcessor {
                                         generatedClasses, methodIndex, subMethodIndex, subMethodField);
                     }
 
-                    String[] consumes = extractProducesConsumesValues(
-                            jandexSubMethod.declaringClass().classAnnotation(CONSUMES), method.getConsumes());
-                    consumes = extractProducesConsumesValues(jandexSubMethod.annotation(CONSUMES), consumes);
                     handleReturn(subInterface, defaultMediaType,
                             getHttpMethod(jandexSubMethod, subMethod.getHttpMethod(), httpAnnotationToMethod),
-                            consumes, jandexSubMethod, subMethodCreator, formParams, multipartForm, bodyParameterValue,
-                            builder);
+                            consumes, jandexSubMethod, subMethodCreator, formParams, bodyParameterValue,
+                            builder, multipart);
                 } else {
                     // finding corresponding jandex method, used by enricher (MicroProfile enricher stores it in a field
                     // to later fill in context with corresponding java.lang.reflect.Method)
@@ -1501,132 +1561,62 @@ public class JaxrsClientReactiveProcessor {
         return clientField;
     }
 
-    /*
-     * Translate the class to be sent as multipart to Vertx Web MultipartForm.
-     */
-    private ResultHandle createMultipartForm(MethodCreator methodCreator, ResultHandle methodParam, Type formClassType,
-            IndexView index) {
-        AssignableResultHandle multipartForm = methodCreator.createVariable(QuarkusMultipartForm.class);
-        methodCreator.assign(multipartForm,
-                methodCreator.newInstance(MethodDescriptor.ofConstructor(QuarkusMultipartForm.class)));
+    private void handleMultipartField(String formParamName, String partType, String partFilename,
+            String type,
+            String parameterGenericType, ResultHandle fieldValue, AssignableResultHandle multipartForm,
+            BytecodeCreator methodCreator,
+            ResultHandle client, String restClientInterfaceClassName, ResultHandle parameterAnnotations, int methodIndex,
+            ResultHandle genericType, String errorLocation) {
 
-        ClassInfo formClass = index.getClassByName(formClassType.name());
+        BytecodeCreator ifValueNotNull = methodCreator.ifNotNull(fieldValue).trueBranch();
 
-        for (FieldInfo field : formClass.fields()) {
-            // go field by field, ignore static fields and fail on non-public fields, only public fields are supported ATM
-            if (Modifier.isStatic(field.flags())) {
-                continue;
+        // we support string, and send it as an attribute unconverted
+        if (type.equals(String.class.getName())) {
+            addString(ifValueNotNull, multipartForm, formParamName, partFilename, fieldValue);
+        } else if (type.equals(File.class.getName())) {
+            // file is sent as file :)
+            ResultHandle filePath = ifValueNotNull.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(File.class, "toPath", Path.class), fieldValue);
+            addFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, filePath);
+        } else if (type.equals(Path.class.getName())) {
+            // and so is path
+            addFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue);
+        } else if (type.equals(Buffer.class.getName())) {
+            // and buffer
+            addBuffer(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue, errorLocation);
+        } else if (type.startsWith("[")) {
+            // byte[] can be sent as file too
+            if (!type.equals("[B")) {
+                throw new IllegalArgumentException("Array of unsupported type: " + type
+                        + " on " + errorLocation);
             }
-
-            String fieldName = field.name();
-            ResultHandle fieldValue = null;
-            String getterName = "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
-            for (MethodInfo method : formClass.methods()) {
-                if (method.name().equals(getterName) && method.returnType().name().equals(field.type().name())
-                        && method.parameterTypes().isEmpty() && Modifier.isPublic(method.flags())
-                        && !Modifier.isStatic(method.flags())) {
-                    fieldValue = methodCreator.invokeVirtualMethod(method, methodParam);
-                    break;
-                }
-            }
-            if ((fieldValue == null) && Modifier.isPublic(field.flags())) {
-                fieldValue = methodCreator.readInstanceField(field, methodParam);
-
-            }
-            if (fieldValue == null) {
-                throw new IllegalArgumentException("Non-public field '" + fieldName
-                        + "' without a getter, found in a multipart form data class '"
-                        + formClassType.name()
-                        + "'. Rest Client Reactive only supports multipart form classes with fields that are public or have public getters.");
-            }
-
-            String formParamName = formParamName(field);
-            String partType = formPartType(field);
-            String partFilename = formPartFilename(field);
-
-            Type fieldType = field.type();
-
-            BytecodeCreator ifValueNotNull = methodCreator.ifNotNull(fieldValue).trueBranch();
-
-            switch (fieldType.kind()) {
-                case CLASS:
-                    // we support string, and send it as an attribute
-                    ClassInfo fieldClass = index.getClassByName(fieldType.name());
-                    if (DotNames.STRING.equals(fieldClass.name())) {
-                        addString(ifValueNotNull, multipartForm, formParamName, partFilename, fieldValue);
-                    } else if (is(FILE, fieldClass, index)) {
-                        // file is sent as file :)
-                        if (partType == null) {
-                            throw new IllegalArgumentException(
-                                    "No @PartType annotation found on multipart form field of type File: " +
-                                            formClass.name() + "." + field.name());
-                        }
-                        ResultHandle filePath = ifValueNotNull.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(File.class, "toPath", Path.class), fieldValue);
-                        addFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, filePath);
-                    } else if (is(PATH, fieldClass, index)) {
-                        // and so is path
-                        if (partType == null) {
-                            throw new IllegalArgumentException(
-                                    "No @PartType annotation found on multipart form field of type Path: " +
-                                            formClass.name() + "." + field.name());
-                        }
-                        addFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue);
-                    } else if (is(BUFFER, fieldClass, index)) {
-                        // and buffer
-                        addBuffer(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue, field);
-                    } else { // assume POJO:
-                        addPojo(ifValueNotNull, multipartForm, formParamName, partType, fieldValue, field);
-                    }
-                    break;
-                case ARRAY:
-                    // byte[] can be sent as file too
-                    Type componentType = fieldType.asArrayType().component();
-                    if (componentType.kind() != Type.Kind.PRIMITIVE
-                            || !byte.class.getName().equals(componentType.name().toString())) {
-                        throw new IllegalArgumentException("Array of unsupported type: " + componentType.name()
-                                + " on " + formClassType.name() + "." + field.name());
-                    }
-                    ResultHandle buffer = ifValueNotNull.invokeStaticInterfaceMethod(
-                            MethodDescriptor.ofMethod(Buffer.class, "buffer", Buffer.class, byte[].class),
-                            fieldValue);
-                    addBuffer(ifValueNotNull, multipartForm, formParamName, partType, partFilename, buffer, field);
-                    break;
-                case PRIMITIVE:
-                    // primitives are converted to text and sent as attribute
-                    ResultHandle string = primitiveToString(ifValueNotNull, fieldValue, field);
-                    addString(ifValueNotNull, multipartForm, formParamName, partFilename, string);
-                    break;
-                case PARAMETERIZED_TYPE:
-                    ParameterizedType parameterizedType = fieldType.asParameterizedType();
-                    List<Type> args = parameterizedType.arguments();
-                    if (parameterizedType.name().equals(MULTI) && args.size() == 1 && args.get(0).name().equals(BYTE)) {
-                        addMultiAsFile(ifValueNotNull, multipartForm, formParamName, partType, field, fieldValue);
-                        break;
-                    }
-                    throw new IllegalArgumentException("Unsupported multipart form field type: " + parameterizedType + "<"
-                            + args.stream().map(a -> a.name().toString()).collect(Collectors.joining(","))
-                            + "> in field class " + formClassType.name());
-                case VOID:
-                case TYPE_VARIABLE:
-                case UNRESOLVED_TYPE_VARIABLE:
-                case TYPE_VARIABLE_REFERENCE:
-                case WILDCARD_TYPE:
-                    throw new IllegalArgumentException("Unsupported multipart form field type: " + fieldType + " in " +
-                            "field class " + formClassType.name());
-            }
+            ResultHandle buffer = ifValueNotNull.invokeStaticInterfaceMethod(
+                    MethodDescriptor.ofMethod(Buffer.class, "buffer", Buffer.class, byte[].class),
+                    fieldValue);
+            addBuffer(ifValueNotNull, multipartForm, formParamName, partType, partFilename, buffer, errorLocation);
+        } else if (parameterGenericType.equals(MULTI_BYTE_SIGNATURE)) {
+            addMultiAsFile(ifValueNotNull, multipartForm, formParamName, partType, fieldValue, errorLocation);
+        } else if (partType != null) {
+            // assume POJO:
+            addPojo(ifValueNotNull, multipartForm, formParamName, partType, fieldValue, type);
+        } else {
+            // go via converter
+            ResultHandle convertedFormParam = convertParamToString(ifValueNotNull, client, fieldValue, type, genericType,
+                    parameterAnnotations, methodIndex);
+            BytecodeCreator parameterIsStringBranch = checkStringParam(ifValueNotNull, convertedFormParam,
+                    restClientInterfaceClassName, errorLocation);
+            addString(parameterIsStringBranch, multipartForm, formParamName, partFilename, convertedFormParam);
         }
-
-        return multipartForm;
     }
 
     private void addPojo(BytecodeCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
-            String partType, ResultHandle fieldValue, FieldInfo field) {
+            String partType, ResultHandle fieldValue, String type) {
         methodCreator.assign(multipartForm,
                 methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "entity",
                         QuarkusMultipartForm.class, String.class, Object.class, String.class, Class.class),
-                        multipartForm, methodCreator.load(field.name()), fieldValue, methodCreator.load(partType),
-                        methodCreator.loadClassFromTCCL(field.type().name().toString())));
+                        multipartForm, methodCreator.load(formParamName), fieldValue, methodCreator.load(partType),
+                        // FIXME: doesn't support generics
+                        methodCreator.loadClassFromTCCL(type)));
     }
 
     /**
@@ -1639,6 +1629,10 @@ public class JaxrsClientReactiveProcessor {
         ResultHandle fileName = partFilename != null ? methodCreator.load(partFilename)
                 : methodCreator.invokeVirtualMethod(OBJECT_TO_STRING, fileNamePath);
         ResultHandle pathString = methodCreator.invokeVirtualMethod(OBJECT_TO_STRING, filePath);
+        // they all default to plain/text except buffers/byte[]/Multi<Byte>/File/Path
+        if (partType == null) {
+            partType = MediaType.APPLICATION_OCTET_STREAM;
+        }
         if (partType.equalsIgnoreCase(MediaType.APPLICATION_OCTET_STREAM)) {
             methodCreator.assign(multipartForm,
                     // MultipartForm#binaryFileUpload(String name, String filename, String pathname, String mediaType);
@@ -1704,12 +1698,11 @@ public class JaxrsClientReactiveProcessor {
     }
 
     private void addMultiAsFile(BytecodeCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
-            String partType, FieldInfo field,
-            ResultHandle multi) {
+            String partType,
+            ResultHandle multi, String errorLocation) {
+        // they all default to plain/text except buffers/byte[]/Multi<Byte>/File/Path
         if (partType == null) {
-            throw new IllegalArgumentException(
-                    "No @PartType annotation found on multipart form field " +
-                            field.declaringClass().name() + "." + field.name());
+            partType = MediaType.APPLICATION_OCTET_STREAM;
         }
         if (partType.equalsIgnoreCase(MediaType.APPLICATION_OCTET_STREAM)) {
             methodCreator.assign(multipartForm,
@@ -1735,13 +1728,12 @@ public class JaxrsClientReactiveProcessor {
     }
 
     private void addBuffer(BytecodeCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
-            String partType, String partFilename, ResultHandle buffer, FieldInfo field) {
+            String partType, String partFilename, ResultHandle buffer, String errorLocation) {
         ResultHandle filenameHandle = partFilename != null ? methodCreator.load(partFilename)
                 : methodCreator.load(formParamName);
+        // they all default to plain/text except buffers/byte[]/Multi<Byte>/File/Path
         if (partType == null) {
-            throw new IllegalArgumentException(
-                    "No @PartType annotation found on multipart form field " +
-                            field.declaringClass().name() + "." + field.name());
+            partType = MediaType.APPLICATION_OCTET_STREAM;
         }
         if (partType.equalsIgnoreCase(MediaType.APPLICATION_OCTET_STREAM)) {
             methodCreator.assign(multipartForm,
@@ -1764,61 +1756,18 @@ public class JaxrsClientReactiveProcessor {
         }
     }
 
-    private String formPartType(FieldInfo field) {
-        AnnotationInstance partType = field.annotation(ResteasyReactiveDotNames.PART_TYPE_NAME);
-        if (partType != null) {
-            return partType.value().asString();
-        }
-        return null;
-    }
-
-    private String formPartFilename(FieldInfo field) {
-        AnnotationInstance partType = field.annotation(ResteasyReactiveDotNames.PART_FILE_NAME);
-        if (partType != null) {
-            return partType.value().asString();
-        }
-        return null;
-    }
-
-    private String formParamName(FieldInfo field) {
-        AnnotationInstance restFormParam = field.annotation(ResteasyReactiveDotNames.REST_FORM_PARAM);
-        AnnotationInstance formParam = field.annotation(ResteasyReactiveDotNames.FORM_PARAM);
-        if (restFormParam != null && formParam != null) {
-            throw new IllegalArgumentException("Only one of @RestFormParam, @FormParam annotations expected on a field. " +
-                    "Found both on " + field.declaringClass() + "." + field.name());
-        }
-        if (restFormParam != null) {
-            AnnotationValue value = restFormParam.value();
-            if (value == null || "".equals(value.asString())) {
-                return field.name();
-            } else {
-                return value.asString();
-            }
-        } else if (formParam != null) {
-            return formParam.value().asString();
-        } else {
-            throw new IllegalArgumentException("One of @RestFormParam, @FormParam annotations expected on a field. " +
-                    "No annotation found on " + field.declaringClass() + "." + field.name());
-        }
-    }
-
-    private boolean is(DotName desiredClass, ClassInfo fieldClass, IndexView index) {
-        if (fieldClass.name().equals(desiredClass)) {
-            return true;
-        }
-        ClassInfo superClass;
-        if (fieldClass.name().toString().equals(Object.class.getName()) ||
-                (superClass = index.getClassByName(fieldClass.superName())) == null) {
-            return false;
-        }
-        return is(desiredClass, superClass, index);
-    }
-
-    private AssignableResultHandle createIfAbsent(BytecodeCreator methodCreator, AssignableResultHandle formValues) {
+    private AssignableResultHandle createFormDataIfAbsent(BytecodeCreator methodCreator, AssignableResultHandle formValues,
+            boolean multipart) {
         if (formValues == null) {
-            formValues = methodCreator.createVariable(MultivaluedMap.class);
-            methodCreator.assign(formValues,
-                    methodCreator.newInstance(MethodDescriptor.ofConstructor(MultivaluedHashMap.class)));
+            if (multipart) {
+                formValues = methodCreator.createVariable(QuarkusMultipartForm.class);
+                methodCreator.assign(formValues,
+                        methodCreator.newInstance(MethodDescriptor.ofConstructor(QuarkusMultipartForm.class)));
+            } else {
+                formValues = methodCreator.createVariable(MultivaluedMap.class);
+                methodCreator.assign(formValues,
+                        methodCreator.newInstance(MethodDescriptor.ofConstructor(MultivaluedHashMap.class)));
+            }
         }
         return formValues;
     }
@@ -1851,8 +1800,8 @@ public class JaxrsClientReactiveProcessor {
     }
 
     private void handleReturn(ClassInfo restClientInterface, String defaultMediaType, String httpMethod, String[] consumes,
-            MethodInfo jandexMethod, MethodCreator methodCreator, ResultHandle formParams, ResultHandle multipartForm,
-            ResultHandle bodyValue, AssignableResultHandle builder) {
+            MethodInfo jandexMethod, MethodCreator methodCreator, ResultHandle formParams,
+            ResultHandle bodyValue, AssignableResultHandle builder, boolean multipart) {
         Type returnType = jandexMethod.returnType();
         ReturnCategory returnCategory = ReturnCategory.BLOCKING;
 
@@ -1952,9 +1901,9 @@ public class JaxrsClientReactiveProcessor {
 
         catchBlock.throwException(caughtException);
 
-        if (bodyValue != null || formParams != null || multipartForm != null) {
-            if (countNonNulls(bodyValue, formParams, multipartForm) > 1) {
-                throw new IllegalArgumentException("Attempt to pass at least two of form, multipart form " +
+        if (bodyValue != null || formParams != null) {
+            if (countNonNulls(bodyValue, formParams) > 1) {
+                throw new IllegalArgumentException("Attempt to pass at least two of form " +
                         "or regular entity as a request body in " +
                         restClientInterface.name().toString() + "#" + jandexMethod.name());
             }
@@ -1968,6 +1917,8 @@ public class JaxrsClientReactiveProcessor {
                                     + " Unable to determine a single `Content-Type`.");
                 }
                 mediaTypeValue = consumes[0];
+            } else if (formParams != null) {
+                mediaTypeValue = multipart ? MediaType.MULTIPART_FORM_DATA : MediaType.APPLICATION_FORM_URLENCODED;
             }
             ResultHandle mediaType = tryBlock.invokeStaticMethod(
                     MethodDescriptor.ofMethod(MediaType.class, "valueOf", MediaType.class, String.class),
@@ -1975,7 +1926,7 @@ public class JaxrsClientReactiveProcessor {
 
             ResultHandle entity = tryBlock.invokeStaticMethod(
                     MethodDescriptor.ofMethod(Entity.class, "entity", Entity.class, Object.class, MediaType.class),
-                    bodyValue != null ? bodyValue : (formParams != null ? formParams : multipartForm),
+                    bodyValue != null ? bodyValue : formParams,
                     mediaType);
 
             if (returnCategory == ReturnCategory.COMPLETION_STAGE) {
@@ -2215,16 +2166,16 @@ public class JaxrsClientReactiveProcessor {
             AssignableResultHandle formParams,
             Supplier<FieldDescriptor> methodGenericTypeField,
             Supplier<FieldDescriptor> methodParamAnnotationsField,
-            int paramIdx) {
+            int paramIdx, boolean multipart, String beanParamClass) {
         // Form params collector must be initialized at method root level before any inner blocks that may use it
         if (areFormParamsDefinedIn(beanParamItems)) {
-            formParams = createIfAbsent(methodCreator, formParams);
+            formParams = createFormDataIfAbsent(methodCreator, formParams, multipart);
         }
 
         addSubBeanParamData(jandexMethod, methodCreator, invocationBuilderEnricher, invocationBuilder, beanParamItems, param,
                 target,
                 index, restClientInterfaceClassName, client, invocationEnricherClient, formParams,
-                methodGenericTypeField, methodParamAnnotationsField, paramIdx);
+                methodGenericTypeField, methodParamAnnotationsField, paramIdx, multipart, beanParamClass);
 
         return formParams;
     }
@@ -2245,7 +2196,7 @@ public class JaxrsClientReactiveProcessor {
             AssignableResultHandle formParams,
             Supplier<FieldDescriptor> methodGenericTypeField,
             Supplier<FieldDescriptor> methodParamAnnotationsField,
-            int paramIdx) {
+            int paramIdx, boolean multipart, String beanParamClass) {
         BytecodeCreator creator = methodCreator.ifNotNull(param).trueBranch();
         BytecodeCreator invoEnricher = invocationBuilderEnricher.ifNotNull(invocationBuilderEnricher.getMethodParam(1))
                 .trueBranch();
@@ -2258,7 +2209,8 @@ public class JaxrsClientReactiveProcessor {
                     addSubBeanParamData(jandexMethod, creator, invoEnricher, invocationBuilder, beanParamItem.items(),
                             beanParamElementHandle, target, index, restClientInterfaceClassName, client,
                             invocationEnricherClient, formParams,
-                            methodGenericTypeField, methodParamAnnotationsField, paramIdx);
+                            methodGenericTypeField, methodParamAnnotationsField, paramIdx, multipart,
+                            beanParamItem.className());
                     break;
                 case QUERY_PARAM:
                     QueryParamItem queryParam = (QueryParamItem) item;
@@ -2299,10 +2251,12 @@ public class JaxrsClientReactiveProcessor {
                 case FORM_PARAM:
                     FormParamItem formParam = (FormParamItem) item;
                     addFormParam(creator, formParam.getFormParamName(), formParam.extract(creator, param),
-                            formParam.getParamType(), restClientInterfaceClassName, client, formParams,
+                            formParam.getParamType(), formParam.getParamSignature(), restClientInterfaceClassName, client,
+                            formParams,
                             creator.readStaticField(methodGenericTypeField.get()),
                             creator.readStaticField(methodParamAnnotationsField.get()),
-                            paramIdx);
+                            paramIdx, multipart, formParam.getMimeType(), formParam.getFileName(),
+                            beanParamClass + "." + formParam.getSourceName());
                     break;
                 default:
                     throw new IllegalStateException("Unimplemented");
@@ -2536,48 +2490,50 @@ public class JaxrsClientReactiveProcessor {
     }
 
     private void addFormParam(BytecodeCreator methodCreator, String paramName, ResultHandle formParamHandle,
-            String parameterType, String restClientInterfaceClassName,
-            ResultHandle client, AssignableResultHandle formParams, ResultHandle genericType,
-            ResultHandle parameterAnnotations, int methodIndex) {
-        BytecodeCreator notNullValue = methodCreator.ifNull(formParamHandle).falseBranch();
-        ResultHandle convertedFormParam = notNullValue.invokeVirtualMethod(
+            String parameterType, String parameterGenericType,
+            String restClientInterfaceClassName, ResultHandle client, AssignableResultHandle formParams,
+            ResultHandle genericType,
+            ResultHandle parameterAnnotations, int methodIndex, boolean multipart,
+            String partType, String partFilename, String errorLocation) {
+        if (multipart) {
+            handleMultipartField(paramName, partType, partFilename, parameterType, parameterGenericType, formParamHandle,
+                    formParams, methodCreator,
+                    client, restClientInterfaceClassName, parameterAnnotations, methodIndex, genericType,
+                    errorLocation);
+        } else {
+            BytecodeCreator notNullValue = methodCreator.ifNull(formParamHandle).falseBranch();
+            ResultHandle convertedFormParam = convertParamToString(notNullValue, client, formParamHandle, parameterType,
+                    genericType, parameterAnnotations, methodIndex);
+            BytecodeCreator parameterIsStringBranch = checkStringParam(notNullValue, convertedFormParam,
+                    restClientInterfaceClassName, errorLocation);
+            parameterIsStringBranch.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
+                    notNullValue.load(paramName), convertedFormParam);
+        }
+    }
+
+    private BytecodeCreator checkStringParam(BytecodeCreator notNullValue, ResultHandle convertedFormParam,
+            String restClientInterfaceClassName, String errorLocation) {
+        ResultHandle isString = notNullValue.instanceOf(convertedFormParam, String.class);
+        BranchResult isStringBranch = notNullValue.ifTrue(isString);
+        isStringBranch.falseBranch().throwException(IllegalStateException.class,
+                "Form element '" + errorLocation
+                        + "' could not be converted to 'String' for REST Client interface '"
+                        + restClientInterfaceClassName + "'. A proper implementation of '"
+                        + ParamConverter.class.getName() + "' needs to be returned by a '"
+                        + ParamConverterProvider.class.getName()
+                        + "' that is registered with the client via the @RegisterProvider annotation on the REST Client interface.");
+        return isStringBranch.trueBranch();
+    }
+
+    private ResultHandle convertParamToString(BytecodeCreator notNullValue, ResultHandle client,
+            ResultHandle formParamHandle, String parameterType,
+            ResultHandle genericType, ResultHandle parameterAnnotations, int methodIndex) {
+        return notNullValue.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class,
                         Object.class, Class.class, Supplier.class, Supplier.class, int.class),
                 client, formParamHandle,
                 notNullValue.loadClassFromTCCL(parameterType), genericType, parameterAnnotations,
                 notNullValue.load(methodIndex));
-        ResultHandle isString = notNullValue.instanceOf(convertedFormParam, String.class);
-        BranchResult isStringBranch = notNullValue.ifTrue(isString);
-        isStringBranch.trueBranch().invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
-                notNullValue.load(paramName), convertedFormParam);
-
-        // if the converted value is not a string, then:
-        // - if it's a primitive type, use the valueOf() method.
-        if (EndpointIndexer.primitiveTypes.containsKey(parameterType)) {
-            ResultHandle convertedFormParamAsString = isStringBranch.falseBranch().invokeStaticMethod(
-                    MethodDescriptor.ofMethod(Objects.class, "toString", String.class, Object.class),
-                    convertedFormParam);
-            isStringBranch.falseBranch().invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
-                    notNullValue.load(paramName), convertedFormParamAsString);
-        } else {
-            // - if it's an enum, use the name() method.
-            ResultHandle isEnum = isStringBranch.falseBranch().instanceOf(convertedFormParam, Enum.class);
-            BranchResult isEnumBranch = isStringBranch.falseBranch().ifTrue(isEnum);
-            ResultHandle enumAsString = isEnumBranch.trueBranch().invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(Enum.class, "name", String.class),
-                    isEnumBranch.trueBranch().checkCast(convertedFormParam, Enum.class));
-            isEnumBranch.trueBranch().invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
-                    notNullValue.load(paramName), enumAsString);
-
-            // - Otherwise, return exception
-            isEnumBranch.falseBranch().throwException(IllegalStateException.class,
-                    "Form parameter '" + paramName
-                            + "' could not be converted to 'String' for REST Client interface '"
-                            + restClientInterfaceClassName + "'. A proper implementation of '"
-                            + ParamConverter.class.getName() + "' needs to be returned by a '"
-                            + ParamConverterProvider.class.getName()
-                            + "' that is registered with the client via the @RegisterProvider annotation on the REST Client interface.");
-        }
     }
 
     private void addCookieParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,

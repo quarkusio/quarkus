@@ -1,5 +1,10 @@
 package org.jboss.resteasy.reactive.server.processor.scanning;
 
+import java.io.File;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiFunction;
@@ -7,13 +12,27 @@ import java.util.function.BiFunction;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.MediaType;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type.Kind;
+import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.processor.AsmUtil;
 import org.jboss.resteasy.reactive.common.processor.IndexedParameter;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.common.processor.TypeArgMapper;
+import org.jboss.resteasy.reactive.common.util.DeploymentUtils;
+import org.jboss.resteasy.reactive.common.util.types.TypeSignatureParser;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.jboss.resteasy.reactive.server.core.Deployment;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.core.multipart.DefaultFileUpload;
+import org.jboss.resteasy.reactive.server.core.multipart.MultipartSupport;
+import org.jboss.resteasy.reactive.server.core.parameters.MultipartFormParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.ArrayConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.DelegatingParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupplier;
@@ -58,6 +77,53 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
     private static final String INIT_CONVERTER_FIELD_NAME = "__quarkus_converter__";
     private static final String INIT_CONVERTER_METHOD_DESCRIPTOR = "(" + QUARKUS_REST_DEPLOYMENT_DESCRIPTOR + ")V";
 
+    private static final String MULTIPART_SUPPORT_BINARY_NAME = MultipartSupport.class.getName().replace('.', '/');
+
+    private static final String OBJECT_BINARY_NAME = Object.class.getName().replace('.', '/');
+    private static final String OBJECT_DESCRIPTOR = "L" + OBJECT_BINARY_NAME + ";";
+
+    private static final String STRING_BINARY_NAME = String.class.getName().replace('.', '/');
+    private static final String STRING_DESCRIPTOR = "L" + STRING_BINARY_NAME + ";";
+
+    private static final String BYTE_ARRAY_DESCRIPTOR = "[B";
+
+    private static final String INPUT_STREAM_BINARY_NAME = InputStream.class.getName().replace('.', '/');
+    private static final String INPUT_STREAM_DESCRIPTOR = "L" + INPUT_STREAM_BINARY_NAME + ";";
+
+    private static final String LIST_BINARY_NAME = List.class.getName().replace('.', '/');
+    private static final String LIST_DESCRIPTOR = "L" + LIST_BINARY_NAME + ";";
+
+    private static final String TYPE_BINARY_NAME = java.lang.reflect.Type.class.getName().replace('.', '/');
+    private static final String TYPE_DESCRIPTOR = "L" + TYPE_BINARY_NAME + ";";
+
+    private static final String CLASS_BINARY_NAME = Class.class.getName().replace('.', '/');
+    private static final String CLASS_DESCRIPTOR = "L" + CLASS_BINARY_NAME + ";";
+
+    private static final String MEDIA_TYPE_BINARY_NAME = MediaType.class.getName().replace('.', '/');
+    private static final String MEDIA_TYPE_DESCRIPTOR = "L" + MEDIA_TYPE_BINARY_NAME + ";";
+
+    private static final String DEPLOYMENT_UTILS_BINARY_NAME = DeploymentUtils.class.getName().replace('.', '/');
+    private static final String DEPLOYMENT_UTILS_DESCRIPTOR = "L" + DEPLOYMENT_UTILS_BINARY_NAME + ";";
+
+    private static final String TYPE_DESCRIPTOR_PARSER_BINARY_NAME = TypeSignatureParser.class.getName().replace('.', '/');
+    private static final String TYPE_DESCRIPTOR_PARSER_DESCRIPTOR = "L" + TYPE_DESCRIPTOR_PARSER_BINARY_NAME + ";";
+
+    private static final String FILE_BINARY_NAME = File.class.getName().replace('.', '/');
+    private static final String FILE_DESCRIPTOR = "L" + FILE_BINARY_NAME + ";";
+
+    private static final String PATH_BINARY_NAME = Path.class.getName().replace('.', '/');
+    private static final String PATH_DESCRIPTOR = "L" + PATH_BINARY_NAME + ";";
+
+    private static final String DEFAULT_FILE_UPLOAD_BINARY_NAME = DefaultFileUpload.class.getName().replace('.', '/');
+    private static final String DEFAULT_FILE_UPLOAD_DESCRIPTOR = "L" + DEFAULT_FILE_UPLOAD_BINARY_NAME + ";";
+
+    private static final String FILE_UPLOAD_BINARY_NAME = FileUpload.class.getName().replace('.', '/');
+
+    private static final String RESTEASY_REACTIVE_REQUEST_CONTEXT_BINARY_NAME = ResteasyReactiveRequestContext.class.getName()
+            .replace('.', '/');
+    private static final String RESTEASY_REACTIVE_REQUEST_CONTEXT_DESCRIPTOR = "L"
+            + RESTEASY_REACTIVE_REQUEST_CONTEXT_BINARY_NAME + ";";
+
     private final Map<FieldInfo, ServerIndexedParameter> fieldExtractors;
     private final boolean superTypeIsInjectable;
 
@@ -65,34 +131,54 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
      * If this is true then we will create a new bean param instance, rather than assuming it has been created for us
      */
     private final boolean requireCreateBeanParams;
+    private IndexView indexView;
 
     public ClassInjectorTransformer(Map<FieldInfo, ServerIndexedParameter> fieldExtractors, boolean superTypeIsInjectable,
-            boolean requireCreateBeanParams) {
+            boolean requireCreateBeanParams, IndexView indexView) {
         this.fieldExtractors = fieldExtractors;
         this.superTypeIsInjectable = superTypeIsInjectable;
         this.requireCreateBeanParams = requireCreateBeanParams;
+        this.indexView = indexView;
     }
 
     @Override
     public ClassVisitor apply(String classname, ClassVisitor visitor) {
-        return new ClassInjectorVisitor(Gizmo.ASM_API_VERSION, visitor, fieldExtractors, superTypeIsInjectable,
-                requireCreateBeanParams);
+        return new ClassInjectorVisitor(Gizmo.ASM_API_VERSION, visitor,
+                fieldExtractors, superTypeIsInjectable,
+                requireCreateBeanParams, indexView);
     }
 
     static class ClassInjectorVisitor extends ClassVisitor {
 
         private Map<FieldInfo, ServerIndexedParameter> fieldExtractors;
+        private Map<FieldInfo, ServerIndexedParameter> partTypes;
         private String thisName;
         private boolean superTypeIsInjectable;
         private String superTypeName;
         private final boolean requireCreateBeanParams;
+        private IndexView indexView;
+        private boolean seenClassInit;
 
         public ClassInjectorVisitor(int api, ClassVisitor classVisitor, Map<FieldInfo, ServerIndexedParameter> fieldExtractors,
-                boolean superTypeIsInjectable, boolean requireCreateBeanParams) {
+                boolean superTypeIsInjectable, boolean requireCreateBeanParams, IndexView indexView) {
             super(api, classVisitor);
             this.fieldExtractors = fieldExtractors;
             this.superTypeIsInjectable = superTypeIsInjectable;
             this.requireCreateBeanParams = requireCreateBeanParams;
+            this.indexView = indexView;
+            this.partTypes = new HashMap<>();
+            // collect part types
+            for (Entry<FieldInfo, ServerIndexedParameter> entry : fieldExtractors.entrySet()) {
+                FieldInfo fieldInfo = entry.getKey();
+                ServerIndexedParameter extractor = entry.getValue();
+                switch (extractor.getType()) {
+                    case FORM:
+                        MultipartFormParamExtractor.Type multipartFormType = getMultipartFormType(extractor);
+                        if (multipartFormType == MultipartFormParamExtractor.Type.PartType) {
+                            this.partTypes.put(fieldInfo, extractor);
+                        }
+                }
+            }
         }
 
         @Override
@@ -111,6 +197,26 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             }
             superTypeName = superName;
             thisName = name;
+        }
+
+        @Override
+        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                String[] exceptions) {
+            MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
+            // if we have part types and we're doing the class init method, add our init for their special fields
+            if (!partTypes.isEmpty() && name.equals("<clinit>")) {
+                this.seenClassInit = true;
+                return new MethodVisitor(Gizmo.ASM_API_VERSION, mv) {
+                    @Override
+                    public void visitEnd() {
+                        for (Entry<FieldInfo, ServerIndexedParameter> entry : partTypes.entrySet()) {
+                            generateMultipartFormStaticInit(this, entry.getKey(), entry.getValue());
+                        }
+                        super.visitEnd();
+                    }
+                };
+            }
+            return mv;
         }
 
         @Override
@@ -199,11 +305,17 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             injectMethod.visitMaxs(0, 0);
 
             // now generate initialisers for every field converter
+            // and type info for Form bodies
             for (Entry<FieldInfo, ServerIndexedParameter> entry : fieldExtractors.entrySet()) {
                 FieldInfo fieldInfo = entry.getKey();
                 ServerIndexedParameter extractor = entry.getValue();
                 switch (extractor.getType()) {
                     case FORM:
+                        MultipartFormParamExtractor.Type multipartFormType = getMultipartFormType(extractor);
+                        if (multipartFormType == MultipartFormParamExtractor.Type.PartType) {
+                            generateMultipartFormFields(fieldInfo, extractor);
+                        }
+                        // fall-through on purpose
                     case HEADER:
                     case MATRIX:
                     case COOKIE:
@@ -219,7 +331,77 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                 }
             }
 
+            if (!seenClassInit && !partTypes.isEmpty()) {
+                // add a class init method for the part types special fields
+                MethodVisitor mv = super.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null);
+                for (Entry<FieldInfo, ServerIndexedParameter> entry : partTypes.entrySet()) {
+                    generateMultipartFormStaticInit(mv, entry.getKey(), entry.getValue());
+                }
+                mv.visitInsn(Opcodes.RETURN);
+                mv.visitEnd();
+                mv.visitMaxs(0, 0);
+            }
             super.visitEnd();
+        }
+
+        private void generateMultipartFormFields(FieldInfo fieldInfo, ServerIndexedParameter extractor) {
+            /*
+             * private static Class map_type;
+             * private static Type map_genericType;
+             * private static MediaType map_mediaType;
+             */
+            super.visitField(Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE, fieldInfo.name() + "_type", CLASS_DESCRIPTOR, null, null)
+                    .visitEnd();
+            super.visitField(Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE, fieldInfo.name() + "_genericType", TYPE_DESCRIPTOR, null,
+                    null).visitEnd();
+            super.visitField(Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE, fieldInfo.name() + "_mediaType", MEDIA_TYPE_DESCRIPTOR,
+                    null, null).visitEnd();
+        }
+
+        private void generateMultipartFormStaticInit(MethodVisitor mv, FieldInfo fieldInfo, ServerIndexedParameter extractor) {
+            /*
+             * generic:
+             * map_type = DeploymentUtils.loadClass("java.util.Map");
+             * map_genericType = TypeSignatureParser.parse("Ljava/util/Map<Ljava/lang/String;Ljava/lang/String;>;");
+             * map_mediaType = MediaType.valueOf("application/json");
+             * dumb class:
+             * Class var0 = DeploymentUtils.loadClass("org.acme.getting.started.Person");
+             * person_type = var0;
+             * person_genericType = var0;
+             * person_mediaType = MediaType.valueOf("application/json");
+             */
+            org.jboss.jandex.Type type = fieldInfo.type();
+            // extract the component type if not single
+            if (!extractor.isSingle()) {
+                boolean isArray = type.kind() == org.jboss.jandex.Type.Kind.ARRAY;
+                // it's T[] or List<T>
+                type = isArray ? type.asArrayType().component()
+                        : type.asParameterizedType().arguments().get(0);
+            }
+            // type
+            mv.visitLdcInsn(type.name().toString());
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, DEPLOYMENT_UTILS_BINARY_NAME, "loadClass",
+                    "(" + STRING_DESCRIPTOR + ")" + CLASS_DESCRIPTOR, false);
+            mv.visitFieldInsn(Opcodes.PUTSTATIC, this.thisName, fieldInfo.name() + "_type", CLASS_DESCRIPTOR);
+            // generic type
+            if ((type.kind() != org.jboss.jandex.Type.Kind.CLASS) && (type.kind() != org.jboss.jandex.Type.Kind.PRIMITIVE)) {
+                TypeArgMapper typeArgMapper = new TypeArgMapper(fieldInfo.declaringClass(), indexView);
+                String signature = AsmUtil.getSignature(type, typeArgMapper);
+                mv.visitLdcInsn(signature);
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, TYPE_DESCRIPTOR_PARSER_BINARY_NAME, "parse",
+                        "(" + STRING_DESCRIPTOR + ")" + TYPE_DESCRIPTOR, false);
+                mv.visitFieldInsn(Opcodes.PUTSTATIC, this.thisName, fieldInfo.name() + "_genericType", TYPE_DESCRIPTOR);
+            } else {
+                mv.visitFieldInsn(Opcodes.GETSTATIC, this.thisName, fieldInfo.name() + "_type", CLASS_DESCRIPTOR);
+                mv.visitFieldInsn(Opcodes.PUTSTATIC, this.thisName, fieldInfo.name() + "_genericType", TYPE_DESCRIPTOR);
+            }
+            // media type
+            // this must not be null, otherwise it's not a part type
+            String mediaType = extractor.getAnns().get(ResteasyReactiveDotNames.PART_TYPE_NAME).value().asString();
+            mv.visitLdcInsn(mediaType);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, MEDIA_TYPE_BINARY_NAME, "valueOf",
+                    "(" + STRING_DESCRIPTOR + ")" + MEDIA_TYPE_DESCRIPTOR, false);
+            mv.visitFieldInsn(Opcodes.PUTSTATIC, this.thisName, fieldInfo.name() + "_mediaType", MEDIA_TYPE_DESCRIPTOR);
         }
 
         private void generateConverterInitMethod(FieldInfo fieldInfo, ParameterConverterSupplier converter, boolean single) {
@@ -263,7 +445,6 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                     "(Ljava/lang/Class;Ljava/lang/String;Z)" + PARAMETER_CONVERTER_DESCRIPTOR, false);
 
             // now if we have a backup delegate, let's call it
-
             // stack: [converter]
             if (delegateBinaryName != null) {
                 // check if we have a delegate
@@ -304,8 +485,17 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                 // [instance, converter, instance]
                 initConverterMethod.visitInsn(Opcodes.SWAP);
                 // [instance, instance, converter]
-                initConverterMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, delegatorBinaryName, "<init>",
-                        "(" + PARAMETER_CONVERTER_DESCRIPTOR + ")V", false);
+                // array converter wants the array instance type
+                if (converter instanceof ArrayConverter.ArraySupplier) {
+                    org.jboss.jandex.Type componentType = fieldInfo.type().asArrayType().component();
+                    initConverterMethod.visitLdcInsn(componentType.name().toString('.'));
+                    // [instance, instance, converter, componentType]
+                    initConverterMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, delegatorBinaryName, "<init>",
+                            "(" + PARAMETER_CONVERTER_DESCRIPTOR + STRING_DESCRIPTOR + ")V", false);
+                } else {
+                    initConverterMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, delegatorBinaryName, "<init>",
+                            "(" + PARAMETER_CONVERTER_DESCRIPTOR + ")V", false);
+                }
             }
 
             // store the converter in the static field
@@ -328,6 +518,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
 
         private void injectParameterWithConverter(MethodVisitor injectMethod, String methodName, FieldInfo fieldInfo,
                 ServerIndexedParameter extractor, boolean extraSingleParameter, boolean extraEncodedParam, boolean encoded) {
+
             // spec says:
             /*
              * 3.2 Fields and Bean Properties
@@ -358,7 +549,12 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                     break;
             }
             // push the parameter value
-            loadParameter(injectMethod, methodName, extractor, extraSingleParameter, extraEncodedParam, encoded);
+            MultipartFormParamExtractor.Type multipartType = getMultipartFormType(extractor);
+            if (multipartType == null) {
+                loadParameter(injectMethod, methodName, extractor, extraSingleParameter, extraEncodedParam, encoded);
+            } else {
+                loadMultipartParameter(injectMethod, fieldInfo, extractor, multipartType);
+            }
             Label valueWasNull = null;
             if (!extractor.isOptional()) {
                 valueWasNull = new Label();
@@ -375,7 +571,8 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                 AsmUtil.unboxIfRequired(injectMethod, fieldInfo.type());
             } else {
                 // FIXME: this is totally wrong wrt. generics
-                injectMethod.visitTypeInsn(Opcodes.CHECKCAST, fieldInfo.type().name().toString('/'));
+                // Do not replace this with toString('/') because it doesn't use the given separator for array types
+                injectMethod.visitTypeInsn(Opcodes.CHECKCAST, fieldInfo.type().name().toString().replace('.', '/'));
             }
             // store our param field
             injectMethod.visitFieldInsn(Opcodes.PUTFIELD, thisName, fieldInfo.name(),
@@ -431,6 +628,259 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
 
             // really done
             injectMethod.visitLabel(endLabel);
+        }
+
+        private void loadMultipartParameter(MethodVisitor injectMethod, FieldInfo fieldInfo, ServerIndexedParameter param,
+                MultipartFormParamExtractor.Type multipartType) {
+            switch (multipartType) {
+                case String:
+                    /*
+                     * return single ? MultipartSupport.getString(name, context)
+                     * : MultipartSupport.getStrings(name, context);
+                     */
+                    invokeMultipartSupport(param, injectMethod, "getString", STRING_DESCRIPTOR);
+                    break;
+                case ByteArray:
+                    /*
+                     * return single ? MultipartSupport.getByteArray(name, context)
+                     * : MultipartSupport.getByteArrays(name, context);
+                     */
+                    invokeMultipartSupport(param, injectMethod, "getByteArray", BYTE_ARRAY_DESCRIPTOR);
+                    break;
+                case InputStream:
+                    /*
+                     * return single ? MultipartSupport.getInputStream(name, context)
+                     * : MultipartSupport.getInputStreams(name, context);
+                     */
+                    invokeMultipartSupport(param, injectMethod, "getInputStream", INPUT_STREAM_DESCRIPTOR);
+                    break;
+                case FileUpload:
+                    /*
+                     * // special case
+                     * if (name.equals(FileUpload.ALL))
+                     * return MultipartSupport.getFileUploads(context);
+                     * return single ? MultipartSupport.getFileUpload(name, context)
+                     * : MultipartSupport.getFileUploads(name, context);
+                     */
+                    if (param.getName().equals(FileUpload.ALL)) {
+                        // ctx param
+                        injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
+                        injectMethod.visitTypeInsn(Opcodes.CHECKCAST, RESTEASY_REACTIVE_REQUEST_CONTEXT_BINARY_NAME);
+                        injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC, MULTIPART_SUPPORT_BINARY_NAME, "getFileUploads",
+                                "(" + RESTEASY_REACTIVE_REQUEST_CONTEXT_DESCRIPTOR + ")" + LIST_DESCRIPTOR, false);
+                    } else {
+                        invokeMultipartSupport(param, injectMethod, "getFileUpload", DEFAULT_FILE_UPLOAD_DESCRIPTOR);
+                    }
+                    break;
+                case File:
+                    /*
+                     * if (single) {
+                     * FileUpload upload = MultipartSupport.getFileUpload(name, context);
+                     * return upload != null ? upload.uploadedFile().toFile() : null;
+                     * } else {
+                     * return MultipartSupport.getJavaIOFileUploads(name, context);
+                     * }
+                     */
+                    if (param.isSingle()) {
+                        // name param
+                        injectMethod.visitLdcInsn(param.getName());
+                        // ctx param
+                        injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
+                        injectMethod.visitTypeInsn(Opcodes.CHECKCAST, RESTEASY_REACTIVE_REQUEST_CONTEXT_BINARY_NAME);
+                        injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC, MULTIPART_SUPPORT_BINARY_NAME, "getFileUpload",
+                                "(" + STRING_DESCRIPTOR + RESTEASY_REACTIVE_REQUEST_CONTEXT_DESCRIPTOR + ")"
+                                        + DEFAULT_FILE_UPLOAD_DESCRIPTOR,
+                                false);
+                        Label ifNull = new Label();
+                        Label endIf = new Label();
+                        // dup for the ifnull
+                        injectMethod.visitInsn(Opcodes.DUP);
+                        injectMethod.visitJumpInsn(Opcodes.IFNULL, ifNull);
+                        // if not null
+                        injectMethod.visitMethodInsn(Opcodes.INVOKEVIRTUAL, DEFAULT_FILE_UPLOAD_BINARY_NAME, "uploadedFile",
+                                "()" + PATH_DESCRIPTOR, false);
+                        injectMethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, PATH_BINARY_NAME, "toFile",
+                                "()" + FILE_DESCRIPTOR, true);
+                        injectMethod.visitJumpInsn(Opcodes.GOTO, endIf);
+                        // else
+                        injectMethod.visitLabel(ifNull);
+                        // get rid of the null file upload
+                        injectMethod.visitInsn(Opcodes.POP);
+                        injectMethod.visitInsn(Opcodes.ACONST_NULL);
+                        injectMethod.visitLabel(endIf);
+                    } else {
+                        // name param
+                        injectMethod.visitLdcInsn(param.getName());
+                        // ctx param
+                        injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
+                        injectMethod.visitTypeInsn(Opcodes.CHECKCAST, RESTEASY_REACTIVE_REQUEST_CONTEXT_BINARY_NAME);
+                        injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC, MULTIPART_SUPPORT_BINARY_NAME,
+                                "getJavaIOFileUploads",
+                                "(" + STRING_DESCRIPTOR + RESTEASY_REACTIVE_REQUEST_CONTEXT_DESCRIPTOR + ")" + LIST_DESCRIPTOR,
+                                false);
+                    }
+                    break;
+                case Path:
+                    /*
+                     * if (single) {
+                     * FileUpload upload = MultipartSupport.getFileUpload(name, context);
+                     * return upload != null ? upload.uploadedFile() : null;
+                     * } else {
+                     * return MultipartSupport.getJavaPathFileUploads(name, context);
+                     * }
+                     */
+                    if (param.isSingle()) {
+                        // name param
+                        injectMethod.visitLdcInsn(param.getName());
+                        // ctx param
+                        injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
+                        injectMethod.visitTypeInsn(Opcodes.CHECKCAST, RESTEASY_REACTIVE_REQUEST_CONTEXT_BINARY_NAME);
+                        injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC, MULTIPART_SUPPORT_BINARY_NAME, "getFileUpload",
+                                "(" + STRING_DESCRIPTOR + RESTEASY_REACTIVE_REQUEST_CONTEXT_DESCRIPTOR + ")"
+                                        + DEFAULT_FILE_UPLOAD_DESCRIPTOR,
+                                false);
+                        Label ifNull = new Label();
+                        Label endIf = new Label();
+                        injectMethod.visitInsn(Opcodes.DUP);
+                        injectMethod.visitJumpInsn(Opcodes.IFNULL, ifNull);
+                        // if not null
+                        injectMethod.visitMethodInsn(Opcodes.INVOKEVIRTUAL, DEFAULT_FILE_UPLOAD_BINARY_NAME, "uploadedFile",
+                                "()" + PATH_DESCRIPTOR, false);
+                        injectMethod.visitJumpInsn(Opcodes.GOTO, endIf);
+                        // else
+                        injectMethod.visitLabel(ifNull);
+                        // get rid of the null file upload
+                        injectMethod.visitInsn(Opcodes.POP);
+                        injectMethod.visitInsn(Opcodes.ACONST_NULL);
+                        injectMethod.visitLabel(endIf);
+                    } else {
+                        // name param
+                        injectMethod.visitLdcInsn(param.getName());
+                        // ctx param
+                        injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
+                        injectMethod.visitTypeInsn(Opcodes.CHECKCAST, RESTEASY_REACTIVE_REQUEST_CONTEXT_BINARY_NAME);
+                        injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC, MULTIPART_SUPPORT_BINARY_NAME,
+                                "getJavaPathFileUploads",
+                                "(" + STRING_DESCRIPTOR + RESTEASY_REACTIVE_REQUEST_CONTEXT_DESCRIPTOR + ")" + LIST_DESCRIPTOR,
+                                false);
+                    }
+                    break;
+                case PartType:
+                    /*
+                     * if (single) {
+                     * String param = (String) context.getFormParameter(name, true, false);
+                     * return MultipartSupport.convertFormAttribute(param, typeClass, genericType, MediaType.valueOf(mimeType),
+                     * context,
+                     * name);
+                     * } else {
+                     * List<String> params = (List<String>) context.getFormParameter(name, false, false);
+                     * return MultipartSupport.convertFormAttributes(params, typeClass, genericType,
+                     * MediaType.valueOf(mimeType), context, name);
+                     * }
+                     */
+                    // ctx param
+                    injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
+                    // name
+                    injectMethod.visitLdcInsn(param.getName());
+                    // single
+                    injectMethod.visitLdcInsn(param.isSingle());
+                    // encoded
+                    injectMethod.visitLdcInsn(false);
+                    injectMethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, QUARKUS_REST_INJECTION_CONTEXT_BINARY_NAME,
+                            "getFormParameter",
+                            "(Ljava/lang/String;ZZ)Ljava/lang/Object;", true);
+                    injectMethod.visitTypeInsn(Opcodes.CHECKCAST, param.isSingle() ? STRING_BINARY_NAME : LIST_BINARY_NAME);
+                    // class, generic type, media type, context, name
+                    injectMethod.visitFieldInsn(Opcodes.GETSTATIC, this.thisName, fieldInfo.name() + "_type", CLASS_DESCRIPTOR);
+                    injectMethod.visitFieldInsn(Opcodes.GETSTATIC, this.thisName, fieldInfo.name() + "_genericType",
+                            TYPE_DESCRIPTOR);
+                    injectMethod.visitFieldInsn(Opcodes.GETSTATIC, this.thisName, fieldInfo.name() + "_mediaType",
+                            MEDIA_TYPE_DESCRIPTOR);
+                    injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
+                    injectMethod.visitTypeInsn(Opcodes.CHECKCAST, RESTEASY_REACTIVE_REQUEST_CONTEXT_BINARY_NAME);
+                    injectMethod.visitLdcInsn(param.getName());
+                    String firstParamDescriptor;
+                    String returnDescriptor;
+                    String methodName;
+                    if (param.isSingle()) {
+                        firstParamDescriptor = STRING_DESCRIPTOR;
+                        returnDescriptor = OBJECT_DESCRIPTOR;
+                        methodName = "convertFormAttribute";
+                    } else {
+                        firstParamDescriptor = LIST_DESCRIPTOR;
+                        returnDescriptor = LIST_DESCRIPTOR;
+                        methodName = "convertFormAttributes";
+                    }
+                    injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC, MULTIPART_SUPPORT_BINARY_NAME, methodName,
+                            "(" + firstParamDescriptor + CLASS_DESCRIPTOR + TYPE_DESCRIPTOR + MEDIA_TYPE_DESCRIPTOR
+                                    + RESTEASY_REACTIVE_REQUEST_CONTEXT_DESCRIPTOR + STRING_DESCRIPTOR + ")" + returnDescriptor,
+                            false);
+                    break;
+                default:
+                    throw new RuntimeException("Unknown multipart type: " + multipartType);
+            }
+        }
+
+        private void invokeMultipartSupport(ServerIndexedParameter param, MethodVisitor injectMethod,
+                String singleOperationName, String singleOperationReturnDescriptor) {
+            if (param.isSingle()) {
+                // name param
+                injectMethod.visitLdcInsn(param.getName());
+                // ctx param
+                injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
+                injectMethod.visitTypeInsn(Opcodes.CHECKCAST, RESTEASY_REACTIVE_REQUEST_CONTEXT_BINARY_NAME);
+                injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC, MULTIPART_SUPPORT_BINARY_NAME, singleOperationName,
+                        "(" + STRING_DESCRIPTOR + RESTEASY_REACTIVE_REQUEST_CONTEXT_DESCRIPTOR + ")"
+                                + singleOperationReturnDescriptor,
+                        false);
+
+            } else {
+                // name param
+                injectMethod.visitLdcInsn(param.getName());
+                // ctx param
+                injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
+                injectMethod.visitTypeInsn(Opcodes.CHECKCAST, RESTEASY_REACTIVE_REQUEST_CONTEXT_BINARY_NAME);
+                injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC, MULTIPART_SUPPORT_BINARY_NAME, singleOperationName + "s",
+                        "(" + STRING_DESCRIPTOR + RESTEASY_REACTIVE_REQUEST_CONTEXT_DESCRIPTOR + ")" + LIST_DESCRIPTOR,
+                        false);
+            }
+        }
+
+        private MultipartFormParamExtractor.Type getMultipartFormType(ServerIndexedParameter param) {
+            if (param.getType() != ParameterType.FORM) {
+                // not a multipart type
+                return null;
+            }
+            AnnotationInstance partType = param.getAnns().get(ResteasyReactiveDotNames.PART_TYPE_NAME);
+            String mimeType = null;
+            if (partType != null && partType.value() != null) {
+                mimeType = partType.value().asString();
+                // remove what ends up being the default
+                if (MediaType.TEXT_PLAIN.equals(mimeType)) {
+                    mimeType = null;
+                }
+            }
+            // FileUpload/File/Path have more importance than part type
+            if (param.getElementType().equals(FileUpload.class.getName())) {
+                return MultipartFormParamExtractor.Type.FileUpload;
+            } else if (param.getElementType().equals(File.class.getName())) {
+                return MultipartFormParamExtractor.Type.File;
+            } else if (param.getElementType().equals(Path.class.getName())) {
+                return MultipartFormParamExtractor.Type.Path;
+            } else if (param.getElementType().equals(String.class.getName())) {
+                return MultipartFormParamExtractor.Type.String;
+            } else if (param.getElementType().equals(InputStream.class.getName())) {
+                return MultipartFormParamExtractor.Type.InputStream;
+            } else if (param.getParamType().kind() == Kind.ARRAY
+                    && param.getParamType().asArrayType().component().kind() == Kind.PRIMITIVE
+                    && param.getParamType().asArrayType().component().asPrimitiveType().primitive() == Primitive.BYTE) {
+                return MultipartFormParamExtractor.Type.ByteArray;
+            } else if (mimeType != null && !mimeType.equals(MediaType.TEXT_PLAIN)) {
+                return MultipartFormParamExtractor.Type.PartType;
+            } else {
+                // not a multipart type
+                return null;
+            }
         }
 
         private void convertParameter(MethodVisitor injectMethod, ServerIndexedParameter extractor, FieldInfo fieldInfo) {

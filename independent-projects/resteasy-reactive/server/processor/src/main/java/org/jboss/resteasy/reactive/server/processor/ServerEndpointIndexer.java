@@ -22,6 +22,9 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SORTED_SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ZONED_DATE_TIME;
 
+import java.io.File;
+import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,6 +59,7 @@ import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ArrayConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.CharParamConverter;
@@ -299,7 +303,7 @@ public class ServerEndpointIndexer
         currentInjectableBean.setFieldExtractorsCount(fieldExtractors.size());
 
         if ((fieldInjectionHandler != null) && (!fieldExtractors.isEmpty() || superTypeIsInjectable)) {
-            fieldInjectionHandler.handleFieldInjection(currentTypeName, fieldExtractors, superTypeIsInjectable);
+            fieldInjectionHandler.handleFieldInjection(currentTypeName, fieldExtractors, superTypeIsInjectable, this.index);
         }
         currentInjectableBean.setInjectionRequired(!fieldExtractors.isEmpty() || superTypeIsInjectable);
         return currentInjectableBean;
@@ -310,18 +314,19 @@ public class ServerEndpointIndexer
             String elementType, boolean single, String signature) {
         ParameterConverterSupplier converter = parameterResult.getConverter();
         DeclaredTypes declaredTypes = getDeclaredTypes(paramType, currentClassInfo, actualEndpointInfo);
+        String mimeType = getPartMime(parameterResult.getAnns());
         return new ServerMethodParameter(name,
                 elementType, declaredTypes.getDeclaredType(), declaredTypes.getDeclaredUnresolvedType(),
                 type, single, signature,
                 converter, defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
-                parameterResult.getCustomParameterExtractor());
+                parameterResult.getCustomParameterExtractor(), mimeType);
     }
 
     protected void handleOtherParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             ServerIndexedParameter builder, String elementType) {
         try {
             builder.setConverter(extractConverter(elementType, index,
-                    existingConverters, errorLocation, hasRuntimeConverters));
+                    existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns()));
         } catch (Throwable throwable) {
             throw new RuntimeException("Could not create converter for " + elementType + " for " + builder.getErrorLocation()
                     + " of type " + builder.getType(), throwable);
@@ -331,7 +336,7 @@ public class ServerEndpointIndexer
     protected void handleSortedSetParam(Map<String, String> existingConverters, String errorLocation,
             boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters);
+                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns());
         builder.setConverter(new SortedSetConverter.SortedSetSupplier(converter));
     }
 
@@ -344,7 +349,7 @@ public class ServerEndpointIndexer
 
         if (genericElementType != null) {
             ParameterConverterSupplier genericTypeConverter = extractConverter(genericElementType, index, existingConverters,
-                    errorLocation, hasRuntimeConverters);
+                    errorLocation, hasRuntimeConverters, builder.getAnns());
             if (LIST.toString().equals(elementType)) {
                 converter = new ListConverter.ListSupplier(genericTypeConverter);
                 builder.setSingle(false);
@@ -362,7 +367,8 @@ public class ServerEndpointIndexer
 
         if (converter == null) {
             // If no generic type provided or element type is not supported, then we try to use a custom runtime converter:
-            converter = extractConverter(elementType, index, existingConverters, errorLocation, hasRuntimeConverters);
+            converter = extractConverter(elementType, index, existingConverters, errorLocation, hasRuntimeConverters,
+                    builder.getAnns());
         }
 
         builder.setConverter(new OptionalConverter.OptionalSupplier(converter));
@@ -371,21 +377,21 @@ public class ServerEndpointIndexer
     protected void handleSetParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             ServerIndexedParameter builder, String elementType) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters);
+                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns());
         builder.setConverter(new SetConverter.SetSupplier(converter));
     }
 
     protected void handleListParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             ServerIndexedParameter builder, String elementType) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters);
+                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns());
         builder.setConverter(new ListConverter.ListSupplier(converter));
     }
 
     protected void handleArrayParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             ServerIndexedParameter builder, String elementType) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters);
+                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns());
         builder.setConverter(new ArrayConverter.ArraySupplier(converter, elementType));
     }
 
@@ -485,7 +491,11 @@ public class ServerEndpointIndexer
     }
 
     private ParameterConverterSupplier extractConverter(String elementType, IndexView indexView,
-            Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters) {
+            Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
+            Map<DotName, AnnotationInstance> annotations) {
+        // no converter if we have a RestForm mime type: this goes via message body readers in MultipartFormParamExtractor
+        if (getPartMime(annotations) != null)
+            return null;
         if (elementType.equals(String.class.getName())) {
             if (hasRuntimeConverters)
                 return new RuntimeResolvedConverter.Supplier().setDelegate(new NoopParameterConverter.Supplier());
@@ -509,6 +519,12 @@ public class ServerEndpointIndexer
             return new CharParamConverter.Supplier();
         } else if (elementType.equals(Character.class.getName())) {
             return new CharacterParamConverter.Supplier();
+        } else if (elementType.equals(FileUpload.class.getName())
+                || elementType.equals(Path.class.getName())
+                || elementType.equals(File.class.getName())
+                || elementType.equals(InputStream.class.getName())) {
+            // this is handled by MultipartFormParamExtractor
+            return null;
         }
         return converterSupplierIndexerExtension.extractConverterImpl(elementType, indexView, existingConverters, errorLocation,
                 hasRuntimeConverters);
@@ -565,7 +581,7 @@ public class ServerEndpointIndexer
     public interface FieldInjectionIndexerExtension {
 
         void handleFieldInjection(String currentTypeName, Map<FieldInfo, ServerIndexedParameter> fieldExtractors,
-                boolean superTypeIsInjectable);
+                boolean superTypeIsInjectable, IndexView indexView);
     }
 
     public interface ConverterSupplierIndexerExtension {

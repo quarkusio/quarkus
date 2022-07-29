@@ -381,7 +381,10 @@ public class VertxCoreRecorder {
         //it's hard to say what this number should be, but it is also obvious
         //that for constrained environments we don't want a lot of event loops
         //lets start with 10mb and adjust as needed
-        int recommended = ProcessorInfo.availableProcessors() * 2;
+        //We used to recommend a default of twice the number of cores,
+        //but more recent developments seem to suggest matching the number of cores 1:1
+        //being a more reasonable default. It also saves memory.
+        int recommended = ProcessorInfo.availableProcessors();
         long mem = Runtime.getRuntime().maxMemory();
         long memInMb = mem / (1024 * 1024);
         long maxAllowed = memInMb / 10;

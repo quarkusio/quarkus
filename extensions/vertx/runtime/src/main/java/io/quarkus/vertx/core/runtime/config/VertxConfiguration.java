@@ -23,7 +23,7 @@ public class VertxConfiguration {
     public boolean classpathResolving;
 
     /**
-     * The number of event loops. 2 x the number of core by default.
+     * The number of event loops. By default, it matches the number of CPUs detected on the system.
      */
     @ConfigItem
     public OptionalInt eventLoopsPoolSize;

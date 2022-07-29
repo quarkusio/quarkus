@@ -25,6 +25,7 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
+import org.flywaydb.core.extensibility.Plugin;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
@@ -51,6 +52,7 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
@@ -287,6 +289,11 @@ class FlywayProcessor {
     @BuildStep
     public NativeImageResourceBuildItem resources() {
         return new NativeImageResourceBuildItem("org/flywaydb/database/version.txt");
+    }
+
+    @BuildStep
+    public ServiceProviderBuildItem flywayPlugins() {
+        return ServiceProviderBuildItem.allProvidersFromClassPath(Plugin.class.getName());
     }
 
     public static final class MigrationStateBuildItem extends SimpleBuildItem {

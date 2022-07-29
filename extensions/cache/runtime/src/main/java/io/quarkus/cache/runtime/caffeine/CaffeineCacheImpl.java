@@ -90,17 +90,17 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     }
 
     @Override
-    public <K, V> Uni<V> getIfPresent(K key) {
+    public <K, V> CompletableFuture<V> getIfPresent(K key) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
         CompletableFuture<Object> caffeineValue = getFromCaffeineIfPresent(key);
 
-        // emit null if key is not in cache
+        // if null return
         if (null == caffeineValue) {
-            return Uni.createFrom().nullItem();
+            return null;
         }
 
-        // otherwise cast and emit the value
-        return Uni.createFrom().completionStage(() -> cast(caffeineValue));
+        // otherwise cast and return
+        return caffeineValue.thenApply(this::cast);
     }
 
     /**

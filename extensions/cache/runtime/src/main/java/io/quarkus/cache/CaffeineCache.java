@@ -1,8 +1,9 @@
 package io.quarkus.cache;
 
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
-import io.smallrye.mutiny.Uni;
+import io.smallrye.common.constraint.Nullable;
 
 public interface CaffeineCache extends Cache {
 
@@ -15,14 +16,17 @@ public interface CaffeineCache extends Cache {
     Set<Object> keySet();
 
     /**
-     * Returns an {@link Uni} emitting the value for the given key, if the key is contained in this cache. If the key does not
-     * exist in the cache, returned {@link Uni} will emit <code>null</code>.
+     * Returns the future associated with {@code key} in this cache, or {@code null} if there is no
+     * cached future for {@code key}. This method is delegating to the
+     * {@link com.github.benmanes.caffeine.cache.AsyncCache#getIfPresent(Object)}, while recording the cache stats if they are
+     * enabled.
      *
      * @param key key whose associated value is to be returned
-     *
-     * @return Uni emitting the value to which the specified key is mapped, or emitting <code>null</code> if this cache contains
-     *         no mapping for the key
+     * @return the current (existing or computed) future value to which the specified key is mapped,
+     *         or {@code null} if this cache contains no mapping for the key
      * @throws NullPointerException if the specified key is null
+     * @see com.github.benmanes.caffeine.cache.AsyncCache#getIfPresent(Object)
      */
-    <K, V> Uni<V> getIfPresent(K key);
+    @Nullable
+    <K, V> CompletableFuture<V> getIfPresent(K key);
 }

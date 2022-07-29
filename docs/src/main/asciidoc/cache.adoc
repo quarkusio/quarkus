@@ -599,9 +599,9 @@ public class CacheKeysService {
 
 === Retrieving a value if a key is present from a `CaffeineCache`
 
-The cache value from a specific `CaffeineCache` can be retrieved as an `Uni` as shown below.
-If the given key is contained in the cache, the returned `Uni` will emit the value to which the specified key is mapped to.
-Otherwise, the `Uni` will emit the `null` value.
+The cache value from a specific `CaffeineCache` can be retrieved if present as shown below.
+If the given key is contained in the cache, the returned `CompletableFuture` contains (existing or computed) future value to which the specified key is mapped to.
+Otherwise, the method with return the `null` value.
 
 [source,java]
 ----
@@ -613,7 +613,7 @@ import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheName;
 import io.quarkus.cache.CaffeineCache;
 
-import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 @ApplicationScoped
 public class CacheKeysService {
@@ -621,7 +621,7 @@ public class CacheKeysService {
     @CacheName("my-cache")
     Cache cache;
 
-    public Uni<Object> getIfPresent(Object key) {
+    public CompletableFuture<Object> getIfPresent(Object key) {
         return cache.as(CaffeineCache.class).getIfPresent(key);
     }
 }

@@ -79,11 +79,6 @@ public class FlywayExtensionCleanAndMigrateAtStartWithJavaMigrationTest {
         }
 
         @Override
-        public boolean isUndo() {
-            return false;
-        }
-
-        @Override
         public boolean canExecuteInTransaction() {
             return true;
         }
@@ -93,11 +88,6 @@ public class FlywayExtensionCleanAndMigrateAtStartWithJavaMigrationTest {
             try (Statement statement = context.getConnection().createStatement()) {
                 statement.executeUpdate("INSERT INTO quarked_flyway VALUES (1002, 'test')");
             }
-        }
-
-        @Override
-        public boolean isBaselineMigration() {
-            return false;
         }
     }
 

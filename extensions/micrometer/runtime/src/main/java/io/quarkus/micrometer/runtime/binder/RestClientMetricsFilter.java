@@ -28,7 +28,8 @@ public class RestClientMetricsFilter implements ClientRequestFilter, ClientRespo
     HttpBinderConfiguration httpMetricsConfig;
 
     // RESTEasy requires no-arg constructor for CDI injection: https://issues.redhat.com/browse/RESTEASY-1538
-    // In Reactive Rest Client this is the constructor called. In the classic is the next one with injection.
+    // In the classic Rest Client this is the constructor called whereas in the Reactive one,
+    // the constructor using HttpBinderConfiguration is called.
     public RestClientMetricsFilter() {
         this(Arc.container().instance(HttpBinderConfiguration.class).get());
     }

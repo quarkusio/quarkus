@@ -304,6 +304,13 @@ public class OpenshiftConfig implements PlatformConfiguration {
     Optional<String> containerName;
 
     /**
+     * Switch used to control whether non-idempotent fields are included in generated kubernetes resources to improve
+     * git-ops compatibility
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean idempotent;
+
+    /**
      * If true, an Openshift Route will be created
      *
      * @deprecated Use the {@code quarkus.openshift.route.exposition} instead
@@ -569,6 +576,11 @@ public class OpenshiftConfig implements PlatformConfiguration {
     @Override
     public SecurityContextConfig getSecurityContext() {
         return securityContext;
+    }
+
+    @Override
+    public boolean isIdempotent() {
+        return idempotent;
     }
 
     public static boolean isOpenshiftBuildEnabled(ContainerImageConfig containerImageConfig, Capabilities capabilities) {

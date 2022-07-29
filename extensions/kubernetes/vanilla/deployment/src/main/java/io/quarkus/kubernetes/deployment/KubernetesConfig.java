@@ -332,6 +332,19 @@ public class KubernetesConfig implements PlatformConfiguration {
     Optional<String> containerName;
 
     /**
+     * Switch used to control whether non-idempotent fields are included in generated kubernetes resources to improve
+     * git-ops compatibility
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean idempotent;
+
+    /**
+     * Optionally set directory generated kubernetes resources will be written to
+     */
+    @ConfigItem
+    Optional<String> outputDirectory;
+
+    /**
      * Debug configuration to be set in pods.
      */
     DebugConfig remoteDebug;
@@ -548,5 +561,14 @@ public class KubernetesConfig implements PlatformConfiguration {
         }
 
         return DeploymentResourceKind.Deployment;
+    }
+
+    @Override
+    public boolean isIdempotent() {
+        return idempotent;
+    }
+
+    public Optional<String> getOutputDirectory() {
+        return outputDirectory;
     }
 }

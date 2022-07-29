@@ -94,6 +94,16 @@ public class KubernetesConfigUtil {
         return result;
     }
 
+    /**
+     * Check if any platform configurations are set to not be idempotent, default value is true
+     *
+     * @param platformConfigurations
+     * @return true if all provided platformConfigurations are set to be idempotent, false if any are not
+     */
+    public static boolean isIdempotent(PlatformConfiguration... platformConfigurations) {
+        return Arrays.stream(platformConfigurations).allMatch(PlatformConfiguration::isIdempotent);
+    }
+
     @Deprecated
     private static void handleExpose(Config config, Map<String, Object> unPrefixed,
             PlatformConfiguration... platformConfigurations) {

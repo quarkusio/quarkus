@@ -451,7 +451,7 @@ public class KubernetesCommonHelper {
             result.add(new DecoratorBuildItem(target, new RemoveAnnotationDecorator(Annotations.COMMIT_ID)));
 
             //Add quarkus vcs annotations
-            if (commitId != null) {
+            if (commitId != null && !config.isIdempotent()) {
                 result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
                         new Annotation(QUARKUS_ANNOTATIONS_COMMIT_ID, commitId, new String[0]))));
             }
@@ -463,7 +463,7 @@ public class KubernetesCommonHelper {
 
         });
 
-        if (config.isAddBuildTimestamp()) {
+        if (config.isAddBuildTimestamp() && !config.isIdempotent()) {
             result.add(new DecoratorBuildItem(target,
                     new AddAnnotationDecorator(name, new Annotation(QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP,
                             now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd - HH:mm:ss Z")), new String[0]))));

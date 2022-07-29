@@ -191,6 +191,16 @@ class KubernetesProcessor {
                 generatedResourcesMap = session.close();
                 List<String> generatedFiles = new ArrayList<>(generatedResourcesMap.size());
                 List<String> generatedFileNames = new ArrayList<>(generatedResourcesMap.size());
+
+                Path targetDirectory = outputTarget.getOutputDirectory().resolve(KUBERNETES);
+                Optional<String> overrideOutputDirectory = kubernetesConfig.getOutputDirectory();
+
+                if (overrideOutputDirectory.isPresent()) {
+                    targetDirectory = Paths.get("").toAbsolutePath().resolve(overrideOutputDirectory.get());
+                } else if (KubernetesConfigUtil.isIdempotent(kubernetesConfig, knativeConfig, openshiftConfig)) {
+                    targetDirectory = Paths.get("").toAbsolutePath().resolve(".kubernetes");
+                }
+
                 for (Map.Entry<String, String> resourceEntry : generatedResourcesMap.entrySet()) {
                     Path path = Paths.get(resourceEntry.getKey());
                     //We need to ignore the config yml
@@ -198,7 +208,7 @@ class KubernetesProcessor {
                         continue;
                     }
                     String fileName = path.toFile().getName();
-                    Path targetPath = outputTarget.getOutputDirectory().resolve(KUBERNETES).resolve(fileName);
+                    Path targetPath = targetDirectory.resolve(fileName);
                     String relativePath = targetPath.toAbsolutePath().toString().replace(root.toAbsolutePath().toString(), "");
 
                     generatedKubernetesResourceProducer.produce(new GeneratedKubernetesResourceBuildItem(fileName,

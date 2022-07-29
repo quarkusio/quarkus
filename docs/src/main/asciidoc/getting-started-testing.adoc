@@ -427,6 +427,8 @@ Alternatively or additionally to an interceptor, you can enrich *all* your `@Qua
 * `io.quarkus.test.junit.callback.QuarkusTestBeforeClassCallback`
 * `io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback`
 * `io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback`
+* `io.quarkus.test.junit.callback.QuarkusTestBeforeTestExecutionCallback`
+* `io.quarkus.test.junit.callback.QuarkusTestAfterTestExecutionCallback`
 * `io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback`
 
 Such a callback implementation has to be registered as a "service provider" as defined by `java.util.ServiceLoader`.

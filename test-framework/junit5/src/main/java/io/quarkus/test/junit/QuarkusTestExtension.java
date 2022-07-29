@@ -54,8 +54,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -102,15 +104,18 @@ import io.quarkus.test.junit.buildchain.TestBuildChainCustomizerProducer;
 import io.quarkus.test.junit.callback.QuarkusTestAfterAllCallback;
 import io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback;
 import io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback;
+import io.quarkus.test.junit.callback.QuarkusTestAfterTestExecutionCallback;
 import io.quarkus.test.junit.callback.QuarkusTestBeforeClassCallback;
 import io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback;
+import io.quarkus.test.junit.callback.QuarkusTestBeforeTestExecutionCallback;
 import io.quarkus.test.junit.callback.QuarkusTestContext;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.internal.DeepClone;
 import io.quarkus.test.junit.internal.SerializationWithXStreamFallbackDeepClone;
 
 public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
-        implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, InvocationInterceptor, AfterAllCallback,
+        implements BeforeEachCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback, AfterEachCallback,
+        BeforeAllCallback, InvocationInterceptor, AfterAllCallback,
         ParameterResolver, ExecutionCondition {
 
     private static final Logger log = Logger.getLogger(QuarkusTestExtension.class);
@@ -131,6 +136,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     private static List<Object> beforeClassCallbacks;
     private static List<Object> afterConstructCallbacks;
     private static List<Object> beforeEachCallbacks;
+    private static List<Object> beforeTestCallbacks;
+    private static List<Object> afterTestCallbacks;
     private static List<Object> afterEachCallbacks;
     private static List<Object> afterAllCallbacks;
     private static Class<?> quarkusTestMethodContextClass;
@@ -353,6 +360,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         beforeClassCallbacks = new ArrayList<>();
         afterConstructCallbacks = new ArrayList<>();
         beforeEachCallbacks = new ArrayList<>();
+        beforeTestCallbacks = new ArrayList<>();
+        afterTestCallbacks = new ArrayList<>();
         afterEachCallbacks = new ArrayList<>();
         afterAllCallbacks = new ArrayList<>();
 
@@ -370,6 +379,16 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 .load(Class.forName(QuarkusTestBeforeEachCallback.class.getName(), false, classLoader), classLoader);
         for (Object quarkusTestBeforeEachCallback : quarkusTestBeforeEachLoader) {
             beforeEachCallbacks.add(quarkusTestBeforeEachCallback);
+        }
+        ServiceLoader<?> quarkusTestBeforeTestLoader = ServiceLoader
+                .load(Class.forName(QuarkusTestBeforeTestExecutionCallback.class.getName(), false, classLoader), classLoader);
+        for (Object quarkusTestBeforeTestCallback : quarkusTestBeforeTestLoader) {
+            beforeTestCallbacks.add(quarkusTestBeforeTestCallback);
+        }
+        ServiceLoader<?> quarkusTestAfterTestLoader = ServiceLoader
+                .load(Class.forName(QuarkusTestAfterTestExecutionCallback.class.getName(), false, classLoader), classLoader);
+        for (Object quarkusTestAfterTestCallback : quarkusTestAfterTestLoader) {
+            afterTestCallbacks.add(quarkusTestAfterTestCallback);
         }
         ServiceLoader<?> quarkusTestAfterEachLoader = ServiceLoader
                 .load(Class.forName(QuarkusTestAfterEachCallback.class.getName(), false, classLoader), classLoader);
@@ -393,6 +412,30 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void beforeTestExecution(ExtensionContext context) throws Exception {
+        if (isNativeOrIntegrationTest(context.getRequiredTestClass()) || beforeTestCallbacks.isEmpty()) {
+            return;
+        }
+        if (!failedBoot) {
+            ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
+            try {
+                for (Object beforeTestCallback : beforeTestCallbacks) {
+                    Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
+                    beforeTestCallback.getClass().getMethod("beforeTestExecution", tuple.getKey())
+                            .invoke(beforeTestCallback, tuple.getValue());
+                }
+            } catch (InvocationTargetException e) {
+                throw e.getCause() instanceof Exception ? (Exception) e.getCause() : e;
+            } finally {
+                setCCL(original);
+            }
+        } else {
+            throwBootFailureException();
+            return;
         }
     }
 
@@ -498,6 +541,27 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
         }
         return replaced.toString();
+    }
+
+    @Override
+    public void afterTestExecution(ExtensionContext context) throws Exception {
+        if (isNativeOrIntegrationTest(context.getRequiredTestClass()) || afterTestCallbacks.isEmpty()) {
+            return;
+        }
+        if (!failedBoot) {
+            ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
+            try {
+                for (Object afterTestCallback : afterTestCallbacks) {
+                    Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
+                    afterTestCallback.getClass().getMethod("afterTestExecution", tuple.getKey())
+                            .invoke(afterTestCallback, tuple.getValue());
+                }
+            } catch (InvocationTargetException e) {
+                throw e.getCause() instanceof Exception ? (Exception) e.getCause() : e;
+            } finally {
+                setCCL(original);
+            }
+        }
     }
 
     @Override

@@ -13,8 +13,7 @@ import io.quarkus.liquibase.LiquibaseFactory;
 import liquibase.Liquibase;
 import liquibase.changelog.ChangeSet;
 import liquibase.changelog.ChangeSetStatus;
-import liquibase.command.CommandFactory;
-import liquibase.command.core.DropAllCommand;
+import liquibase.command.CommandScope;
 
 @Path("/")
 public class LiquibaseFunctionalityResource {
@@ -25,7 +24,7 @@ public class LiquibaseFunctionalityResource {
     @GET
     @Path("update")
     public String doUpdateAuto() {
-        assertCommandFactoryResolvesProperly();
+        assertCommandScopeResolvesProperly();
 
         try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
             liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
@@ -43,11 +42,11 @@ public class LiquibaseFunctionalityResource {
         }
     }
 
-    private void assertCommandFactoryResolvesProperly() {
+    private void assertCommandScopeResolvesProperly() {
         try {
-            DropAllCommand dropAll = (DropAllCommand) CommandFactory.getInstance().getCommand("dropAll");
+            new CommandScope("dropAll");
         } catch (Exception e) {
-            throw new RuntimeException("Unable to load 'dropAll' command from Liquibase's CommandFactory", e);
+            throw new RuntimeException("Unable to load 'dropAll' via Liquibase's CommandScope", e);
         }
     }
 

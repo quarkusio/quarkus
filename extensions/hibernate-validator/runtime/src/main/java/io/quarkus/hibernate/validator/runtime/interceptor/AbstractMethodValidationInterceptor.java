@@ -16,8 +16,6 @@ import javax.validation.Path;
 import javax.validation.Validator;
 import javax.validation.executable.ExecutableValidator;
 
-import io.quarkus.arc.WithCaching;
-
 /**
  * NOTE: this is a copy of the interceptor present in hibernate-validator-cdi.
  * For now, I prefer not depending on this artifact but this might change in the
@@ -44,7 +42,6 @@ public abstract class AbstractMethodValidationInterceptor implements Serializabl
      * injection enough to enable it to work for beans that observe {@code @Initialized(ApplicationScoped.class)} event.
      */
     @Inject
-    @WithCaching
     Instance<Validator> validatorInstance;
 
     /**
@@ -107,7 +104,7 @@ public abstract class AbstractMethodValidationInterceptor implements Serializabl
         ctx.proceed();
         Object createdObject = ctx.getTarget();
 
-        violations = validatorInstance.get().forExecutables().validateConstructorReturnValue(ctx.getConstructor(),
+        violations = executableValidator.validateConstructorReturnValue(ctx.getConstructor(),
                 createdObject);
 
         if (!violations.isEmpty()) {

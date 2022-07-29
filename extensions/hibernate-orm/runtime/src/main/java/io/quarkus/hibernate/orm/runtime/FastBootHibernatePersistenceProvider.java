@@ -149,7 +149,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
         Map<String, HibernateOrmRuntimeConfigPersistenceUnit> puConfigMap = hibernateOrmRuntimeConfig
                 .getAllPersistenceUnitConfigsAsMap();
-        for (PersistenceUnitDescriptor persistenceUnit : units) {
+        for (RuntimePersistenceUnitDescriptor persistenceUnit : units) {
             log.debugf(
                     "Checking persistence-unit [name=%s, explicit-provider=%s] against incoming persistence unit name [%s]",
                     persistenceUnit.getName(), persistenceUnit.getProviderClassName(), persistenceUnitName);
@@ -174,8 +174,12 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                         "Attempting to boot a blocking Hibernate ORM instance on a reactive RecordedState");
             }
             final PrevalidatedQuarkusMetadata metadata = recordedState.getMetadata();
-            var puConfig = puConfigMap.getOrDefault(persistenceUnitName,
+            var puConfig = puConfigMap.getOrDefault(persistenceUnit.getConfigurationName(),
                     new HibernateOrmRuntimeConfigPersistenceUnit());
+            if (puConfig.active.isPresent() && !puConfig.active.get()) {
+                throw new IllegalStateException(
+                        "Attempting to boot a deactivated Hibernate ORM persistence unit");
+            }
             RuntimeSettings runtimeSettings = buildRuntimeSettings(persistenceUnitName, recordedState, puConfig);
 
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(runtimeSettings,

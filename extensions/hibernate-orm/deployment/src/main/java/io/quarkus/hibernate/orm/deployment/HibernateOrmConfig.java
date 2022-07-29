@@ -18,7 +18,8 @@ public class HibernateOrmConfig {
      * Whether Hibernate ORM is enabled <strong>during the build</strong>.
      *
      * If Hibernate ORM is disabled during the build, all processing related to Hibernate ORM will be skipped,
-     * but it will not be possible to use Hibernate ORM at runtime.
+     * but it will not be possible to activate Hibernate ORM at runtime:
+     * `quarkus.hibernate-orm.active` will default to `false` and setting it to `true` will lead to an error.
      *
      * @asciidoclet
      */

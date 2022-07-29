@@ -35,6 +35,10 @@ public class HibernateOrmRuntimeConfig {
         return map;
     }
 
+    public static String extensionPropertyKey(String radical) {
+        return "quarkus.hibernate-orm." + radical;
+    }
+
     public static String puPropertyKey(String puName, String radical) {
         String prefix = PersistenceUnitUtil.isDefaultPersistenceUnit(puName)
                 ? "quarkus.hibernate-orm."

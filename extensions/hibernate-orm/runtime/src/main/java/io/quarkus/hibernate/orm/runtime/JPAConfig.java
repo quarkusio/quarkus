@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.runtime;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -18,24 +19,34 @@ import javax.inject.Singleton;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 
-import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.jboss.logging.Logger;
+
+import io.quarkus.hibernate.orm.runtime.boot.RuntimePersistenceUnitDescriptor;
 
 @Singleton
 public class JPAConfig {
 
     private static final Logger LOGGER = Logger.getLogger(JPAConfig.class.getName());
 
-    private final Map<String, LazyPersistenceUnit> persistenceUnits;
+    private final Map<String, LazyPersistenceUnit> persistenceUnits = new HashMap<>();
+    private final Set<String> deactivatedPersistenceUnitNames = new HashSet<>();
 
     @Inject
-    public JPAConfig() {
-        Map<String, LazyPersistenceUnit> persistenceUnitsBuilder = new HashMap<>();
-        for (PersistenceUnitDescriptor descriptor : PersistenceUnitsHolder.getPersistenceUnitDescriptors()) {
+    public JPAConfig(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
+        Map<String, HibernateOrmRuntimeConfigPersistenceUnit> puConfigMap = hibernateOrmRuntimeConfig
+                .getAllPersistenceUnitConfigsAsMap();
+        for (RuntimePersistenceUnitDescriptor descriptor : PersistenceUnitsHolder.getPersistenceUnitDescriptors()) {
             String puName = descriptor.getName();
-            persistenceUnitsBuilder.put(puName, new LazyPersistenceUnit(puName));
+            var puConfig = puConfigMap.getOrDefault(descriptor.getConfigurationName(),
+                    new HibernateOrmRuntimeConfigPersistenceUnit());
+            if (puConfig.active.isPresent() && !puConfig.active.get()) {
+                LOGGER.infof("Hibernate ORM persistence unit '%s' was deactivated through configuration properties",
+                        puName);
+                deactivatedPersistenceUnitNames.add(puName);
+            } else {
+                persistenceUnits.put(puName, new LazyPersistenceUnit(puName));
+            }
         }
-        this.persistenceUnits = persistenceUnitsBuilder;
     }
 
     void startAll() {
@@ -82,6 +93,12 @@ public class JPAConfig {
         }
 
         if (lazyPersistenceUnit == null) {
+            if (deactivatedPersistenceUnitNames.contains(unitName)) {
+                throw new IllegalStateException(
+                        "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit "
+                                + unitName
+                                + ": Hibernate ORM was deactivated through configuration properties");
+            }
             throw new IllegalArgumentException(
                     String.format(Locale.ROOT, "Unable to find an EntityManagerFactory for persistence unit '%s'", unitName));
         }
@@ -90,12 +107,21 @@ public class JPAConfig {
     }
 
     /**
-     * Returns the registered persistence units.
+     * Returns the registered, active persistence units.
      *
-     * @return Set containing the names of all registered persistence units.
+     * @return Set containing the names of all registered, actives persistence units.
      */
     public Set<String> getPersistenceUnits() {
         return persistenceUnits.keySet();
+    }
+
+    /**
+     * Returns the name of persistence units that were deactivated through configuration properties.
+     *
+     * @return Set containing the names of all persistence units that were deactivated through configuration properties.
+     */
+    public Set<String> getDeactivatedPersistenceUnitNames() {
+        return deactivatedPersistenceUnitNames;
     }
 
     /**

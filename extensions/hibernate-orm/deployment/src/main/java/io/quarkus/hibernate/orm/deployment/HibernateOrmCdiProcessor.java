@@ -104,7 +104,9 @@ public class HibernateOrmCdiProcessor {
         return new AnnotationsTransformerBuildItem(transformer);
     }
 
-    @Record(ExecutionTime.STATIC_INIT)
+    // These beans must be initialized at runtime because their initialization
+    // depends on runtime configuration (to activate/deactivate a persistence unit)
+    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void generateDataSourceBeans(HibernateOrmRecorder recorder,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
@@ -201,6 +203,7 @@ public class HibernateOrmCdiProcessor {
                 // See https://github.com/quarkusio/quarkus/issues/16437
                 .scope(ApplicationScoped.class)
                 .unremovable()
+                .setRuntimeInit()
                 .supplier(supplier);
 
         for (DotName exposedType : allExposedTypes) {

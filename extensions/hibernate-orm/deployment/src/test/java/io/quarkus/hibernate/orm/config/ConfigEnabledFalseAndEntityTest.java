@@ -8,8 +8,6 @@ import javax.persistence.EntityManagerFactory;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -19,8 +17,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ConfigEnabledFalseAndEntityTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(MyEntity.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .withApplicationRoot(jar -> jar.addClass(MyEntity.class))
             .withConfigurationResource("application.properties")
             // This should disable Hibernate ORM even if there is an entity
             .overrideConfigKey("quarkus.hibernate-orm.enabled", "false");

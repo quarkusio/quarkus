@@ -15,6 +15,21 @@ import io.quarkus.runtime.configuration.TrimmedStringConverter;
 public class HibernateOrmRuntimeConfigPersistenceUnit {
 
     /**
+     * Whether this persistence unit should be active at runtime.
+     *
+     * If the persistence unit is not active, it won't start with the application,
+     * and accessing the corresponding EntityManagerFactory/EntityManager or SessionFactory/Session
+     * will not be possible.
+     *
+     * Note that if Hibernate ORM is disabled (i.e. `quarkus.hibernate-orm.enabled` is set to `false`),
+     * all persistence units are deactivated, and setting this property to `true` will fail.
+     *
+     * @asciidoclet
+     */
+    @ConfigItem(defaultValueDocumentation = "`true` if Hibernate ORM is enabled; `false` otherwise")
+    public Optional<Boolean> active = Optional.empty();
+
+    /**
      * Database related configuration.
      */
     @ConfigItem

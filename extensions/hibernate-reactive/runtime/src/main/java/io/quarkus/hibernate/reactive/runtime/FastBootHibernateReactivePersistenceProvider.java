@@ -84,9 +84,13 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                 //if the provider is not set, don't use it as people might want to use Hibernate ORM
                 if (IMPLEMENTATION_NAME.equalsIgnoreCase(unit.getProviderClassName()) ||
                         unit.getProviderClassName() == null) {
-                    EntityManagerFactoryBuilder emfBuilder = getEntityManagerFactoryBuilderOrNull(emName, properties);
-                    EntityManagerFactory emf = emfBuilder.build();
-                    return emf;
+                    EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilderOrNull(emName, properties);
+                    if (builder == null) {
+                        log.trace("Could not obtain matching EntityManagerFactoryBuilder, returning null");
+                        return null;
+                    } else {
+                        return builder.build();
+                    }
                 }
             }
 
@@ -119,7 +123,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
 
         Map<String, HibernateOrmRuntimeConfigPersistenceUnit> puConfigMap = hibernateOrmRuntimeConfig
                 .getAllPersistenceUnitConfigsAsMap();
-        for (PersistenceUnitDescriptor persistenceUnit : units) {
+        for (RuntimePersistenceUnitDescriptor persistenceUnit : units) {
             log.debugf(
                     "Checking persistence-unit [name=%s, explicit-provider=%s] against incoming persistence unit name [%s]",
                     persistenceUnit.getName(), persistenceUnit.getProviderClassName(), persistenceUnitName);
@@ -145,10 +149,15 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,
                     integrationSettings);
 
+            var puConfig = puConfigMap.getOrDefault(persistenceUnit.getConfigurationName(),
+                    new HibernateOrmRuntimeConfigPersistenceUnit());
+            if (puConfig.active.isPresent() && !puConfig.active.get()) {
+                throw new IllegalStateException(
+                        "Attempting to boot a deactivated Hibernate Reactive persistence unit");
+            }
+
             // Inject runtime configuration if the persistence unit was defined by Quarkus configuration
             if (!recordedState.isFromPersistenceXml()) {
-                var puConfig = puConfigMap.getOrDefault(persistenceUnitName,
-                        new HibernateOrmRuntimeConfigPersistenceUnit());
                 injectRuntimeConfiguration(puConfig, runtimeSettingsBuilder);
             }
 

@@ -33,8 +33,9 @@ public class ConfigActiveFalseAndIndexedEntityTest {
     public void test() {
         assertThatThrownBy(() -> Arc.container().instance(SearchMapping.class).get())
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining(
-                        "Cannot retrieve the SearchMapping: Hibernate Search was deactivated through configuration properties");
+                .hasMessageContainingAll(
+                        "Cannot retrieve the SearchMapping for persistence unit <default>",
+                        "Hibernate Search was deactivated through configuration properties");
 
         assertThatThrownBy(() -> Search.mapping(sessionFactory))
                 .isInstanceOf(SearchException.class)
@@ -42,8 +43,9 @@ public class ConfigActiveFalseAndIndexedEntityTest {
 
         assertThatThrownBy(() -> Arc.container().instance(SearchSession.class).get())
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining(
-                        "Cannot retrieve the SearchSession: Hibernate Search was deactivated through configuration properties");
+                .hasMessageContainingAll(
+                        "Cannot retrieve the SearchSession for persistence unit <default>",
+                        "Hibernate Search was deactivated through configuration properties");
 
         try (Session session = sessionFactory.openSession()) {
             assertThatThrownBy(() -> Search.session(session).search(IndexedEntity.class))

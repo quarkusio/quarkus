@@ -4,6 +4,20 @@
 features: [ALL]
 workflowRunAnalysis:
   workflows: ["Quarkus CI"]
+projectsClassic:
+  rules:
+    - labels: [area/documentation]
+      project: 21
+      issues: true
+      pullRequests: true
+      status: To do
+projects:
+  rules:
+    - labels: [area/jakarta]
+      project: 13
+      issues: true
+      pullRequests: false
+      status: Todo
 triage:
   discussions:
     monitoredCategories: [33575230]

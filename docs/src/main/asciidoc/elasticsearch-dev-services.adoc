@@ -48,7 +48,7 @@ Note that the Elasticsearch hosts property is automatically configured with the 
 
 == Configuring the image
 
-Dev Services for Elasticsearch only support Elasticsearch based images, Opensearch is not supported at the moment.
+Dev Services for Elasticsearch only support Elasticsearch based images, OpenSearch is not supported at the moment.
 
 If you need to use a different image than the default one you can configure it via:
 [source, properties]

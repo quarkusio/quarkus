@@ -25,7 +25,7 @@ public class RestClientMetricsFilter implements ClientRequestFilter, ClientRespo
     private final static String REQUEST_METRIC_PROPERTY = "restClientMetrics";
     private final MeterRegistry registry = Metrics.globalRegistry;
 
-    HttpBinderConfiguration httpMetricsConfig;
+    private final HttpBinderConfiguration httpMetricsConfig;
 
     // RESTEasy requires no-arg constructor for CDI injection: https://issues.redhat.com/browse/RESTEASY-1538
     // In the classic Rest Client this is the constructor called whereas in the Reactive one,

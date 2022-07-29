@@ -56,23 +56,18 @@ The solution is located in the `microprofile-graphql-client-quickstart` {quickst
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: microprofile-graphql-client-quickstart
-:create-app-extensions: resteasy-reactive-jsonb,graphql-client,rest-client-reactive
+:create-app-extensions: resteasy-reactive-jsonb,graphql-client
 include::{includes}/devtools/create-app.adoc[]
 
-NOTE: The typesafe GraphQL client depends on REST client, thus we included the `rest-client-reactive` extension
-in the `extensions` list. You may also switch to the traditional non-reactive `rest-client` if the rest of
-your application depends on the non-reactive RESTEasy stack (you can't mix reactive and non-reactive RESTEasy).
-If you're only going to use the dynamic GraphQL client and don't use RESTEasy in your application,
-you may leave out the REST client dependency completely.
-This command generates a project, importing the `smallrye-graphql-client` extension.
+This command generates a project, importing the `smallrye-graphql-client` extension, and also the `resteasy-reactive`
+extension, because we will use that too - a REST endpoint will be the entrypoint to allow you to manually trigger
+the GraphQL client to do its work.
 
 If you already have your Quarkus project configured, you can add the `smallrye-graphql-client` extension
 to your project by running the following command in your project base directory:
 
-:add-extension-extensions: graphql-client,rest-client-reactive
+:add-extension-extensions: graphql-client
 include::{includes}/devtools/extension-add.adoc[]
-
-Again, you may leave out `rest-client-reactive` if you're only going to use the dynamic client.
 
 This will add the following to your build file:
 
@@ -83,17 +78,12 @@ This will add the following to your build file:
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-graphql-client</artifactId>
 </dependency>
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-rest-client-reactive</artifactId>
-</dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
 implementation("io.quarkus:quarkus-smallrye-graphql-client")
-implementation("io.quarkus:quarkus-rest-client-reactive")
 ----
 
 == The application

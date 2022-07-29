@@ -45,7 +45,7 @@ public class SetSectionTest {
     @Test
     public void testParameterOrigin() {
         Engine engine = Engine.builder().addDefaults().build();
-        Template template = engine.parse("  {#let item=1 foo=bar}{/let}");
+        Template template = engine.parse("  {#let item = 1 foo=bar}{/let}");
         List<Expression> expressions = template.getExpressions();
         assertEquals(2, expressions.size());
         for (Expression expression : expressions) {

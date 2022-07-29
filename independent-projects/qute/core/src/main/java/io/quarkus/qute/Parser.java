@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -823,6 +824,25 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             }
             parts.add(buffer.toString());
         }
+
+        // Try to find/replace "standalone" equals signs used as param names separators
+        // This allows for more lenient parsing of named section parameters, e.g. item.name = 'foo' instead of item.name='foo'
+        for (ListIterator<String> it = parts.listIterator(); it.hasNext();) {
+            if (it.next().equals("=") && it.previousIndex() != 0 && it.hasNext()) {
+                // move cursor back
+                it.previous();
+                String merged = parts.get(it.previousIndex()) + it.next() + it.next();
+                // replace the element with the merged value
+                it.set(merged);
+                // move cursor back and remove previous two elements
+                it.previous();
+                it.previous();
+                it.remove();
+                it.previous();
+                it.remove();
+            }
+        }
+
         return parts.iterator();
     }
 

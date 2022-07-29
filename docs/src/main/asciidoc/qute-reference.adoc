@@ -569,32 +569,34 @@ NOTE: Similar errors are detected at build time if <<typesafe_expressions>> and 
 [[sections]]
 === Sections
 
-A section:
+A section has a start tag that starts with `#`, followed by the name of the section such as `{#if}` and `{#each}`.
+It may be empty, i.e. the start tag ends with `/`: `{#myEmptySection /}`.
+Sections usually contain nested expressions and other sections.
+The end tag starts with `/` and contains the name of the section (optional): `{#if foo}Foo!{/if}` or `{#if foo}Foo!{/}`.
 
-* has a start tag
-** starts with `#`, followed by the name of the section such as `{#if}` and `{#each}`,
-* may be empty 
-** tag ends with `/`, ie. `{#emptySection /}`
-* may contain other expression, sections, etc.
-** the end tag starts with `/` and contains the name of the section (optional): `{#if foo}Foo!{/if}` or `{#if foo}Foo!{/}`,
+The start tag can also define parameters: `{#if item.isActive}`.
+Parameters are separated by one or more spaces. 
+However, parameters can have optional names separated by the equals sign prefixed and suffixed with any number of spaces, e.g. `{#let id='Foo'}` and `{#let id = 'Foo'}` are equivalents where the name of the parameter is `id` and the value is `Foo`.
 
-The start tag can also define parameters.
-The parameters have optional names.
 A section may contain several content *blocks*. 
 The "main" block is always present.
 Additional/nested blocks also start with `#` and can have parameters too - `{#else if item.isActive}`.
 A section helper that defines the logic of a section can "execute" any of the blocks and evaluate the parameters.
 
+.`#if` Section Example
 [source]
 ----
 {#if item.name is 'sword'}
-  It's a sword!
+  It's a sword! <1>
 {#else if item.name is 'shield'}
-  It's a shield!
+  It's a shield! <2>
 {#else}
-  Item is neither a sword nor a shield.
+  Item is neither a sword nor a shield. <3>
 {/if}
 ----
+<1> This is the main block.
+<2> Additional block.
+<3> Additional block.
 
 [[loop_section]]
 ==== Loop Section

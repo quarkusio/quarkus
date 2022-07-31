@@ -113,6 +113,16 @@ public class TestResource {
         Assertions.assertEquals("aaa", results.get(0).title);
         Assertions.assertEquals("AAA", results.get(1).title);
         Assertions.assertEquals("BBB", results.get(2).title);
+
+        //count with collation
+        collation = Collation.builder()
+                .locale("en")
+                .collationStrength(CollationStrength.SECONDARY)
+                .build();
+        Assertions.assertEquals(2, TestImperativeEntity.find("{'title' : ?1}", "aaa").withCollation(collation).count());
+        Assertions.assertEquals(2, TestImperativeEntity.find("{'title' : ?1}", "AAA").withCollation(collation).count());
+        Assertions.assertEquals(1, TestImperativeEntity.find("{'title' : ?1}", "bbb").withCollation(collation).count());
+        Assertions.assertEquals(1, TestImperativeEntity.find("{'title' : ?1}", "BBB").withCollation(collation).count());
         entityAUpper.delete();
         entityALower.delete();
         entityB.delete();
@@ -264,6 +274,17 @@ public class TestResource {
         Assertions.assertEquals("aaa", results.get(0).title);
         Assertions.assertEquals("AAA", results.get(1).title);
         Assertions.assertEquals("BBB", results.get(2).title);
+
+        //count with collation
+        collation = Collation.builder()
+                .locale("en")
+                .collationStrength(CollationStrength.SECONDARY)
+                .build();
+
+        Assertions.assertEquals(2, testImperativeRepository.find("{'title' : ?1}", "aaa").withCollation(collation).count());
+        Assertions.assertEquals(2, testImperativeRepository.find("{'title' : ?1}", "AAA").withCollation(collation).count());
+        Assertions.assertEquals(1, testImperativeRepository.find("{'title' : ?1}", "bbb").withCollation(collation).count());
+        Assertions.assertEquals(1, testImperativeRepository.find("{'title' : ?1}", "BBB").withCollation(collation).count());
         testImperativeRepository.delete(entityALower);
         testImperativeRepository.delete(entityAUpper);
         testImperativeRepository.delete(entityB);
@@ -494,6 +515,20 @@ public class TestResource {
         Assertions.assertEquals("aaa", results.get(0).title);
         Assertions.assertEquals("AAA", results.get(1).title);
         Assertions.assertEquals("BBB", results.get(2).title);
+
+        //count with collation
+        collation = Collation.builder()
+                .locale("en")
+                .collationStrength(CollationStrength.SECONDARY)
+                .build();
+        Assertions.assertEquals(2, TestReactiveEntity.find("{'title' : ?1}", "aaa").withCollation(collation).count()
+                .await().indefinitely());
+        Assertions.assertEquals(2, TestReactiveEntity.find("{'title' : ?1}", "AAA").withCollation(collation).count()
+                .await().indefinitely());
+        Assertions.assertEquals(1, TestReactiveEntity.find("{'title' : ?1}", "bbb").withCollation(collation).count()
+                .await().indefinitely());
+        Assertions.assertEquals(1, TestReactiveEntity.find("{'title' : ?1}", "BBB").withCollation(collation).count()
+                .await().indefinitely());
         entityAUpper.delete().await().indefinitely();
         entityALower.delete().await().indefinitely();
         entityB.delete().await().indefinitely();
@@ -654,6 +689,20 @@ public class TestResource {
         Assertions.assertEquals("aaa", results.get(0).title);
         Assertions.assertEquals("AAA", results.get(1).title);
         Assertions.assertEquals("BBB", results.get(2).title);
+
+        //count with collation
+        collation = Collation.builder()
+                .locale("en")
+                .collationStrength(CollationStrength.SECONDARY)
+                .build();
+        Assertions.assertEquals(2, testReactiveRepository.find("{'title' : ?1}", "aaa").withCollation(collation).count()
+                .await().indefinitely());
+        Assertions.assertEquals(2, testReactiveRepository.find("{'title' : ?1}", "AAA").withCollation(collation).count()
+                .await().indefinitely());
+        Assertions.assertEquals(1, testReactiveRepository.find("{'title' : ?1}", "bbb").withCollation(collation).count()
+                .await().indefinitely());
+        Assertions.assertEquals(1, testReactiveRepository.find("{'title' : ?1}", "BBB").withCollation(collation).count()
+                .await().indefinitely());
         testReactiveRepository.delete(entityALower).await().indefinitely();
         testReactiveRepository.delete(entityAUpper).await().indefinitely();
         testReactiveRepository.delete(entityB).await().indefinitely();

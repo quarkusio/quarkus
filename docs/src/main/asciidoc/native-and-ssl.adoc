@@ -106,6 +106,7 @@ As SSL is de facto the standard nowadays, we decided to enable its support autom
  * the Redis client extension (`quarkus-redis-client`),
  * the REST Client extension (`quarkus-rest-client`),
  * the REST Client Reactive extension (`quarkus-rest-client-reactive`),
+ * the SmallRye GraphQL Client extension (`quarkus-smallrye-graphql-client`),
  * the Spring Cloud Config client extension (`quarkus-spring-cloud-config-client`),
  * the Vault extension (`quarkus-vault`),
  * the Cassandra client extensions (`cassandra-quarkus-client`)

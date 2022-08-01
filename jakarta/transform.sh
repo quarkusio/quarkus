@@ -190,11 +190,12 @@ set_property () {
 
 # OpenRewrite phase - we rewrite the whole repository in one go
 clean_maven_repository
-./mvnw -Dtcks clean
+# Note for future me: we cannot use ./mvnw clean here
+clean_project
 ./update-version.sh 999-jakarta-SNAPSHOT
 
 ## let's build what's required to be able to run the rewrite
-./mvnw -B -pl :quarkus-bootstrap-maven-plugin -pl :quarkus-enforcer-rules -pl :quarkus-maven-plugin -pl :quarkus-bom-test -am clean install -DskipTests -DskipITs -Dinvoker.skip
+./mvnw -B -pl :quarkus-bootstrap-maven-plugin -pl :quarkus-extension-maven-plugin -pl :quarkus-enforcer-rules -pl :quarkus-maven-plugin -pl :quarkus-bom-test -am clean install -DskipTests -DskipITs -Dinvoker.skip
 
 ## we cannot rewrite some of the modules for various reasons but we rewrite most of them
 ./mvnw -B -e rewrite:run -Dtcks -Denforcer.skip -Dprotoc.skip -Dmaven.main.skip -Dmaven.test.skip -Dforbiddenapis.skip -Dinvoker.skip -Dquarkus.generate-code.skip -Dquarkus.build.skip -Dbytebuddy.skip -DskipExtensionValidation -DskipCodestartValidation -Pbom-descriptor-json-hollow -pl '!:io.quarkus.gradle.plugin' -pl '!:io.quarkus.extension.gradle.plugin' -pl '!:quarkus-integration-test-gradle-plugin' -pl '!:quarkus-documentation' -Drewrite.pomCacheEnabled=false -Djakarta-rewrite
@@ -224,6 +225,12 @@ sed -i 's@ServletContextConfigSourceImpl@ServletContextConfigSource@g' extension
 # For now, this will have to do
 cp "jakarta/overrides/rest-client/QuarkusRestClientBuilder.java" "extensions/resteasy-classic/rest-client/runtime/src/main/java/io/quarkus/restclient/runtime/"
 cp "jakarta/overrides/jaxb/JAXBSubstitutions.java" "extensions/jaxb/runtime/src/main/java/io/quarkus/jaxb/runtime/graal/"
+sed -i 's@com.sun.xml.bind.v2.model.annotation.Locatable@org.glassfish.jaxb.core.v2.model.annotation.Locatable@g' extensions/jaxb/deployment/src/main/java/io/quarkus/jaxb/deployment/JaxbProcessor.java
+sed -i 's@com.sun.xml.bind.marshaller.CharacterEscapeHandler@org.glassfish.jaxb.core.marshaller.CharacterEscapeHandler@g' extensions/jaxb/deployment/src/main/java/io/quarkus/jaxb/deployment/JaxbProcessor.java
+sed -i 's@com.sun.xml.bind.v2.schemagen.episode@org.glassfish.jaxb.core.v2.schemagen.episode@g' extensions/jaxb/deployment/src/main/java/io/quarkus/jaxb/deployment/JaxbProcessor.java
+sed -i 's@com.sun.xml.bind.v2.schemagen.xmlschema@org.glassfish.jaxb.runtime.v2.schemagen.xmlschema@g' extensions/jaxb/deployment/src/main/java/io/quarkus/jaxb/deployment/JaxbProcessor.java
+sed -i 's@com.sun.xml.bind.v2.ContextFactory@org.glassfish.jaxb.runtime.v2.ContextFactory@g' extensions/jaxb/deployment/src/main/java/io/quarkus/jaxb/deployment/JaxbProcessor.java
+sed -i '/com.sun.xml.internal.bind.v2.ContextFactory/d' extensions/jaxb/deployment/src/main/java/io/quarkus/jaxb/deployment/JaxbProcessor.java
 
 ## JSON-P implementation switch
 sed -i 's@<runnerParentFirstArtifact>org.glassfish:jakarta.json</runnerParentFirstArtifact>@<runnerParentFirstArtifact>org.eclipse.parsson:jakarta.json</runnerParentFirstArtifact>@g' extensions/logging-json/runtime/pom.xml

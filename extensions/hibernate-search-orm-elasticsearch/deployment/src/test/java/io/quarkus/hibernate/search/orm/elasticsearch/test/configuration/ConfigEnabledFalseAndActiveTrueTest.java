@@ -20,7 +20,7 @@ public class ConfigEnabledFalseAndActiveTrueTest {
             .overrideConfigKey("quarkus.hibernate-search-orm.active", "true")
             .assertException(throwable -> assertThat(throwable)
                     .isInstanceOf(ConfigurationException.class)
-                    .hasMessageContaining(
+                    .hasMessageContainingAll(
                             "Hibernate Search activated explicitly, but Hibernate Search was disabled at build time",
                             "If you want Hibernate Search to be active at runtime, you must set 'quarkus.hibernate-search-orm.enabled' to 'true' at build time",
                             "If you don't want Hibernate Search to be active at runtime, you must leave 'quarkus.hibernate-search-orm.active' unset or set it to 'false'"));

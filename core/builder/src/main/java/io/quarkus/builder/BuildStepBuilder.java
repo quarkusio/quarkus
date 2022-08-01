@@ -194,6 +194,15 @@ public final class BuildStepBuilder {
      */
     public BuildChainBuilder build() {
         final BuildChainBuilder chainBuilder = this.buildChainBuilder;
+        if (produces.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Build step '" + buildStep.getId()
+                            + "' does not produce any build item and thus will never get executed."
+                            + " Either change the return type of the method to a build item type,"
+                            + " add a parameter of type BuildProducer<[some build item type]>/Consumer<[some build item type]>,"
+                            + " or annotate the method with @Produces."
+                            + " Use @Produce(EmptyBuildItem.class) if you want to always execute this step.");
+        }
         if (BuildChainBuilder.LOG_CONFLICT_CAUSING) {
             chainBuilder.addStep(this, new Exception().getStackTrace());
         } else {

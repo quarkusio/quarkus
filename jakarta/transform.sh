@@ -225,6 +225,12 @@ sed -i 's@ServletContextConfigSourceImpl@ServletContextConfigSource@g' extension
 # For now, this will have to do
 cp "jakarta/overrides/rest-client/QuarkusRestClientBuilder.java" "extensions/resteasy-classic/rest-client/runtime/src/main/java/io/quarkus/restclient/runtime/"
 cp "jakarta/overrides/jaxb/JAXBSubstitutions.java" "extensions/jaxb/runtime/src/main/java/io/quarkus/jaxb/runtime/graal/"
+sed -i 's@com.sun.xml.bind.v2.model.annotation.Locatable@org.glassfish.jaxb.core.v2.model.annotation.Locatable@g' extensions/jaxb/deployment/src/main/java/io/quarkus/jaxb/deployment/JaxbProcessor.java
+sed -i 's@com.sun.xml.bind.marshaller.CharacterEscapeHandler@org.glassfish.jaxb.core.marshaller.CharacterEscapeHandler@g' extensions/jaxb/deployment/src/main/java/io/quarkus/jaxb/deployment/JaxbProcessor.java
+sed -i 's@com.sun.xml.bind.v2.schemagen.episode@org.glassfish.jaxb.core.v2.schemagen.episode@g' extensions/jaxb/deployment/src/main/java/io/quarkus/jaxb/deployment/JaxbProcessor.java
+sed -i 's@com.sun.xml.bind.v2.schemagen.xmlschema@org.glassfish.jaxb.runtime.v2.schemagen.xmlschema@g' extensions/jaxb/deployment/src/main/java/io/quarkus/jaxb/deployment/JaxbProcessor.java
+sed -i 's@com.sun.xml.bind.v2.ContextFactory@org.glassfish.jaxb.runtime.v2.ContextFactory@g' extensions/jaxb/deployment/src/main/java/io/quarkus/jaxb/deployment/JaxbProcessor.java
+sed -i '/com.sun.xml.internal.bind.v2.ContextFactory/d' extensions/jaxb/deployment/src/main/java/io/quarkus/jaxb/deployment/JaxbProcessor.java
 
 ## JSON-P implementation switch
 sed -i 's@<runnerParentFirstArtifact>org.glassfish:jakarta.json</runnerParentFirstArtifact>@<runnerParentFirstArtifact>org.eclipse.parsson:jakarta.json</runnerParentFirstArtifact>@g' extensions/logging-json/runtime/pom.xml

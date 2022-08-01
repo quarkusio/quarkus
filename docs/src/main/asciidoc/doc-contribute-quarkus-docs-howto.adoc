@@ -26,26 +26,27 @@ We suggest you have the following materials nearby:
 
 == Sources
 
-- Documentation for Quarkus core and most extensions is located in the `docs` directory of the {quarkus-docs}[Quarkus GitHub repository].
-- Docs for Quarkiverse or other third-party extensions are pulled directly from those repositories.
+- Documentation for Quarkus core and most extensions is in the `docs` directory of the {quarkus-docs}[Quarkus GitHub repository].
+- Docs for Quarkiverse or other third-party extensions are pulled from those repositories.
 
 == Building and previewing Quarkus documentation
 
-Asciidoc syntax highlighting and the preview provided by an IDE can be sufficient for minor documentation changes.
+Asciidoc syntax highlighting and the preview provided by an IDE may be enough for minor documentation changes.
 For significant changes or any changes related to Quarkus configuration documentation,
 we recommend that you run the build and view the resulting output before submitting your changes for review.
 
 include::{includes}/compile-quarkus-quickly.adoc[tag=quickly-install-docs]
 
-This will produce a few things:
+This will produce:
 
-- Generated configuration properties documentation will be located in the  `target/asciidoc/generated/config/` directory.
-- Asciidoc output (html files) will be found in the `docs/target/generated-docs/` directory.
+- Generated Asciidoc files describing configuration properties in the  `target/asciidoc/generated/config/` directory.
+- Asciidoc output (html files) in the `docs/target/generated-docs/` directory.
 
-As you make additional changes, you can build the `docs` module specifically to update the generated HTML:
+As you make changes, you can rebuild the `docs` module specifically to update the generated HTML:
 
 [source,shell]
 ----
+#
 $ ./mvnw -f docs clean install
 ----
 
@@ -60,16 +61,12 @@ and then rebuild the `docs` module.
 
 Submit your proposed changes to the core Quarkus docs by {gh-pull-requests-fork}[creating a pull request] against the `main` branch of the Quarkus repository from your own {gh-about-forks}[repository fork].
 
-[TIP]
-Changes to docs for Quarkiverse or other third-party extensions should be submitted as pull requests in respective repository according to its contribution guide.
-
 Reviews for code and documentation have different (but overlapping) participants.
 To simplify collaborative review, either isolate changes to docs in their own PRs,
-or ensure that the PRs has a single, focused purpose.
-For example:
+or ensure that the PR has a single, focused purpose For example:
 
-- A single PR that adds a configuration option for an extension and updates related materials (how-to, reference) to explain the change.
-- A single PR for related changes to several docs,
+- Create a single PR that adds a configuration option for an extension and updates related materials (how-to, reference) to explain the change.
+- Create a single PR for related changes to multiple documents,
 e.g. updates to ensure a term is used consistently, correcting a recurring error, or moving repeated content into a shared file.
 - If there are extensive code changes as well as documentation changes,
 make a separate PR for the documentation changes and indicate the relationship in the issue description.

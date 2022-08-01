@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 public class VertxBufferOutputStream extends OutputStream {
-    private Buffer buffer;
+    private final Buffer buffer;
 
     public VertxBufferOutputStream() {
         this.buffer = Buffer.buffer();

@@ -44,7 +44,7 @@ jobs:
           SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
         run: |
           ./mvnw -e -B --settings .github/mvn-settings.xml \
-            -DskipITs -Dno-format -Dinvoker.skip=true \
+            -DskipTests -DskipITs -Dno-format -Dinvoker.skip=true \
             -DretryFailedDeploymentCount=10 \
             -pl !integration-tests/gradle \
             clean deploy

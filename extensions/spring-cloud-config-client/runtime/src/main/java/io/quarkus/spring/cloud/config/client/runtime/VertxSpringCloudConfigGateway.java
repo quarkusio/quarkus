@@ -2,7 +2,6 @@ package io.quarkus.spring.cloud.config.client.runtime;
 
 import static io.vertx.core.spi.resolver.ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME;
 
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -168,14 +167,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
     }
 
     private static byte[] allBytes(InputStream inputStream) throws Exception {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        int nRead;
-        byte[] data = new byte[1024];
-        while ((nRead = inputStream.read(data, 0, data.length)) != -1) {
-            buffer.write(data, 0, nRead);
-        }
-        buffer.flush();
-        return buffer.toByteArray();
+        return inputStream.readAllBytes();
     }
 
     private URI determineBaseUri(SpringCloudConfigClientConfig springCloudConfigClientConfig) throws URISyntaxException {

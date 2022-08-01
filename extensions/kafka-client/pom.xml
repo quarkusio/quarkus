@@ -15,6 +15,7 @@
    <packaging>pom</packaging>
 
    <modules>
+      <module>ui</module>
       <module>deployment</module>
       <module>runtime</module>
    </modules>

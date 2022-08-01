@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>kafka-devUI</title>
+        <link rel="stylesheet" href="./css/bootstrap.min.css">
+        <link rel="stylesheet" href="./fontawesome/css/all.min.css">
+        <link id="favicon" rel="icon" href="logo.png">
+
+        <style>
+            html {
+                min-height: 90vh;
+                min-width: 100vh;
+            }
+
+            body {
+                min-height: 90vh;
+                min-width: 100vh;
+            }
+
+            .row-holder {
+                padding: 0;
+                margin: 0;
+
+            }
+
+            .row:after {
+                content: "";
+                display: table;
+                clear: both;
+            }
+
+            .content-holder {
+                height: auto;
+                min-height: 90vh;
+            }
+
+            .navbar-brand img {
+                border-right: 1px solid darkgrey;
+                padding-right: 10px;
+                margin-right: 5px;
+            }
+
+            .navbar-brand {
+                padding: 0;
+                margin: 0;
+            }
+
+            #nav-menu-panel {
+                padding: 0px;
+            }
+
+        </style>
+
+    </head>
+
+    <body>
+    <nav class="navbar sticky-top navbar-dark bg-dark justify-content-start">
+        <a class="navbar-brand col-md-2">
+            <img id="navbar-logo" src="logo.png" height="30">
+            <span class="align-middle">Kafka UI</span>
+        </a>
+        <ol id="nav-breadcrumb" class="breadcrumb">
+        </ol>
+    </nav>
+    <div class="row row-holder">
+        <div id="nav-menu-panel" class="col-md-2" style="background-color:#e9ecef; color:#005fff">
+            <ul class="nav flex-column top-margin" id="navbar-list">
+            </ul>
+        </div>
+
+        <div class="col-md-10 content-holder" style="background-color:#ffffff;">
+            <div id="topics-page" class="flex-column">
+                <div class="card d-flex flex-fill top-margin">
+                    <table class="table table-hover pointer" id="topics-table">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th scope="col">Topic Name</th>
+                                <th scope="col">Id</th>
+                                <th scope="col">Partitions count</th>
+                                <th scope="col">Number of msg</th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+                <button id="open-create-topic-modal-btn" class="btn btn-primary float-plus-btn"><i
+                        class="bi bi-plus"> </i>
+                </button>
+            </div>
+            <div id="topic-messages-page" class="flex-column">
+                <div id="topic-msg-content" class="card flex-fill top-margin">
+                    <div class="page d-flex align-content-center justify-content-center">
+                        <div id="msg-table-holder" class="align-items-start">
+                            <table class="table" id="msg-table">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th scope="col"></th>
+                                        <th scope="col">Offset</th>
+                                        <th scope="col" class="pointer">
+                                            <select id="msg-page-partition-select" class="custom-select" multiple="multiple">
+                                                <option>0</option>
+                                            </select>
+                                        </th>
+                                        <th scope="col" class="pointer" id="timestamp-sort-header">Timestamp <i id="timestamp-sort-icon" class="bi bi-chevron-double-down"></i></th>
+                                        <th scope="col">Key</th>
+                                        <th scope="col">Value</th>
+                                        <th><btn id="reload-msg-btn" class="btn"><i class="bi bi-arrow-clockwise thead-text"></i></btn></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="msg-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="message-load-spinner"
+                             class="hidden top-margin align-items-center justify-content-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <nav class="d-flex justify-content-end top-margin">
+                    <ul class="pagination" id="msg-pagination">
+                        <li class="page-item previous disabled"><a class="page-link" href="#">Previous</a></li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item next"><a class="page-link" href="#">Next</a></li>
+                    </ul>
+                </nav>
+                <button id="open-create-msg-modal-btn" class="btn btn-primary float-plus-btn"><i
+                        class="bi bi-plus"> </i>
+                </button>
+            </div>
+            <div id="schema-page">
+                Schema registry is not implemeted yet.<br>
+            </div>
+            <div id="consumer-groups-page">
+                <div class="card flex-fill top-margin">
+                    <table class="table table-hover" id="consumer-groups-table">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th scope="col">State</th>
+                                <th scope="col">Id</th>
+                                <th scope="col">Coordinator</th>
+                                <th scope="col">Protocol</th>
+                                <th scope="col">Members</th>
+                                <th scope="col">Lag(Sum)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="consumer-groups-details-page">
+                <div class="card flex-fill">
+                    <table class="table table-hover top-margin" id="consumer-group-details-table">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th scope="col"></th>
+                                <th scope="col">Member ID</th>
+                                <th scope="col">Host</th>
+                                <th scope="col">Partitions</th>
+                                <th scope="col">Lag(Sum)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="access-control-list-page" class="flex-column top-margin">
+                <div class="card d-flex flex-fill">
+                    <div class="card-body">
+                        <b>Kafka cluster id:&nbsp;</b><span id="acluster-id"></span><br>
+                        <b>Controller node (broker):&nbsp;</b><span id="acluster-controller"></span><br>
+                        <b>ACL operations:&nbsp;</b><span id="acluster-acl"></span><br>
+                    </div>
+                </div>
+                <h3 class="top-margin">Access Control Lists</h3>
+                <div class="card flex-fill">
+                    <table class="table" id="acl-table">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th scope="col">Operation</th>
+                                <th scope="col">Prinicipal</th>
+                                <th scope="col">Permissions</th>
+                                <th scope="col">Pattern</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="nodes-page" class="flex-column top-margin">
+                <div class="card d-flex flex-fill">
+                    <div class="card-body">
+                        <b>Kafka cluster id:&nbsp;</b><span id="cluster-id"></span><br>
+                        <b>Controller node (broker):&nbsp;</b><span id="cluster-controller"></span><br>
+                        <b>ACL operations:&nbsp;</b><span id="cluster-acl"></span><br>
+                    </div>
+                </div>
+                <h3 class="top-margin">Cluster nodes</h3>
+                <div class="card flex-fill">
+                    <table class="table" id="cluster-table">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th scope="col">Id</th>
+                                <th scope="col">Host</th>
+                                <th scope="col">Port</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./js/jquery.min.js"></script>
+    <script src="./js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet"
+          href="./css/bootstrap-multiselect.css">
+    <link rel="stylesheet" href="./css/bootstrap-icons.css">
+    </body>
+</html>

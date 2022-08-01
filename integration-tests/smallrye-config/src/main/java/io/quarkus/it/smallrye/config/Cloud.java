@@ -6,6 +6,7 @@ import io.smallrye.config.WithParentName;
 
 @Unremovable
 @ConfigMapping(prefix = "cloud")
+@Prod
 public interface Cloud {
     @WithParentName
     Server server();

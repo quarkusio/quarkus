@@ -7,6 +7,11 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
+
+import io.quarkus.runtime.LaunchMode;
 import io.smallrye.graphql.client.impl.GraphQLClientConfiguration;
 import io.smallrye.graphql.client.impl.GraphQLClientsConfiguration;
 
@@ -20,6 +25,8 @@ import io.smallrye.graphql.client.impl.GraphQLClientsConfiguration;
  */
 @Singleton
 public class GraphQLClientConfigurationMergerBean {
+
+    private final Logger logger = Logger.getLogger(GraphQLClientConfigurationMergerBean.class);
 
     GraphQLClientsConfiguration upstreamConfigs;
 
@@ -54,6 +61,32 @@ public class GraphQLClientConfigurationMergerBean {
             }
         }
 
+        // allow automatically wiring client to the local server instance in test mode
+        if (LaunchMode.current() == LaunchMode.TEST) {
+            String testUrl = null;
+            for (String configKey : support.getKnownConfigKeys()) {
+                GraphQLClientConfiguration config = upstreamConfigs.getClient(configKey);
+                if (config.getUrl() == null) {
+                    if (testUrl == null) {
+                        testUrl = getTestingServerUrl();
+                    }
+                    logger.info("Automatically wiring the URL of GraphQL client named " + configKey + " to " + testUrl
+                            + ". If this is incorrect, " +
+                            "please set it manually using the quarkus.smallrye-graphql-client." + maybeWithQuotes(configKey)
+                            + ".url property. Also note that" +
+                            " this autowiring is only supported during tests.");
+                    config.setUrl(testUrl);
+                }
+            }
+        }
+    }
+
+    private String maybeWithQuotes(String key) {
+        if (key.contains(".")) {
+            return "\"" + key + "\"";
+        } else {
+            return key;
+        }
     }
 
     // translates a Quarkus `GraphQLClientConfig` configuration object to `GraphQLClientConfiguration` which is understood
@@ -78,6 +111,13 @@ public class GraphQLClientConfigurationMergerBean {
                 .ifPresent(transformed::setExecuteSingleOperationsOverWebsocket);
         quarkusConfig.websocketInitializationTimeout.ifPresent(transformed::setWebsocketInitializationTimeout);
         return transformed;
+    }
+
+    private String getTestingServerUrl() {
+        Config config = ConfigProvider.getConfig();
+        // the client extension doesn't have dependencies on neither the server extension nor quarkus-vertx-http, so guessing
+        // is somewhat limited
+        return "http://localhost:" + config.getOptionalValue("quarkus.http.test-port", int.class).orElse(8081) + "/graphql";
     }
 
     public void nothing() {

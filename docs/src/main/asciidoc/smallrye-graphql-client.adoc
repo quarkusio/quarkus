@@ -219,6 +219,11 @@ or move this over to the configuration file, `application.properties`:
 quarkus.smallrye-graphql-client.star-wars-typesafe.url=https://swapi-graphql.netlify.app/.netlify/functions/index
 ----
 
+NOTE: During *tests only*, the URL is an optional property, and if it's not specified, Quarkus will assume
+that the target of the client is the application that is being tested (typically, `http://localhost:8081/graphql`).
+This is useful if your application contains a GraphQL server-side API as well as a GraphQL client that is used for
+testing the API.
+
 `star-wars-typesafe` is the name of the configured client instance, and corresponds to the `configKey`
 in the `@GraphQLClientApi` annotation. If you don't want to specify a custom name, you can leave
 out the `configKey`, and then refer to it by using the fully qualified name of the interface.

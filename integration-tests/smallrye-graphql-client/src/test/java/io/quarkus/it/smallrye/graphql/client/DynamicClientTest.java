@@ -7,6 +7,7 @@ import java.net.URL;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 
 /**
@@ -40,6 +41,16 @@ public class DynamicClientTest {
     public void testDynamicClientSubscription() throws Exception {
         when()
                 .get("/dynamic-subscription/" + url.toString())
+                .then()
+                .log().everything()
+                .statusCode(204);
+    }
+
+    @Test
+    @DisabledOnIntegrationTest(forArtifactTypes = DisabledOnIntegrationTest.ArtifactType.NATIVE_BINARY)
+    public void testDynamicClientAutowiredUrl() throws Exception {
+        when()
+                .get("/autowired-dynamic/")
                 .then()
                 .log().everything()
                 .statusCode(204);

@@ -11,6 +11,7 @@ import java.util.Map;
 import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
@@ -140,17 +141,31 @@ public class SmallRyeGraphQLClientProcessor {
      */
     @BuildStep
     @Record(RUNTIME_INIT)
-    void shortNamesToQualifiedNames(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+    void initializeClientSupport(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             SmallRyeGraphQLClientRecorder recorder,
             GraphQLClientsConfig quarkusConfig,
             BeanArchiveIndexBuildItem index) {
+        // to store config keys of all clients found in the application code
+        List<String> knownConfigKeys = new ArrayList<>();
+
         Map<String, String> shortNamesToQualifiedNames = new HashMap<>();
         for (AnnotationInstance annotation : index.getIndex().getAnnotations(GRAPHQL_CLIENT_API)) {
             ClassInfo clazz = annotation.target().asClass();
             shortNamesToQualifiedNames.put(clazz.name().withoutPackagePrefix(), clazz.name().toString());
+            AnnotationValue configKeyValue = annotation.value("configKey");
+            String configKey = configKeyValue != null ? configKeyValue.asString() : null;
+            knownConfigKeys.add((configKey != null && !configKey.equals("")) ? configKey : clazz.name().toString());
         }
 
-        RuntimeValue<GraphQLClientSupport> support = recorder.clientSupport(shortNamesToQualifiedNames);
+        for (AnnotationInstance annotation : index.getIndex().getAnnotations(GRAPHQL_CLIENT)) {
+            String configKey = annotation.value().asString();
+            if (configKey == null) {
+                configKey = "default";
+            }
+            knownConfigKeys.add(configKey);
+        }
+
+        RuntimeValue<GraphQLClientSupport> support = recorder.clientSupport(shortNamesToQualifiedNames, knownConfigKeys);
 
         DotName supportClassName = DotName.createSimple(GraphQLClientSupport.class.getName());
         SyntheticBeanBuildItem bean = SyntheticBeanBuildItem

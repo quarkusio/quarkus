@@ -3,7 +3,6 @@ package io.quarkus.vertx.http.runtime;
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setCurrentContextSafe;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -998,13 +997,7 @@ public class VertxHttpRecorder {
     }
 
     private static byte[] doRead(InputStream is) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        byte[] buf = new byte[1024];
-        int r;
-        while ((r = is.read(buf)) > 0) {
-            out.write(buf, 0, r);
-        }
-        return out.toByteArray();
+        return is.readAllBytes();
     }
 
     private static HttpServerOptions createHttpServerOptions(

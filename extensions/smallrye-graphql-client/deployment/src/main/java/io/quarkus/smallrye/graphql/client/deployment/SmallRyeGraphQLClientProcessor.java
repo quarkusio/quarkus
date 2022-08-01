@@ -25,6 +25,7 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -46,6 +47,11 @@ public class SmallRyeGraphQLClientProcessor {
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> featureProducer) {
         featureProducer.produce(new FeatureBuildItem(Feature.SMALLRYE_GRAPHQL_CLIENT));
+    }
+
+    @BuildStep
+    ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
+        return new ExtensionSslNativeSupportBuildItem(Feature.SMALLRYE_GRAPHQL_CLIENT);
     }
 
     @BuildStep

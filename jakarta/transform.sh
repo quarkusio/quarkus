@@ -190,7 +190,8 @@ set_property () {
 
 # OpenRewrite phase - we rewrite the whole repository in one go
 clean_maven_repository
-./mvnw -Dtcks clean
+# Note for future me: we cannot use ./mvnw clean here
+clean_project
 ./update-version.sh 999-jakarta-SNAPSHOT
 
 ## let's build what's required to be able to run the rewrite

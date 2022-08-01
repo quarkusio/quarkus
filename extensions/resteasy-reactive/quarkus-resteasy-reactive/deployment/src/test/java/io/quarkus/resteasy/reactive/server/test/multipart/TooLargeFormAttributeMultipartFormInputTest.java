@@ -22,6 +22,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -29,6 +30,7 @@ import io.quarkus.resteasy.reactive.server.test.multipart.other.OtherPackageForm
 import io.quarkus.test.QuarkusUnitTest;
 import io.vertx.core.http.HttpServerOptions;
 
+@Disabled("flaky")
 public class TooLargeFormAttributeMultipartFormInputTest extends AbstractMultipartTest {
 
     private static final java.nio.file.Path uploadDir = Paths.get("file-uploads");

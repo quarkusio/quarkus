@@ -385,6 +385,11 @@ public class ServerEndpointIndexer
         builder.setConverter(new PathSegmentParamConverter.Supplier());
     }
 
+    @Override
+    protected String handleTrailingSlash(String path) {
+        return path.substring(0, path.length() - 1);
+    }
+
     protected void handleTemporalParam(ServerIndexedParameter builder, DotName paramType,
             Map<DotName, AnnotationInstance> parameterAnnotations,
             MethodInfo currentMethodInfo) {

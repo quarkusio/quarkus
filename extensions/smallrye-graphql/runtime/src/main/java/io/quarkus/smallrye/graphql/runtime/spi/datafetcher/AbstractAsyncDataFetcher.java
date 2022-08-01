@@ -7,6 +7,8 @@ import org.eclipse.microprofile.graphql.GraphQLException;
 
 import graphql.execution.DataFetcherResult;
 import graphql.schema.DataFetchingEnvironment;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ManagedContext;
 import io.smallrye.graphql.SmallRyeGraphQLServerMessages;
 import io.smallrye.graphql.execution.datafetcher.AbstractDataFetcher;
 import io.smallrye.graphql.schema.model.Operation;
@@ -72,11 +74,15 @@ public abstract class AbstractAsyncDataFetcher<K, T> extends AbstractDataFetcher
     @Override
     @SuppressWarnings("unchecked")
     protected CompletionStage<List<T>> invokeBatch(DataFetchingEnvironment dfe, Object[] arguments) {
+        ManagedContext requestContext = Arc.container().requestContext();
         try {
+            BlockingHelper.reactivate(requestContext, dfe);
             return handleUserBatchLoad(dfe, arguments)
                     .subscribe().asCompletionStage();
         } catch (Exception ex) {
             throw new RuntimeException(ex);
+        } finally {
+            requestContext.deactivate();
         }
     }
 

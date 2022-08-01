@@ -309,6 +309,33 @@ However, in the case of ``ConstraintValidator``s that are dependent of attribute
 use the `@Dependent` scope to make sure each annotation context has a separate instance of the `ConstraintValidator` bean.
 ====
 
+If customizing the `ValidatorFactory` through the available configuration properties and the CDI beans above doesn't cover your requirements,
+you can customize it further by registering `ValidatorFactoryCustomizer` beans.
+
+For instance, you could override the built-in validator enforcing the `@Email` constraint and use `MyEmailValidator` instead with the following class:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyEmailValidatorFactoryCustomizer implements ValidatorFactoryCustomizer {
+
+    @Override
+    public void customize(BaseHibernateValidatorConfiguration<?> configuration) {
+        ConstraintMapping constraintMapping = configuration.createConstraintMapping();
+
+        constraintMapping
+                .constraintDefinition(Email.class)
+                .includeExistingValidators(false)
+                .validatedBy(MyEmailValidator.class);
+
+        configuration.addMapping(constraintMapping);
+    }
+}
+----
+
+All beans implementing `ValidatorFactoryCustomizer` are applied, meaning you can have several of them.
+If you need to enforce some ordering, you can use the usual `@javax.annotation.Priority` annotation - beans with higher priority are applied first.
+
 ==== Constraint validators as beans
 
 You can declare your constraint validators as CDI beans:
@@ -333,13 +360,16 @@ public class MyConstraintValidator implements ConstraintValidator<MyConstraint, 
 ----
 
 When initializing a constraint validator of a given type,
-Quarkus will check if a bean of this type is available and, if so, it will use it instead of instantiating one.
+Quarkus will check if a bean of this type is available and, if so, it will use it instead of instantiating a `ConstraintValidator`.
 
 Thus, as demonstrated in our example, you can fully use injection in your constraint validator beans.
 
-[NOTE]
+[WARNING]
 ====
-Except in very specific situations, it is recommended to make the said beans `@ApplicationScoped`.
+The scope you choose for your `ConstraintValidator` bean is important:
+
+- If the same instance of the `ConstraintValidator` bean can be used across the whole application, use the `@ApplicationScoped` scope.
+- If the `ConstraintValidator` bean implements the `initialize(A constraintAnnotation)` method and depends on the state of the constraint annotation, use the `@Dependent` scope to make sure each annotation context has a separate and properly configured instance of the `ConstraintValidator` bean.
 ====
 
 === Validation and localization

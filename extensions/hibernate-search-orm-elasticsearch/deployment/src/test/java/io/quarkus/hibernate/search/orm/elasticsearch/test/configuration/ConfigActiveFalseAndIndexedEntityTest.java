@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.test.configuration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import javax.inject.Inject;
@@ -30,27 +31,48 @@ public class ConfigActiveFalseAndIndexedEntityTest {
     SessionFactory sessionFactory;
 
     @Test
-    public void test() {
-        assertThatThrownBy(() -> Arc.container().instance(SearchMapping.class).get())
+    public void searchMapping() {
+        SearchMapping searchMapping = Arc.container().instance(SearchMapping.class).get();
+
+        // The bean is always available to be injected during static init
+        // since we don't know whether HSearch will be active at runtime.
+        // So the bean cannot be null.
+        assertThat(searchMapping).isNotNull();
+        // However, any attempt to use it at runtime will fail.
+        assertThatThrownBy(searchMapping::allIndexedEntities)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContainingAll(
                         "Cannot retrieve the SearchMapping for persistence unit <default>",
                         "Hibernate Search was deactivated through configuration properties");
 
+        // Hibernate Search APIs also throw exceptions,
+        // even if the messages are less explicit (we can't really do better).
         assertThatThrownBy(() -> Search.mapping(sessionFactory))
                 .isInstanceOf(SearchException.class)
-                .hasMessageContaining("Hibernate Search was not initialized.");
+                .hasMessageContaining("Hibernate Search was not initialized");
+    }
 
-        assertThatThrownBy(() -> Arc.container().instance(SearchSession.class).get())
+    @Test
+    public void searchSession() {
+        SearchSession searchSession = Arc.container().instance(SearchSession.class).get();
+
+        // The bean is always available to be injected during static init
+        // since we don't know whether HSearch will be active at runtime.
+        // So the bean cannot be null.
+        assertThat(searchSession).isNotNull();
+        // However, any attempt to use it at runtime will fail.
+        assertThatThrownBy(() -> searchSession.search(IndexedEntity.class))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContainingAll(
                         "Cannot retrieve the SearchSession for persistence unit <default>",
                         "Hibernate Search was deactivated through configuration properties");
 
+        // Hibernate Search APIs also throw exceptions,
+        // even if the messages are less explicit (we can't really do better).
         try (Session session = sessionFactory.openSession()) {
             assertThatThrownBy(() -> Search.session(session).search(IndexedEntity.class))
                     .isInstanceOf(SearchException.class)
-                    .hasMessageContaining("Hibernate Search was not initialized.");
+                    .hasMessageContaining("Hibernate Search was not initialized");
         }
     }
 }

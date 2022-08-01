@@ -12,6 +12,7 @@ import javax.json.JsonReader;
 import javax.json.JsonReaderFactory;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -67,6 +68,7 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
         }
         try {
             handleWithIdentity(ctx);
+            currentManagedContext.deactivate();
         } catch (Throwable t) {
             currentManagedContext.terminate();
             throw t;
@@ -108,6 +110,8 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
         Map<String, Object> metaData = new ConcurrentHashMap<>();
         metaData.put("runBlocking", runBlocking);
         metaData.put("httpHeaders", getHeaders(ctx));
+        InjectableContext.ContextState state = currentManagedContext.getState();
+        metaData.put("state", state);
         return metaData;
     }
 

@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.graphql.runtime;
 
+import java.util.Map;
+
 import org.jboss.logging.Logger;
 
 import io.quarkus.security.identity.CurrentIdentityAssociation;
@@ -25,7 +27,9 @@ public class SmallRyeGraphQLOverWebSocketHandler extends SmallRyeGraphQLAbstract
 
     @Override
     protected void doHandle(final RoutingContext ctx) {
+
         if (ctx.request().headers().contains(HttpHeaders.UPGRADE, HttpHeaders.WEBSOCKET, true) && !ctx.request().isEnded()) {
+            Map<String, Object> metaData = getMetaData(ctx);
             ctx.request().toWebSocket(event -> {
                 if (event.succeeded()) {
                     ServerWebSocket serverWebSocket = event.result();
@@ -34,11 +38,11 @@ public class SmallRyeGraphQLOverWebSocketHandler extends SmallRyeGraphQLAbstract
                     switch (subprotocol) {
                         case "graphql-transport-ws":
                             handler = new GraphQLTransportWSSubprotocolHandler(
-                                    new QuarkusVertxWebSocketSession(serverWebSocket), getMetaData(ctx));
+                                    new QuarkusVertxWebSocketSession(serverWebSocket), metaData);
                             break;
                         case "graphql-ws":
                             handler = new GraphQLWSSubprotocolHandler(
-                                    new QuarkusVertxWebSocketSession(serverWebSocket), getMetaData(ctx));
+                                    new QuarkusVertxWebSocketSession(serverWebSocket), metaData);
                             break;
                         default:
                             log.warn("Unknown graphql-over-websocket protocol: " + subprotocol);

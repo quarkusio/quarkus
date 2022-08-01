@@ -31,7 +31,8 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
     private final CurrentIdentityAssociation currentIdentityAssociation;
     private final CurrentVertxRequest currentVertxRequest;
     private final ManagedContext currentManagedContext;
-    private final Handler currentManagedContextTerminationHandler;
+    private final Handler<Void> currentManagedContextTerminationHandler;
+    private final Handler<Throwable> currentManagedContextExceptionHandler;
     private final boolean runBlocking;
 
     private volatile ExecutionService executionService;
@@ -47,12 +48,16 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
         this.currentVertxRequest = currentVertxRequest;
         this.currentManagedContext = Arc.container().requestContext();
         this.runBlocking = runBlocking;
-        this.currentManagedContextTerminationHandler = new Handler() {
+        this.currentManagedContextTerminationHandler = createCurrentManagedContextTerminationHandler();
+        this.currentManagedContextExceptionHandler = createCurrentManagedContextTerminationHandler();
+    }
+
+    private <T> Handler<T> createCurrentManagedContextTerminationHandler() {
+        return new Handler<>() {
             @Override
             public void handle(Object e) {
                 currentManagedContext.terminate();
             }
-
         };
     }
 
@@ -61,7 +66,7 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
 
         ctx.response()
                 .endHandler(currentManagedContextTerminationHandler)
-                .exceptionHandler(currentManagedContextTerminationHandler)
+                .exceptionHandler(currentManagedContextExceptionHandler)
                 .closeHandler(currentManagedContextTerminationHandler);
         if (!currentManagedContext.isActive()) {
             currentManagedContext.activate();

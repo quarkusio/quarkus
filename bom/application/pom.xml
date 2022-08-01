@@ -161,7 +161,7 @@
         <liquibase.version>4.14.0</liquibase.version>
         <snakeyaml.version>1.30</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
-        <mongo-client.version>4.6.1</mongo-client.version>
+        <mongo-client.version>4.7.1</mongo-client.version>
         <mongo-crypt.version>1.4.1</mongo-crypt.version>
         <proton-j.version>0.33.10</proton-j.version>
         <javaparser.version>3.24.2</javaparser.version>

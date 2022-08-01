@@ -392,7 +392,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                             methodPath = "/" + methodPath;
                         }
                         if (methodPath.endsWith("/")) {
-                            methodPath = methodPath.substring(0, methodPath.length() - 1);
+                            methodPath = handleTrailingSlash(methodPath);
                         }
                     } else {
                         methodPath = "";
@@ -449,6 +449,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
         }
         return ret;
+    }
+
+    protected String handleTrailingSlash(String path) {
+        return path;
     }
 
     private void validateHttpAnnotations(MethodInfo info) {

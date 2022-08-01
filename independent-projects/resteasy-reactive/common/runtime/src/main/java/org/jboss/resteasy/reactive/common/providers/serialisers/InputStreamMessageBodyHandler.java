@@ -34,11 +34,7 @@ public class InputStreamMessageBodyHandler implements MessageBodyWriter<InputStr
 
     protected void writeTo(InputStream inputStream, OutputStream entityStream) throws IOException {
         try {
-            byte[] buffer = new byte[8192];
-            int c;
-            while ((c = inputStream.read(buffer)) != -1) {
-                entityStream.write(buffer, 0, c);
-            }
+            inputStream.transferTo(entityStream);
         } finally {
             try {
                 inputStream.close();

@@ -36,11 +36,7 @@ public class FileBodyHandler implements MessageBodyReader<File>, MessageBodyWrit
         }
 
         try (OutputStream output = new BufferedOutputStream(new FileOutputStream(downloadedFile))) {
-            int read;
-            final byte[] buf = new byte[2048];
-            while ((read = entityStream.read(buf)) != -1) {
-                output.write(buf, 0, read);
-            }
+            entityStream.transferTo(output);
         }
 
         return downloadedFile;

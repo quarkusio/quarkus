@@ -80,15 +80,15 @@
     <modules>
 
         <!-- External projects -->
-        <module>independent-projects/ide-config</module>
-        <module>independent-projects/revapi</module>
-        <module>independent-projects/arc</module>
-        <module>independent-projects/bootstrap</module>
-        <module>independent-projects/qute</module>
-        <module>independent-projects/tools</module>
-        <module>independent-projects/enforcer-rules</module>
-        <module>independent-projects/resteasy-reactive</module>
-        <module>independent-projects/extension-maven-plugin</module>
+        <module>other/ide-config</module>
+        <module>other/revapi</module>
+        <module>other/arc</module>
+        <module>other/bootstrap</module>
+        <module>other/qute</module>
+        <module>other/tools</module>
+        <module>other/enforcer-rules</module>
+        <module>other/resteasy-reactive</module>
+        <module>other/extension-maven-plugin</module>
 
         <!-- BOMs and parent POM -->
         <module>bom/application</module>
@@ -336,7 +336,7 @@
                              See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder/issues/213 -->
                         <configuration>
                             <!-- pointless to attempt incremental build if something like mvnw was changed
-                                 (and also potentially wrong, given that independent-projects might not be built) -->
+                                 (and also potentially wrong, given that other might not be built) -->
                             <skipIfPathMatches>\.github[/\\].*|\.mvn[/\\].*|mvnw.*</skipIfPathMatches>
                             <!-- Note: *Upstream* is only relevant in case of:
                                  -am or

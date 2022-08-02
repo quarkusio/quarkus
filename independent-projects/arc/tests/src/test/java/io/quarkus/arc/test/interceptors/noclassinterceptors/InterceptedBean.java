@@ -5,7 +5,7 @@ import javax.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 @ClassLevel
-public class InterceptedBean extends SuperclassWithInterceptor {
+public class InterceptedBean extends SuperclassWithInterceptor implements Superinterface {
     @MethodLevel
     @NoClassInterceptors
     public InterceptedBean() {

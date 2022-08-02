@@ -229,6 +229,14 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     private List<String> dependencyCondition = new ArrayList<>(0);
 
     /**
+     * <a href="https://quarkus.io/guides/conditional-extension-dependencies">Extension dependency predicate</a> that should be
+     * satisfied for this extension to be enabled
+     * in case it is added as a conditional dependency of another extension.
+     */
+    @Parameter
+    private List<String> dependencyPredicate = new ArrayList<>(0);
+
+    /**
      * Whether to skip validation of the codestart artifact, in case its configured
      */
     @Parameter(property = "skipCodestartValidation")
@@ -302,6 +310,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             }
             props.setProperty(BootstrapConstants.DEPENDENCY_CONDITION, buf.toString());
 
+        }
+        if (!dependencyPredicate.isEmpty()) {
+            props.setProperty(BootstrapConstants.DEPENDENCY_PREDICATE, String.join(";", dependencyPredicate));
         }
 
         if (!capabilities.getProvides().isEmpty()) {

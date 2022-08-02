@@ -75,6 +75,40 @@ class BuildIT extends MojoTestBase {
     }
 
     @Test
+    void testDependencyPredicates()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/dependency-predicates", "projects/dependency-predicates-build");
+
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
+                Collections.emptyMap());
+        assertThat(result.getProcess().waitFor()).isZero();
+
+        final File targetDir = new File(testDir, "runner" + File.separator + "target");
+        File runnerJar = targetDir.toPath().resolve("quarkus-app-with").resolve("quarkus-run.jar").toFile();
+        // make sure the jar can be read by JarInputStream
+        ensureManifestOfJarIsReadableByJarInputStream(runnerJar);
+
+        Path mainLib = targetDir.toPath().resolve("quarkus-app-with").resolve("lib").resolve("main");
+        assertThat(mainLib.resolve("org.acme.acme-quarkus-ext-a-1.0-SNAPSHOT.jar")).exists();
+        assertThat(mainLib.resolve("org.acme.acme-quarkus-ext-b-1.0-SNAPSHOT.jar")).exists();
+        assertThat(mainLib.resolve("commons-io.commons-io-2.11.0.jar")).exists();
+        assertThat(mainLib.resolve("org.acme.acme-quarkus-ext-c-1.0-SNAPSHOT.jar")).exists();
+        assertThat(mainLib.resolve("org.acme.acme-quarkus-ext-d-1.0-SNAPSHOT.jar")).doesNotExist();
+
+        runnerJar = targetDir.toPath().resolve("quarkus-app-without").resolve("quarkus-run.jar").toFile();
+        // make sure the jar can be read by JarInputStream
+        ensureManifestOfJarIsReadableByJarInputStream(runnerJar);
+
+        mainLib = targetDir.toPath().resolve("quarkus-app-without").resolve("lib").resolve("main");
+        assertThat(mainLib.resolve("org.acme.acme-quarkus-ext-a-1.0-SNAPSHOT.jar")).exists();
+        assertThat(mainLib.resolve("org.acme.acme-quarkus-ext-b-1.0-SNAPSHOT.jar")).doesNotExist();
+        assertThat(mainLib.resolve("commons-io.commons-io-2.11.0.jar")).doesNotExist();
+        assertThat(mainLib.resolve("org.acme.acme-quarkus-ext-c-1.0-SNAPSHOT.jar")).exists();
+        assertThat(mainLib.resolve("org.acme.acme-quarkus-ext-d-1.0-SNAPSHOT.jar")).doesNotExist();
+    }
+
+    @Test
     void testMultiModuleAppRootWithNoSources()
             throws MavenInvocationException, IOException, InterruptedException {
         testDir = initProject("projects/multimodule-root-no-src", "projects/multimodule-root-no-src-build");

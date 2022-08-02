@@ -11,6 +11,7 @@ public interface BootstrapConstants {
     String DESCRIPTOR_FILE_NAME = "quarkus-extension.properties";
     String CONDITIONAL_DEPENDENCIES = "conditional-dependencies";
     String DEPENDENCY_CONDITION = "dependency-condition";
+    String DEPENDENCY_PREDICATE = "dependency-predicate";
 
     /**
      * Constant for sharing the additional mappings between test-sources and the corresponding application-sources.

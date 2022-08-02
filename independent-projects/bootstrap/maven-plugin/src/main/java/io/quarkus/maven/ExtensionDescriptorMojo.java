@@ -20,7 +20,6 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.DependencyUtils;
 import io.quarkus.fs.util.ZipUtils;
-import io.quarkus.maven.ExtensionDescriptorMojo.RemovedResources;
 import io.quarkus.maven.capabilities.CapabilitiesConfig;
 import io.quarkus.maven.capabilities.CapabilityConfig;
 import io.quarkus.maven.dependency.ArtifactCoords;

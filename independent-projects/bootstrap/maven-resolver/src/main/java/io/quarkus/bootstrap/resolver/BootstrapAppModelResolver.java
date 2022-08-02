@@ -297,7 +297,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
     private ApplicationModel buildAppModel(ResolvedDependency appArtifact, CollectRequest collectRtDepsRequest,
             Set<ArtifactKey> reloadableModules, List<Dependency> managedDeps, List<RemoteRepository> repos)
-            throws AppModelResolverException, BootstrapMavenException {
+            throws AppModelResolverException {
 
         final ApplicationModelBuilder appBuilder = new ApplicationModelBuilder().setAppArtifact(appArtifact);
         if (appArtifact.getWorkspaceModule() != null) {
@@ -315,6 +315,8 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                     .setApplicationModelBuilder(appBuilder)
                     .setCollectReloadableModules(collectReloadableDeps && reloadableModules.isEmpty())
                     .setBuildTreeConsumer(buildTreeConsumer)
+                    .setDevMode(devmode)
+                    .setTest(test)
                     .resolve(collectRtDepsRequest);
         } catch (BootstrapDependencyProcessingException e) {
             throw new AppModelResolverException(

@@ -145,6 +145,22 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    public void testDependencyPredicatesWithDep() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/dependency-predicates", "projects/dependency-predicates-with-property");
+        run(true, "-Dwith.ext.b=true");
+        final String response = DevModeTestUtils.getHttpResponse("/containsExtB");
+        assertThat(response).isEqualTo("true");
+    }
+
+    @Test
+    public void testDependencyPredicatesWithoutDep() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/dependency-predicates", "projects/dependency-predicates-without-property");
+        run(true);
+        final String response = DevModeTestUtils.getHttpResponse("/containsExtB");
+        assertThat(response).isEqualTo("false");
+    }
+
+    @Test
     public void testCommandModeAppSystemPropArguments() throws MavenInvocationException, IOException {
         testDir = initProject("projects/basic-command-mode", "projects/command-mode-app-args");
         run(false, "-Dquarkus.args='1 2'");

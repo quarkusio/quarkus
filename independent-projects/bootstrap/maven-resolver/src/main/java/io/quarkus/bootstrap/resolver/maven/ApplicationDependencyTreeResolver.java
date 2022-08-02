@@ -13,6 +13,7 @@ import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathList;
 import io.quarkus.paths.PathTree;
@@ -31,9 +32,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositoryException;
 import org.eclipse.aether.RepositorySystemSession;
@@ -96,6 +99,8 @@ public class ApplicationDependencyTreeResolver {
     private ApplicationModelBuilder appBuilder;
     private boolean collectReloadableModules;
     private Consumer<String> buildTreeConsumer;
+    private boolean devmode;
+    private boolean test;
 
     public ApplicationDependencyTreeResolver setArtifactResolver(MavenArtifactResolver resolver) {
         this.resolver = resolver;
@@ -124,6 +129,16 @@ public class ApplicationDependencyTreeResolver {
 
     public ApplicationDependencyTreeResolver setBuildTreeConsumer(Consumer<String> buildTreeConsumer) {
         this.buildTreeConsumer = buildTreeConsumer;
+        return this;
+    }
+
+    public ApplicationDependencyTreeResolver setDevMode(boolean devmode) {
+        this.devmode = devmode;
+        return this;
+    }
+
+    public ApplicationDependencyTreeResolver setTest(boolean test) {
+        this.test = test;
         return this;
     }
 
@@ -585,8 +600,7 @@ public class ApplicationDependencyTreeResolver {
         return false;
     }
 
-    private DependencyNode collectDependencies(Artifact artifact, Collection<Exclusion> exclusions)
-            throws BootstrapDependencyProcessingException {
+    private DependencyNode collectDependencies(Artifact artifact, Collection<Exclusion> exclusions) {
         try {
             return managedDeps.isEmpty()
                     ? resolver.collectDependencies(artifact, List.of(), mainRepos, exclusions).getRoot()
@@ -638,6 +652,7 @@ public class ApplicationDependencyTreeResolver {
         final Artifact deploymentArtifact;
         final Artifact[] conditionalDeps;
         final ArtifactKey[] dependencyCondition;
+        final DependencyPredicateEntry[] dependencyPredicate;
         boolean activated;
 
         ExtensionInfo(Artifact runtimeArtifact, Properties props) throws BootstrapDependencyProcessingException {
@@ -673,6 +688,8 @@ public class ApplicationDependencyTreeResolver {
 
             dependencyCondition = BootstrapUtils
                     .parseDependencyCondition(props.getProperty(BootstrapConstants.DEPENDENCY_CONDITION));
+            dependencyPredicate = DependencyPredicateEntry
+                    .parsePredicateEntries(props.getProperty(BootstrapConstants.DEPENDENCY_PREDICATE));
         }
 
         void ensureActivated() {
@@ -688,6 +705,156 @@ public class ApplicationDependencyTreeResolver {
                 appBuilder.addExtensionCapabilities(
                         CapabilityContract.of(toCompactCoords(runtimeArtifact), providesCapabilities, requiresCapabilities));
             }
+        }
+    }
+
+    /**
+     * {@code DependencyPredicateEntry} represents a group of sub-predicates on dependencies that all need to match to
+     * be successful.
+     */
+    private static class DependencyPredicateEntry {
+
+        /**
+         * The global predicate for the entire entry.
+         */
+        private final Predicate<ApplicationDependencyTreeResolver> predicate;
+
+        /**
+         * Constructs a {@code DependencyPredicateEntry} with the given predicate.
+         *
+         * @param predicate the global predicate for the entire entry.
+         */
+        private DependencyPredicateEntry(Predicate<ApplicationDependencyTreeResolver> predicate) {
+            this.predicate = predicate;
+        }
+
+        /**
+         * @param resolver the resolver against which the predicate is tested.
+         * @return {@code true} in case of a match, {@code false} otherwise.
+         */
+        boolean test(ApplicationDependencyTreeResolver resolver) {
+            return predicate.test(resolver);
+        }
+
+        /**
+         * Parses the given value to convert it into an array of {@code DependencyPredicateEntry} knowing that the separator
+         * of the entries is the semicolon character representing a logical {@code OR} and within each entry the separator
+         * of sub-predicates is the comma character representing a logical {@code AND}.
+         *
+         * @param value the value to parse
+         * @return an array of {@code DependencyPredicateEntry} if the value was not {@code null}, {@code null} otherwise.
+         */
+        static DependencyPredicateEntry[] parsePredicateEntries(String value) {
+            if (value == null) {
+                return null;
+            }
+            final String[] predicates = value.split(";");
+            DependencyPredicateEntry[] entries = new DependencyPredicateEntry[predicates.length];
+            for (int i = 0; i < predicates.length; ++i) {
+                entries[i] = DependencyPredicateEntry.parsePredicateEntry(predicates[i]);
+            }
+            return entries;
+        }
+
+        /**
+         * Parses the given value to convert it into a {@code DependencyPredicateEntry} corresponding to sub-predicates
+         * on dependencies where the character comma is the separator representing a logical {@code AND}.
+         *
+         * If a sub-predicate starts with the character {@code !}, the resulting predicate is the logical negation of the
+         * following sub-predicate.
+         *
+         * @param value the value to parse
+         * @return the corresponding {@code DependencyPredicateEntry}.
+         */
+        private static DependencyPredicateEntry parsePredicateEntry(String value) {
+            Predicate<ApplicationDependencyTreeResolver> result = null;
+            for (String predicate : value.split(",")) {
+                predicate = predicate.trim();
+                if (predicate.isEmpty()) {
+                    continue;
+                }
+                final boolean reverse = predicate.startsWith("!");
+                if (reverse) {
+                    predicate = predicate.substring(1);
+                }
+                Predicate<ApplicationDependencyTreeResolver> current = toExtensionPredicate(predicate);
+                if (reverse) {
+                    current = current.negate();
+                }
+                if (result == null) {
+                    result = current;
+                } else {
+                    result = result.and(current);
+                }
+            }
+            return new DependencyPredicateEntry(result == null ? x -> true : result);
+        }
+
+        /**
+         * Converts the given value into a {@code Predicate}.
+         * <p>
+         * The supported types of predicate are the following:
+         * <ul>
+         * <li>{@code test}, {@code dev}, {@code development}, {@code jvm} and {@code native} as expected modes</li>
+         * <li>{@code property-name?} as test on the presence of the property {@code property-name}</li>
+         * <li>{@code property-name=expected-property-value} as test on the value of the {@code property-name} that is expected
+         * to be {@code expected-property-value}</li>
+         * <li>{@code groupId:artifactId[:<classifier>:<extension>]} as test on the presence of an artifact</li>
+         * </ul>
+         *
+         * @param value the value to convert.
+         * @return the corresponding {@code Predicate}.
+         */
+        private static Predicate<ApplicationDependencyTreeResolver> toExtensionPredicate(String value) {
+            switch (value.toLowerCase()) {
+                case "test":
+                    return resolver -> resolver.test;
+                case "dev":
+                case "development":
+                    return resolver -> resolver.devmode;
+                case "jvm":
+                case "native":
+                    final Predicate<ApplicationDependencyTreeResolver> isNative = x -> "native"
+                            .equalsIgnoreCase(getOptionalValue("quarkus.package.type").orElse(null));
+                    if (value.equalsIgnoreCase("jvm")) {
+                        return isNative.negate();
+                    }
+                    return isNative;
+                default:
+                    int index = value.indexOf('=');
+                    if (index != -1) {
+                        final String expectedKey = value.substring(0, index);
+                        final Optional<String> expectedValue = Optional.of(value.substring(index + 1));
+                        return x -> expectedValue.equals(getOptionalValue(expectedKey));
+                    } else if (value.endsWith("?")) {
+                        final String expectedKey = value.substring(0, value.length() - 1);
+                        return x -> getOptionalValue(expectedKey).isPresent();
+                    }
+                    // Coordinates by default
+                    ArtifactKey key = GACT.fromString(value);
+                    return resolver -> resolver.isRuntimeArtifact(key);
+            }
+        }
+
+        /**
+         * @param key the key of the option to retrieve
+         * @return the value of the key if it could be found, {@code Optional.empty()} otherwise.
+         */
+        private static Optional<String> getOptionalValue(String key) {
+            try {
+                // Only accessible ar Runtime
+                ClassLoader cl = Thread.currentThread().getContextClassLoader();
+                Class<?> c = cl.loadClass("org.eclipse.microprofile.config.spi.ConfigProviderResolver");
+                Object instance = c.getMethod("instance").invoke(null);
+                Object config = instance.getClass().getMethod("getConfig").invoke(instance);
+                //noinspection unchecked
+                return (Optional<String>) config.getClass().getMethod("getOptionalValue", String.class, Class.class).invoke(
+                        config,
+                        key, String.class);
+            } catch (Exception e) {
+                log.warnf("Could not retrieve the config property %s: %s", key, e.getMessage());
+            }
+            return Optional.empty();
         }
     }
 
@@ -749,7 +916,7 @@ public class ApplicationDependencyTreeResolver {
             return dependency;
         }
 
-        void activate() throws BootstrapDependencyProcessingException {
+        void activate() {
             if (activated) {
                 return;
             }
@@ -771,7 +938,14 @@ public class ApplicationDependencyTreeResolver {
             dependent.runtimeNode.getChildren().add(rtNode);
         }
 
-        boolean isSatisfied() throws BootstrapDependencyProcessingException {
+        boolean isSatisfied() {
+            return isDependencyConditionSatisfied() && isDependencyPredicateSatisfied();
+        }
+
+        /**
+         * @return {@code true} if there is no dependency condition, or they all match, {@code false} otherwise.
+         */
+        private boolean isDependencyConditionSatisfied() {
             if (info.dependencyCondition == null) {
                 return true;
             }
@@ -781,6 +955,21 @@ public class ApplicationDependencyTreeResolver {
                 }
             }
             return true;
+        }
+
+        /**
+         * @return {@code true} if there is no dependency predicate, or at least one matches, {@code false} otherwise.
+         */
+        private boolean isDependencyPredicateSatisfied() {
+            if (info.dependencyPredicate == null) {
+                return true;
+            }
+            for (DependencyPredicateEntry entry : info.dependencyPredicate) {
+                if (entry.test(ApplicationDependencyTreeResolver.this)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 

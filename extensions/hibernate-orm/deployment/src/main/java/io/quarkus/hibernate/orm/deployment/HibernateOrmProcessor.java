@@ -599,11 +599,6 @@ public final class HibernateOrmProcessor {
                             .getOrDefault(pud.getPersistenceUnitName(), Collections.emptyList())));
         }
 
-        //Make it possible to record the QuarkusPersistenceUnitDefinition as bytecode:
-        recorderContext.registerSubstitution(QuarkusPersistenceUnitDefinition.class,
-                QuarkusPersistenceUnitDefinition.Serialized.class,
-                QuarkusPersistenceUnitDefinition.Substitution.class);
-
         if (hasXmlMappings(persistenceUnitDescriptorBuildItems)) {
             //Make it possible to record JAXBElement as bytecode:
             recorderContext.registerSubstitution(JAXBElement.class,

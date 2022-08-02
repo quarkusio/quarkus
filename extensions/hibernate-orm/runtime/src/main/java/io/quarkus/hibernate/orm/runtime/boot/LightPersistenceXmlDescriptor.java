@@ -13,6 +13,8 @@ import javax.persistence.spi.PersistenceUnitTransactionType;
 import org.hibernate.bytecode.enhance.spi.EnhancementContext;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 
+import io.quarkus.runtime.annotations.RecordableConstructor;
+
 public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescriptor {
 
     private final String name;
@@ -20,24 +22,27 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
     private final boolean useQuotedIdentifiers;
     private final PersistenceUnitTransactionType transactionType;
     private final ValidationMode validationMode;
-    private final SharedCacheMode sharedCachemode;
+    private final SharedCacheMode sharedCacheMode;
     private final List<String> managedClassNames;
     private final Properties properties;
 
     /**
-     * Internal constructor, as we're trusting all parameters. Useful for serialization to bytecode.
-     * (intentionally set to package-private visibility)
+     * @deprecated Do not use directly: this should be considered an internal constructor,
+     *             as we're trusting all parameters.
+     *             Useful for serialization to bytecode (which requires the constructor to be public).
      */
-    LightPersistenceXmlDescriptor(String name, String providerClassName, boolean useQuotedIdentifiers,
+    @Deprecated
+    @RecordableConstructor
+    public LightPersistenceXmlDescriptor(String name, String providerClassName, boolean useQuotedIdentifiers,
             PersistenceUnitTransactionType transactionType,
-            ValidationMode validationMode, SharedCacheMode sharedCachemode, List<String> managedClassNames,
+            ValidationMode validationMode, SharedCacheMode sharedCacheMode, List<String> managedClassNames,
             Properties properties) {
         this.name = name;
         this.providerClassName = providerClassName;
         this.useQuotedIdentifiers = useQuotedIdentifiers;
         this.transactionType = transactionType;
         this.validationMode = validationMode;
-        this.sharedCachemode = sharedCachemode;
+        this.sharedCacheMode = sharedCacheMode;
         this.managedClassNames = managedClassNames;
         this.properties = properties;
     }
@@ -50,6 +55,7 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
      * @return a new instance of LightPersistenceXmlDescriptor
      * @throws UnsupportedOperationException on unsupported configurations
      */
+    @SuppressWarnings("deprecated")
     public static LightPersistenceXmlDescriptor validateAndReadFrom(PersistenceUnitDescriptor toClone) {
         Objects.requireNonNull(toClone);
         verifyIgnoredFields(toClone);
@@ -97,7 +103,7 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
 
     @Override
     public SharedCacheMode getSharedCacheMode() {
-        return sharedCachemode;
+        return sharedCacheMode;
     }
 
     @Override
@@ -175,7 +181,7 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
     public String toString() {
         return "PersistenceUnitDescriptor{" + "name='" + name + '\'' + ", providerClassName='" + providerClassName
                 + '\'' + ", useQuotedIdentifiers=" + useQuotedIdentifiers + ", transactionType=" + transactionType
-                + ", validationMode=" + validationMode + ", sharedCachemode=" + sharedCachemode + ", managedClassNames="
+                + ", validationMode=" + validationMode + ", sharedCachemode=" + sharedCacheMode + ", managedClassNames="
                 + managedClassNames + ", properties=" + properties + '}';
     }
 }

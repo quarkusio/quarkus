@@ -4,11 +4,20 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.util.IoUtils;
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.maven.settings.Activation;
+import org.apache.maven.settings.Profile;
+import org.apache.maven.settings.Repository;
+import org.apache.maven.settings.RepositoryPolicy;
+import org.apache.maven.settings.Settings;
+import org.apache.maven.settings.io.DefaultSettingsWriter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -19,7 +28,9 @@ import org.junit.jupiter.api.BeforeEach;
 public class ResolverSetupCleanup {
 
     protected Path workDir;
-    protected Path repoHome;
+    private Path repoHome;
+    private Path localRepoHome;
+    private Path settingsXml;
     protected BootstrapAppModelResolver resolver;
     protected TsRepoBuilder repo;
 
@@ -30,8 +41,45 @@ public class ResolverSetupCleanup {
         setSystemProperties();
         workDir = initWorkDir();
         repoHome = IoUtils.mkdirs(workDir.resolve("repo"));
+        if (setupCustomMavenRepoInSettings()) {
+            localRepoHome = IoUtils.mkdirs(workDir).resolve("local-repo");
+
+            final Settings settings = new Settings();
+            final Profile profile = new Profile();
+            final Activation activation = new Activation();
+            activation.setActiveByDefault(true);
+            profile.setActivation(activation);
+            final Repository repo = new Repository();
+            repo.setId("custom-repo");
+            repo.setName("Custom Test Repo");
+            repo.setLayout("default");
+            try {
+                repo.setUrl(repoHome.toUri().toURL().toExternalForm());
+            } catch (MalformedURLException e) {
+                throw new BootstrapMavenException("Failed to initialize Maven repo URL", e);
+            }
+            RepositoryPolicy policy = new RepositoryPolicy();
+            policy.setEnabled(true);
+            policy.setChecksumPolicy("ignore");
+            policy.setUpdatePolicy("never");
+            repo.setReleases(policy);
+            repo.setSnapshots(policy);
+            profile.setId("custom-repo");
+            profile.addRepository(repo);
+            settings.addProfile(profile);
+
+            settingsXml = workDir.resolve("settings.xml");
+            try (BufferedWriter writer = Files.newBufferedWriter(settingsXml)) {
+                new DefaultSettingsWriter().write(writer, Map.of(), settings);
+            } catch (IOException e) {
+                throw new BootstrapMavenException("Failed to persist settings.xml", e);
+            }
+        } else {
+            localRepoHome = repoHome;
+        }
+
         resolver = newAppModelResolver(null);
-        repo = TsRepoBuilder.getInstance(resolver, workDir);
+        repo = TsRepoBuilder.getInstance(newArtifactResolver(null, true), workDir);
     }
 
     @AfterEach
@@ -51,6 +99,22 @@ public class ResolverSetupCleanup {
         }
     }
 
+    protected Path getInstallDir() {
+        return repoHome;
+    }
+
+    /**
+     * Enabling this option will install all the artifacts to a Maven repo that
+     * will be enabled in the Maven settings as a remote repo for the test.
+     * Otherwise, all the artifacts will be installed in a Maven repo that will
+     * be configured as a local repo for the test.
+     *
+     * @return whether to setup a custom remote Maven repo for the test
+     */
+    protected boolean setupCustomMavenRepoInSettings() {
+        return false;
+    }
+
     protected void setSystemProperties() {
     }
 
@@ -66,6 +130,10 @@ public class ResolverSetupCleanup {
 
     protected Path initWorkDir() {
         return IoUtils.createRandomTmpDir();
+    }
+
+    protected Path getSettingsXml() {
+        return settingsXml;
     }
 
     protected boolean cleanWorkDir() {
@@ -85,12 +153,24 @@ public class ResolverSetupCleanup {
     }
 
     protected MavenArtifactResolver newArtifactResolver(LocalProject currentProject) throws BootstrapMavenException {
-        return MavenArtifactResolver.builder()
-                .setLocalRepository(repoHome.toString())
+        return newArtifactResolver(currentProject, false);
+    }
+
+    private MavenArtifactResolver newArtifactResolver(LocalProject currentProject, boolean forInstalling)
+            throws BootstrapMavenException {
+        final MavenArtifactResolver.Builder builder = MavenArtifactResolver.builder()
                 .setOffline(true)
                 .setWorkspaceDiscovery(false)
-                .setCurrentProject(currentProject)
-                .build();
+                .setCurrentProject(currentProject);
+        if (forInstalling) {
+            builder.setLocalRepository(repoHome.toString());
+        } else {
+            builder.setLocalRepository(localRepoHome.toString());
+            if (settingsXml != null) {
+                builder.setUserSettings(settingsXml.toFile()).setOffline(false);
+            }
+        }
+        return builder.build();
     }
 
     protected TsJar newJar() throws IOException {

@@ -26,7 +26,6 @@ import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.GACTV;
 
 public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBase {
 
@@ -121,8 +120,10 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
                     modulePom.setParent(parent);
                     final Path moduleDir = IoUtils.mkdirs(ws.resolve(modulePom.getArtifactId()));
                     ModelUtils.persistModel(moduleDir.resolve("pom.xml"), modulePom);
-                    final Path resolvedJar = resolver.resolve(new GACTV(modulePom.getGroupId(), modulePom.getArtifactId(),
-                            moduleDep.getClassifier(), moduleDep.getType(), modulePom.getVersion())).getResolvedPaths()
+                    final Path resolvedJar = resolver
+                            .resolve(ArtifactCoords.of(modulePom.getGroupId(), modulePom.getArtifactId(),
+                                    moduleDep.getClassifier(), moduleDep.getType(), modulePom.getVersion()))
+                            .getResolvedPaths()
                             .getSinglePath();
                     final Path moduleTargetDir = moduleDir.resolve("target");
                     ZipUtils.unzip(resolvedJar, moduleTargetDir.resolve("classes"));
@@ -136,8 +137,10 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
                     modulePom.setParent(parent);
                     final Path moduleDir = IoUtils.mkdirs(ws.resolve(modulePom.getArtifactId()));
                     ModelUtils.persistModel(moduleDir.resolve("pom.xml"), modulePom);
-                    final Path resolvedJar = resolver.resolve(new GACTV(modulePom.getGroupId(), modulePom.getArtifactId(),
-                            module.getClassifier(), module.getType(), modulePom.getVersion())).getResolvedPaths()
+                    final Path resolvedJar = resolver
+                            .resolve(ArtifactCoords.of(modulePom.getGroupId(), modulePom.getArtifactId(),
+                                    module.getClassifier(), module.getType(), modulePom.getVersion()))
+                            .getResolvedPaths()
                             .getSinglePath();
                     final Path moduleTargetDir = moduleDir.resolve("target");
                     ZipUtils.unzip(resolvedJar, moduleTargetDir.resolve("classes"));
@@ -177,8 +180,10 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
                         modulePom.setParent(parent);
                         final Path moduleDir = IoUtils.mkdirs(ws.resolve(modulePom.getArtifactId()));
                         ModelUtils.persistModel(moduleDir.resolve("pom.xml"), modulePom);
-                        final Path resolvedJar = resolver.resolve(new GACTV(modulePom.getGroupId(), modulePom.getArtifactId(),
-                                a.getClassifier(), a.getType(), modulePom.getVersion())).getResolvedPaths()
+                        final Path resolvedJar = resolver
+                                .resolve(ArtifactCoords.of(modulePom.getGroupId(), modulePom.getArtifactId(),
+                                        a.getClassifier(), a.getType(), modulePom.getVersion()))
+                                .getResolvedPaths()
                                 .getSinglePath();
                         final Path moduleTargetDir = moduleDir.resolve("target");
                         ZipUtils.unzip(resolvedJar, moduleTargetDir.resolve("classes"));
@@ -197,6 +202,7 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
             final LocalProject appProject = new BootstrapMavenContext(BootstrapMavenContext.config()
                     .setWorkspaceDiscovery(true)
                     .setRootProjectDir(ws)
+                    .setUserSettings(getSettingsXml() == null ? null : getSettingsXml().toFile())
                     .setCurrentProject(appPomXml.toString()))
                     .getCurrentProject();
 

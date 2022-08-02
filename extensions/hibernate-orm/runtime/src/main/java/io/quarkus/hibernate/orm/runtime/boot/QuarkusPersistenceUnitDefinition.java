@@ -18,7 +18,7 @@ import io.quarkus.runtime.annotations.RecordableConstructor;
  */
 public final class QuarkusPersistenceUnitDefinition {
 
-    private final LightPersistenceXmlDescriptor actualHibernateDescriptor;
+    private final RuntimePersistenceUnitDescriptor actualHibernateDescriptor;
     private final Optional<String> dataSource;
     private final MultiTenancyStrategy multitenancyStrategy;
     private final List<RecordableXmlMapping> xmlMappings;
@@ -27,14 +27,16 @@ public final class QuarkusPersistenceUnitDefinition {
     private final List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors;
     private final Map<String, String> quarkusConfigUnsupportedProperties;
 
-    public QuarkusPersistenceUnitDefinition(PersistenceUnitDescriptor persistenceUnitDescriptor, Optional<String> dataSource,
+    public QuarkusPersistenceUnitDefinition(PersistenceUnitDescriptor persistenceUnitDescriptor,
+            String configurationName, Optional<String> dataSource,
             MultiTenancyStrategy multitenancyStrategy, List<RecordableXmlMapping> xmlMappings,
             Map<String, String> quarkusConfigUnsupportedProperties,
             boolean isReactive, boolean fromPersistenceXml,
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         Objects.requireNonNull(persistenceUnitDescriptor);
         Objects.requireNonNull(multitenancyStrategy);
-        this.actualHibernateDescriptor = LightPersistenceXmlDescriptor.validateAndReadFrom(persistenceUnitDescriptor);
+        this.actualHibernateDescriptor = RuntimePersistenceUnitDescriptor.validateAndReadFrom(persistenceUnitDescriptor,
+                configurationName);
         this.dataSource = dataSource;
         this.multitenancyStrategy = multitenancyStrategy;
         this.xmlMappings = xmlMappings;
@@ -45,7 +47,7 @@ public final class QuarkusPersistenceUnitDefinition {
     }
 
     @RecordableConstructor
-    public QuarkusPersistenceUnitDefinition(LightPersistenceXmlDescriptor actualHibernateDescriptor,
+    public QuarkusPersistenceUnitDefinition(RuntimePersistenceUnitDescriptor actualHibernateDescriptor,
             Optional<String> dataSource,
             MultiTenancyStrategy multitenancyStrategy,
             List<RecordableXmlMapping> xmlMappings,
@@ -66,7 +68,7 @@ public final class QuarkusPersistenceUnitDefinition {
         this.integrationStaticDescriptors = integrationStaticDescriptors;
     }
 
-    public PersistenceUnitDescriptor getActualHibernateDescriptor() {
+    public RuntimePersistenceUnitDescriptor getActualHibernateDescriptor() {
         return actualHibernateDescriptor;
     }
 

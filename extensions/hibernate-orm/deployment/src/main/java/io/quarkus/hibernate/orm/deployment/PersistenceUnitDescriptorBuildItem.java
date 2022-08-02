@@ -23,6 +23,11 @@ import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
     private final ParsedPersistenceXmlDescriptor descriptor;
+
+    // The default PU in Hibernate Reactive is named "default-reactive" instead of "<default>",
+    // but everything related to configuration (e.g. getAllPersistenceUnitConfigsAsMap() still
+    // use the name "<default>", so we need to convert between those.
+    private final String configurationName;
     private final Optional<String> dataSource;
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final String multiTenancySchemaDataSource;
@@ -31,20 +36,23 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
 
-    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor,
+    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, String configurationName,
             List<RecordableXmlMapping> xmlMappings,
             Map<String, String> quarkusConfigUnsupportedProperties,
             boolean isReactive, boolean fromPersistenceXml) {
-        this(descriptor, Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME), MultiTenancyStrategy.NONE, null,
+        this(descriptor, configurationName,
+                Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME), MultiTenancyStrategy.NONE, null,
                 xmlMappings, quarkusConfigUnsupportedProperties, isReactive, fromPersistenceXml);
     }
 
-    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, Optional<String> dataSource,
+    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, String configurationName,
+            Optional<String> dataSource,
             MultiTenancyStrategy multiTenancyStrategy, String multiTenancySchemaDataSource,
             List<RecordableXmlMapping> xmlMappings,
             Map<String, String> quarkusConfigUnsupportedProperties,
             boolean isReactive, boolean fromPersistenceXml) {
         this.descriptor = descriptor;
+        this.configurationName = configurationName;
         this.dataSource = dataSource;
         this.multiTenancyStrategy = multiTenancyStrategy;
         this.multiTenancySchemaDataSource = multiTenancySchemaDataSource;
@@ -84,7 +92,8 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
     public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition(
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
-        return new QuarkusPersistenceUnitDefinition(descriptor, dataSource, multiTenancyStrategy, xmlMappings,
+        return new QuarkusPersistenceUnitDefinition(descriptor, configurationName, dataSource, multiTenancyStrategy,
+                xmlMappings,
                 quarkusConfigUnsupportedProperties, isReactive, fromPersistenceXml, integrationStaticDescriptors);
     }
 }

@@ -15,9 +15,10 @@ import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 
 import io.quarkus.runtime.annotations.RecordableConstructor;
 
-public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescriptor {
+public final class RuntimePersistenceUnitDescriptor implements PersistenceUnitDescriptor {
 
     private final String name;
+    private final String configurationName;
     private final String providerClassName;
     private final boolean useQuotedIdentifiers;
     private final PersistenceUnitTransactionType transactionType;
@@ -33,11 +34,13 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
      */
     @Deprecated
     @RecordableConstructor
-    public LightPersistenceXmlDescriptor(String name, String providerClassName, boolean useQuotedIdentifiers,
+    public RuntimePersistenceUnitDescriptor(String name, String configurationName,
+            String providerClassName, boolean useQuotedIdentifiers,
             PersistenceUnitTransactionType transactionType,
             ValidationMode validationMode, SharedCacheMode sharedCacheMode, List<String> managedClassNames,
             Properties properties) {
         this.name = name;
+        this.configurationName = configurationName;
         this.providerClassName = providerClassName;
         this.useQuotedIdentifiers = useQuotedIdentifiers;
         this.transactionType = transactionType;
@@ -52,14 +55,16 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
      * several options that Quarkus does not support are not set.
      *
      * @param toClone the descriptor to clone
+     * @param configurationName the name of this PU in Quarkus configuration
      * @return a new instance of LightPersistenceXmlDescriptor
      * @throws UnsupportedOperationException on unsupported configurations
      */
     @SuppressWarnings("deprecated")
-    public static LightPersistenceXmlDescriptor validateAndReadFrom(PersistenceUnitDescriptor toClone) {
+    public static RuntimePersistenceUnitDescriptor validateAndReadFrom(PersistenceUnitDescriptor toClone,
+            String configurationName) {
         Objects.requireNonNull(toClone);
         verifyIgnoredFields(toClone);
-        return new LightPersistenceXmlDescriptor(toClone.getName(), toClone.getProviderClassName(),
+        return new RuntimePersistenceUnitDescriptor(toClone.getName(), configurationName, toClone.getProviderClassName(),
                 toClone.isUseQuotedIdentifiers(),
                 toClone.getTransactionType(), toClone.getValidationMode(), toClone.getSharedCacheMode(),
                 Collections.unmodifiableList(toClone.getManagedClassNames()), toClone.getProperties());
@@ -73,6 +78,10 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
     @Override
     public String getName() {
         return name;
+    }
+
+    public String getConfigurationName() {
+        return configurationName;
     }
 
     @Override

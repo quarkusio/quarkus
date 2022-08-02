@@ -36,6 +36,7 @@ import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitsHolder;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
+import io.quarkus.hibernate.orm.runtime.boot.RuntimePersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
@@ -77,7 +78,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             properties = new HashMap<Object, Object>();
         try {
             // These are pre-parsed during image generation:
-            final List<PersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
+            final List<RuntimePersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
 
             for (PersistenceUnitDescriptor unit : units) {
                 //if the provider is not set, don't use it as people might want to use Hibernate ORM
@@ -106,7 +107,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         verifyProperties(properties);
 
         // These are pre-parsed during image generation:
-        final List<PersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
+        final List<RuntimePersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
 
         log.debugf("Located %s persistence units; checking each", units.size());
 

@@ -192,6 +192,8 @@ set_property () {
 clean_maven_repository
 # Note for future me: we cannot use ./mvnw clean here
 clean_project
+
+# TODO REMOVE FOR FINAL VERSION
 ./update-version.sh 999-jakarta-SNAPSHOT
 
 ## let's build what's required to be able to run the rewrite

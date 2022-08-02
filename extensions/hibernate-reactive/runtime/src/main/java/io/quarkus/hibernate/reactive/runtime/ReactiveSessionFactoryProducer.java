@@ -10,6 +10,7 @@ import javax.persistence.PersistenceUnit;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.arc.DefaultBean;
+import io.quarkus.arc.Unremovable;
 
 public class ReactiveSessionFactoryProducer {
 
@@ -20,6 +21,7 @@ public class ReactiveSessionFactoryProducer {
     @Produces
     @Singleton
     @DefaultBean
+    @Unremovable
     @Typed(Mutiny.SessionFactory.class)
     public Mutiny.SessionFactory mutinySessionFactory() {
         return emf.unwrap(Mutiny.SessionFactory.class);

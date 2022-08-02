@@ -11,6 +11,7 @@ import org.hibernate.reactive.common.spi.MutinyImplementor;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.arc.DefaultBean;
+import io.quarkus.arc.Unremovable;
 
 public class ReactiveSessionProducer {
 
@@ -20,6 +21,7 @@ public class ReactiveSessionProducer {
     @Produces
     @RequestScoped
     @DefaultBean
+    @Unremovable
     public Mutiny.Session createMutinySession() {
         return ((MutinyImplementor) mutinySessionFactory).newSession();
     }

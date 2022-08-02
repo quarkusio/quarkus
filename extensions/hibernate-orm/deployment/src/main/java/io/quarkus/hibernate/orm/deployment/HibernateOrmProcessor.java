@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
-import javax.inject.Singleton;
 import javax.persistence.AttributeConverter;
 import javax.persistence.SharedCacheMode;
 import javax.persistence.ValidationMode;
@@ -123,7 +122,6 @@ import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
-import io.quarkus.hibernate.orm.runtime.JPAConfigSupport;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
 import io.quarkus.hibernate.orm.runtime.TransactionSessions;
@@ -706,19 +704,14 @@ public final class HibernateOrmProcessor {
     @Record(STATIC_INIT)
     public void build(HibernateOrmRecorder recorder, HibernateOrmConfig hibernateOrmConfig,
             BuildProducer<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaModelBuildItem jpaModel) throws Exception {
         if (!hasEntities(jpaModel)) {
             return;
         }
 
-        Set<String> persistenceUnitNames = new HashSet<>();
-
         Map<String, Set<String>> entityPersistenceUnitMapping = new HashMap<>();
         for (PersistenceUnitDescriptorBuildItem descriptor : descriptors) {
-            persistenceUnitNames.add(descriptor.getPersistenceUnitName());
-
             for (String entityClass : descriptor.getManagedClassNames()) {
                 entityPersistenceUnitMapping.putIfAbsent(entityClass, new HashSet<>());
                 entityPersistenceUnitMapping.get(entityClass).add(descriptor.getPersistenceUnitName());
@@ -726,13 +719,6 @@ public final class HibernateOrmProcessor {
         }
 
         jpaModelPersistenceUnitMapping.produce(new JpaModelPersistenceUnitMappingBuildItem(entityPersistenceUnitMapping));
-
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(JPAConfigSupport.class)
-                .scope(Singleton.class)
-                .unremovable()
-                .supplier(recorder.jpaConfigSupportSupplier(
-                        new JPAConfigSupport(persistenceUnitNames)))
-                .done());
     }
 
     @BuildStep

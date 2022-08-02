@@ -18,6 +18,7 @@ import javax.inject.Singleton;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 
+import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.jboss.logging.Logger;
 
 @Singleton
@@ -28,11 +29,11 @@ public class JPAConfig {
     private final Map<String, LazyPersistenceUnit> persistenceUnits;
 
     @Inject
-    public JPAConfig(JPAConfigSupport jpaConfigSupport) {
-
+    public JPAConfig() {
         Map<String, LazyPersistenceUnit> persistenceUnitsBuilder = new HashMap<>();
-        for (String persistenceUnitName : jpaConfigSupport.persistenceUnitNames) {
-            persistenceUnitsBuilder.put(persistenceUnitName, new LazyPersistenceUnit(persistenceUnitName));
+        for (PersistenceUnitDescriptor descriptor : PersistenceUnitsHolder.getPersistenceUnitDescriptors()) {
+            String puName = descriptor.getName();
+            persistenceUnitsBuilder.put(puName, new LazyPersistenceUnit(puName));
         }
         this.persistenceUnits = persistenceUnitsBuilder;
     }

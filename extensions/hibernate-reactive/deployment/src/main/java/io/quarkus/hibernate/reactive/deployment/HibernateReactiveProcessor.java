@@ -59,6 +59,7 @@ import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
+import io.quarkus.hibernate.reactive.runtime.HibernateReactive;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
 import io.quarkus.hibernate.reactive.runtime.ReactiveSessionFactoryProducer;
 import io.quarkus.hibernate.reactive.runtime.ReactiveSessionProducer;
@@ -224,7 +225,7 @@ public final class HibernateReactiveProcessor {
 
         // we found one
         ParsedPersistenceXmlDescriptor desc = new ParsedPersistenceXmlDescriptor(null); //todo URL
-        desc.setName("default-reactive");
+        desc.setName(HibernateReactive.DEFAULT_REACTIVE_PERSISTENCE_UNIT_NAME);
         desc.setTransactionType(PersistenceUnitTransactionType.RESOURCE_LOCAL);
         desc.getProperties().setProperty(AvailableSettings.DIALECT, dialect);
         desc.setExcludeUnlistedClasses(true);

@@ -246,6 +246,18 @@ class FlywayCreatorTest {
         assertEquals(runtimeConfig.validateOnMigrate, expected);
     }
 
+    @Test
+    @DisplayName("validateMigrationNaming defaults to false and it is correctly set")
+    void testValidateMigrationNaming() {
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        assertEquals(runtimeConfig.validateMigrationNaming, createdFlywayConfig().isValidateMigrationNaming());
+        assertFalse(runtimeConfig.validateMigrationNaming);
+
+        runtimeConfig.validateMigrationNaming = true;
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        assertTrue(createdFlywayConfig().isValidateMigrationNaming());
+    }
+
     private static List<String> pathList(Location[] locations) {
         return Stream.of(locations).map(Location::getPath).collect(Collectors.toList());
     }

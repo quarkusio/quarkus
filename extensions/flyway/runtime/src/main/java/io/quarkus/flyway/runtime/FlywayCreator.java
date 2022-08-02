@@ -59,7 +59,7 @@ class FlywayCreator {
         configure.cleanDisabled(flywayRuntimeConfig.cleanDisabled);
         configure.baselineOnMigrate(flywayRuntimeConfig.baselineOnMigrate);
         configure.validateOnMigrate(flywayRuntimeConfig.validateOnMigrate);
-        configure.validateMigrationNaming(true);
+        configure.validateMigrationNaming(flywayRuntimeConfig.validateMigrationNaming);
         List<String> patterns = new ArrayList<>(2);
         //https://flywaydb.org/documentation/configuration/parameters/ignoreMigrationPatterns
         if (flywayRuntimeConfig.ignoreMissingMigrations) {

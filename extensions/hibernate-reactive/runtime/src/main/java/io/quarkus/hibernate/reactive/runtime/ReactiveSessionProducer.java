@@ -16,14 +16,14 @@ import io.quarkus.arc.Unremovable;
 public class ReactiveSessionProducer {
 
     @Inject
-    Mutiny.SessionFactory mutinySessionFactory;
+    MutinyImplementor mutinyImplementor;
 
     @Produces
     @RequestScoped
     @DefaultBean
     @Unremovable
     public Mutiny.Session createMutinySession() {
-        return ((MutinyImplementor) mutinySessionFactory).newSession();
+        return mutinyImplementor.newSession();
     }
 
     public void disposeMutinySession(@Disposes Mutiny.Session reactiveSession) {

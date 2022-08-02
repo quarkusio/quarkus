@@ -107,7 +107,8 @@ public class HibernateSearchElasticsearchRecorder {
                         .getAllPersistenceUnitConfigsAsMap().get(persistenceUnitName);
                 if (puRuntimeConfig != null && !puRuntimeConfig.active.orElse(true)) {
                     throw new IllegalStateException(
-                            "Cannot retrieve the SearchMapping: Hibernate Search was deactivated through configuration properties");
+                            "Cannot retrieve the SearchMapping for persistence unit " + persistenceUnitName
+                                    + ": Hibernate Search was deactivated through configuration properties");
                 }
                 SessionFactory sessionFactory;
                 if (isDefaultPersistenceUnit) {
@@ -130,7 +131,8 @@ public class HibernateSearchElasticsearchRecorder {
                         .getAllPersistenceUnitConfigsAsMap().get(persistenceUnitName);
                 if (puRuntimeConfig != null && !puRuntimeConfig.active.orElse(true)) {
                     throw new IllegalStateException(
-                            "Cannot retrieve the SearchSession: Hibernate Search was deactivated through configuration properties");
+                            "Cannot retrieve the SearchSession for persistence unit " + persistenceUnitName
+                                    + ": Hibernate Search was deactivated through configuration properties");
                 }
                 Session session;
                 if (isDefaultPersistenceUnit) {

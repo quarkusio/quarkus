@@ -31,21 +31,30 @@ public class ConfigEnabledFalseAndIndexedEntityTest {
     SessionFactory sessionFactory;
 
     @Test
-    public void test() {
+    public void searchMapping() {
+        // The bean is not defined during static init, so it's null.
         assertThat(Arc.container().instance(SearchMapping.class).get())
                 .isNull();
 
+        // Hibernate Search APIs throw exceptions,
+        // even if the messages are not very explicit (we can't really do better).
         assertThatThrownBy(() -> Search.mapping(sessionFactory))
                 .isInstanceOf(SearchException.class)
-                .hasMessageContaining("Hibernate Search was not initialized.");
+                .hasMessageContaining("Hibernate Search was not initialized");
+    }
 
+    @Test
+    public void searchSession() {
+        // The bean is not defined during static init, so it's null.
         assertThat(Arc.container().instance(SearchSession.class).get())
                 .isNull();
 
+        // Hibernate Search APIs throw exceptions,
+        // even if the messages are not very explicit (we can't really do better).
         try (Session session = sessionFactory.openSession()) {
             assertThatThrownBy(() -> Search.session(session).search(IndexedEntity.class))
                     .isInstanceOf(SearchException.class)
-                    .hasMessageContaining("Hibernate Search was not initialized.");
+                    .hasMessageContaining("Hibernate Search was not initialized");
         }
     }
 }

@@ -3,8 +3,8 @@ package io.quarkus.hibernate.search.orm.elasticsearch.deployment;
 import java.util.List;
 import java.util.function.Supplier;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
-import javax.inject.Singleton;
 
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import org.hibernate.search.mapper.orm.session.SearchSession;
@@ -54,7 +54,9 @@ public class HibernateSearchElasticsearchCdiProcessor {
             Class<T> type, Supplier<T> supplier) {
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(type)
-                .scope(Singleton.class)
+                // NOTE: this is using ApplicationScoped and not Singleton, by design, in order to be mockable
+                // See https://github.com/quarkusio/quarkus/issues/16437
+                .scope(ApplicationScoped.class)
                 .unremovable()
                 .supplier(supplier)
                 .setRuntimeInit();

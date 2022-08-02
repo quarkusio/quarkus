@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
+import java.util.Map;
 
 import org.apache.maven.settings.Profile;
 import org.apache.maven.settings.Repository;
@@ -78,7 +78,7 @@ public abstract class RegistryClientBuilderTestBase {
 
         settingsXml = workDir().resolve("settings.xml");
         try (BufferedWriter writer = Files.newBufferedWriter(settingsXml)) {
-            new DefaultSettingsWriter().write(writer, Collections.emptyMap(), settings);
+            new DefaultSettingsWriter().write(writer, Map.of(), settings);
         }
         testRepo = registryConfigDir.resolve("test-repo");
     }
@@ -109,7 +109,7 @@ public abstract class RegistryClientBuilderTestBase {
     private static Settings getBaseMavenSettings(Path mavenSettings) throws IOException {
         if (Files.exists(mavenSettings)) {
             try (BufferedReader reader = Files.newBufferedReader(mavenSettings)) {
-                return new DefaultSettingsReader().read(reader, Collections.emptyMap());
+                return new DefaultSettingsReader().read(reader, Map.of());
             }
         }
         return new Settings();

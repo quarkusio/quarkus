@@ -63,6 +63,7 @@ public class YamlMetadataGenerator {
         try (Asciidoctor asciidoctor = Asciidoctor.Factory.create()) {
             try (Stream<Path> pathStream = Files.list(rootDir)) {
                 pathStream.filter(path -> !path.endsWith("attributes.adoc"))
+                        .filter(path -> !path.getFileName().toString().startsWith("README"))
                         .filter(path -> path.getFileName().toString().endsWith(".adoc"))
                         .forEach(path -> {
                             Document doc = asciidoctor.loadFile(path.toFile(), options);

@@ -5,6 +5,7 @@ import java.util.function.BiConsumer;
 
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.spi.BootstrapContext;
+import org.hibernate.envers.boot.internal.EnversService;
 import org.hibernate.envers.configuration.EnversSettings;
 
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
@@ -14,13 +15,14 @@ import io.quarkus.runtime.annotations.Recorder;
 public class HibernateEnversRecorder {
 
     public HibernateOrmIntegrationStaticInitListener createStaticInitListener(HibernateEnversBuildTimeConfig buildTimeConfig) {
-        return new HibernateEnversIntegrationListener(buildTimeConfig);
+        return new HibernateEnversIntegrationStaticInitListener(buildTimeConfig);
     }
 
-    private static final class HibernateEnversIntegrationListener implements HibernateOrmIntegrationStaticInitListener {
+    private static final class HibernateEnversIntegrationStaticInitListener
+            implements HibernateOrmIntegrationStaticInitListener {
         private HibernateEnversBuildTimeConfig buildTimeConfig;
 
-        private HibernateEnversIntegrationListener(HibernateEnversBuildTimeConfig buildTimeConfig) {
+        private HibernateEnversIntegrationStaticInitListener(HibernateEnversBuildTimeConfig buildTimeConfig) {
             this.buildTimeConfig = buildTimeConfig;
         }
 
@@ -74,6 +76,26 @@ public class HibernateEnversRecorder {
         public static <T> void addConfigIfPresent(BiConsumer<String, Object> propertyCollector, String configPath,
                 Optional<T> value) {
             value.ifPresent(t -> propertyCollector.accept(configPath, t));
+        }
+
+        @Override
+        public void onMetadataInitialized(Metadata metadata, BootstrapContext bootstrapContext,
+                BiConsumer<String, Object> propertyCollector) {
+        }
+    }
+
+    public HibernateOrmIntegrationStaticInitListener createStaticInitInactiveListener() {
+        return new HibernateEnversIntegrationStaticInitInactiveListener();
+    }
+
+    private static final class HibernateEnversIntegrationStaticInitInactiveListener
+            implements HibernateOrmIntegrationStaticInitListener {
+        private HibernateEnversIntegrationStaticInitInactiveListener() {
+        }
+
+        @Override
+        public void contributeBootProperties(BiConsumer<String, Object> propertyCollector) {
+            propertyCollector.accept(EnversService.INTEGRATION_ENABLED, "false");
         }
 
         @Override

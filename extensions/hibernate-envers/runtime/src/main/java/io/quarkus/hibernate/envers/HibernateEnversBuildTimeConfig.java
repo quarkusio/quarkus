@@ -9,6 +9,19 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class HibernateEnversBuildTimeConfig {
     /**
+     * Whether Hibernate Envers is enabled <strong>during the build</strong>.
+     *
+     * If Hibernate Envers is disabled during the build, all processing related to Hibernate Envers will be skipped,
+     * and the audit entities will not be added to the Hibernate ORM metamodel
+     * nor to the database schema that Hibernate ORM generates,
+     * but it will not be possible to use Hibernate Envers at runtime.
+     *
+     * @asciidoclet
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled;
+
+    /**
      * Enable store_data_at_delete feature.
      * Maps to {@link org.hibernate.envers.configuration.EnversSettings#STORE_DATA_AT_DELETE}.
      */

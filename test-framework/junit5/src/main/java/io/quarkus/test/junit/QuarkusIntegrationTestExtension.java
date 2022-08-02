@@ -175,7 +175,7 @@ public class QuarkusIntegrationTestExtension
                     System.setProperty(i.getKey(), i.getValue());
                 }
             }
-            context.getStore(ExtensionContext.Namespace.GLOBAL).put(NativeTestExtension.class.getName() + ".systemProps",
+            context.getStore(ExtensionContext.Namespace.GLOBAL).put(QuarkusIntegrationTestExtension.class.getName() + ".systemProps",
                     new ExtensionContext.Store.CloseableResource() {
                         @Override
                         public void close() throws Throwable {

@@ -120,6 +120,9 @@ public class NativeTestExtension
             Class<?> requiredTestClass = context.getRequiredTestClass();
 
             Map<String, String> sysPropRestore = getSysPropsToRestore();
+            for (String devServicesProp : devServicesProps.keySet()) {
+                sysPropRestore.put(devServicesProp, null); // used to signal that the property needs to be cleared
+            }
             TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
 
             testResourceManager = new TestResourceManager(requiredTestClass, quarkusTestProfile,

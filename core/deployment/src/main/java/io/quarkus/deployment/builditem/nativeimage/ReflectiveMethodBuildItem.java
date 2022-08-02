@@ -36,6 +36,23 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
         this.declaringClass = method.getDeclaringClass().getName();
     }
 
+    public ReflectiveMethodBuildItem(String declaringClass, String name,
+            String... params) {
+        this.declaringClass = declaringClass;
+        this.name = name;
+        this.params = params;
+    }
+
+    public ReflectiveMethodBuildItem(String declaringClass, String name,
+            Class<?>... params) {
+        this.declaringClass = declaringClass;
+        this.name = name;
+        this.params = new String[params.length];
+        for (int i = 0; i < params.length; ++i) {
+            this.params[i] = params[i].getName();
+        }
+    }
+
     public String getName() {
         return name;
     }

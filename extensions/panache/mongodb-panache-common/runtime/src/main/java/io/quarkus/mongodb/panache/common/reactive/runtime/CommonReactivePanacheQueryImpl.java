@@ -9,6 +9,7 @@ import org.bson.conversions.Bson;
 
 import com.mongodb.ReadPreference;
 import com.mongodb.client.model.Collation;
+import com.mongodb.client.model.CountOptions;
 
 import io.quarkus.mongodb.FindOptions;
 import io.quarkus.mongodb.panache.common.runtime.MongoPropertyUtil;
@@ -154,7 +155,14 @@ public class CommonReactivePanacheQueryImpl<Entity> {
     @SuppressWarnings("unchecked")
     public Uni<Long> count() {
         if (count == null) {
-            count = mongoQuery == null ? collection.countDocuments() : collection.countDocuments(mongoQuery);
+            CountOptions countOptions = new CountOptions();
+            if (collation != null) {
+                countOptions.collation(collation);
+            }
+
+            count = mongoQuery == null
+                    ? collection.countDocuments()
+                    : collection.countDocuments(mongoQuery, countOptions);
         }
         return count;
     }

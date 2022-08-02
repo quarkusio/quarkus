@@ -16,6 +16,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Collation;
+import com.mongodb.client.model.CountOptions;
 
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
@@ -157,7 +158,14 @@ public class CommonPanacheQueryImpl<Entity> {
     public long count() {
         if (count == null) {
             Bson query = getQuery();
-            count = clientSession == null ? collection.countDocuments(query) : collection.countDocuments(clientSession, query);
+            CountOptions countOptions = new CountOptions();
+            if (collation != null) {
+                countOptions.collation(collation);
+            }
+
+            count = clientSession == null
+                    ? collection.countDocuments(query, countOptions)
+                    : collection.countDocuments(clientSession, query, countOptions);
         }
         return count;
     }

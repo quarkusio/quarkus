@@ -18,7 +18,7 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.devtools.testing.WrapperRunner;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.IOException;

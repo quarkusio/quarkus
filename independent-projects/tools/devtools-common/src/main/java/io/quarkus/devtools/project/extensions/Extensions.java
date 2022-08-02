@@ -1,7 +1,7 @@
 package io.quarkus.devtools.project.extensions;
 
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.registry.catalog.Extension;
 import java.util.Collection;
 import java.util.Objects;
@@ -12,15 +12,15 @@ public final class Extensions {
     private Extensions() {
     }
 
-    public static ArtifactKey toKey(final Extension extension) {
-        return new ArtifactKey(extension.getArtifact().getGroupId(),
+    public static io.quarkus.maven.ArtifactKey toKey(final Extension extension) {
+        return new io.quarkus.maven.ArtifactKey(extension.getArtifact().getGroupId(),
                 extension.getArtifact().getArtifactId(),
                 extension.getArtifact().getClassifier(),
                 extension.getArtifact().getType());
     }
 
-    public static ArtifactKey toKey(final Dependency dependency) {
-        return new ArtifactKey(dependency.getGroupId(), dependency.getArtifactId(), dependency.getClassifier(),
+    public static io.quarkus.maven.ArtifactKey toKey(final Dependency dependency) {
+        return new io.quarkus.maven.ArtifactKey(dependency.getGroupId(), dependency.getArtifactId(), dependency.getClassifier(),
                 dependency.getType());
     }
 
@@ -28,8 +28,8 @@ public final class Extensions {
         return list.stream().filter(e -> Objects.equals(e.getArtifact().getKey(), key)).findFirst();
     }
 
-    public static ArtifactCoords toCoords(final ArtifactKey k, final String version) {
-        return new ArtifactCoords(k, version);
+    public static io.quarkus.maven.ArtifactCoords toCoords(final ArtifactKey k, final String version) {
+        return new io.quarkus.maven.ArtifactCoords(k.getGroupId(), k.getArtifactId(), k.getClassifier(), k.getType(), version);
     }
 
     @Deprecated
@@ -60,17 +60,19 @@ public final class Extensions {
         return e.getArtifact().getGroupId() + ":" + e.getArtifact().getArtifactId();
     }
 
-    public static ArtifactCoords stripVersion(final ArtifactCoords coords) {
+    public static io.quarkus.maven.ArtifactCoords stripVersion(final ArtifactCoords coords) {
         return overrideVersion(coords, null);
     }
 
-    public static ArtifactCoords overrideVersion(final ArtifactCoords coords, final String overrideVersion) {
-        return new ArtifactCoords(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType(),
+    public static io.quarkus.maven.ArtifactCoords overrideVersion(final ArtifactCoords coords, final String overrideVersion) {
+        return new io.quarkus.maven.ArtifactCoords(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(),
+                coords.getType(),
                 overrideVersion);
     }
 
-    public static ArtifactCoords toCoords(final Dependency d) {
-        return new ArtifactCoords(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion());
+    public static io.quarkus.maven.ArtifactCoords toCoords(final Dependency d) {
+        return new io.quarkus.maven.ArtifactCoords(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(),
+                d.getVersion());
     }
 
 }

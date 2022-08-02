@@ -163,6 +163,24 @@ public class ProgrammaticApiTest {
     }
 
     @Test
+    public void testCacheNullValue() throws Exception {
+        // with custom key
+        Object key = new Object();
+
+        try {
+            // when null is cached
+            cache.get(key, (k) -> null).await().indefinitely();
+
+            // assert
+            assertKeySetContains(key);
+            assertGetIfPresent(key, null);
+        } finally {
+            // invalidate to remove side effects in other tests
+            cache.invalidate(key).await().indefinitely();
+        }
+    }
+
+    @Test
     public void testExceptionInValueLoader() throws Exception {
         // with custom key and exception
         Object key = new Object();

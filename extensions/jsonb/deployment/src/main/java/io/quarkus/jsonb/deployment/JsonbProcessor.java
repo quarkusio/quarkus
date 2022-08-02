@@ -36,6 +36,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -57,6 +58,7 @@ public class JsonbProcessor {
 
     @BuildStep
     void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
@@ -87,6 +89,10 @@ public class JsonbProcessor {
         // register String constructors for reflection as they may not have been properly registered by default
         // see https://github.com/quarkusio/quarkus/issues/10873
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, "java.lang.String"));
+
+        // Necessary for Yasson versions using MethodHandles (2.0+)
+        reflectiveMethod.produce(new ReflectiveMethodBuildItem("jdk.internal.misc.Unsafe", "putReference", Object.class,
+                long.class, Object.class));
     }
 
     private void registerInstance(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, AnnotationInstance instance) {
@@ -182,5 +188,4 @@ public class JsonbProcessor {
             }
         }
     }
-
 }

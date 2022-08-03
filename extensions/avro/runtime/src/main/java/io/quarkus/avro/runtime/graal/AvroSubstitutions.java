@@ -1,8 +1,6 @@
 package io.quarkus.avro.runtime.graal;
 
 import java.lang.reflect.Constructor;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -11,6 +9,7 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.ResolvingDecoder;
 import org.apache.avro.util.WeakIdentityHashMap;
+import org.apache.avro.util.internal.ThreadLocalWithInitial;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
@@ -38,23 +37,33 @@ final class Target_org_apache_avro_generic_GenericDatumReader {
 
     @Alias
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FromAlias)
-    private static ThreadLocal<Map<Schema, Map<Schema, ResolvingDecoder>>> RESOLVER_CACHE = ThreadLocal.withInitial(
-            WeakIdentityHashMap::new);
+    private static ThreadLocal<Map<Schema, Map<Schema, ResolvingDecoder>>> RESOLVER_CACHE = ThreadLocalWithInitial
+            .of(WeakIdentityHashMap::new);
+
     @Alias
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
-    private Map<Schema, Class> stringClassCache;
-    @Alias
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
-    private Map<Class, Constructor> stringCtorCache;
+    private Target_org_apache_avro_generic_GenericDatumReader_ReaderCache readerCache;
 
     @Substitute
     protected Target_org_apache_avro_generic_GenericDatumReader(GenericData data) {
         this.fastDatumReader = null;
         this.creatorResolver = null;
-        this.stringClassCache = new IdentityHashMap();
-        this.stringCtorCache = new HashMap();
         this.data = data;
         this.creator = Thread.currentThread();
+        this.readerCache = new Target_org_apache_avro_generic_GenericDatumReader_ReaderCache(this::findStringClass);
+    }
+
+    @Alias
+    protected native Class findStringClass(Schema schema);
+
+}
+
+@TargetClass(className = "org.apache.avro.generic.GenericDatumReader", innerClass = "ReaderCache")
+final class Target_org_apache_avro_generic_GenericDatumReader_ReaderCache {
+    // Just provide access to "org.apache.avro.generic.GenericDatumReader.ReaderCache"
+
+    @Alias
+    public Target_org_apache_avro_generic_GenericDatumReader_ReaderCache(
+            @SuppressWarnings("unused") Function<Schema, Class> findStringClass) {
     }
 
 }

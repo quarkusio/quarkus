@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime.devconsole;
 
 import java.time.Duration;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -13,6 +14,7 @@ import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.quarkus.devconsole.runtime.spi.FlashScopeUtil;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfigPersistenceUnit;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -23,7 +25,12 @@ public class HibernateSearchDevConsoleRecorder {
 
     public Supplier<HibernateSearchSupplier.IndexedPersistenceUnits> infoSupplier(
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig, Set<String> persistenceUnitNames) {
-        return new HibernateSearchSupplier(runtimeConfig, persistenceUnitNames);
+        Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> puConfigs = runtimeConfig
+                .getAllPersistenceUnitConfigsAsMap();
+        Set<String> activePersistenceUnitNames = persistenceUnitNames.stream()
+                .filter(name -> puConfigs.get(name).active.orElse(true))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        return new HibernateSearchSupplier(activePersistenceUnitNames);
     }
 
     public Handler<RoutingContext> indexEntity() {

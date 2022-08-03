@@ -20,24 +20,18 @@ import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
-import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
 
 public class HibernateSearchSupplier implements Supplier<HibernateSearchSupplier.IndexedPersistenceUnits> {
 
-    private final HibernateSearchElasticsearchRuntimeConfig runtimeConfig;
-    private final Set<String> persistenceUnitNames;
+    private final Set<String> activePersistenceUnitNames;
 
-    HibernateSearchSupplier(HibernateSearchElasticsearchRuntimeConfig runtimeConfig, Set<String> persistenceUnitNames) {
-        this.runtimeConfig = runtimeConfig;
-        this.persistenceUnitNames = persistenceUnitNames;
+    HibernateSearchSupplier(Set<String> activePersistenceUnitNames) {
+        this.activePersistenceUnitNames = activePersistenceUnitNames;
     }
 
     @Override
     public IndexedPersistenceUnits get() {
-        if (!isActive()) {
-            return new IndexedPersistenceUnits();
-        }
-        Map<String, SearchMapping> mappings = searchMapping(persistenceUnitNames);
+        Map<String, SearchMapping> mappings = searchMapping(activePersistenceUnitNames);
         if (mappings.isEmpty()) {
             return new IndexedPersistenceUnits();
         }
@@ -50,10 +44,6 @@ public class HibernateSearchSupplier implements Supplier<HibernateSearchSupplier
                             left.addAll(right);
                             return left;
                         }));
-    }
-
-    private boolean isActive() {
-        return runtimeConfig.defaultPersistenceUnit.active.orElse(true);
     }
 
     public static Map<String, SearchMapping> searchMapping(Set<String> persistenceUnitNames) {

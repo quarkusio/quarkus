@@ -591,6 +591,43 @@ jobs:
             LICENSE.txt
           retention-days: 2
 
+  quickstarts-tests:
+    name: Quickstarts Compilation - JDK ${{matrix.java.name}}
+    runs-on: ${{matrix.java.os-name}}
+    needs: build-jdk11
+    # Skip main in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        java:
+          - {
+            name: "17",
+            java-version: 17,
+            os-name: "ubuntu-latest"
+          }
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v1
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzf maven-repo.tgz -C ~
+      - name: Set up JDK ${{ matrix.java.java-version }}
+        uses: actions/setup-java@v2
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java.java-version }}
+      - name: Compile Quickstarts
+        run: |
+          git clone https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
+          git checkout development
+          export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests
+
   tcks-test:
     name: MicroProfile TCKs Tests
     needs: [build-jdk11, calculate-test-jobs]

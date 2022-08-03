@@ -1,8 +1,71 @@
 # Jakarta migration
 
+## Testing
+
+To test the Jakarta work, there are two approaches:
+
+- Use the snapshots we publish nightly
+- Build the `jakarta-rewrite` branch yourself
+
+### Using snapshots
+
+First, you need to install locally some Narayana snapshots (this requirement will be dropped soon).
+From the root of a fresh Quarkus repository, run:
+
+```
+./jakarta/prepare.sh
+```
+
+Snapshots of the `jakarta-rewrite` branch containing the transformed artifacts are published nightly on https://s01.oss.sonatype.org/content/repositories/snapshots/ .
+
+Add the following snippet to your `pom.xml` to enable the s01 OSSRH snapshots repository:
+
+```xml
+<repositories>
+    <repository>
+        <name>s01 OSSRH Snapshots</name>
+        <id>s01-ossrh-snapshots-repo</id>
+        <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+        <layout>default</layout>
+        <releases>
+            <enabled>false</enabled>
+            <updatePolicy>always</updatePolicy>
+            <checksumPolicy>warn</checksumPolicy>
+        </releases>
+        <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>daily</updatePolicy>
+            <checksumPolicy>fail</checksumPolicy>
+        </snapshots>
+    </repository>
+</repositories>
+```
+
+The published artifacts have the `999-jakarta-SNAPSHOT` version so make sure to use this version in your projects.
+
+### Build locally
+
+First, you need to install locally some Narayana snapshots (this requirement will be dropped soon).
+From the root of a fresh Quarkus repository, run:
+
+```
+./jakarta/prepare.sh
+```
+
+Then you can build the `jakarta-rewrite` branch locally:
+
+```
+git checkout jakarta-rewrite
+./mvnw -Dquickly
+```
+
+The installed artifacts have the `999-jakarta-SNAPSHOT` version so make sure to use this version in your projects.
+
+## Transforming
+
 This directory contains scripts and configuration files to automate the migration to Jakarta EE 9 (for now) and hopefully Jakarta EE 10 soon.
 
-## jakarta/transform.sh
+### jakarta/transform.sh
 
 `jakarta/transform.sh` is the main script to run.
 It has to be run from the root of the Quarkus repository.
@@ -26,9 +89,9 @@ Note that this script also builds:
 - A patched version of the Rewrite Maven Plugin (to point to the patched OpenRewrite version)
 - A patched version of the Kotlin Maven Plugin (to allow skipping the `main` compilation, it's required for the OpenRewrite run)
 
-## Approach
+### Approach
 
-### OpenRewrite
+#### OpenRewrite
 
 The OpenRewrite transformation is done in one unique step to alleviate dependency issues we had before switching to this approach.
 You don't need to run OpenRewrite for the modules you add to `transform.sh`, you just need to adjust the configuration.
@@ -85,13 +148,13 @@ In particular, be extremely care with the `io.quarkus.jakarta-versions` recipe:
 - It shouldn't add any content that is not common to all these POM files (for instance, adding some new dependencies is forbidden as there is a good chance you don't want to add them in all the POM adjusted by `io.quarkus.jakarta-versions`)
 - If you need to go further than just updating versions, create a specific recipe such as `io.quarkus.jakarta-jaxrs-jaxb`
 
-### Eclipse Transformer
+#### Eclipse Transformer
 
 The transformer phase is done at a more granular level but, typically, for now we transform the whole `extensions` subdirectory at once.
 There's not much to say about this phase.
 AFAICS, it just works.
 
-## Experimenting
+### Experimenting
 
 It is recommended to do the experiments in a separate copy of the Quarkus repository and:
 
@@ -99,9 +162,9 @@ It is recommended to do the experiments in a separate copy of the Quarkus reposi
 - commit in this branch
 - then sync the branch and run the migration scripts in the separate `quarkus-jakarta` repository
 
-Note that the `transform.sh` script will remove all `999-SNAPSHOT` Quarkus artifacts that are in your local Maven repository.
-
 That way, you can easily reinitialize your `quarkus-jakarta` copy after having attempted a migration.
+
+Note that the `transform.sh` script replaces the `999-SNAPSHOT` version with `999-jakarta-SNAPSHOT` and will remove all `999-jakarta-SNAPSHOT` Quarkus artifacts that are in your local Maven repository.
 
 You can for instance use the following approach:
 

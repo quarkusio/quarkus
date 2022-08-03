@@ -148,7 +148,7 @@ public class BootstrapMavenContext {
         if (config.rootProjectDir == null) {
             final String topLevelBaseDirStr = PropertyUtils.getProperty(MAVEN_TOP_LEVEL_PROJECT_BASEDIR);
             if (topLevelBaseDirStr != null) {
-                final Path tmp = Paths.get(topLevelBaseDirStr);
+                final Path tmp = Path.of(topLevelBaseDirStr);
                 if (!Files.exists(tmp)) {
                     throw new BootstrapMavenException("Top-level project base directory " + topLevelBaseDirStr
                             + " specified with system property " + MAVEN_TOP_LEVEL_PROJECT_BASEDIR + " does not exist");

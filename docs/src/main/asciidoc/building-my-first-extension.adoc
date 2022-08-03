@@ -496,7 +496,7 @@ To do so, our extension will deploy, in the user application, a Servlet exposing
 
 The `runtime` module is where you develop the feature you want to propose to your users, so it's time to create our Web Servlet.
 
-To use Servlets in your applications you need to have a Servlet Container such as http://undertow.io[Undertow].
+To use Servlets in your applications you need to have a Servlet Container such as https://undertow.io[Undertow].
 Luckily, `quarkus-bom` imported by our parent `pom.xml` already includes the Undertow Quarkus extension.
 
 All we need to do is add `quarkus-undertow` as dependency to our `./greeting-extension/runtime/pom.xml`:
@@ -663,7 +663,7 @@ That's why the tests will be hosted in the `deployment` module.
 
 Quarkus proposes facilities to test extensions via the `quarkus-junit5-internal` artifact (which should already be in the deployment pom.xml), in particular the `io.quarkus.test.QuarkusUnitTest` runner which starts an application with your extension.
 
-We will use http://rest-assured.io[RestAssured] (massively used in Quarkus) to test our HTTP endpoint.
+We will use https://rest-assured.io[RestAssured] (massively used in Quarkus) to test our HTTP endpoint.
 Let's add the `rest-assured` dependency into the  `./greeting-extension/deployment/pom.xml`.
 
 [source, xml]

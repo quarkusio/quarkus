@@ -7,14 +7,14 @@ import javax.servlet.DispatcherType;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.micrometer.deployment.MicrometerProcessor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
@@ -35,13 +35,8 @@ public class HttpBinderProcessor {
     static final String RESTEASY_REACTIVE_CONTAINER_FILTER_CLASS_NAME = "io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderRestEasyReactiveContainerFilter";
     static final String UNDERTOW_SERVLET_FILTER_CLASS_NAME = "io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderUndertowServletFilter";
 
-    // Rest client listener SPI
-    private static final String REST_CLIENT_LISTENER_CLASS_NAME = "org.eclipse.microprofile.rest.client.spi.RestClientListener";
-    private static final Class<?> REST_CLIENT_LISTENER_CLASS = MicrometerRecorder
-            .getClassForName(REST_CLIENT_LISTENER_CLASS_NAME);
-
-    // Rest Client listener
-    private static final String REST_CLIENT_METRICS_LISTENER = "io.quarkus.micrometer.runtime.binder.RestClientMetricsListener";
+    private static final String REST_CLIENT_REQUEST_FILTER = "javax.ws.rs.client.ClientRequestFilter";
+    private static final String REST_CLIENT_METRICS_FILTER = "io.quarkus.micrometer.runtime.binder.RestClientMetricsFilter";
 
     static class HttpServerBinderEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
@@ -56,7 +51,7 @@ public class HttpBinderProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return REST_CLIENT_LISTENER_CLASS != null
+            return QuarkusClassLoader.isClassPresentAtRuntime(REST_CLIENT_REQUEST_FILTER)
                     && mConfig.checkBinderEnabledWithDefault(mConfig.binder.httpClient);
         }
     }
@@ -110,12 +105,10 @@ public class HttpBinderProcessor {
     }
 
     @BuildStep(onlyIf = HttpClientBinderEnabled.class)
-    void registerRestClientListener(BuildProducer<NativeImageResourceBuildItem> resource,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        resource.produce(new NativeImageResourceBuildItem(
-                "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
-        reflectiveClass
-                .produce(new ReflectiveClassBuildItem(true, true, REST_CLIENT_METRICS_LISTENER));
+    void registerProvider(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexed,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(REST_CLIENT_METRICS_FILTER));
+        additionalBeans.produce(new AdditionalBeanBuildItem(REST_CLIENT_METRICS_FILTER));
     }
 
     private void createAdditionalBean(BuildProducer<AdditionalBeanBuildItem> additionalBeans, String className) {

@@ -33,7 +33,7 @@ Quarkus applications that want to include extensions from a Quarkus platform wil
 [[platform-descriptor]]
 === Quarkus Platform Descriptor
 
-Quarkus platform descriptor is a JSON artifact that provides information about the platform and its extensions to the Quarkus tools. E.g. http://code.quarkus.io and the Quarkus command line tools consult this descriptor to list, add and remove extensions to/from the project on user's request.
+Quarkus platform descriptor is a JSON artifact that provides information about the platform and its extensions to the Quarkus tools. E.g. https://code.quarkus.io/ and the Quarkus command line tools consult this descriptor to list, add and remove extensions to/from the project on user's request.
 This artifact is also used as a Quarkus platform identifier. When Quarkus tools need to identify the Quarkus platform(s) used in the project, they will analyze the dependency version constraints of the project (the effective list of the managed dependencies from the `dependencyManagement` section in Maven terms) looking for the platform descriptor artifact(s) among them. Given that the platform descriptors are included into the Quarkus platform BOMs, every Quarkus application will inherit the platform descriptor artifact from the imported platform BOM(s) as a dependency version constraint (managed dependency in Maven terms).
 
 To be able to easily identify Quarkus platform descriptors among the project's dependency constraints, the platform descriptor Maven artifact coordinates should follow the following naming convention:

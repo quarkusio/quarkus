@@ -1,5 +1,5 @@
 // code originally coming from:
-// https://github.com/bmuschko/asciidocj-tabbed-code-extension
+// https://github.com/bmuschko/asciidoctorj-tabbed-code-extension
 // adapted to work with jQuery
 
 $(document).ready(function() {

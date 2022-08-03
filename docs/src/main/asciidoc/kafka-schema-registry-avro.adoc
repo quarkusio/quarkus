@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-This guide shows how your Quarkus application can use Apache Kafka, http://avro.apache.org/docs/current/[Avro] serialized
+This guide shows how your Quarkus application can use Apache Kafka, https://avro.apache.org/docs/current/[Avro] serialized
 records, and connect to a schema registry (such as the https://docs.confluent.io/platform/current/schema-registry/index.html[Confluent Schema Registry] or https://www.apicur.io/registry/[Apicurio Registry]).
 
 If you are not familiar with Kafka and Kafka in Quarkus in particular, consider
@@ -620,7 +620,7 @@ If we couldn't use Dev Services and wanted to start a Kafka broker and Apicurio 
 .build.gradle
 ----
 testImplementation("io.strimzi:strimzi-test-container:0.22.1") {
-    exclude group: "org.apache.logging.log4j", module: "log4j-core" 
+    exclude group: "org.apache.logging.log4j", module: "log4j-core"
 }
 ----
 
@@ -700,6 +700,6 @@ regular getter will be generated. Defaults to `false`
 
 == Further reading
 
-* link:https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/2.9/kafka/kafka.html[SmallRye Reactive Messaging Kafka] documentation
+* link:https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.4/kafka/kafka.html[SmallRye Reactive Messaging Kafka] documentation
 * link:https://quarkus.io/blog/kafka-avro/[How to Use Kafka, Schema Registry and Avro with Quarkus] - a blog post on which
 the guide is based. It gives a good introduction to Avro and the concept of schema registry

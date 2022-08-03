@@ -149,6 +149,9 @@ public class QuarkusIntegrationTestExtension
             Class<?> requiredTestClass = context.getRequiredTestClass();
 
             Map<String, String> sysPropRestore = getSysPropsToRestore();
+            for (String devServicesProp : devServicesProps.keySet()) {
+                sysPropRestore.put(devServicesProp, null); // used to signal that the property needs to be cleared
+            }
             TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
 
             testResourceManager = new TestResourceManager(requiredTestClass, quarkusTestProfile,
@@ -175,7 +178,8 @@ public class QuarkusIntegrationTestExtension
                     System.setProperty(i.getKey(), i.getValue());
                 }
             }
-            context.getStore(ExtensionContext.Namespace.GLOBAL).put(NativeTestExtension.class.getName() + ".systemProps",
+            context.getStore(ExtensionContext.Namespace.GLOBAL).put(
+                    QuarkusIntegrationTestExtension.class.getName() + ".systemProps",
                     new ExtensionContext.Store.CloseableResource() {
                         @Override
                         public void close() throws Throwable {

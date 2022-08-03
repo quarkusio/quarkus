@@ -2,6 +2,9 @@ package io.quarkus.smallrye.graphql.runtime.spi.datafetcher;
 
 import java.util.concurrent.Callable;
 
+import graphql.schema.DataFetchingEnvironment;
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.ManagedContext;
 import io.smallrye.graphql.schema.model.Execute;
 import io.smallrye.graphql.schema.model.Operation;
 import io.vertx.core.Context;
@@ -31,4 +34,14 @@ public class BlockingHelper {
         }, result);
     }
 
+    public static void reactivate(ManagedContext requestContext, DataFetchingEnvironment dfe) {
+        if (!requestContext.isActive()) {
+            Object maybeState = dfe.getGraphQlContext().getOrDefault("state", null);
+            if (maybeState != null) {
+                requestContext.activate((InjectableContext.ContextState) maybeState);
+            } else {
+                requestContext.activate();
+            }
+        }
+    }
 }

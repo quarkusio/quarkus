@@ -87,7 +87,12 @@ public class ToolsUtils {
 
     public static ExtensionCatalog resolvePlatformDescriptorDirectly(String bomGroupId, String bomArtifactId, String bomVersion,
             MavenArtifactResolver artifactResolver, MessageWriter log) {
-        // TODO remove this method once we have the registry service available
+        return resolvePlatformDescriptorDirectly(bomGroupId, bomArtifactId, bomVersion, artifactResolver, log, 1);
+    }
+
+    private static ExtensionCatalog resolvePlatformDescriptorDirectly(String bomGroupId, String bomArtifactId,
+            String bomVersion,
+            MavenArtifactResolver artifactResolver, MessageWriter log, int registryPreference) {
         if (bomVersion == null) {
             throw new IllegalArgumentException("BOM version was not provided");
         }
@@ -96,6 +101,7 @@ public class ToolsUtils {
                 (bomArtifactId == null ? ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID : bomArtifactId)
                         + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX,
                 bomVersion, "json", bomVersion);
+
         Path platformJson = null;
         try {
             log.debug("Resolving platform descriptor %s", catalogCoords);
@@ -160,7 +166,8 @@ public class ToolsUtils {
                             }
                         }
 
-                        final OriginPreference originPreference = new OriginPreference(1, 1, 1, ++memberIndex, 1);
+                        final OriginPreference originPreference = new OriginPreference(registryPreference, 1, 1, ++memberIndex,
+                                1);
                         Map<String, Object> metadata = new HashMap<>(memberCatalog.getMetadata());
                         metadata.put("origin-preference", originPreference);
                         ExtensionCatalog.Mutable mutableMemberCatalog = memberCatalog.mutable();
@@ -169,6 +176,20 @@ public class ToolsUtils {
                     }
                     catalog = CatalogMergeUtility.merge(catalogs);
                 }
+            }
+        }
+        if (catalog.getUpstreamQuarkusCoreVersion() != null
+                && !catalog.getUpstreamQuarkusCoreVersion().isBlank()
+                && !(bomVersion.equals(catalog.getUpstreamQuarkusCoreVersion())
+                        && catalogCoords.getGroupId().equals(ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID)
+                        && catalogCoords.getArtifactId().equals(ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID
+                                + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX))) {
+            try {
+                final ExtensionCatalog upstreamCatalog = resolvePlatformDescriptorDirectly(null, null,
+                        catalog.getUpstreamQuarkusCoreVersion(), artifactResolver, log, registryPreference + 1);
+                catalog = CatalogMergeUtility.merge(List.of(catalog, upstreamCatalog));
+            } catch (Exception e) {
+                log.warn(e.getLocalizedMessage());
             }
         }
         return catalog;

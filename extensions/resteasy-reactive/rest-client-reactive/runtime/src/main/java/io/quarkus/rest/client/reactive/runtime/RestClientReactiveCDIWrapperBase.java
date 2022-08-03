@@ -48,11 +48,13 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
     }
 
     @Override
+    @NoClassInterceptors
     public void setMock(Object mock) {
         this.mock = mock;
     }
 
     @Override
+    @NoClassInterceptors
     public void clearMock() {
         this.mock = null;
     }

@@ -537,7 +537,7 @@ JReleaser will perform the following tasks for us:
 * Upload assets to JFrog Artifactory or AWS S3. We also skip this step as it's not configured.
 * Create a Git release at the chosen repository, tagging it.
 * Upload all assets, including checksums.
-* Create a Homebrew formula, publishing to pass:[https://gitcom.com/aamiray/homebrew-tap].
+* Create a Homebrew formula, publishing to pass:[https://github.com/aalmiray/homebrew-tap].
 
 Of course no remote repository was affected as we can appreciate the `-Djreleaser.dryrun` property was in effect. If you're
 so inclined inspect the contents of `target/jreleaser/package/app/brew/Formula/app.rb` which defines the Homebrew formula

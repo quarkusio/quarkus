@@ -10,8 +10,11 @@ import org.hibernate.validator.BaseHibernateValidatorConfiguration;
  * {@link javax.validation.ValidatorFactory}.
  * <p>
  * Customizers are applied in the order of {@link javax.annotation.Priority}.
+ *
+ * @deprecated Implement {@link ValidatorFactoryCustomizer} instead.
  */
-public interface HibernateValidatorFactoryCustomizer {
+@Deprecated(forRemoval = true)
+public interface HibernateValidatorFactoryCustomizer extends ValidatorFactoryCustomizer {
 
     void customize(BaseHibernateValidatorConfiguration<?> configuration);
 }

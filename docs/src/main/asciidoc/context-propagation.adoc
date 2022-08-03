@@ -34,7 +34,7 @@ The solution is located in the `context-propagation-quickstart` {quickstarts-tre
 
 == Setting it up
 
-If you are using link:http://smallrye.io/smallrye-mutiny[Mutiny] (the `quarkus-mutiny` extension), you just need to add
+If you are using link:https://smallrye.io/smallrye-mutiny[Mutiny] (the `quarkus-mutiny` extension), you just need to add
 the `quarkus-smallrye-context-propagation` extension to enable context propagation.
 
 In other words, add the following dependencies to your build file:
@@ -186,7 +186,7 @@ The following configuration properties allow you to specify the default sets of 
 |`mp.context.ThreadContext.unchanged`
 |The comma-separated set of unchanged contexts
 |`None` (no context)
-|=== 
+|===
 
 The following contexts are available in Quarkus either out of the box, or depending on whether you include
 their extensions:
@@ -222,7 +222,7 @@ their extensions:
 |`Application`
 |https://javadoc.io/static/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.2/org/eclipse/microprofile/context/ThreadContext.html#APPLICATION[`ThreadContext.APPLICATION`]
 |The current `ThreadContextClassLoader`
-|=== 
+|===
 
 === Overriding the propagated contexts using annotations
 

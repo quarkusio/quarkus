@@ -9,7 +9,7 @@ else
 fi
 
 if [[ $BRANCH == "main" ]]; then
-  TARGET_GUIDES=target/web-site/_versions/main/guides
+  TARGET_GUIDES=target/web-site/_guides
   TARGET_CONFIG=target/web-site/_generated-config/latest
 else
   TARGET_GUIDES=target/web-site/_versions/${BRANCH}/guides
@@ -59,7 +59,7 @@ Run one of the following command to check the web site (if not done already):
   - you may need to add an environment variable if you are running rootless: -e JEKYLL_ROOTLESS=1
   - More: https://github.com/envygeeks/jekyll-docker/blob/master/README.md
 
-- For either docker/podman, you may want to add a volume to store built bundles:
+- For either Docker/Podman, you may want to add a volume to store built bundles:
       docker volume create quarkus-jekyll-bundles
   - Add the volume to the command: --volume quarkus-jekyll-bundles:/usr/local/bundle
 "

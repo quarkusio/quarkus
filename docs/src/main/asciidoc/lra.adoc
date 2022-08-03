@@ -17,7 +17,7 @@ retaining the option to compensate for any actions performed during the computat
 This kind of loose coupling of services bridges the gap between strong consistency models
 such as JTA/XA and "home-grown" ad hoc consistency solutions.
 
-The model is based on the https://github.com/eclipse/microprofile-lra/blob/master/spec/src/main/asciidoc/microprofile-lra-spec.adoc#eclipse-microprofile-lra[Eclipse MicroProfile LRA specification].
+The model is based on the https://github.com/eclipse/microprofile-lra/blob/master/spec/src/main/asciidoc/microprofile-lra-spec.asciidoc[Eclipse MicroProfile LRA specification].
 The approach is for the developer to annotate a business method with a Java annotation
 (https://download.eclipse.org/microprofile/microprofile-lra-1.0/apidocs/[`@LRA`]).
 When such a method is called, an LRA context is created (if one is not already present) which is passed
@@ -215,4 +215,4 @@ the method finishes and the `end = true` element on the confirmTrip method force
 (started by the bookTrip method) to be closed when the method finishes. Note that this
 end element can be placed on any JAX-RS resource (ie one service can start the LRA whilst
 a different service ends it). There are many more examples in the
-https://github.com/eclipse/microprofile-lra/blob/master/spec/src/main/asciidoc/microprofile-lra-spec.adoc#java-annotations[Microprofile LRA specification document] and in the https://github.com/eclipse/microprofile-lra/tree/master/tck/src/main/java/org/eclipse/microprofile/lra/tck[Microprofile LRA TCK].
+https://github.com/eclipse/microprofile-lra/blob/master/spec/src/main/asciidoc/microprofile-lra-spec.asciidoc#java-annotations-for-lras[Microprofile LRA specification document] and in the https://github.com/eclipse/microprofile-lra/tree/master/tck/src/main/java/org/eclipse/microprofile/lra/tck[Microprofile LRA TCK].

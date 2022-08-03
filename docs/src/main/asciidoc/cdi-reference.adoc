@@ -15,7 +15,7 @@ Quarkus DI solution (also called ArC) is based on the https://jakarta.ee/specifi
 However, it is not a full CDI implementation verified by the TCK.
 Only a subset of the CDI features is implemented - see also <<supported_features,the list of supported features>> and <<limitations,the list of limitations>>.
 
-TIP: If you're new to CDI then we recommend you to read the xref:cdi.adoc[Introduction to CDI] first. 
+TIP: If you're new to CDI then we recommend you to read the xref:cdi.adoc[Introduction to CDI] first.
 
 NOTE: Most of the existing CDI code should work just fine but there are some small differences which follow from the Quarkus architecture and goals.
 
@@ -37,7 +37,7 @@ The bean archive is synthesized from:
 Bean classes that don't have a https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#bean_defining_annotations[bean defining annotation, window="_blank"] are not discovered.
 This behavior is defined by CDI.
 But producer methods and fields and observer methods are discovered even if the declaring class is not annotated with a bean defining annotation (this behavior is different to what is defined in CDI).
-In fact, the declaring bean classes are considered annotated with `@Dependent`. 
+In fact, the declaring bean classes are considered annotated with `@Dependent`.
 
 NOTE: Quarkus extensions may declare additional discovery rules. For example, `@Scheduled` business methods are registered even if the declaring class is not annotated with a bean defining annotation.
 
@@ -108,7 +108,7 @@ The `quarkus.arc.exclude-types` property accepts a list of string values that ar
 |Value|Description
 |`org.acme.Foo`| Match the fully qualified name of the class
 |`org.acme.*`| Match classes with package `org.acme`
-|`org.acme.**`| Match classes where the package starts with `org.acme` 
+|`org.acme.**`| Match classes where the package starts with `org.acme`
 |`Bar`| Match the simple name of the class
 |===
 
@@ -122,7 +122,7 @@ quarkus.arc.exclude-types=org.acme.Foo,org.acme.*,Bar <1><2><3>
 <3> Exclude all types whose simple name is `Bar`
 
 It is also possible to exclude a dependency artifact that would be otherwise scanned for beans.
-For example, because it contains a `beans.xml` descriptor.  
+For example, because it contains a `beans.xml` descriptor.
 
 .Example application.properties
 [source,properties]
@@ -136,7 +136,7 @@ quarkus.arc.exclude-dependency.acme.artifact-id=acme-services <2>
 == Native Executables and Private Members
 
 Quarkus is using GraalVM to build a native executable.
-One of the limitations of GraalVM is the usage of https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/Limitations.md#reflection[Reflection, window="_blank"].
+One of the limitations of GraalVM is the usage of https://www.graalvm.org/22.2/reference-manual/native-image/Reflection/[Reflection, window="_blank"].
 Reflective operations are supported but all relevant members must be registered for reflection explicitly.
 Those registrations result in a bigger native executable.
 
@@ -154,7 +154,7 @@ public class CounterBean {
 
     @Inject
     CounterService counterService; <1>
-    
+
     void onMessage(@Observes Event msg) { <2>
     }
 }
@@ -190,7 +190,7 @@ public class CounterBean {
 ** Stereotypes
 * Dependency injection and lookup
 ** Field, constructor and initializer/setter injection
-** Type-safe resolution 
+** Type-safe resolution
 ** Programmatic lookup via `javax.enterprise.inject.Instance`
 ** Client proxies
 ** Injection point metadata
@@ -227,7 +227,7 @@ public class CounterBean {
 By default, CDI beans are created lazily, when needed.
 What exactly "needed" means depends on the scope of a bean.
 
-* A *normal scoped bean* (`@ApplicationScoped`, `@RequestScoped`, etc.) is needed when a method is invoked upon an injected instance (contextual reference per the specification). 
+* A *normal scoped bean* (`@ApplicationScoped`, `@RequestScoped`, etc.) is needed when a method is invoked upon an injected instance (contextual reference per the specification).
 +
 In other words, injecting a normal scoped bean will not suffice because a _client proxy_ is injected instead of a contextual instance of the bean.
 
@@ -255,10 +255,10 @@ public class PingResource {
 
   @Inject
   AmazingService s1; <1>
-  
+
   @Inject
   CoolService s2; <2>
-  
+
   @GET
   public String ping() {
     return s1.ping() + s2.ping(); <3>
@@ -266,7 +266,7 @@ public class PingResource {
 }
 ----
 <1> Injection triggers the instantiation of `AmazingService`.
-<2> Injection itself does not result in the instantiation of `CoolService`. A client proxy is injected. 
+<2> Injection itself does not result in the instantiation of `CoolService`. A client proxy is injected.
 <3> The first invocation upon the injected proxy triggers the instantiation of `CoolService`.
 
 [[startup_event]]
@@ -286,7 +286,7 @@ class CoolService {
 ----
 <1> A `CoolService` is created during startup to service the observer method invocation.
 
-* Use the bean in an observer of the `StartupEvent` - normal scoped beans must be used as described in <<lazy_by_default>>:    
+* Use the bean in an observer of the `StartupEvent` - normal scoped beans must be used as described in <<lazy_by_default>>:
 +
 [source,java]
 ----
@@ -405,7 +405,7 @@ In such cases, you'll notice a big warning in the log.
 Users and extension authors have several options <<eliminate_false_positives,how to eliminate false positives>>.
 
 The optimization can be disabled by setting `quarkus.arc.remove-unused-beans` to `none` or `false`.
-Quarkus also provides a middle ground where application beans are never removed whether or not they are unused, while the optimization proceeds normally for non application classes. 
+Quarkus also provides a middle ground where application beans are never removed whether or not they are unused, while the optimization proceeds normally for non application classes.
 To use this mode, set `quarkus.arc.remove-unused-beans` to `fwk` or `framework`.
 
 ==== What's Removed?
@@ -638,7 +638,7 @@ The priority declared via `@Priority` or `@AlternativePriority` is overridden.
 |Value|Description
 |`org.acme.Foo`| Match the fully qualified name of the bean class or the bean class of the bean that declares the producer
 |`org.acme.*`| Match beans where the package of the bean class is `org.acme`
-|`org.acme.**`| Match beans where the package of the bean class starts with `org.acme` 
+|`org.acme.**`| Match beans where the package of the bean class starts with `org.acme`
 |`Bar`| Match the simple name of the bean class or the bean class of the bean that declares the producer
 |===
 
@@ -651,7 +651,7 @@ quarkus.arc.selected-alternatives=org.acme.Foo,org.acme.*,Bar
 === Simplified Producer Method Declaration
 
 In CDI, a producer method must be always annotated with `@Produces`.
- 
+
 [source,java]
 ----
 class Producers {
@@ -684,11 +684,11 @@ class Producers {
 }
 ----
 
-=== Interception of Static Methods 
+=== Interception of Static Methods
 
 The Interceptors specification is clear that _around-invoke_ methods must not be declared static.
 However, this restriction was driven mostly by technical limitations.
-And since Quarkus is a build-time oriented stack that allows for additional class transformations, those limitations don't apply anymore. 
+And since Quarkus is a build-time oriented stack that allows for additional class transformations, those limitations don't apply anymore.
 It's possible to annotate a non-private static method with an interceptor binding:
 
 [source,java]
@@ -704,7 +704,7 @@ class Services {
 }
 ----
 <1> `Logged` is an interceptor binding.
-<2> Each method invocation is intercepted if there is an interceptor associated with `Logged`. 
+<2> Each method invocation is intercepted if there is an interceptor associated with `Logged`.
 
 ==== Limitations
 
@@ -727,7 +727,7 @@ Quarkus however, can overcome these limitations when `quarkus.arc.transform-unpr
 There is no standard concurrency control mechanism for CDI beans.
 Nevertheless, a bean instance can be shared and accessed concurrently from multiple threads.
 In that case it should be thread-safe.
-You can use standard Java constructs (`volatile`, `synchronized`, `ReadWriteLock`, etc.) or let the container control the concurrent access. 
+You can use standard Java constructs (`volatile`, `synchronized`, `ReadWriteLock`, etc.) or let the container control the concurrent access.
 Quarkus provides `@io.quarkus.arc.Lock` and a built-in interceptor for this interceptor binding.
 Each interceptor instance associated with a contextual instance of an intercepted bean holds a separate `ReadWriteLock` with non-fair ordering policy.
 
@@ -745,7 +745,7 @@ class SharedService {
   void addAmount(BigDecimal amount) {
     // ...changes some internal state of the bean
   }
-  
+
   @Lock(value = Lock.Type.READ, time = 1, unit = TimeUnit.SECONDS) <2> <3>
   BigDecimal getAmount() {
     // ...it is safe to read the value concurrently
@@ -753,7 +753,7 @@ class SharedService {
 }
 ----
 <1> `@Lock` (which maps to `@Lock(Lock.Type.WRITE)`) declared on the class instructs the container to lock the bean instance for any invocation of any business method, i.e. the client has "exclusive access" and no concurrent invocations will be allowed.
-<2> `@Lock(Lock.Type.READ)` overrides the value specified at class level. It means that any number of clients can invoke the method concurrently, unless the bean instance is locked by `@Lock(Lock.Type.WRITE)`. 
+<2> `@Lock(Lock.Type.READ)` overrides the value specified at class level. It means that any number of clients can invoke the method concurrently, unless the bean instance is locked by `@Lock(Lock.Type.WRITE)`.
 <3> You can also specify the "wait time". If it's not possible to acquire the lock in the given time a `LockException` is thrown.
 
 === Repeatable interceptor bindings
@@ -819,32 +819,32 @@ The result is computed on the first call and the same value is returned for all 
 [source,java]
 ----
 class Producer {
-     
+
   AtomicLong nextLong = new AtomicLong();
   AtomicInteger nextInt = new AtomicInteger();
- 
+
    @Dependent
-   @Produces 
+   @Produces
    Integer produceInt() {
      return nextInt.incrementAndGet();
    }
-     
+
    @Dependent
-   @Produces 
+   @Produces
    Long produceLong() {
      return nextLong.incrementAndGet();
    }
 }
 
 class Consumer {
-  
+
   @Inject
   Instance<Long> longInstance;
 
   @Inject
   @WithCaching
   Instance<Integer> intInstance;
-     
+
   // this method should always return true
   // Producer#produceInt() is only called once
   boolean pingInt() {
@@ -879,30 +879,30 @@ Alternatively, you can use the `@LookupIfProperty` and `@LookupUnlessProperty` a
  interface Service {
     String name();
  }
- 
+
  @LookupIfProperty(name = "service.foo.enabled", stringValue = "true")
  @ApplicationScoped
  class ServiceFoo implements Service {
- 
+
     public String name() {
        return "foo";
     }
  }
- 
+
  @ApplicationScoped
  class ServiceBar implements Service {
- 
+
     public String name() {
        return "bar";
     }
  }
- 
+
  @ApplicationScoped
  class Client {
- 
+
     @Inject
     Instance<Service> service;
-    
+
     void printServiceName() {
        // This will print "bar" if the property "service.foo.enabled" is NOT set to "true"
        // If "service.foo.enabled" is set to "true" then service.get() would result in an AmbiguousResolutionException
@@ -946,7 +946,7 @@ public class Processor {
      @Inject
      @All
      List<InstanceHandle<Service>> services;
-     
+
      public void doSomething() {
        for (InstanceHandle<Service> handle : services) {
          if (handle.getBean().getScope().equals(Dependent.class)) {

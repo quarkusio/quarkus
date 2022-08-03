@@ -160,14 +160,15 @@ final class Methods {
                 bytecodeTransformerConsumer, transformUnproxyableClasses,
                 new SubclassSkipPredicate(beanDeployment.getAssignabilityCheck()::isAssignableFrom,
                         beanDeployment.getBeanArchiveIndex()),
-                false);
+                false, new HashSet<>());
     }
 
-    static Set<MethodInfo> addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo,
+    private static Set<MethodInfo> addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo,
             ClassInfo originalClassInfo,
             Map<MethodKey, Set<AnnotationInstance>> candidates,
             Set<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
-            boolean transformUnproxyableClasses, SubclassSkipPredicate skipPredicate, boolean ignoreMethodLevelBindings) {
+            boolean transformUnproxyableClasses, SubclassSkipPredicate skipPredicate, boolean ignoreMethodLevelBindings,
+            Set<MethodKey> noClassInterceptorsMethods) {
 
         Set<NameAndDescriptor> methodsFromWhichToRemoveFinal = new HashSet<>();
         Set<MethodInfo> finalMethodsFoundAndNotChanged = new HashSet<>();
@@ -175,7 +176,7 @@ final class Methods {
 
         for (MethodInfo method : classInfo.methods()) {
             Set<AnnotationInstance> merged = mergeBindings(beanDeployment, originalClassInfo, classLevelBindings,
-                    ignoreMethodLevelBindings, method);
+                    ignoreMethodLevelBindings, method, noClassInterceptorsMethods);
             if (merged.isEmpty() || skipPredicate.test(method)) {
                 continue;
             }
@@ -206,7 +207,7 @@ final class Methods {
                 finalMethodsFoundAndNotChanged
                         .addAll(addInterceptedMethodCandidates(beanDeployment, superClassInfo, classInfo, candidates,
                                 classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses, skipPredicate,
-                                ignoreMethodLevelBindings));
+                                ignoreMethodLevelBindings, noClassInterceptorsMethods));
             }
         }
 
@@ -216,16 +217,33 @@ final class Methods {
                 //interfaces can't have final methods
                 addInterceptedMethodCandidates(beanDeployment, interfaceInfo, originalClassInfo, candidates,
                         classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses,
-                        skipPredicate, true);
+                        skipPredicate, true, noClassInterceptorsMethods);
             }
         }
         return finalMethodsFoundAndNotChanged;
     }
 
     private static Set<AnnotationInstance> mergeBindings(BeanDeployment beanDeployment, ClassInfo classInfo,
-            Set<AnnotationInstance> classLevelBindings, boolean ignoreMethodLevelBindings, MethodInfo method) {
+            Set<AnnotationInstance> classLevelBindings, boolean ignoreMethodLevelBindings, MethodInfo method,
+            Set<MethodKey> noClassInterceptorsMethods) {
 
-        if (beanDeployment.getAnnotation(method, DotNames.NO_CLASS_INTERCEPTORS) != null) {
+        MethodKey key = new MethodKey(method);
+        if (beanDeployment.getAnnotation(method, DotNames.NO_CLASS_INTERCEPTORS) != null
+                || noClassInterceptorsMethods.contains(key)) {
+            // The set of methods with `@NoClassInterceptors` is shared in the traversal of class hierarchy, so once
+            // a method with the annotation is found, all subsequent occurences of the "same" method are treated
+            // as if they also had it. Given that we traverse classes bottom-up, this works as expected: presence
+            // of `@NoClassInterceptors` on subclass overrides absence on superclass, and absence on subclass overrides
+            // presence on superclass. We process interfaces after all superclasses, so presence/absence on a class
+            // overrides absence/presence on a `default` method inherited from an interface. That is also expected.
+            // (Note that we apply class-level interceptors to `default` methods, as an extension to the specification,
+            // so we have to care.) However, due to recursive nature of the traversal, interfaces implemented by
+            // superclasses are processed _before_ interfaces implemented by subclasses. This still leads to expected
+            // behavior when a `default` method declares `@NoClassInterceptors` and is inherited only once, because
+            // inheritance chain of each interface is also processed bottom-up. However, if a `default` method from
+            // an interface is inherited multiple times, `@NoClassInterceptors` declared on that method may behave
+            // weirdly. This is enough of a corner case that we'll leave it and solve it when it becomes problematic.
+            noClassInterceptorsMethods.add(key);
             classLevelBindings = Set.of();
         }
 
@@ -320,7 +338,7 @@ final class Methods {
         final String name;
         final List<DotName> params;
         final DotName returnType;
-        final MethodInfo method;
+        final MethodInfo method; // this is intentionally ignored for equals/hashCode
 
         public MethodKey(MethodInfo method) {
             this.method = Objects.requireNonNull(method, "Method must not be null");

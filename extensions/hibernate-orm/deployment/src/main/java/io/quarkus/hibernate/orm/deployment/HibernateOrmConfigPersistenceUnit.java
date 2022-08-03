@@ -210,7 +210,8 @@ public class HibernateOrmConfigPersistenceUnit {
 
     /**
      * Defines the method for multi-tenancy (DATABASE, NONE, SCHEMA). The complete list of allowed values is available in the
-     * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/MultiTenancyStrategy.html[Hibernate ORM JavaDoc].
+     * https://javadoc.io/doc/org.hibernate/hibernate-core/5.6.10.Final/org/hibernate/MultiTenancyStrategy.html[Hibernate ORM
+     * JavaDoc].
      * The type DISCRIMINATOR is currently not supported. The default value is NONE (no multi-tenancy).
      *
      * @asciidoclet

@@ -155,13 +155,13 @@ public class ClientCallingResource {
         });
 
         router.route("/call-with-fault-tolerance-on-interface").blockingHandler(rc -> {
-            String exception = "";
+            String result = "";
             try {
-                faultToleranceOnInterfaceClient.hello();
+                result = faultToleranceOnInterfaceClient.hello();
             } catch (Exception e) {
-                exception = e.getClass().getSimpleName();
+                result = e.getClass().getSimpleName();
             }
-            rc.end(exception);
+            rc.end(result);
         });
 
         router.get("/with%20space").handler(rc -> rc.response().setStatusCode(200).end());

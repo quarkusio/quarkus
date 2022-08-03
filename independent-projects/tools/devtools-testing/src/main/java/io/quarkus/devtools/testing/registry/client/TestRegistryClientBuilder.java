@@ -56,6 +56,7 @@ public class TestRegistryClientBuilder {
     private List<Extension> externalExtensions = List.of();
     private List<TestCodestartBuilder> externalCodestartBuilders = List.of();
     private MavenArtifactResolver resolver;
+    private boolean persistPlatformDescriptorsAsMavenArtifacts;
 
     public static TestRegistryClientBuilder newInstance() {
         return new TestRegistryClientBuilder();
@@ -71,6 +72,11 @@ public class TestRegistryClientBuilder {
 
     public TestRegistryClientBuilder debug() {
         this.config.setDebug(true);
+        return this;
+    }
+
+    public TestRegistryClientBuilder persistPlatformDescriptorsAsMavenArtifacts() {
+        this.persistPlatformDescriptorsAsMavenArtifacts = true;
         return this;
     }
 
@@ -766,7 +772,7 @@ public class TestRegistryClientBuilder {
                 registry().clientBuilder().getResolver().install(new DefaultArtifact(
                         coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType(),
                         coords.getVersion(),
-                        Collections.emptyMap(), path.toFile()));
+                        Map.of(), path.toFile()));
             } catch (BootstrapMavenException e) {
                 throw new IllegalStateException("Failed to install " + path + " as " + coords, e);
             }
@@ -780,6 +786,10 @@ public class TestRegistryClientBuilder {
                 extensions.persist(json);
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to persist extension catalog " + json, e);
+            }
+
+            if (registry().clientBuilder().persistPlatformDescriptorsAsMavenArtifacts) {
+                install(PlatformArtifacts.ensureCatalogArtifact(bom), json);
             }
 
             Path artifactPath = registry().clientBuilder().getTmpPath(bom);

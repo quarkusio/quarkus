@@ -32,7 +32,7 @@ You observe them (_subscription_) and you get notified when they emit an item, a
 When you (the subscriber) receive the event, you can process it (e.g., transform it, filter it).
 With Mutiny, you are going to write code like _onX().action()_, which reads as “on item X do action”.
 
-If you want to know more about Mutiny, and the concepts behind it, check https://smallrye.io/smallrye-mutiny/pages/philosophy[the Mutiny Philosophy].
+If you want to know more about Mutiny, and the concepts behind it, check https://smallrye.io/smallrye-mutiny/latest/reference/why-is-asynchronous-important[the Mutiny Reference documentation].
 
 == Mutiny in Quarkus
 
@@ -198,7 +198,7 @@ As we have seen in the previous section, it could indicate the successful insert
 
 Transforming an item is done using: `onItem().transform(item -> ....)`.
 
-More details about transformation can be found in the https://smallrye.io/smallrye-mutiny/getting-started/transforming-items[Mutiny documentation].
+More details about transformation can be found in the https://smallrye.io/smallrye-mutiny/latest/tutorials/transforming-items/[Mutiny documentation].
 
 === Sequential composition
 
@@ -212,7 +212,7 @@ uni1
 .onItem().transformtoUni(item -> anotherAsynchronousAction(item));
 ----
 
-More details about asynchronous transformation can be found in the https://smallrye.io/smallrye-mutiny/getting-started/transforming-items-async[Mutiny documentation].
+More details about asynchronous transformation can be found in the https://smallrye.io/smallrye-mutiny/latest/tutorials/transforming-items-asynchronously/[Mutiny documentation].
 
 === Failure handling
 
@@ -236,7 +236,7 @@ uni1
 .onFailure().retry().atMost(5);
 ----
 
-More info about failure recovery can be found on https://smallrye.io/smallrye-mutiny/getting-started/handling-failures[the handling failure documentation] and https://smallrye.io/smallrye-mutiny/getting-started/retry[the retry documentation].
+More info about failure recovery can be found on https://smallrye.io/smallrye-mutiny/latest/tutorials/handling-failures/[the handling failure documentation] and https://smallrye.io/smallrye-mutiny/latest/tutorials/retrying/[the retrying on failures documentation].
 
 == Events and Actions
 
@@ -256,7 +256,7 @@ The following tables list the events that you can receive for Uni and Multi. Eac
 |Cancellation, Request
 |===
 
-Check the full list of events on https://smallrye.io/smallrye-mutiny/getting-started/observing-events[the event documentation].
+Check the full list of events on https://smallrye.io/smallrye-mutiny/latest/tutorials/observing-events/[the event documentation].
 
 |===
 | Action |API |Comment
@@ -277,9 +277,9 @@ Head over to the https://smallrye.io/smallrye-mutiny[Mutiny documentation] to se
 
 Some frequently asked guides are the following:
 
-1. merge vs. concatenation - https://smallrye.io/smallrye-mutiny/guides/merge-concat
-2. controlling the emission thread - https://smallrye.io/smallrye-mutiny/guides/emit-subscription
-3. explicit blocking  - https://smallrye.io/smallrye-mutiny/guides/imperative-to-reactive
+1. merge vs. concatenation - https://smallrye.io/smallrye-mutiny/latest/guides/merging-and-concatenating-streams/
+2. controlling the emission thread - https://smallrye.io/smallrye-mutiny/latest/guides/emit-on-vs-run-subscription-on/
+3. explicit blocking  - https://smallrye.io/smallrye-mutiny/latest/guides/imperative-to-reactive/
 
 == Shortcuts
 
@@ -357,7 +357,7 @@ Mutiny exposes hooks that allow Quarkus and Mutiny to be closely integrated:
 * The default Mutiny thread pool is the Quarkus worker thread pool;
 * Context Propagation is enabled by default when using Mutiny Uni and Multi
 
-More details about the infrastructure integration can be found on https://smallrye.io/smallrye-mutiny/guides/infrastructure.
+More details about the infrastructure integration can be found on https://smallrye.io/smallrye-mutiny/latest/guides/framework-integration/.
 
 
 

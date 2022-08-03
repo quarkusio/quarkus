@@ -180,4 +180,11 @@ public final class FlywayDataSourceRuntimeConfig {
      */
     @ConfigItem
     public Optional<String> initSql = Optional.empty();
+
+    /**
+     * Whether to validate migrations and callbacks whose scripts do not obey the correct naming convention. A failure can be
+     * useful to check that errors such as case sensitivity in migration prefixes have been corrected.
+     */
+    @ConfigItem
+    public boolean validateMigrationNaming;
 }

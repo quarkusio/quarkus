@@ -12,6 +12,7 @@ import javax.json.JsonReader;
 import javax.json.JsonReaderFactory;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -30,7 +31,8 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
     private final CurrentIdentityAssociation currentIdentityAssociation;
     private final CurrentVertxRequest currentVertxRequest;
     private final ManagedContext currentManagedContext;
-    private final Handler currentManagedContextTerminationHandler;
+    private final Handler<Void> currentManagedContextTerminationHandler;
+    private final Handler<Throwable> currentManagedContextExceptionHandler;
     private final boolean runBlocking;
 
     private volatile ExecutionService executionService;
@@ -46,12 +48,16 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
         this.currentVertxRequest = currentVertxRequest;
         this.currentManagedContext = Arc.container().requestContext();
         this.runBlocking = runBlocking;
-        this.currentManagedContextTerminationHandler = new Handler() {
+        this.currentManagedContextTerminationHandler = createCurrentManagedContextTerminationHandler();
+        this.currentManagedContextExceptionHandler = createCurrentManagedContextTerminationHandler();
+    }
+
+    private <T> Handler<T> createCurrentManagedContextTerminationHandler() {
+        return new Handler<>() {
             @Override
             public void handle(Object e) {
                 currentManagedContext.terminate();
             }
-
         };
     }
 
@@ -60,13 +66,14 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
 
         ctx.response()
                 .endHandler(currentManagedContextTerminationHandler)
-                .exceptionHandler(currentManagedContextTerminationHandler)
+                .exceptionHandler(currentManagedContextExceptionHandler)
                 .closeHandler(currentManagedContextTerminationHandler);
         if (!currentManagedContext.isActive()) {
             currentManagedContext.activate();
         }
         try {
             handleWithIdentity(ctx);
+            currentManagedContext.deactivate();
         } catch (Throwable t) {
             currentManagedContext.terminate();
             throw t;
@@ -108,6 +115,8 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
         Map<String, Object> metaData = new ConcurrentHashMap<>();
         metaData.put("runBlocking", runBlocking);
         metaData.put("httpHeaders", getHeaders(ctx));
+        InjectableContext.ContextState state = currentManagedContext.getState();
+        metaData.put("state", state);
         return metaData;
     }
 

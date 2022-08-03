@@ -79,11 +79,11 @@ public class ArcContextProvider implements ThreadContextProvider {
                 // context active, store current state, start blank context anew and restore state afterwards
                 // it is not necessary to deactivate the context first - just overwrite the previous state
                 requestContext.activate();
-                return new RestoreContextController(requestContext, toRestore);
+                return new RestoreContextController(requestContext, toRestore, true);
             } else {
-                // context not active, activate blank one, deactivate afterwards
+                // context not active, activate blank one, terminate afterwards
                 requestContext.activate();
-                return requestContext::deactivate;
+                return requestContext::terminate;
             }
         }
     }
@@ -158,14 +158,24 @@ public class ArcContextProvider implements ThreadContextProvider {
 
         private final ManagedContext requestContext;
         private final InjectableContext.ContextState stateToRestore;
+        private final boolean destroyRequestContext;
 
         RestoreContextController(ManagedContext requestContext, ContextState stateToRestore) {
+            this(requestContext, stateToRestore, false);
+        }
+
+        // in case of ClearContextSnapshot, we want to destroy instances of the intermediate context
+        RestoreContextController(ManagedContext requestContext, ContextState stateToRestore, boolean destroyRequestContext) {
             this.requestContext = requestContext;
             this.stateToRestore = stateToRestore;
+            this.destroyRequestContext = destroyRequestContext;
         }
 
         @Override
         public void endContext() throws IllegalStateException {
+            if (destroyRequestContext) {
+                requestContext.destroy();
+            }
             // it is not necessary to deactivate the context first - just overwrite the previous state
             requestContext.activate(stateToRestore.isValid() ? stateToRestore : null);
         }

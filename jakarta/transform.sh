@@ -192,6 +192,8 @@ set_property () {
 clean_maven_repository
 # Note for future me: we cannot use ./mvnw clean here
 clean_project
+
+# TODO REMOVE FOR FINAL VERSION
 ./update-version.sh 999-jakarta-SNAPSHOT
 
 ## let's build what's required to be able to run the rewrite
@@ -294,6 +296,7 @@ sed -i 's/javax.ws.rs.core.Application/jakarta.ws.rs.core.Application/g' integra
 sed -i 's/javax.inject.Singleton/jakarta.inject.Singleton/g' integration-tests/main/src/main/resources/application.properties
 sed -i 's@<excludedArtifact>jakarta.xml.bind:jakarta.xml.bind-api</excludedArtifact>@<excludedArtifact>org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec</excludedArtifact>@g' extensions/jaxb/runtime/pom.xml
 rm extensions/resteasy-classic/resteasy-common/runtime/src/main/java/io/quarkus/resteasy/common/runtime/graal/{Target_org_jboss_resteasy_microprofile_config_FilterConfigSource.java,Target_org_jboss_resteasy_microprofile_config_ServletConfigSource.java,Target_org_jboss_resteasy_microprofile_config_ServletContextConfigSource.java,ServletMissing.java}
+sed -i 's@<quarkus.rest-client-reactive.scope>javax.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>@<quarkus.rest-client-reactive.scope>jakarta.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>@g' tcks/microprofile-rest-client-reactive/pom.xml
 
 transform_documentation
 sed -i 's@javax/ws/rs@jakarta/ws/rs@g' docs/src/main/asciidoc/resteasy-reactive.adoc

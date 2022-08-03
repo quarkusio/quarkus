@@ -12,4 +12,48 @@ public class NumberTemplateExtensions {
         return number % mod;
     }
 
+    // addition
+
+    @TemplateExtension(matchNames = { "plus", "+" })
+    static Integer addToInt(Integer number, String name, Integer other) {
+        return number + other;
+    }
+
+    @TemplateExtension(matchNames = { "plus", "+" })
+    static Long addToInt(Integer number, String name, Long other) {
+        return number + other;
+    }
+
+    @TemplateExtension(matchNames = { "plus", "+" })
+    static Long addToLong(Long number, String name, Integer other) {
+        return number + other;
+    }
+
+    @TemplateExtension(matchNames = { "plus", "+" })
+    static Long addToLong(Long number, String name, Long other) {
+        return number + other;
+    }
+
+    // subtraction
+
+    @TemplateExtension(matchNames = { "minus", "-" })
+    static Integer subtractFromInt(Integer number, String name, Integer other) {
+        return number - other;
+    }
+
+    @TemplateExtension(matchNames = { "minus", "-" })
+    static Long subtractFromInt(Integer number, String name, Long other) {
+        return number - other;
+    }
+
+    @TemplateExtension(matchNames = { "minus", "-" })
+    static Long subtractFromLong(Long number, String name, Integer other) {
+        return number - other;
+    }
+
+    @TemplateExtension(matchNames = { "minus", "-" })
+    static Long subtractFromLong(Long number, String name, Long other) {
+        return number - other;
+    }
+
 }

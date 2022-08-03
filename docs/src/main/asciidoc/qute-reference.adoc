@@ -1754,17 +1754,25 @@ TIP: A map value can be also accessed directly: `{map.myKey}`. Use the bracket n
 
 TIP: A list element can be accessed directly via an index: `{list.10}` or even `{list[10]}`.
 
-===== Numbers
+===== Integer Numbers
 
 * `mod`: Modulo operation
 ** `{#if counter.mod(5) == 0}`
+* `plus` or `+`: Addition
+** `{counter + 1}`
+** `{age plus 10}`
+** `{age.plus(10)}`
+* `minus` or `-`: Subtraction
+** `{counter - 1}`
+** `{age minus 10}`
+** `{age.minus(10)}`
 
 ===== Strings
 
-* `fmt` or `format`: format the string instance via `java.lang.String.format()`
+* `fmt` or `format`: Formats the string instance via `java.lang.String.format()`
 ** `{myStr.fmt("arg1","arg2")}`
 ** `{myStr.format(locale,arg1)}`
-* `str:fmt` or `str:format`: format the supplied string value via `java.lang.String.format()`
+* `str:fmt` or `str:format`: Formats the supplied string value via `java.lang.String.format()`
 ** `{str:format("Hello %s!",name)}`
 ** `{str:fmt(locale,'%tA',now)}`
 

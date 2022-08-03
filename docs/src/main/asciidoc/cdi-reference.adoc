@@ -44,7 +44,7 @@ NOTE: Quarkus extensions may declare additional discovery rules. For example, `@
 === How to Generate a Jandex Index
 
 A dependency with a Jandex index is automatically scanned for beans.
-To generate the index just add the following plugin to your build file :
+To generate the index just add the following plugin to your build file:
 
 [role="primary asciidoc-tabs-sync-maven"]
 .Maven

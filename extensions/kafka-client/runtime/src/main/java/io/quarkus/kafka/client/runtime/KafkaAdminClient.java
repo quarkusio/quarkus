@@ -1,12 +1,8 @@
 package io.quarkus.kafka.client.runtime;
 
-import io.quarkus.kafka.client.runtime.ui.model.request.KafkaCreateTopicRequest;
-import io.smallrye.common.annotation.Identifier;
-import org.apache.kafka.clients.admin.*;
-import org.apache.kafka.common.acl.AccessControlEntryFilter;
-import org.apache.kafka.common.acl.AclBinding;
-import org.apache.kafka.common.acl.AclBindingFilter;
-import org.apache.kafka.common.resource.ResourcePatternFilter;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -52,6 +48,14 @@ public class KafkaAdminClient {
         return client.listTopics().listings().get();
     }
 
+    public Collection<ConsumerGroupDescription> getConsumerGroups() throws InterruptedException, ExecutionException {
+        var consumerGroupIds = client.listConsumerGroups().all().get().stream()
+                .map(ConsumerGroupListing::groupId)
+                .collect(Collectors.toList());
+        return client.describeConsumerGroups(consumerGroupIds).all().get()
+                .values();
+    }
+
     public boolean deleteTopic(String name) {
         Collection<String> topics = new ArrayList<>();
         topics.add(name);
@@ -66,6 +70,10 @@ public class KafkaAdminClient {
 
         CreateTopicsResult ctr = client.createTopics(List.of(newTopic));
         return ctr.values() != null;
+    }
+
+    public ListConsumerGroupOffsetsResult listConsumerGroupOffsets(String groupId) {
+        return client.listConsumerGroupOffsets(groupId);
     }
 
     public Collection<AclBinding> getAclInfo() throws InterruptedException, ExecutionException {

@@ -6,14 +6,17 @@ public class KafkaInfo {
     private String broker;
     private KafkaClusterInfo clusterInfo;
     private List<KafkaTopic> topics;
+    private List<KafkaConsumerGroup> consumerGroups;
 
     public KafkaInfo() {
     }
 
-    public KafkaInfo(String broker, KafkaClusterInfo clusterInfo, List<KafkaTopic> topics) {
+    public KafkaInfo(String broker, KafkaClusterInfo clusterInfo, List<KafkaTopic> topics,
+            List<KafkaConsumerGroup> consumerGroups) {
         this.broker = broker;
         this.clusterInfo = clusterInfo;
         this.topics = topics;
+        this.consumerGroups = consumerGroups;
     }
 
     public String getBroker() {
@@ -28,4 +31,7 @@ public class KafkaInfo {
         return clusterInfo;
     }
 
+    public List<KafkaConsumerGroup> getConsumerGroups() {
+        return consumerGroups;
+    }
 }

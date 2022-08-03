@@ -5,15 +5,17 @@ public class KafkaTopic {
     private String topicId;
     private int partitionsCount;
     private boolean internal;
+    private long nmsg = 0;
 
     public KafkaTopic() {
     }
 
-    public KafkaTopic(String name, String topicId, int partitionsCount, boolean internal) {
+    public KafkaTopic(String name, String topicId, int partitionsCount, boolean internal, long nmsg) {
         this.name = name;
         this.topicId = topicId;
         this.partitionsCount = partitionsCount;
         this.internal = internal;
+        this.nmsg = nmsg;
     }
 
     public String getName() {
@@ -30,6 +32,10 @@ public class KafkaTopic {
 
     public boolean isInternal() {
         return internal;
+    }
+
+    public long getNmsg() {
+        return nmsg;
     }
 
     public String toString() {

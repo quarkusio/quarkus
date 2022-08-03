@@ -10,6 +10,9 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.Arc;
 import io.quarkus.kafka.client.runtime.KafkaAdminClient;
 import io.quarkus.kafka.client.runtime.ui.model.request.KafkaCreateTopicRequest;
+import io.quarkus.kafka.client.runtime.ui.model.request.KafkaMessageCreateRequest;
+import io.quarkus.kafka.client.runtime.ui.model.request.KafkaMessagesRequest;
+import io.quarkus.kafka.client.runtime.ui.model.request.KafkaOffsetRequest;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.core.http.HttpServerRequest;
@@ -64,6 +67,27 @@ public class KafkaUiHandler extends AbstractHttpRequestHandler {
                         break;
                     case "getTopics":
                         message = webUtils.toJson(webUtils.getTopics());
+                        res = true;
+                        break;
+                    case "topicMessages":
+                        var msgRequest = event.body().asPojo(KafkaMessagesRequest.class);
+                        message = webUtils.toJson(webUtils.getMessages(msgRequest));
+                        res = true;
+                        break;
+                    case "getOffset":
+                        var request = event.body().asPojo(KafkaOffsetRequest.class);
+                        message = webUtils.toJson(webUtils.getOffset(request));
+                        res = true;
+                        break;
+                    case "createMessage":
+                        var rq = event.body().asPojo(KafkaMessageCreateRequest.class);
+                        webUtils.createMessage(rq);
+                        message = "{}";
+                        res = true;
+                        break;
+                    case "getPartitions":
+                        var topicName = body.getString("topicName");
+                        message = webUtils.toJson(webUtils.partitions(topicName));
                         res = true;
                         break;
                     default:

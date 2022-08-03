@@ -83,10 +83,12 @@ public class HibernateSearchElasticsearchRecorder {
                 String enabledPropertyKey = HibernateSearchElasticsearchRuntimeConfig.extensionPropertyKey("enabled");
                 String activePropertyKey = HibernateSearchElasticsearchRuntimeConfig.mapperPropertyKey(puName, "active");
                 throw new ConfigurationException(
-                        "Hibernate Search activated explicitly, but Hibernate Search was disabled at build time."
-                                + " If you want Hibernate Search to be active at runtime, you must set '" + enabledPropertyKey
+                        "Hibernate Search activated explicitly for persistence unit '" + puName
+                                + "', but the Hibernate Search extension was disabled at build time."
+                                + " If you want Hibernate Search to be active for this persistence unit, you must set '"
+                                + enabledPropertyKey
                                 + "' to 'true' at build time."
-                                + " If you don't want Hibernate Search to be active at runtime, you must leave '"
+                                + " If you don't want Hibernate Search to be active for this persistence unit, you must leave '"
                                 + activePropertyKey
                                 + "' unset or set it to 'false'.",
                         Set.of(enabledPropertyKey, activePropertyKey));

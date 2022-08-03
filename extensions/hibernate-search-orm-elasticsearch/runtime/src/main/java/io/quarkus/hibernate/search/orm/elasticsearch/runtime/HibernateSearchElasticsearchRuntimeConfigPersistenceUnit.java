@@ -23,13 +23,14 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
 
     /**
-     * Whether Hibernate Search should be active at runtime.
+     * Whether Hibernate Search should be active for this persistence unit at runtime.
      *
      * If Hibernate Search is not active, it won't index Hibernate ORM entities,
-     * and accessing the SearchMapping/SearchSession for search or other operation will not be possible.
+     * and accessing the SearchMapping/SearchSession of the relevant persistence unit
+     * for search or other operation will not be possible.
      *
      * Note that if Hibernate Search is disabled (i.e. `quarkus.hibernate-search-orm.enabled` is set to `false`),
-     * it won't be active, and setting this property to `true` will fail.
+     * it won't be active for any persistence unit, and setting this property to `true` will fail.
      *
      * @asciidoclet
      */

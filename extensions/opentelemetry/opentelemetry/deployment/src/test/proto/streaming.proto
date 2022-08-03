@@ -8,6 +8,7 @@ package streaming;
 
 service Streaming {
   rpc Pipe(stream Item) returns (stream Item) {}
+  rpc PipeBlocking(stream Item) returns (stream Item) {}
 }
 
 message Item {

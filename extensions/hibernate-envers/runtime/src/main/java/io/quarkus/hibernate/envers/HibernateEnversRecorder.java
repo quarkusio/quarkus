@@ -14,20 +14,30 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class HibernateEnversRecorder {
 
-    public HibernateOrmIntegrationStaticInitListener createStaticInitListener(HibernateEnversBuildTimeConfig buildTimeConfig) {
-        return new HibernateEnversIntegrationStaticInitListener(buildTimeConfig);
+    public HibernateOrmIntegrationStaticInitListener createStaticInitListener(HibernateEnversBuildTimeConfig buildTimeConfig,
+            String puName) {
+        return new HibernateEnversIntegrationStaticInitListener(buildTimeConfig, puName);
     }
 
     private static final class HibernateEnversIntegrationStaticInitListener
             implements HibernateOrmIntegrationStaticInitListener {
-        private HibernateEnversBuildTimeConfig buildTimeConfig;
+        private final HibernateEnversBuildTimeConfig buildTimeConfig;
+        private final String puName;
 
-        private HibernateEnversIntegrationStaticInitListener(HibernateEnversBuildTimeConfig buildTimeConfig) {
+        private HibernateEnversIntegrationStaticInitListener(HibernateEnversBuildTimeConfig buildTimeConfig, String puName) {
             this.buildTimeConfig = buildTimeConfig;
+            this.puName = puName;
         }
 
         @Override
         public void contributeBootProperties(BiConsumer<String, Object> propertyCollector) {
+            var puConfig = buildTimeConfig.getAllPersistenceUnitConfigsAsMap().get(puName);
+            if (puConfig != null && puConfig.active.isPresent() && !puConfig.active.get()) {
+                propertyCollector.accept(EnversService.INTEGRATION_ENABLED, "false");
+                // Do not process other properties: Hibernate Envers is inactive anyway.
+                return;
+            }
+
             addConfig(propertyCollector, EnversSettings.STORE_DATA_AT_DELETE, buildTimeConfig.storeDataAtDelete);
             addConfig(propertyCollector, EnversSettings.AUDIT_TABLE_SUFFIX, buildTimeConfig.auditTableSuffix);
             addConfig(propertyCollector, EnversSettings.AUDIT_TABLE_PREFIX, buildTimeConfig.auditTablePrefix);

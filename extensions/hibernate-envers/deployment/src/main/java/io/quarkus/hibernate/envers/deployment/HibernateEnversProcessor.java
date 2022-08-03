@@ -44,14 +44,14 @@ public final class HibernateEnversProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public void applyConfig(HibernateEnversRecorder recorder, HibernateEnversBuildTimeConfig buildTimeConfig,
+    public void applyStaticConfig(HibernateEnversRecorder recorder, HibernateEnversBuildTimeConfig buildTimeConfig,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> integrationProducer) {
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
+            String puName = puDescriptor.getPersistenceUnitName();
             integrationProducer.produce(
-                    new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_ENVERS,
-                            puDescriptor.getPersistenceUnitName())
-                            .setInitListener(recorder.createStaticInitListener(buildTimeConfig))
+                    new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_ENVERS, puName)
+                            .setInitListener(recorder.createStaticInitListener(buildTimeConfig, puName))
                             .setXmlMappingRequired(true));
         }
     }

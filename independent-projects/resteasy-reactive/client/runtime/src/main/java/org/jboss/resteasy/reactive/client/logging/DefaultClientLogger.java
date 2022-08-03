@@ -1,10 +1,11 @@
 package org.jboss.resteasy.reactive.client.logging;
 
+import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
-import java.util.stream.Collectors;
+import java.util.Map;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 
@@ -20,14 +21,25 @@ public class DefaultClientLogger implements ClientLogger {
 
     @Override
     public void logResponse(HttpClientResponse response, boolean redirect) {
-        response.bodyHandler(body -> log.debugf("%s: %s %s, Status[%d %s], Headers[%s], Body:\n%s",
-                redirect ? "Redirect" : "Response",
-                response.request().getMethod(), response.request().absoluteURI(), response.statusCode(),
-                response.statusMessage(), asString(response.headers()), bodyToString(body)));
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        response.bodyHandler(new Handler<>() {
+            @Override
+            public void handle(Buffer body) {
+                log.debugf("%s: %s %s, Status[%d %s], Headers[%s], Body:\n%s",
+                        redirect ? "Redirect" : "Response",
+                        response.request().getMethod(), response.request().absoluteURI(), response.statusCode(),
+                        response.statusMessage(), asString(response.headers()), bodyToString(body));
+            }
+        });
     }
 
     @Override
     public void logRequest(HttpClientRequest request, Buffer body, boolean omitBody) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
         if (omitBody) {
             log.debugf("Request: %s %s Headers[%s], Body omitted",
                     request.getMethod(), request.absoluteURI(), asString(request.headers()));
@@ -50,8 +62,19 @@ public class DefaultClientLogger implements ClientLogger {
     }
 
     private String asString(MultiMap headers) {
-        return headers.entries().stream()
-                .map(e -> String.format("%s=%s", e.getKey(), e.getValue()))
-                .collect(Collectors.joining(" "));
+        if (headers.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder((headers.size() * (6 + 1 + 6)) + (headers.size() - 1)); // this is a very rough estimate of a result like 'key1=value1 key2=value2'
+        boolean isFirst = true;
+        for (Map.Entry<String, String> entry : headers) {
+            if (isFirst) {
+                isFirst = false;
+            } else {
+                sb.append(' ');
+            }
+            sb.append(entry.getKey()).append('=').append(entry.getValue());
+        }
+        return sb.toString();
     }
 }

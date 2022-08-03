@@ -1,2 +1,1 @@
-#io.smallrye.config.validator.BeanValidationConfigValidatorImpl
 io.quarkus.hibernate.validator.runtime.HibernateBeanValidationConfigValidator

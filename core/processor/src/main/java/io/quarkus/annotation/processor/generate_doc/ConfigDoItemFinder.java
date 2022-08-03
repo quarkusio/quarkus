@@ -3,6 +3,8 @@ package io.quarkus.annotation.processor.generate_doc;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_MAP_KEY;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_SECTION;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_ITEM;
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_WITH_DEFAULT;
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_WITH_NAME;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONVERT_WITH;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_DEFAULT_CONVERTER;
 import static io.quarkus.annotation.processor.Constants.DOT;
@@ -137,7 +139,7 @@ class ConfigDoItemFinder {
         }
 
         for (Element enclosedElement : element.getEnclosedElements()) {
-            if (!enclosedElement.getKind().isField() && (!enclosedElement.getKind().equals(ElementKind.METHOD) || !isMapping)) {
+            if (!enclosedElement.getKind().isField() && (!isMapping || !enclosedElement.getKind().equals(ElementKind.METHOD))) {
                 continue;
             }
 
@@ -153,7 +155,7 @@ class ConfigDoItemFinder {
             String name = null;
             String defaultValue = NO_DEFAULT;
             String defaultValueDoc = EMPTY;
-            final TypeMirror typeMirror = enclosedElement.asType();
+            final TypeMirror typeMirror = unwrapTypeMirror(enclosedElement.asType());
             String type = typeMirror.toString();
             List<String> acceptedValues = null;
             final TypeElement clazz = (TypeElement) element;
@@ -217,6 +219,19 @@ class ConfigDoItemFinder {
                         || annotationName.equals(ANNOTATION_CONVERT_WITH)) {
                     useHyphenateEnumValue = false;
                 }
+
+                // Mappings
+                if (isMapping) {
+                    for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationMirror
+                            .getElementValues().entrySet()) {
+                        Object value = entry.getValue().getValue();
+                        if (annotationName.equals(ANNOTATION_CONFIG_WITH_NAME)) {
+                            name = parentName + DOT + value;
+                        } else if (annotationName.equals(ANNOTATION_CONFIG_WITH_DEFAULT)) {
+                            defaultValue = value.toString();
+                        }
+                    }
+                }
             }
 
             if (isDeprecated) {
@@ -247,24 +262,8 @@ class ConfigDoItemFinder {
                 boolean list = false;
                 boolean optional = false;
                 if (!typeMirror.getKind().isPrimitive()) {
-                    TypeElement typeElement;
-                    DeclaredType declaredType;
-                    if (typeMirror instanceof DeclaredType) {
-                        declaredType = (DeclaredType) typeMirror;
-                        typeElement = (TypeElement) declaredType.asElement();
-                    } else if (typeMirror instanceof ExecutableType) {
-                        ExecutableType executableType = (ExecutableType) typeMirror;
-                        TypeMirror returnType = executableType.getReturnType();
-                        if (returnType instanceof DeclaredType) {
-                            declaredType = ((DeclaredType) returnType);
-                            typeElement = (TypeElement) declaredType.asElement();
-                        } else {
-                            continue;
-                        }
-                    } else {
-                        continue;
-                    }
-
+                    DeclaredType declaredType = (DeclaredType) typeMirror;
+                    TypeElement typeElement = (TypeElement) declaredType.asElement();
                     Name qualifiedName = typeElement.getQualifiedName();
                     optional = qualifiedName.toString().startsWith(Optional.class.getName())
                             || qualifiedName.contentEquals(Map.class.getName());
@@ -313,14 +312,7 @@ class ConfigDoItemFinder {
                                         || typeInString.startsWith(Set.class.getName())
                                         || realTypeMirror.getKind() == TypeKind.ARRAY)) {
                                     list = true;
-                                    DeclaredType declaredRealType;
-                                    if (typeMirror instanceof DeclaredType) {
-                                        declaredRealType = (DeclaredType) typeMirror;
-                                    } else {
-                                        ExecutableType executableType = (ExecutableType) typeMirror;
-                                        TypeMirror returnType = executableType.getReturnType();
-                                        declaredRealType = ((DeclaredType) returnType);
-                                    }
+                                    DeclaredType declaredRealType = (DeclaredType) typeMirror;
                                     typeArguments = declaredRealType.getTypeArguments();
                                     if (!typeArguments.isEmpty()) {
                                         realTypeMirror = typeArguments.get(0);
@@ -376,6 +368,19 @@ class ConfigDoItemFinder {
         }
 
         return configDocItems;
+    }
+
+    private TypeMirror unwrapTypeMirror(TypeMirror typeMirror) {
+        if (typeMirror instanceof DeclaredType) {
+            return typeMirror;
+        }
+
+        if (typeMirror instanceof ExecutableType) {
+            ExecutableType executableType = (ExecutableType) typeMirror;
+            return executableType.getReturnType();
+        }
+
+        return typeMirror;
     }
 
     private boolean isConfigGroup(String type) {

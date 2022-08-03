@@ -88,6 +88,8 @@ final public class ConfigDocItemScanner {
 
                 for (AnnotationMirror mirror : clazz.getAnnotationMirrors()) {
                     if (mirror.getAnnotationType().toString().equals(Constants.ANNOTATION_CONFIG_MAPPING)) {
+                        isMapping = true;
+                        name = Constants.EMPTY;
                         for (Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : mirror.getElementValues()
                                 .entrySet()) {
                             if ("prefix()".equals(entry.getKey().toString())) {
@@ -145,7 +147,7 @@ final public class ConfigDocItemScanner {
      * Loads the list of configuration items per configuration root
      *
      */
-    private Properties loadAllExtensionConfigItemsParConfigRoot() throws IOException {
+    private Properties loadAllExtensionConfigItemsParConfigRoot() {
         return allExtensionGeneratedDocs.asProperties();
     }
 
@@ -153,9 +155,8 @@ final public class ConfigDocItemScanner {
      * Update extensions config roots. We need to gather the complete list of configuration roots of an extension
      * when generating the documentation.
      *
-     * @throws IOException
      */
-    private void updateConfigurationRootsList(Map.Entry<ConfigRootInfo, List<ConfigDocItem>> entry) throws IOException {
+    private void updateConfigurationRootsList(Map.Entry<ConfigRootInfo, List<ConfigDocItem>> entry) {
         String extensionFileName = entry.getKey().getFileName();
         String clazz = entry.getKey().getClazz().getQualifiedName().toString();
         configurationRootsParExtensionFileName.put(extensionFileName, clazz);

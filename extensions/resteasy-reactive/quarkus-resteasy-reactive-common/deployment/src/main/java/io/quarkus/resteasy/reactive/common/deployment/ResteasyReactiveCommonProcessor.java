@@ -15,8 +15,6 @@ import java.util.stream.Collectors;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.ext.RuntimeDelegate;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
@@ -45,6 +43,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.resteasy.reactive.common.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.spi.AbstractInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.AdditionalResourceClassBuildItem;
@@ -66,22 +65,15 @@ public class ResteasyReactiveCommonProcessor {
     private static final int LEGACY_WRITER_PRIORITY = Priorities.USER / 2; // writers are compared by increased priority
 
     @BuildStep
-    void setUpDenyAllJaxRs(CombinedIndexBuildItem index,
+    void setUpDenyAllJaxRs(
+            CombinedIndexBuildItem index,
             ResteasyReactiveConfig rrConfig,
+            JaxRsSecurityConfig securityConfig,
             Optional<ResourceScanningResultBuildItem> resteasyDeployment,
             BuildProducer<AdditionalSecuredClassesBuildItem> additionalSecuredClasses) {
 
-        Config config = ConfigProvider.getConfig();
-
-        // we do this in order to avoid having 'io.quarkus.resteasy.reactive.common.runtime.JaxRsSecurityConfig' conflict with 'io.quarkus.resteasy.runtime.JaxRsSecurityConfig'
-        Optional<Boolean> denyUnannotatedEndpointsConfig = config
-                .getOptionalValue("quarkus.security.jaxrs.deny-unannotated-endpoints", Boolean.class);
-        Optional<List<String>> defaultRolesAllowedConfig = config
-                .getOptionalValues("quarkus.security.jaxrs.default-roles-allowed", String.class);
-
-        if (denyUnannotatedEndpointsConfig.orElse(false) && resteasyDeployment.isPresent()) {
-            final List<ClassInfo> classes = new ArrayList<>();
-
+        if (securityConfig.denyJaxRs() && resteasyDeployment.isPresent()) {
+            List<ClassInfo> classes = new ArrayList<>();
             Set<DotName> resourceClasses = resteasyDeployment.get().getResult().getScannedResourcePaths().keySet();
             for (DotName className : resourceClasses) {
                 ClassInfo classInfo = index.getIndex().getClassByName(className);
@@ -91,9 +83,8 @@ public class ResteasyReactiveCommonProcessor {
             }
 
             additionalSecuredClasses.produce(new AdditionalSecuredClassesBuildItem(classes));
-        } else if (defaultRolesAllowedConfig.isPresent() && resteasyDeployment.isPresent()) {
-
-            final List<ClassInfo> classes = new ArrayList<>();
+        } else if (securityConfig.defaultRolesAllowed().isPresent() && resteasyDeployment.isPresent()) {
+            List<ClassInfo> classes = new ArrayList<>();
             Set<DotName> resourceClasses = resteasyDeployment.get().getResult().getScannedResourcePaths().keySet();
             for (DotName className : resourceClasses) {
                 ClassInfo classInfo = index.getIndex().getClassByName(className);
@@ -102,7 +93,7 @@ public class ResteasyReactiveCommonProcessor {
                 }
             }
             additionalSecuredClasses
-                    .produce(new AdditionalSecuredClassesBuildItem(classes, defaultRolesAllowedConfig));
+                    .produce(new AdditionalSecuredClassesBuildItem(classes, securityConfig.defaultRolesAllowed()));
         }
     }
 

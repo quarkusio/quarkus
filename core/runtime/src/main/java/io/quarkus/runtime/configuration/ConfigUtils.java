@@ -110,6 +110,8 @@ public final class ConfigUtils {
         }
         if (runTime || bootstrap) {
             builder.addDefaultSources();
+            // Validator only for runtime. We cannot use the current validator for build time (chicken / egg problem)
+            builder.addDiscoveredValidator();
             builder.withDefaultValue(UUID_KEY, UUID.randomUUID().toString());
             builder.withSources(new DotEnvConfigSourceProvider());
             builder.withSources(
@@ -179,7 +181,6 @@ public final class ConfigUtils {
         builder.addDefaultInterceptors();
         builder.addDiscoveredInterceptors();
         builder.addDiscoveredConverters();
-        builder.addDiscoveredValidator();
         return builder;
     }
 

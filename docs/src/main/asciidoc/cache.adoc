@@ -600,8 +600,9 @@ public class CacheKeysService {
 === Retrieving a value if a key is present from a `CaffeineCache`
 
 The cache value from a specific `CaffeineCache` can be retrieved if present as shown below.
-If the given key is contained in the cache, the returned `CompletableFuture` contains (existing or computed) future value to which the specified key is mapped to.
-Otherwise, the method with return the `null` value.
+If the given key is contained in the cache, the method will return the `CompletableFuture` the specified key is mapped to.
+That `CompletableFuture` may be computing or may already be completed.
+Otherwise, the method will return `null`.
 
 [source,java]
 ----

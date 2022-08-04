@@ -47,7 +47,7 @@
         <version.jboss-logging>3.5.0.Final</version.jboss-logging>
         <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
         <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
-        <version.smallrye-mutiny>1.6.0</version.smallrye-mutiny>
+        <version.smallrye-mutiny>1.7.0</version.smallrye-mutiny>
     </properties>
 
     <modules>

@@ -3,6 +3,7 @@ package io.quarkus.jdbc.oracle.deployment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 
 /**
  * @author Sanne Grinovero <sanne@hibernate.org>
@@ -25,6 +26,15 @@ public final class OracleNativeImage {
 
         // for ldap style jdbc urls. e.g. jdbc:oracle:thin:@ldap://oid:5000/mydb1,cn=OracleContext,dc=myco,dc=com
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.jndi.ldap.LdapCtxFactory"));
+    }
+
+    @BuildStep
+    void runtimeInitialization(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClass) {
+        runtimeInitializedClass
+                .produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.driver.BlockSource$ThreadedCachingBlockSource"));
+        runtimeInitializedClass
+                .produce(new RuntimeInitializedClassBuildItem(
+                        "oracle.jdbc.driver.BlockSource$ThreadedCachingBlockSource$BlockReleaser"));
     }
 
 }

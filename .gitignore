@@ -40,3 +40,4 @@ nb-configuration.xml
 .jbang
 .sdkmanrc
 .envrc
+.jekyll-cache

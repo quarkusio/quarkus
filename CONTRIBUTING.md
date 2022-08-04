@@ -35,6 +35,7 @@ fixes, documentation, examples... But first, read this page (including the small
         - [Automatic incremental build](#automatic-incremental-build)
             * [Special case `bom-descriptor-json`](#special-case--bom-descriptor-json-)
             * [Usage by CI](#usage-by-ci)
+* [Release](#release)
 * [Documentation](#documentation)
     + [Building the documentation](#building-the-documentation)
     + [Referencing a new guide in the index](#referencing-a-new-guide-in-the-index)
@@ -501,6 +502,26 @@ CI is using a slightly different GIB config than locally:
 * Certain "critical" branches like `main` are not built incrementally
 
 For more details see the `Get GIB arguments` step in `.github/workflows/ci-actions-incremental.yml`.
+
+## Release
+
+To release version `x.y`, first update the version:
+
+```shell
+./update-version.sh "x.y"
+```
+
+Commit the changes then run:
+
+```shell
+./mvnw --settings .github/mvn-settings.xml \
+            -B \
+            -Prelease \
+            -DskipTests -DskipITs \
+            -Ddokka \
+            -Dgpg.skip \
+            clean deploy
+```
 
 ## Documentation
 

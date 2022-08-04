@@ -22,11 +22,11 @@ public interface CaffeineCache extends Cache {
      * enabled.
      *
      * @param key key whose associated value is to be returned
-     * @return the current (existing or computed) future value to which the specified key is mapped,
-     *         or {@code null} if this cache contains no mapping for the key
+     * @return the future value to which the specified key is mapped, or {@code null} if this cache
+     *         does not contain a mapping for the key
      * @throws NullPointerException if the specified key is null
      * @see com.github.benmanes.caffeine.cache.AsyncCache#getIfPresent(Object)
      */
     @Nullable
-    <K, V> CompletableFuture<V> getIfPresent(K key);
+    <V> CompletableFuture<V> getIfPresent(Object key);
 }

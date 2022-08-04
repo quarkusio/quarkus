@@ -90,17 +90,29 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     }
 
     @Override
-    public <K, V> CompletableFuture<V> getIfPresent(K key) {
+    public <V> CompletableFuture<V> getIfPresent(Object key) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
-        CompletableFuture<Object> caffeineValue = getFromCaffeineIfPresent(key);
+        CompletableFuture<Object> existingCacheValue = cache.getIfPresent(key);
 
-        // if null return
-        if (null == caffeineValue) {
+        // record metrics, if not null apply casting
+        if (existingCacheValue == null) {
+            statsCounter.recordMisses(1);
             return null;
-        }
+        } else {
+            LOGGER.tracef("Key [%s] found in cache [%s]", key, cacheInfo.name);
+            statsCounter.recordHits(1);
 
-        // otherwise cast and return
-        return caffeineValue.thenApply(this::cast);
+            // cast, but still throw the CacheException in case it fails
+            return unwrapCacheValueOrThrowable(existingCacheValue)
+                    .thenApply(value -> {
+                        try {
+                            return (V) value;
+                        } catch (ClassCastException e) {
+                            throw new CacheException("An existing cached value type does not match the requested type", e);
+                        }
+                    });
+
+        }
     }
 
     /**
@@ -126,26 +138,6 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                 newCacheValue.complete(new CaffeineComputationThrowable(t));
             }
             return unwrapCacheValueOrThrowable(newCacheValue);
-        } else {
-            LOGGER.tracef("Key [%s] found in cache [%s]", key, cacheInfo.name);
-            statsCounter.recordHits(1);
-            return unwrapCacheValueOrThrowable(existingCacheValue);
-        }
-    }
-
-    /**
-     * Returns a {@link CompletableFuture} holding the cache value identified by {@code key}, if the key is contained in this
-     * cache.
-     *
-     * @param key cache key
-     * @return a {@link CompletableFuture} holding the cache value or <code>null</code> if the cache contains no mapping for the
-     *         key
-     */
-    private <K, V> CompletableFuture<Object> getFromCaffeineIfPresent(K key) {
-        CompletableFuture<Object> existingCacheValue = cache.getIfPresent(key);
-        if (existingCacheValue == null) {
-            statsCounter.recordMisses(1);
-            return null;
         } else {
             LOGGER.tracef("Key [%s] found in cache [%s]", key, cacheInfo.name);
             statsCounter.recordHits(1);

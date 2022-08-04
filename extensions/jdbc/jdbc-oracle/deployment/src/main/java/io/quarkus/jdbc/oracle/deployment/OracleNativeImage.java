@@ -5,15 +5,16 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 /**
- * Registers the {@code oracle.jdbc.driver.OracleDriver} so that it can be loaded
- * by reflection, as commonly expected.
- *
  * @author Sanne Grinovero <sanne@hibernate.org>
  */
-public final class OracleReflections {
+public final class OracleNativeImage {
 
+    /**
+     * Registers the {@code oracle.jdbc.driver.OracleDriver} so that it can be loaded
+     * by reflection, as commonly expected.
+     */
     @BuildStep
-    void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+    void reflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         //Not strictly necessary when using Agroal, as it also registers
         //any JDBC driver being configured explicitly through its configuration.
         //We register it for the sake of people not using Agroal.

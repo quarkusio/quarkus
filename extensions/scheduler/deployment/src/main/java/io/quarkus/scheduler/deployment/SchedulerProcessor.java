@@ -409,8 +409,7 @@ public class SchedulerProcessor {
                             ScheduledExecution.class.getName(), SchedulerDotNames.CONTINUATION.toString());
         } else {
             // The descriptor is: CompletionStage invoke(ScheduledExecution execution)
-            invoke = invokerCreator.getMethodCreator("invokeBean", CompletionStage.class, ScheduledExecution.class)
-                    .addException(Exception.class);
+            invoke = invokerCreator.getMethodCreator("invokeBean", CompletionStage.class, ScheduledExecution.class);
         }
 
         // Use a try-catch block and return failed future if an exception is thrown

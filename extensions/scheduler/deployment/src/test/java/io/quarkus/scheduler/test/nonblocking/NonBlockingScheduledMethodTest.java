@@ -1,5 +1,6 @@
 package io.quarkus.scheduler.test.nonblocking;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -10,13 +11,19 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.PreDestroy;
+import javax.enterprise.context.RequestScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.Unremovable;
+import io.quarkus.scheduler.FailedExecution;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.SuccessfulExecution;
@@ -30,7 +37,7 @@ public class NonBlockingScheduledMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root.addClasses(Jobs.class, JobWasExecuted.class));
+            .withApplicationRoot(root -> root.addClasses(Jobs.class, JobWasExecuted.class, Naeb.class));
 
     @Test
     public void testVoid() throws InterruptedException {
@@ -46,6 +53,10 @@ public class NonBlockingScheduledMethodTest {
         assertTrue(Jobs.UNI_ON_EVENT_LOOP.get());
         assertTrue(Jobs.SUCCESS_LATCH.await(5, TimeUnit.SECONDS));
         assertEvents("every_uni");
+        assertTrue(Jobs.UNI_FAIL_LATCH.await(5, TimeUnit.SECONDS));
+        assertTrue(Jobs.FAILED_LATCH.await(5, TimeUnit.SECONDS));
+        // the bean should be destroyed twice
+        assertEquals(2, Naeb.DESTROYED_COUNTER.get());
     }
 
     @Test
@@ -57,12 +68,12 @@ public class NonBlockingScheduledMethodTest {
     }
 
     private void assertEvents(String id) {
-        for (SuccessfulExecution exec : Jobs.events) {
+        for (SuccessfulExecution exec : Jobs.successEvents) {
             if (exec.getExecution().getTrigger().getId().equals(id)) {
                 return;
             }
         }
-        fail("No SuccessfulExecution event fired for " + id + ": " + Jobs.events);
+        fail("No SuccessfulExecution event fired for " + id + ": " + Jobs.successEvents);
     }
 
     static class Jobs {
@@ -70,6 +81,7 @@ public class NonBlockingScheduledMethodTest {
         // jobs executed
         static final CountDownLatch VOID_LATCH = new CountDownLatch(1);
         static final CountDownLatch UNI_LATCH = new CountDownLatch(1);
+        static final CountDownLatch UNI_FAIL_LATCH = new CountDownLatch(1);
         static final CountDownLatch CS_LATCH = new CountDownLatch(1);
 
         // jobs executed on the event loop
@@ -79,11 +91,20 @@ public class NonBlockingScheduledMethodTest {
 
         // successful events
         static final CountDownLatch SUCCESS_LATCH = new CountDownLatch(3);
-        static final List<SuccessfulExecution> events = new CopyOnWriteArrayList<>();
+        static final List<SuccessfulExecution> successEvents = new CopyOnWriteArrayList<>();
+
+        // failed events
+        static final CountDownLatch FAILED_LATCH = new CountDownLatch(1);
+        static final List<FailedExecution> failedEvents = new CopyOnWriteArrayList<>();
 
         static void onSuccess(@Observes SuccessfulExecution event) {
-            events.add(event);
+            successEvents.add(event);
             SUCCESS_LATCH.countDown();
+        }
+
+        static void onFailure(@Observes FailedExecution event) {
+            failedEvents.add(event);
+            FAILED_LATCH.countDown();
         }
 
         @NonBlocking
@@ -97,7 +118,18 @@ public class NonBlockingScheduledMethodTest {
         Uni<Void> everySecondUni() {
             UNI_ON_EVENT_LOOP.set(Context.isOnEventLoopThread() && VertxContext.isOnDuplicatedContext());
             UNI_LATCH.countDown();
-            return Uni.createFrom().voidItem();
+            return Uni.createFrom().voidItem().invoke(Void -> {
+                // this callback is executed (and the bean instance is created) after the scheduled method completes
+                Arc.container().instance(Naeb.class).get().doSomething();
+            });
+        }
+
+        @Scheduled(every = "0.5s", identity = "every_uni_fail", skipExecutionIf = JobWasExecuted.class)
+        Uni<Void> everySecondUniFailure() {
+            UNI_FAIL_LATCH.countDown();
+            // the bean instance is created before the scheduled method completes
+            Arc.container().instance(Naeb.class).get().doSomething();
+            throw new IllegalStateException("FAIL!");
         }
 
         @Scheduled(every = "0.5s", identity = "every_cs", skipExecutionIf = JobWasExecuted.class)
@@ -108,6 +140,7 @@ public class NonBlockingScheduledMethodTest {
             ret.complete(null);
             return ret;
         }
+
     }
 
     @Singleton
@@ -120,6 +153,8 @@ public class NonBlockingScheduledMethodTest {
                     return Jobs.VOID_LATCH.getCount() == 0;
                 case "every_uni":
                     return Jobs.UNI_LATCH.getCount() == 0;
+                case "every_uni_fail":
+                    return Jobs.UNI_FAIL_LATCH.getCount() == 0;
                 case "every_cs":
                     return Jobs.CS_LATCH.getCount() == 0;
                 default:
@@ -127,6 +162,21 @@ public class NonBlockingScheduledMethodTest {
             }
         }
 
+    }
+
+    @Unremovable // this bean is "unused"
+    @RequestScoped
+    static class Naeb {
+
+        static final AtomicInteger DESTROYED_COUNTER = new AtomicInteger();
+
+        void doSomething() {
+        }
+
+        @PreDestroy
+        void destroy() {
+            DESTROYED_COUNTER.incrementAndGet();
+        }
     }
 
 }

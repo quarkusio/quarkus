@@ -21,15 +21,17 @@ What follows is a brief summary of the different document types, but their site 
 
 > Explanation is _discussion_ that clarifies and illuminates a particular topic. Explanation is _understanding-oriented_.
 
-Good concept guides: 
+Good concept guides:
 
-- are about a topic, and aim to provide the reader with information that helps 
-  establish a deeper understanding of that topic.
-- make connections to other things, if it helps explain the topic.
-- provide background and context to help explain _why_.
-- can consider alternatives or counter-examples, if it helps explain the topic.
-- do things other parts of the documentation do not; rely on references, tutorials, and 
-  how-to guides to perform their roles.
+- focus on explaining a topic.
+Their goal is to help the reader understand the concept.
+- do not teach, instruct or include reference information.
+If you need to refer to a tutorial, how-to, or reference guide, point the reader to where they can find it, but do not replicate that information directly in your concept guide.
+- provide background information and context to explain _why_ things work the way they do, or why they are built in a particular way.
+You can cite design decisions, historical reasons, and technical constraints to reaffirm your points.
+- include specific examples to illustrate the explanation, but avoid making the explanation itself overly dependent on a specific technology or pattern of implementation.
+- analyze the concept from multiple perspectives and draw comparisons with alternative concepts discuss if it is relevant and useful for the reader's understanding.
+- may express opinions about advantages and drawbacks of the concept that you are explaining relative to different potential use cases or applications.
 
 [[howto-guide]]
 === How-To guides

@@ -23,6 +23,8 @@
         <quarkus-home-url>https://quarkus.io</quarkus-home-url>
         <quarkus-base-url>https://github.com/quarkusio/quarkus</quarkus-base-url>
         <quickstarts-base-url>https://github.com/quarkusio/quarkus-quickstarts</quickstarts-base-url>
+        <!-- DO NOT MODIFY MANUALLY: smallrye-config.version is managed by the Dependabot -->
+        <smallrye-config.version>2.11.1</smallrye-config.version>
     </properties>
 
     <name>Quarkus - Documentation</name>
@@ -2840,6 +2842,7 @@
                         <!-- avoid content security policy violations -->
                         <skip-front-matter>true</skip-front-matter>
 
+                        <smallrye-config-version>${smallrye-config.version}</smallrye-config-version>
                         <quarkus-version>${project.version}</quarkus-version>
                         <surefire-version>${version.surefire.plugin}</surefire-version>
                         <graalvm-version>${graal-sdk.version-for-documentation}</graalvm-version>
@@ -2952,6 +2955,13 @@
                         <groupId>${project.groupId}</groupId>
                         <artifactId>${project.artifactId}</artifactId>
                         <version>${project.version}</version>
+                    </dependency>
+                    <!-- Dependabot will only update config property 'smallrye-config.version' if some of our dependencies is using it -->
+                    <!-- 'smallrye-config.version' is used as a documentation attribute and need to stay up to date -->
+                    <dependency>
+                        <groupId>io.smallrye.config</groupId>
+                        <artifactId>smallrye-config-common</artifactId>
+                        <version>${smallrye-config.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>

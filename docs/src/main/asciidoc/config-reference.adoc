@@ -62,7 +62,7 @@ the value `youshallnotpass` to the attribute `quarkus.datasource.password`.
 NOTE: Environment variables names follow the conversion rules specified by
 link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[MicroProfile Config].
 
-NOTE: SmallRye Config specifies link:https://smallrye.io/smallrye-config/latest/config/environment-variables/[additional conversion rules].
+NOTE: SmallRye Config specifies link:https://smallrye.io/smallrye-config/{smallrye-config-version}/config/environment-variables/[additional conversion rules].
 
 [[env-file]]
 === `.env` file in the current working directory
@@ -561,7 +561,7 @@ Quarkus relies on link:https://github.com/smallrye/smallrye-config/[SmallRye Con
 * Hide secrets
 
 For more information, please check the
-link:https://smallrye.io/smallrye-config/latest[SmallRye Config documentation].
+link:https://smallrye.io/smallrye-config/{smallrye-config-version}[SmallRye Config documentation].
 
 == Configuration Reference
 

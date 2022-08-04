@@ -128,7 +128,7 @@ public String hello() {
 ----
 
 TIP: Use `@io.smallrye.config.ConfigMapping` annotation to group multiple configurations in a single interface. Please,
-check the https://smallrye.io/smallrye-config/latest/config/mappings/[Config Mappings] documentation.
+check the https://smallrye.io/smallrye-config/{smallrye-config-version}/config/mappings/[Config Mappings] documentation.
 
 == Update the test
 
@@ -240,4 +240,4 @@ Quarkus relies on link:https://github.com/smallrye/smallrye-config/[SmallRye Con
 * Hide secrets
 
 For more information, please check the
-link:https://smallrye.io/smallrye-config/latest/[SmallRye Config documentation].
+link:https://smallrye.io/smallrye-config/{smallrye-config-version}[SmallRye Config documentation].

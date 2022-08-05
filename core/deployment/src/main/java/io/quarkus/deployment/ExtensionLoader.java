@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
@@ -620,7 +621,8 @@ public final class ExtensionLoader {
                                 .andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
                         methodParamFns.add((bc, bri) -> (Supplier<Optional<? extends SimpleBuildItem>>) () -> Optional
                                 .ofNullable(bc.consume(buildItemClass)));
-                    } else if (rawTypeOf(parameterType) == Executor.class) {
+                    } else if (rawTypeOf(parameterType) == Executor.class
+                            || rawTypeOf(parameterType) == ExecutorService.class) {
                         methodParamFns.add((bc, bri) -> bc.getExecutor());
                     } else if (parameterClass.isAnnotationPresent(ConfigRoot.class)) {
                         final ConfigRoot annotation = parameterClass.getAnnotation(ConfigRoot.class);

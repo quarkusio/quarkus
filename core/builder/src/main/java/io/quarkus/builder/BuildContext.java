@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -224,7 +224,7 @@ public final class BuildContext {
      *
      * @return an executor which can be used for asynchronous tasks
      */
-    public Executor getExecutor() {
+    public ExecutorService getExecutor() {
         return execution.getExecutor();
     }
 

@@ -29,34 +29,40 @@ public abstract class AbstractAsyncDataFetcher<K, T> extends AbstractDataFetcher
             DataFetcherResult.Builder<Object> resultBuilder,
             Object[] transformedArguments) throws Exception {
 
-        Uni<?> uni = handleUserMethodCall(dfe, transformedArguments);
-        return (O) uni
-                .onItemOrFailure()
-                .transformToUni((result, throwable, emitter) -> {
-                    if (throwable != null) {
-                        eventEmitter.fireOnDataFetchError(dfe.getExecutionId().toString(), throwable);
-                        if (throwable instanceof GraphQLException) {
-                            GraphQLException graphQLException = (GraphQLException) throwable;
-                            errorResultHelper.appendPartialResult(resultBuilder, dfe, graphQLException);
-                        } else if (throwable instanceof Exception) {
-                            emitter.fail(SmallRyeGraphQLServerMessages.msg.dataFetcherException(operation, throwable));
-                            return;
-                        } else if (throwable instanceof Error) {
-                            emitter.fail(throwable);
-                            return;
+        ManagedContext requestContext = Arc.container().requestContext();
+        try {
+            RequestContextHelper.reactivate(requestContext, dfe);
+            Uni<?> uni = handleUserMethodCall(dfe, transformedArguments);
+            return (O) uni
+                    .onItemOrFailure()
+                    .transformToUni((result, throwable, emitter) -> {
+                        if (throwable != null) {
+                            eventEmitter.fireOnDataFetchError(dfe.getExecutionId().toString(), throwable);
+                            if (throwable instanceof GraphQLException) {
+                                GraphQLException graphQLException = (GraphQLException) throwable;
+                                errorResultHelper.appendPartialResult(resultBuilder, dfe, graphQLException);
+                            } else if (throwable instanceof Exception) {
+                                emitter.fail(SmallRyeGraphQLServerMessages.msg.dataFetcherException(operation, throwable));
+                                return;
+                            } else if (throwable instanceof Error) {
+                                emitter.fail(throwable);
+                                return;
+                            }
+                        } else {
+                            try {
+                                resultBuilder.data(fieldHelper.transformOrAdaptResponse(result, dfe));
+                            } catch (AbstractDataFetcherException te) {
+                                te.appendDataFetcherResult(resultBuilder, dfe);
+                            }
                         }
-                    } else {
-                        try {
-                            resultBuilder.data(fieldHelper.transformOrAdaptResponse(result, dfe));
-                        } catch (AbstractDataFetcherException te) {
-                            te.appendDataFetcherResult(resultBuilder, dfe);
-                        }
-                    }
 
-                    emitter.complete(resultBuilder.build());
-                })
-                .subscribe()
-                .asCompletionStage();
+                        emitter.complete(resultBuilder.build());
+                    })
+                    .subscribe()
+                    .asCompletionStage();
+        } finally {
+            requestContext.deactivate();
+        }
     }
 
     protected abstract Uni<?> handleUserMethodCall(DataFetchingEnvironment dfe, final Object[] transformedArguments)
@@ -76,7 +82,7 @@ public abstract class AbstractAsyncDataFetcher<K, T> extends AbstractDataFetcher
     protected CompletionStage<List<T>> invokeBatch(DataFetchingEnvironment dfe, Object[] arguments) {
         ManagedContext requestContext = Arc.container().requestContext();
         try {
-            BlockingHelper.reactivate(requestContext, dfe);
+            RequestContextHelper.reactivate(requestContext, dfe);
             return handleUserBatchLoad(dfe, arguments)
                     .subscribe().asCompletionStage();
         } catch (Exception ex) {

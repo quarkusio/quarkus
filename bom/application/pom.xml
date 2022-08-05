@@ -179,7 +179,7 @@
         <quarkus-security.version>1.1.4.Final</quarkus-security.version>
         <keycloak.version>18.0.2</keycloak.version>
         <logstash-gelf.version>1.15.0</logstash-gelf.version>
-        <checker-qual.version>3.23.0</checker-qual.version>
+        <checker-qual.version>3.24.0</checker-qual.version>
         <error-prone-annotations.version>2.14.0</error-prone-annotations.version>
         <jib-core.version>0.21.0</jib-core.version>
         <google-http-client.version>1.42.2</google-http-client.version>

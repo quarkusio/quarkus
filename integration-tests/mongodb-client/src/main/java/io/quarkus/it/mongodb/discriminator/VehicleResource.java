@@ -52,7 +52,8 @@ public class VehicleResource {
     @POST
     public Response addVehicle(Vehicle vehicle) throws UnsupportedEncodingException {
         getCollection().insertOne(vehicle);
-        return Response.created(URI.create("/vehicle/" + URLEncoder.encode(vehicle.name, StandardCharsets.UTF_8.toString())))
+        return Response
+                .created(URI.create("/vehicle/" + URLEncoder.encode(vehicle.getName(), StandardCharsets.UTF_8.toString())))
                 .build();
     }
 }

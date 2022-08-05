@@ -30,22 +30,34 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
     public <T> T invokeAndTransform(DataFetchingEnvironment dfe, DataFetcherResult.Builder<Object> resultBuilder,
             Object[] transformedArguments) throws Exception {
 
-        Context vc = Vertx.currentContext();
-        if (runBlocking(dfe) || BlockingHelper.blockingShouldExecuteNonBlocking(operation, vc)) {
-            return super.invokeAndTransform(dfe, resultBuilder, transformedArguments);
-        } else {
-            return invokeAndTransformBlocking(dfe, resultBuilder, transformedArguments, vc);
+        ManagedContext requestContext = Arc.container().requestContext();
+        try {
+            RequestContextHelper.reactivate(requestContext, dfe);
+            Context vc = Vertx.currentContext();
+            if (runBlocking(dfe) || BlockingHelper.blockingShouldExecuteNonBlocking(operation, vc)) {
+                return super.invokeAndTransform(dfe, resultBuilder, transformedArguments);
+            } else {
+                return invokeAndTransformBlocking(dfe, resultBuilder, transformedArguments, vc);
+            }
+        } finally {
+            requestContext.deactivate();
         }
     }
 
     @Override
     public CompletionStage<List<T>> invokeBatch(DataFetchingEnvironment dfe, Object[] arguments) {
 
-        Context vc = Vertx.currentContext();
-        if (runBlocking(dfe) || BlockingHelper.blockingShouldExecuteNonBlocking(operation, vc)) {
-            return super.invokeBatch(dfe, arguments);
-        } else {
-            return invokeBatchBlocking(dfe, arguments, vc);
+        ManagedContext requestContext = Arc.container().requestContext();
+        try {
+            RequestContextHelper.reactivate(requestContext, dfe);
+            Context vc = Vertx.currentContext();
+            if (runBlocking(dfe) || BlockingHelper.blockingShouldExecuteNonBlocking(operation, vc)) {
+                return super.invokeBatch(dfe, arguments);
+            } else {
+                return invokeBatchBlocking(dfe, arguments, vc);
+            }
+        } finally {
+            requestContext.deactivate();
         }
     }
 
@@ -83,23 +95,19 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
 
     @SuppressWarnings("unchecked")
     private CompletionStage<List<T>> invokeBatchBlocking(DataFetchingEnvironment dfe, Object[] arguments, Context vc) {
-        ManagedContext requestContext = Arc.container().requestContext();
-        try {
-            BlockingHelper.reactivate(requestContext, dfe);
-            SmallRyeThreadContext threadContext = Arc.container().select(SmallRyeThreadContext.class).get();
-            final Promise<List<T>> result = Promise.promise();
 
-            // We need some make sure that we call given the context
-            Callable<Object> contextualCallable = threadContext.contextualCallable(() -> {
-                return (List<T>) operationInvoker.invokePrivileged(arguments);
-            });
+        SmallRyeThreadContext threadContext = Arc.container().select(SmallRyeThreadContext.class).get();
+        final Promise<List<T>> result = Promise.promise();
 
-            // Here call blocking with context
-            BlockingHelper.runBlocking(vc, contextualCallable, result);
-            return result.future().toCompletionStage();
-        } finally {
-            requestContext.deactivate();
-        }
+        // We need some make sure that we call given the context
+        Callable<Object> contextualCallable = threadContext.contextualCallable(() -> {
+            return (List<T>) operationInvoker.invokePrivileged(arguments);
+        });
+
+        // Here call blocking with context
+        BlockingHelper.runBlocking(vc, contextualCallable, result);
+        return result.future().toCompletionStage();
+
     }
 
     private boolean runBlocking(DataFetchingEnvironment dfe) {

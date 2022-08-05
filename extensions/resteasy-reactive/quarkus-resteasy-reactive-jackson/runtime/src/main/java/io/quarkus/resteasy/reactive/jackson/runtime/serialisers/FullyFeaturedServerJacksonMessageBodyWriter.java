@@ -18,6 +18,8 @@ import javax.inject.Inject;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.Providers;
 
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
@@ -31,13 +33,16 @@ import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJackso
 public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
     private final ObjectMapper originalMapper;
+    private final Providers providers;
     private final ObjectWriter defaultWriter;
     private final ConcurrentMap<String, ObjectWriter> perMethodWriter = new ConcurrentHashMap<>();
+    private final ConcurrentMap<ObjectMapper, ObjectWriter> contextResolverMap = new ConcurrentHashMap<>();
 
     @Inject
-    public FullyFeaturedServerJacksonMessageBodyWriter(ObjectMapper mapper) {
+    public FullyFeaturedServerJacksonMessageBodyWriter(ObjectMapper mapper, Providers providers) {
         this.originalMapper = mapper;
         this.defaultWriter = createDefaultWriter(mapper);
+        this.providers = providers;
     }
 
     @Override
@@ -47,6 +52,8 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
             stream.write(((String) o).getBytes(StandardCharsets.UTF_8));
         } else {
+            ObjectMapper effectiveMapper = getEffectiveMapper(o, context);
+
             // First test the names to see if JsonView is used. We do this to avoid doing reflection for the common case
             // where JsonView is not used
             ResteasyReactiveResourceInfo resourceInfo = context.getResteasyReactiveResourceInfo();
@@ -55,21 +62,54 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
                 var customSerializationValue = ResteasyReactiveServerJacksonRecorder.customSerializationForMethod(methodId);
                 if (customSerializationValue != null) {
                     ObjectWriter objectWriter = perMethodWriter.computeIfAbsent(methodId,
-                            new MethodObjectWriterFunction(customSerializationValue, genericType, originalMapper));
+                            new MethodObjectWriterFunction(customSerializationValue, genericType, effectiveMapper));
                     objectWriter.writeValue(stream, o);
                     return;
                 }
 
                 Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder.jsonViewForMethod(methodId);
                 if (jsonViewValue != null) {
-                    defaultWriter.withView(jsonViewValue).writeValue(stream, o);
+                    getEffectiveWriter(effectiveMapper).withView(jsonViewValue).writeValue(stream, o);
                     return;
                 }
             }
-            defaultWriter.writeValue(stream, o);
+            getEffectiveWriter(effectiveMapper).writeValue(stream, o);
         }
         // we don't use try-with-resources because that results in writing to the http output without the exception mapping coming into play
         stream.close();
+    }
+
+    private ObjectWriter getEffectiveWriter(ObjectMapper effectiveMapper) {
+        if (effectiveMapper == originalMapper) {
+            return defaultWriter;
+        }
+        return contextResolverMap.computeIfAbsent(effectiveMapper, new Function<>() {
+            @Override
+            public ObjectWriter apply(ObjectMapper objectMapper) {
+                return createDefaultWriter(effectiveMapper);
+            }
+        });
+    }
+
+    /**
+     * Obtains the user configured {@link ObjectMapper} if there is a {@link ContextResolver} configured.
+     * Otherwise, returns the default {@link ObjectMapper}.
+     */
+    private ObjectMapper getEffectiveMapper(Object o, ServerRequestContext context) {
+        ObjectMapper effectiveMapper = originalMapper;
+        ContextResolver<ObjectMapper> contextResolver = providers.getContextResolver(ObjectMapper.class,
+                context.getResponseMediaType());
+        if (contextResolver == null) {
+            // TODO: not sure if this is correct, but Jackson does this as well...
+            contextResolver = providers.getContextResolver(ObjectMapper.class, null);
+        }
+        if (contextResolver != null) {
+            ObjectMapper mapperFromContextResolver = contextResolver.getContext(o.getClass());
+            if (mapperFromContextResolver != null) {
+                effectiveMapper = mapperFromContextResolver;
+            }
+        }
+        return effectiveMapper;
     }
 
     @Override

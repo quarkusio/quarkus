@@ -28,6 +28,7 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.server.util.MethodId;
 
 import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -58,6 +59,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonA
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectMessageBodyWriter;
+import io.quarkus.resteasy.reactive.server.deployment.ContextResolversBuildItem;
 import io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveResourceMethodEntriesBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
@@ -122,10 +124,13 @@ public class ResteasyReactiveJacksonProcessor {
     }
 
     @BuildStep
-    void additionalProviders(List<JacksonFeatureBuildItem> jacksonFeatureBuildItems,
+    void additionalProviders(ContextResolversBuildItem contextResolversBuildItem,
+            List<JacksonFeatureBuildItem> jacksonFeatureBuildItems,
             BuildProducer<MessageBodyReaderBuildItem> additionalReaders,
             BuildProducer<MessageBodyWriterBuildItem> additionalWriters) {
-        boolean applicationNeedsSpecialJacksonFeatures = jacksonFeatureBuildItems.isEmpty();
+        boolean specialJacksonFeaturesUsed = !jacksonFeatureBuildItems.isEmpty();
+        boolean hasObjectMapperContextResolver = contextResolversBuildItem.getContextResolvers().getResolvers()
+                .containsKey(ObjectMapper.class);
 
         additionalReaders
                 .produce(
@@ -150,7 +155,9 @@ public class ResteasyReactiveJacksonProcessor {
         additionalWriters
                 .produce(
                         new MessageBodyWriterBuildItem.Builder(
-                                getJacksonMessageBodyWriter(applicationNeedsSpecialJacksonFeatures), Object.class.getName())
+                                getJacksonMessageBodyWriter(
+                                        hasObjectMapperContextResolver || specialJacksonFeaturesUsed),
+                                Object.class.getName())
                                 .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
                                 .setBuiltin(true)
                                 .build());
@@ -170,9 +177,9 @@ public class ResteasyReactiveJacksonProcessor {
                                 .build());
     }
 
-    private String getJacksonMessageBodyWriter(boolean applicationNeedsSpecialJacksonFeatures) {
-        return applicationNeedsSpecialJacksonFeatures ? BasicServerJacksonMessageBodyWriter.class.getName()
-                : FullyFeaturedServerJacksonMessageBodyWriter.class.getName();
+    private String getJacksonMessageBodyWriter(boolean needsFullFeatureSet) {
+        return needsFullFeatureSet ? FullyFeaturedServerJacksonMessageBodyWriter.class.getName()
+                : BasicServerJacksonMessageBodyWriter.class.getName();
     }
 
     @Record(ExecutionTime.STATIC_INIT)

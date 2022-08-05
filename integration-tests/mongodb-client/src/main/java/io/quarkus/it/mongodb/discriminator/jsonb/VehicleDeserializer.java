@@ -18,19 +18,11 @@ public class VehicleDeserializer implements JsonbDeserializer<Vehicle> {
         String type = json.getString("type");
         switch (type) {
             case "CAR":
-                Car car = new Car();
-                car.type = type;
-                car.seatNumber = json.getInt("seatNumber");
-                car.name = json.getString("name");
-                return car;
+                return new Car(type, json.getString("name"), json.getInt("seatNumber"));
             case "MOTO":
-                Moto moto = new Moto();
-                moto.type = type;
-                moto.name = json.getString("name");
-                moto.sideCar = json.getBoolean("sideCar");
-                return moto;
+                return new Moto(type, json.getString("name"), json.getBoolean("sideCar"));
             default:
-                throw new RuntimeException("Type " + type + "not managed");
+                throw new RuntimeException("Type " + type + " not managed");
         }
     }
 }

@@ -204,9 +204,9 @@ public class ClientResource {
         return Multi.createFrom().emitter(emitter -> {
             try {
                 communes.forEach((commune) -> {
-                    commune.codesPostaux.forEach((postalCode) -> {
+                    commune.getCodesPostaux().forEach((postalCode) -> {
                         int level = org.jboss.resteasy.core.ResteasyContext.getContextDataLevelCount();
-                        api.getCommunes(postalCode).forEach(c -> emitter.emit(c.code + "-" + level));
+                        api.getCommunes(postalCode).forEach(c -> emitter.emit(c.getCode() + "-" + level));
                     });
                 });
             } catch (Exception e) {

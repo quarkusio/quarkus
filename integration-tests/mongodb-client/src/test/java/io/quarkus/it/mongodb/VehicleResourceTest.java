@@ -32,17 +32,12 @@ public class VehicleResourceTest {
 
     @Test
     public void testVehicleEndpoint() {
-        Car car = new Car();
-        car.name = "Renault Clio";
-        car.type = "CAR";
-        car.seatNumber = 5;
+        Car car = new Car("CAR", "Renault Clio", 5);
         given().header("Content-Type", "application/json").body(car)
                 .when().post("/vehicles")
                 .then().statusCode(201);
 
-        Moto moto = new Moto();
-        moto.name = "Harley Davidson Sportster";
-        moto.type = "MOTO";
+        Moto moto = new Moto("MOTO", "Harley Davidson Sportster", false);
         given().header("Content-Type", "application/json").body(moto)
                 .when().post("/vehicles")
                 .then().statusCode(201);

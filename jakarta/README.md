@@ -9,13 +9,6 @@ To test the Jakarta work, there are two approaches:
 
 ### Using snapshots
 
-First, you need to install locally some Narayana snapshots (this requirement will be dropped soon).
-From the root of a fresh Quarkus repository, run:
-
-```
-./jakarta/prepare.sh
-```
-
 Snapshots of the `jakarta-rewrite` branch containing the transformed artifacts are published nightly on https://s01.oss.sonatype.org/content/repositories/snapshots/ .
 
 Add the following snippet to your `pom.xml` to enable the s01 OSSRH snapshots repository:
@@ -44,13 +37,6 @@ Add the following snippet to your `pom.xml` to enable the s01 OSSRH snapshots re
 The published artifacts have the `999-jakarta-SNAPSHOT` version so make sure to use this version in your projects.
 
 ### Build locally
-
-First, you need to install locally some Narayana snapshots (this requirement will be dropped soon).
-From the root of a fresh Quarkus repository, run:
-
-```
-./jakarta/prepare.sh
-```
 
 Then you can build the `jakarta-rewrite` branch locally:
 

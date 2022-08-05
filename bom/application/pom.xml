@@ -5068,12 +5068,6 @@
                 <groupId>com.cronutils</groupId>
                 <artifactId>cron-utils</artifactId>
                 <version>${cronutils.version}</version>
-                <exclusions>
-                    <exclusion><!-- Remove once https://github.com/jmrozanec/cron-utils/pull/521 reaches us -->
-                        <groupId>org.javassist</groupId>
-                        <artifactId>javassist</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.quartz-scheduler</groupId>

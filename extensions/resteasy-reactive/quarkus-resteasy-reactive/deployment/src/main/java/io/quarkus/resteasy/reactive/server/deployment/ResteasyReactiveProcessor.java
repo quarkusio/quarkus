@@ -711,7 +711,9 @@ public class ResteasyReactiveProcessor {
 
     @BuildStep
     public void additionalReflection(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            SetupEndpointsResultBuildItem setupEndpointsResult, List<MessageBodyWriterBuildItem> messageBodyWriterBuildItems,
+            SetupEndpointsResultBuildItem setupEndpointsResult,
+            List<MessageBodyReaderBuildItem> messageBodyReaderBuildItems,
+            List<MessageBodyWriterBuildItem> messageBodyWriterBuildItems,
             BuildProducer<ReflectiveClassBuildItem> producer) {
         List<ResourceClass> resourceClasses = setupEndpointsResult.getResourceClasses();
         IndexView index = beanArchiveIndexBuildItem.getIndex();
@@ -735,6 +737,25 @@ public class ResteasyReactiveProcessor {
             if (!interfaceNames.contains(ResteasyReactiveServerDotNames.SERVER_MESSAGE_BODY_WRITER)) {
                 serializersRequireResourceReflection = true;
                 break;
+            }
+        }
+        if (!serializersRequireResourceReflection) {
+            for (var reader : messageBodyReaderBuildItems) {
+                if (reader.isBuiltin()) {
+                    continue;
+                }
+                if ((reader.getRuntimeType() != null) && (reader.getRuntimeType() == RuntimeType.CLIENT)) {
+                    continue;
+                }
+                ClassInfo writerClassInfo = index.getClassByName(DotName.createSimple(reader.getClassName()));
+                if (writerClassInfo == null) {
+                    continue;
+                }
+                List<DotName> interfaceNames = writerClassInfo.interfaceNames();
+                if (!interfaceNames.contains(ResteasyReactiveServerDotNames.SERVER_MESSAGE_BODY_READER)) {
+                    serializersRequireResourceReflection = true;
+                    break;
+                }
             }
         }
         if (serializersRequireResourceReflection) {

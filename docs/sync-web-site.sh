@@ -1,29 +1,59 @@
 #!/usr/bin/env bash
 
-git clone -b develop --single-branch git@github.com:quarkusio/quarkusio.github.io.git target/web-site
+# Make sure our working directory is where this script lives (docs directory of quarkus)
+SCRIPTDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+cd "${SCRIPTDIR}"
+
+# Invocation for sync + publish for a release
+# This will clone the website and then sync documents to the 'latest' for a release
+#
+# $ QUARKUS_WEB_SITE_PUSH=true QUARKUS_RELEASE=true ./sync-web-site.sh ${BRANCH}
+#
+# In quarkusio/quarkusio.github.io repo for nightly sync (.github/workflows/sync-main-doc.yml)
+# Both the branch and the target website directory are specified.
+# This will skip the website repo clone and will sync files into _versions, _generated_config, etc.
+#
+# $ .quarkus-main-repository/docs/sync-web-site.sh main ${PWD}
+#
+# For local development leave all arguments out.
+# This will clone the website repo clone and sync files into _versions, _generated_config, etc.
+# (use the version dropdown to select the nightly snapshot to preview changes)
+#
+# $ ./sync-web-site.sh
 
 if [ $# -eq 0 ]; then
   BRANCH="main"
 else
   BRANCH=$1
 fi
-
-if [[ $BRANCH == "main" ]]; then
-  TARGET_GUIDES=target/web-site/_guides
-  TARGET_CONFIG=target/web-site/_generated-config/latest
-else
-  TARGET_GUIDES=target/web-site/_versions/${BRANCH}/guides
-  TARGET_CONFIG=target/web-site/_generated-config/${BRANCH}
+if [ $# -ge 2 ]; then
+  TARGET_DIR=$2
 fi
 
+if [ -z $TARGET_DIR ]; then
+  TARGET_DIR=target/web-site
+  git clone -b develop --single-branch git@github.com:quarkusio/quarkusio.github.io.git ${TARGET_DIR}
+fi
+
+if [ $BRANCH == "main" ] && [ "$QUARKUS_RELEASE" == "true" ]; then
+  TARGET_GUIDES=${TARGET_DIR}/_guides
+  TARGET_CONFIG=${TARGET_DIR}/_generated-config/latest
+else
+  TARGET_GUIDES=${TARGET_DIR}/_versions/${BRANCH}/guides
+  TARGET_CONFIG=${TARGET_DIR}/_generated-config/${BRANCH}
+fi
+
+echo "Copying from src/main/asciidoc/* to $TARGET_GUIDES"
 rsync -vr --delete \
     --exclude='**/*.html' \
     --exclude='**/index.adoc' \
     --exclude='**/attributes.adoc' \
     --exclude='**/guides.md' \
+    --exclude='**/_templates' \
     src/main/asciidoc/* \
     $TARGET_GUIDES
 
+echo "\nCopying from ../target/asciidoc/generated/ to $TARGET_CONFIG"
 rsync -vr --delete \
     --exclude='**/*.html' \
     --exclude='**/index.adoc' \

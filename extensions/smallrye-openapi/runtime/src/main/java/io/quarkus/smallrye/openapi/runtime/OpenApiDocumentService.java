@@ -27,6 +27,12 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
     private final OpenApiDocumentHolder documentHolder;
 
     public OpenApiDocumentService(OASFilter autoSecurityFilter, Config config) {
+
+        String servers = config.getOptionalValue("quarkus.smallrye-openapi.servers", String.class).orElse(null);
+        if (servers != null && !servers.isEmpty()) {
+            System.setProperty("mp.openapi.servers", servers);
+        }
+
         if (config.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", Boolean.class).orElse(Boolean.FALSE)) {
             this.documentHolder = new DynamicDocument(config, autoSecurityFilter);
         } else {

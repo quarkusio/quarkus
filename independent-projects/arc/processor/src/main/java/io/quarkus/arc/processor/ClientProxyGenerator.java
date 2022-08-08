@@ -325,31 +325,42 @@ public class ClientProxyGenerator extends AbstractGenerator {
         if (bean.isClassBean()) {
             Map<String, Set<Methods.NameAndDescriptor>> methodsFromWhichToRemoveFinal = new HashMap<>();
             ClassInfo classInfo = bean.getTarget().get().asClass();
-            Methods.addDelegatingMethods(index, classInfo,
-                    methods, methodsFromWhichToRemoveFinal, transformUnproxyableClasses);
-            if (!methodsFromWhichToRemoveFinal.isEmpty()) {
-                for (Map.Entry<String, Set<Methods.NameAndDescriptor>> entry : methodsFromWhichToRemoveFinal.entrySet()) {
-                    String className = entry.getKey();
-                    bytecodeTransformerConsumer.accept(new BytecodeTransformer(className,
-                            new Methods.RemoveFinalFromMethod(className, entry.getValue())));
-                }
-            }
+            addDelegatesAndTrasformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
+                    methodsFromWhichToRemoveFinal, classInfo);
         } else if (bean.isProducerMethod()) {
+            Map<String, Set<Methods.NameAndDescriptor>> methodsFromWhichToRemoveFinal = new HashMap<>();
             MethodInfo producerMethod = bean.getTarget().get().asMethod();
             ClassInfo returnTypeClass = getClassByName(index, producerMethod.returnType());
-            Methods.addDelegatingMethods(index, returnTypeClass, methods, null,
-                    transformUnproxyableClasses);
+            addDelegatesAndTrasformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
+                    methodsFromWhichToRemoveFinal, returnTypeClass);
         } else if (bean.isProducerField()) {
+            Map<String, Set<Methods.NameAndDescriptor>> methodsFromWhichToRemoveFinal = new HashMap<>();
             FieldInfo producerField = bean.getTarget().get().asField();
             ClassInfo fieldClass = getClassByName(index, producerField.type());
-            Methods.addDelegatingMethods(index, fieldClass, methods, null,
-                    transformUnproxyableClasses);
+            addDelegatesAndTrasformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
+                    methodsFromWhichToRemoveFinal, fieldClass);
         } else if (bean.isSynthetic()) {
             Methods.addDelegatingMethods(index, bean.getImplClazz(), methods, null,
                     transformUnproxyableClasses);
         }
 
         return methods.values();
+    }
+
+    private void addDelegatesAndTrasformIfNecessary(Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
+            boolean transformUnproxyableClasses,
+            Map<Methods.MethodKey, MethodInfo> methods, IndexView index,
+            Map<String, Set<Methods.NameAndDescriptor>> methodsFromWhichToRemoveFinal,
+            ClassInfo fieldClass) {
+        Methods.addDelegatingMethods(index, fieldClass, methods, methodsFromWhichToRemoveFinal,
+                transformUnproxyableClasses);
+        if (!methodsFromWhichToRemoveFinal.isEmpty()) {
+            for (Map.Entry<String, Set<Methods.NameAndDescriptor>> entry : methodsFromWhichToRemoveFinal.entrySet()) {
+                String className = entry.getKey();
+                bytecodeTransformerConsumer.accept(new BytecodeTransformer(className,
+                        new Methods.RemoveFinalFromMethod(className, entry.getValue())));
+            }
+        }
     }
 
     private DotName getApplicationClassTestName(BeanInfo bean) {

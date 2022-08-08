@@ -133,6 +133,7 @@
                         <configuration>
                             <activeRecipes>
                                 <recipe>io.quarkus.resteasy-common</recipe>
+                                <recipe>io.quarkus.jakarta-angus-activation-switch</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>

@@ -12,9 +12,19 @@ name: io.quarkus.jakarta-versions
 displayName: Adjust Jakarta versions
 recipeList:
   # Activation
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: com.sun.activation
+      oldArtifactId: jakarta.activation
+      newGroupId: org.eclipse.angus
+      newArtifactId: angus-activation
+      newVersion: "${angus-activation.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.activation.version
-      newValue: 2.0.1
+      newValue: 2.1.0
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: angus-activation.version
+      newValue: 1.0.0
+      addIfMissing: true
   # Annotation
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jakarta-annotation
@@ -97,7 +107,9 @@ recipeList:
       newGroupId: org.hibernate
       newArtifactId: quarkus-local-cache-jakarta
   # Mail
-  # TODO: move to Angus artifacts
+  # TODO At some point we should move to the Angus artifacts BUT
+  # the only thing using Jakarta Mail is subethasmtp
+  # so let's wait for it to switch to Angus Mail.
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.mail.version
       newValue: 2.0.1
@@ -221,6 +233,28 @@ recipeList:
   - org.openrewrite.maven.RemoveExclusion:
       groupId: jakarta.xml.bind
       artifactId: jakarta.xml.bind-api
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.jakarta-angus-activation-switch
+displayName: Switch JAX-RS version
+recipeList:
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: com.sun.activation
+      oldArtifactId: jakarta.activation
+      newGroupId: org.eclipse.angus
+      newArtifactId: angus-activation
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.jakarta-angus-activation-exclude-add
+displayName: Switch JAX-RS version
+recipeList:
+  - org.openrewrite.maven.ExcludeDependency:
+      groupId: com.sun.activation
+      artifactId: jakarta.activation
+  - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
+      groupId: org.eclipse.angus
+      artifactId: angus-activation
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-json-cleanup

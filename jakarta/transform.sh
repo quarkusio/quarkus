@@ -217,6 +217,8 @@ update_banned_dependency "build-parent" 'jakarta.xml.bind:jakarta.xml.bind-api' 
 #update_banned_dependency_advanced "build-parent" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>\n                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
 update_banned_dependency_advanced "build-parent" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<!-- exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude -->\n                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
 update_banned_dependency_advanced "build-parent" '<exclude>jakarta.json:jakarta.json-api</exclude>' "<exclude>jakarta.json:jakarta.json-api</exclude>\n                                            <exclude>org.glassfish:jakarta.json</exclude>"
+sed -i 's@<!-- Exclude jakarta.activation-api as the implementation contains it -->@<!-- Exclude com.sun.activation:jakarta.activation as we switched to Angus Activation -->@g' 'build-parent/pom.xml'
+update_banned_dependency "build-parent" 'jakarta.activation:jakarta.activation-api' 'com.sun.activation:jakarta.activation'
 
 ## some additional wild changes to clean up at some point
 sed -i 's@FilterConfigSourceImpl@FilterConfigSource@g' extensions/resteasy-classic/resteasy-common/deployment/src/main/java/io/quarkus/resteasy/common/deployment/ResteasyCommonProcessor.java

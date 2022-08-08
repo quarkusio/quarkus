@@ -43,7 +43,7 @@
         <version.junit>5.9.0</version.junit>
         <version.assertj>3.23.1</version.assertj>
         <version.jandex>2.4.3.Final</version.jandex>
-        <version.gizmo>1.0.11.Final</version.gizmo>
+        <version.gizmo>1.1.0.Final</version.gizmo>
         <version.jboss-logging>3.5.0.Final</version.jboss-logging>
         <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
         <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>

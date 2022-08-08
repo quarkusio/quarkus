@@ -542,7 +542,7 @@ triage:
       notify: [geoand]
     - labels: [area/devservices]
       title: "dev.?services"
-      notify: [stuartwdouglas]
+      notify: [stuartwdouglas, geoand]
     - labels: [area/reactive-sql-clients]
       title: "(reactive sql|reactive pool|pgpool|mysqlpool|db2pool)"
       notify: [tsegismont,vietj]

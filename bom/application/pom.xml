@@ -4296,6 +4296,11 @@
                 </exclusions>
             </dependency>
             <dependency>
+                <groupId>org.eclipse.microprofile.lra</groupId>
+                <artifactId>microprofile-lra-api</artifactId>
+                <version>${microprofile-lra.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.jboss.narayana.rts</groupId>
                 <artifactId>narayana-lra</artifactId>
                 <version>${narayana.version}</version>
@@ -4303,10 +4308,6 @@
                     <exclusion>
                         <groupId>org.jboss.narayana.rts</groupId>
                         <artifactId>narayana-lra</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.jboss.narayana.rts</groupId>
-                        <artifactId>lra-service-base</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>commons-logging</groupId>
@@ -4328,8 +4329,17 @@
                 <version>${narayana.version}</version>
                 <exclusions>
                     <exclusion>
+                        <groupId>org.jboss.narayana.rts</groupId>
+                        <artifactId>lra-service-base</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>commons-logging</groupId>
                         <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                    <!-- this one will be handled in the extension -->
+                    <exclusion>
+                        <groupId>org.jboss.spec.javax.ws.rs</groupId>
+                        <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -4337,6 +4347,27 @@
                 <groupId>org.jboss.narayana.rts</groupId>
                 <artifactId>lra-proxy-api</artifactId>
                 <version>${narayana.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.narayana.rts</groupId>
+                        <artifactId>lra-proxy-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.narayana.rts</groupId>
+                <artifactId>lra-client</artifactId>
+                <version>${narayana.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.narayana.rts</groupId>
+                        <artifactId>lra-client</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>jakarta.activation</groupId>
+                        <artifactId>jakarta.activation-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>

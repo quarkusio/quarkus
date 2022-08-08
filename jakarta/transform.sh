@@ -298,6 +298,10 @@ sed -i 's@<excludedArtifact>jakarta.xml.bind:jakarta.xml.bind-api</excludedArtif
 rm extensions/resteasy-classic/resteasy-common/runtime/src/main/java/io/quarkus/resteasy/common/runtime/graal/{Target_org_jboss_resteasy_microprofile_config_FilterConfigSource.java,Target_org_jboss_resteasy_microprofile_config_ServletConfigSource.java,Target_org_jboss_resteasy_microprofile_config_ServletContextConfigSource.java,ServletMissing.java}
 sed -i 's@<quarkus.rest-client-reactive.scope>javax.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>@<quarkus.rest-client-reactive.scope>jakarta.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>@g' tcks/microprofile-rest-client-reactive/pom.xml
 
+sed -i 's@org.jboss.narayana.rts:narayana-lra@org.jboss.narayana.rts:narayana-lra-jakarta@g' extensions/narayana-lra/runtime/pom.xml
+sed -i 's@org.jboss.narayana.rts:lra-client@org.jboss.narayana.rts:lra-client-jakarta@g' extensions/narayana-lra/runtime/pom.xml
+sed -i 's@META-INF/services/javax.ws.rs.client.ClientBuilder@META-INF/services/jakarta.ws.rs.client.ClientBuilder@g' extensions/narayana-lra/runtime/pom.xml
+
 transform_documentation
 sed -i 's@javax/ws/rs@jakarta/ws/rs@g' docs/src/main/asciidoc/resteasy-reactive.adoc
 sed -i 's@https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/2.1.1@https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/3.1.0@g' docs/src/main/asciidoc/resteasy-reactive.adoc

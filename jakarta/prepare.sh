@@ -16,7 +16,7 @@ if [ ! -f dco.txt ]; then
     exit 1
 fi
 
-if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
+#if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   # Build SmallRye Config (temporary)
   #rm -rf target/smallrye-config
   #git clone https://github.com/smallrye/smallrye-config.git target/smallrye-config
@@ -26,9 +26,9 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   #popd
 
   # Build Narayana (temporary)
-  rm -rf target/narayana
-  git clone -b JBTM-3595-martin --depth 1 https://github.com/mmusgrov/narayana.git target/narayana
-  pushd target/narayana
-  ./build.sh clean install -DskipTests -DskipITs -Pcommunity
-  popd
-fi
+  #rm -rf target/narayana
+  #git clone -b JBTM-3595-martin --depth 1 https://github.com/mmusgrov/narayana.git target/narayana
+  #pushd target/narayana
+  #./build.sh clean install -DskipTests -DskipITs -Pcommunity
+  #popd
+#fi

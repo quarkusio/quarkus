@@ -44,7 +44,7 @@ recipeList:
   # JAX-RS - See below for the specs
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy.version
-      newValue: 6.0.0.Final
+      newValue: 6.0.3.Final
   # JAXB - See below
   # JSON - See below
   # JSON Bind

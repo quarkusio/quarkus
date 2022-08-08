@@ -627,6 +627,16 @@ jobs:
           git clone https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
           git checkout development
           export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests
+      - name: Upload build reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "build-reports-Quickstarts Compilation - JDK ${{matrix.java.name}}"
+          path: |
+            quarkus-quickstarts/**/target/*-reports/TEST-*.xml
+            quarkus-quickstarts/target/build-report.json
+            quarkus-quickstarts/LICENSE
+          retention-days: 2
 
   tcks-test:
     name: MicroProfile TCKs Tests

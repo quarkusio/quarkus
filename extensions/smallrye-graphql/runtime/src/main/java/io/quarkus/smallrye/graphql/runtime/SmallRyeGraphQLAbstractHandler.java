@@ -19,6 +19,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.graphql.execution.ExecutionService;
+import io.smallrye.graphql.execution.context.SmallRyeContextManager;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
@@ -56,7 +57,7 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
         return new Handler<>() {
             @Override
             public void handle(Object e) {
-                currentManagedContext.terminate();
+                terminate();
             }
         };
     }
@@ -73,9 +74,9 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
         }
         try {
             handleWithIdentity(ctx);
-            currentManagedContext.deactivate();
+            deactivate();
         } catch (Throwable t) {
-            currentManagedContext.terminate();
+            terminate();
             throw t;
         }
     }
@@ -127,5 +128,15 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
             h.put(header, headers.getAll(header));
         }
         return h;
+    }
+
+    private void deactivate() {
+        SmallRyeContextManager.clearCurrentSmallRyeContext();
+        currentManagedContext.deactivate();
+    }
+
+    private void terminate() {
+        SmallRyeContextManager.clearCurrentSmallRyeContext();
+        currentManagedContext.terminate();
     }
 }

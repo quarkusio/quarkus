@@ -10,6 +10,7 @@ import graphql.schema.DataFetchingEnvironment;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
 import io.smallrye.graphql.SmallRyeGraphQLServerMessages;
+import io.smallrye.graphql.execution.context.SmallRyeContextManager;
 import io.smallrye.graphql.execution.datafetcher.AbstractDataFetcher;
 import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Type;
@@ -36,6 +37,11 @@ public abstract class AbstractAsyncDataFetcher<K, T> extends AbstractDataFetcher
             return (O) uni
                     .onItemOrFailure()
                     .transformToUni((result, throwable, emitter) -> {
+
+                        emitter.onTermination(() -> {
+                            deactivate(requestContext);
+                        });
+
                         if (throwable != null) {
                             eventEmitter.fireOnDataFetchError(dfe.getExecutionId().toString(), throwable);
                             if (throwable instanceof GraphQLException) {
@@ -55,14 +61,24 @@ public abstract class AbstractAsyncDataFetcher<K, T> extends AbstractDataFetcher
                                 te.appendDataFetcherResult(resultBuilder, dfe);
                             }
                         }
-
                         emitter.complete(resultBuilder.build());
+                    })
+                    .onCancellation().invoke(() -> {
+                        deactivate(requestContext);
+                    })
+                    .onTermination().invoke(() -> {
+                        deactivate(requestContext);
                     })
                     .subscribe()
                     .asCompletionStage();
         } finally {
-            requestContext.deactivate();
+            deactivate(requestContext);
         }
+    }
+
+    private void deactivate(ManagedContext requestContext) {
+        SmallRyeContextManager.clearCurrentSmallRyeContext();
+        requestContext.deactivate();
     }
 
     protected abstract Uni<?> handleUserMethodCall(DataFetchingEnvironment dfe, final Object[] transformedArguments)

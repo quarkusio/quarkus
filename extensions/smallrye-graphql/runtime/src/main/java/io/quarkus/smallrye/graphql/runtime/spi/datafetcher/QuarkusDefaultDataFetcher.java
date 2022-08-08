@@ -12,6 +12,7 @@ import graphql.schema.DataFetchingEnvironment;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
 import io.smallrye.context.SmallRyeThreadContext;
+import io.smallrye.graphql.execution.context.SmallRyeContextManager;
 import io.smallrye.graphql.execution.datafetcher.DefaultDataFetcher;
 import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Type;
@@ -40,7 +41,7 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
                 return invokeAndTransformBlocking(dfe, resultBuilder, transformedArguments, vc);
             }
         } finally {
-            requestContext.deactivate();
+            deactivate(requestContext);
         }
     }
 
@@ -57,7 +58,7 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
                 return invokeBatchBlocking(dfe, arguments, vc);
             }
         } finally {
-            requestContext.deactivate();
+            deactivate(requestContext);
         }
     }
 
@@ -112,5 +113,10 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
 
     private boolean runBlocking(DataFetchingEnvironment dfe) {
         return dfe.getGraphQlContext().get("runBlocking");
+    }
+
+    private void deactivate(ManagedContext requestContext) {
+        SmallRyeContextManager.clearCurrentSmallRyeContext();
+        requestContext.deactivate();
     }
 }

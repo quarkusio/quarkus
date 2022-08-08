@@ -20,7 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -76,7 +75,8 @@ public class ClassTransformingBuildStep {
             ApplicationArchivesBuildItem appArchives, LiveReloadBuildItem liveReloadBuildItem,
             LaunchModeBuildItem launchModeBuildItem, ClassLoadingConfig classLoadingConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem, List<RemovedResourceBuildItem> removedResourceBuildItems,
-            ArchiveRootBuildItem archiveRoot, LaunchModeBuildItem launchMode, PackageConfig packageConfig)
+            ArchiveRootBuildItem archiveRoot, LaunchModeBuildItem launchMode, PackageConfig packageConfig,
+            ExecutorService buildExecutor)
             throws ExecutionException, InterruptedException {
         if (bytecodeTransformerBuildItems.isEmpty() && classLoadingConfig.removedResources.isEmpty()
                 && removedResourceBuildItems.isEmpty()) {
@@ -113,7 +113,6 @@ public class ClassTransformingBuildStep {
         // now copy all the contents to the runner jar
         // we also record if any additional archives needed transformation
         // when we copy these archives we will remove the problematic classes
-        final ExecutorService executorPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         final ConcurrentLinkedDeque<Future<TransformedClassesBuildItem.TransformedClass>> transformed = new ConcurrentLinkedDeque<>();
         final Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar = new HashMap<>();
         ClassLoader transformCl = Thread.currentThread().getContextClassLoader();
@@ -173,90 +172,86 @@ public class ClassTransformingBuildStep {
                 }
             }
         };
-        try {
-            for (Map.Entry<String, List<BytecodeTransformerBuildItem>> entry : bytecodeTransformers
-                    .entrySet()) {
-                String className = entry.getKey();
-                boolean cacheable = !nonCacheable.contains(className);
-                if (cacheable && transformedClassesCache.containsKey(className)) {
-                    if (liveReloadBuildItem.getChangeInformation() != null) {
-                        if (!liveReloadBuildItem.getChangeInformation().getChangedClasses().contains(className)) {
-                            //we can use the cached transformation
-                            handleTransformedClass(transformedToArchive, transformedClassesByJar,
-                                    transformedClassesCache.get(className));
-                            continue;
-                        }
-                    }
-                }
-                String classFileName = className.replace('.', '/') + ".class";
-                List<ClassPathElement> archives = cl.getElementsWithResource(classFileName);
-                if (!archives.isEmpty()) {
-                    ClassPathElement classPathElement = archives.get(0);
-                    Path jar = classPathElement.getRoot();
-                    if (jar == null) {
-                        log.warnf("Cannot transform %s as its containing application archive could not be found.",
-                                entry.getKey());
+        for (Map.Entry<String, List<BytecodeTransformerBuildItem>> entry : bytecodeTransformers
+                .entrySet()) {
+            String className = entry.getKey();
+            boolean cacheable = !nonCacheable.contains(className);
+            if (cacheable && transformedClassesCache.containsKey(className)) {
+                if (liveReloadBuildItem.getChangeInformation() != null) {
+                    if (!liveReloadBuildItem.getChangeInformation().getChangedClasses().contains(className)) {
+                        //we can use the cached transformation
+                        handleTransformedClass(transformedToArchive, transformedClassesByJar,
+                                transformedClassesCache.get(className));
                         continue;
                     }
-
-                    boolean continueOnFailure = entry.getValue().stream()
-                            .filter(a -> !a.isContinueOnFailure())
-                            .findAny().isEmpty();
-                    List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = entry.getValue().stream()
-                            .map(BytecodeTransformerBuildItem::getVisitorFunction).filter(Objects::nonNull)
-                            .collect(Collectors.toList());
-                    List<BiFunction<String, byte[], byte[]>> preVisitFunctions = entry.getValue().stream()
-                            .map(BytecodeTransformerBuildItem::getInputTransformer).filter(Objects::nonNull)
-                            .collect(Collectors.toList());
-                    transformedToArchive.put(classFileName, jar);
-                    transformed.add(executorPool.submit(new Callable<TransformedClassesBuildItem.TransformedClass>() {
-                        @Override
-                        public TransformedClassesBuildItem.TransformedClass call() throws Exception {
-                            ClassLoader old = Thread.currentThread().getContextClassLoader();
-                            try {
-                                byte[] classData = classPathElement.getResource(classFileName).getData();
-                                Thread.currentThread().setContextClassLoader(transformCl);
-                                Set<String> constValues = constScanning.get(className);
-                                if (constValues != null && !noConstScanning.contains(className)) {
-                                    if (!ConstPoolScanner.constPoolEntryPresent(classData, constValues)) {
-                                        return null;
-                                    }
-                                }
-                                byte[] data = transformClass(className, visitors, classData, preVisitFunctions,
-                                        classReaderOptions.getOrDefault(className, 0));
-                                TransformedClassesBuildItem.TransformedClass transformedClass = new TransformedClassesBuildItem.TransformedClass(
-                                        className, data,
-                                        classFileName, eager.contains(className));
-                                if (cacheable && launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT
-                                        && classData != null) {
-                                    transformedClassesCache.put(className, transformedClass);
-                                }
-                                return transformedClass;
-                            } catch (Throwable e) {
-                                if (continueOnFailure) {
-                                    if (log.isDebugEnabled()) {
-                                        log.errorf(e, "Failed to transform %s", className);
-                                    } else {
-                                        log.errorf("Failed to transform %s", className);
-                                    }
-                                    return null;
-                                } else {
-                                    throw e;
-                                }
-                            } finally {
-                                Thread.currentThread().setContextClassLoader(old);
-                            }
-                        }
-                    }));
-                } else {
-                    log.warnf("Cannot transform %s as its containing application archive could not be found.",
-                            entry.getKey());
                 }
             }
+            String classFileName = className.replace('.', '/') + ".class";
+            List<ClassPathElement> archives = cl.getElementsWithResource(classFileName);
+            if (!archives.isEmpty()) {
+                ClassPathElement classPathElement = archives.get(0);
+                Path jar = classPathElement.getRoot();
+                if (jar == null) {
+                    log.warnf("Cannot transform %s as its containing application archive could not be found.",
+                            entry.getKey());
+                    continue;
+                }
 
-        } finally {
-            executorPool.shutdown();
+                boolean continueOnFailure = entry.getValue().stream()
+                        .filter(a -> !a.isContinueOnFailure())
+                        .findAny().isEmpty();
+                List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = entry.getValue().stream()
+                        .map(BytecodeTransformerBuildItem::getVisitorFunction).filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+                List<BiFunction<String, byte[], byte[]>> preVisitFunctions = entry.getValue().stream()
+                        .map(BytecodeTransformerBuildItem::getInputTransformer).filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+                transformedToArchive.put(classFileName, jar);
+                transformed.add(buildExecutor.submit(new Callable<TransformedClassesBuildItem.TransformedClass>() {
+                    @Override
+                    public TransformedClassesBuildItem.TransformedClass call() throws Exception {
+                        ClassLoader old = Thread.currentThread().getContextClassLoader();
+                        try {
+                            byte[] classData = classPathElement.getResource(classFileName).getData();
+                            Thread.currentThread().setContextClassLoader(transformCl);
+                            Set<String> constValues = constScanning.get(className);
+                            if (constValues != null && !noConstScanning.contains(className)) {
+                                if (!ConstPoolScanner.constPoolEntryPresent(classData, constValues)) {
+                                    return null;
+                                }
+                            }
+                            byte[] data = transformClass(className, visitors, classData, preVisitFunctions,
+                                    classReaderOptions.getOrDefault(className, 0));
+                            TransformedClassesBuildItem.TransformedClass transformedClass = new TransformedClassesBuildItem.TransformedClass(
+                                    className, data,
+                                    classFileName, eager.contains(className));
+                            if (cacheable && launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT
+                                    && classData != null) {
+                                transformedClassesCache.put(className, transformedClass);
+                            }
+                            return transformedClass;
+                        } catch (Throwable e) {
+                            if (continueOnFailure) {
+                                if (log.isDebugEnabled()) {
+                                    log.errorf(e, "Failed to transform %s", className);
+                                } else {
+                                    log.errorf("Failed to transform %s", className);
+                                }
+                                return null;
+                            } else {
+                                throw e;
+                            }
+                        } finally {
+                            Thread.currentThread().setContextClassLoader(old);
+                        }
+                    }
+                }));
+            } else {
+                log.warnf("Cannot transform %s as its containing application archive could not be found.",
+                        entry.getKey());
+            }
         }
+
         handleRemovedResources(classLoadingConfig, curateOutcomeBuildItem, transformedClassesByJar, removedResourceBuildItems);
         if (!transformed.isEmpty()) {
             for (Future<TransformedClassesBuildItem.TransformedClass> i : transformed) {

@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -516,7 +515,8 @@ public class ArcProcessor {
             BuildProducer<GeneratedResourceBuildItem> generatedResource,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer,
             List<ReflectiveBeanClassBuildItem> reflectiveBeanClasses,
-            Optional<CurrentContextFactoryBuildItem> currentContextFactory) throws Exception {
+            Optional<CurrentContextFactoryBuildItem> currentContextFactory,
+            ExecutorService buildExecutor) throws Exception {
 
         for (ValidationErrorBuildItem validationError : validationErrors) {
             for (Throwable error : validationError.getValues()) {
@@ -539,45 +539,37 @@ public class ArcProcessor {
         boolean parallelResourceGeneration = Boolean
                 .parseBoolean(System.getProperty("quarkus.arc.parallel-resource-generation", "true"));
         long start = System.nanoTime();
-        ExecutorService executor = parallelResourceGeneration
-                ? Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
-                : null;
+        ExecutorService executor = parallelResourceGeneration ? buildExecutor : null;
         List<ResourceOutput.Resource> resources;
-        try {
-            resources = beanProcessor.generateResources(new ReflectionRegistration() {
-                @Override
-                public void registerMethod(MethodInfo methodInfo) {
-                    reflectiveMethods.produce(new ReflectiveMethodBuildItem(methodInfo));
-                }
-
-                @Override
-                public void registerField(FieldInfo fieldInfo) {
-                    reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
-                }
-
-                @Override
-                public void registerClientProxy(DotName beanClassName, String clientProxyName) {
-                    if (reflectiveBeanClassesNames.contains(beanClassName)) {
-                        // Fields should never be registered for client proxies
-                        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, clientProxyName));
-                    }
-                }
-
-                @Override
-                public void registerSubclass(DotName beanClassName, String subclassName) {
-                    if (reflectiveBeanClassesNames.contains(beanClassName)) {
-                        // Fields should never be registered for subclasses
-                        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, subclassName));
-                    }
-                }
-
-            }, existingClasses.existingClasses, bytecodeTransformerConsumer,
-                    config.shouldEnableBeanRemoval() && config.detectUnusedFalsePositives, executor);
-        } finally {
-            if (executor != null) {
-                executor.shutdown();
+        resources = beanProcessor.generateResources(new ReflectionRegistration() {
+            @Override
+            public void registerMethod(MethodInfo methodInfo) {
+                reflectiveMethods.produce(new ReflectiveMethodBuildItem(methodInfo));
             }
-        }
+
+            @Override
+            public void registerField(FieldInfo fieldInfo) {
+                reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
+            }
+
+            @Override
+            public void registerClientProxy(DotName beanClassName, String clientProxyName) {
+                if (reflectiveBeanClassesNames.contains(beanClassName)) {
+                    // Fields should never be registered for client proxies
+                    reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, clientProxyName));
+                }
+            }
+
+            @Override
+            public void registerSubclass(DotName beanClassName, String subclassName) {
+                if (reflectiveBeanClassesNames.contains(beanClassName)) {
+                    // Fields should never be registered for subclasses
+                    reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, subclassName));
+                }
+            }
+
+        }, existingClasses.existingClasses, bytecodeTransformerConsumer,
+                config.shouldEnableBeanRemoval() && config.detectUnusedFalsePositives, executor);
 
         for (ResourceOutput.Resource resource : resources) {
             switch (resource.getType()) {

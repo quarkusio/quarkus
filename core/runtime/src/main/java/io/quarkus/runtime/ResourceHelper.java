@@ -12,7 +12,7 @@ public class ResourceHelper {
 
     public static void registerResources(String resource) {
         try {
-            Class resourcesClass = Class.forName("com.oracle.svm.core.jdk.Resources");
+            Class<?> resourcesClass = Class.forName("com.oracle.svm.core.jdk.Resources");
             Method register = resourcesClass.getDeclaredMethod("registerResource", String.class, InputStream.class);
             ClassPathUtils.consumeAsStreams(ResourceHelper.class.getClassLoader(), resource, in -> {
                 try {

@@ -134,15 +134,12 @@ receivers:
     protocols:
       grpc:
         endpoint: otel-collector:4317
-  otlp/2:
-    protocols:
-      grpc:
-        endpoint: otel-collector:55680
 
 exporters:
   jaeger:
     endpoint: jaeger-all-in-one:14250
-    insecure: true
+    tls:
+      insecure: true
 
 processors:
   batch:
@@ -172,8 +169,8 @@ services:
     image: jaegertracing/all-in-one:latest
     ports:
       - "16686:16686"
-      - "14268"
-      - "14250"
+      - "14268:14268"
+      - "14250:14250"
   # Collector
   otel-collector:
     image: otel/opentelemetry-collector:latest
@@ -183,7 +180,6 @@ services:
     ports:
       - "13133:13133" # Health_check extension
       - "4317:4317"   # OTLP gRPC receiver
-      - "55680:55680" # OTLP gRPC receiver alternative port
     depends_on:
       - jaeger-all-in-one
 ----
@@ -194,7 +190,7 @@ include::{includes}/devtools/dev.adoc[]
 
 or if configuring the OTLP gRPC endpoint via JVM arguments:
 
-:dev-additional-parameters: -Djvm.args="-Dquarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://localhost:55680"
+:dev-additional-parameters: -Djvm.args="-Dquarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://localhost:4317"
 include::{includes}/devtools/dev.adoc[]
 :!dev-additional-parameters:
 

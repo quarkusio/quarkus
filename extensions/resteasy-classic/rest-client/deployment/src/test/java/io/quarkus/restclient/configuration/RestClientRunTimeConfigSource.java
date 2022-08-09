@@ -41,7 +41,7 @@ public class RestClientRunTimeConfigSource extends MapBackedConfigSource {
 
     private static boolean isRuntime() {
         for (ConfigSource configSource : ConfigProvider.getConfig().getConfigSources()) {
-            if (configSource.getName().equals("PropertiesConfigSource[source=Specified default values]")) {
+            if (configSource.getName().equals("RunTime Defaults")) {
                 return true;
             }
         }

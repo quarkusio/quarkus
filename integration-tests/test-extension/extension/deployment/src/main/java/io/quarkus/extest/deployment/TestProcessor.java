@@ -335,7 +335,7 @@ public final class TestProcessor {
             TestMappingBuildTime testMappingBuildTime,
             TestMappingBuildTimeRunTime testMappingBuildTimeRunTime) {
         Map<String, String> buildTimeValues = configItem.getReadResult().getAllBuildTimeValues();
-        Map<String, String> buildTimeRunTimeValues = configItem.getReadResult().getBuildTimeRunTimeVisibleValues();
+        Map<String, String> buildTimeRunTimeValues = configItem.getReadResult().getBuildTimeRunTimeValues();
 
         if (!testMappingBuildTime.value().equals("value")
                 || !buildTimeValues.getOrDefault("quarkus.mapping.bt.value", "").equals("value")) {

@@ -715,6 +715,15 @@ public class NativeImageBuildStep {
                     }
                 }
 
+                // only available in GraalVM 22.3.0 and better.
+                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_22_3_0) >= 0) {
+                    // For build time information
+                    nativeImageArgs.add("-H:+CollectImageBuildStatistics");
+                    nativeImageArgs.add("-H:ImageBuildStatisticsFile=" + nativeImageName + "-timing-stats.json");
+                    // For getting the build output stats as a JSON file
+                    nativeImageArgs.add("-H:BuildOutputJSONFile=" + nativeImageName + "-build-output-stats.json");
+                }
+
                 /*
                  * Any parameters following this call are forced over the user provided parameters in
                  * quarkus.native.additional-build-args. So if you need a parameter to be overridable through

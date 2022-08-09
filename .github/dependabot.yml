@@ -12,6 +12,8 @@ updates:
     allow:
       - dependency-name: org.jboss:jboss-parent
       - dependency-name: org.jboss.resteasy:*
+      - dependency-name: org.jboss.resteasy.microprofile:*
+      - dependency-name: org.jboss.resteasy.spring:*
       - dependency-name: org.apache.activemq:*
       - dependency-name: org.flywaydb:*
       - dependency-name: org.liquibase:*
@@ -85,9 +87,9 @@ updates:
       - dependency-name: net.revelc.code.formatter:formatter-maven-plugin
       - dependency-name: net.revelc.code:impsort-maven-plugin
       # Narayana
-      - dependency-name: org.jboss.narayana.jta:narayana-jta
-      - dependency-name: org.jboss.narayana.jts:narayana-jts-integration
-      - dependency-name: org.jboss.narayana.stm:stm
+      - dependency-name: org.jboss.narayana.jta:*
+      - dependency-name: org.jboss.narayana.jts:*
+      - dependency-name: org.jboss.narayana.stm:*
       # Agroal
       - dependency-name: io.agroal:*
       # Jandex
@@ -173,6 +175,13 @@ updates:
       - dependency-name: org.jboss.jdeparser:jdeparser
       - dependency-name: com.github.javaparser:javaparser-core
       - dependency-name: com.h2database:h2
+      # Jakarta 9/10 preparation
+      - dependency-name: jakarta.activation:jakarta.activation-api
+      - dependency-name: org.eclipse.angus:angus-activation
+      - dependency-name: org.glassfish.expressly:expressly
+      - dependency-name: com.sun.xml.bind:jaxb-impl
+      - dependency-name: jakarta.xml.bind:jakarta.xml.bind-api
+      - dependency-name: org.eclipse.parsson:*
     ignore:
       # this one cannot be upgraded due to the usage of proxies in new versions
       # the proxy implements interfaces in a random order which causes issues

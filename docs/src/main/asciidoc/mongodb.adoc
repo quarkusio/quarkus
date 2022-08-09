@@ -593,6 +593,11 @@ When building native executables and using generic types, you might need to regi
 
 The xref:mongodb-panache.adoc[MongoDB with Panache] extension facilitates the usage of MongoDB by providing active record style entities (and repositories) like you have in xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
 
+== Schema migration with Liquibase
+
+The xref:liquibase-mongodb.adoc[Liquibase MongoDB] extension facilitates the initialization of a MongoDB database including indices and initial data.
+It implements the same schema migration facilities that Liquibase offers for SQL databases.
+
 == Connection Health Check
 
 If you are using the `quarkus-smallrye-health` extension, `quarkus-mongodb-client` will automatically add a readiness health check

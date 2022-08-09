@@ -2,7 +2,6 @@ package io.quarkus.opentelemetry.runtime.tracing;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import javax.enterprise.inject.Any;
@@ -140,25 +139,14 @@ public class TracerRecorder {
             List<String> dropStaticResources) {
 
         LateBoundSampler lateBoundSampler = CDI.current().select(LateBoundSampler.class, Any.Literal.INSTANCE).get();
-        Optional<Sampler> samplerBean = CDI.current()
-                .select(Sampler.class, Any.Literal.INSTANCE)
-                .stream()
-                .filter(o -> !(o instanceof LateBoundSampler))
-                .findFirst();
-
-        // Define Sampler using bean if present
-        if (samplerBean.isPresent()) {
-            lateBoundSampler.setSamplerDelegate(samplerBean.get());
-        } else {
-            List<String> dropNames = new ArrayList<>();
-            if (config.suppressNonApplicationUris) {
-                dropNames.addAll(dropNonApplicationUris);
-            }
-            if (!config.includeStaticResources) {
-                dropNames.addAll(dropStaticResources);
-            }
-            // Define Sampler using config
-            lateBoundSampler.setSamplerDelegate(TracerUtil.mapSampler(config.sampler, dropNames));
+        List<String> dropNames = new ArrayList<>();
+        if (config.suppressNonApplicationUris) {
+            dropNames.addAll(dropNonApplicationUris);
         }
+        if (!config.includeStaticResources) {
+            dropNames.addAll(dropStaticResources);
+        }
+        Sampler samplerBean = TracerUtil.mapSampler(config.sampler, dropNames);
+        lateBoundSampler.setSamplerDelegate(samplerBean);
     }
 }

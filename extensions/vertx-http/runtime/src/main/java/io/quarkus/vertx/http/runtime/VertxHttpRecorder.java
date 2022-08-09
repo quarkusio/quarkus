@@ -274,8 +274,7 @@ public class VertxHttpRecorder {
             doServerStart(vertx, buildConfig, config, LaunchMode.DEVELOPMENT, new Supplier<Integer>() {
                 @Override
                 public Integer get() {
-                    return ProcessorInfo.availableProcessors()
-                            * 2; //this is dev mode, so the number of IO threads not always being 100% correct does not really matter in this case
+                    return ProcessorInfo.availableProcessors(); //this is dev mode, so the number of IO threads not always being 100% correct does not really matter in this case
                 }
             }, null, false);
         } catch (Exception e) {

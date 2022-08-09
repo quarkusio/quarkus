@@ -83,7 +83,7 @@ class NarayanaLRAProcessor {
                 continue;
             }
 
-            int modifiers = classInfo.getClass().getModifiers();
+            int modifiers = classInfo.flags();
 
             if (Modifier.isInterface(modifiers) || Modifier.isAbstract(modifiers) || !isLRAParticipant(index, classInfo)) {
                 continue;

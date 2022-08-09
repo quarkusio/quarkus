@@ -54,6 +54,7 @@ class ResourceImplementor {
 
         classCreator.addAnnotation(ApplicationScoped.class);
         implementList(classCreator, dataAccessImplementor);
+        implementCount(classCreator, dataAccessImplementor);
         implementListPageCount(classCreator, dataAccessImplementor);
         implementGet(classCreator, dataAccessImplementor);
         implementAdd(classCreator, dataAccessImplementor);
@@ -76,6 +77,15 @@ class ResourceImplementor {
         isEmptySortBranch.trueBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page));
         isEmptySortBranch.falseBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort));
 
+        methodCreator.close();
+    }
+
+    /**
+     * Generate count method.
+     */
+    private void implementCount(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
+        MethodCreator methodCreator = classCreator.getMethodCreator("count", Uni.class);
+        methodCreator.returnValue(dataAccessImplementor.count(methodCreator));
         methodCreator.close();
     }
 

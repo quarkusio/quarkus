@@ -29,6 +29,11 @@ public interface ReactiveRestDataResource<Entity, ID> {
     Uni<List<Entity>> list(Page page, Sort sort);
 
     /**
+     * @return the total number of entities.
+     */
+    Uni<Long> count();
+
+    /**
      * Return an entity as a JSON object.
      * Response content type: application/json.
      *

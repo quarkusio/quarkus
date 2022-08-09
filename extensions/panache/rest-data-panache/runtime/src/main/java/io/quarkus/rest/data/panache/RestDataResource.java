@@ -28,6 +28,11 @@ public interface RestDataResource<Entity, ID> {
     List<Entity> list(Page page, Sort sort);
 
     /**
+     * @return the total number of entities.
+     */
+    long count();
+
+    /**
      * Return an entity as a JSON object.
      * Response content type: application/json.
      *

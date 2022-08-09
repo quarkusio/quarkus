@@ -108,6 +108,15 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     }
 
     /**
+     * Implements <code>repository.count()</code>
+     */
+    @Override
+    public ResultHandle count(BytecodeCreator creator) {
+        return creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "count", Uni.class),
+                getRepositoryInstance(creator));
+    }
+
+    /**
      * Implements getting repository from Arc container.
      * <code>Arc.container().instance(Repository.class, new Annotation[0]).get()</code>
      */

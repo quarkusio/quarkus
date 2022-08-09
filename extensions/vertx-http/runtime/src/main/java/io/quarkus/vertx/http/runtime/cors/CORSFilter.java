@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
@@ -24,10 +23,24 @@ public class CORSFilter implements Handler<RoutingContext> {
     final CORSConfig corsConfig;
 
     final List<Pattern> allowedOriginsRegex;
+    private final List<HttpMethod> configuredHttpMethods;
 
     public CORSFilter(CORSConfig corsConfig) {
         this.corsConfig = corsConfig;
         this.allowedOriginsRegex = parseAllowedOriginsRegex(this.corsConfig.origins);
+        configuredHttpMethods = createConfiguredHttpMethods(this.corsConfig.methods);
+    }
+
+    private List<HttpMethod> createConfiguredHttpMethods(Optional<List<String>> methods) {
+        if (methods.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> corsConfigMethods = methods.get();
+        List<HttpMethod> result = new ArrayList<>(corsConfigMethods.size());
+        for (String value : corsConfigMethods) {
+            result.add(HttpMethod.valueOf(value));
+        }
+        return result;
     }
 
     public static boolean isConfiguredWithWildcard(Optional<List<String>> optionalList) {
@@ -85,20 +98,29 @@ public class CORSFilter implements Handler<RoutingContext> {
         if (isConfiguredWithWildcard(corsConfig.headers)) {
             response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, allowHeadersValue);
         } else {
-            List<String> requestedHeaders = new ArrayList<>();
-            for (String requestedHeader : COMMA_SEPARATED_SPLIT_REGEX.split(allowHeadersValue)) {
+            List<String> requestedHeaders;
+            String[] allowedParts = COMMA_SEPARATED_SPLIT_REGEX.split(allowHeadersValue);
+            requestedHeaders = new ArrayList<>(allowedParts.length);
+            for (String requestedHeader : allowedParts) {
                 requestedHeaders.add(requestedHeader.toLowerCase());
             }
 
-            List<String> validRequestedHeaders = new ArrayList<>();
-            for (String configHeader : corsConfig.headers.get()) {
+            List<String> corsConfigHeaders = corsConfig.headers.get();
+            StringBuilder allowedHeaders = new StringBuilder();
+            boolean isFirst = true;
+            for (String configHeader : corsConfigHeaders) {
                 if (requestedHeaders.contains(configHeader.toLowerCase())) {
-                    validRequestedHeaders.add(configHeader);
+                    if (isFirst) {
+                        isFirst = false;
+                    } else {
+                        allowedHeaders.append(',');
+                    }
+                    allowedHeaders.append(configHeader);
                 }
             }
 
-            if (!validRequestedHeaders.isEmpty()) {
-                response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, String.join(",", validRequestedHeaders));
+            if (allowedHeaders.length() != 0) {
+                response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, allowedHeaders.toString());
             }
         }
     }
@@ -107,22 +129,27 @@ public class CORSFilter implements Handler<RoutingContext> {
         if (isConfiguredWithWildcard(corsConfig.methods)) {
             response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, allowMethodsValue);
         } else {
-            List<String> requestedMethods = new ArrayList<>();
-            for (String requestedMethod : COMMA_SEPARATED_SPLIT_REGEX.split(allowMethodsValue)) {
+            String[] allowedMethodsParts = COMMA_SEPARATED_SPLIT_REGEX.split(allowMethodsValue);
+            List<String> requestedMethods = new ArrayList<>(allowedMethodsParts.length);
+            for (String requestedMethod : allowedMethodsParts) {
                 requestedMethods.add(requestedMethod.toLowerCase());
             }
 
-            List<String> validRequestedMethods = new ArrayList<>();
-            List<HttpMethod> methods = corsConfig.methods.get().stream().map(HttpMethod::valueOf)
-                    .collect(Collectors.toList());
-            for (HttpMethod configMethod : methods) {
+            StringBuilder allowMethods = new StringBuilder();
+            boolean isFirst = true;
+            for (HttpMethod configMethod : configuredHttpMethods) {
                 if (requestedMethods.contains(configMethod.name().toLowerCase())) {
-                    validRequestedMethods.add(configMethod.name());
+                    if (isFirst) {
+                        isFirst = false;
+                    } else {
+                        allowMethods.append(',');
+                    }
+                    allowMethods.append(configMethod.name());
                 }
             }
 
-            if (!validRequestedMethods.isEmpty()) {
-                response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, String.join(",", validRequestedMethods));
+            if (allowMethods.length() != 0) {
+                response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, allowMethods.toString());
             }
         }
     }

@@ -702,6 +702,10 @@ public class NativeImageBuildStep {
 
                 //address https://github.com/quarkusio/quarkus-quickstarts/issues/993
                 nativeImageArgs.add("-J--add-opens=java.base/java.text=ALL-UNNAMED");
+                // kogito-dmn-quickstart is failing if we don't have this
+                nativeImageArgs.add("-J--add-opens=java.base/java.io=ALL-UNNAMED");
+                // mybatis extension
+                nativeImageArgs.add("-J--add-opens=java.base/java.lang.invoke=ALL-UNNAMED");
 
                 if (nativeConfig.enableReports) {
                     if (graalVMVersion.isOlderThan(GraalVM.Version.VERSION_21_3_2)) {

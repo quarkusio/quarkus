@@ -6,6 +6,7 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
@@ -35,10 +36,16 @@ public class AutoFieldInjectionTest {
     public void testInjectionWorks() {
         assertEquals("ok", bean.foo);
         assertEquals(1l, bean.bar);
+        assertNull(Client.staticFoo);
+        assertNull(bean.baz);
     }
 
     @Dependent
     static class Client {
+
+        // @Inject should not be added here
+        @MyQualifier
+        static String staticFoo;
 
         // @Inject is added automatically
         @MyQualifier
@@ -46,6 +53,14 @@ public class AutoFieldInjectionTest {
 
         @MyQualifier
         Long bar;
+
+        // @Inject should not be added here
+        @MyQualifier
+        final Long baz;
+
+        Client() {
+            this.baz = null;
+        }
 
     }
 

@@ -48,7 +48,7 @@ public class ArcConfig {
     public String removeUnusedBeans;
 
     /**
-     * If set to true {@code @Inject} is automatically added to all non-static fields that are annotated with
+     * If set to true {@code @Inject} is automatically added to all non-static non-final fields that are annotated with
      * one of the annotations defined by {@link AutoInjectAnnotationBuildItem}.
      */
     @ConfigItem(defaultValue = "true")

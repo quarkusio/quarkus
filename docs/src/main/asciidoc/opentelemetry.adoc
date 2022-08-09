@@ -109,6 +109,9 @@ quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://localhost:4317 // <3>
 quarkus.opentelemetry.tracer.exporter.otlp.headers=Authorization=Bearer my_secret // <4>
 
 quarkus.log.console.format=%d{HH:mm:ss} %-5p traceId=%X{traceId}, parentId=%X{parentId}, spanId=%X{spanId}, sampled=%X{sampled} [%c{2.}] (%t) %s%e%n  // <5>
+
+# Alternative to the console log
+quarkus.http.access-log.pattern="...traceId=%{X,traceId} spanId=%{X,spanId}" // <6>
 ----
 
 <1> All spans created from the application will include an OpenTelemetry `Resource` indicating the span was created by the `myservice` application. If not set, it will default to the artifact id.
@@ -116,6 +119,8 @@ quarkus.log.console.format=%d{HH:mm:ss} %-5p traceId=%X{traceId}, parentId=%X{pa
 <3> gRPC endpoint for sending spans
 <4> Optional gRPC headers commonly used for authentication
 <5> Add tracing information into log message.
+<6> You can also only put the trace info into the access log. In this case you must omit the info in the console log format.
+
 == Run the application
 
 The first step is to configure and start the https://opentelemetry.io/docs/collector/[OpenTelemetry Collector] to receive, process and export telemetry data to https://www.jaegertracing.io/[Jaeger] that will display the captured traces.

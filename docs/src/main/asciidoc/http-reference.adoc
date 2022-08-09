@@ -359,6 +359,7 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-confi
 |Request header                                                               |          | `%{i,request_header_name}`
 |Response header                                                              |          | `%{o,response_header_name}`
 |Vert.x Routing Context Internal Data                                         |          | `%{d,map_key}`
+|Vert.x MDC data (e.g. 'traceId' for OpenTelemetry)                           |          | `%{X,mdc-key}`
 |===
 
 

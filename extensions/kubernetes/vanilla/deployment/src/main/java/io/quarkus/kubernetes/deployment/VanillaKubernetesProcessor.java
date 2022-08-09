@@ -5,6 +5,7 @@ import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
+import static io.quarkus.kubernetes.deployment.Constants.INGRESS;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.VANILLA_KUBERNETES_PRIORITY;
 
@@ -17,7 +18,10 @@ import java.util.stream.Stream;
 
 import io.dekorate.kubernetes.annotation.ServiceType;
 import io.dekorate.kubernetes.config.EnvBuilder;
+import io.dekorate.kubernetes.config.IngressBuilder;
+import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
+import io.dekorate.kubernetes.decorator.AddIngressTlsDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.kubernetes.decorator.ApplyReplicasToDeploymentDecorator;
@@ -102,7 +106,9 @@ public class VanillaKubernetesProcessor {
         KubernetesCommonHelper.combinePorts(ports, config).values().forEach(value -> {
             result.add(new ConfiguratorBuildItem(new AddPortToKubernetesConfig(value)));
         });
-        result.add(new ConfiguratorBuildItem(new ApplyKubernetesExpositionConfigurator((config.ingress))));
+        if (config.ingress != null) {
+            result.add(new ConfiguratorBuildItem(new ApplyKubernetesIngressConfigurator((config.ingress))));
+        }
 
         // Handle remote debug configuration for container ports
         if (config.remoteDebug.enabled) {
@@ -139,6 +145,28 @@ public class VanillaKubernetesProcessor {
         if (config.deploymentKind == KubernetesConfig.DeploymentResourceKind.StatefulSet) {
             result.add(new DecoratorBuildItem(KUBERNETES, new RemoveDeploymentResourceDecorator(name)));
             result.add(new DecoratorBuildItem(KUBERNETES, new AddStatefulSetResourceDecorator(name, config)));
+        }
+
+        if (config.ingress != null) {
+            if (config.ingress.tls != null) {
+                for (Map.Entry<String, IngressTlsConfig> tlsConfigEntry : config.ingress.tls.entrySet()) {
+                    if (tlsConfigEntry.getValue().enabled) {
+                        String[] tlsHosts = tlsConfigEntry.getValue().hosts
+                                .map(l -> l.toArray(new String[0]))
+                                .orElse(null);
+                        result.add(new DecoratorBuildItem(KUBERNETES,
+                                new AddIngressTlsDecorator(name, new IngressBuilder()
+                                        .withTlsSecretName(tlsConfigEntry.getKey())
+                                        .withTlsHosts(tlsHosts)
+                                        .build())));
+                    }
+                }
+
+            }
+            for (Map.Entry<String, String> annotation : config.ingress.annotations.entrySet()) {
+                result.add(new DecoratorBuildItem(KUBERNETES,
+                        new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), INGRESS)));
+            }
         }
 
         if (config.getReplicas() != 1) {

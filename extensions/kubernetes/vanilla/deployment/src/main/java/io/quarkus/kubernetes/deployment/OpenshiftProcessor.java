@@ -7,11 +7,13 @@ import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT_APP_RUNTIME;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS;
+import static io.quarkus.kubernetes.deployment.Constants.ROUTE;
 import static io.quarkus.kubernetes.deployment.OpenshiftConfig.OpenshiftFlavor.v3;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.DEFAULT_PRIORITY;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -19,6 +21,7 @@ import io.dekorate.kubernetes.annotation.ServiceType;
 import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.config.ImageConfiguration;
 import io.dekorate.kubernetes.config.ImageConfigurationBuilder;
+import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
@@ -133,7 +136,7 @@ public class OpenshiftProcessor {
         KubernetesCommonHelper.combinePorts(ports, config).values().forEach(value -> {
             result.add(new ConfiguratorBuildItem(new AddPortToOpenshiftConfig(value)));
         });
-        result.add(new ConfiguratorBuildItem(new ApplyRouteExpositionConfigurator(config.route)));
+        result.add(new ConfiguratorBuildItem(new ApplyOpenshiftRouteConfigurator(config.route)));
 
         // Handle remote debug configuration for container ports
         if (config.remoteDebug.enabled) {
@@ -222,6 +225,13 @@ public class OpenshiftProcessor {
                 result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentConfigResourceDecorator(name)));
                 result.add(new DecoratorBuildItem(OPENSHIFT, new AddStatefulSetResourceDecorator(name, config)));
                 break;
+        }
+
+        if (config.route != null) {
+            for (Map.Entry<String, String> annotation : config.route.annotations.entrySet()) {
+                result.add(new DecoratorBuildItem(OPENSHIFT,
+                        new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), ROUTE)));
+            }
         }
 
         if (config.getReplicas() != 1) {

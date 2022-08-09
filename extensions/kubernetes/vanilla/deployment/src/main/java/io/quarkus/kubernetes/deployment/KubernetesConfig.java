@@ -264,7 +264,7 @@ public class KubernetesConfig implements PlatformConfiguration {
     /**
      * Ingress configuration
      */
-    ExpositionConfig ingress;
+    IngressConfig ingress;
 
     /**
      * If true, the 'app.kubernetes.io/version' label will be part of the selectors of Service and Deployment
@@ -500,11 +500,6 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public Optional<String> getAppConfigMap() {
         return appConfigMap;
-    }
-
-    @Override
-    public Optional<ExpositionConfig> getExposition() {
-        return Optional.of(ingress);
     }
 
     @Override

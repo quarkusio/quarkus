@@ -300,7 +300,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
     /**
      * Openshift route configuration
      */
-    ExpositionConfig route;
+    RouteConfig route;
 
     /**
      * If true, the 'app.kubernetes.io/version' label will be part of the selectors of Service and DeploymentConfig
@@ -525,11 +525,6 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     public Optional<String> getAppConfigMap() {
         return this.appConfigMap;
-    }
-
-    @Override
-    public Optional<ExpositionConfig> getExposition() {
-        return Optional.of(route);
     }
 
     @Override

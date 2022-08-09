@@ -7,7 +7,7 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class ExpositionConfig {
+public class IngressConfig {
 
     /**
      * If true, the service will be exposed
@@ -26,5 +26,11 @@ public class ExpositionConfig {
      */
     @ConfigItem
     Map<String, String> annotations;
+
+    /**
+     * Allow to configure the TLS Ingress configuration hosts by secret name.
+     */
+    @ConfigItem
+    Map<String, IngressTlsConfig> tls;
 
 }

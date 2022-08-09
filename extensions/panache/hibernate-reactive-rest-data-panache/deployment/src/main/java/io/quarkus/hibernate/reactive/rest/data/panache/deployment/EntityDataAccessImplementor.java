@@ -93,4 +93,12 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
                 page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", Uni.class), query);
     }
+
+    /**
+     * Implements <code>Entity.count()</code>
+     */
+    @Override
+    public ResultHandle count(BytecodeCreator creator) {
+        return creator.invokeStaticMethod(ofMethod(entityClassName, "count", Uni.class));
+    }
 }

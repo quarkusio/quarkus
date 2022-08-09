@@ -17,6 +17,7 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.rest.data.panache.deployment.methods.AddMethodImplementor;
+import io.quarkus.rest.data.panache.deployment.methods.CountMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.DeleteMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.GetMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.ListMethodImplementor;
@@ -39,6 +40,7 @@ class JaxRsResourceImplementor {
     JaxRsResourceImplementor(boolean withValidation, boolean isResteasyClassic, boolean isReactivePanache) {
         this.methodImplementors = Arrays.asList(new GetMethodImplementor(isResteasyClassic, isReactivePanache),
                 new ListMethodImplementor(isResteasyClassic, isReactivePanache),
+                new CountMethodImplementor(isResteasyClassic, isReactivePanache),
                 new AddMethodImplementor(withValidation, isResteasyClassic, isReactivePanache),
                 new UpdateMethodImplementor(withValidation, isResteasyClassic, isReactivePanache),
                 new DeleteMethodImplementor(isResteasyClassic, isReactivePanache),

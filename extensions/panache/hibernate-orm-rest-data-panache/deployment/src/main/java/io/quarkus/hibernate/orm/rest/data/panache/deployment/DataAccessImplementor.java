@@ -71,4 +71,12 @@ public interface DataAccessImplementor {
      * @return int page count.
      */
     ResultHandle pageCount(BytecodeCreator creator, ResultHandle page);
+
+    /**
+     * return the total number of entities.
+     *
+     * @param creator Bytecode creator that should be used for implementation.
+     * @return long entities count.
+     */
+    ResultHandle count(BytecodeCreator creator);
 }

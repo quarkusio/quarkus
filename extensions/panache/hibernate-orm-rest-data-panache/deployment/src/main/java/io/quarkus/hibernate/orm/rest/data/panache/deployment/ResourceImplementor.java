@@ -54,6 +54,7 @@ class ResourceImplementor {
         classCreator.addAnnotation(ApplicationScoped.class);
         implementList(classCreator, dataAccessImplementor);
         implementListPageCount(classCreator, dataAccessImplementor);
+        implementCount(classCreator, dataAccessImplementor);
         implementGet(classCreator, dataAccessImplementor);
         implementAdd(classCreator, dataAccessImplementor);
         implementUpdate(classCreator, dataAccessImplementor, entityType);
@@ -87,6 +88,15 @@ class ResourceImplementor {
                 Page.class);
         ResultHandle page = methodCreator.getMethodParam(0);
         methodCreator.returnValue(dataAccessImplementor.pageCount(methodCreator, page));
+        methodCreator.close();
+    }
+
+    /**
+     * Generate count method.
+     */
+    private void implementCount(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
+        MethodCreator methodCreator = classCreator.getMethodCreator("count", long.class);
+        methodCreator.returnValue(dataAccessImplementor.count(methodCreator));
         methodCreator.close();
     }
 

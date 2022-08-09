@@ -246,6 +246,12 @@ public class PeopleResourceJaxRs { // The actual class name is going to be uniqu
         // ... build a response with page links and return a 200 response with a list
     }
 
+    @GET
+    @Path("/count")
+    public long count() {
+        return resource.count();
+    }
+
     @Transactional
     @POST
     @Consumes("application/json")

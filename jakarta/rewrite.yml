@@ -158,10 +158,10 @@ recipeList:
   # XML Bind
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.xml.bind-api.version
-      newValue: 3.0.1
+      newValue: 4.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jaxb-runtime.version
-      newValue: 3.0.2
+      newValue: 4.0.0
   # WildFly Security
   - org.openrewrite.maven.ChangePropertyValue:
       key: wildfly-elytron.version
@@ -181,7 +181,7 @@ recipeList:
       version: "${jboss-jaxrs-api_3.0_spec.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.xml.bind-api.version
-      newValue: 3.0.1
+      newValue: 4.0.0
       addIfMissing: true
   - org.openrewrite.maven.ChangePropertyValue:
       key: jboss-jaxrs-api_3.0_spec.version

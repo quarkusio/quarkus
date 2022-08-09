@@ -187,4 +187,13 @@ public final class FlywayDataSourceRuntimeConfig {
      */
     @ConfigItem
     public boolean validateMigrationNaming;
+
+    /**
+     * Ignore migrations during validate and repair according to a given list of patterns (see
+     * https://flywaydb.org/documentation/configuration/parameters/ignoreMigrationPatterns for more information).
+     * When this configuration is set, the ignoreFutureMigrations and ignoreMissingMigrations settings are ignored. Patterns are
+     * comma separated.
+     */
+    @ConfigItem
+    public Optional<String[]> ignoreMigrationPatterns = Optional.empty();
 }

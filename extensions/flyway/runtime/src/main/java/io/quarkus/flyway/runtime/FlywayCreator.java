@@ -60,16 +60,23 @@ class FlywayCreator {
         configure.baselineOnMigrate(flywayRuntimeConfig.baselineOnMigrate);
         configure.validateOnMigrate(flywayRuntimeConfig.validateOnMigrate);
         configure.validateMigrationNaming(flywayRuntimeConfig.validateMigrationNaming);
-        List<String> patterns = new ArrayList<>(2);
-        //https://flywaydb.org/documentation/configuration/parameters/ignoreMigrationPatterns
-        if (flywayRuntimeConfig.ignoreMissingMigrations) {
-            patterns.add("*:Missing");
+
+        final String[] ignoreMigrationPatterns;
+        if (flywayRuntimeConfig.ignoreMigrationPatterns.isPresent()) {
+            ignoreMigrationPatterns = flywayRuntimeConfig.ignoreMigrationPatterns.get();
+        } else {
+            List<String> patterns = new ArrayList<>(2);
+            if (flywayRuntimeConfig.ignoreMissingMigrations) {
+                patterns.add("*:Missing");
+            }
+            if (flywayRuntimeConfig.ignoreFutureMigrations) {
+                patterns.add("*:Future");
+            }
+            // Default is *:Future
+            ignoreMigrationPatterns = patterns.toArray(new String[0]);
         }
-        if (flywayRuntimeConfig.ignoreFutureMigrations) {
-            patterns.add("*:Future");
-        }
-        // Default is *:Future
-        configure.ignoreMigrationPatterns(patterns.toArray(new String[0]));
+
+        configure.ignoreMigrationPatterns(ignoreMigrationPatterns);
         configure.cleanOnValidationError(flywayRuntimeConfig.cleanOnValidationError);
         configure.outOfOrder(flywayRuntimeConfig.outOfOrder);
         if (flywayRuntimeConfig.baselineVersion.isPresent()) {

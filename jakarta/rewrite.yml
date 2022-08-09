@@ -60,10 +60,10 @@ recipeList:
   # JSON Bind
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.json.bind-api.version
-      newValue: 2.0.0
+      newValue: 3.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: yasson.version
-      newValue: 2.0.4
+      newValue: 3.0.1
   # JPA
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jpa
@@ -276,7 +276,7 @@ recipeList:
       version: "${parsson.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: parsson.version
-      newValue: 1.0.0
+      newValue: 1.1.1
       addIfMissing: true
   - org.openrewrite.maven.ChangePropertyValue:
       key: jboss-logmanager.version

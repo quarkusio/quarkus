@@ -288,6 +288,7 @@ When using Maven, we could use the following configuration:
 </profiles>
 ----
 
+[[delay-class-init-in-your-app]]
 === Delaying class initialization
 
 By default, Quarkus initializes all classes at build time.
@@ -359,6 +360,225 @@ com.oracle.svm.core.jdk.UnsupportedFeatureError: Proxy class defined by interfac
 
 Solving this issue requires adding the `-H:DynamicProxyConfigurationResources=<comma-separated-config-resources>` option and to provide a dynamic proxy configuration file.
 You can find all the information about the format of this file in https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/DynamicProxy.md#manual-configuration[the GraalVM documentation].
+
+[[modularity-benefits]]
+=== Modularity Benefits
+
+During native executable build time GraalVM analyses the application's call tree and generates a code-set that includes all the code it needs.
+Having a modular codebase is key to avoiding problems with unused or optional parts of your application,
+while at the same time reducing both native executable build times and size.
+In this section you will learn about the details behind the benefits of modularity for native applications.
+
+When code is not modular enough, generated native executables can end up with more code than what the user needs.
+If a feature is not used and the code gets compiled into the native executable,
+this is a waste of native compilation time and memory usage, as well as native executable disk space and starting heap size.
+Even more problems arise when third party libraries or specialized API subsystems are used which cause native compilation or runtime errors,
+and their use is not modularised enough.
+A recent problem can be found in the JAXB library,
+which is capable of deserializing XML files containing images using Java’s AWT APIs.
+The vast majority of Quarkus XML users don’t need to deserialize images,
+so there shouldn’t be a need for users applications to include Java AWT code,
+unless they specifically configure Quarkus to add the JAXB AWT code to the native executable.
+However, because JAXB code that uses AWT is in the same jar as the rest of the XML parsing code,
+achieving this separation was rather complex and required the use of Java bytecode substitutions to get around it.
+These substitutions are hard to maintain and can easily break, hence they should be one's last resort.
+
+A modular codebase is the best way to avoid these kind of issues.
+Taking the JAXB/AWT problem above,
+if the JAXB code that dealt with images was in a separate module or jar (e.g. `jaxb-images`),
+then Quarkus could choose not to include that module unless the user specifically requested the need to serialize/deserialize XML files containing images at build time.
+
+Another benefit of modular applications is that they can reduce the code-set that will need to get into the native executable.
+The smaller the code-set, the faster the native executable builds will be and the smaller the native executable produced.
+
+[TIP]
+====
+The key takeaway point here is the following:
+Keeping optional features, particularly those that depend on third party libraries or API subsystems with a big footprint,
+in separate modules is the best solution.
+====
+
+How do I know if my application suffers from similar problems?
+Aside from a deep study of the application,
+finding usages of
+https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html[Maven optional dependencies]
+is a clear indicator that your application might suffer from similar problems.
+These type of dependencies should be avoided,
+and instead code that interacts with optional dependencies should be moved into separate modules.
+
+[[enforcing-singletons]]
+=== Enforcing Singletons
+
+As already explained in the <<delay-class-init-in-your-app, delay class initialization>> section,
+Quarkus marks all code to be initialized at build time by default.
+This means that, unless marked otherwise,
+static variables will be assigned at build time,
+and static blocks will be executed at build time too.
+
+This can cause values in Java programs that would normally vary from one run to another,
+to always return a constant value.
+E.g. a static field that is assigned the value of `System.currentTimeMillis()`
+will always return the same value when executed as a Quarkus native executable.
+
+Singletons that rely on static variable initialization will suffer similar problems.
+For example, imagine you have a singleton based around static initialization along with a REST endpoint to query it:
+
+[source,java]
+----
+@Path("/singletons")
+public class Singletons {
+
+    @GET
+    @Path("/static")
+    public long withStatic() {
+        return StaticSingleton.startTime();
+    }
+}
+
+class StaticSingleton {
+    static final long START_TIME = System.currentTimeMillis();
+
+    static long startTime() {
+        return START_TIME;
+    }
+}
+----
+
+When the `singletons/static` endpoint is queried,
+it will always return the same value,
+even after the application is restarted:
+
+[source,bash]
+----
+$ curl http://localhost:8080/singletons/static
+1656509254532%
+
+$ curl http://localhost:8080/singletons/static
+1656509254532%
+
+### Restart the native application ###
+
+$ curl http://localhost:8080/singletons/static
+1656509254532%
+----
+
+Singletons that rely on `enum` classes are also affected by the same issue:
+
+[source,java]
+----
+@Path("/singletons")
+public class Singletons {
+
+    @GET
+    @Path("/enum")
+    public long withEnum() {
+        return EnumSingleton.INSTANCE.startTime();
+    }
+}
+
+enum EnumSingleton {
+    INSTANCE(System.currentTimeMillis());
+
+    private final long startTime;
+
+    private EnumSingleton(long startTime) {
+        this.startTime = startTime;
+    }
+
+    long startTime() {
+        return startTime;
+    }
+}
+----
+
+When the `singletons/enum` endpoint is queried,
+it will always return the same value,
+even after the application is restarted:
+
+[source,bash]
+----
+$ curl http://localhost:8080/singletons/enum
+1656509254601%
+
+$ curl http://localhost:8080/singletons/enum
+1656509254601%
+
+### Restart the native application ###
+
+$ curl http://localhost:8080/singletons/enum
+1656509254601%
+----
+
+One way to fix it is to build singletons using CDI's `@Singleton` annotation:
+
+[source,java]
+----
+@Path("/singletons")
+public class Singletons {
+
+    @Inject
+    CdiSingleton cdiSingleton;
+
+    @GET
+    @Path("/cdi")
+    public long withCdi() {
+        return cdiSingleton.startTime();
+    }
+}
+
+@Singleton
+class CdiSingleton {
+    // Note that the field is not static
+    final long startTime = System.currentTimeMillis();
+
+    long startTime() {
+        return startTime;
+    }
+}
+----
+
+After each restart,
+querying `singletons/cdi` will return a different value,
+just like it would in JVM mode:
+
+[source,bash]
+----
+$ curl http://localhost:8080/singletons/cdi
+1656510218554%
+
+$ curl http://localhost:8080/singletons/cdi
+1656510218554%
+
+### Restart the native application ###
+
+$ curl http://localhost:8080/singletons/cdi
+1656510714689%
+----
+
+An alternative way to enforce a singleton while relying static fields, or enums,
+is to <<delay-class-init-in-your-app,delay its class initialization until run time>>.
+The nice advantage of CDI-based singletons is that your class initialization is not constrained,
+so you can freely decide whether it should be build-time or run-time initialized,
+depending on your use case.
+
+=== Beware of common Java API overrides
+
+Certain commonly used Java methods are overriden by user classes,
+e.g. `toString`, `equals`, `hashCode`...etc.
+The majority of overrides do not cause problems,
+but if they use third party libraries (e.g. for additional formatting),
+or use dynamic language features (e.g. reflection or proxies),
+they can cause native image build to fail.
+Some of those failures might be solvable via configuration,
+but others can be more tricky to handle.
+
+From a GraalVM points-to analysis perspective,
+what happens in these method overrides matters,
+even if the application does not explicitly call them.
+This is because these methods are used throughout the JDK,
+and all it takes is for one of those calls to be done on an unconstrained type,
+e.g. `java.lang.Object`,
+for the analysis to have to pull all implementations of that particular method.
 
 [[native-in-extension]]
 == Supporting native in a Quarkus extension

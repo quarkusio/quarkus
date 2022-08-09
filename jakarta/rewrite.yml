@@ -603,6 +603,9 @@ recipeList:
       key: microprofile-jwt-auth-tck.version
       newValue: 2.1-RC2
   - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-lra-tck.version
+      newValue: 2.0-RC1
+  - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-metrics-tck.version
       newValue: 4.0.1
   # TODO: update to 3.1 once SmallRye passes it

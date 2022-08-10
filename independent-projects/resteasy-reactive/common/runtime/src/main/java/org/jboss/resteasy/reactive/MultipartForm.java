@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation to be used on POJOs meant to map to the various parts of
+ * Annotation to be used on POJOs meant to map to the various parts
  * of {@code multipart/form-data} HTTP bodies.
  * Each part of the POJO that should be mapped to a part of the body should be annotated with {@link RestForm}.
  * In order to facilitate conversion to the field's body type, {@link PartType} should be used to determine the media

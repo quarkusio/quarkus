@@ -19,6 +19,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -30,7 +31,10 @@ import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation;
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
+import io.restassured.filter.log.RequestLoggingFilter;
+import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.vertx.core.http.HttpMethod;
 
@@ -119,7 +123,9 @@ class HelloRouterTest {
         assertEquals("hello to bus", messages.get(0));
 
         await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 3);
+        RestAssured.filters(new RequestLoggingFilter(), new ResponseLoggingFilter());
         List<Map<String, Object>> spans = getSpans();
+        RestAssured.replaceFiltersWith(Collections.emptyList());
         assertEquals(3, spans.size());
 
         assertEquals(spans.get(0).get("traceId"), spans.get(1).get("traceId"));

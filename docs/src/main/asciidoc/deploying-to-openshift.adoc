@@ -136,9 +136,12 @@ The input of the build is the jar that has been built locally and the output of 
 [NOTE]
 ====
 During the build you may find the `Caused by: javax.net.ssl.SSLHandshakeException: sun.security.validator.ValidatorException: PKIX path building failed` exception due to self-signed certificate. To solve this, just add the following line to your `application.properties`:
-```properties
+
+[source,properties]
+----
 quarkus.kubernetes-client.trust-certs=true
-```
+----
+
 For more information, see link:https://quarkus.io/guides/deploying-to-kubernetes#client-connection-configuration[deploying to kubernetes].
 ====
 

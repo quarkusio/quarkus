@@ -293,12 +293,13 @@ You can override the profile the executable is *built* with and *runs* with usin
 `./mvnw clean verify -Pnative -Dquarkus-profile=test`. This might come handy if there are test specific resources to be processed,
 such as importing test data into the database.
 
-```
+[source,properties]
+----
 quarkus.native.resources.includes=version.txt
 %test.quarkus.native.resources.includes=version.txt,import-dev.sql
 %test.quarkus.hibernate-orm.database.generation=drop-and-create
 %test.quarkus.hibernate-orm.sql-load-script=import-dev.sql
-```
+----
 
 With the aforementioned example in your `application.properties`, your Hibernate ORM managed database will be populated with test
 data both during the JVM mode test run and during the native mode test run. The production

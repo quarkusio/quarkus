@@ -353,7 +353,6 @@
                 <groupId>org.jboss.spec.javax.xml.bind</groupId>
                 <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
                 <version>${jboss-jaxb-api_2.3_spec.version}</version>
-                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>jakarta.validation</groupId>

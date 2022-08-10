@@ -13,7 +13,7 @@ public class PropertiesUtil {
                 return true;
             }
 
-            // A sub property from a namespace is always bigger in length
+            // A sub property from a namespace is always bigger
             if (propertyName.getName().length() <= root.length()) {
                 continue;
             }
@@ -36,7 +36,7 @@ public class PropertiesUtil {
                 rootNi.next();
                 propertyName.next();
 
-                // root has no more segments and we reached this far so everything matched.
+                // root has no more segments, and we reached this far so everything matched.
                 // on top, property still has more segments to do the mapping.
                 if (!rootNi.hasNext() && propertyName.hasNext()) {
                     propertyName.goToStart();
@@ -45,6 +45,13 @@ public class PropertiesUtil {
             }
         }
 
+        return false;
+    }
+
+    public static boolean isPropertyQuarkusCompoundName(NameIterator propertyName) {
+        if (propertyName.hasNext()) {
+            return propertyName.getNextSegment().startsWith("quarkus.");
+        }
         return false;
     }
 }

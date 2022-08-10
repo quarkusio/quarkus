@@ -474,6 +474,11 @@ public final class BuildTimeConfigurationReader {
                     if (configValue.getValue() != null) {
                         runTimeDefaultValues.put(configValue.getNameProfiled(), configValue.getValue());
                     }
+
+                    // in the case the user defined compound keys in YAML (or similar config source, that quotes the name)
+                    if (PropertiesUtil.isPropertyQuarkusCompoundName(ni)) {
+                        unknownBuildProperties.add(propertyName);
+                    }
                 }
             }
 

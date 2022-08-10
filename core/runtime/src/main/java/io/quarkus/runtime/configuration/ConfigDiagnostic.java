@@ -68,13 +68,13 @@ public final class ConfigDiagnostic {
 
     /**
      * Report any unused properties.
-     *
-     * The list of unused properties may contain false positives. This is caused when an environment variable is set up
+     * <br>
+     * The list of unused properties may contain false positives. This is caused when an environment variable is set up,
      * and we cannot determine correctly if it was used or not.
-     *
-     * Environment variables required conversion to regular property names so a Map can be properly populated when
+     * <br>
+     * Environment variables require a conversion to regular property names so a Map can be properly populated when
      * iterating {@link Config#getPropertyNames()}. Because an Environment variable name may match multiple property
-     * names, we try a best effort to report unknowns by matching used properties in their Environment variable name
+     * names, we try the best effort to report unknowns by matching used properties in their Environment variable name
      * format.
      *
      * @param properties the list of possible unused properties

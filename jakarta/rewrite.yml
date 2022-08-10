@@ -731,6 +731,12 @@ recipeList:
   - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
       groupId: org.jboss.resteasy.microprofile
       artifactId: microprofile-config
+  - org.openrewrite.maven.ExcludeDependency:
+      groupId: org.jboss.spec.javax.ws.rs
+      artifactId: jboss-jaxrs-api_3.0_spec
+  - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
+      groupId: jakarta.ws.rs
+      artifactId: jakarta.ws.rs-api
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.bom.resteasy-spring-web
@@ -766,6 +772,12 @@ recipeList:
       oldArtifactId: resteasy-client-microprofile
       newGroupId: org.jboss.resteasy.microprofile
       newArtifactId: microprofile-rest-client
+  - org.openrewrite.maven.ExcludeDependency:
+      groupId: org.jboss.spec.javax.ws.rs
+      artifactId: jboss-jaxrs-api_3.0_spec
+  - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
+      groupId: jakarta.ws.rs
+      artifactId: jakarta.ws.rs-api
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.keycloak-admin-client

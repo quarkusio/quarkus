@@ -24,6 +24,16 @@
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-jaxb-provider</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.sun.activation</groupId>
+                    <artifactId>jakarta.activation</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.activation</groupId>
+            <artifactId>jakarta.activation</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.spec.javax.xml.bind</groupId>
@@ -68,6 +78,7 @@
                         <configuration>
                             <activeRecipes>
                                 <recipe>io.quarkus.jakarta-jaxb-switch</recipe>
+                                <recipe>io.quarkus.jakarta-angus-activation-switch</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>

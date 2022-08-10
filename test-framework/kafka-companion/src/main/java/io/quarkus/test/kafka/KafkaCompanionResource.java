@@ -32,9 +32,12 @@ public class KafkaCompanionResource implements QuarkusTestResourceLifecycleManag
             kafkaCompanion = new KafkaCompanion(bootstrapServers);
             String apicurioUrl = devServicesProperties.get("mp.messaging.connector.smallrye-kafka.apicurio.registry.url");
             if (apicurioUrl != null) {
+                // normally, the processor will set both property so it's safe to unconditionally load the confluent URL
+                String confluentUrl = devServicesProperties.get("mp.messaging.connector.smallrye-kafka.schema.registry.url");
                 kafkaCompanion.setCommonClientConfig(Map.of(
                         "apicurio.registry.url", apicurioUrl,
-                        "apicurio.registry.auto-register", "true"));
+                        "apicurio.registry.auto-register", "true",
+                        "schema.registry.url", confluentUrl));
             }
         }
     }

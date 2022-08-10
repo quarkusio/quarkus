@@ -69,7 +69,7 @@ Type: _string_ | true |
 
 Type: _int_ | false | `1`
 
-| [.no-hyphens]#*group.id* | A unique string that identifies the consumer group the application belongs to.
+| [.no-hyphens]#*group.id*# | A unique string that identifies the consumer group the application belongs to.
 
 If not set, defaults to the application name as set by the `quarkus.application.name` configuration property.
 

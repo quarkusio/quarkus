@@ -5,11 +5,9 @@ import java.util.function.BooleanSupplier;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.oidc.token.propagation.AccessToken;
 import io.quarkus.oidc.token.propagation.AccessTokenRequestFilter;
@@ -27,11 +25,6 @@ public class OidcTokenPropagationBuildStep {
     private static final DotName JWT_ACCESS_TOKEN_CREDENTIAL = DotName.createSimple(JsonWebToken.class.getName());
 
     OidcTokenPropagationConfig config;
-
-    @BuildStep
-    FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(Feature.OIDC_TOKEN_PROPAGATION);
-    }
 
     @BuildStep
     void registerProvider(BuildProducer<AdditionalBeanBuildItem> additionalBeans,

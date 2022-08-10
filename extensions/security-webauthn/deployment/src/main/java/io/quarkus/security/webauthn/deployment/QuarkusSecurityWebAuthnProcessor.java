@@ -7,12 +7,11 @@ import javax.inject.Singleton;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.security.webauthn.WebAuthnAuthenticationMechanism;
 import io.quarkus.security.webauthn.WebAuthnAuthenticatorStorage;
@@ -26,14 +25,10 @@ import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.vertx.ext.auth.webauthn.impl.attestation.Attestation;
 
+@BuildSteps(onlyIf = QuarkusSecurityWebAuthnProcessor.IsEnabled.class)
 class QuarkusSecurityWebAuthnProcessor {
 
     @BuildStep
-    FeatureBuildItem feature() {
-        return new FeatureBuildItem(Feature.SECURITY_WEBAUTHN);
-    }
-
-    @BuildStep(onlyIf = IsEnabled.class)
     public void myBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
 
@@ -45,7 +40,7 @@ class QuarkusSecurityWebAuthnProcessor {
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     public void setup(
             WebAuthnRecorder recorder,
             VertxWebRouterBuildItem vertxWebRouterBuildItem,
@@ -55,12 +50,12 @@ class QuarkusSecurityWebAuthnProcessor {
                 nonApplicationRootPathBuildItem.getNonApplicationRootPath());
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     public ServiceProviderBuildItem serviceLoader() {
         return ServiceProviderBuildItem.allProvidersFromClassPath(Attestation.class.getName());
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     SyntheticBeanBuildItem initWebAuthnAuth(
             WebAuthnRecorder recorder) {

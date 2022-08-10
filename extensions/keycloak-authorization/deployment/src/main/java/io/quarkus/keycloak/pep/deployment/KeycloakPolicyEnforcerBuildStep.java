@@ -9,10 +9,10 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerAuthorizer;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerBuildTimeConfig;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerConfig;
@@ -25,14 +25,10 @@ import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 
+@BuildSteps(onlyIf = KeycloakPolicyEnforcerBuildStep.IsEnabled.class)
 public class KeycloakPolicyEnforcerBuildStep {
 
     @BuildStep
-    FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(Feature.KEYCLOAK_AUTHORIZATION);
-    }
-
-    @BuildStep(onlyIf = IsEnabled.class)
     RequireBodyHandlerBuildItem requireBody(OidcBuildTimeConfig oidcBuildTimeConfig, KeycloakPolicyEnforcerConfig config) {
         if (oidcBuildTimeConfig.enabled) {
             if (isBodyHandlerRequired(config.defaultTenant)) {
@@ -73,7 +69,7 @@ public class KeycloakPolicyEnforcerBuildStep {
         return false;
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     public AdditionalBeanBuildItem beans(OidcBuildTimeConfig oidcBuildTimeConfig, KeycloakPolicyEnforcerConfig config) {
         if (oidcBuildTimeConfig.enabled) {
             return AdditionalBeanBuildItem.builder().setUnremovable()
@@ -88,7 +84,7 @@ public class KeycloakPolicyEnforcerBuildStep {
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     public SyntheticBeanBuildItem setup(OidcBuildTimeConfig oidcBuildTimeConfig, OidcConfig oidcRunTimeConfig,
             TlsConfig tlsConfig,
             KeycloakPolicyEnforcerConfig keycloakConfig, KeycloakPolicyEnforcerRecorder recorder) {

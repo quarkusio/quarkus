@@ -5,10 +5,10 @@ import java.util.Optional;
 import io.jaegertracing.internal.JaegerTracer;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
@@ -19,6 +19,7 @@ import io.quarkus.jaeger.runtime.ZipkinConfig;
 import io.quarkus.runtime.ApplicationConfig;
 import io.quarkus.runtime.metrics.MetricsFactory;
 
+@BuildSteps(onlyIf = JaegerEnabled.class)
 public class JaegerProcessor {
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -33,25 +34,18 @@ public class JaegerProcessor {
             JaegerConfig jaeger, ApplicationConfig appConfig, Optional<MetricsCapabilityBuildItem> metricsCapability,
             ZipkinConfig zipkinConfig) {
 
-        if (buildTimeConfig.enabled) {
-            if (buildTimeConfig.metricsEnabled && metricsCapability.isPresent()) {
-                if (metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
-                    jdr.registerTracerWithMicrometerMetrics(jaeger, appConfig, zipkinConfig);
-                } else {
-                    jdr.registerTracerWithMpMetrics(jaeger, appConfig, zipkinConfig);
-                }
+        if (buildTimeConfig.metricsEnabled && metricsCapability.isPresent()) {
+            if (metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
+                jdr.registerTracerWithMicrometerMetrics(jaeger, appConfig, zipkinConfig);
             } else {
-                jdr.registerTracerWithoutMetrics(jaeger, appConfig, zipkinConfig);
+                jdr.registerTracerWithMpMetrics(jaeger, appConfig, zipkinConfig);
             }
+        } else {
+            jdr.registerTracerWithoutMetrics(jaeger, appConfig, zipkinConfig);
         }
 
         // Indicates that this extension would like the SSL support to be enabled
         return new ExtensionSslNativeSupportBuildItem(Feature.JAEGER.getName());
-    }
-
-    @BuildStep
-    public FeatureBuildItem build() {
-        return new FeatureBuildItem(Feature.JAEGER);
     }
 
     @BuildStep

@@ -15,14 +15,12 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -46,11 +44,6 @@ public class OpenTelemetryProcessor {
         public boolean getAsBoolean() {
             return IS_REST_CLIENT_AVAILABLE;
         }
-    }
-
-    @BuildStep
-    FeatureBuildItem feature() {
-        return new FeatureBuildItem(Feature.OPENTELEMETRY);
     }
 
     @BuildStep

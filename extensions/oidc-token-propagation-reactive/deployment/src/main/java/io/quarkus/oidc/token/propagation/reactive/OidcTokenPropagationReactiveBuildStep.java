@@ -3,21 +3,14 @@ package io.quarkus.oidc.token.propagation.reactive;
 import java.util.function.BooleanSupplier;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 @BuildSteps(onlyIf = OidcTokenPropagationReactiveBuildStep.IsEnabled.class)
 public class OidcTokenPropagationReactiveBuildStep {
-
-    @BuildStep
-    FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(Feature.OIDC_TOKEN_PROPAGATION_REACTIVE);
-    }
 
     @BuildStep
     void registerProvider(BuildProducer<AdditionalBeanBuildItem> additionalBeans,

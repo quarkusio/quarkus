@@ -283,7 +283,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
                     FieldDescriptor.of(clientProxy.getClassName(), MOCK_FIELD, providerType.descriptorName()),
                     creator.getThis());
             BytecodeCreator falseBranch = creator.ifNull(mock).falseBranch();
-            falseBranch.returnValue(falseBranch.checkCast(mock, providerType.className()));
+            falseBranch.returnValue(mock);
         }
 
         ResultHandle beanHandle = creator.readInstanceField(beanField, creator.getThis());

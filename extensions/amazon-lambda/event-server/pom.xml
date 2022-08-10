@@ -36,24 +36,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-client</artifactId>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>jakarta.activation</groupId>
-                    <artifactId>jakarta.activation-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <!-- quarkus-apache-httpclient is needed for resteasy-client -->
-        <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-apache-httpclient</artifactId>
+            <artifactId>quarkus-rest-client</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

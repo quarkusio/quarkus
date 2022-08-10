@@ -208,7 +208,7 @@ person.persist();
 // note that once persisted, you don't need to explicitly save your entity: all
 // modifications are automatically persisted on transaction commit.
 
-// check if it's persistent
+// check if it is persistent
 if(person.isPersistent()){
     // delete it
     person.delete();
@@ -395,7 +395,7 @@ personRepository.persist(person);
 // note that once persisted, you don't need to explicitly save your entity: all
 // modifications are automatically persisted on transaction commit.
 
-// check if it's persistent
+// check if it is persistent
 if(personRepository.isPersistent(person)){
     // delete it
     personRepository.delete(person);
@@ -772,6 +772,7 @@ If in the DTO projection object you have a field from a referenced entity, you c
 public class Dog extends PanacheEntity {
     public String name;
     public String race;
+    public Double weight;
     @ManyToOne
     public Person owner;
 }
@@ -791,6 +792,45 @@ PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class);
 ----
 <1> The `ownerName` DTO constructor's parameter will be loaded from the `owner.name` HQL property.
 
+It is also possible to specify a HQL query with a select clause. In this case, the projection class must have a constructor
+matching the values returned by the select clause:
+
+[source,java]
+----
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+@RegisterForReflection 
+public class RaceWeight {
+    public final String race;
+    public final Double weight;
+
+    public RaceWeight(String race) {
+        this(race, null);
+    }
+
+    public RaceWeight(String race, Double weight) { // <1>
+        this.race = race;
+        this.weight = weight;
+    }
+}
+
+// Only the race and the average weight will be loaded
+PanacheQuery<RaceWeight> query = Person.find("select d.race, AVG(d.weight) from Dog d group by d.race).project(RaceWeight.class);
+----
+<1> Hibernate ORM will use this constructor. When the query has a select clause, it is possible to have multiple constructors.
+
+[WARNING]
+====
+It is not possible to have a HQL `select new` query and `.project(Class)` at the same time - you need to pick one approach.
+
+For example, this will fail:
+
+[source,java]
+----
+PanacheQuery<RaceWeight> query = Person.find("select new MyView(d.race, AVG(d.weight)) from Dog d group by d.race).project(AnotherView.class);
+----
+====
+
 == Multiple Persistence Units
 
 The support for multiple persistence units is described in detail in xref:hibernate-orm.adoc#multiple-persistence-units[the Hibernate ORM guide].
@@ -806,8 +846,8 @@ Make sure to wrap methods modifying your database (e.g. `entity.persist()`) with
 CDI bean method `@Transactional` will do that for you and make that method a transaction boundary. We recommend doing
 so at your application entry point boundaries like your REST endpoint controllers.
 
-JPA batches changes you make to your entities and sends changes (it's called flush) at the end of the transaction or before a query.
-This is usually a good thing as it's more efficient.
+JPA batches changes you make to your entities and sends changes (it is called flush) at the end of the transaction or before a query.
+This is usually a good thing as it is more efficient.
 But if you want to check optimistic locking failures, do object validation right away or generally want to get immediate feedback, you can force the flush operation by calling `entity.flush()` or even use `entity.persistAndFlush()` to make it a single method call. This will allow you to catch any `PersistenceException` that could occur when JPA send those changes to the database.
 Remember, this is less efficient so don't abuse it.
 And your transaction still has to be committed.
@@ -1149,7 +1189,7 @@ public class PanacheFunctionalityTest {
 When it comes to writing Hibernate ORM entities, there are a number of annoying things that users have grown used to
 reluctantly deal with, such as:
 
-- Duplicating ID logic: most entities need an ID, most people don't care how it's set, because it's not really
+- Duplicating ID logic: most entities need an ID, most people don't care how it is set, because it is not really
 relevant to your model.
 - Traditional EE patterns advise to split entity definition (the model) from the operations you can do on them
 (DAOs, Repositories), but really that requires a split between the state and its operations even though

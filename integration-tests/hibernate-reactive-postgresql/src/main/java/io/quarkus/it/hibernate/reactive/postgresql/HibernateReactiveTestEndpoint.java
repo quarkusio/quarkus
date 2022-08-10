@@ -20,7 +20,7 @@ public class HibernateReactiveTestEndpoint {
     @Inject
     Mutiny.Session mutinySession;
 
-    // Injecting a Vert.x Pool is not required, it us only used to
+    // Injecting a Vert.x Pool is not required, it's only used to
     // independently validate the contents of the database for the test
     @Inject
     PgPool pgPool;

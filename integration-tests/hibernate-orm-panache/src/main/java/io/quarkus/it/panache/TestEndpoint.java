@@ -1205,10 +1205,52 @@ public class TestEndpoint {
         CatOwner catOwner = new CatOwner("Julie");
         catOwner.persist();
         Cat bubulle = new Cat("Bubulle", catOwner);
+        bubulle.weight = 8.5d;
         bubulle.persist();
 
         CatDto catDto = Cat.findAll().project(CatDto.class).firstResult();
         Assertions.assertEquals("Julie", catDto.ownerName);
+
+        CatProjectionBean fieldsProjection = Cat.find("select c.name, c.owner.name as ownerName from Cat c")
+                .project(CatProjectionBean.class).firstResult();
+        Assertions.assertEquals("Julie", fieldsProjection.getOwnerName());
+
+        PanacheQueryException exception = Assertions.assertThrows(PanacheQueryException.class,
+                () -> Cat.find("select new FakeClass('fake_cat', 'fake_owner', 12.5 from Cat c)")
+                        .project(CatProjectionBean.class).firstResult());
+        Assertions.assertTrue(exception.getMessage().startsWith("Unable to perform a projection on a 'select new' query"));
+
+        CatProjectionBean constantProjection = Cat.find("select 'fake_cat', 'fake_owner', 12.5 from Cat c")
+                .project(CatProjectionBean.class).firstResult();
+        Assertions.assertEquals("fake_cat", constantProjection.getName());
+        Assertions.assertEquals("fake_owner", constantProjection.getOwnerName());
+        Assertions.assertEquals(12.5d, constantProjection.getWeight());
+
+        PanacheQuery<CatProjectionBean> projectionQuery = Cat
+                // The spaces at the beginning are intentional
+                .find("   SELECT c.name, cast(null as string), SUM(c.weight) from Cat c where name = :name group by name  ",
+                        Parameters.with("name", bubulle.name))
+                .project(CatProjectionBean.class);
+        CatProjectionBean aggregationProjection = projectionQuery.firstResult();
+        Assertions.assertEquals(bubulle.name, aggregationProjection.getName());
+        Assertions.assertNull(aggregationProjection.getOwnerName());
+        Assertions.assertEquals(bubulle.weight, aggregationProjection.getWeight());
+
+        long count = projectionQuery.count();
+        Assertions.assertEquals(1L, count);
+
+        PanacheQuery<CatProjectionBean> projectionDistinctQuery = Cat
+                // The spaces at the beginning are intentional
+                .find("   SELECT   disTINct  c.name, cast(null as string), SUM(c.weight) from Cat c where name = :name group by name  ",
+                        Parameters.with("name", bubulle.name))
+                .project(CatProjectionBean.class);
+        CatProjectionBean aggregationDistinctProjection = projectionDistinctQuery.singleResult();
+        Assertions.assertEquals(bubulle.name, aggregationDistinctProjection.getName());
+        Assertions.assertNull(aggregationDistinctProjection.getOwnerName());
+        Assertions.assertEquals(bubulle.weight, aggregationDistinctProjection.getWeight());
+
+        long countDistinct = projectionDistinctQuery.count();
+        Assertions.assertEquals(1L, countDistinct);
 
         Cat.deleteAll();
         CatOwner.deleteAll();

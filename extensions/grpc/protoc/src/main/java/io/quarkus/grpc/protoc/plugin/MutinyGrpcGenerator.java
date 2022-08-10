@@ -137,7 +137,7 @@ public class MutinyGrpcGenerator extends Generator {
     private MethodContext buildMethodContext(DescriptorProtos.MethodDescriptorProto methodProto, ProtoTypeMap typeMap,
             List<DescriptorProtos.SourceCodeInfo.Location> locations, int methodNumber) {
         MethodContext methodContext = new MethodContext();
-        methodContext.methodName = lowerCaseFirst(methodProto.getName());
+        methodContext.methodName = adaptMethodName(methodProto.getName());
         methodContext.inputType = typeMap.toJavaTypeName(methodProto.getInputType());
         methodContext.outputType = typeMap.toJavaTypeName(methodProto.getOutputType());
         methodContext.deprecated = methodProto.getOptions() != null && methodProto.getOptions().getDeprecated();
@@ -171,8 +171,96 @@ public class MutinyGrpcGenerator extends Generator {
         return methodContext;
     }
 
-    private String lowerCaseFirst(String s) {
-        return Character.toLowerCase(s.charAt(0)) + s.substring(1);
+    static String adaptMethodName(String name) {
+        if (name == null || name.isEmpty()) {
+            return name;
+        }
+        // We need to adjust the method name in the same way as the grpc-java compiler does:
+        // 1. Decapitalize the first letter (unlike JavaBeans "URL" becomes "uRL")
+        // 2. Replace an underscore and capitalize the following letter
+        // 3. Append the underscore for a java keyword
+        // (these rules are bit odd but we need to follow them unless we get rid of the grpc-java compiler)
+        // https://github.com/quarkusio/quarkus/issues/27170
+        StringBuilder ret = new StringBuilder();
+        ret.append(Character.toLowerCase(name.charAt(0)));
+        if (name.length() > 1) {
+            if (name.contains("_")) {
+                for (String str : name.substring(1).split("_")) {
+                    if (ret.length() == 1) {
+                        ret.append(str);
+                    } else {
+                        ret.append(Character.toUpperCase(str.charAt(0)));
+                        if (str.length() > 1) {
+                            ret.append(str.substring(1));
+                        }
+                    }
+                }
+            } else {
+                ret.append(name.substring(1));
+            }
+            if (isJavaKeyword(ret.toString())) {
+                ret.append("_");
+            }
+        }
+        return ret.toString();
+    }
+
+    private static boolean isJavaKeyword(String value) {
+        switch (value) {
+            case "public":
+            case "protected":
+            case "private":
+            case "abstract":
+            case "static":
+            case "final":
+            case "transient":
+            case "volatile":
+            case "synchronized":
+            case "native":
+            case "class":
+            case "interface":
+            case "extends":
+            case "package":
+            case "throws":
+            case "implements":
+            case "boolean":
+            case "byte":
+            case "char":
+            case "short":
+            case "int":
+            case "long":
+            case "float":
+            case "double":
+            case "void":
+            case "if":
+            case "else":
+            case "try":
+            case "catch":
+            case "finally":
+            case "do":
+            case "while":
+            case "for":
+            case "continue":
+            case "switch":
+            case "case":
+            case "default":
+            case "break":
+            case "throw":
+            case "return":
+            case "this":
+            case "new":
+            case "super":
+            case "import":
+            case "instanceof":
+            case "goto":
+            case "const":
+            case "null":
+            case "true":
+            case "false":
+                return true;
+            default:
+                return false;
+        }
     }
 
     private List<PluginProtos.CodeGeneratorResponse.File> generateFiles(List<ServiceContext> services) {

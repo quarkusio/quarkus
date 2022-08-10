@@ -247,7 +247,7 @@ triage:
       notify: [gastaldi]
     - labels: [area/kubernetes]
       titleBody: "kubernetes"
-      notify: [geoand, iocanel]
+      notify: [geoand, iocanel, Sgitario]
       directories:
         - extensions/kubernetes/
         - extensions/kubernetes-client/
@@ -395,7 +395,7 @@ triage:
         - .github/
     - labels: [area/jaxb]
       title: "jaxb"
-      notify: [gsmet]
+      notify: [gsmet, Sgitario]
       directories:
         - extensions/jaxb/
     - labels: [area/logging]

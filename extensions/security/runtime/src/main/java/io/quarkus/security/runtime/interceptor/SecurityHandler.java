@@ -1,5 +1,8 @@
 package io.quarkus.security.runtime.interceptor;
 
+import static io.quarkus.security.spi.runtime.SecurityHandlerConstants.EXECUTED;
+import static io.quarkus.security.spi.runtime.SecurityHandlerConstants.SECURITY_HANDLER;
+
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -15,9 +18,6 @@ import io.smallrye.mutiny.Uni;
  */
 @Singleton
 public class SecurityHandler {
-
-    private static final String HANDLER_NAME = SecurityHandler.class.getName();
-    private static final String EXECUTED = "executed";
 
     @Inject
     SecurityConstrainer constrainer;
@@ -49,7 +49,7 @@ public class SecurityHandler {
     }
 
     private boolean alreadyHandled(InvocationContext ic) {
-        return ic.getContextData().put(HANDLER_NAME, EXECUTED) != null;
+        return ic.getContextData().put(SECURITY_HANDLER, EXECUTED) != null;
     }
 
     private static class UniContinuation implements Function<Object, Uni<?>> {

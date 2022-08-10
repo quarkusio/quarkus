@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.server.runtime.security;
 
+import static io.quarkus.resteasy.reactive.server.runtime.StandardSecurityCheckInterceptor.STANDARD_SECURITY_CHECK_INTERCEPTOR;
+
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
@@ -75,7 +77,9 @@ public class EagerSecurityHandler implements ServerRestHandler {
 
         requestContext.requireCDIRequestScope();
         SecurityCheck theCheck = check;
-        if (!theCheck.isPermitAll()) {
+        if (theCheck.isPermitAll()) {
+            preventRepeatedSecurityChecks(requestContext, methodDescription);
+        } else {
             requestContext.suspend();
             Uni<SecurityIdentity> deferredIdentity = getCurrentIdentityAssociation().get().getDeferredIdentity();
 
@@ -95,6 +99,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
                 public Object apply(SecurityIdentity securityIdentity) {
                     theCheck.apply(securityIdentity, methodDescription,
                             requestContext.getParameters());
+                    preventRepeatedSecurityChecks(requestContext, methodDescription);
                     return null;
                 }
             })
@@ -115,6 +120,13 @@ public class EagerSecurityHandler implements ServerRestHandler {
                         }
                     });
         }
+    }
+
+    private void preventRepeatedSecurityChecks(ResteasyReactiveRequestContext requestContext,
+            MethodDescription methodDescription) {
+        // propagate information that security check has been performed on this method to the SecurityHandler
+        // via io.quarkus.resteasy.reactive.server.runtime.StandardSecurityCheckInterceptor
+        requestContext.setProperty(STANDARD_SECURITY_CHECK_INTERCEPTOR, methodDescription);
     }
 
     private InjectableInstance<CurrentIdentityAssociation> getCurrentIdentityAssociation() {

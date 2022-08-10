@@ -119,9 +119,10 @@ String jwt = Jwt.upn("Alice").jws().algorithm(SignatureAlgorithm.PS256).sign();
 
 Alternatively you can use a `smallrye.jwt.new-token.signature-algorithm` property:
 
-```properties
+[source,properties]
+----
 smallrye.jwt.new-token.signature-algorithm=PS256
-```
+----
 
 and write a simpler API sequence:
 
@@ -181,10 +182,11 @@ String jwt = Jwt.subject("Bob").jwe()
 
 Alternatively you can use `smallrye.jwt.new-token.key-encryption-algorithm` and `smallrye.jwt.new-token.content-encryption-algorithm` properties to customize the key and content encryption algorithms:
 
-```properties
+[source,properties]
+----
 smallrye.jwt.new-token.key-encryption-algorithm=RSA-OAEP-256
 smallrye.jwt.new-token.content-encryption-algorithm=A256CBC-HS512
-```
+----
 
 and write a simpler API sequence:
 

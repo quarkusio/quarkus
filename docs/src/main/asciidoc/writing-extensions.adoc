@@ -3175,10 +3175,11 @@ Before publishing your extension to the xref:tooling.adoc[Quarkus tooling], make
 
 Then you must create a pull request adding a `your-extension.yaml` file in the `extensions/` directory in the link:https://github.com/quarkusio/quarkus-extension-catalog[Quarkus Extension Catalog]. The YAML must have the following structure:
 
-```yaml
+[source,yaml]
+----
 group-id: <YOUR_EXTENSION_RUNTIME_GROUP_ID>
 artifact-id: <YOUR_EXTENSION_RUNTIME_ARTIFACT_ID>
-```
+----
 
 That's all. Once the pull request is merged, a scheduled job will check Maven Central for new versions and update the xref:extension-registry-user.adoc[Quarkus Extension Registry].
 

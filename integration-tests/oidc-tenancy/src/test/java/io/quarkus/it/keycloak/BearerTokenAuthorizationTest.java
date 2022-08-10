@@ -499,6 +499,24 @@ public class BearerTokenAuthorizationTest {
         }
     }
 
+    @Test
+    public void testRequiredClaimPass() {
+        //Client id should match the required azp claim
+        RestAssured.given().auth().oauth2(getAccessToken("alice", "b", "b"))
+                .when().get("/tenant/tenant-requiredclaim/api/user")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
+    public void testRequiredClaimFail() {
+        //Client id does not match required azp claim
+        RestAssured.given().auth().oauth2(getAccessToken("alice", "b", "b2"))
+                .when().get("/tenant/tenant-requiredclaim/api/user")
+                .then()
+                .statusCode(401);
+    }
+
     private String getAccessToken(String userName, String clientId) {
         return getAccessToken(userName, clientId, clientId);
     }

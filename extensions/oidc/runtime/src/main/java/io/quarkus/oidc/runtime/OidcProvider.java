@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.security.Key;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -11,11 +12,14 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jws.JsonWebSignature;
+import org.jose4j.jwt.MalformedClaimException;
 import org.jose4j.jwt.consumer.ErrorCodeValidator;
 import org.jose4j.jwt.consumer.ErrorCodes;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
+import org.jose4j.jwt.consumer.JwtContext;
+import org.jose4j.jwt.consumer.Validator;
 import org.jose4j.jwx.HeaderParameterNames;
 import org.jose4j.jwx.JsonWebStructure;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
@@ -53,6 +57,7 @@ public class OidcProvider implements Closeable {
     final OidcTenantConfig oidcConfig;
     final String issuer;
     final String[] audience;
+    final Map<String, String> requiredClaims;
     final Key tokenDecryptionKey;
 
     public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks, Key tokenDecryptionKey) {
@@ -63,6 +68,7 @@ public class OidcProvider implements Closeable {
 
         this.issuer = checkIssuerProp();
         this.audience = checkAudienceProp();
+        this.requiredClaims = checkRequiredClaimsProp();
         this.tokenDecryptionKey = tokenDecryptionKey;
     }
 
@@ -72,6 +78,7 @@ public class OidcProvider implements Closeable {
         this.asymmetricKeyResolver = new LocalPublicKeyResolver(publicKeyEnc);
         this.issuer = checkIssuerProp();
         this.audience = checkAudienceProp();
+        this.requiredClaims = checkRequiredClaimsProp();
         this.tokenDecryptionKey = tokenDecryptionKey;
     }
 
@@ -89,6 +96,10 @@ public class OidcProvider implements Closeable {
     private String[] checkAudienceProp() {
         List<String> audienceProp = oidcConfig != null ? oidcConfig.token.audience.orElse(null) : null;
         return audienceProp != null ? audienceProp.toArray(new String[] {}) : null;
+    }
+
+    private Map<String, String> checkRequiredClaimsProp() {
+        return oidcConfig != null ? oidcConfig.token.requiredClaims : null;
     }
 
     public TokenVerificationResult verifySelfSignedJwtToken(String token) throws InvalidJwtException {
@@ -134,6 +145,9 @@ public class OidcProvider implements Closeable {
             builder.setExpectedAudience(audience);
         } else {
             builder.setSkipDefaultAudienceValidation();
+        }
+        if (requiredClaims != null) {
+            builder.registerValidator(new CustomClaimsValidator(requiredClaims));
         }
 
         if (oidcConfig.token.lifespanGrace.isPresent()) {
@@ -381,6 +395,35 @@ public class OidcProvider implements Closeable {
     private static interface RefreshableVerificationKeyResolver extends VerificationKeyResolver {
         default Uni<Void> refresh() {
             return Uni.createFrom().voidItem();
+        }
+    }
+
+    private static class CustomClaimsValidator implements Validator {
+
+        private final Map<String, String> customClaims;
+
+        public CustomClaimsValidator(Map<String, String> customClaims) {
+            this.customClaims = customClaims;
+        }
+
+        @Override
+        public String validate(JwtContext jwtContext) throws MalformedClaimException {
+            var claims = jwtContext.getJwtClaims();
+            for (var targetClaim : customClaims.entrySet()) {
+                var claimName = targetClaim.getKey();
+                if (!claims.hasClaim(claimName)) {
+                    return "claim " + claimName + " is missing";
+                }
+                if (!claims.isClaimValueString(claimName)) {
+                    throw new MalformedClaimException("expected claim " + claimName + " to be a string");
+                }
+                var claimValue = claims.getStringClaimValue(claimName);
+                var targetValue = targetClaim.getValue();
+                if (!claimValue.equals(targetValue)) {
+                    return "claim " + claimName + "does not match expected value of " + targetValue;
+                }
+            }
+            return null;
         }
     }
 }

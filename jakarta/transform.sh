@@ -336,6 +336,7 @@ sed -i 's@<module>kafka-avro</module>@<!-- <module>kafka-avro</module> -->@g' in
 sed -i 's@<module>infinispan-client</module>@<!-- <module>infinispan-client</module> -->@g' integration-tests/pom.xml
 
 ./mvnw -B clean install -f integration-tests -DskipTests -DskipITs
+./mvnw -B clean install -f tcks -DskipTests -DskipITs
 
 exit 0
 

@@ -151,7 +151,7 @@ service:
   extensions: [health_check]
   pipelines:
     traces:
-      receivers: [otlp,otlp/2]
+      receivers: [otlp]
       processors: [batch]
       exporters: [jaeger]
 

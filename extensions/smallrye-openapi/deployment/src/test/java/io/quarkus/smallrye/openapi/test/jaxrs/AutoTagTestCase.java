@@ -7,34 +7,27 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class AutoTagTestCase {
+class AutoTagTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(OpenApiResourceWithNoTag.class, AutoTagResource.class, AbstractAutoTagResource.class));
+                    .addClasses(OpenApiResourceWithNoTag.class, AutoTagResource.class, AutoTagFetchableResource.class,
+                            AbstractAutoTagResource.class));
 
     @Test
-    public void testAutoSecurityRequirement() {
+    void testTagInOpenApi() {
         RestAssured.given().header("Accept", "application/json")
-                .when().get("/q/openapi")
+                .when()
+                .get("/q/openapi")
                 .then()
-                .log().body()
-                .and()
-                .body("paths.'/resource/annotated'.get.tags", Matchers.hasItem("From Annotation"))
-                .and()
-                .body("paths.'/resource/auto'.get.tags", Matchers.hasItem("Open Api Resource With No Tag"))
-                .and()
-                .body("paths.'/resource/auto'.post.tags", Matchers.hasItem("Open Api Resource With No Tag"));
-
-    }
-
-    @Test
-    public void testTagInOpenApi() {
-        RestAssured.given().header("Accept", "application/json")
-                .when().get("/q/openapi")
-                .then()
+                .log().ifValidationFails()
+                .assertThat()
                 .statusCode(200)
-                .body(Matchers.containsString("Auto Tag Resource"));
+                .body("paths.'/tagged'.get.tags", Matchers.hasItem("Auto Tag Resource"))
+                .body("paths.'/tagged/{id}'.get.tags", Matchers.hasItem("Auto Tag Resource"))
+                .body("paths.'/resource/annotated'.get.tags", Matchers.hasItem("From Annotation"))
+                .body("paths.'/resource/auto'.get.tags", Matchers.hasItem("Open Api Resource With No Tag"))
+                .body("paths.'/resource/auto'.post.tags", Matchers.hasItem("Open Api Resource With No Tag"));
     }
 
 }

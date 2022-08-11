@@ -61,7 +61,7 @@ implementation("io.quarkus:quarkus-smallrye-reactive-messaging-kafka")
 
 [NOTE]
 ====
-The extension includes `kafka-clients` version 3.1.0 as a transitive dependency and is compatible with Kafka brokers version 2.x.
+The extension includes `kafka-clients` version 3.2.1 as a transitive dependency and is compatible with Kafka brokers version 2.x.
 ====
 
 == Configuring Smallrye Kafka Connector
@@ -1120,11 +1120,6 @@ If you'd like to consume records only written and committed inside a Kafka trans
 ----
 mp.messaging.incoming.prices-in.isolation.level=read_committed
 ----
-
-[NOTE]
-====
-If you are using Dev Services for Kafka using Redpanda, you need to <<kafka-dev-services.adoc#redpanda-enabling-transactions, enable transactions>>.
-====
 
 == Processing Messages
 

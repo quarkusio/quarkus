@@ -84,15 +84,15 @@ without trying to re-partition the existing topic to a different number of parti
 
 You can configure timeout for Kafka admin client calls used in topic creation using `quarkus.kafka.devservices.topic-partitions-timeout`, it defaults to 2 seconds.
 
-[[redpanda-enabling-transactions]]
-== Enabling transactions
+[[redpanda-transactions]]
+== Transactional and Idempotent producers support
 
-By default, the Red Panda broker does not act as a transaction coordinator.
-To enable transactions, set:
+By default, the Red Panda broker is configured to enable transactions and idempotence features.
+You can disable those using:
 
 [source, properties]
 ----
-quarkus.kafka.devservices.redpanda.transaction-enabled=true
+quarkus.kafka.devservices.redpanda.transaction-enabled=false
 ----
 
-NOTE: It also enables producer idempotence support.
+NOTE: Redpanda transactions does not support exactly-once processing.

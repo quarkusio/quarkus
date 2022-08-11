@@ -106,7 +106,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
             return unwrapCacheValueOrThrowable(existingCacheValue)
                     .thenApply(new Function<>() {
                         @Override
-                        public Object apply(Object value) {
+                        public V apply(Object value) {
                             try {
                                 return (V) value;
                             } catch (ClassCastException e) {

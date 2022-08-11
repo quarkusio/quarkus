@@ -31,7 +31,7 @@ import org.jboss.logging.Logger;
  */
 class RequestContext implements ManagedContext {
 
-    private static final Logger LOGGER = Logger.getLogger(RequestContext.class.getPackage().getName());
+    private static final Logger LOG = Logger.getLogger("io.quarkus.arc.requestContext");
 
     private final CurrentContext<RequestContextState> currentContext;
 
@@ -39,11 +39,15 @@ class RequestContext implements ManagedContext {
     private final LazyValue<Notifier<Object>> beforeDestroyedNotifier;
     private final LazyValue<Notifier<Object>> destroyedNotifier;
 
+    private final boolean traceEnabled;
+
     public RequestContext(CurrentContext<RequestContextState> currentContext) {
         this.currentContext = currentContext;
         this.initializedNotifier = new LazyValue<>(RequestContext::createInitializedNotifier);
         this.beforeDestroyedNotifier = new LazyValue<>(RequestContext::createBeforeDestroyedNotifier);
         this.destroyedNotifier = new LazyValue<>(RequestContext::createDestroyedNotifier);
+        // we do not need to check the effective log level
+        this.traceEnabled = LOG.isTraceEnabled();
     }
 
     @Override
@@ -122,6 +126,15 @@ class RequestContext implements ManagedContext {
 
     @Override
     public void activate(ContextState initialState) {
+        if (traceEnabled) {
+            String stack = Arrays.stream(Thread.currentThread().getStackTrace())
+                    .skip(2)
+                    .limit(7)
+                    .map(se -> "\n\t" + se.toString())
+                    .collect(Collectors.joining());
+            LOG.tracef("Activate %s %s\n\t...",
+                    initialState != null ? Integer.toHexString(initialState.hashCode()) : "new", stack);
+        }
         if (initialState == null) {
             currentContext.set(new RequestContextState(new ConcurrentHashMap<>()));
             // Fire an event with qualifier @Initialized(RequestScoped.class) if there are any observers for it
@@ -151,6 +164,14 @@ class RequestContext implements ManagedContext {
 
     @Override
     public void deactivate() {
+        if (traceEnabled) {
+            String stack = Arrays.stream(Thread.currentThread().getStackTrace())
+                    .skip(2)
+                    .limit(7)
+                    .map(se -> "\n\t" + se.toString())
+                    .collect(Collectors.joining());
+            LOG.tracef("Deactivate%s\n\t...", stack);
+        }
         currentContext.remove();
     }
 
@@ -161,6 +182,14 @@ class RequestContext implements ManagedContext {
 
     @Override
     public void destroy(ContextState state) {
+        if (traceEnabled) {
+            String stack = Arrays.stream(Thread.currentThread().getStackTrace())
+                    .skip(2)
+                    .limit(7)
+                    .map(se -> "\n\t" + se.toString())
+                    .collect(Collectors.joining());
+            LOG.tracef("Destroy %s%s\n\t...", state != null ? Integer.toHexString(state.hashCode()) : "", stack);
+        }
         if (state == null) {
             // nothing to destroy
             return;
@@ -174,7 +203,7 @@ class RequestContext implements ManagedContext {
                 try {
                     fireIfNotEmpty(beforeDestroyedNotifier);
                 } catch (Exception e) {
-                    LOGGER.warn("An error occurred during delivery of the @BeforeDestroyed(RequestScoped.class) event", e);
+                    LOG.warn("An error occurred during delivery of the @BeforeDestroyed(RequestScoped.class) event", e);
                 }
                 //Performance: avoid an iterator on the map elements
                 map.forEach(this::destroyContextElement);
@@ -182,7 +211,7 @@ class RequestContext implements ManagedContext {
                 try {
                     fireIfNotEmpty(destroyedNotifier);
                 } catch (Exception e) {
-                    LOGGER.warn("An error occurred during delivery of the @Destroyed(RequestScoped.class) event", e);
+                    LOG.warn("An error occurred during delivery of the @Destroyed(RequestScoped.class) event", e);
                 }
                 map.clear();
             }

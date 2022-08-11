@@ -354,6 +354,18 @@ The request context is destroyed:
 
 NOTE: An event with qualifier `@Initialized(RequestScoped.class)` is fired when the request context is initialized for an observer notification. Moreover, the events with qualifiers `@BeforeDestroyed(RequestScoped.class)` and `@Destroyed(RequestScoped.class)` are fired when the request context is destroyed.
 
+==== How to Enable Trace Logging for Request Context Activation
+
+You can set the `TRACE` level for the logger `io.quarkus.arc.requestContext` and try to analyze the log output afterwards.
+
+.`application.properties` Example
+[source,properties]
+----
+quarkus.log.category."io.quarkus.arc.requestContext".min-level=TRACE <1>
+quarkus.log.category."io.quarkus.arc.requestContext".level=TRACE
+----
+<1> You also need to adjust the minimum log level for the relevant category.
+
 === Qualified Injected Fields
 
 In CDI, if you declare a field injection point you need to use `@Inject` and optionally a set of qualifiers.

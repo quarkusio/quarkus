@@ -12,9 +12,19 @@ name: io.quarkus.jakarta-versions
 displayName: Adjust Jakarta versions
 recipeList:
   # Activation
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: com.sun.activation
+      oldArtifactId: jakarta.activation
+      newGroupId: org.eclipse.angus
+      newArtifactId: angus-activation
+      newVersion: "${angus-activation.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.activation.version
-      newValue: 2.0.1
+      newValue: 2.1.0
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: angus-activation.version
+      newValue: 1.0.0
+      addIfMissing: true
   # Annotation
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jakarta-annotation
@@ -23,9 +33,27 @@ recipeList:
       key: jakarta.annotation-api.version
       newValue: 2.0.0
   # EL
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.glassfish
+      oldArtifactId: jakarta.el
+      newGroupId: org.glassfish.expressly
+      newArtifactId: expressly
+      newVersion: "${expressly.version}"
+  - org.openrewrite.maven.RemoveProperty:
+      propertyName: jakarta.el-impl.version
   - org.openrewrite.maven.ChangePropertyValue:
-      key: jakarta.el-impl.version
-      newValue: 4.0.2
+      key: expressly.version
+      newValue: 5.0.0
+      addIfMissing: true
+  # TODO once ArC is aligned, we can remove this one
+  - org.openrewrite.maven.AddManagedDependency:
+      groupId: jakarta.el
+      artifactId: jakarta.el-api
+      version: "${jakarta.el-api.version}"
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: jakarta.el-api.version
+      newValue: 5.0.0
+      addIfMissing: true
   # CDI
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.cdi
@@ -44,16 +72,16 @@ recipeList:
   # JAX-RS - See below for the specs
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy.version
-      newValue: 6.0.0.Final
+      newValue: 6.0.3.Final
   # JAXB - See below
   # JSON - See below
   # JSON Bind
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.json.bind-api.version
-      newValue: 2.0.0
+      newValue: 3.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: yasson.version
-      newValue: 2.0.4
+      newValue: 3.0.1
   # JPA
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jpa
@@ -97,7 +125,9 @@ recipeList:
       newGroupId: org.hibernate
       newArtifactId: quarkus-local-cache-jakarta
   # Mail
-  # TODO: move to Angus artifacts
+  # TODO At some point we should move to the Angus artifacts BUT
+  # the only thing using Jakarta Mail is subethasmtp
+  # so let's wait for it to switch to Angus Mail.
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.mail.version
       newValue: 2.0.1
@@ -138,7 +168,7 @@ recipeList:
       newValue: 3.0.1
   - org.openrewrite.maven.ChangePropertyValue:
       key: hibernate-validator.version
-      newValue: 7.0.4.Final
+      newValue: 8.0.0.CR3
   # Websockets
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.websocket-api.version
@@ -146,10 +176,10 @@ recipeList:
   # XML Bind
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.xml.bind-api.version
-      newValue: 3.0.1
+      newValue: 4.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jaxb-runtime.version
-      newValue: 3.0.2
+      newValue: 4.0.0
   # WildFly Security
   - org.openrewrite.maven.ChangePropertyValue:
       key: wildfly-elytron.version
@@ -164,16 +194,16 @@ recipeList:
       artifactId: jakarta.xml.bind-api
       version: "${jakarta.xml.bind-api.version}"
   - org.openrewrite.maven.AddManagedDependency:
-      groupId: org.jboss.spec.javax.ws.rs
-      artifactId: jboss-jaxrs-api_3.0_spec
-      version: "${jboss-jaxrs-api_3.0_spec.version}"
+      groupId: jakarta.ws.rs
+      artifactId: jakarta.ws.rs-api
+      version: "${jakarta.ws.rs-api.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.xml.bind-api.version
-      newValue: 3.0.1
+      newValue: 4.0.0
       addIfMissing: true
   - org.openrewrite.maven.ChangePropertyValue:
-      key: jboss-jaxrs-api_3.0_spec.version
-      newValue: 1.0.1.Final
+      key: jakarta.ws.rs-api.version
+      newValue: 3.0.0
       addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe
@@ -198,8 +228,8 @@ recipeList:
   - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
       oldGroupId: org.jboss.spec.javax.ws.rs
       oldArtifactId: jboss-jaxrs-api_2.1_spec
-      newGroupId: org.jboss.spec.javax.ws.rs
-      newArtifactId: jboss-jaxrs-api_3.0_spec
+      newGroupId: jakarta.ws.rs
+      newArtifactId: jakarta.ws.rs-api
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.exclude-javax-jaxrs
@@ -208,6 +238,9 @@ recipeList:
   - org.openrewrite.maven.ExcludeDependency:
       groupId: org.jboss.spec.javax.ws.rs
       artifactId: jboss-jaxrs-api_2.1_spec
+  - org.openrewrite.maven.ExcludeDependency:
+      groupId: org.jboss.spec.javax.ws.rs
+      artifactId: jboss-jaxrs-api_3.0_spec
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-jaxb-switch
@@ -221,6 +254,38 @@ recipeList:
   - org.openrewrite.maven.RemoveExclusion:
       groupId: jakarta.xml.bind
       artifactId: jakarta.xml.bind-api
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.jakarta-el-switch
+displayName: Switch JAX-RS version
+recipeList:
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.glassfish
+      oldArtifactId: jakarta.el
+      newGroupId: org.glassfish.expressly
+      newArtifactId: expressly
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.jakarta-angus-activation-switch
+displayName: Switch JAX-RS version
+recipeList:
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: com.sun.activation
+      oldArtifactId: jakarta.activation
+      newGroupId: org.eclipse.angus
+      newArtifactId: angus-activation
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.jakarta-angus-activation-exclude-add
+displayName: Switch JAX-RS version
+recipeList:
+  - org.openrewrite.maven.ExcludeDependency:
+      groupId: com.sun.activation
+      artifactId: jakarta.activation
+  - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
+      groupId: org.eclipse.angus
+      artifactId: angus-activation
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-json-cleanup
@@ -242,7 +307,7 @@ recipeList:
       version: "${parsson.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: parsson.version
-      newValue: 1.0.0
+      newValue: 1.1.1
       addIfMissing: true
   - org.openrewrite.maven.ChangePropertyValue:
       key: jboss-logmanager.version
@@ -541,6 +606,9 @@ recipeList:
       key: microprofile-jwt-auth-tck.version
       newValue: 2.1-RC2
   - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-lra-tck.version
+      newValue: 2.0-RC1
+  - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-metrics-tck.version
       newValue: 4.0.1
   # TODO: update to 3.1 once SmallRye passes it
@@ -663,6 +731,12 @@ recipeList:
   - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
       groupId: org.jboss.resteasy.microprofile
       artifactId: microprofile-config
+  - org.openrewrite.maven.ExcludeDependency:
+      groupId: org.jboss.spec.javax.ws.rs
+      artifactId: jboss-jaxrs-api_3.0_spec
+  - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
+      groupId: jakarta.ws.rs
+      artifactId: jakarta.ws.rs-api
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.bom.resteasy-spring-web
@@ -698,6 +772,12 @@ recipeList:
       oldArtifactId: resteasy-client-microprofile
       newGroupId: org.jboss.resteasy.microprofile
       newArtifactId: microprofile-rest-client
+  - org.openrewrite.maven.ExcludeDependency:
+      groupId: org.jboss.spec.javax.ws.rs
+      artifactId: jboss-jaxrs-api_3.0_spec
+  - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
+      groupId: jakarta.ws.rs
+      artifactId: jakarta.ws.rs-api
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.keycloak-admin-client

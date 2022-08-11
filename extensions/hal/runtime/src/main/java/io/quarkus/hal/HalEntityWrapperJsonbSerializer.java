@@ -6,7 +6,7 @@ import javax.json.bind.serializer.JsonbSerializer;
 import javax.json.bind.serializer.SerializationContext;
 import javax.json.stream.JsonGenerator;
 
-import org.eclipse.yasson.internal.Marshaller;
+import org.eclipse.yasson.internal.ProcessingContext;
 import org.eclipse.yasson.internal.model.ClassModel;
 import org.eclipse.yasson.internal.model.PropertyModel;
 
@@ -14,16 +14,16 @@ public class HalEntityWrapperJsonbSerializer implements JsonbSerializer<HalEntit
 
     @Override
     public void serialize(HalEntityWrapper wrapper, JsonGenerator generator, SerializationContext context) {
-        Marshaller marshaller = (Marshaller) context;
+        ProcessingContext processingContext = (ProcessingContext) context;
         Object entity = wrapper.getEntity();
 
-        if (!marshaller.addProcessedObject(entity)) {
+        if (!processingContext.addProcessedObject(entity)) {
             throw new RuntimeException("Cyclic dependency when marshaling an object");
         }
 
         try {
             generator.writeStartObject();
-            ClassModel classModel = marshaller.getMappingContext().getOrCreateClassModel(entity.getClass());
+            ClassModel classModel = processingContext.getMappingContext().getOrCreateClassModel(entity.getClass());
 
             for (PropertyModel property : classModel.getSortedProperties()) {
                 if (property.isReadable()) {
@@ -34,7 +34,7 @@ public class HalEntityWrapperJsonbSerializer implements JsonbSerializer<HalEntit
             writeLinks(wrapper.getLinks(), generator, context);
             generator.writeEnd();
         } finally {
-            marshaller.removeProcessedObject(entity);
+            processingContext.removeProcessedObject(entity);
         }
     }
 

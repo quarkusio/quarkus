@@ -127,6 +127,7 @@
                             <activeRecipes>
                                 <recipe>io.quarkus.jakarta-jaxb-switch</recipe>
                                 <recipe>io.quarkus.hibernate-orm-narayana-switch</recipe>
+                                <recipe>io.quarkus.jakarta-angus-activation-switch</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>

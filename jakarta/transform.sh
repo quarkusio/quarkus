@@ -34,7 +34,7 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   # Build Kotlin Maven Plugin to allow skipping main compilation
   # (skipping test compilation is supported but not main)
   rm -rf target/kotlin
-  git clone -b v1.6.21-jakarta --depth 1 https://github.com/gsmet/kotlin.git target/kotlin
+  git clone -b v1.7.10-jakarta --depth 1 https://github.com/gsmet/kotlin.git target/kotlin
   pushd target/kotlin/libraries/tools/kotlin-maven-plugin
   mvn -B clean install -DskipTests -DskipITs
   popd
@@ -210,13 +210,16 @@ remove_banned_dependency "independent-projects/extension-maven-plugin" 'javax.an
 remove_banned_dependency "independent-projects/tools" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
 remove_banned_dependency "independent-projects/tools" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
 update_banned_dependency "independent-projects/resteasy-reactive" 'jakarta.xml.bind:jakarta.xml.bind-api' 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec'
+update_banned_dependency "independent-projects/resteasy-reactive" 'jakarta.ws.rs:jakarta.ws.rs-api' 'org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_3.0_spec'
 remove_banned_dependency "build-parent" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
 remove_banned_dependency "build-parent" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
 update_banned_dependency "build-parent" 'jakarta.xml.bind:jakarta.xml.bind-api' 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec'
 # TODO: due to an issue in the MicroProfile REST Client, we cannot exclude jakarta.ws.rs:jakarta.ws.rs-api yet
 #update_banned_dependency_advanced "build-parent" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>\n                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
-update_banned_dependency_advanced "build-parent" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<!-- exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude -->\n                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
+update_banned_dependency_advanced "build-parent" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_3.0_spec</exclude>\n                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
 update_banned_dependency_advanced "build-parent" '<exclude>jakarta.json:jakarta.json-api</exclude>' "<exclude>jakarta.json:jakarta.json-api</exclude>\n                                            <exclude>org.glassfish:jakarta.json</exclude>"
+sed -i 's@<!-- Exclude jakarta.activation-api as the implementation contains it -->@<!-- Exclude com.sun.activation:jakarta.activation as we switched to Angus Activation -->@g' 'build-parent/pom.xml'
+update_banned_dependency "build-parent" 'jakarta.activation:jakarta.activation-api' 'com.sun.activation:jakarta.activation'
 
 ## some additional wild changes to clean up at some point
 sed -i 's@FilterConfigSourceImpl@FilterConfigSource@g' extensions/resteasy-classic/resteasy-common/deployment/src/main/java/io/quarkus/resteasy/common/deployment/ResteasyCommonProcessor.java
@@ -295,6 +298,7 @@ sed -i 's/@javax.annotation.Generated/@jakarta.annotation.Generated/g' extension
 sed -i 's/javax.ws.rs.core.Application/jakarta.ws.rs.core.Application/g' integration-tests/elytron-undertow/src/main/resources/META-INF/web.xml
 sed -i 's/javax.inject.Singleton/jakarta.inject.Singleton/g' integration-tests/main/src/main/resources/application.properties
 sed -i 's@<excludedArtifact>jakarta.xml.bind:jakarta.xml.bind-api</excludedArtifact>@<excludedArtifact>org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec</excludedArtifact>@g' extensions/jaxb/runtime/pom.xml
+sed -i 's@<excludedArtifact>jakarta.ws.rs:jakarta.ws.rs-api</excludedArtifact>@<excludedArtifact>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_3.0_spec</excludedArtifact>\n                        <excludedArtifact>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</excludedArtifact>@g' extensions/resteasy-classic/resteasy-common/runtime/pom.xml
 rm extensions/resteasy-classic/resteasy-common/runtime/src/main/java/io/quarkus/resteasy/common/runtime/graal/{Target_org_jboss_resteasy_microprofile_config_FilterConfigSource.java,Target_org_jboss_resteasy_microprofile_config_ServletConfigSource.java,Target_org_jboss_resteasy_microprofile_config_ServletContextConfigSource.java,ServletMissing.java}
 sed -i 's@<quarkus.rest-client-reactive.scope>javax.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>@<quarkus.rest-client-reactive.scope>jakarta.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>@g' tcks/microprofile-rest-client-reactive/pom.xml
 
@@ -332,6 +336,7 @@ sed -i 's@<module>kafka-avro</module>@<!-- <module>kafka-avro</module> -->@g' in
 sed -i 's@<module>infinispan-client</module>@<!-- <module>infinispan-client</module> -->@g' integration-tests/pom.xml
 
 ./mvnw -B clean install -f integration-tests -DskipTests -DskipITs
+./mvnw -B clean install -f tcks -DskipTests -DskipITs
 
 exit 0
 

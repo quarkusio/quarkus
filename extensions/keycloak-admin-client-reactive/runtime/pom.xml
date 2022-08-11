@@ -21,6 +21,16 @@
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.sun.activation</groupId>
+                    <artifactId>jakarta.activation</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.activation</groupId>
+            <artifactId>jakarta.activation</artifactId>
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
@@ -91,6 +101,7 @@
                         <configuration>
                             <activeRecipes>
                                 <recipe>io.quarkus.keycloak-admin-client</recipe>
+                                <recipe>io.quarkus.jakarta-angus-activation-switch</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>

@@ -99,6 +99,7 @@
                             <activeRecipes>
                                 <recipe>io.quarkus.narayana-lra-switch</recipe>
                                 <recipe>io.quarkus.jakarta-jaxrs-switch</recipe>
+                                <recipe>io.quarkus.jakarta-angus-activation-switch</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>

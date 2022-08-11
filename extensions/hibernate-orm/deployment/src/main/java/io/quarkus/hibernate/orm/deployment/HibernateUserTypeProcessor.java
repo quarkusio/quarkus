@@ -12,9 +12,11 @@ import org.jboss.jandex.IndexView;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
+@BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public final class HibernateUserTypeProcessor {
     private static final String TYPE_VALUE = "type";
     private static final String TYPE_CLASS_VALUE = "typeClass";

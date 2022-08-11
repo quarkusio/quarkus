@@ -79,15 +79,6 @@ public class HibernateOrmRecorder {
         };
     }
 
-    public Supplier<JPAConfigSupport> jpaConfigSupportSupplier(JPAConfigSupport jpaConfigSupport) {
-        return new Supplier<JPAConfigSupport>() {
-            @Override
-            public JPAConfigSupport get() {
-                return jpaConfigSupport;
-            }
-        };
-    }
-
     public Supplier<DataSourceTenantConnectionResolver> dataSourceTenantConnectionResolver(String persistenceUnitName,
             Optional<String> dataSourceName,
             MultiTenancyStrategy multiTenancyStrategy, String multiTenancySchemaDataSourceName) {

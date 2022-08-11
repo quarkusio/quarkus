@@ -36,6 +36,7 @@ import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitsHolder;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
+import io.quarkus.hibernate.orm.runtime.boot.RuntimePersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
@@ -77,15 +78,19 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             properties = new HashMap<Object, Object>();
         try {
             // These are pre-parsed during image generation:
-            final List<PersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
+            final List<RuntimePersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
 
             for (PersistenceUnitDescriptor unit : units) {
                 //if the provider is not set, don't use it as people might want to use Hibernate ORM
                 if (IMPLEMENTATION_NAME.equalsIgnoreCase(unit.getProviderClassName()) ||
                         unit.getProviderClassName() == null) {
-                    EntityManagerFactoryBuilder emfBuilder = getEntityManagerFactoryBuilderOrNull(emName, properties);
-                    EntityManagerFactory emf = emfBuilder.build();
-                    return emf;
+                    EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilderOrNull(emName, properties);
+                    if (builder == null) {
+                        log.trace("Could not obtain matching EntityManagerFactoryBuilder, returning null");
+                        return null;
+                    } else {
+                        return builder.build();
+                    }
                 }
             }
 
@@ -106,7 +111,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         verifyProperties(properties);
 
         // These are pre-parsed during image generation:
-        final List<PersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
+        final List<RuntimePersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
 
         log.debugf("Located %s persistence units; checking each", units.size());
 
@@ -116,7 +121,9 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             throw new PersistenceException("No name provided and multiple persistence units found");
         }
 
-        for (PersistenceUnitDescriptor persistenceUnit : units) {
+        Map<String, HibernateOrmRuntimeConfigPersistenceUnit> puConfigMap = hibernateOrmRuntimeConfig
+                .getAllPersistenceUnitConfigsAsMap();
+        for (RuntimePersistenceUnitDescriptor persistenceUnit : units) {
             log.debugf(
                     "Checking persistence-unit [name=%s, explicit-provider=%s] against incoming persistence unit name [%s]",
                     persistenceUnit.getName(), persistenceUnit.getProviderClassName(), persistenceUnitName);
@@ -142,9 +149,16 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,
                     integrationSettings);
 
+            var puConfig = puConfigMap.getOrDefault(persistenceUnit.getConfigurationName(),
+                    new HibernateOrmRuntimeConfigPersistenceUnit());
+            if (puConfig.active.isPresent() && !puConfig.active.get()) {
+                throw new IllegalStateException(
+                        "Attempting to boot a deactivated Hibernate Reactive persistence unit");
+            }
+
             // Inject runtime configuration if the persistence unit was defined by Quarkus configuration
             if (!recordedState.isFromPersistenceXml()) {
-                injectRuntimeConfiguration(persistenceUnitName, hibernateOrmRuntimeConfig, runtimeSettingsBuilder);
+                injectRuntimeConfiguration(puConfig, runtimeSettingsBuilder);
             }
 
             for (HibernateOrmIntegrationRuntimeDescriptor descriptor : integrationRuntimeDescriptors
@@ -261,10 +275,8 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         serviceRegistry.addInitiator(new VertxInstanceInitiator(vertxHandle.get()));
     }
 
-    private static void injectRuntimeConfiguration(String persistenceUnitName,
-            HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig, Builder runtimeSettingsBuilder) {
-        HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig = hibernateOrmRuntimeConfig.defaultPersistenceUnit;
-
+    private static void injectRuntimeConfiguration(HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,
+            Builder runtimeSettingsBuilder) {
         // Database
         runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_DATABASE_ACTION,
                 persistenceUnitConfig.database.generation.generation);

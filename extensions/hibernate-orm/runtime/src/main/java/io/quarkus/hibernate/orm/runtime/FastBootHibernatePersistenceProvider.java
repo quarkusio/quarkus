@@ -30,6 +30,7 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
+import io.quarkus.hibernate.orm.runtime.boot.RuntimePersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.boot.registry.PreconfiguredServiceRegistryBuilder;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
@@ -136,7 +137,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         verifyProperties(properties);
 
         // These are pre-parsed during image generation:
-        final List<PersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
+        final List<RuntimePersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
 
         log.debugf("Located %s persistence units; checking each", units.size());
 
@@ -146,7 +147,9 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             throw new PersistenceException("No name provided and multiple persistence units found");
         }
 
-        for (PersistenceUnitDescriptor persistenceUnit : units) {
+        Map<String, HibernateOrmRuntimeConfigPersistenceUnit> puConfigMap = hibernateOrmRuntimeConfig
+                .getAllPersistenceUnitConfigsAsMap();
+        for (RuntimePersistenceUnitDescriptor persistenceUnit : units) {
             log.debugf(
                     "Checking persistence-unit [name=%s, explicit-provider=%s] against incoming persistence unit name [%s]",
                     persistenceUnit.getName(), persistenceUnit.getProviderClassName(), persistenceUnitName);
@@ -171,7 +174,13 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                         "Attempting to boot a blocking Hibernate ORM instance on a reactive RecordedState");
             }
             final PrevalidatedQuarkusMetadata metadata = recordedState.getMetadata();
-            RuntimeSettings runtimeSettings = buildRuntimeSettings(persistenceUnitName, recordedState);
+            var puConfig = puConfigMap.getOrDefault(persistenceUnit.getConfigurationName(),
+                    new HibernateOrmRuntimeConfigPersistenceUnit());
+            if (puConfig.active.isPresent() && !puConfig.active.get()) {
+                throw new IllegalStateException(
+                        "Attempting to boot a deactivated Hibernate ORM persistence unit");
+            }
+            RuntimeSettings runtimeSettings = buildRuntimeSettings(persistenceUnitName, recordedState, puConfig);
 
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(runtimeSettings,
                     recordedState, persistenceUnitName);
@@ -191,7 +200,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         return null;
     }
 
-    private RuntimeSettings buildRuntimeSettings(String persistenceUnitName, RecordedState recordedState) {
+    private RuntimeSettings buildRuntimeSettings(String persistenceUnitName, RecordedState recordedState,
+            HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig) {
         final BuildTimeSettings buildTimeSettings = recordedState.getBuildTimeSettings();
         final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
         Builder runtimeSettingsBuilder = new Builder(buildTimeSettings, integrationSettings);
@@ -200,14 +210,6 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         if (dataSourceName.isPresent()) {
             // Inject the datasource
             injectDataSource(persistenceUnitName, dataSourceName.get(), runtimeSettingsBuilder);
-        }
-
-        HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig;
-        if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
-            persistenceUnitConfig = hibernateOrmRuntimeConfig.defaultPersistenceUnit;
-        } else {
-            persistenceUnitConfig = hibernateOrmRuntimeConfig.persistenceUnits.getOrDefault(persistenceUnitName,
-                    new HibernateOrmRuntimeConfigPersistenceUnit());
         }
 
         // Inject runtime configuration if the persistence unit was defined by Quarkus configuration

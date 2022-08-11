@@ -13,31 +13,39 @@ import javax.persistence.spi.PersistenceUnitTransactionType;
 import org.hibernate.bytecode.enhance.spi.EnhancementContext;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 
-public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescriptor {
+import io.quarkus.runtime.annotations.RecordableConstructor;
+
+public final class RuntimePersistenceUnitDescriptor implements PersistenceUnitDescriptor {
 
     private final String name;
+    private final String configurationName;
     private final String providerClassName;
     private final boolean useQuotedIdentifiers;
     private final PersistenceUnitTransactionType transactionType;
     private final ValidationMode validationMode;
-    private final SharedCacheMode sharedCachemode;
+    private final SharedCacheMode sharedCacheMode;
     private final List<String> managedClassNames;
     private final Properties properties;
 
     /**
-     * Internal constructor, as we're trusting all parameters. Useful for serialization to bytecode.
-     * (intentionally set to package-private visibility)
+     * @deprecated Do not use directly: this should be considered an internal constructor,
+     *             as we're trusting all parameters.
+     *             Useful for serialization to bytecode (which requires the constructor to be public).
      */
-    LightPersistenceXmlDescriptor(String name, String providerClassName, boolean useQuotedIdentifiers,
+    @Deprecated
+    @RecordableConstructor
+    public RuntimePersistenceUnitDescriptor(String name, String configurationName,
+            String providerClassName, boolean useQuotedIdentifiers,
             PersistenceUnitTransactionType transactionType,
-            ValidationMode validationMode, SharedCacheMode sharedCachemode, List<String> managedClassNames,
+            ValidationMode validationMode, SharedCacheMode sharedCacheMode, List<String> managedClassNames,
             Properties properties) {
         this.name = name;
+        this.configurationName = configurationName;
         this.providerClassName = providerClassName;
         this.useQuotedIdentifiers = useQuotedIdentifiers;
         this.transactionType = transactionType;
         this.validationMode = validationMode;
-        this.sharedCachemode = sharedCachemode;
+        this.sharedCacheMode = sharedCacheMode;
         this.managedClassNames = managedClassNames;
         this.properties = properties;
     }
@@ -47,13 +55,16 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
      * several options that Quarkus does not support are not set.
      *
      * @param toClone the descriptor to clone
+     * @param configurationName the name of this PU in Quarkus configuration
      * @return a new instance of LightPersistenceXmlDescriptor
      * @throws UnsupportedOperationException on unsupported configurations
      */
-    public static LightPersistenceXmlDescriptor validateAndReadFrom(PersistenceUnitDescriptor toClone) {
+    @SuppressWarnings("deprecated")
+    public static RuntimePersistenceUnitDescriptor validateAndReadFrom(PersistenceUnitDescriptor toClone,
+            String configurationName) {
         Objects.requireNonNull(toClone);
         verifyIgnoredFields(toClone);
-        return new LightPersistenceXmlDescriptor(toClone.getName(), toClone.getProviderClassName(),
+        return new RuntimePersistenceUnitDescriptor(toClone.getName(), configurationName, toClone.getProviderClassName(),
                 toClone.isUseQuotedIdentifiers(),
                 toClone.getTransactionType(), toClone.getValidationMode(), toClone.getSharedCacheMode(),
                 Collections.unmodifiableList(toClone.getManagedClassNames()), toClone.getProperties());
@@ -67,6 +78,10 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
     @Override
     public String getName() {
         return name;
+    }
+
+    public String getConfigurationName() {
+        return configurationName;
     }
 
     @Override
@@ -97,7 +112,7 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
 
     @Override
     public SharedCacheMode getSharedCacheMode() {
-        return sharedCachemode;
+        return sharedCacheMode;
     }
 
     @Override
@@ -175,7 +190,7 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
     public String toString() {
         return "PersistenceUnitDescriptor{" + "name='" + name + '\'' + ", providerClassName='" + providerClassName
                 + '\'' + ", useQuotedIdentifiers=" + useQuotedIdentifiers + ", transactionType=" + transactionType
-                + ", validationMode=" + validationMode + ", sharedCachemode=" + sharedCachemode + ", managedClassNames="
+                + ", validationMode=" + validationMode + ", sharedCachemode=" + sharedCacheMode + ", managedClassNames="
                 + managedClassNames + ", properties=" + properties + '}';
     }
 }

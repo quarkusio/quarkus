@@ -8,10 +8,10 @@ import java.util.stream.Collectors;
 
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 
 import io.quarkus.hibernate.orm.runtime.boot.FastBootMetadataBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
+import io.quarkus.hibernate.orm.runtime.boot.RuntimePersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 
@@ -36,14 +36,14 @@ public final class PersistenceUnitsHolder {
     static void initializeJpa(List<QuarkusPersistenceUnitDefinition> puDefinitions,
             Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators,
             PreGeneratedProxies preGeneratedProxies) {
-        final List<PersistenceUnitDescriptor> units = convertPersistenceUnits(puDefinitions);
+        final List<RuntimePersistenceUnitDescriptor> units = convertPersistenceUnits(puDefinitions);
         final Map<String, RecordedState> metadata = constructMetadataAdvance(puDefinitions, scanner, additionalIntegrators,
                 preGeneratedProxies);
 
         persistenceUnits = new PersistenceUnits(units, metadata);
     }
 
-    public static List<PersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
+    public static List<RuntimePersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
         checkJPAInitialization();
         return persistenceUnits.units;
     }
@@ -57,7 +57,7 @@ public final class PersistenceUnitsHolder {
         return persistenceUnits.recordedStates.remove(key);
     }
 
-    private static List<PersistenceUnitDescriptor> convertPersistenceUnits(
+    private static List<RuntimePersistenceUnitDescriptor> convertPersistenceUnits(
             final List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors) {
         return parsedPersistenceXmlDescriptors.stream().map(QuarkusPersistenceUnitDefinition::getActualHibernateDescriptor)
                 .collect(Collectors.toList());
@@ -103,11 +103,12 @@ public final class PersistenceUnitsHolder {
 
     private static class PersistenceUnits {
 
-        private final List<PersistenceUnitDescriptor> units;
+        private final List<RuntimePersistenceUnitDescriptor> units;
 
         private final Map<String, RecordedState> recordedStates;
 
-        public PersistenceUnits(final List<PersistenceUnitDescriptor> units, final Map<String, RecordedState> recordedStates) {
+        public PersistenceUnits(final List<RuntimePersistenceUnitDescriptor> units,
+                final Map<String, RecordedState> recordedStates) {
             this.units = units;
             this.recordedStates = recordedStates;
         }

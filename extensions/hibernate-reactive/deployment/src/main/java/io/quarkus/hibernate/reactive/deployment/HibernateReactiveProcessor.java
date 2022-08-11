@@ -32,13 +32,12 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
-import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -46,12 +45,21 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.hibernate.orm.deployment.*;
+import io.quarkus.hibernate.orm.deployment.Dialects;
+import io.quarkus.hibernate.orm.deployment.HibernateConfigUtil;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor;
+import io.quarkus.hibernate.orm.deployment.JpaModelBuildItem;
+import io.quarkus.hibernate.orm.deployment.PersistenceProviderSetUpBuildItem;
+import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
+import io.quarkus.hibernate.orm.deployment.PersistenceXmlDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
+import io.quarkus.hibernate.reactive.runtime.HibernateReactive;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
 import io.quarkus.hibernate.reactive.runtime.ReactiveSessionFactoryProducer;
 import io.quarkus.hibernate.reactive.runtime.ReactiveSessionProducer;
@@ -59,6 +67,7 @@ import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
+@BuildSteps(onlyIf = HibernateReactiveEnabled.class)
 public final class HibernateReactiveProcessor {
 
     private static final String HIBERNATE_REACTIVE = "Hibernate Reactive";
@@ -70,11 +79,6 @@ public final class HibernateReactiveProcessor {
             "org.hibernate.reactive.persister.collection.impl.ReactiveOneToManyPersister",
             "org.hibernate.reactive.persister.collection.impl.ReactiveBasicCollectionPersister",
     };
-
-    @BuildStep
-    FeatureBuildItem feature() {
-        return new FeatureBuildItem(Feature.HIBERNATE_REACTIVE);
-    }
 
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans, CombinedIndexBuildItem combinedIndex,
@@ -159,6 +163,7 @@ public final class HibernateReactiveProcessor {
             // - we don't support starting Hibernate Reactive from a persistence.xml
             // - we don't support Hibernate Envers with Hibernate Reactive
             persistenceUnitDescriptors.produce(new PersistenceUnitDescriptorBuildItem(reactivePU,
+                    PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                     jpaModel.getXmlMappings(reactivePU.getName()),
                     persistenceUnitConfig.unsupportedProperties,
                     true, false));
@@ -221,7 +226,7 @@ public final class HibernateReactiveProcessor {
 
         // we found one
         ParsedPersistenceXmlDescriptor desc = new ParsedPersistenceXmlDescriptor(null); //todo URL
-        desc.setName("default-reactive");
+        desc.setName(HibernateReactive.DEFAULT_REACTIVE_PERSISTENCE_UNIT_NAME);
         desc.setTransactionType(PersistenceUnitTransactionType.RESOURCE_LOCAL);
         desc.getProperties().setProperty(AvailableSettings.DIALECT, dialect);
         desc.setExcludeUnlistedClasses(true);

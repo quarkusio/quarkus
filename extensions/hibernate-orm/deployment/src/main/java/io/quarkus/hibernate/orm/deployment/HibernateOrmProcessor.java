@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
-import javax.inject.Singleton;
 import javax.persistence.AttributeConverter;
 import javax.persistence.SharedCacheMode;
 import javax.persistence.ValidationMode;
@@ -73,6 +72,7 @@ import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanTypeExclusion;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
@@ -82,11 +82,11 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
-import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
@@ -97,13 +97,11 @@ import io.quarkus.deployment.builditem.BytecodeRecorderConstantDefinitionBuildIt
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
-import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
@@ -125,7 +123,6 @@ import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
-import io.quarkus.hibernate.orm.runtime.JPAConfigSupport;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
 import io.quarkus.hibernate.orm.runtime.TransactionSessions;
@@ -137,7 +134,6 @@ import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusArcBeanContainer;
 import io.quarkus.hibernate.orm.runtime.devconsole.HibernateOrmDevConsoleCreateDDLSupplier;
 import io.quarkus.hibernate.orm.runtime.devconsole.HibernateOrmDevConsoleIntegrator;
-import io.quarkus.hibernate.orm.runtime.graal.DisableLoggingFeature;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
@@ -163,6 +159,7 @@ import net.bytebuddy.pool.TypePool;
  * @author Emmanuel Bernard emmanuel@hibernate.org
  * @author Sanne Grinovero <sanne@hibernate.org>
  */
+@BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public final class HibernateOrmProcessor {
 
     public static final String HIBERNATE_ORM_CONFIG_PREFIX = "quarkus.hibernate-orm.";
@@ -171,11 +168,6 @@ public final class HibernateOrmProcessor {
     private static final Logger LOG = Logger.getLogger(HibernateOrmProcessor.class);
 
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
-
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    NativeImageFeatureBuildItem nativeImageFeature() {
-        return new NativeImageFeatureBuildItem(DisableLoggingFeature.class);
-    }
 
     @BuildStep
     void registerHibernateOrmMetadataForCoreDialects(
@@ -397,8 +389,10 @@ public final class HibernateOrmProcessor {
 
         // First produce the PUs having a persistence.xml: these are not reactive, as we don't allow using a persistence.xml for them.
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptorBuildItem : persistenceXmlDescriptors) {
+            ParsedPersistenceXmlDescriptor xmlDescriptor = persistenceXmlDescriptorBuildItem.getDescriptor();
             persistenceUnitDescriptors
-                    .produce(new PersistenceUnitDescriptorBuildItem(persistenceXmlDescriptorBuildItem.getDescriptor(),
+                    .produce(new PersistenceUnitDescriptorBuildItem(xmlDescriptor,
+                            xmlDescriptor.getName(),
                             Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
                             getMultiTenancyStrategy(Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
                                     .getProperties().getProperty(AvailableSettings.MULTI_TENANT))),
@@ -563,11 +557,8 @@ public final class HibernateOrmProcessor {
             JpaModelBuildItem jpaModel,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             List<HibernateOrmIntegrationStaticConfiguredBuildItem> integrationBuildItems,
-            BuildProducer<FeatureBuildItem> feature,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
             LaunchModeBuildItem launchMode) throws Exception {
-
-        feature.produce(new FeatureBuildItem(Feature.HIBERNATE_ORM));
         validateHibernatePropertiesNotUsed();
 
         final boolean enableORM = hasEntities(jpaModel);
@@ -610,11 +601,6 @@ public final class HibernateOrmProcessor {
                     pud.asOutputPersistenceUnitDefinition(integrationStaticDescriptors
                             .getOrDefault(pud.getPersistenceUnitName(), Collections.emptyList())));
         }
-
-        //Make it possible to record the QuarkusPersistenceUnitDefinition as bytecode:
-        recorderContext.registerSubstitution(QuarkusPersistenceUnitDefinition.class,
-                QuarkusPersistenceUnitDefinition.Serialized.class,
-                QuarkusPersistenceUnitDefinition.Substitution.class);
 
         if (hasXmlMappings(persistenceUnitDescriptorBuildItems)) {
             //Make it possible to record JAXBElement as bytecode:
@@ -713,22 +699,18 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
-    @Record(STATIC_INIT)
+    @Record(RUNTIME_INIT)
     public void build(HibernateOrmRecorder recorder, HibernateOrmConfig hibernateOrmConfig,
+            HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
             BuildProducer<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaModelBuildItem jpaModel) throws Exception {
         if (!hasEntities(jpaModel)) {
             return;
         }
 
-        Set<String> persistenceUnitNames = new HashSet<>();
-
         Map<String, Set<String>> entityPersistenceUnitMapping = new HashMap<>();
         for (PersistenceUnitDescriptorBuildItem descriptor : descriptors) {
-            persistenceUnitNames.add(descriptor.getPersistenceUnitName());
-
             for (String entityClass : descriptor.getManagedClassNames()) {
                 entityPersistenceUnitMapping.putIfAbsent(entityClass, new HashSet<>());
                 entityPersistenceUnitMapping.get(entityClass).add(descriptor.getPersistenceUnitName());
@@ -736,13 +718,6 @@ public final class HibernateOrmProcessor {
         }
 
         jpaModelPersistenceUnitMapping.produce(new JpaModelPersistenceUnitMappingBuildItem(entityPersistenceUnitMapping));
-
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(JPAConfigSupport.class)
-                .scope(Singleton.class)
-                .unremovable()
-                .supplier(recorder.jpaConfigSupportSupplier(
-                        new JPAConfigSupport(persistenceUnitNames)))
-                .done());
     }
 
     @BuildStep
@@ -760,6 +735,7 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     @Record(RUNTIME_INIT)
     public ServiceStartBuildItem startPersistenceUnits(HibernateOrmRecorder recorder, BeanContainerBuildItem beanContainer,
             List<JdbcDataSourceBuildItem> dataSourcesConfigured,
@@ -1194,7 +1170,8 @@ public final class HibernateOrmProcessor {
                 String.valueOf(persistenceUnitConfig.discriminator.ignoreExplicitForJoined));
 
         persistenceUnitDescriptors.produce(
-                new PersistenceUnitDescriptorBuildItem(descriptor, jdbcDataSource.map(JdbcDataSourceBuildItem::getName),
+                new PersistenceUnitDescriptorBuildItem(descriptor, descriptor.getName(),
+                        jdbcDataSource.map(JdbcDataSourceBuildItem::getName),
                         multiTenancyStrategy,
                         persistenceUnitConfig.multitenantSchemaDatasource.orElse(null),
                         xmlMappings,

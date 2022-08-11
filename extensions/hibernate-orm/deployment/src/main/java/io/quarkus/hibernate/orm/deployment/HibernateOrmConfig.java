@@ -15,6 +15,18 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class HibernateOrmConfig {
 
     /**
+     * Whether Hibernate ORM is enabled <strong>during the build</strong>.
+     *
+     * If Hibernate ORM is disabled during the build, all processing related to Hibernate ORM will be skipped,
+     * but it will not be possible to activate Hibernate ORM at runtime:
+     * `quarkus.hibernate-orm.active` will default to `false` and setting it to `true` will lead to an error.
+     *
+     * @asciidoclet
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled;
+
+    /**
      * Configuration for the default persistence unit.
      */
     @ConfigItem(name = ConfigItem.PARENT)

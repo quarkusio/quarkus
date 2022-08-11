@@ -104,11 +104,14 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
             // cast, but still throw the CacheException in case it fails
             return unwrapCacheValueOrThrowable(existingCacheValue)
-                    .thenApply(value -> {
-                        try {
-                            return (V) value;
-                        } catch (ClassCastException e) {
-                            throw new CacheException("An existing cached value type does not match the requested type", e);
+                    .thenApply(new Function<>() {
+                        @Override
+                        public Object apply(Object value) {
+                            try {
+                                return (V) value;
+                            } catch (ClassCastException e) {
+                                throw new CacheException("An existing cached value type does not match the requested type", e);
+                            }
                         }
                     });
 

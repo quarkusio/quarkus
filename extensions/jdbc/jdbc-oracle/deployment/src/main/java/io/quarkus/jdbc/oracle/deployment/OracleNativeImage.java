@@ -32,9 +32,6 @@ public final class OracleNativeImage {
     void runtimeInitialization(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClass) {
         runtimeInitializedClass
                 .produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.driver.BlockSource$ThreadedCachingBlockSource"));
-        runtimeInitializedClass
-                .produce(new RuntimeInitializedClassBuildItem(
-                        "oracle.jdbc.driver.BlockSource$ThreadedCachingBlockSource$BlockReleaser"));
     }
 
 }

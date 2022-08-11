@@ -535,10 +535,11 @@ public class SmallRyeOpenApiProcessor {
     }
 
     private Map<String, String> getClassNamesMethodReferences(OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem) {
+        FilteredIndexView filteredIndex = apiFilteredIndexViewBuildItem.getIndex();
         List<AnnotationInstance> openapiAnnotations = new ArrayList<>();
         Set<DotName> allOpenAPIEndpoints = getAllOpenAPIEndpoints();
         for (DotName dotName : allOpenAPIEndpoints) {
-            openapiAnnotations.addAll(apiFilteredIndexViewBuildItem.getIndex().getAnnotations(dotName));
+            openapiAnnotations.addAll(filteredIndex.getAnnotations(dotName));
         }
 
         Map<String, String> classNames = new HashMap<>();
@@ -546,33 +547,36 @@ public class SmallRyeOpenApiProcessor {
         for (AnnotationInstance ai : openapiAnnotations) {
             if (ai.target().kind().equals(AnnotationTarget.Kind.METHOD)) {
                 MethodInfo method = ai.target().asMethod();
-                if (Modifier.isInterface(method.declaringClass().flags())) {
-                    Collection<ClassInfo> allKnownImplementors = apiFilteredIndexViewBuildItem.getIndex()
-                            .getAllKnownImplementors(method.declaringClass().name());
-                    for (ClassInfo impl : allKnownImplementors) {
-                        MethodInfo implMethod = impl.method(method.name(), method.parameterTypes().toArray(new Type[] {}));
-                        if (implMethod != null) {
-                            String implRef = JandexUtil.createUniqueMethodReference(impl, method);
-                            classNames.put(implRef, impl.simpleName());
-                        }
-                    }
-                } else if (Modifier.isAbstract(method.declaringClass().flags())) {
-                    Collection<ClassInfo> allKnownSubclasses = apiFilteredIndexViewBuildItem.getIndex()
-                            .getAllKnownSubclasses(method.declaringClass().name());
-                    for (ClassInfo impl : allKnownSubclasses) {
-                        MethodInfo implMethod = impl.method(method.name(), method.parameterTypes().toArray(new Type[] {}));
-                        if (implMethod != null) {
-                            String implRef = JandexUtil.createUniqueMethodReference(impl, method);
-                            classNames.put(implRef, impl.simpleName());
-                        }
-                    }
+                ClassInfo declaringClass = method.declaringClass();
+                Type[] params = method.parameterTypes().toArray(new Type[] {});
+
+                if (Modifier.isInterface(declaringClass.flags())) {
+                    addMethodImplementationClassNames(method, params, filteredIndex
+                            .getAllKnownImplementors(declaringClass.name()), classNames);
+                } else if (Modifier.isAbstract(declaringClass.flags())) {
+                    addMethodImplementationClassNames(method, params, filteredIndex
+                            .getAllKnownSubclasses(declaringClass.name()), classNames);
                 } else {
-                    String ref = JandexUtil.createUniqueMethodReference(method.declaringClass(), method);
-                    classNames.put(ref, method.declaringClass().simpleName());
+                    String ref = JandexUtil.createUniqueMethodReference(declaringClass, method);
+                    classNames.put(ref, declaringClass.simpleName());
                 }
             }
         }
         return classNames;
+    }
+
+    void addMethodImplementationClassNames(MethodInfo method, Type[] params, Collection<ClassInfo> classes,
+            Map<String, String> classNames) {
+        for (ClassInfo impl : classes) {
+            String simpleClassName = impl.simpleName();
+            MethodInfo implMethod = impl.method(method.name(), params);
+
+            if (implMethod != null) {
+                classNames.put(JandexUtil.createUniqueMethodReference(impl, implMethod), simpleClassName);
+            }
+
+            classNames.put(JandexUtil.createUniqueMethodReference(impl, method), simpleClassName);
+        }
     }
 
     private boolean isValidOpenAPIMethodForAutoAdd(MethodInfo method, DotName securityRequirement) {

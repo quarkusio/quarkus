@@ -211,8 +211,6 @@ class JaxbProcessor {
                 String className = xmlSchemaInstance.target().asClass().name().toString();
 
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, className));
-
-                classesToBeBound.add(className);
             }
         }
 

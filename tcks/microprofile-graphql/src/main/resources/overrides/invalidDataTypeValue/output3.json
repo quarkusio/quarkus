@@ -1,0 +1,16 @@
+{
+    "errors": [
+        {
+            "message": "argument 'powerLevel' with value 'StringValue{value='Unlimited'}' is not a valid 'Int'",
+            "locations": [
+                {
+                    "line": 2,
+                    "column": 37
+                }
+            ]
+        }
+    ],
+    "data": {
+        "updateItemPowerLevel": null
+    }
+}

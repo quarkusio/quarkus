@@ -52,7 +52,7 @@ public class HotReloadTest extends AbstractGraphQLTest {
                 .statusCode(200)
                 .and()
                 .body(CoreMatchers.containsString(
-                        "{\"errors\":[{\"message\":\"Validation error of type FieldUndefined: Field 'foo' in type 'TestPojo' is undefined @ 'foo/foo'\",\"locations\":[{\"line\":7,\"column\":5}],\"extensions\":{\"classification\":\"ValidationError\"}}],\"data\":null}"));
+                        "{\"errors\":[{\"message\":\"Validation error (FieldUndefined@[foo/foo]) : Field 'foo' in type 'TestPojo' is undefined\",\"locations\":[{\"line\":7,\"column\":5}],\"extensions\":{\"classification\":\"ValidationError\"}}],\"data\":null}"));
         LOG.info("Initial request done");
 
         // Make a code change (add a field)
@@ -94,7 +94,7 @@ public class HotReloadTest extends AbstractGraphQLTest {
                 .statusCode(200)
                 .and()
                 .body(CoreMatchers.containsString(
-                        "{\"errors\":[{\"message\":\"Validation error of type FieldUndefined: Field 'foo' in type 'TestPojo' is undefined @ 'foo/foo'\",\"locations\":[{\"line\":7,\"column\":5}],\"extensions\":{\"classification\":\"ValidationError\"}}],\"data\":null}"));
+                        "{\"errors\":[{\"message\":\"Validation error (FieldUndefined@[foo/foo]) : Field 'foo' in type 'TestPojo' is undefined\",\"locations\":[{\"line\":7,\"column\":5}],\"extensions\":{\"classification\":\"ValidationError\"}}],\"data\":null}"));
 
         LOG.info("Code change done - field removed");
 

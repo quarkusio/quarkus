@@ -1,0 +1,14 @@
+{
+    "errors": [
+        {
+            "message": "Validation error (WrongType@[createNewHero]) : argument 'hero.tshirtSize' with value 'EnumValue{name='XLTall'}' is not a valid 'ShirtSize' - Expected enum literal value not in allowable values -  'EnumValue{name='XLTall'}'.",
+            "locations": [
+                {
+                    "line": 3,
+                    "column": 19
+                }
+            ]
+        }
+    ],
+    "data": null
+}

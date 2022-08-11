@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.deployment;
 
+import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_PEER_IP;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_PEER_PORT;
@@ -27,7 +28,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
@@ -38,6 +38,7 @@ import io.quarkus.grpc.GrpcService;
 import io.quarkus.opentelemetry.deployment.MutinyGreeterGrpc.MutinyGreeterStub;
 import io.quarkus.opentelemetry.deployment.MutinyStreamingGrpc.MutinyStreamingStub;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 
 public class GrpcOpenTelemetryTest {
@@ -50,7 +51,7 @@ public class GrpcOpenTelemetryTest {
                             Greeter.class, GreeterBean.class, GreeterClient.class,
                             HelloProto.class, HelloRequest.class, HelloRequestOrBuilder.class,
                             HelloReply.class, HelloReplyOrBuilder.class)
-                    .addClasses(StreamService.class)
+                    .addClasses(StreamingService.class)
                     .addClasses(StreamingGrpc.class, MutinyStreamingGrpc.class,
                             Streaming.class, StreamingBean.class, StreamingClient.class,
                             StreamingProto.class, Item.class, ItemOrBuilder.class))
@@ -85,7 +86,7 @@ public class GrpcOpenTelemetryTest {
         SpanData internal = spans.get(0);
         assertEquals("span.internal", internal.getName());
         assertEquals(INTERNAL, internal.getKind());
-        assertEquals("value", internal.getAttributes().get(AttributeKey.stringKey("grpc.internal")));
+        assertEquals("value", internal.getAttributes().get(stringKey("grpc.internal")));
 
         SpanData server = spans.get(1);
         assertEquals("helloworld.Greeter/SayHello", server.getName());
@@ -200,7 +201,7 @@ public class GrpcOpenTelemetryTest {
     MutinyStreamingStub streamingStub;
 
     @Test
-    void stream() {
+    void streaming() {
         Multi<Item> request = Multi.createFrom().items(item("Goku"), item("Vegeta"), item("Piccolo"), item("Beerus"),
                 item("Whis"));
         Multi<Item> response = streamingStub.pipe(request);
@@ -225,6 +226,7 @@ public class GrpcOpenTelemetryTest {
         assertNotNull(server.getAttributes().get(NET_PEER_IP));
         assertNotNull(server.getAttributes().get(NET_PEER_PORT));
         assertEquals("ip_tcp", server.getAttributes().get(NET_TRANSPORT));
+        assertEquals("true", server.getAttributes().get(stringKey("grpc.service.propagated")));
 
         SpanData client = spans.get(1);
         assertEquals("streaming.Streaming/Pipe", client.getName());
@@ -237,10 +239,57 @@ public class GrpcOpenTelemetryTest {
         assertEquals(server.getTraceId(), client.getTraceId());
     }
 
+    @Test
+    void streamingBlocking() {
+        Multi<Item> request = Multi.createFrom().items(item("Goku"), item("Vegeta"), item("Piccolo"), item("Beerus"),
+                item("Whis"));
+        Multi<Item> response = streamingStub.pipeBlocking(request);
+
+        List<String> items = response.map(Item::getMessage).collect().asList().await().atMost(Duration.ofSeconds(5));
+        assertTrue(items.contains("Hello Goku"));
+        assertTrue(items.contains("Hello Vegeta"));
+        assertTrue(items.contains("Hello Piccolo"));
+        assertTrue(items.contains("Hello Beerus"));
+        assertTrue(items.contains("Hello Whis"));
+
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
+        assertEquals(2, spans.size());
+
+        SpanData server = spans.get(0);
+        assertEquals("streaming.Streaming/PipeBlocking", server.getName());
+        assertEquals(SpanKind.SERVER, server.getKind());
+        assertEquals("grpc", server.getAttributes().get(RPC_SYSTEM));
+        assertEquals("streaming.Streaming", server.getAttributes().get(RPC_SERVICE));
+        assertEquals("PipeBlocking", server.getAttributes().get(RPC_METHOD));
+        assertEquals(Status.Code.OK.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
+        assertNotNull(server.getAttributes().get(NET_PEER_IP));
+        assertNotNull(server.getAttributes().get(NET_PEER_PORT));
+        assertEquals("ip_tcp", server.getAttributes().get(NET_TRANSPORT));
+        assertEquals("true", server.getAttributes().get(stringKey("grpc.service.propagated.blocking")));
+
+        SpanData client = spans.get(1);
+        assertEquals("streaming.Streaming/PipeBlocking", client.getName());
+        assertEquals(SpanKind.CLIENT, client.getKind());
+        assertEquals("grpc", client.getAttributes().get(RPC_SYSTEM));
+        assertEquals("streaming.Streaming", client.getAttributes().get(RPC_SERVICE));
+        assertEquals("PipeBlocking", client.getAttributes().get(RPC_METHOD));
+        assertEquals(Status.Code.OK.value(), client.getAttributes().get(RPC_GRPC_STATUS_CODE));
+
+        assertEquals(server.getTraceId(), client.getTraceId());
+    }
+
     @GrpcService
-    public static class StreamService implements Streaming {
+    public static class StreamingService implements Streaming {
         @Override
         public Multi<Item> pipe(final Multi<Item> request) {
+            Span.current().setAttribute("grpc.service.propagated", "true");
+            return request.onItem().transform(item -> item("Hello " + item.getMessage()));
+        }
+
+        @Blocking
+        @Override
+        public Multi<Item> pipeBlocking(final Multi<Item> request) {
+            Span.current().setAttribute("grpc.service.propagated.blocking", "true");
             return request.onItem().transform(item -> item("Hello " + item.getMessage()));
         }
     }

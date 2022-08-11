@@ -56,10 +56,9 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
         boolean shouldStart = instrumenter.shouldStart(parentContext, grpcRequest);
         if (shouldStart) {
             Context spanContext = instrumenter.start(parentContext, grpcRequest);
-            try (Scope ignored = spanContext.makeCurrent()) {
-                TracingServerCall<ReqT, RespT> tracingServerCall = new TracingServerCall<>(call, spanContext, grpcRequest);
-                return new TracingServerCallListener<>(next.startCall(tracingServerCall, headers), spanContext, grpcRequest);
-            }
+            Scope scope = spanContext.makeCurrent();
+            TracingServerCall<ReqT, RespT> tracingServerCall = new TracingServerCall<>(call, spanContext, scope, grpcRequest);
+            return new TracingServerCallListener<>(next.startCall(tracingServerCall, headers), spanContext, scope, grpcRequest);
         }
 
         return next.startCall(call, headers);
@@ -99,52 +98,68 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
 
     private class TracingServerCallListener<ReqT> extends SimpleForwardingServerCallListener<ReqT> {
         private final Context spanContext;
+        private final Scope scope;
         private final GrpcRequest grpcRequest;
 
-        protected TracingServerCallListener(final ServerCall.Listener<ReqT> delegate, final Context spanContext,
+        protected TracingServerCallListener(
+                final ServerCall.Listener<ReqT> delegate,
+                final Context spanContext,
+                final Scope scope,
                 final GrpcRequest grpcRequest) {
+
             super(delegate);
+            this.scope = scope;
             this.spanContext = spanContext;
             this.grpcRequest = grpcRequest;
         }
 
         @Override
         public void onHalfClose() {
-            try (Scope ignored = spanContext.makeCurrent()) {
+            try {
                 super.onHalfClose();
             } catch (Exception e) {
-                instrumenter.end(spanContext, grpcRequest, null, e);
+                try (scope) {
+                    instrumenter.end(spanContext, grpcRequest, null, e);
+                }
                 throw e;
             }
         }
 
         @Override
         public void onCancel() {
-            try (Scope ignored = spanContext.makeCurrent()) {
+            try {
                 super.onCancel();
-                instrumenter.end(spanContext, grpcRequest, Status.CANCELLED, null);
             } catch (Exception e) {
-                instrumenter.end(spanContext, grpcRequest, null, e);
+                try (scope) {
+                    instrumenter.end(spanContext, grpcRequest, null, e);
+                }
                 throw e;
+            }
+            try (scope) {
+                instrumenter.end(spanContext, grpcRequest, Status.CANCELLED, null);
             }
         }
 
         @Override
         public void onComplete() {
-            try (Scope ignored = spanContext.makeCurrent()) {
+            try {
                 super.onComplete();
             } catch (Exception e) {
-                instrumenter.end(spanContext, grpcRequest, null, e);
+                try (scope) {
+                    instrumenter.end(spanContext, grpcRequest, null, e);
+                }
                 throw e;
             }
         }
 
         @Override
         public void onReady() {
-            try (Scope ignored = spanContext.makeCurrent()) {
+            try {
                 super.onReady();
             } catch (Exception e) {
-                instrumenter.end(spanContext, grpcRequest, null, e);
+                try (scope) {
+                    instrumenter.end(spanContext, grpcRequest, null, e);
+                }
                 throw e;
             }
         }
@@ -152,12 +167,18 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
 
     private class TracingServerCall<ReqT, RespT> extends SimpleForwardingServerCall<ReqT, RespT> {
         private final Context spanContext;
+        private final Scope scope;
         private final GrpcRequest grpcRequest;
 
-        public TracingServerCall(final ServerCall<ReqT, RespT> delegate, final Context spanContext,
+        public TracingServerCall(
+                final ServerCall<ReqT, RespT> delegate,
+                final Context spanContext,
+                final Scope scope,
                 final GrpcRequest grpcRequest) {
+
             super(delegate);
             this.spanContext = spanContext;
+            this.scope = scope;
             this.grpcRequest = grpcRequest;
         }
 
@@ -166,10 +187,14 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
             try {
                 super.close(status, trailers);
             } catch (Exception e) {
-                instrumenter.end(spanContext, grpcRequest, null, e);
+                try (scope) {
+                    instrumenter.end(spanContext, grpcRequest, null, e);
+                }
                 throw e;
             }
-            instrumenter.end(spanContext, grpcRequest, status, status.getCause());
+            try (scope) {
+                instrumenter.end(spanContext, grpcRequest, status, status.getCause());
+            }
         }
     }
 }

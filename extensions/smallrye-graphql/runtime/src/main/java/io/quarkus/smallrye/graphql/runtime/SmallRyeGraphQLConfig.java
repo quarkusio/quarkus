@@ -152,17 +152,59 @@ public class SmallRyeGraphQLConfig {
     public Optional<List<String>> unwrapExceptions;
 
     /**
-     * SmallRye GraphQL UI configuration
-     */
-    @ConfigItem
-    @ConfigDocSection
-    public SmallRyeGraphQLUIConfig ui;
-
-    /**
      * Subprotocols that should be supported by the server for graphql-over-websocket use cases.
      * Allowed subprotocols are "graphql-ws" and "graphql-transport-ws". By default, both are enabled.
      */
     @ConfigItem
     public Optional<List<String>> websocketSubprotocols;
 
+    /**
+     * Set to true if ignored chars should be captured as AST nodes. Default to false
+     */
+    @ConfigItem
+    public Optional<Boolean> parserCaptureIgnoredChars;
+
+    /**
+     * Set to true if `graphql.language.Comment`s should be captured as AST nodes
+     */
+    @ConfigItem
+    public Optional<Boolean> parserCaptureLineComments;
+
+    /**
+     * Set to true true if `graphql.language.SourceLocation`s should be captured as AST nodes. Default to true
+     */
+    @ConfigItem
+    public Optional<Boolean> parserCaptureSourceLocation;
+
+    /**
+     * The maximum number of raw tokens the parser will accept, after which an exception will be thrown. Default to 15000
+     */
+    @ConfigItem
+    public Optional<Integer> parserMaxTokens;
+
+    /**
+     * The maximum number of raw whitespace tokens the parser will accept, after which an exception will be thrown. Default to
+     * 200000
+     */
+    @ConfigItem
+    public Optional<Integer> parserMaxWhitespaceTokens;
+
+    /**
+     * Abort a query if the total number of data fields queried exceeds the defined limit. Default to no limit
+     */
+    @ConfigItem
+    public Optional<Integer> instrumentationQueryComplexity;
+
+    /**
+     * Abort a query if the total depth of the query exceeds the defined limit. Default to no limit
+     */
+    @ConfigItem
+    public Optional<Integer> instrumentationQueryDepth;
+
+    /**
+     * SmallRye GraphQL UI configuration
+     */
+    @ConfigItem
+    @ConfigDocSection
+    public SmallRyeGraphQLUIConfig ui;
 }

@@ -1,0 +1,14 @@
+{
+    "errors": [
+        {
+            "message": "Validation error (WrongType@[createNewHero]) : argument 'hero' with value 'ObjectValue{objectFields=[ObjectField{name='realName', value=StringValue{value='John Smith'}}]}' is missing required fields '[name]'",
+            "locations": [
+                {
+                    "line": 2,
+                    "column": 19
+                }
+            ]
+        }
+    ],
+    "data": null
+}

@@ -1,0 +1,16 @@
+{
+    "errors": [
+        {
+            "message": "argument 'date' with value 'StringValue{value='Today'}' is not a valid 'Date'",
+            "locations": [
+                {
+                    "line": 2,
+                    "column": 28
+                }
+            ]
+        }
+    ],
+    "data": {
+        "checkIn": null
+    }
+}

@@ -1,0 +1,14 @@
+{
+    "errors": [
+        {
+            "message": "Validation error (FieldUndefined@[createNewHeroCat]) : Field 'createNewHeroCat' in type 'Mutation' is undefined",
+            "locations": [
+                {
+                    "line": 2,
+                    "column": 5
+                }
+            ]
+        }
+    ],
+    "data": null
+}

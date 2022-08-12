@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
@@ -50,6 +49,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.runtime.ReflectionUtil;
 import io.quarkus.runtime.ResourceHelper;
 import io.quarkus.runtime.graal.ResourcesFeature;
 import io.quarkus.runtime.graal.WeakReflection;
@@ -82,7 +82,7 @@ public class NativeImageFeatureStep {
             String.class);
 
     private static final MethodDescriptor LOOKUP_METHOD = ofMethod(
-            "com.oracle.svm.util.ReflectionUtil",
+            ReflectionUtil.class,
             "lookupMethod", Method.class, Class.class, String.class, Class[].class);
     private static final MethodDescriptor FOR_NAME = ofMethod(
             Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class);
@@ -282,8 +282,8 @@ public class NativeImageFeatureStep {
 
         /* Resource includes and excludes */
         if (!resourcePatterns.isEmpty()) {
-            // Needed to access LOOKUP_METHOD
-            exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.base", "com.oracle.svm.util",
+            // Needed to access com.oracle.svm.core.configure.ResourcesRegistry.*
+            exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.configure",
                     GraalVM.Version.VERSION_22_1_0));
 
             ResultHandle resourcesRegistrySingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
@@ -506,9 +506,6 @@ public class NativeImageFeatureStep {
 
             if (entry.getValue().serialization) {
                 if (registerSerializationMethod == null) {
-                    // Needed by createRegisterSerializationForClassMethod to access LOOKUP_METHOD
-                    exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.base", "com.oracle.svm.util",
-                            GraalVM.Version.VERSION_22_1_0));
                     registerSerializationMethod = createRegisterSerializationForClassMethod(file);
                 }
 

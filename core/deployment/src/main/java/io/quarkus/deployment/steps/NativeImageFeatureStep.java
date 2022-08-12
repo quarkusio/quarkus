@@ -43,8 +43,6 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -59,8 +57,6 @@ import io.quarkus.runtime.graal.WeakReflection;
 public class NativeImageFeatureStep {
 
     public static final String GRAAL_FEATURE = "io.quarkus.runner.Feature";
-    private static final MethodDescriptor VERSION_CURRENT = ofMethod(Version.class, "getCurrent", Version.class);
-    private static final MethodDescriptor VERSION_COMPARE_TO = ofMethod(Version.class, "compareTo", int.class, int[].class);
 
     private static final MethodDescriptor IMAGE_SINGLETONS_LOOKUP = ofMethod(ImageSingletons.class, "lookup", Object.class,
             Class.class);
@@ -589,36 +585,6 @@ public class NativeImageFeatureStep {
     }
 
     private MethodDescriptor createRegisterSerializationForClassMethod(ClassCreator file) {
-        //register serialization feature as requested
-        MethodCreator requiredFeatures = file.getMethodCreator("getRequiredFeatures", "java.util.List");
-
-        TryBlock requiredTryCatch = requiredFeatures.tryBlock();
-
-        AssignableResultHandle serializationFeatureClass = requiredTryCatch.createVariable(Class.class);
-
-        BranchResult graalVm22_3Test = requiredTryCatch.ifGreaterEqualZero(
-                requiredTryCatch.invokeVirtualMethod(VERSION_COMPARE_TO,
-                        requiredTryCatch.invokeStaticMethod(VERSION_CURRENT),
-                        requiredTryCatch.marshalAsArray(int.class, requiredTryCatch.load(22), requiredTryCatch.load(3))));
-        /* GraalVM >= 22.3 */
-        BytecodeCreator greaterThan22_2 = graalVm22_3Test.trueBranch();
-        greaterThan22_2.assign(serializationFeatureClass,
-                greaterThan22_2.loadClassFromTCCL("com.oracle.svm.hosted.reflect.serialize.SerializationFeature"));
-        /* GraalVM < 22.3 */
-        BytecodeCreator smallerThan22_3 = graalVm22_3Test.falseBranch();
-        smallerThan22_3.assign(serializationFeatureClass,
-                smallerThan22_3.loadClassFromTCCL("com.oracle.svm.reflect.serialize.hosted.SerializationFeature"));
-
-        ResultHandle requiredFeaturesList = requiredTryCatch.invokeStaticMethod(
-                ofMethod("java.util.Collections", "singletonList", List.class, Object.class),
-                serializationFeatureClass);
-
-        requiredTryCatch.returnValue(requiredFeaturesList);
-
-        CatchBlockCreator cc = requiredTryCatch.addCatch(Throwable.class);
-        cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
-        cc.throwException(cc.getCaughtException());
-
         // method to register class for registration
         MethodCreator addSerializationForClass = file.getMethodCreator("registerSerializationForClass", "V", Class.class);
         addSerializationForClass.setModifiers(Modifier.PRIVATE | Modifier.STATIC);

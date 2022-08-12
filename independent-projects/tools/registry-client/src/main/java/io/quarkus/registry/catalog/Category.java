@@ -16,7 +16,7 @@ public interface Category {
     Map<String, Object> getMetadata();
 
     default Mutable mutable() {
-        return Category.builder();
+        return new CategoryImpl.Builder(this);
     }
 
     interface Mutable extends Category, JsonBuilder<Category> {

@@ -3,8 +3,6 @@ package io.quarkus.cache;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-import io.smallrye.common.constraint.Nullable;
-
 public interface CaffeineCache extends Cache {
 
     /**
@@ -27,6 +25,5 @@ public interface CaffeineCache extends Cache {
      * @throws NullPointerException if the specified key is null
      * @see com.github.benmanes.caffeine.cache.AsyncCache#getIfPresent(Object)
      */
-    @Nullable
     <V> CompletableFuture<V> getIfPresent(Object key);
 }

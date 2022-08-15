@@ -10,7 +10,7 @@ metadata:
   guide: "https://quarkus.io/guides/security-jpa"
   categories:
   - "security"
-  status: "preview"
+  status: "stable"
   config:
   - "quarkus.datasource."
   - "quarkus.hibernate-orm."

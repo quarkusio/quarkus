@@ -75,20 +75,22 @@ public class SimpleContextPropagationTest {
     }
 
     @Test()
-    public void testArcMEContextPropagationDisabled() {
+    public void testArcMEContextPropagationDisabled() throws InterruptedException {
         // reset state
-        RequestBean.DESTROY_INVOKED = 0;
+        RequestBean.initState();
         RestAssured.when().get("/context/noarc").then()
                 .statusCode(Response.Status.OK.getStatusCode());
+        Assertions.assertTrue(RequestBean.LATCH.await(3, TimeUnit.SECONDS));
         Assertions.assertEquals(2, RequestBean.DESTROY_INVOKED);
     }
 
     @Test()
-    public void testArcTCContextPropagationDisabled() {
+    public void testArcTCContextPropagationDisabled() throws InterruptedException {
         // reset state
-        RequestBean.DESTROY_INVOKED = 0;
+        RequestBean.initState();
         RestAssured.when().get("/context/noarc-tc").then()
                 .statusCode(Response.Status.OK.getStatusCode());
+        Assertions.assertTrue(RequestBean.LATCH.await(3, TimeUnit.SECONDS));
         Assertions.assertEquals(2, RequestBean.DESTROY_INVOKED);
     }
 

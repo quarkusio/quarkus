@@ -1,6 +1,7 @@
 package io.quarkus.flyway.runtime;
 
 import static java.util.Arrays.asList;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -15,6 +16,7 @@ import java.util.stream.Stream;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.configuration.Configuration;
+import org.flywaydb.core.api.pattern.ValidatePattern;
 import org.flywaydb.core.internal.util.ValidatePatternUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -256,6 +258,23 @@ class FlywayCreatorTest {
         runtimeConfig.validateMigrationNaming = true;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertTrue(createdFlywayConfig().isValidateMigrationNaming());
+    }
+
+    @Test
+    @DisplayName("validateIgnoreMigrationPatterns defaults to false and it is correctly set")
+    void testIgnoreMigrationPatterns() {
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        assertEquals(0, createdFlywayConfig().getIgnoreMigrationPatterns().length);
+        assertFalse(runtimeConfig.ignoreMigrationPatterns.isPresent());
+
+        runtimeConfig.ignoreMigrationPatterns = Optional.of(new String[] { "*:missing" });
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        final ValidatePattern[] existingIgnoreMigrationPatterns = createdFlywayConfig().getIgnoreMigrationPatterns();
+        assertEquals(1, existingIgnoreMigrationPatterns.length);
+        final String[] ignoreMigrationPatterns = runtimeConfig.ignoreMigrationPatterns.get();
+        final ValidatePattern[] validatePatterns = Arrays.stream(ignoreMigrationPatterns)
+                .map(ValidatePattern::fromPattern).toArray(ValidatePattern[]::new);
+        assertArrayEquals(validatePatterns, existingIgnoreMigrationPatterns);
     }
 
     private static List<String> pathList(Location[] locations) {

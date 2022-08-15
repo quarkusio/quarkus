@@ -35,22 +35,52 @@ These generated files are found in `target/asciidoc/generated/config/` (from the
 
 Asciidoc output as HTML:: A locally-rendered result of asciidoc processing (which is similar, but not identical, to that used to generate website documentation) is found in `docs/target/generated-docs/`
 
-== Titles
+== Titles and headings
 
-The title should use sentence case and the active tense.
-Search engines like good titles, too!
+Regardless of content type, ensure that the main title and any headings in your document are:
 
-Concepts:: Concept documents give context and provide explanations.
-A title for a concept doc might finish this thought, "Understanding ... "
+* Goal-oriented and use the language and keywords of the audience
+* Descriptive and avoid filler words
+* Between 3-12 words and 50-80 characters per line to optimize findability in search engines
+* In sentence case capitalization style
 
-How-To Guides:: The title should state exactly what the how-to guide shows. Consider starting with "How to... " and complete the sentence with a concise description of the task. 
+Your titles and headings must also follow the specific guidance for the Quarkus content types, as outlined in the following table:
 
-Reference:: A reference guide title should concisely summarize the content of the document.
-It should not include the word 'reference'. Consider starting with "About ..."
+.Title guidance for different Quarkus content types
+[cols="15%,25%a,30%,30%"]
+|===
+|Content type |Should ... |Good example|Bad example
 
-Tutorials:: The title of the tutorial should state what task the user will complete, with emphasis on the key topic or demonstrated activity.
-Creating an app, for example, is rarely the focus of a tutorial, though it is often a step along the path.
-An example title might complete this (long) sentence, "You will create an application that [uses x extension to] ..."
+|Concept
+|* Start with a noun that names the concept or topic
+* Never start with an active verb, for example, an action word like configure, install, or start
+* Finish the implied sentence: "Understanding … "
+|Security and authentication mechanisms in Quarkus
+|Discovering Reactive SQL Clients In Quarkus
+
+|How-To Guide
+|* Start with an active verb in the imperative verb form, for example, ‘Create a ...’ or ‘Secure a ...’
+* Be action-oriented or task-oriented, rather than feature-oriented
+* Finish the implied sentence: "How to.."
+|Secure your Quarkus application with WebAuthn authentication
+|Applying WebAuthn Authentication In Quarkus
+
+|Reference
+|* Use a noun phrase to concisely summarize the content of the document
+* Not include the word 'reference'
+* Finish the implied sentence: "About ..."
+|Hibernate Reactive API configuration properties
+|Reference guide for Configuring Hibernate Reactive API Configuration Properties
+
+|Tutorial
+|* Start with an active verb in the imperative verb form, for example, ‘Create a ...’ or ‘Secure a ...’
+* State what task the user will complete, with emphasis on the key topic or demonstrated activity
+* Be action-oriented or task-oriented, rather than feature-oriented
+* Be led by the needs of the user in learning mode.
+* Finish the implied sentence: "In this tutorial, you will… " 
+|Create a Quarkus application in JVM mode by using the quick start example
+|Creating an App
+|===
 
 == File naming conventions
 

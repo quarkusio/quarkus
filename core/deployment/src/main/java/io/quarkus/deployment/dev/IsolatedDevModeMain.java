@@ -10,14 +10,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.BindException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -45,15 +41,12 @@ import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.deployment.CodeGenerator;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
-import io.quarkus.deployment.codegen.CodeGenData;
 import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
 import io.quarkus.deployment.dev.testing.MessageFormat;
 import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.deployment.steps.ClassTransformingBuildStep;
-import io.quarkus.deployment.util.FSWatchUtil;
 import io.quarkus.dev.appstate.ApplicationStartException;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.DeploymentFailedStartHandler;
@@ -61,7 +54,6 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runtime.ApplicationLifecycleManager;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 
@@ -81,11 +73,11 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     private static volatile boolean firstStartCompleted;
     private static final CountDownLatch shutdownLatch = new CountDownLatch(1);
     private Thread shutdownThread;
-    private final FSWatchUtil fsWatchUtil = new FSWatchUtil();
+    private CodeGenWatcher codeGenWatcher;
     private static volatile ConsoleStateManager.ConsoleContext consoleContext;
     private final List<DevModeListener> listeners = new ArrayList<>();
 
-    private synchronized void firstStart(QuarkusClassLoader deploymentClassLoader, List<CodeGenData> codeGens) {
+    private synchronized void firstStart() {
 
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
@@ -143,7 +135,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                             }
                         });
 
-                startCodeGenWatcher(deploymentClassLoader, codeGens, context.getBuildSystemProperties());
                 runner = start.runMainClass(context.getArgs());
                 RuntimeUpdatesProcessor.INSTANCE.setConfiguredInstrumentationEnabled(
                         runner.getConfigValue("quarkus.live-reload.instrumentation", Boolean.class).orElse(false));
@@ -207,27 +198,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         } finally {
             Thread.currentThread().setContextClassLoader(old);
         }
-    }
-
-    private void startCodeGenWatcher(QuarkusClassLoader classLoader, List<CodeGenData> codeGens,
-            Map<String, String> propertyMap) {
-
-        Collection<FSWatchUtil.Watcher> watchers = new ArrayList<>();
-        Properties properties = new Properties();
-        properties.putAll(propertyMap);
-        for (CodeGenData codeGen : codeGens) {
-            watchers.add(new FSWatchUtil.Watcher(codeGen.sourceDir, codeGen.provider.inputExtension(),
-                    modifiedPaths -> {
-                        try {
-                            CodeGenerator.trigger(classLoader,
-                                    codeGen,
-                                    curatedApplication.getApplicationModel(), properties, LaunchMode.DEVELOPMENT, false);
-                        } catch (Exception any) {
-                            log.warn("Code generation failed", any);
-                        }
-                    }));
-        }
-        fsWatchUtil.observe(watchers, 500);
     }
 
     public void restartCallback(Set<String> changedResources, ClassScanResult result) {
@@ -351,7 +321,9 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     public void close() {
         //don't attempt to restart in the exit code handler
         restarting = true;
-        fsWatchUtil.shutdown();
+        if (codeGenWatcher != null) {
+            codeGenWatcher.shutdown();
+        }
 
         for (int i = listeners.size() - 1; i >= 0; i--) {
             try {
@@ -439,7 +411,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             }
 
             augmentAction = new AugmentActionImpl(curatedApplication,
-                    Collections.singletonList(new Consumer<BuildChainBuilder>() {
+                    List.of(new Consumer<BuildChainBuilder>() {
                         @Override
                         public void accept(BuildChainBuilder buildChainBuilder) {
                             buildChainBuilder.addBuildStep(new BuildStep() {
@@ -461,28 +433,19 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                             }).produces(ApplicationClassPredicateBuildItem.class).build();
                         }
                     }),
-                    Collections.emptyList());
-            List<CodeGenData> codeGens = new ArrayList<>();
-            QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
+                    List.of());
 
-            for (DevModeContext.ModuleInfo module : context.getAllModules()) {
-                if (!module.getSourceParents().isEmpty() && module.getPreBuildOutputDir() != null) { // it's null for remote dev
-                    codeGens.addAll(
-                            CodeGenerator.init(
-                                    deploymentClassLoader,
-                                    module.getSourceParents(),
-                                    Paths.get(module.getPreBuildOutputDir()),
-                                    Paths.get(module.getTargetDir()),
-                                    sourcePath -> module.addSourcePathFirst(sourcePath.toAbsolutePath().toString())));
-                }
-            }
+            // code generators should be initialized before the runtime compilation is setup to properly configure the sources directories
+            codeGenWatcher = new CodeGenWatcher(curatedApplication, context);
+
             RuntimeUpdatesProcessor.INSTANCE = setupRuntimeCompilation(context, (Path) params.get(APP_ROOT),
                     (DevModeType) params.get(DevModeType.class.getName()));
             if (RuntimeUpdatesProcessor.INSTANCE != null) {
                 RuntimeUpdatesProcessor.INSTANCE.checkForFileChange();
                 RuntimeUpdatesProcessor.INSTANCE.checkForChangedClasses(true);
             }
-            firstStart(deploymentClassLoader, codeGens);
+
+            firstStart();
 
             //        doStart(false, Collections.emptySet());
             if (deploymentProblem != null || RuntimeUpdatesProcessor.INSTANCE.getCompileProblem() != null) {

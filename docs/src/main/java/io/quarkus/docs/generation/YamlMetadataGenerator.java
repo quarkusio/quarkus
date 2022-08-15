@@ -26,9 +26,13 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 
 /**
  * Iterate over the documents in the source directory.
- * Create two files in the target directory:
- * - index.yaml, which contains metadata (id, title, filename, keywords, summary, preamble) from each document
- * - errors.yaml, which lists all documents that have problems with required structure or metadata
+ * Creates two sets of files in the target directory:
+ * <ul>
+ * <li>{@code index*.yaml}, which contains metadata (id, title, file name, categories, summary, preamble)
+ * from each document. One file is organized by document type, another is organized by file name.
+ * <li>{@code errors*.yaml}, which lists all documents that have problems with required structure or
+ * metadata. One file is organized by document type, another is organized by file name.
+ * </ul>
  */
 public class YamlMetadataGenerator {
     static Errors errors = new Errors();
@@ -69,7 +73,7 @@ public class YamlMetadataGenerator {
                             Document doc = asciidoctor.loadFile(path.toFile(), options);
                             String title = doc.getDoctitle();
                             String id = doc.getId();
-                            Object keywords = doc.getAttribute("keywords");
+                            Object categories = doc.getAttribute("categories");
                             Object summary = doc.getAttribute("summary");
 
                             Optional<StructuralNode> preambleNode = doc.getBlocks().stream()
@@ -84,16 +88,16 @@ public class YamlMetadataGenerator {
                                         .findFirst();
 
                                 if (content.isPresent()) {
-                                    index.add(new DocMetadata(title, path, getSummary(summary, content), keywords, id));
+                                    index.add(new DocMetadata(title, path, getSummary(summary, content), categories, id));
                                 } else {
                                     System.err.format("%s (%s) does not have text in the preamble%n", path, title);
                                     errors.record("empty-preamble", path);
-                                    index.add(new DocMetadata(title, path, getSummary(summary, content), keywords, id));
+                                    index.add(new DocMetadata(title, path, getSummary(summary, content), categories, id));
                                 }
                             } else {
-                                System.err.format("[WARN] %s (%s) does not have a preamble section%n", path, title);
+                                System.err.format("[WARN] %s (%s) does not have a preamble%n", path, title);
                                 errors.record("missing-preamble", path);
-                                index.add(new DocMetadata(title, path, getSummary(summary, Optional.empty()), keywords, id));
+                                index.add(new DocMetadata(title, path, getSummary(summary, Optional.empty()), categories, id));
                             }
                         });
             }
@@ -111,10 +115,16 @@ public class YamlMetadataGenerator {
     }
 
     static String getSummary(Object summary, Optional<String> content) {
-        if (summary != null) {
-            return summary.toString();
+        String result = (summary != null ? summary.toString() : content.orElse(""))
+                .trim()
+                .replaceAll("\n", " ") // undo semantic line endings
+                .replaceAll("\\s+", " ") // condense whitespace
+                .replaceAll("<[^>]+>(.*?)</[^>]+>", "$1"); // strip html tags
+        int pos = result.indexOf(". "); // Find the end of the first sentence.
+        if (pos >= 1) {
+            return result.substring(0, pos + 1).trim();
         }
-        return content.orElse("");
+        return result;
     }
 
     enum Type {
@@ -213,23 +223,21 @@ public class YamlMetadataGenerator {
     static class DocMetadata {
         String title;
         String filename;
-        String description;
-        String keywords;
+        String summary;
+        String categories;
         String id;
-
         Type type;
 
-        public DocMetadata(String title, Path path, String description, Object keywords, String id) {
+        public DocMetadata(String title, Path path, String summary, Object categories, String id) {
             this.id = id;
             this.title = title;
             this.filename = path.getFileName().toString();
-            this.keywords = keywords == null ? null : keywords.toString();
-            this.description = description
-                    .replaceAll("\n", " ") // undo semantic line endings
-                    .replaceAll("\\s+", " ")
-                    .replaceAll("<[^>]+>(.*?)</[^>]+>", "$1"); // strip html tags
+            this.categories = categories == null ? "" : categories.toString();
+            this.summary = summary;
 
-            if (filename.endsWith("-concepts.adoc")) {
+            if (this.categories.contains("get-started")) {
+                this.type = Type.getstarted;
+            } else if (filename.endsWith("-concepts.adoc")) {
                 this.type = Type.concepts;
             } else if (filename.endsWith("-howto.adoc")) {
                 this.type = Type.howto;
@@ -248,8 +256,8 @@ public class YamlMetadataGenerator {
                         filename, id, type.id);
                 errors.record("incorrect-id", path);
             }
-            if (keywords == null) {
-                errors.record("missing-keywords", path);
+            if (this.categories.isEmpty()) {
+                errors.record("missing-categories", path);
             }
         }
 
@@ -265,12 +273,12 @@ public class YamlMetadataGenerator {
             return title;
         }
 
-        public String getDescription() {
-            return description;
+        public String getSummary() {
+            return summary;
         }
 
-        public String getKeywords() {
-            return keywords;
+        public String getCategories() {
+            return categories;
         }
 
         public String getType() {

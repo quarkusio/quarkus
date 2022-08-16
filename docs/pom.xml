@@ -23,6 +23,7 @@
         <quarkus-home-url>https://quarkus.io</quarkus-home-url>
         <quarkus-base-url>https://github.com/quarkusio/quarkus</quarkus-base-url>
         <quickstarts-base-url>https://github.com/quarkusio/quarkus-quickstarts</quickstarts-base-url>
+        <code-example-dir>${project.basedir}/../target/asciidoc/examples</code-example-dir>
     </properties>
 
     <name>Quarkus - Documentation</name>
@@ -2795,6 +2796,25 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>copy-tagged-java-source</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipDocs}</skip>
+                            <mainClass>io.quarkus.docs.generation.CopyExampleSource</mainClass>
+                            <arguments>
+                                <argument>${code-example-dir}</argument>
+                                <argument>${project.basedir}/..</argument>
+                                <argument>${project.basedir}/src/main/asciidoc</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>generate-doc-manifests</id>
                         <phase>prepare-package</phase>
                         <goals>
@@ -2830,6 +2850,7 @@
                     <preserveDirectories>true</preserveDirectories>
                     <attributes>
                         <generated-dir>${project.basedir}/../target/asciidoc/generated</generated-dir>
+                        <code-examples>${code-example-dir}</code-examples>
                         <imagesdir>./images</imagesdir>
                         <icons>font</icons>
                         <sectanchors>true</sectanchors>
@@ -2912,7 +2933,7 @@
                         <neo4j-guide>https://quarkiverse.github.io/quarkiverse-docs/quarkus-neo4j/dev/index.html</neo4j-guide>
                         <vault-guide>https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/index.html</vault-guide>
                         <vault-datasource-guide>https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/vault-datasource.html</vault-datasource-guide>
-                        <micrometer-registry-gulde>https://quarkiverse.github.io/quarkiverse-docs/quarkus-micrometer-registry/dev/</micrometer-registry-gulde>
+                        <micrometer-registry-guide>https://quarkiverse.github.io/quarkiverse-docs/quarkus-micrometer-registry/dev/</micrometer-registry-guide>
                     </attributes>
                 </configuration>
                 <executions>

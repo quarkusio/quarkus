@@ -54,14 +54,14 @@ public class ExampleResourcesTest {
         when().get("/example/prime/257").then().statusCode(200);
         when().get("/q/metrics").then().statusCode(200)
                 .body(containsString(
-                        "example_prime_number_test_seconds_sum{env=\"test\",registry=\"prometheus\",}"))
+                        "example_prime_number_test_seconds_sum{env=\"test\",prime=\"true\",registry=\"prometheus\",}"))
                 .body(containsString(
-                        "example_prime_number_test_seconds_max{env=\"test\",registry=\"prometheus\",}"))
+                        "example_prime_number_test_seconds_max{env=\"test\",prime=\"true\",registry=\"prometheus\",}"))
                 .body(containsString(
-                        "example_prime_number_test_seconds_count{env=\"test\",registry=\"prometheus\",} 1.0"));
+                        "example_prime_number_test_seconds_count{env=\"test\",prime=\"true\",registry=\"prometheus\",} 1.0"));
         when().get("/example/prime/7919").then().statusCode(200);
         when().get("/q/metrics").then().statusCode(200)
                 .body(containsString(
-                        "example_prime_number_test_seconds_count{env=\"test\",registry=\"prometheus\",} 2.0"));
+                        "example_prime_number_test_seconds_count{env=\"test\",prime=\"true\",registry=\"prometheus\",} 2.0"));
     }
 }

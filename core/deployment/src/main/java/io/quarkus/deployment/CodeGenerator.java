@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.ServiceLoader;
@@ -12,6 +14,8 @@ import java.util.function.Consumer;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.codegen.CodeGenData;
+import io.quarkus.deployment.dev.DevModeContext;
+import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -28,38 +32,90 @@ public class CodeGenerator {
             PathCollection sourceParentDirs, Path generatedSourcesDir, Path buildDir,
             Consumer<Path> sourceRegistrar, ApplicationModel appModel, Properties properties,
             String launchMode, boolean test) throws CodeGenException {
-        List<CodeGenData> generators = init(classLoader, sourceParentDirs, generatedSourcesDir, buildDir, sourceRegistrar);
+        final List<CodeGenData> generators = init(classLoader, sourceParentDirs, generatedSourcesDir, buildDir,
+                sourceRegistrar);
         for (CodeGenData generator : generators) {
             generator.setRedirectIO(true);
             trigger(classLoader, generator, appModel, properties, LaunchMode.valueOf(launchMode), test);
         }
     }
 
-    public static List<CodeGenData> init(ClassLoader deploymentClassLoader,
+    private static List<CodeGenData> init(ClassLoader deploymentClassLoader,
             PathCollection sourceParentDirs,
             Path generatedSourcesDir,
             Path buildDir,
             Consumer<Path> sourceRegistrar) throws CodeGenException {
         return callWithClassloader(deploymentClassLoader, () -> {
-            List<CodeGenData> result = new ArrayList<>();
-            Class<? extends CodeGenProvider> codeGenProviderClass;
-            try {
-                //noinspection unchecked
-                codeGenProviderClass = (Class<? extends CodeGenProvider>) deploymentClassLoader
-                        .loadClass(CodeGenProvider.class.getName());
-            } catch (ClassNotFoundException e) {
-                throw new CodeGenException("Failed to load CodeGenProvider class from deployment classloader", e);
+            final List<CodeGenProvider> codeGenProviders = loadCodeGenProviders(deploymentClassLoader);
+            if (codeGenProviders.isEmpty()) {
+                return List.of();
             }
-            for (CodeGenProvider provider : ServiceLoader.load(codeGenProviderClass, deploymentClassLoader)) {
+            List<CodeGenData> result = new ArrayList<>();
+            for (CodeGenProvider provider : codeGenProviders) {
                 Path outputDir = codeGenOutDir(generatedSourcesDir, provider, sourceRegistrar);
                 for (Path sourceParentDir : sourceParentDirs) {
                     result.add(
                             new CodeGenData(provider, outputDir, sourceParentDir.resolve(provider.inputDirectory()), buildDir));
                 }
             }
-
             return result;
         });
+    }
+
+    public static List<CodeGenData> init(ClassLoader deploymentClassLoader, Collection<ModuleInfo> modules)
+            throws CodeGenException {
+        return callWithClassloader(deploymentClassLoader, () -> {
+            List<CodeGenProvider> codeGenProviders = null;
+            List<CodeGenData> codeGens = List.of();
+            for (DevModeContext.ModuleInfo module : modules) {
+                if (!module.getSourceParents().isEmpty() && module.getPreBuildOutputDir() != null) { // it's null for remote dev
+
+                    if (codeGenProviders == null) {
+                        codeGenProviders = loadCodeGenProviders(deploymentClassLoader);
+                        if (codeGenProviders.isEmpty()) {
+                            return List.of();
+                        }
+                    }
+
+                    for (CodeGenProvider provider : codeGenProviders) {
+                        Path outputDir = codeGenOutDir(Path.of(module.getPreBuildOutputDir()), provider,
+                                sourcePath -> module.addSourcePathFirst(sourcePath.toAbsolutePath().toString()));
+                        for (Path sourceParentDir : module.getSourceParents()) {
+                            if (codeGens.isEmpty()) {
+                                codeGens = new ArrayList<>();
+                            }
+                            codeGens.add(
+                                    new CodeGenData(provider, outputDir, sourceParentDir.resolve(provider.inputDirectory()),
+                                            Path.of(module.getTargetDir())));
+                        }
+
+                    }
+                }
+            }
+            return codeGens;
+        });
+    }
+
+    private static List<CodeGenProvider> loadCodeGenProviders(ClassLoader deploymentClassLoader)
+            throws CodeGenException {
+        Class<? extends CodeGenProvider> codeGenProviderClass;
+        try {
+            //noinspection unchecked
+            codeGenProviderClass = (Class<? extends CodeGenProvider>) deploymentClassLoader
+                    .loadClass(CodeGenProvider.class.getName());
+        } catch (ClassNotFoundException e) {
+            throw new CodeGenException("Failed to load CodeGenProvider class from deployment classloader", e);
+        }
+        final Iterator<? extends CodeGenProvider> i = ServiceLoader.load(codeGenProviderClass, deploymentClassLoader)
+                .iterator();
+        if (!i.hasNext()) {
+            return List.of();
+        }
+        final List<CodeGenProvider> codeGenProviders = new ArrayList<>();
+        while (i.hasNext()) {
+            codeGenProviders.add(i.next());
+        }
+        return codeGenProviders;
     }
 
     private static <T> T callWithClassloader(ClassLoader deploymentClassLoader, CodeGenAction<T> supplier)

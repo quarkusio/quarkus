@@ -6,9 +6,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.tools.Diagnostic;
@@ -33,8 +31,8 @@ public class JavaCompilationProvider implements CompilationProvider {
     // -g is used to make the java compiler generate all debugging info
     // -parameters is used to generate metadata for reflection on method parameters
     // this is useful when people using debuggers against their hot-reloaded app
-    private static final Set<String> COMPILER_OPTIONS = new HashSet<>(Arrays.asList("-g", "-parameters"));
-    private static final Set<String> IGNORE_NAMESPACES = new HashSet<>(Collections.singletonList("org.osgi"));
+    private static final Set<String> COMPILER_OPTIONS = Set.of("-g", "-parameters");
+    private static final Set<String> IGNORE_NAMESPACES = Set.of("org.osgi");
 
     JavaCompiler compiler;
     StandardJavaFileManager fileManager;
@@ -47,7 +45,7 @@ public class JavaCompilationProvider implements CompilationProvider {
 
     @Override
     public Set<String> handledExtensions() {
-        return Collections.singleton(".java");
+        return Set.of(".java");
     }
 
     @Override
@@ -67,7 +65,7 @@ public class JavaCompilationProvider implements CompilationProvider {
 
             DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
             fileManager.setLocation(StandardLocation.CLASS_PATH, context.getClasspath());
-            fileManager.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singleton(context.getOutputDirectory()));
+            fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(context.getOutputDirectory()));
 
             CompilerFlags compilerFlags = new CompilerFlags(COMPILER_OPTIONS, context.getCompilerOptions(getProviderKey()),
                     context.getReleaseJavaVersion(), context.getSourceJavaVersion(), context.getTargetJvmVersion());

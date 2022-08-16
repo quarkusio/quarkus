@@ -101,7 +101,6 @@ import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
-import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
@@ -1056,7 +1055,7 @@ public class DevMojo extends AbstractMojo {
             appModel = new BootstrapAppModelResolver(resolverBuilder.build())
                     .setDevMode(true)
                     .setCollectReloadableDependencies(!noDeps)
-                    .resolveModel(GACTV.jar(project.getGroupId(), project.getArtifactId(), project.getVersion()));
+                    .resolveModel(ArtifactCoords.jar(project.getGroupId(), project.getArtifactId(), project.getVersion()));
         }
 
         // serialize the app model to avoid re-resolving it in the dev process

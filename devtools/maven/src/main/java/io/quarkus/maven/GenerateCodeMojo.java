@@ -65,11 +65,10 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
 
         ClassLoader originalTccl = Thread.currentThread().getContextClassLoader();
         CuratedApplication curatedApplication = null;
+        QuarkusClassLoader deploymentClassLoader = null;
         try {
-
             curatedApplication = bootstrapApplication(launchMode);
-
-            QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
+            deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
             Thread.currentThread().setContextClassLoader(deploymentClassLoader);
 
             final Class<?> codeGenerator = deploymentClassLoader.loadClass("io.quarkus.deployment.CodeGenerator");
@@ -90,6 +89,9 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
                 curatedApplication.close();
             }
             Thread.currentThread().setContextClassLoader(originalTccl);
+            if (deploymentClassLoader != null) {
+                deploymentClassLoader.close();
+            }
         }
     }
 

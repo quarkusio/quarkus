@@ -409,6 +409,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         if (baseRuntimeClassLoader != null) {
             baseRuntimeClassLoader.close();
         }
+        augmentationElements.clear();
     }
 
     /**

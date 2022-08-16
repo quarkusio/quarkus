@@ -155,7 +155,7 @@ quarkus:
 
 == Expressions
 
-The YAML format also supports xref:config-reference.adoc#expressions[expressions], using the same format as Java
+The YAML format also supports xref:config-reference.adoc#property-expressions[property expressions], using the same format as Java
 Properties:
 
 [source, yaml]
@@ -171,7 +171,7 @@ display:
     factor: ${x.factor}
 ----
 
-Note that you can reference nested properties using the `.` (dot) separator as in `{x.factor}`.
+Note that you can reference nested properties using the `.` (dot) separator as in `${x.factor}`.
 
 == External application.yaml file
 

@@ -62,9 +62,9 @@ They should be able to determine if they want to engage with the content.
 
 [source,asciidoc]
 ----
-In this tutorial, we will create an application that uses unique annotations from the experimental acme extension to define two endpoints:
-a simple Http endpoint and an endpoint that emits Server-Sent Events (SSE).
-We will also use Quarkus dev mode for iterative development and test.
+Create an application that uses unique annotations from the experimental acme extension to define two endpoints:
+a simple HTTP endpoint and an endpoint that emits server-sent events (SSE).
+We will also use Quarkus dev mode for iterative development and testing.
 ----
 
 .Document Preview

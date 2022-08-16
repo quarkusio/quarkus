@@ -2,6 +2,7 @@ package io.quarkus.oidc;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -10,6 +11,7 @@ import java.util.OptionalInt;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcConfig;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -951,6 +953,17 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<List<String>> audience = Optional.empty();
 
         /**
+         * A map of required claims and their expected values.
+         * For example, `quarkus.oidc.token.required-claims.org_id = org_xyz` would require tokens to have the `org_id` claim to
+         * be present and set to `org_xyz`.
+         * Strings are the only supported types. Use {@linkplain SecurityIdentityAugmentor} to verify claims of other types or
+         * complex claims.
+         */
+        @ConfigItem
+        @ConfigDocMapKey("claim-name")
+        public Map<String, String> requiredClaims = new HashMap<>();
+
+        /**
          * Expected token type
          */
         @ConfigItem
@@ -1166,6 +1179,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setDecryptionKeyLocation(String decryptionKeyLocation) {
             this.decryptionKeyLocation = Optional.of(decryptionKeyLocation);
+        }
+
+        public Map<String, String> getRequiredClaims() {
+            return requiredClaims;
+        }
+
+        public void setRequiredClaims(Map<String, String> requiredClaims) {
+            this.requiredClaims = requiredClaims;
         }
     }
 

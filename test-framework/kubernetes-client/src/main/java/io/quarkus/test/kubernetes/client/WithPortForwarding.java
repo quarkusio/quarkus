@@ -23,7 +23,7 @@ public @interface WithPortForwarding {
         String labelSelector() default AnnotationConstants.UNSET_STRING_VALUE;
 
         LabelValue[] labelValues() default {};
-        
+
         FieldSelector[] fieldSelectors() default {};
 
         int podIndex() default 0;
@@ -44,6 +44,7 @@ public @interface WithPortForwarding {
 
     @interface LabelValue {
         String key();
+
         String value() default AnnotationConstants.UNSET_STRING_VALUE;
     }
 

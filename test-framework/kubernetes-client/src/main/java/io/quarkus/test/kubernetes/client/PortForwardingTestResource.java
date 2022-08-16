@@ -1,6 +1,5 @@
 package io.quarkus.test.kubernetes.client;
 
-import io.quarkus.test.kubernetes.client.WithPortForwarding.LabelValue;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -13,6 +12,7 @@ import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.LocalPortForward;
 import io.quarkus.test.common.QuarkusTestResourceConfigurableLifecycleManager;
 import io.quarkus.test.kubernetes.client.WithPortForwarding.FieldSelector;
+import io.quarkus.test.kubernetes.client.WithPortForwarding.LabelValue;
 
 public class PortForwardingTestResource extends AbstractNamespaceConnectingTestResource
         implements QuarkusTestResourceConfigurableLifecycleManager<WithPortForwarding> {
@@ -35,7 +35,8 @@ public class PortForwardingTestResource extends AbstractNamespaceConnectingTestR
         final var hasFieldSelectors = podIdentifier.fieldSelectors().length > 0;
         final var hasLabelValues = podIdentifier.labelValues().length > 0;
         if (!hasLabelSelector && !hasFieldSelectors && !hasLabelValues) {
-            throw new IllegalArgumentException("Must specify label values and/or label and/or field selectors to identify which pod to port forward");
+            throw new IllegalArgumentException(
+                    "Must specify label values and/or label and/or field selectors to identify which pod to port forward");
         }
 
         // retrieve pod name from selectors and optional index
@@ -60,7 +61,7 @@ public class PortForwardingTestResource extends AbstractNamespaceConnectingTestR
             for (LabelValue labelValue : podIdentifier.labelValues()) {
                 final var key = labelValue.key();
                 final var value = labelValue.value();
-                if(AnnotationConstants.UNSET_STRING_VALUE.equals(value)) {
+                if (AnnotationConstants.UNSET_STRING_VALUE.equals(value)) {
                     podsResource.withLabel(key);
                 } else {
                     podsResource.withLabel(key, value);
@@ -73,7 +74,7 @@ public class PortForwardingTestResource extends AbstractNamespaceConnectingTestR
         final var matchingString = "matching (labels: '"
                 + podIdentifier.labelSelector() + "', fields: "
                 + Arrays.toString(podIdentifier.fieldSelectors());
-        if(podsNumber == 0) {
+        if (podsNumber == 0) {
             throw new IllegalArgumentException("No pod " + matchingString);
         }
 
@@ -82,9 +83,9 @@ public class PortForwardingTestResource extends AbstractNamespaceConnectingTestR
             pod = pods.get(podIndex);
         } else {
             throw new IndexOutOfBoundsException("There are only " + podsNumber
-                + " pods " + matchingString + " but provided index was " + podIndex);
+                    + " pods " + matchingString + " but provided index was " + podIndex);
         }
-        
+
         this.podName = pod.getMetadata().getName();
 
         // deal with port

@@ -54,9 +54,15 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                {#if quarkus.version}
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bom</artifactId>
+                <version>$\{quarkus.version}</version>
+                {#else}
                 <groupId>{quarkus.bom.group-id}</groupId>
                 <artifactId>{quarkus.bom.artifact-id}</artifactId>
                 <version>{quarkus.bom.version}</version>
+                {/if}
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

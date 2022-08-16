@@ -2,13 +2,16 @@ package io.quarkus.cache.test.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
@@ -60,8 +63,10 @@ public class ProgrammaticApiTest {
     }
 
     @Test
-    public void testAllCacheAnnotationsAndMethods() {
+    public void testAllCacheAnnotationsAndMethods() throws Exception {
         assertKeySetContains();
+        assertGetIfPresentMissingKey(KEY_1);
+        assertGetIfPresentMissingKey(KEY_2);
 
         // STEP 1
         // Action: @CacheResult-annotated method call.
@@ -77,6 +82,8 @@ public class ProgrammaticApiTest {
         String value2 = cache.get(KEY_1, k -> new String()).await().indefinitely();
         assertSame(value1, value2);
         assertKeySetContains(KEY_1);
+        assertGetIfPresent(KEY_1, value2);
+        assertGetIfPresentMissingKey(KEY_2);
 
         // STEP 3
         // Action: value retrieval from the cache with a new key.
@@ -93,6 +100,8 @@ public class ProgrammaticApiTest {
         String value4 = cachedService.cachedMethod(KEY_2);
         assertSame(value3, value4);
         assertKeySetContains(KEY_1, KEY_2);
+        assertGetIfPresent(KEY_1, value2);
+        assertGetIfPresent(KEY_2, value4);
 
         // STEP 5
         // Action: cache entry invalidation.
@@ -100,6 +109,8 @@ public class ProgrammaticApiTest {
         // Verified by: STEP 6.
         cache.invalidate(KEY_1).await().indefinitely();
         assertKeySetContains(KEY_2);
+        assertGetIfPresentMissingKey(KEY_1);
+        assertGetIfPresent(KEY_2, value4);
 
         // STEP 6
         // Action: value retrieval from the cache with the same key as STEP 2.
@@ -108,6 +119,8 @@ public class ProgrammaticApiTest {
         String value6 = cache.get(KEY_1, k -> new String()).await().indefinitely();
         assertNotSame(value2, value6);
         assertKeySetContains(KEY_1, KEY_2);
+        assertGetIfPresent(KEY_1, value6);
+        assertGetIfPresent(KEY_2, value4);
 
         // STEP 7
         // Action: value retrieval from the cache with the same key as STEP 4.
@@ -116,6 +129,8 @@ public class ProgrammaticApiTest {
         String value7 = cache.get(KEY_2, k -> new String()).await().indefinitely();
         assertSame(value4, value7);
         assertKeySetContains(KEY_1, KEY_2);
+        assertGetIfPresent(KEY_1, value6);
+        assertGetIfPresent(KEY_2, value4);
 
         // STEP 8
         // Action: full cache invalidation.
@@ -123,6 +138,8 @@ public class ProgrammaticApiTest {
         // Verified by: STEPS 9 and 10.
         cache.invalidateAll().await().indefinitely();
         assertKeySetContains();
+        assertGetIfPresentMissingKey(KEY_1);
+        assertGetIfPresentMissingKey(KEY_2);
 
         // STEP 9
         // Action: same call as STEP 6.
@@ -131,6 +148,8 @@ public class ProgrammaticApiTest {
         String value9 = cache.get(KEY_1, k -> new String()).await().indefinitely();
         assertNotSame(value6, value9);
         assertKeySetContains(KEY_1);
+        assertGetIfPresent(KEY_1, value9);
+        assertGetIfPresentMissingKey(KEY_2);
 
         // STEP 10
         // Action: same call as STEP 7.
@@ -139,12 +158,61 @@ public class ProgrammaticApiTest {
         String value10 = cache.get(KEY_2, k -> new String()).await().indefinitely();
         assertNotSame(value7, value10);
         assertKeySetContains(KEY_1, KEY_2);
+        assertGetIfPresent(KEY_1, value9);
+        assertGetIfPresent(KEY_2, value10);
+    }
+
+    @Test
+    public void testCacheNullValue() throws Exception {
+        // with custom key
+        Object key = new Object();
+
+        try {
+            // when null is cached
+            cache.get(key, (k) -> null).await().indefinitely();
+
+            // assert
+            assertKeySetContains(key);
+            assertGetIfPresent(key, null);
+        } finally {
+            // invalidate to remove side effects in other tests
+            cache.invalidate(key).await().indefinitely();
+        }
+    }
+
+    @Test
+    public void testExceptionInValueLoader() throws Exception {
+        // with custom key and exception
+        Object key = new Object();
+        RuntimeException thrown = new RuntimeException();
+
+        // when exception thrown in the value loader for the key
+        RuntimeException result = assertThrows(RuntimeException.class, () -> {
+            cache.get(key, k -> {
+                throw thrown;
+            }).await().indefinitely();
+        });
+
+        // assert
+        assertSame(thrown, result);
+        assertKeySetContains();
+        assertGetIfPresentMissingKey(key);
     }
 
     private void assertKeySetContains(Object... expectedKeys) {
         Set<Object> expectedKeySet = new HashSet<>(Arrays.asList(expectedKeys));
         Set<Object> actualKeySet = cache.as(CaffeineCache.class).keySet();
         assertEquals(expectedKeySet, actualKeySet);
+    }
+
+    private void assertGetIfPresent(Object key, Object value) throws Exception {
+        Object actual = cache.as(CaffeineCache.class).getIfPresent(key).get();
+        assertSame(value, actual);
+    }
+
+    private void assertGetIfPresentMissingKey(Object key) throws Exception {
+        CompletableFuture<Object> future = cache.as(CaffeineCache.class).getIfPresent(key);
+        assertNull(future);
     }
 
     @Dependent

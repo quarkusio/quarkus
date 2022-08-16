@@ -89,6 +89,35 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                 });
     }
 
+    @Override
+    public <V> CompletableFuture<V> getIfPresent(Object key) {
+        Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
+        CompletableFuture<Object> existingCacheValue = cache.getIfPresent(key);
+
+        // record metrics, if not null apply casting
+        if (existingCacheValue == null) {
+            statsCounter.recordMisses(1);
+            return null;
+        } else {
+            LOGGER.tracef("Key [%s] found in cache [%s]", key, cacheInfo.name);
+            statsCounter.recordHits(1);
+
+            // cast, but still throw the CacheException in case it fails
+            return unwrapCacheValueOrThrowable(existingCacheValue)
+                    .thenApply(new Function<>() {
+                        @Override
+                        public V apply(Object value) {
+                            try {
+                                return (V) value;
+                            } catch (ClassCastException e) {
+                                throw new CacheException("An existing cached value type does not match the requested type", e);
+                            }
+                        }
+                    });
+
+        }
+    }
+
     /**
      * Returns a {@link CompletableFuture} holding the cache value identified by {@code key}, obtaining that value from
      * {@code valueLoader} if necessary. The value computation is done synchronously on the calling thread and the

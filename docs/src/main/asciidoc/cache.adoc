@@ -597,6 +597,37 @@ public class CacheKeysService {
 }
 ----
 
+=== Retrieving a value if a key is present from a `CaffeineCache`
+
+The cache value from a specific `CaffeineCache` can be retrieved if present as shown below.
+If the given key is contained in the cache, the method will return the `CompletableFuture` the specified key is mapped to.
+That `CompletableFuture` may be computing or may already be completed.
+Otherwise, the method will return `null`.
+
+[source,java]
+----
+package org.acme.cache;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheName;
+import io.quarkus.cache.CaffeineCache;
+
+import java.util.concurrent.CompletableFuture;
+
+@ApplicationScoped
+public class CacheKeysService {
+
+    @CacheName("my-cache")
+    Cache cache;
+
+    public CompletableFuture<Object> getIfPresent(Object key) {
+        return cache.as(CaffeineCache.class).getIfPresent(key);
+    }
+}
+----
+
 == Configuring the underlying caching provider
 
 This extension uses https://github.com/ben-manes/caffeine[Caffeine] as its underlying caching provider.

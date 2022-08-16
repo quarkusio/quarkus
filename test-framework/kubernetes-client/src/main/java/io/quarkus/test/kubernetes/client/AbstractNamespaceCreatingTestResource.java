@@ -33,24 +33,32 @@ public abstract class AbstractNamespaceCreatingTestResource extends AbstractName
     public void stop() {
         final var client = client();
 
+        boolean deleted = false;
         if (createdNamespace) {
             // todo: add namespace preservation on error if/when quarkusio/quarkus#25905 becomes available
             final var namespace = namespace();
             logger().info("Deleting namespace '{}'", namespace);
-            client.namespaces().withName(namespace).delete();
-            final var secondsToWaitForNamespaceDeletion = numberOfSecondsToWaitForNamespaceDeletion();
-            if (secondsToWaitForNamespaceDeletion > 0) {
-                logger().info("Waiting for namespace '{}' to be deleted", namespace);
-                Awaitility.await("namespace deleted")
+            try {
+                deleted = client.namespaces().withName(namespace).delete();
+            } catch (Exception e) {
+                logger().warn("Couldn't delete namespace '" + namespace + "'", e);
+            }
+
+            if (deleted) {
+                final var secondsToWaitForNamespaceDeletion = numberOfSecondsToWaitForNamespaceDeletion();
+                if (secondsToWaitForNamespaceDeletion > 0) {
+                    logger().info("Waiting for namespace '{}' to be deleted", namespace);
+                    Awaitility.await("namespace deleted")
                         .pollInterval(50, TimeUnit.MILLISECONDS)
                         .atMost(secondsToWaitForNamespaceDeletion, TimeUnit.SECONDS)
                         .until(() -> client.namespaces().withName(namespace).get() == null);
+                }
             }
         }
 
         // todo: right now, we need clean up if we didn't create the namespace (and therefore, deleted it above)
         // however when namespace preservation is available, this logic will need to change
-        doStop(!createdNamespace);
+        doStop(!deleted);
         client.close();
     }
 

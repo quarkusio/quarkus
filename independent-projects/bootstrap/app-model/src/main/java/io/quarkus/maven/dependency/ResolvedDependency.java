@@ -38,7 +38,7 @@ public interface ResolvedDependency extends Dependency {
         }
         if (paths.isSinglePath()) {
             final Path p = paths.getSinglePath();
-            return PathTree.ofDirectoryOrArchive(p);
+            return isJar() ? PathTree.ofDirectoryOrArchive(p) : PathTree.ofDirectoryOrFile(p);
         }
         final PathTree[] trees = new PathTree[paths.size()];
         int i = 0;

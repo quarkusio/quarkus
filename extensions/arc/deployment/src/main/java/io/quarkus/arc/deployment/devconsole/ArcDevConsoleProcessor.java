@@ -1,7 +1,9 @@
 package io.quarkus.arc.deployment.devconsole;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -134,9 +136,24 @@ public class ArcDevConsoleProcessor {
 
         // Build dependency graphs
         BeanResolver resolver = validationPhaseBuildItem.getBeanResolver();
-        for (BeanInfo bean : validationContext.beans()) {
+        Collection<BeanInfo> beans = validationContext.get(BuildExtension.Key.BEANS);
+        Map<BeanInfo, List<InjectionPointInfo>> directDependents = new HashMap<>();
+        List<InjectionPointInfo> allInjectionPoints = new ArrayList<>();
+        Map<BeanInfo, List<BeanInfo>> declaringToProducers = validationContext.beans().producers()
+                .collect(Collectors.groupingBy(BeanInfo::getDeclaringBean));
+        for (BeanInfo b : beans) {
+            if (b.hasInjectionPoint()) {
+                for (InjectionPointInfo ip : b.getAllInjectionPoints()) {
+                    if (ip.getTargetBean().isPresent()) {
+                        allInjectionPoints.add(ip);
+                    }
+                }
+            }
+        }
+        for (BeanInfo bean : beans) {
             beanInfos.addDependencyGraph(bean.getIdentifier(),
-                    buildDependencyGraph(bean, validationContext, resolver, beanInfos));
+                    buildDependencyGraph(bean, validationContext, resolver, beanInfos, allInjectionPoints, declaringToProducers,
+                            directDependents));
         }
 
         beanInfos.sort();
@@ -154,14 +171,14 @@ public class ArcDevConsoleProcessor {
     }
 
     DependencyGraph buildDependencyGraph(BeanInfo bean, ValidationContext validationContext, BeanResolver resolver,
-            DevBeanInfos devBeanInfos) {
+            DevBeanInfos devBeanInfos, List<InjectionPointInfo> allInjectionPoints,
+            Map<BeanInfo, List<BeanInfo>> declaringToProducers,
+            Map<BeanInfo, List<InjectionPointInfo>> directDependents) {
         Set<DevBeanInfo> nodes = new HashSet<>();
-        Collection<BeanInfo> beans = validationContext.get(BuildExtension.Key.BEANS);
         Set<Link> links = new HashSet<>();
-        Map<BeanInfo, List<BeanInfo>> declaringToProducers = validationContext.beans().producers()
-                .collect(Collectors.groupingBy(BeanInfo::getDeclaringBean));
         addNodesDependencies(bean, nodes, links, bean, devBeanInfos);
-        addNodesDependents(bean, nodes, links, bean, beans, declaringToProducers, resolver, devBeanInfos);
+        addNodesDependents(bean, nodes, links, bean, allInjectionPoints, declaringToProducers, resolver, devBeanInfos,
+                directDependents);
         return new DependencyGraph(nodes, links);
     }
 
@@ -183,38 +200,52 @@ public class ArcDevConsoleProcessor {
         }
     }
 
-    void addNodesDependents(BeanInfo root, Set<DevBeanInfo> nodes, Set<Link> links, BeanInfo bean, Collection<BeanInfo> beans,
-            Map<BeanInfo, List<BeanInfo>> declaringToProducers, BeanResolver resolver, DevBeanInfos devBeanInfos) {
-        for (BeanInfo dependent : beans) {
-            if (!bean.equals(dependent)) {
-                for (InjectionPointInfo injectionPoint : dependent.getAllInjectionPoints()) {
-                    Link link = null;
-                    if (injectionPoint.isProgrammaticLookup()) {
-                        if (resolver.matches(bean,
-                                injectionPoint.getType().asParameterizedType().arguments().get(0),
-                                injectionPoint.getRequiredQualifiers())) {
-                            link = Link.lookup(dependent.getIdentifier(), bean.getIdentifier());
-                        }
-                    } else if (bean.equals(injectionPoint.getResolvedBean())) {
-                        link = Link.dependent(root.equals(bean), dependent.getIdentifier(), bean.getIdentifier());
+    void addNodesDependents(BeanInfo root, Set<DevBeanInfo> nodes, Set<Link> links, BeanInfo bean,
+            List<InjectionPointInfo> injectionPoints, Map<BeanInfo, List<BeanInfo>> declaringToProducers, BeanResolver resolver,
+            DevBeanInfos devBeanInfos, Map<BeanInfo, List<InjectionPointInfo>> directDependents) {
+        List<InjectionPointInfo> direct = directDependents.get(bean);
+        if (direct == null) {
+            direct = new ArrayList<>();
+            for (InjectionPointInfo injectionPoint : injectionPoints) {
+                BeanInfo dependent = injectionPoint.getTargetBean().get();
+                if (dependent.equals(bean)) {
+                    continue;
+                }
+                BeanInfo resolved = injectionPoint.getResolvedBean();
+                if (resolved == null) {
+                    if (injectionPoint.isProgrammaticLookup() && resolver.matches(bean,
+                            injectionPoint.getType().asParameterizedType().arguments().get(0),
+                            injectionPoint.getRequiredQualifiers())) {
+                        direct.add(injectionPoint);
                     }
-                    if (link != null) {
-                        links.add(link);
-                        if (nodes.add(devBeanInfos.getBean(dependent.getIdentifier()))) {
-                            // add transient dependents
-                            addNodesDependents(root, nodes, links, dependent, beans, declaringToProducers, resolver,
-                                    devBeanInfos);
-                        }
-                    }
+                } else if (bean.equals(resolved)) {
+                    direct.add(injectionPoint);
                 }
             }
+            directDependents.put(bean, direct);
         }
+        for (InjectionPointInfo ip : direct) {
+            BeanInfo dependent = ip.getTargetBean().get();
+            Link link;
+            if (ip.getResolvedBean() == null) {
+                link = Link.lookup(dependent.getIdentifier(), bean.getIdentifier());
+            } else {
+                link = Link.dependent(root.equals(bean), dependent.getIdentifier(), bean.getIdentifier());
+            }
+            links.add(link);
+            if (nodes.add(devBeanInfos.getBean(dependent.getIdentifier()))) {
+                // add transient dependents
+                addNodesDependents(root, nodes, links, dependent, injectionPoints, declaringToProducers, resolver,
+                        devBeanInfos, directDependents);
+            }
+        }
+
         for (BeanInfo producer : declaringToProducers.getOrDefault(bean, Collections.emptyList())) {
             links.add(Link.producer(producer.getIdentifier(), bean.getIdentifier()));
             if (nodes.add(devBeanInfos.getBean(producer.getIdentifier()))) {
                 // add transient dependents
-                addNodesDependents(root, nodes, links, producer, beans, declaringToProducers, resolver,
-                        devBeanInfos);
+                addNodesDependents(root, nodes, links, producer, injectionPoints, declaringToProducers, resolver,
+                        devBeanInfos, directDependents);
             }
         }
     }

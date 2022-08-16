@@ -262,6 +262,10 @@ public class BeanInfo implements InjectionTargetInfo {
         return injections;
     }
 
+    public boolean hasInjectionPoint() {
+        return !injections.isEmpty();
+    }
+
     public List<InjectionPointInfo> getAllInjectionPoints() {
         if (injections.isEmpty()) {
             return Collections.emptyList();

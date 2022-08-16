@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -110,7 +111,7 @@ public class SmallRyeGraphQLClientProcessor {
             // an equivalent of io.smallrye.graphql.client.typesafe.impl.cdi.GraphQlClientBean that produces typesafe client instances
             SyntheticBeanBuildItem bean = SyntheticBeanBuildItem.configure(apiClassInfo.name())
                     .addType(apiClassInfo.name())
-                    .scope(Singleton.class)
+                    .scope(ApplicationScoped.class)
                     .supplier(recorder.typesafeClientSupplier(apiClass))
                     .unremovable()
                     .done();

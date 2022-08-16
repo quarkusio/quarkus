@@ -143,7 +143,7 @@
         <webjar.chartjs.version>3.7.1</webjar.chartjs.version>
 
         <!-- revapi API check -->
-        <revapi-maven-plugin.version>0.14.6</revapi-maven-plugin.version>
+        <revapi-maven-plugin.version>0.14.7</revapi-maven-plugin.version>
         <revapi-java-plugin.version>0.26.1</revapi-java-plugin.version>
         <build-helper-plugin.version>1.9.1</build-helper-plugin.version>
         <revapi-reporter-text.version>0.14.5</revapi-reporter-text.version>
@@ -157,6 +157,8 @@
         <revapi.skip>true</revapi.skip>
         <!-- By default don't check dependencies -->
         <revapi.checkdeps>false</revapi.checkdeps>
+        <!-- The message that is appended to the end of the plugin error output when the API problems fail the build -->
+        <revapi.buildFailureMessage>Run "jbang revapi-update" to update api-changes.xml file</revapi.buildFailureMessage>
 
         <!-- Forbidden API checks -->
         <forbiddenapis-maven-plugin.version>3.1</forbiddenapis-maven-plugin.version>
@@ -1221,6 +1223,7 @@
                             <failSeverity>potentiallyBreaking</failSeverity>
                             <failBuildOnProblemsFound>true</failBuildOnProblemsFound>
                             <checkDependencies>${revapi.checkdeps}</checkDependencies>
+                            <buildFailureMessage>${revapi.buildFailureMessage}</buildFailureMessage>
                             <ignoreSuggestionsFormat>xml</ignoreSuggestionsFormat>
                             <ignoreSuggestionsFile>${project.build.directory}/api-changes-suggestions.xml</ignoreSuggestionsFile>
                             <expandProperties>true</expandProperties>

@@ -1,5 +1,6 @@
 package io.quarkus.test.kubernetes.client;
 
+import io.quarkus.test.kubernetes.client.WithPortForwarding.LabelValue;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,61 +30,61 @@ public class PortForwardingTestResource extends AbstractNamespaceConnectingTestR
         final var podIdentifier = annotation.pod();
 
         // identify which pod to target
-        var podName = podIdentifier.name();
         Pod pod;
-        final var hasPodName = !AnnotationConstants.UNSET_STRING_VALUE.equals(podName);
         final var hasLabelSelector = !AnnotationConstants.UNSET_STRING_VALUE.equals(podIdentifier.labelSelector());
         final var hasFieldSelectors = podIdentifier.fieldSelectors().length > 0;
-        if (hasPodName) {
-            if (hasLabelSelector || hasFieldSelectors) {
-                logger().warn("Pod name was specified so field and label selectors will be ignored");
-            }
-            pod = client().pods().withName(podName).get();
-        } else {
-            if (!hasLabelSelector && !hasFieldSelectors) {
-                throw new IllegalArgumentException(
-                        "Must specify a target pod name or label or field selectors to identify which pod to port forward");
-            }
+        final var hasLabelValues = podIdentifier.labelValues().length > 0;
+        if (!hasLabelSelector && !hasFieldSelectors && !hasLabelValues) {
+            throw new IllegalArgumentException("Must specify label values and/or label and/or field selectors to identify which pod to port forward");
+        }
 
-            // retrieve pod name from selectors and optional index
-            final var podsResource = client().pods().inNamespace(namespace());
-            if (hasLabelSelector) {
-                podsResource.withLabelSelector(podIdentifier.labelSelector());
-            }
-            if (hasFieldSelectors) {
-                for (FieldSelector fieldSelector : podIdentifier.fieldSelectors()) {
-                    switch (fieldSelector.operator()) {
-                        case eq:
-                            podsResource.withField(fieldSelector.key(), fieldSelector.value());
-                            break;
-                        case neq:
-                            podsResource.withoutField(fieldSelector.key(), fieldSelector.value());
-                        default:
-                            throw new IllegalArgumentException("Unknown field selector operator: " + fieldSelector.operator());
-                    }
+        // retrieve pod name from selectors and optional index
+        final var podsResource = client().pods().inNamespace(namespace());
+        if (hasLabelSelector) {
+            podsResource.withLabelSelector(podIdentifier.labelSelector());
+        }
+        if (hasFieldSelectors) {
+            for (FieldSelector fieldSelector : podIdentifier.fieldSelectors()) {
+                switch (fieldSelector.operator()) {
+                    case eq:
+                        podsResource.withField(fieldSelector.key(), fieldSelector.value());
+                        break;
+                    case neq:
+                        podsResource.withoutField(fieldSelector.key(), fieldSelector.value());
+                    default:
+                        throw new IllegalArgumentException("Unknown field selector operator: " + fieldSelector.operator());
                 }
             }
-
-            final var pods = podsResource.list().getItems();
-            final var podsNumber = pods.size();
-            final var matchingString = "matching (labels: '"
-                    + podIdentifier.labelSelector() + "', fields: "
-                    + Arrays.toString(podIdentifier.fieldSelectors());
-            switch (podsNumber) {
-                case 0:
-                    throw new IllegalArgumentException("No pod " + matchingString);
-                case 1:
-                    pod = pods.get(0);
-                default:
-                    final var podIndex = podIdentifier.podIndex();
-                    if (podIndex < podsNumber) {
-                        pod = pods.get(podIndex);
-                    } else {
-                        throw new IndexOutOfBoundsException("There are only " + podsNumber
-                                + " pods " + matchingString + " but provided index was " + podIndex);
-                    }
+        }
+        if (hasLabelValues) {
+            for (LabelValue labelValue : podIdentifier.labelValues()) {
+                final var key = labelValue.key();
+                final var value = labelValue.value();
+                if(AnnotationConstants.UNSET_STRING_VALUE.equals(value)) {
+                    podsResource.withLabel(key);
+                } else {
+                    podsResource.withLabel(key, value);
+                }
             }
         }
+
+        final var pods = podsResource.list().getItems();
+        final var podsNumber = pods.size();
+        final var matchingString = "matching (labels: '"
+                + podIdentifier.labelSelector() + "', fields: "
+                + Arrays.toString(podIdentifier.fieldSelectors());
+        if(podsNumber == 0) {
+            throw new IllegalArgumentException("No pod " + matchingString);
+        }
+
+        final var podIndex = podIdentifier.podIndex();
+        if (podIndex < podsNumber) {
+            pod = pods.get(podIndex);
+        } else {
+            throw new IndexOutOfBoundsException("There are only " + podsNumber
+                + " pods " + matchingString + " but provided index was " + podIndex);
+        }
+        
         this.podName = pod.getMetadata().getName();
 
         // deal with port

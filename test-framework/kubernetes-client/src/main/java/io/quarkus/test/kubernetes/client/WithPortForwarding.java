@@ -20,10 +20,10 @@ public @interface WithPortForwarding {
     String namespace() default AnnotationConstants.UNSET_STRING_VALUE;
 
     @interface Pod {
-        String name() default AnnotationConstants.UNSET_STRING_VALUE;
-
         String labelSelector() default AnnotationConstants.UNSET_STRING_VALUE;
 
+        LabelValue[] labelValues() default {};
+        
         FieldSelector[] fieldSelectors() default {};
 
         int podIndex() default 0;
@@ -40,6 +40,11 @@ public @interface WithPortForwarding {
         Operator operator() default Operator.eq;
 
         String value();
+    }
+
+    @interface LabelValue {
+        String key();
+        String value() default AnnotationConstants.UNSET_STRING_VALUE;
     }
 
     @interface Port {

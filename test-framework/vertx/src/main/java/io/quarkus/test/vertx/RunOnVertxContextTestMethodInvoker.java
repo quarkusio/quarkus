@@ -78,7 +78,8 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         RunTestMethodOnContextHandler handler = new RunTestMethodOnContextHandler(actualTestInstance, actualTestMethod,
                 actualTestMethodArgs, uniAsserter, cf);
         Context context = vertx.getOrCreateContext();
-        boolean shouldDuplicateContext = shouldContextBeDuplicated(actualTestMethod);
+        boolean shouldDuplicateContext = shouldContextBeDuplicated(
+                actualTestInstance != null ? actualTestInstance.getClass() : Object.class, actualTestMethod);
         if (shouldDuplicateContext) {
             context = VertxContext.getOrCreateDuplicatedContext(context);
             VertxContextSafetyToggle.setContextSafe(context, true);
@@ -95,8 +96,11 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         }
     }
 
-    private boolean shouldContextBeDuplicated(Method m) {
-        final RunOnVertxContext runOnVertxContext = m.getAnnotation(RunOnVertxContext.class);
+    private boolean shouldContextBeDuplicated(Class<?> c, Method m) {
+        RunOnVertxContext runOnVertxContext = m.getAnnotation(RunOnVertxContext.class);
+        if (runOnVertxContext == null) {
+            runOnVertxContext = c.getAnnotation(RunOnVertxContext.class);
+        }
         if (runOnVertxContext == null) {
             return false;
         } else {

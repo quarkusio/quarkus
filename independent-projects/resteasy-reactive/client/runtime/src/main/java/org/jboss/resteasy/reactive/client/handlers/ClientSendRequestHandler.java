@@ -327,6 +327,16 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                                     });
                                         }
                                     });
+
+                        } else if (requestContext.isInputStreamDownload()) {
+                            if (loggingScope != LoggingScope.NONE) {
+                                clientLogger.logResponse(clientResponse, false);
+                            }
+                            //TODO: make timeout configureable
+                            requestContext
+                                    .setResponseEntityStream(
+                                            new VertxClientInputStream(clientResponse, 100000, requestContext));
+                            requestContext.resume();
                         } else {
                             clientResponse.bodyHandler(new Handler<>() {
                                 @Override

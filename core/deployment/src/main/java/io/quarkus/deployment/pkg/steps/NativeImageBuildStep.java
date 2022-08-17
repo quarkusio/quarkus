@@ -706,6 +706,8 @@ public class NativeImageBuildStep {
                 nativeImageArgs.add("-J--add-opens=java.base/java.io=ALL-UNNAMED");
                 // mybatis extension
                 nativeImageArgs.add("-J--add-opens=java.base/java.lang.invoke=ALL-UNNAMED");
+                // required by camel-quarkus-xstream
+                nativeImageArgs.add("-J--add-opens=java.base/java.util=ALL-UNNAMED");
 
                 if (nativeConfig.enableReports) {
                     if (graalVMVersion.isOlderThan(GraalVM.Version.VERSION_21_3_2)) {

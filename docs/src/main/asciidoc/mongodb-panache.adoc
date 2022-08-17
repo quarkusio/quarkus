@@ -183,7 +183,6 @@ If you need to write accessors, you can:
 ----
 public class Person extends PanacheMongoEntity {
 
-    @JsonProperty
     public String name;
     public LocalDate birth;
     public Status status;

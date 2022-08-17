@@ -279,7 +279,8 @@ public class HttpSecurityRecorder {
         return new Supplier<BasicAuthenticationMechanism>() {
             @Override
             public BasicAuthenticationMechanism get() {
-                return new BasicAuthenticationMechanism(buildTimeConfig.auth.realm, buildTimeConfig.auth.form.enabled);
+                return new BasicAuthenticationMechanism(buildTimeConfig.auth.realm.orElse(null),
+                        buildTimeConfig.auth.form.enabled);
             }
         };
     }

@@ -95,7 +95,7 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
 
     public BasicAuthenticationMechanism(final String realmName, final boolean silent,
             Charset charset, Map<Pattern, Charset> userAgentCharsets) {
-        this.challenge = BASIC_PREFIX + "realm=\"" + realmName + "\"";
+        this.challenge = realmName == null ? BASIC : BASIC_PREFIX + "realm=\"" + realmName + "\"";
         this.silent = silent;
         this.charset = charset;
         this.userAgentCharsets = Collections.unmodifiableMap(new LinkedHashMap<>(userAgentCharsets));

@@ -1,5 +1,6 @@
 package io.quarkus.oidc.runtime;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Function;
 
@@ -57,8 +58,18 @@ public class OidcSessionImpl implements OidcSession {
     }
 
     @Override
+    public Instant expiresAt() {
+        return Instant.ofEpochSecond(idToken.getExpirationTime());
+    }
+
+    @Override
+    public Duration validFor() {
+        final long nowSecs = System.currentTimeMillis() / 1000;
+        return Duration.ofSeconds(idToken.getExpirationTime() - nowSecs);
+    }
+
+    @Override
     public JsonWebToken getIdToken() {
         return idToken;
     }
-
 }

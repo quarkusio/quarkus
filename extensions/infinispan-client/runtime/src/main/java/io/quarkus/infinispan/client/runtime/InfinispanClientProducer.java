@@ -2,6 +2,7 @@ package io.quarkus.infinispan.client.runtime;
 
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
+import java.net.URL;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
@@ -142,6 +143,16 @@ public class InfinispanClientProducer {
      */
     private static String getContents(String fileName) {
         InputStream stream = InfinispanClientProducer.class.getResourceAsStream(fileName);
+        return getContents(stream);
+    }
+
+    /**
+     * Reads all the contents of the input stream as a single string using default charset
+     *
+     * @param stream to read contents of
+     * @return string containing the contents of the file
+     */
+    private static String getContents(InputStream stream) {
         try (Scanner scanner = new Scanner(stream, "UTF-8")) {
             return scanner.useDelimiter("\\A").next();
         }
@@ -153,6 +164,7 @@ public class InfinispanClientProducer {
      *
      * @param properties the properties that was static constructed
      * @return the configuration builder based on the provided properties
+     * @throws RuntimeException if the cache configuration file is not present in the resources folder
      */
     private ConfigurationBuilder builderFromProperties(Properties properties) {
         // If you are changing this method, you will most likely have to change replaceProperties as well
@@ -213,6 +225,32 @@ public class InfinispanClientProducer {
         }
 
         builder.withProperties(properties);
+
+        for (Map.Entry<String, InfinispanClientRuntimeConfig.RemoteCacheConfig> cache : infinispanClientRuntimeConfig.cache
+                .entrySet()) {
+            String cacheName = cache.getKey();
+            InfinispanClientRuntimeConfig.RemoteCacheConfig remoteCacheConfig = cache.getValue();
+            if (remoteCacheConfig.configurationUri.isPresent()) {
+                URL configFile = InfinispanClientProducer.class.getClassLoader()
+                        .getResource(remoteCacheConfig.configurationUri.get());
+                try {
+                    builder.remoteCache(cacheName).configurationURI(configFile.toURI());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            } else if (remoteCacheConfig.configuration.isPresent()) {
+                builder.remoteCache(cacheName).configuration(remoteCacheConfig.configuration.get());
+            }
+            if (remoteCacheConfig.nearCacheMaxEntries.isPresent()) {
+                builder.remoteCache(cacheName).nearCacheMaxEntries(remoteCacheConfig.nearCacheMaxEntries.get());
+            }
+            if (remoteCacheConfig.nearCacheMode.isPresent()) {
+                builder.remoteCache(cacheName).nearCacheMode(remoteCacheConfig.nearCacheMode.get());
+            }
+            if (remoteCacheConfig.nearCacheUseBloomFilter.isPresent()) {
+                builder.remoteCache(cacheName).nearCacheUseBloomFilter(remoteCacheConfig.nearCacheUseBloomFilter.get());
+            }
+        }
 
         return builder;
     }

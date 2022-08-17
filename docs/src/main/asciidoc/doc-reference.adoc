@@ -23,10 +23,10 @@ The Asciidoc files can be found in the `src/main/asciidoc` directory within the 
 
 Create new documentation files using the appropriate template for the content type: 
 
-Concepts:: Use `docs/src/main/asciidoc/_templates/template-concepts.adoc`
-How-To Guides:: Use `docs/src/main/asciidoc/_templates/template-howto.adoc`
-Reference:: Use `docs/src/main/asciidoc/_templates/template-reference.adoc`
-Tutorials:: Use `docs/src/main/asciidoc/_templates/template-tutorial.adoc`
+Concepts:: Use `src/main/asciidoc/_templates/template-concepts.adoc`
+How-To Guides:: Use `src/main/asciidoc/_templates/template-howto.adoc`
+Reference:: Use `src/main/asciidoc/_templates/template-reference.adoc`
+Tutorials:: Use `src/main/asciidoc/_templates/template-tutorial.adoc`
 
 == Output locations
 
@@ -117,7 +117,8 @@ Start a new line at the end of each sentence, and split sentences themselves at 
 === Abstracts (preamble)
 
 For optimum findability, add a short description using user-oriented keywords to summarize the document's purpose, task, and intent in no more than three sentences.
-Good abstracts also mention the benefits of following this content and avoid filler words, such as: "This document..", "This tutorial..", and "The following.."
+Avoid self-referential expressions and filler words, such as "This document..", "This tutorial..", and "The following.." 
+Mentioning the benefits users gain from reading the content is also helpful.
 
 [IMPORTANT]
 ====
@@ -183,16 +184,10 @@ Quarkus documentation is built from source in a few different environments.
 We use attributes in our cross-references to ensure our docs can be built across these environments.
 
 .Cross-reference source attributes
-[cols="<m,<2",options="header"]
-|===
-|Attribute|Description
-|\{code-examples}|Relative path to directory containing collected example source files
-|\{doc-guides}|Relative path to documentation adoc files (e.g. doc-concepts.adoc)
-|\{doc-examples}|Relative path to source examples for documentation guides
-|\{generated-dir}|Relative path to generated configuration `*.adoc` files
-|\{imagesdir}|Relative path to directory containing images
-|\{includes}|Relative path to directory containing partial/reusable content (`*.adoc` files)
-|===
+[source,asciidoc]
+----
+include::attributes.adoc[tag=xref-attributes]
+----
 
 When cross-referencing content, always use the inter-document `xref:` syntax and supply a human-readable label to your link.
 
@@ -201,75 +196,13 @@ When cross-referencing content, always use the inter-document `xref:` syntax and
 ----
 xref:{doc-guides}/doc-concepts.adoc[Quarkus Documentation concepts] <1>
 ----
-<1> The cross reference starts with `xref:`, uses a cross-reference source attribute(`\{doc-guides}`), and provides a readable description: `[Quarkus Documentation concepts]`.
+<1> The cross reference starts with `xref:`, uses a cross-reference source attribute(`\{doc-guides}`), and provides a readable description: `[Quarkus Documentation concepts]`
 
-=== Reference source code 
+=== Variables for use in documents
 
-There are many ways to include source code and examples in documentation.
-
-The simplest is to write it directly in the file, like this:
-
-[source,asciidoc]
------
-[source,java]
-----
-System.out.println("Hello, World!");
-----
------
-
-In documents like tutorials, you may want to reference source code that is built and tested regularly.
-The Quarkus documentation module build will copy source files enumerated in `*-examples/yaml` files into a flattened structure in the `target/asciidoc/examples` directory (from the project root).
-
-[source,yaml]
-----
-examples:
-- source: path/to/source/file/SomeClassFile.java <1>
-  target: prefix-simplified-unique-filename.java <2>
-----
-
-<1> define the path of source to be copied
-<2> define the simplified target file name to use when copying the file into the `target/asciidoc/examples` directory. We recommend using the same prefix as the related/consuming documentation in the file name.
-
-Content copied in this way is referenced using the `\{code-examples}` source attribute. If a copied file contains the literal string `{{source}}`, that literal value is replaced with the path of the source file.
-
-.Micrometer example
-* The source file to be copied is:
-+
-`integration-tests/micrometer-prometheus/src/main/java/documentation/example/telemetry/micrometer/tutorial/ExampleResource.java`
-
-* The target file name we want to use in docs is:
-+
-`telemetry-micrometer-tutorial-example-resource.java`.
-
-* The source and target file names are declared in `docs/src/main/asciidoc/telemetry-examples.yaml`: 
-+
-[source,yaml]
-----
-examples:
-- source: integration-tests/micrometer-prometheus/src/main/java/io/quarkus/doc/micrometer/ExampleResource.java
-  target: telemetry-micrometer-tutorial-example-resource.java
-----
-
-* Snippets from this source file are then included using the following path:
-+
-`\{code-examples}/telemetry-micrometer-tutorial-example-resource.java`.
-* The source file contains the following comment: 
-[source,java]
-----
-// Source: {{source}}
-----
-* The copied file contains this comment instead: 
-[source,java]
-----
-// Source: integration-tests/micrometer-prometheus/src/main/java/io/quarkus/doc/micrometer/ExampleResource.java
-----
-
-=== Quarkus documentation variables
-
-The following variables externalize key information that can change over time. References
-to such information should use the variable inside of curly brackets, `{}`. 
-
-The complete list of externalized variables for use is given in the following table:
+The following variables externalize key information that can change over time, and so references
+to such information should be done by using the variable inside of {} curly brackets. The
+complete list of externalized variables for use is given in the following table:
 
 .Variables
 [cols="<m,<m,<2",options="header"]
@@ -301,4 +234,3 @@ The complete list of externalized variables for use is given in the following ta
 |\{graalvm-version}|{graalvm-version}| Recommended GraalVM version to use.
 |\{graalvm-flavor}|{graalvm-flavor}| The full flavor of GraalVM to use e.g. `19.3.1-java11`. Make sure to use a `java11` version.
 |===
-

@@ -58,7 +58,7 @@ public class WebAuthnSecurity {
             options.setRequireResidentKey(config.requireResidentKey.get());
         }
         if (config.timeout.isPresent()) {
-            options.setTimeout(config.timeout.get().toMillis());
+            options.setTimeoutInMilliseconds(config.timeout.get().toMillis());
         }
         if (config.transports.isPresent()) {
             options.setTransports(config.transports.get());

@@ -12,8 +12,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceDirectoryBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.*;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.graphql.runtime.VertxGraphqlRecorder;
 import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
@@ -45,6 +44,13 @@ class VertxGraphqlProcessor {
                 //new ReflectiveClassBuildItem(true, true, GraphQLInputDeserializer.class.getName()),
                 new ReflectiveClassBuildItem(true, true, GraphQLBatch.class.getName()),
                 new ReflectiveClassBuildItem(true, true, GraphQLQuery.class.getName()));
+    }
+
+    @BuildStep
+    void registerI18nResources(BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
+        resourceBundle.produce(new NativeImageResourceBundleBuildItem("i18n/Execution"));
+        resourceBundle.produce(new NativeImageResourceBundleBuildItem("i18n/General"));
+        resourceBundle.produce(new NativeImageResourceBundleBuildItem("i18n/Validation"));
     }
 
     @BuildStep

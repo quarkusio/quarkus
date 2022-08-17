@@ -51,7 +51,7 @@
         <smallrye-context-propagation.version>1.2.2</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>2.7.0</smallrye-reactive-types-converter.version>
-        <smallrye-mutiny-vertx-binding.version>2.25.0</smallrye-mutiny-vertx-binding.version>
+        <smallrye-mutiny-vertx-binding.version>2.26.0</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>3.18.0</smallrye-reactive-messaging.version>
         <smallrye-stork.version>1.1.2</smallrye-stork.version>
         <jakarta.activation.version>1.2.1</jakarta.activation.version>
@@ -109,7 +109,7 @@
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>1.20.0.Final</wildfly-elytron.version>
         <jboss-threads.version>3.4.2.Final</jboss-threads.version>
-        <vertx.version>4.3.2</vertx.version>
+        <vertx.version>4.3.3</vertx.version>
 
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.15</httpcore.version>
@@ -297,12 +297,6 @@
                 <version>${vertx.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
-            </dependency>
-            <!-- Extra Vert.x dependency because of a breaking change in the Vert.x Web Client 4.3.3 -->
-            <dependency>
-                <groupId>io.vertx</groupId>
-                <artifactId>vertx-web-client</artifactId>
-                <version>${vertx.version}.1</version>
             </dependency>
 
             <!-- gRPC dependencies, imported as a BOM -->

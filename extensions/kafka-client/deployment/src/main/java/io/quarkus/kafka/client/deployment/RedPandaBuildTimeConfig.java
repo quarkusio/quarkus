@@ -26,6 +26,6 @@ public class RedPandaBuildTimeConfig {
      * <a href="https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=89068820">KIP-360 (Improve reliability of
      * idempotent/transactional producer)</a> are <em>not</em> supported.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem(defaultValue = "true")
     public boolean transactionEnabled;
 }

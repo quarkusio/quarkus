@@ -24,7 +24,7 @@ public class KafkaStreamsPropertiesTest {
     @Test
     public void testProperties() throws Exception {
         // reflection hack ... no other way to get raw props ...
-        Field configField = KafkaStreams.class.getDeclaredField("config");
+        Field configField = KafkaStreams.class.getDeclaredField("applicationConfigs");
         configField.setAccessible(true);
         StreamsConfig config = (StreamsConfig) configField.get(streams);
 

@@ -138,7 +138,7 @@
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
         <mutiny.version>1.7.0</mutiny.version>
-        <kafka3.version>3.1.0</kafka3.version>
+        <kafka3.version>3.2.1</kafka3.version>
         <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
         <snappy.version>1.1.8.4</snappy.version>
         <strimzi-test-container.version>0.100.0</strimzi-test-container.version>

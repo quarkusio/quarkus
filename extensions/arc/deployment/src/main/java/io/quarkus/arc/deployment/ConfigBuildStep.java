@@ -16,6 +16,7 @@ import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 import static org.jboss.jandex.AnnotationValue.createStringValue;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,6 +29,7 @@ import java.util.stream.Stream;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.CreationException;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -38,8 +40,10 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
@@ -61,6 +65,7 @@ import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
 import io.quarkus.deployment.builditem.ConfigPropertiesBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.ConfigMappingUtils;
 import io.quarkus.deployment.configuration.definition.RootDefinition;
@@ -75,16 +80,21 @@ import io.smallrye.config.inject.ConfigProducer;
  * MicroProfile Config related build steps.
  */
 public class ConfigBuildStep {
+    private static final Logger LOGGER = Logger.getLogger(ConfigBuildStep.class.getName());
+
+    private static final DotName MP_CONFIG = DotName.createSimple(Config.class.getName());
     private static final DotName MP_CONFIG_PROPERTY_NAME = DotName.createSimple(ConfigProperty.class.getName());
     private static final DotName MP_CONFIG_PROPERTIES_NAME = DotName.createSimple(ConfigProperties.class.getName());
     private static final DotName MP_CONFIG_VALUE_NAME = DotName.createSimple(ConfigValue.class.getName());
+
+    private static final DotName SR_CONFIG = DotName.createSimple(io.smallrye.config.SmallRyeConfig.class.getName());
+    private static final DotName SR_CONFIG_VALUE_NAME = DotName.createSimple(io.smallrye.config.ConfigValue.class.getName());
+    private static final DotName SR_WITH_CONVERTER = DotName.createSimple(WithConverter.class.getName());
 
     private static final DotName MAP_NAME = DotName.createSimple(Map.class.getName());
     private static final DotName SET_NAME = DotName.createSimple(Set.class.getName());
     private static final DotName LIST_NAME = DotName.createSimple(List.class.getName());
     private static final DotName SUPPLIER_NAME = DotName.createSimple(Supplier.class.getName());
-    private static final DotName CONFIG_VALUE_NAME = DotName.createSimple(io.smallrye.config.ConfigValue.class.getName());
-    private static final DotName WITH_CONVERTER = DotName.createSimple(WithConverter.class.getName());
 
     @BuildStep
     void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -169,7 +179,7 @@ public class ConfigBuildStep {
                         || DotNames.OPTIONAL_DOUBLE.equals(injectedType.name())
                         || DotNames.PROVIDER.equals(injectedType.name())
                         || SUPPLIER_NAME.equals(injectedType.name())
-                        || CONFIG_VALUE_NAME.equals(injectedType.name())
+                        || SR_CONFIG_VALUE_NAME.equals(injectedType.name())
                         || MP_CONFIG_VALUE_NAME.equals(injectedType.name())) {
                     // Never validate container objects
                     continue;
@@ -359,7 +369,7 @@ public class ConfigBuildStep {
     void registerConfigMappingConverters(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> producer) {
 
-        String[] valueTypes = indexBuildItem.getIndex().getAnnotations(WITH_CONVERTER).stream()
+        String[] valueTypes = indexBuildItem.getIndex().getAnnotations(SR_WITH_CONVERTER).stream()
                 .map(i -> i.value().asClass().name().toString())
                 .toArray(String[]::new);
         if (valueTypes.length > 0) {
@@ -460,6 +470,67 @@ public class ConfigBuildStep {
     }
 
     @BuildStep
+    void warnStaticInitInjectionPoints(
+            CombinedIndexBuildItem indexBuildItem,
+            ValidationPhaseBuildItem validationPhase,
+            List<ConfigClassBuildItem> configClasses,
+            List<ConfigInjectionStaticInitBuildItem> configInjectionStaticInit,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfigurationDefault) {
+
+        // Add here annotated classes that are initialized during static init
+        Set<DotName> declaringClassCandidates = configInjectionStaticInit.stream()
+                .map(ConfigInjectionStaticInitBuildItem::getDeclaringCandidate).collect(toSet());
+
+        Set<Type> configClassesTypes = configClasses.stream().map(ConfigClassBuildItem::getTypes).flatMap(Collection::stream)
+                .collect(toSet());
+
+        for (InjectionPointInfo injectionPoint : validationPhase.getContext().getInjectionPoints()) {
+            if (injectionPoint.getType().name().equals(DotNames.INSTANCE)) {
+                continue;
+            }
+
+            Type type = Type.create(injectionPoint.getRequiredType().name(), Type.Kind.CLASS);
+            DotName injectionTypeName = null;
+            if (type.name().equals(MP_CONFIG) || type.name().equals(SR_CONFIG)) {
+                injectionTypeName = type.name();
+            } else if (injectionPoint.getRequiredQualifier(MP_CONFIG_PROPERTY_NAME) != null) {
+                injectionTypeName = MP_CONFIG_PROPERTY_NAME;
+            } else if (configClassesTypes.contains(type)) {
+                injectionTypeName = type.name();
+            }
+
+            if (injectionTypeName != null) {
+                AnnotationTarget target = injectionPoint.getTarget();
+                if (FIELD.equals(target.kind())) {
+                    FieldInfo field = target.asField();
+                    ClassInfo declaringClass = field.declaringClass();
+                    Map<DotName, List<AnnotationInstance>> annotationsMap = declaringClass.annotationsMap();
+                    for (DotName declaringClassCandidate : declaringClassCandidates) {
+                        List<AnnotationInstance> annotationInstances = annotationsMap.get(declaringClassCandidate);
+                        if (annotationInstances != null && annotationInstances.size() == 1) {
+                            AnnotationInstance annotationInstance = annotationInstances.get(0);
+                            if (annotationInstance.target().equals(declaringClass)) {
+                                LOGGER.warn("Directly injecting a " +
+                                        injectionTypeName +
+                                        " into a " +
+                                        declaringClassCandidate +
+                                        " may lead to unexpected results. To ensure proper results, please " +
+                                        "change the type of the field to " +
+                                        ParameterizedType.create(DotNames.INSTANCE, new Type[] { type }, null) +
+                                        ". Offending field is '" +
+                                        field.name() +
+                                        "' of class '" +
+                                        field.declaringClass() +
+                                        "'");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @BuildStep
     @Record(RUNTIME_INIT)
     void registerConfigClasses(
             RecorderContext context,
@@ -512,7 +583,7 @@ public class ConfigBuildStep {
                 DotNames.BYTE.equals(type.name()) ||
                 DotNames.CHARACTER.equals(type.name()) ||
                 SUPPLIER_NAME.equals(type.name()) ||
-                CONFIG_VALUE_NAME.equals(type.name()) ||
+                SR_CONFIG_VALUE_NAME.equals(type.name()) ||
                 MP_CONFIG_VALUE_NAME.equals(type.name());
     }
 

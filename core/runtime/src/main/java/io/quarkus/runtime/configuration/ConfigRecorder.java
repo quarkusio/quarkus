@@ -59,6 +59,30 @@ public class ConfigRecorder {
                     throw new IllegalStateException("Unexpected " + BuildTimeMismatchAtRuntime.class.getName() + ": "
                             + configurationConfig.buildTimeMismatchAtRuntime);
             }
+
+        }
+    }
+
+    public void handleNativeProfileChange(List<String> buildProfiles) {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        List<String> runtimeProfiles = config.getProfiles();
+
+        if (buildProfiles.size() != runtimeProfiles.size()) {
+            log.warn(
+                    "The profile '" + buildProfiles + "' used to build the native image is different from the runtime profile '"
+                            + runtimeProfiles + "'. This may lead to unexpected results.");
+            return;
+        }
+
+        for (int i = 0; i < buildProfiles.size(); i++) {
+            String buildProfile = buildProfiles.get(i);
+            String runtimeProfile = runtimeProfiles.get(i);
+
+            if (!buildProfile.equals(runtimeProfile)) {
+                log.warn("The profile '" + buildProfile
+                        + "' used to build the native image is different from the runtime profile '" + runtimeProfile
+                        + "'. This may lead to unexpected results.");
+            }
         }
     }
 }

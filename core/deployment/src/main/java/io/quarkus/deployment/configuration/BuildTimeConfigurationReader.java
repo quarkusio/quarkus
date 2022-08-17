@@ -58,7 +58,6 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
-import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.configuration.PropertiesUtil;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigMappings;
@@ -925,9 +924,11 @@ public final class BuildTimeConfigurationReader {
         private Map<String, String> filterActiveProfileProperties(final Map<String, String> properties) {
             Set<String> propertiesToRemove = new HashSet<>();
             for (String property : properties.keySet()) {
-                String profiledProperty = "%" + ProfileManager.getActiveProfile() + "." + property;
-                if (properties.containsKey(profiledProperty)) {
-                    propertiesToRemove.add(property);
+                for (String profile : config.getProfiles()) {
+                    String profiledProperty = "%" + profile + "." + property;
+                    if (properties.containsKey(profiledProperty)) {
+                        propertiesToRemove.add(property);
+                    }
                 }
             }
             properties.keySet().removeAll(propertiesToRemove);

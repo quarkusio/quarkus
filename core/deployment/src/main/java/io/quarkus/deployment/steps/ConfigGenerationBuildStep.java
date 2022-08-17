@@ -61,6 +61,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -69,12 +70,12 @@ import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.quarkus.runtime.configuration.ConfigDiagnostic;
 import io.quarkus.runtime.configuration.ConfigRecorder;
 import io.quarkus.runtime.configuration.ConfigUtils;
-import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.configuration.QuarkusConfigValue;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.PropertiesLocationConfigSourceFactory;
+import io.smallrye.config.SmallRyeConfig;
 
 public class ConfigGenerationBuildStep {
 
@@ -310,7 +311,7 @@ public class ConfigGenerationBuildStep {
     public void watchConfigFiles(BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
         List<String> configWatchedFiles = new ArrayList<>();
 
-        Config config = ConfigProvider.getConfig();
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         String userDir = System.getProperty("user.dir");
 
         // Main files
@@ -320,12 +321,13 @@ public class ConfigGenerationBuildStep {
         configWatchedFiles.add(Paths.get(userDir, "config", "application.properties").toAbsolutePath().toString());
 
         // Profiles
-        String profile = ProfileManager.getActiveProfile();
-        configWatchedFiles.add(String.format("application-%s.properties", profile));
-        configWatchedFiles.add(String.format("META-INF/microprofile-config-%s.properties", profile));
-        configWatchedFiles.add(Paths.get(userDir, String.format(".env-%s", profile)).toAbsolutePath().toString());
-        configWatchedFiles.add(
-                Paths.get(userDir, "config", String.format("application-%s.properties", profile)).toAbsolutePath().toString());
+        for (String profile : config.getProfiles()) {
+            configWatchedFiles.add(String.format("application-%s.properties", profile));
+            configWatchedFiles.add(String.format("META-INF/microprofile-config-%s.properties", profile));
+            configWatchedFiles.add(Paths.get(userDir, String.format(".env-%s", profile)).toAbsolutePath().toString());
+            configWatchedFiles.add(Paths.get(userDir, "config", String.format("application-%s.properties", profile))
+                    .toAbsolutePath().toString());
+        }
 
         Optional<List<URI>> optionalLocations = config.getOptionalValues(SMALLRYE_CONFIG_LOCATIONS, URI.class);
         optionalLocations.ifPresent(locations -> {
@@ -333,7 +335,9 @@ public class ConfigGenerationBuildStep {
                 Path path = location.getScheme() != null ? Paths.get(location) : Paths.get(location.getPath());
                 if (!Files.isDirectory(path)) {
                     configWatchedFiles.add(path.toString());
-                    configWatchedFiles.add(appendProfileToFilename(path.toString(), profile));
+                    for (String profile : config.getProfiles()) {
+                        configWatchedFiles.add(appendProfileToFilename(path.toString(), profile));
+                    }
                 }
             }
         });
@@ -341,6 +345,13 @@ public class ConfigGenerationBuildStep {
         for (String configWatchedFile : configWatchedFiles) {
             watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(configWatchedFile));
         }
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void warnDifferentProfileUsedBetweenBuildAndRunTime(ConfigRecorder configRecorder) {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        configRecorder.handleNativeProfileChange(config.getProfiles());
     }
 
     private String appendProfileToFilename(String path, String activeProfile) {

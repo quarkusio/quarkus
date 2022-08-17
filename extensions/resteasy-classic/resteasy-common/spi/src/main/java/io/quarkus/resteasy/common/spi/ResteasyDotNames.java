@@ -7,7 +7,6 @@ import java.util.function.Predicate;
 
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
@@ -47,12 +46,8 @@ public final class ResteasyDotNames {
             .createSimple("org.jboss.resteasy.annotations.SseElementType");
     public static final DotName RESTEASY_PART_TYPE = DotName
             .createSimple("org.jboss.resteasy.annotations.providers.multipart.PartType");
-    public static final DotName CONFIG_PROPERTY = DotName
-            .createSimple(ConfigProperty.class.getName());
     public static final DotName CDI_INJECT = DotName
             .createSimple(Inject.class.getName());
-    public static final DotName CDI_INSTANCE = DotName
-            .createSimple(javax.enterprise.inject.Instance.class.getName());
     public static final DotName JSON_IGNORE = DotName.createSimple("com.fasterxml.jackson.annotation.JsonIgnore");
     public static final DotName JSONB_TRANSIENT = DotName.createSimple("javax.json.bind.annotation.JsonbTransient");
     public static final DotName XML_TRANSIENT = DotName.createSimple("javax.xml.bind.annotation.XmlTransient");

@@ -166,5 +166,9 @@ This file may appear in a runtime extension artifact as well as in a deployment 
 [[quarkus-javadoc-properties]]
 == META-INF/quarkus-javadoc.properties
 
-Same as `quarkus-config-roots.list`, this file may appear in a runtime extension artifact as well in a deployment one. it must not be edited manually, it is generated as part of the extension project build process and descriptions of configuration options available in classes annotated with `io.quarkus.runtime.annotations.ConfigRoot`.
+Same as `quarkus-config-roots.list`, this file may appear in a runtime extension artifact as well in a deployment one. It is generated as part of the extension project build process from the descriptions of configuration options available in the classes annotated with `io.quarkus.runtime.annotations.ConfigRoot` and is not supported to be edited manually.
 
+[[quarkus-build-steps]]
+== META-INF/quarkus-build-steps.list
+
+This file may appear in a deployment extension artifact. It contains a list of classes that implement Quarkus build steps (methods annotated with `io.quarkus.deployment.annotations.BuildStep`). This file is generated as part of the extension project build process and must not be edited manually.

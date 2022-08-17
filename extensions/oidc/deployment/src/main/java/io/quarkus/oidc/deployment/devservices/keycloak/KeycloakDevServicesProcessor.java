@@ -108,7 +108,7 @@ public class KeycloakDevServicesProcessor {
     private static final String KEYCLOAK_QUARKUS_HOSTNAME = "KC_HOSTNAME";
     private static final String KEYCLOAK_QUARKUS_ADMIN_PROP = "KEYCLOAK_ADMIN";
     private static final String KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP = "KEYCLOAK_ADMIN_PASSWORD";
-    private static final String KEYCLOAK_QUARKUS_START_CMD = "start --http-enabled=true --hostname-strict=false --hostname-strict-https=false";
+    private static final String KEYCLOAK_QUARKUS_START_CMD = "start --storage=chm --http-enabled=true --hostname-strict=false --hostname-strict-https=false";
 
     private static final String JAVA_OPTS = "JAVA_OPTS";
     private static final String KEYCLOAK_DOCKER_REALM_PATH = "/tmp/realm.json";
@@ -547,10 +547,13 @@ public class KeycloakDevServicesProcessor {
     private void createRealm(String keycloakUrl, RealmRepresentation realm) {
         WebClient client = OidcDevServicesUtils.createWebClient(vertxInstance);
         try {
+            LOG.tracef("Getting admin token before creating the realm %s", realm.getRealm());
+
             String token = OidcDevServicesUtils.getPasswordAccessToken(client,
                     keycloakUrl + "/realms/master/protocol/openid-connect/token",
                     "admin-cli", null, "admin", "admin", null, oidcConfig.devui.webClientTimeout);
 
+            LOG.tracef("Creating the realm %s", realm.getRealm());
             HttpResponse<Buffer> createRealmResponse = client.postAbs(keycloakUrl + "/admin/realms")
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
                     .putHeader(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + token)

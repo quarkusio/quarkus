@@ -162,18 +162,43 @@ public class DevBeanInfo implements Comparable<DevBeanInfo> {
     }
 
     public String getDescription() {
+        return description(false);
+    }
+
+    public String getSimpleDescription() {
+        return description(true);
+    }
+
+    private String description(boolean simple) {
+        String typeInfo = typeInfo(simple);
         switch (kind) {
-            case CLASS:
-                return providerType.toString();
             case FIELD:
-                return declaringClass.toString() + "#" + memberName;
+                return typeInfo + "#" + memberName;
             case METHOD:
-                return declaringClass.toString() + "#" + memberName + "()";
+                return typeInfo + "#" + memberName + "()";
             case SYNTHETIC:
-                return "Synthetic: " + providerType.toString();
+                return "Synthetic: " + typeInfo;
             default:
-                return providerType.toString();
+                return typeInfo;
         }
+    }
+
+    public String typeInfo(boolean simple) {
+        String type;
+        switch (kind) {
+            case FIELD:
+            case METHOD:
+                type = declaringClass.toString();
+                break;
+            default:
+                type = providerType.toString();
+                break;
+        }
+        if (simple) {
+            int idx = type.lastIndexOf(".");
+            return idx != -1 && type.length() > 1 ? type.substring(idx + 1) : type;
+        }
+        return type;
     }
 
     @Override

@@ -6,7 +6,7 @@
   
   const nodes = [
   {#each info:devBeanInfos.getDependencyGraph(currentRequest.getParam('beanId')).nodes}
-    { id:"{it.id}", kind:"{it.kind}", description:"{it.description}", root:{#if it.id == currentRequest.getParam('beanId')}true{#else}false{/if} },
+    { id:"{it.id}", kind:"{it.kind}", description:"{#if info:devBeanInfos.beanDescription ne "simple"}{it.description}{#else}{it.simpleDescription}{/if}", root:{#if it.id == currentRequest.getParam('beanId')}true{#else}false{/if} },
   {/each}
   ];
   const links = [
@@ -16,11 +16,12 @@
   ];
   
   const beanId = "{currentRequest.getParam('beanId')}";
+  const chartContainer = document.getElementById('beanDepGraph_container');
 
   {|
   const types = ['directDependency','directDependent','dependency','lookup','producer'];
-  const height = 600;
-  const width = 1200;
+  const width = chartContainer.clientWidth;
+  const height = chartContainer.clientHeight;
   const color = d3.scaleOrdinal(types, d3.schemeCategory10);
   
   // Legend colors
@@ -48,6 +49,7 @@
         return d.source.id === beanId || d.target.id === beanId ? 150 : 75;
       }))
       .force("charge", d3.forceManyBody().strength(-400))
+      .force("center", d3.forceCenter(width / 3, height / 2))   
       .force("x", d3.forceX())
       .force("y", d3.forceY());
       
@@ -68,9 +70,27 @@
     d.fy = event.y;
   }
   
+  let onZoom = function (e) {
+    d3.select('svg g').attr('transform', e.transform);
+  }
+  
+  const d3Zoom = d3.zoom()
+        .scaleExtent([0, 1])
+        .on("zoom", onZoom);
+  
   const svg = d3.select("#beanDepGraph_area")
-      .attr("viewBox", [-width / 3, -height / 3, width, height])
-      .style("font", "12px sans-serif");
+        .attr("preserveAspectRatio", "xMinYMin meet")
+        .attr("viewBox", [0, 0, width, height])
+        .style("font", "1rem sans-serif")
+        .call(d3Zoom)
+        .append("g");
+        
+   d3.select("#zoom_in").on("click", function() {
+      d3Zoom.scaleBy(svg.transition().duration(750), 1.2);
+    });
+   d3.select("#zoom_out").on("click", function() {
+      d3Zoom.scaleBy(svg.transition().duration(750), 0.8);
+    });
 
   svg.append("defs").selectAll("marker")
     .data(types)
@@ -124,11 +144,16 @@
   });
 
   |}
-
+  {/script}
+  {#style}
+    #beanDepGraph_container {
+      min-height: 800px;
+    }
+  {/style}
   {#breadcrumbs}<i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> <a href="beans">Beans</a>{/breadcrumbs}
   {#title}Bean Dependency Graph{/title}
   {#body}
-  {#set bean=info:devBeanInfos.getBean(currentRequest.getParam('beanId'))}
+  {#let bean=info:devBeanInfos.getBean(currentRequest.getParam('beanId'))}
   
   
     <div class="row">
@@ -137,7 +162,7 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-md-auto">
+        <div class="col-2">
             <ul class="list-group list-group-flush">
                 <li class="list-group-item"><i class="fas fa-circle text-danger fa-sm legend-root"></i> root</li>
                 <li class="list-group-item"><i class="fa fa-long-arrow-right fa-sm legend-direct-dependency"></i> direct dependencies</li>
@@ -145,14 +170,41 @@
                 <li class="list-group-item"><i class="fa fa-long-arrow-right fa-sm legend-dependency"></i> dependencies</li>
                 <li class="list-group-item"><i class="fa fa-long-arrow-right fa-sm legend-producer"></i> declaring bean of a producer</li>
                 <li class="list-group-item"><i class="fa fa-long-arrow-right fa-sm legend-lookup"></i> potential dependency <br/> &nbsp;<small class="text-muted">programmatic lookup</small></li>
+                <li class="list-group-item">
+                    <div class="btn-group" role="group" aria-label="Zoom">
+                        <button class="btn btn-outline-secondary" type="button" id="zoom_in">
+                            Zoom in <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary" type="button" id="zoom_out">
+                            <i class="fas fa-search-minus"></i> Zoom out
+                        </button>
+                    </div>
+                </li>
+                <li class="list-group-item">
+                <form id="simpleDescriptionForm" method="post" action="toggleBeanDescription?beanId={bean.id}">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="simpleDescriptionCheck" title="Simple description does not include the package information" onclick="this.form.submit();" {#if info:devBeanInfos.beanDescription eq "simple"}checked{/if}>
+                        <label class="form-check-label" for="simpleDescriptionCheck">Simple description</label>
+                    </div>
+                </form>
+                </li>
+                <li class="list-group-item">
+                <form method="post" action="setMaxDependencyLevel?beanId={bean.id}">
+                    <label for="maxDepLevel">Max dependency level:</label>
+                    <input type="number" value="{info:devBeanInfos.maxDependencyLevel}" class="form-control" id="maxDepLevel" name="maxDepLevel" min="0" max="1000" onchange="this.form.submit();">
+                    <small class="form-text text-muted">Value <code>0</code> means only direct dependencies</small>
+                </form>
+                </li>
             </ul>
         </div>
-        <div class="col">
-            <svg id="beanDepGraph_area" class="w-100 h-90"></svg>
+        <div class="col-10">
+            <div id="beanDepGraph_container" class="w-100">
+                <svg id="beanDepGraph_area"></svg>
+            </div>
         </div>
     </div>
   
-  {/set}
+  {/let}
   {/body}
   
   {#scriptref}

@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.dev.console.DevConsoleManager;
+
 public class DevBeanInfos {
 
     private final List<DevBeanInfo> beans;
@@ -56,6 +58,15 @@ public class DevBeanInfos {
         return removedDecorators;
     }
 
+    public String getBeanDescription() {
+        return DevConsoleManager.getGlobal(ArcDevConsoleProcessor.BEAN_DESCRIPTION);
+    }
+
+    public int getMaxDependencyLevel() {
+        Integer val = DevConsoleManager.getGlobal(ArcDevConsoleProcessor.MAX_DEPENDENCY_LEVEL);
+        return val != null ? val : ArcDevConsoleProcessor.DEFAULT_MAX_DEPENDENCY_LEVEL;
+    }
+
     public DevBeanInfo getBean(String id) {
         for (DevBeanInfo bean : beans) {
             if (bean.getId().equals(id)) {
@@ -75,7 +86,12 @@ public class DevBeanInfos {
     }
 
     public DependencyGraph getDependencyGraph(String beanId) {
-        return dependencyGraphs.get(beanId);
+        Integer maxLevel = DevConsoleManager.getGlobal(ArcDevConsoleProcessor.MAX_DEPENDENCY_LEVEL);
+        if (maxLevel == null) {
+            maxLevel = ArcDevConsoleProcessor.DEFAULT_MAX_DEPENDENCY_LEVEL;
+        }
+        DependencyGraph graph = dependencyGraphs.get(beanId);
+        return graph.maxLevel <= maxLevel ? graph : graph.forLevel(maxLevel);
     }
 
     public int getRemovedComponents() {

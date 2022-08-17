@@ -45,8 +45,12 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.RoutingContext;
 
 public class ArcDevConsoleProcessor {
 
@@ -102,8 +106,9 @@ public class ArcDevConsoleProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public DevConsoleTemplateInfoBuildItem collectBeanInfo(ValidationPhaseBuildItem validationPhaseBuildItem,
-            CompletedApplicationClassPredicateBuildItem predicate) {
+    public void collectBeanInfo(ValidationPhaseBuildItem validationPhaseBuildItem,
+            CompletedApplicationClassPredicateBuildItem predicate, BuildProducer<DevConsoleTemplateInfoBuildItem> templates,
+            BuildProducer<DevConsoleRouteBuildItem> routes) {
         BeanDeploymentValidator.ValidationContext validationContext = validationPhaseBuildItem.getContext();
         DevBeanInfos beanInfos = new DevBeanInfos();
         for (BeanInfo bean : validationContext.beans()) {
@@ -157,8 +162,52 @@ public class ArcDevConsoleProcessor {
         }
 
         beanInfos.sort();
-        return new DevConsoleTemplateInfoBuildItem("devBeanInfos", beanInfos);
+        templates.produce(new DevConsoleTemplateInfoBuildItem("devBeanInfos", beanInfos));
+
+        routes.produce(new DevConsoleRouteBuildItem("toggleBeanDescription", "POST", new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext context) {
+                Object val = DevConsoleManager.getGlobal(BEAN_DESCRIPTION);
+                if (val != null && val.equals("simple")) {
+                    val = "full";
+                } else {
+                    val = "simple";
+                }
+                DevConsoleManager.setGlobal(BEAN_DESCRIPTION, val);
+                context.response()
+                        .putHeader("location", "beanDependencyGraph?beanId=" + context.request().getParam("beanId"))
+                        .setStatusCode(302).end();
+            }
+        }));
+
+        routes.produce(new DevConsoleRouteBuildItem("setMaxDependencyLevel", "POST", new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext context) {
+                context.request().setExpectMultipart(true);
+                context.request().endHandler(new Handler<Void>() {
+                    @Override
+                    public void handle(Void ignore) {
+                        Integer val = null;
+                        try {
+                            val = Integer.parseInt(context.request().getFormAttribute("maxDepLevel"));
+                        } catch (NumberFormatException ignored) {
+                        }
+                        if (val != null) {
+                            DevConsoleManager.setGlobal(MAX_DEPENDENCY_LEVEL, val);
+                        }
+                        context.response()
+                                .putHeader("location", "beanDependencyGraph?beanId=" + context.request().getParam("beanId"))
+                                .setStatusCode(302).end();
+                    }
+                });
+
+            }
+        }));
     }
+
+    static final String BEAN_DESCRIPTION = "io.quarkus.arc.beanDescription";
+    static final String MAX_DEPENDENCY_LEVEL = "io.quarkus.arc.maxDependencyLevel";
+    static final int DEFAULT_MAX_DEPENDENCY_LEVEL = 10;
 
     private boolean isAdditionalBeanDefiningAnnotationOn(ClassInfo beanClass,
             List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
@@ -176,31 +225,31 @@ public class ArcDevConsoleProcessor {
             Map<BeanInfo, List<InjectionPointInfo>> directDependents) {
         Set<DevBeanInfo> nodes = new HashSet<>();
         Set<Link> links = new HashSet<>();
-        addNodesDependencies(bean, nodes, links, bean, devBeanInfos);
-        addNodesDependents(bean, nodes, links, bean, allInjectionPoints, declaringToProducers, resolver, devBeanInfos,
+        addNodesDependencies(0, bean, nodes, links, bean, devBeanInfos);
+        addNodesDependents(0, bean, nodes, links, bean, allInjectionPoints, declaringToProducers, resolver, devBeanInfos,
                 directDependents);
         return new DependencyGraph(nodes, links);
     }
 
-    void addNodesDependencies(BeanInfo root, Set<DevBeanInfo> nodes, Set<Link> links, BeanInfo bean,
+    void addNodesDependencies(int level, BeanInfo root, Set<DevBeanInfo> nodes, Set<Link> links, BeanInfo bean,
             DevBeanInfos devBeanInfos) {
         if (nodes.add(devBeanInfos.getBean(bean.getIdentifier()))) {
             if (bean.isProducerField() || bean.isProducerMethod()) {
-                links.add(Link.producer(bean.getIdentifier(), bean.getDeclaringBean().getIdentifier()));
-                addNodesDependencies(root, nodes, links, bean.getDeclaringBean(), devBeanInfos);
+                links.add(Link.producer(bean.getIdentifier(), bean.getDeclaringBean().getIdentifier(), level));
+                addNodesDependencies(level + 1, root, nodes, links, bean.getDeclaringBean(), devBeanInfos);
             }
             for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
                 BeanInfo resolved = injectionPoint.getResolvedBean();
                 if (resolved != null && !resolved.equals(bean)) {
-                    links.add(Link.dependency(root.equals(bean), bean.getIdentifier(), resolved.getIdentifier()));
+                    links.add(Link.dependency(bean.getIdentifier(), resolved.getIdentifier(), level));
                     // add transient dependencies
-                    addNodesDependencies(root, nodes, links, injectionPoint.getResolvedBean(), devBeanInfos);
+                    addNodesDependencies(level + 1, root, nodes, links, injectionPoint.getResolvedBean(), devBeanInfos);
                 }
             }
         }
     }
 
-    void addNodesDependents(BeanInfo root, Set<DevBeanInfo> nodes, Set<Link> links, BeanInfo bean,
+    void addNodesDependents(int level, BeanInfo root, Set<DevBeanInfo> nodes, Set<Link> links, BeanInfo bean,
             List<InjectionPointInfo> injectionPoints, Map<BeanInfo, List<BeanInfo>> declaringToProducers, BeanResolver resolver,
             DevBeanInfos devBeanInfos, Map<BeanInfo, List<InjectionPointInfo>> directDependents) {
         List<InjectionPointInfo> direct = directDependents.get(bean);
@@ -228,23 +277,23 @@ public class ArcDevConsoleProcessor {
             BeanInfo dependent = ip.getTargetBean().get();
             Link link;
             if (ip.getResolvedBean() == null) {
-                link = Link.lookup(dependent.getIdentifier(), bean.getIdentifier());
+                link = Link.lookup(dependent.getIdentifier(), bean.getIdentifier(), level);
             } else {
-                link = Link.dependent(root.equals(bean), dependent.getIdentifier(), bean.getIdentifier());
+                link = Link.dependent(dependent.getIdentifier(), bean.getIdentifier(), level);
             }
             links.add(link);
             if (nodes.add(devBeanInfos.getBean(dependent.getIdentifier()))) {
                 // add transient dependents
-                addNodesDependents(root, nodes, links, dependent, injectionPoints, declaringToProducers, resolver,
+                addNodesDependents(level + 1, root, nodes, links, dependent, injectionPoints, declaringToProducers, resolver,
                         devBeanInfos, directDependents);
             }
         }
 
         for (BeanInfo producer : declaringToProducers.getOrDefault(bean, Collections.emptyList())) {
-            links.add(Link.producer(producer.getIdentifier(), bean.getIdentifier()));
+            links.add(Link.producer(producer.getIdentifier(), bean.getIdentifier(), level));
             if (nodes.add(devBeanInfos.getBean(producer.getIdentifier()))) {
                 // add transient dependents
-                addNodesDependents(root, nodes, links, producer, injectionPoints, declaringToProducers, resolver,
+                addNodesDependents(level + 1, root, nodes, links, producer, injectionPoints, declaringToProducers, resolver,
                         devBeanInfos, directDependents);
             }
         }

@@ -24,8 +24,8 @@ public class TransactionalBitMapCommandsTest extends DatasourceTestBase {
 
     @BeforeEach
     void initialize() {
-        blocking = new BlockingRedisDataSourceImpl(redis, api, Duration.ofSeconds(60));
-        reactive = new ReactiveRedisDataSourceImpl(redis, api);
+        blocking = new BlockingRedisDataSourceImpl(vertx, redis, api, Duration.ofSeconds(60));
+        reactive = new ReactiveRedisDataSourceImpl(vertx, redis, api);
     }
 
     @AfterEach

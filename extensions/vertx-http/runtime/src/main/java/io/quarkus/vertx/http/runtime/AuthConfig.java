@@ -29,8 +29,8 @@ public class AuthConfig {
     /**
      * The authentication realm
      */
-    @ConfigItem(defaultValue = "Quarkus")
-    public String realm;
+    @ConfigItem
+    public Optional<String> realm;
 
     /**
      * The HTTP permissions

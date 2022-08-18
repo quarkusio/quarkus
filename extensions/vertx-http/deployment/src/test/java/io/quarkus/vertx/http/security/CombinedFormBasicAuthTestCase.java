@@ -23,6 +23,7 @@ public class CombinedFormBasicAuthTestCase {
 
     private static final String APP_PROPS = "" +
             "quarkus.http.auth.basic=true\n" +
+            "quarkus.http.auth.realm=TestRealm\n" +
             "quarkus.http.auth.form.enabled=true\n" +
             "quarkus.http.auth.form.login-page=login\n" +
             "quarkus.http.auth.form.error-page=error\n" +
@@ -154,7 +155,7 @@ public class CombinedFormBasicAuthTestCase {
                 .then()
                 .assertThat()
                 .statusCode(401)
-                .header("WWW-Authenticate", equalTo("basic realm=\"Quarkus\""));
+                .header("WWW-Authenticate", equalTo("basic realm=\"TestRealm\""));
 
     }
 }

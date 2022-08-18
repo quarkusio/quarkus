@@ -13,6 +13,6 @@ public class MsSQLServiceBindingConverter implements ServiceBindingConverter {
     @Override
     public Optional<ServiceBindingConfigSource> convert(List<ServiceBinding> serviceBindings) {
         return ServiceBinding.singleMatchingByType("sqlserver", serviceBindings)
-                .map(new DatasourceServiceBindingConfigSourceFactory.Jdbc());
+                .map(new DatasourceServiceBindingConfigSourceFactory.Jdbc("jdbc:%s://%s%s;databaseName=%s"));
     }
 }

@@ -31,10 +31,10 @@ public class PubSubCommandsTest extends DatasourceTestBase {
 
     @BeforeEach
     void initialize() {
-        ds = new BlockingRedisDataSourceImpl(redis, api, Duration.ofSeconds(5));
+        ds = new BlockingRedisDataSourceImpl(vertx, redis, api, Duration.ofSeconds(5));
         pubsub = ds.pubsub(Person.class);
 
-        ReactiveRedisDataSourceImpl reactiveDS = new ReactiveRedisDataSourceImpl(redis, api);
+        ReactiveRedisDataSourceImpl reactiveDS = new ReactiveRedisDataSourceImpl(vertx, redis, api);
         reactive = reactiveDS.pubsub(Person.class);
     }
 

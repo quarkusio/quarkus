@@ -14,21 +14,25 @@ import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisAPI;
 import io.vertx.mutiny.redis.client.RedisConnection;
+import io.vertx.mutiny.redis.client.Response;
 
 public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands implements ReactivePubSubCommands<V> {
 
     private final Class<V> classOfMessage;
-    private final Redis ds;
+    private final Redis client;
+    private final ReactiveRedisDataSourceImpl datasource;
 
     public ReactivePubSubCommandsImpl(ReactiveRedisDataSourceImpl ds, Class<V> classOfMessage) {
         super(ds, new Marshaller(classOfMessage));
-        this.ds = ds.redis;
+        this.client = ds.redis;
+        this.datasource = ds;
         this.classOfMessage = classOfMessage;
     }
 
@@ -67,7 +71,7 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
             }
         }
 
-        return ds.connect()
+        return client.connect()
                 .chain(conn -> {
                     RedisAPI api = RedisAPI.api(conn);
                     ReactiveRedisPatternSubscriberImpl subscriber = new ReactiveRedisPatternSubscriberImpl(conn, api, onMessage,
@@ -91,7 +95,7 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
             }
         }
 
-        return ds.connect()
+        return client.connect()
                 .chain(conn -> {
                     RedisAPI api = RedisAPI.api(conn);
                     ReactiveAbstractRedisSubscriberImpl subscriber = new ReactiveAbstractRedisSubscriberImpl(conn, api,
@@ -146,14 +150,13 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
             Uni<Void> handled = Uni.createFrom().emitter(emitter -> {
                 connection.handler(r -> {
                     if (r != null && r.size() > 0) {
-                        Context context = VertxContext.getOrCreateDuplicatedContext(Vertx.currentContext());
-                        String command = r.get(0).toString();
-                        if ("subscribe".equalsIgnoreCase(command) || "psubscribe".equalsIgnoreCase(command)) {
-                            emitter.complete(null); // Subscribed
-                        } else if ("message".equalsIgnoreCase(command)) {
-                            context.runOnContext(x -> onMessage.accept(marshaller.decode(classOfMessage, r.get(2))));
-                        } else if ("pmessage".equalsIgnoreCase(command)) {
-                            context.runOnContext(x -> onMessage.accept(marshaller.decode(classOfMessage, r.get(3))));
+                        Context ctxt = Vertx.currentContext();
+                        if (ctxt != null) {
+                            handleRedisEvent(emitter, r);
+                        } else {
+                            datasource.getVertx().runOnContext(() -> {
+                                handleRedisEvent(emitter, r);
+                            });
                         }
                     }
                 });
@@ -163,6 +166,18 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
 
             return subscribed.chain(() -> handled)
                     .replaceWith(id);
+        }
+
+        private void handleRedisEvent(UniEmitter<? super Void> emitter, Response r) {
+            Context context = VertxContext.getOrCreateDuplicatedContext(Vertx.currentContext());
+            String command = r.get(0).toString();
+            if ("subscribe".equalsIgnoreCase(command) || "psubscribe".equalsIgnoreCase(command)) {
+                emitter.complete(null); // Subscribed
+            } else if ("message".equalsIgnoreCase(command)) {
+                context.runOnContext(x -> onMessage.accept(marshaller.decode(classOfMessage, r.get(2))));
+            } else if ("pmessage".equalsIgnoreCase(command)) {
+                context.runOnContext(x -> onMessage.accept(marshaller.decode(classOfMessage, r.get(3))));
+            }
         }
 
         public Uni<Void> closeAndUnregister(Collection<?> collection) {

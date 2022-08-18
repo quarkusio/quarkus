@@ -12,9 +12,9 @@ import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 
 public class ConnectionRecyclingTest extends DatasourceTestBase {
 
-    RedisDataSource ds = new BlockingRedisDataSourceImpl(redis, api, Duration.ofSeconds(1));
+    RedisDataSource ds = new BlockingRedisDataSourceImpl(vertx, redis, api, Duration.ofSeconds(1));
 
-    ReactiveRedisDataSource rds = new ReactiveRedisDataSourceImpl(redis, api);
+    ReactiveRedisDataSource rds = new ReactiveRedisDataSourceImpl(vertx, redis, api);
 
     @AfterEach
     public void tearDown() {

@@ -27,7 +27,7 @@
                 </exclusion>
                 <exclusion>
                     <groupId>org.glassfish</groupId>
-                    <artifactId>javax.el</artifactId>
+                    <artifactId>jakarta.el</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

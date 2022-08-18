@@ -22,15 +22,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.instrumentation.annotations.SpanAttribute;
-import io.opentelemetry.instrumentation.annotations.WithSpan;
+import io.opentelemetry.extension.annotations.SpanAttribute;
+import io.opentelemetry.extension.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.config.SmallRyeConfig;
 import io.vertx.ext.web.Router;
 
-public class WithSpanInterceptorTest {
+public class WithSpanLegacyInterceptorTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(

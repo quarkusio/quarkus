@@ -31,8 +31,8 @@ In your `pom.xml` file, add:
 .pom.xml
 ----
 <dependency>
-    <groupId>io.quarkiverse.redis</groupId>
-    <artifactId>quarkus-redis</artifactId>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-redis-client</artifactId>
 </dependency>
 ----
 
@@ -78,7 +78,7 @@ It exposes the `io.quarkus.redis.datasource.RedisDataSource` interface.
 To help you select the suitable API for you, here are some recommendations:
 
 * If you are building an imperative (_classic_) Quarkus application integrating with Redis: use `io.quarkus.redis.datasource.RedisDataSource`.
-* If you are building a reactive Quarkus application integrating with Redis: use `io.quarkus.redis.datasource.RedisReactiveDataSource`.
+* If you are building a reactive Quarkus application integrating with Redis: use `io.quarkus.redis.datasource.ReactiveRedisDataSource`.
 * If you need fine-grain control, or execute commands in a generic way: use `io.vertx.mutiny.redis.client.RedisAPI`
 * If you have existing Vert.x code, use `io.vertx.redis.client.RedisAPI`
 * If you need to emit custom commands, you can either use the data sources (reactive or imperative) or the `io.vertx.mutiny.redis.client.Redis`.
@@ -104,7 +104,7 @@ When using the default connection, you can inject the various APIS using a _plai
 ----
 @ApplicationScoped
 public class RedisExample {
-    @Inject RedisReactiveDataSource reactiveDataSource;
+    @Inject ReactiveRedisDataSource reactiveDataSource;
     @Inject RedisDataSource redisDataSource;
     @Inject RedisAPI redisAPI;
     // ...
@@ -128,7 +128,7 @@ To access the APIs, you need to use the `@RedisClientName` qualifier:
 ----
 @ApplicationScoped
 public class RedisExample {
-    @Inject @RedisClientName("my-redis-1") RedisReactiveDataSource reactiveDataSource;
+    @Inject @RedisClientName("my-redis-1") ReactiveRedisDataSource reactiveDataSource;
     @Inject @RedisClientName("my-redis-2") RedisDataSource redisDataSource;
     // ...
 }

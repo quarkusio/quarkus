@@ -5395,6 +5395,12 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+            <!-- liquibase-core has a dependency on org.osgi:osgi.core -->
+            <dependency>
+                <groupId>org.osgi</groupId>
+                <artifactId>osgi.core</artifactId>
+                <version>${osgi.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.liquibase.ext</groupId>
                 <artifactId>liquibase-mongodb</artifactId>

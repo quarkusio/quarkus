@@ -840,3 +840,15 @@ recipeList:
       newGroupId: org.infinispan
       newArtifactId: infinispan-commons
       newClassifier: jakarta
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.fix-infinispan-commons
+displayName: Adjust Infinispan version and dependencies
+recipeList:
+  - org.openrewrite.maven.ExcludeDependency:
+      groupId: org.infinispan
+      artifactId: infinispan-commons
+  - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
+      groupId: org.infinispan
+      artifactId: infinispan-commons
+      classifier: jakarta

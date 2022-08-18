@@ -72,6 +72,10 @@
                     <groupId>org.wildfly.security</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.latencyutils</groupId>
+                    <artifactId>LatencyUtils</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

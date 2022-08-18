@@ -793,3 +793,62 @@ recipeList:
       oldArtifactId: keycloak-admin-client
       newGroupId: org.keycloak
       newArtifactId: keycloak-admin-client-jakarta
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.infinispan
+displayName: Adjust Infinispan version and dependencies
+recipeList:
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: infinispan.version
+      newValue: 14.0.0.Dev04
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: infinispan.protostream.version
+      newValue: 14.0.0.CR2
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.infinispan
+      oldArtifactId: infinispan-core
+      newGroupId: org.infinispan
+      newArtifactId: infinispan-core
+      newClassifier: jakarta
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.infinispan
+      oldArtifactId: infinispan-client-hotrod
+      newGroupId: org.infinispan
+      newArtifactId: infinispan-client-hotrod
+      newClassifier: jakarta
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.infinispan
+      oldArtifactId: infinispan-commons
+      newGroupId: org.infinispan
+      newArtifactId: infinispan-commons
+      newClassifier: jakarta
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.infinispan
+      oldArtifactId: infinispan-core
+      newGroupId: org.infinispan
+      newArtifactId: infinispan-core
+      newClassifier: jakarta
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.infinispan
+      oldArtifactId: infinispan-client-hotrod
+      newGroupId: org.infinispan
+      newArtifactId: infinispan-client-hotrod
+      newClassifier: jakarta
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.infinispan
+      oldArtifactId: infinispan-commons
+      newGroupId: org.infinispan
+      newArtifactId: infinispan-commons
+      newClassifier: jakarta
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.fix-infinispan-commons
+displayName: Adjust Infinispan version and dependencies
+recipeList:
+  - org.openrewrite.maven.ExcludeDependency:
+      groupId: org.infinispan
+      artifactId: infinispan-commons
+  - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
+      groupId: org.infinispan
+      artifactId: infinispan-commons
+      classifier: jakarta

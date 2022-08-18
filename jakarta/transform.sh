@@ -218,6 +218,7 @@ update_banned_dependency "build-parent" 'jakarta.xml.bind:jakarta.xml.bind-api' 
 #update_banned_dependency_advanced "build-parent" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>\n                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
 update_banned_dependency_advanced "build-parent" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_3.0_spec</exclude>\n                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
 update_banned_dependency_advanced "build-parent" '<exclude>jakarta.json:jakarta.json-api</exclude>' "<exclude>jakarta.json:jakarta.json-api</exclude>\n                                            <exclude>org.glassfish:jakarta.json</exclude>"
+update_banned_dependency_advanced "build-parent" '<exclude>org.glassfish:javax.el</exclude>' "<exclude>org.glassfish:javax.el</exclude>\n                                            <exclude>org.glassfish:jakarta.el</exclude>"
 sed -i 's@<!-- Exclude jakarta.activation-api as the implementation contains it -->@<!-- Exclude com.sun.activation:jakarta.activation as we switched to Angus Activation -->@g' 'build-parent/pom.xml'
 update_banned_dependency "build-parent" 'jakarta.activation:jakarta.activation-api' 'com.sun.activation:jakarta.activation'
 
@@ -333,7 +334,6 @@ fi
 # - Infinispan uses the @javax.annotation.Generated annotation in code generation and it's not available
 # - Confluent registry client doesn't have a version supporting Jakarta packages
 sed -i 's@<module>kafka-avro</module>@<!-- <module>kafka-avro</module> -->@g' integration-tests/pom.xml
-sed -i 's@<module>infinispan-client</module>@<!-- <module>infinispan-client</module> -->@g' integration-tests/pom.xml
 
 ./mvnw -B clean install -f integration-tests -DskipTests -DskipITs
 ./mvnw -B clean install -f tcks -DskipTests -DskipITs

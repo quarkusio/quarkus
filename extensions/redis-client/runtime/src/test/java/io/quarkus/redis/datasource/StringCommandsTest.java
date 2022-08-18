@@ -30,7 +30,7 @@ public class StringCommandsTest extends DatasourceTestBase {
 
     @BeforeEach
     void initialize() {
-        ds = new BlockingRedisDataSourceImpl(redis, api, Duration.ofSeconds(1));
+        ds = new BlockingRedisDataSourceImpl(vertx, redis, api, Duration.ofSeconds(1));
 
         strings = ds.string(String.class);
     }

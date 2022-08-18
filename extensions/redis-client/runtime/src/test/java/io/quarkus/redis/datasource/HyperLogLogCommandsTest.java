@@ -22,7 +22,7 @@ public class HyperLogLogCommandsTest extends DatasourceTestBase {
 
     @BeforeEach
     void initialize() {
-        ds = new BlockingRedisDataSourceImpl(redis, api, Duration.ofSeconds(1));
+        ds = new BlockingRedisDataSourceImpl(vertx, redis, api, Duration.ofSeconds(1));
         hll = ds.hyperloglog(Person.class);
     }
 

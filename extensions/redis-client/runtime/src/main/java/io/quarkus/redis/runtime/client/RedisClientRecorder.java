@@ -33,14 +33,15 @@ public class RedisClientRecorder {
     private final RedisConfig config;
     private static final Map<String, RedisClientAndApi> clients = new HashMap<>();
     private static final Map<String, ReactiveRedisDataSourceImpl> dataSources = new HashMap<>();
+    private Vertx vertx;
 
     public RedisClientRecorder(RedisConfig rc) {
         this.config = rc;
     }
 
     public void initialize(RuntimeValue<io.vertx.core.Vertx> vertx, Set<String> names) {
-        Vertx v = Vertx.newInstance(vertx.getValue());
-        _initialize(v, names);
+        this.vertx = Vertx.newInstance(vertx.getValue());
+        _initialize(this.vertx, names);
     }
 
     private void closeAllClients() {
@@ -138,7 +139,7 @@ public class RedisClientRecorder {
                     RedisClientAndApi redisClientAndApi = clients.get(name);
                     Redis redis = redisClientAndApi.redis;
                     RedisAPI api = redisClientAndApi.api;
-                    return new ReactiveRedisDataSourceImpl(redis, api);
+                    return new ReactiveRedisDataSourceImpl(vertx, redis, api);
                 });
             }
         };

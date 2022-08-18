@@ -27,7 +27,7 @@ public class BitMapCommandsTest extends DatasourceTestBase {
 
     @BeforeEach
     void initialize() {
-        ds = new BlockingRedisDataSourceImpl(redis, api, Duration.ofSeconds(1));
+        ds = new BlockingRedisDataSourceImpl(vertx, redis, api, Duration.ofSeconds(1));
         bitmap = ds.bitmap();
     }
 

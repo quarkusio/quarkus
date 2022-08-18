@@ -424,10 +424,11 @@ we are able to propagate the span into the Kafka Record with:
 
 [source,java]
 ----
-Metadata.of(TracingMetadata.withPrevious(Context.current()));
+TracingMetadata tm = TracingMetadata.withPrevious(Context.current();
+Message out = Message.of(...).withMetadata(tm);
 ----
 
-The above creates a `Metadata` object we can add to the `Message` being produced,
+The above creates a `TracingMetadata` object we can add to the `Message` being produced,
 which retrieves the OpenTelemetry `Context` to extract the current span for propagation.
 
 [[configuration-reference]]

@@ -544,7 +544,7 @@ recipeList:
       newValue: 6.0.0-RC4
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-graphql.version
-      newValue: 2.0.0.RC8
+      newValue: 2.0.0.RC9
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-health.version
       newValue: 4.0.0
@@ -582,10 +582,10 @@ recipeList:
       newValue: 4.0.1
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-metrics.version
-      newValue: 4.0.0-RC1
+      newValue: 4.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-open-api.version
-      newValue: 3.0.0-RC4
+      newValue: 3.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-opentracing-api.version
       newValue: 3.0

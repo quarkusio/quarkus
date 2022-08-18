@@ -224,8 +224,8 @@ public final class Types {
                 default:
                     throw new IllegalArgumentException("Unsupported primitive type: " + type);
             }
-        } else if (Kind.UNRESOLVED_TYPE_VARIABLE.equals(type.kind())) {
-            String identifier = type.asUnresolvedTypeVariable().identifier();
+        } else if (Kind.TYPE_VARIABLE_REFERENCE.equals(type.kind())) {
+            String identifier = type.asTypeVariableReference().identifier();
             TypeVariableInfo recursive = TypeVariableInfo.find(identifier, typeVariableStack);
             if (recursive != null) {
                 ResultHandle typeVariableHandle = creator.newInstance(

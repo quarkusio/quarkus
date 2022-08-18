@@ -125,7 +125,7 @@ class VertxProcessor {
                 AnnotationInstance consumeEvent = annotationStore.getAnnotation(method, CONSUME_EVENT);
                 if (consumeEvent != null) {
                     // Validate method params and return type
-                    List<Type> params = method.parameters();
+                    List<Type> params = method.parameterTypes();
                     if (params.size() == 2) {
                         if (!isMessageHeaders(params.get(0).name())) {
                             // If there are two parameters, the first must be message headers.

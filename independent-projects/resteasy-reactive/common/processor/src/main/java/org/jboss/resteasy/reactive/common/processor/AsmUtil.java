@@ -11,6 +11,7 @@ import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
+import org.jboss.jandex.TypeVariableReference;
 import org.jboss.jandex.UnresolvedTypeVariable;
 import org.jboss.jandex.WildcardType;
 import org.objectweb.asm.MethodVisitor;
@@ -214,6 +215,17 @@ public class AsmUtil {
                     // TODO ???
                 } else {
                     sb.append("T").append(unresolvedTypeVariable.identifier()).append(";");
+                }
+                break;
+            case TYPE_VARIABLE_REFERENCE:
+                TypeVariableReference typeVariableReference = type.asTypeVariableReference();
+                String mappedSignature3 = typeArgMapper.apply(typeVariableReference.identifier());
+                if (mappedSignature3 != null) {
+                    sb.append(mappedSignature3);
+                } else if (erased) {
+                    // TODO ???
+                } else {
+                    sb.append("T").append(typeVariableReference.identifier()).append(";");
                 }
                 break;
             case VOID:

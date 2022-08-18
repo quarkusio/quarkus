@@ -2918,7 +2918,7 @@
                         <kibana-image>${kibana.image}</kibana-image>
                         <keycloak-docker-image>${keycloak.docker.image}</keycloak-docker-image>
 
-                        <jandex-maven-plugin-version>${jandex-maven-plugin.version}</jandex-maven-plugin-version>
+                        <jandex-version>${jandex.version}</jandex-version>
                         <jandex-gradle-plugin-version>${jandex-gradle-plugin.version}</jandex-gradle-plugin-version>
                         <kotlin-version>${kotlin.version}</kotlin-version>
 

@@ -334,7 +334,6 @@ fi
 # - Infinispan uses the @javax.annotation.Generated annotation in code generation and it's not available
 # - Confluent registry client doesn't have a version supporting Jakarta packages
 sed -i 's@<module>kafka-avro</module>@<!-- <module>kafka-avro</module> -->@g' integration-tests/pom.xml
-sed -i 's@<module>infinispan-client</module>@<!-- <module>infinispan-client</module> -->@g' integration-tests/pom.xml
 
 ./mvnw -B clean install -f integration-tests -DskipTests -DskipITs
 ./mvnw -B clean install -f tcks -DskipTests -DskipITs

@@ -1,5 +1,9 @@
 package io.quarkus.maven.dependency;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 abstract class AbstractDependencyBuilder<B extends AbstractDependencyBuilder<B, T>, T> {
 
     String groupId;
@@ -7,8 +11,9 @@ abstract class AbstractDependencyBuilder<B extends AbstractDependencyBuilder<B, 
     String classifier = ArtifactCoords.DEFAULT_CLASSIFIER;
     String type = ArtifactCoords.TYPE_JAR;
     String version;
-    String scope = "compile";
+    String scope = Dependency.SCOPE_COMPILE;
     int flags;
+    Collection<ArtifactKey> exclusions = List.of();
 
     @SuppressWarnings("unchecked")
     public B setCoords(ArtifactCoords coords) {
@@ -122,6 +127,19 @@ abstract class AbstractDependencyBuilder<B extends AbstractDependencyBuilder<B, 
         if ((flags & flag) > 0) {
             flags ^= flag;
         }
+    }
+
+    public B addExclusion(String groupId, String artifactId) {
+        return addExclusion(ArtifactKey.ga(groupId, artifactId));
+    }
+
+    @SuppressWarnings("unchecked")
+    public B addExclusion(ArtifactKey key) {
+        if (exclusions.isEmpty()) {
+            exclusions = new ArrayList<>();
+        }
+        exclusions.add(key);
+        return (B) this;
     }
 
     public String getGroupId() {

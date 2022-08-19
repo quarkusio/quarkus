@@ -1,7 +1,9 @@
 package io.quarkus.grpc.deployment;
 
 import static io.quarkus.deployment.Feature.GRPC_SERVER;
-import static io.quarkus.grpc.deployment.GrpcDotNames.*;
+import static io.quarkus.grpc.deployment.GrpcDotNames.BLOCKING;
+import static io.quarkus.grpc.deployment.GrpcDotNames.NON_BLOCKING;
+import static io.quarkus.grpc.deployment.GrpcDotNames.TRANSACTIONAL;
 import static io.quarkus.grpc.deployment.GrpcInterceptors.MICROMETER_INTERCEPTORS;
 import static java.util.Arrays.asList;
 
@@ -73,12 +75,10 @@ import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import io.quarkus.grpc.runtime.GrpcContainer;
 import io.quarkus.grpc.runtime.GrpcServerRecorder;
 import io.quarkus.grpc.runtime.ServerInterceptorStorage;
-import io.quarkus.grpc.runtime.config.GrpcClientBuildTimeConfig;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerBuildTimeConfig;
 import io.quarkus.grpc.runtime.health.GrpcHealthEndpoint;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
-import io.quarkus.grpc.runtime.stork.GrpcStorkRecorder;
 import io.quarkus.grpc.runtime.supports.context.GrpcDuplicatedContextGrpcInterceptor;
 import io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
@@ -86,6 +86,7 @@ import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
+import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
 
 public class GrpcServerProcessor {
 
@@ -606,6 +607,7 @@ public class GrpcServerProcessor {
             List<BindableServiceBuildItem> bindables,
             List<RecorderBeanInitializedBuildItem> orderEnforcer,
             LaunchModeBuildItem launchModeBuildItem,
+            VertxWebRouterBuildItem routerBuildItem,
             VertxBuildItem vertx) {
 
         // Build the list of blocking methods per service implementation
@@ -618,7 +620,8 @@ public class GrpcServerProcessor {
 
         if (!bindables.isEmpty()
                 || (LaunchMode.current() == LaunchMode.DEVELOPMENT && buildTimeConfig.devMode.forceServerStart)) {
-            recorder.initializeGrpcServer(vertx.getVertx(), config, shutdown, blocking, launchModeBuildItem.getLaunchMode());
+            recorder.initializeGrpcServer(vertx.getVertx(), routerBuildItem.getHttpRouter(),
+                    config, shutdown, blocking, launchModeBuildItem.getLaunchMode());
             return new ServiceStartBuildItem(GRPC_SERVER);
         }
         return null;
@@ -665,12 +668,6 @@ public class GrpcServerProcessor {
     @BuildStep
     ExtensionSslNativeSupportBuildItem extensionSslNativeSupport() {
         return new ExtensionSslNativeSupportBuildItem(GRPC_SERVER);
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void setUpStork(GrpcStorkRecorder storkRecorder, GrpcClientBuildTimeConfig config) {
-        storkRecorder.init(config.storkProactiveConnections);
     }
 
     @BuildStep

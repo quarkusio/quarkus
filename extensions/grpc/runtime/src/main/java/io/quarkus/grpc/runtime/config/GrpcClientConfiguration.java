@@ -13,6 +13,14 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class GrpcClientConfiguration {
 
     public static final String DNS = "dns";
+
+    /**
+     * Use new Vert.x gRPC client support.
+     * By default, we still use previous Java gRPC support.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean useQuarkusGrpcClient;
+
     /**
      * The gRPC service port.
      */
@@ -39,7 +47,7 @@ public class GrpcClientConfiguration {
 
     /**
      * Whether {@code plain-text} should be used instead of {@code TLS}.
-     * Enables by default, except it TLS/SSL is configured. In this case, {@code plain-text} is disabled.
+     * Enabled by default, except if TLS/SSL is configured. In this case, {@code plain-text} is disabled.
      */
     @ConfigItem
     public Optional<Boolean> plainText;

@@ -21,6 +21,7 @@
     <modules>
         <module>common</module>
         <module>h2</module>
+        <module>grpc</module>
         <module>derby</module>
         <module>kubernetes-client</module>
         <module>openshift-client</module>

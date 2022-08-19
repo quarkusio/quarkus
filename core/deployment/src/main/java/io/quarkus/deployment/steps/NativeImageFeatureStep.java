@@ -285,6 +285,9 @@ public class NativeImageFeatureStep {
             // Needed to access LOOKUP_METHOD
             exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.base", "com.oracle.svm.util",
                     GraalVM.Version.VERSION_22_1_0));
+            // Needed to access com.oracle.svm.core.jdk.Resources.registerResource
+            exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk",
+                    GraalVM.Version.VERSION_22_2_0));
 
             ResultHandle resourcesRegistrySingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
                     overallCatch.loadClassFromTCCL("com.oracle.svm.core.configure.ResourcesRegistry"));
@@ -341,6 +344,10 @@ public class NativeImageFeatureStep {
             overallCatch.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class),
                     overallCatch.load(i.serviceDescriptorFile()));
         }
+
+        // Needed to access BUILD_TIME_INITIALIZATION
+        exports.produce(new JPMSExportBuildItem("org.graalvm.sdk", "org.graalvm.nativeimage.impl",
+                GraalVM.Version.VERSION_22_2_0));
 
         if (!resourceBundles.isEmpty()) {
             // Needed to access LOCALIZATION_FEATURE

@@ -5,13 +5,11 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Secure a Quarkus application with Basic authentication
 include::./attributes.adoc[]
-:categories: get-started
-:toc: preamble
 
 Secure your Quarkus application endpoints by combining xref:security-built-in-authentication.adoc#basic-auth[Quarkus built-in basic HTTP authentication] with the JPA identity provider to enable role-based access control (RBAC). 
 The JPA `IdentityProvider` creates a `SecurityIdentity` instance, which is used during user authentication to verify and authorize access requests making your Quarkus application secure.
 
-After you complete this tutorial, you will be ready to apply more advanced security mechanisms in Quarkus, for example, how to use the OpenID Connect (OIDC) authentication mechanism.
+This tutorial prepares you for implementing more advanced security mechanisms in Quarkus, for example, how to use the OpenID Connect (OIDC) authentication mechanism.
 
 == Prerequisites
 
@@ -43,7 +41,7 @@ You can find the solution in the `security-jpa-quickstart` {quickstarts-tree-url
 :sectnums:
 :sectnumlevels: 3
 
-== Create a Maven project with the `security-jpa` extension
+== Create a Maven project
 
 For Quarkus security to be able to map your security source to JPA entities, ensure that the Maven project that is used in this tutorial includes the `security-jpa` extension.
 You can either create a new Maven project with the `security-jpa` extension or you can add the extension to an existing Maven project.

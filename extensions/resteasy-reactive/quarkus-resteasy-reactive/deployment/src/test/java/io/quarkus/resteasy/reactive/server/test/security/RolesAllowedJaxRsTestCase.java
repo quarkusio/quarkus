@@ -29,10 +29,9 @@ public class RolesAllowedJaxRsTestCase {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(RolesAllowedResource.class, UserResource.class, RolesAllowedBlockingResource.class,
-                            SerializationEntity.class, SerializationRolesResource.class,
-                            TestIdentityProvider.class,
-                            TestIdentityController.class,
-                            UnsecuredSubResource.class));
+                            SerializationEntity.class, SerializationRolesResource.class, TestIdentityProvider.class,
+                            TestIdentityController.class, UnsecuredSubResource.class, RolesAllowedService.class,
+                            RolesAllowedServiceResource.class));
 
     @BeforeAll
     public static void setupUsers() {
@@ -59,6 +58,14 @@ public class RolesAllowedJaxRsTestCase {
         RestAssured.given().auth().basic("admin", "admin").get("/user").then().body(is(""));
         RestAssured.given().auth().basic("user", "user").get("/user").then().body(is(""));
         RestAssured.given().auth().preemptive().basic("user", "user").get("/user").then().body(is("user"));
+    }
+
+    @Test
+    public void testNestedRolesAllowed() {
+        // there are 2 different checks in place: user & admin on resource, admin on service
+        RestAssured.given().auth().basic("admin", "admin").get("/roles-service/hello").then().statusCode(200)
+                .body(is(RolesAllowedService.SERVICE_HELLO));
+        RestAssured.given().auth().basic("user", "user").get("/roles-service/hello").then().statusCode(403);
     }
 
     @Test

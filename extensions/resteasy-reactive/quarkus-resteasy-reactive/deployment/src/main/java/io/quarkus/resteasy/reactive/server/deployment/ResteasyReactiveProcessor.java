@@ -143,6 +143,7 @@ import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveInitialiser;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRuntimeRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveServerRuntimeConfig;
+import io.quarkus.resteasy.reactive.server.runtime.StandardSecurityCheckInterceptor;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationCompletionExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationFailedExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationRedirectExceptionMapper;
@@ -1129,6 +1130,17 @@ public class ResteasyReactiveProcessor {
             }
         }
 
+    }
+
+    @BuildStep
+    void registerSecurityInterceptors(Capabilities capabilities,
+            BuildProducer<AdditionalBeanBuildItem> beans) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            // Register interceptors for standard security annotations to prevent repeated security checks
+            beans.produce(new AdditionalBeanBuildItem(StandardSecurityCheckInterceptor.RolesAllowedInterceptor.class,
+                    StandardSecurityCheckInterceptor.AuthenticatedInterceptor.class,
+                    StandardSecurityCheckInterceptor.PermitAllInterceptor.class));
+        }
     }
 
     private <T> T consumeStandardSecurityAnnotations(MethodInfo methodInfo, ClassInfo classInfo, IndexView index,

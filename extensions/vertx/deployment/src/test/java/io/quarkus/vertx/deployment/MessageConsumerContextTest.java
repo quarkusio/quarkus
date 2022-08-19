@@ -84,11 +84,7 @@ public class MessageConsumerContextTest {
                 })
                 .await().atMost(Duration.ofSeconds(3));
 
-        if (Runtime.getRuntime().availableProcessors() > 1) {
-            assertEquals(3, MessageConsumers.MESSAGES.size());
-        } else {
-            assertTrue(MessageConsumers.MESSAGES.size() >= 2);
-        }
+        assertTrue(MessageConsumers.MESSAGES.size() >= 2);
     }
 
     @ApplicationScoped

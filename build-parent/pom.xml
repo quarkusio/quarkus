@@ -122,7 +122,6 @@
         <!-- Note: this version is also set in quarkus-bom but BOMs don't contribute to pluginManagement or properties -->
         <jacoco.version>0.8.8</jacoco.version>
 
-
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <docker-maven-plugin.version>0.40.2</docker-maven-plugin.version>
         <formatter-maven-plugin.version>2.20.0</formatter-maven-plugin.version>

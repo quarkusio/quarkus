@@ -1,0 +1,8 @@
+---
+extends: repetition
+message: "'%s' is repeated!"
+level: error
+source: Quarkus contributor guide
+alpha: true
+tokens:
+  - '[^\s]+'

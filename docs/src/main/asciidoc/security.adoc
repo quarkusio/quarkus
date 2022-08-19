@@ -13,7 +13,7 @@ This document provides a brief overview of Quarkus Security and links to the ind
 
 == Getting Started
 
-Please see the xref:security-getting-started.adoc[Getting Started With Security] guide for a quick walkthrough through Quarkus Security where you can learn how to use xref:security-built-in-authentication.adoc#basic-auth[Basic HTTP Authentication] mechanism and `JPA Identity Provider` to create `SecurityIdentity` and authorize a secure access to the endpoint with `Role Based Access Control`.
+Please see the xref:security-getting-started.adoc[Getting Started With Security] guide for a quick walkthrough through Quarkus Security where you can learn how to use xref:security-basic-auth-concept.adoc[Basic HTTP Authentication] mechanism and `JPA Identity Provider` to create `SecurityIdentity` and authorize a secure access to the endpoint with `Role Based Access Control`.
 
 == Architecture
 
@@ -38,7 +38,7 @@ Quarkus supports several sources to load authentication information from.
 === Basic and Form Authentication Mechanisms
 
 Basic and Form HTTP-based authentication mechanisms are the core authentication mechanisms supported in Quarkus.
-Please see xref:security-built-in-authentication.adoc#basic-auth[Basic HTTP Authentication] and xref:security-built-in-authentication.adoc#form-auth[Form HTTP Authentication] for more information.
+Please see xref:security-basic-auth-concept.adoc[Basic HTTP Authentication] and xref:security-built-in-authentication.adoc#form-auth[Form HTTP Authentication] for more information.
 
 === WebAuthn Authentication Mechanism
 

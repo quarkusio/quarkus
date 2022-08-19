@@ -117,7 +117,8 @@ Start a new line at the end of each sentence, and split sentences themselves at 
 === Abstracts (preamble)
 
 For optimum findability, add a short description using user-oriented keywords to summarize the document's purpose, task, and intent in no more than three sentences.
-Good abstracts also mention the benefits of following this content and avoid filler words, such as: "This document..", "This tutorial..", and "The following.."
+Avoid self-referential expressions and filler words, such as "This document..", "This tutorial..", and "The following.." 
+Mentioning the benefits users gain from reading the content is also helpful.
 
 [IMPORTANT]
 ====

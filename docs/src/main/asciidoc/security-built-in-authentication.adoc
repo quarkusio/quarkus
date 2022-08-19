@@ -9,65 +9,9 @@ include::./attributes.adoc[]
 
 The following section describes the Quarkus built-in authentication mechanisms for HTTP based FORM, BASIC, and Mutual TLS authentication. Proactive authentication is also described.
 
-[[basic-auth]]
-== Basic Authentication
- 
-HTTP Basic Authentication uses fields in the HTTP header and is the easiest to set up. Also, it is one of the least resource-demanding techniques that enforce access controls to the Web resources without requiring HTTP cookies, session identifiers, or login pages.
+include::security-basic-auth-concept.adoc[leveloffset=+1]
 
-In the context of an HTTP request, Basic authentication is a method for an HTTP user agent, such as a web browser, to provide a user name and password when creating a request. In Basic HTTP Authentication, a request contains a header field in the form of `Authorization: Basic <credentials>`, where credentials are the Base64 encoding of a user ID and password joined by a colon as described in the following example.
-
-====
-.Example
- 
-If the user name is `Alice` and the password is `secret`, the HTTP authorization header looks authorization as `Authorization: Basic  QWxjZTpzZWNyZXQ=`, where `QWxjZTpzZWNyZXQ=` is a Base64 encoded representation of the `Alice:secret` string.
-====
- 
-The Basic Authentication mechanism does not provide confidentiality protection for the transmitted credentials. The credentials are merely encoded with Base64 when in transit and not encrypted or hashed in any way. Therefore, Basic Authentication is used with HTTPS to provide confidentiality.
-
-Basic Authentication is a well-specified, simple challenge and response scheme that all web browsers and most web servers understand. However, there are a few limitations associated with Basic Authentication, which include:
-
-Credentials are sent as plain text::
-+
---
-It is required to use HTTPS with Basic Authentication to avoid exposing the credentials. However, if the load balancer terminates HTTPS, the risk of exposing credentials as plain text increases when a request is forwarded to Quarkus over HTTP.
-
-Also, in multi-hop deployments, the credentials can be exposed if HTTPS is used between the client and the first Quarkus endpoint only, and the credentials are propagated to the next Quarkus endpoint over HTTP.
---
-
-Credentials are sent with each request::
-+
---
-In Basic Authentication, a username and password need to be sent with each request, which increases the risk of credentials being exposed.
---
-
-Application complexity increases::
-+
---
-The Quarkus application needs to ensure itself that usernames, passwords, and roles are managed securely, which increases the application complexity.
---
-
-[[enabling-basic-auth]]
-=== Enabling Basic Authentication
- 
-.Prerequisites
- 
-* You have installed at least one extension that provides an `IdentityProvider` based on username and password, such as xref:security-jdbc.adoc[Elytron JDBC].
- 
-.Procedure
- 
-* Enable Basic Authentication by setting the value of `quarkus.http.auth.basic` property to `true`.
-+
-[source,properties]
-----
-quarkus.http.auth.basic=true
-----
- 
-For a Basic Authentication configuration walk-through that uses `JPA`, see the xref:security-getting-started.adoc[Getting Started With Security] guide.
- 
-.Additional resources
- 
-* xref:security.adoc#identity-providers[Security Identity Providers]
-* xref:security-testing.adoc#configuring-user-information[Configuring User Information in application.properties]
+include::security-enabling-basic-auth-howto.adoc[leveloffset=+2]
 
 
 [[form-auth]]

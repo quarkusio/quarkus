@@ -169,6 +169,12 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                     }
                     if (aborted) {
                         return;
+                    } else if (suspended) {
+                        log.error("Uncaught exception thrown when the request context is suspended. " +
+                                " Resuming the request to unlock processing the error." +
+                                " This may not be appropriate in your situation, please resume the request context when this exception is thrown. ",
+                                t);
+                        resume(t);
                     }
                 }
             }

@@ -187,7 +187,7 @@ public class DecoratorGenerator extends BeanGenerator {
             // A decorated type can declare type parameters
             // For example Converter<String> should result in a T -> String mapping
             List<TypeVariable> typeParameters = decoratedTypeClass.typeParameters();
-            Map<TypeVariable, org.jboss.jandex.Type> resolvedTypeParameters = Collections.emptyMap();
+            Map<String, org.jboss.jandex.Type> resolvedTypeParameters = Collections.emptyMap();
             if (!typeParameters.isEmpty()) {
                 resolvedTypeParameters = new HashMap<>();
                 // The delegate type can be used to infer the parameter types
@@ -195,7 +195,7 @@ public class DecoratorGenerator extends BeanGenerator {
                 if (type.kind() == Kind.PARAMETERIZED_TYPE) {
                     List<org.jboss.jandex.Type> typeArguments = type.asParameterizedType().arguments();
                     for (int i = 0; i < typeParameters.size(); i++) {
-                        resolvedTypeParameters.put(typeParameters.get(i), typeArguments.get(i));
+                        resolvedTypeParameters.put(typeParameters.get(i).identifier(), typeArguments.get(i));
                     }
                 }
             }

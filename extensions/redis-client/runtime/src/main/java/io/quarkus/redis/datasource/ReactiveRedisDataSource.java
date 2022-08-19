@@ -1,5 +1,6 @@
 package io.quarkus.redis.datasource;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
@@ -12,6 +13,7 @@ import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveSortedSetCommands;
 import io.quarkus.redis.datasource.string.ReactiveStringCommands;
+import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
@@ -45,9 +47,9 @@ public interface ReactiveRedisDataSource {
      * Retrieves a {@link RedisDataSource} enqueuing commands in a Redis Transaction ({@code MULTI}).
      * Note that transaction acquires a single connection, and all the commands are enqueued in this connection.
      * The commands are only executed when the passed block emits the {@code null} item.
-     *
+     * <p>
      * The results of the commands are retrieved using the produced {@link TransactionResult}.
-     *
+     * <p>
      * The user can discard a transaction using the {@link TransactionalRedisDataSource#discard()} method.
      * In this case, the produced {@link TransactionResult} will be empty.
      *
@@ -60,9 +62,9 @@ public interface ReactiveRedisDataSource {
      * Retrieves a {@link RedisDataSource} enqueuing commands in a Redis Transaction ({@code MULTI}).
      * Note that transaction acquires a single connection, and all the commands are enqueued in this connection.
      * The commands are only executed when the passed block emits the {@code null} item.
-     *
+     * <p>
      * The results of the commands are retrieved using the produced {@link TransactionResult}.
-     *
+     * <p>
      * The user can discard a transaction using the {@link TransactionalRedisDataSource#discard()} method.
      * In this case, the produced {@link TransactionResult} will be empty.
      *
@@ -72,6 +74,46 @@ public interface ReactiveRedisDataSource {
      *        the completion of the transaction, the transaction is discarded.
      */
     Uni<TransactionResult> withTransaction(Function<ReactiveTransactionalRedisDataSource, Uni<Void>> tx, String... watchedKeys);
+
+    /**
+     * Retrieves a {@link RedisDataSource} enqueuing commands in a Redis Transaction ({@code MULTI}).
+     * Note that transaction acquires a single connection, and all the commands are enqueued in this connection.
+     * The commands are only executed when the passed block emits the {@code null} item.
+     * <p>
+     * This variant also allows executing code before the transaction gets started but after the key being watched:
+     *
+     * <pre>
+     *     WATCH key
+     *     // preTxBlock
+     *     element = ZRANGE k 0 0
+     *     // TxBlock
+     *     MULTI
+     *        ZREM k element
+     *     EXEC
+     * </pre>
+     * <p>
+     * The {@code preTxBlock} returns a {@link Uni Uni&lt;I&gt;}. The produced value is received by the {@code tx} block,
+     * which can use that value to execute the appropriate operation in the transaction. The produced value can also be
+     * retrieved from the produced {@link OptimisticLockingTransactionResult}. Commands issued in the {@code preTxBlock }
+     * must used the passed (single-connection) {@link ReactiveRedisDataSource} instance.
+     * <p>
+     * If the {@code preTxBlock} throws an exception or emits a failure, the transaction is not executed, and the returned
+     * {@link OptimisticLockingTransactionResult} is empty.
+     * <p>
+     * This construct allows implementing operation relying on optimistic locking.
+     * The results of the commands are retrieved using the produced {@link OptimisticLockingTransactionResult}.
+     * <p>
+     * The user can discard a transaction using the {@link TransactionalRedisDataSource#discard()} method.
+     * In this case, the produced {@link OptimisticLockingTransactionResult} will be empty.
+     *
+     * @param tx the consumer receiving the transactional redis data source. The enqueued commands are only executed
+     *        at the end of the block.
+     * @param watchedKeys the keys to watch during the execution of the transaction. If one of these key is modified before
+     *        the completion of the transaction, the transaction is discarded.
+     */
+    <I> Uni<OptimisticLockingTransactionResult<I>> withTransaction(Function<ReactiveRedisDataSource, Uni<I>> preTxBlock,
+            BiFunction<I, ReactiveTransactionalRedisDataSource, Uni<Void>> tx,
+            String... watchedKeys);
 
     /**
      * Execute the command <a href="https://redis.io/commands/select">SELECT</a>.

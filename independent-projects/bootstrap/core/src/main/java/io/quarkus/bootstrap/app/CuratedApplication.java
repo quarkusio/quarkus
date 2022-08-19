@@ -401,6 +401,14 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         return builder.build();
     }
 
+    public boolean isReloadableArtifact(ArtifactKey key) {
+        return this.configuredClassLoading.isReloadableArtifact(key);
+    }
+
+    public boolean hasReloadableArtifacts() {
+        return this.configuredClassLoading.hasReloadableArtifacts();
+    }
+
     @Override
     public void close() {
         if (augmentClassLoader != null) {

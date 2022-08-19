@@ -7,14 +7,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.function.Supplier;
 
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.AfterEach;
 
+import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
@@ -60,7 +61,7 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
         //of physical memory as they will consume way more than what they need instead of
         //just running GC
         args.add("-Djvm.args=-Xmx128m");
-        running.execute(args, Collections.emptyMap());
+        running.execute(args, Map.of());
     }
 
     protected void runAndCheck(String... options) throws FileNotFoundException, MavenInvocationException {
@@ -85,9 +86,22 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
         running = new RunningInvoker(testDir, false);
         final Properties mvnRunProps = new Properties();
         mvnRunProps.setProperty("debug", "false");
-        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap(), mvnRunProps);
+        running.execute(Arrays.asList("compile", "quarkus:dev"), Map.of(), mvnRunProps);
 
         DevModeTestUtils.getHttpErrorResponse();
+    }
+
+    protected void install(final File baseDir, final boolean performClean) throws Exception {
+        final MavenProcessInvocationResult result = new RunningInvoker(baseDir, false)
+                .execute(performClean ? List.of("clean", "install") : List.of("install"), Map.of());
+        final Process process = result.getProcess();
+        if (process == null) {
+            if (result.getExecutionException() == null) {
+                throw new IllegalStateException("Failed to build project");
+            }
+            throw result.getExecutionException();
+        }
+        process.waitFor();
     }
 
     public String getHttpErrorResponse() {

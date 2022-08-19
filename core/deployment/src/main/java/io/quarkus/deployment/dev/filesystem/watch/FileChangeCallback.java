@@ -1,4 +1,4 @@
-package io.quarkus.deployment.dev.filewatch;
+package io.quarkus.deployment.dev.filesystem.watch;
 
 import java.util.Collection;
 

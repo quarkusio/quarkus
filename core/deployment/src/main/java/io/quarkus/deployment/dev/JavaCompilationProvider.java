@@ -3,30 +3,35 @@ package io.quarkus.deployment.dev;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
-import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 
+import io.quarkus.deployment.dev.filesystem.QuarkusFileManager;
+import io.quarkus.deployment.dev.filesystem.ReloadableFileManager;
+import io.quarkus.deployment.dev.filesystem.StaticFileManager;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.paths.PathCollection;
 
 public class JavaCompilationProvider implements CompilationProvider {
 
-    private static final Logger log = Logger.getLogger(JavaCompilationProvider.class);
+    private static final Logger LOG = Logger.getLogger(JavaCompilationProvider.class);
 
     // -g is used to make the java compiler generate all debugging info
     // -parameters is used to generate metadata for reflection on method parameters
@@ -34,13 +39,15 @@ public class JavaCompilationProvider implements CompilationProvider {
     private static final Set<String> COMPILER_OPTIONS = Set.of("-g", "-parameters");
     private static final Set<String> IGNORE_NAMESPACES = Set.of("org.osgi");
 
-    JavaCompiler compiler;
-    StandardJavaFileManager fileManager;
-    DiagnosticCollector<JavaFileObject> fileManagerDiagnostics;
+    private static final String PROVIDER_KEY = "java";
+
+    private JavaCompiler compiler;
+    private List<String> compilerFlags;
+    private QuarkusFileManager fileManager;
 
     @Override
     public String getProviderKey() {
-        return "java";
+        return PROVIDER_KEY;
     }
 
     @Override
@@ -49,57 +56,64 @@ public class JavaCompilationProvider implements CompilationProvider {
     }
 
     @Override
-    public void compile(Set<File> filesToCompile, Context context) {
-        JavaCompiler compiler = this.compiler;
-        if (compiler == null) {
-            compiler = this.compiler = ToolProvider.getSystemJavaCompiler();
+    public void compile(Set<File> filesToCompile, CompilationProvider.Context context) {
+        if (this.compiler == null) {
+            this.compiler = ToolProvider.getSystemJavaCompiler();
+            this.compilerFlags = new CompilerFlags(COMPILER_OPTIONS,
+                    context.getCompilerOptions(PROVIDER_KEY),
+                    context.getReleaseJavaVersion(),
+                    context.getSourceJavaVersion(),
+                    context.getTargetJvmVersion()).toList();
         }
+
+        final JavaCompiler compiler = this.compiler;
+
         if (compiler == null) {
             throw new RuntimeException("No system java compiler provided");
         }
-        try {
-            if (fileManager == null) {
-                fileManager = compiler.getStandardFileManager(fileManagerDiagnostics = new DiagnosticCollector<>(), null,
-                        context.getSourceEncoding());
+
+        final QuarkusFileManager.Context sourcesContext = new QuarkusFileManager.Context(
+                context.getClasspath(), context.getReloadableClasspath(),
+                context.getOutputDirectory(), context.getSourceEncoding());
+
+        if (this.fileManager == null) {
+            final Supplier<StandardJavaFileManager> supplier = () -> {
+                final Charset charset = context.getSourceEncoding();
+                return compiler.getStandardFileManager(null, null, charset);
+            };
+
+            if (context.getReloadableClasspath().isEmpty()) {
+                this.fileManager = new StaticFileManager(supplier, sourcesContext);
+            } else {
+                this.fileManager = new ReloadableFileManager(supplier, sourcesContext);
             }
+        } else {
+            this.fileManager.reset(sourcesContext);
+        }
 
-            DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-            fileManager.setLocation(StandardLocation.CLASS_PATH, context.getClasspath());
-            fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(context.getOutputDirectory()));
+        final DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<>();
 
-            CompilerFlags compilerFlags = new CompilerFlags(COMPILER_OPTIONS, context.getCompilerOptions(getProviderKey()),
-                    context.getReleaseJavaVersion(), context.getSourceJavaVersion(), context.getTargetJvmVersion());
+        final Iterable<? extends JavaFileObject> sources = this.fileManager.getJavaSources(filesToCompile);
+        final JavaCompiler.CompilationTask task = this.compiler.getTask(null, this.fileManager,
+                diagnosticsCollector, this.compilerFlags, null, sources);
 
-            Iterable<? extends JavaFileObject> sources = fileManager.getJavaFileObjectsFromFiles(filesToCompile);
-            JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics,
-                    compilerFlags.toList(), null, sources);
+        final boolean compilationTaskSucceed = task.call();
 
-            if (!task.call()) {
-                StringBuilder sb = new StringBuilder("\u001B[91mCompilation Failed:");
-                for (Diagnostic<? extends JavaFileObject> i : diagnostics.getDiagnostics()) {
-                    sb.append("\n");
-                    sb.append(i.toString());
-                }
-                sb.append("\u001b[0m");
-                throw new RuntimeException(sb.toString());
-            }
+        if (LOG.isEnabled(Logger.Level.ERROR) || LOG.isEnabled(Logger.Level.WARN)) {
+            collectDiagnostics(diagnosticsCollector, (level, diagnostic) -> LOG.logf(level, "%s, line %d in %s",
+                    diagnostic.getMessage(null), diagnostic.getLineNumber(),
+                    diagnostic.getSource() == null ? "[unknown source]" : diagnostic.getSource().getName()));
+        }
 
-            logDiagnostics(diagnostics);
-
-            if (!fileManagerDiagnostics.getDiagnostics().isEmpty()) {
-                logDiagnostics(fileManagerDiagnostics);
-                fileManager.close();
-                fileManagerDiagnostics = null;
-                fileManager = null;
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Cannot close file manager", e);
+        if (!compilationTaskSucceed) {
+            final String errorMessage = extractCompilationErrorMessage(diagnosticsCollector);
+            throw new RuntimeException(errorMessage);
         }
     }
 
     @Override
     public Path getSourcePath(Path classFilePath, PathCollection sourcePaths, String classesPath) {
-        Path sourceFilePath = null;
+        Path sourceFilePath;
         final RuntimeUpdatesClassVisitor visitor = new RuntimeUpdatesClassVisitor(sourcePaths, classesPath);
         try (final InputStream inputStream = Files.newInputStream(classFilePath)) {
             final ClassReader reader = new ClassReader(inputStream);
@@ -113,36 +127,31 @@ public class JavaCompilationProvider implements CompilationProvider {
 
     @Override
     public void close() throws IOException {
-        if (fileManager != null) {
-            fileManager.close();
-            fileManager = null;
-            fileManagerDiagnostics = null;
+        if (this.fileManager != null) {
+            this.fileManager.close();
+            this.fileManager = null;
         }
     }
 
-    private void logDiagnostics(final DiagnosticCollector<JavaFileObject> diagnostics) {
-        for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics()) {
+    private void collectDiagnostics(final DiagnosticCollector<JavaFileObject> diagnosticsCollector,
+            final BiConsumer<Logger.Level, Diagnostic<? extends JavaFileObject>> callback) {
+        for (Diagnostic<? extends JavaFileObject> diagnostic : diagnosticsCollector.getDiagnostics()) {
             Logger.Level level = diagnostic.getKind() == Diagnostic.Kind.ERROR ? Logger.Level.ERROR : Logger.Level.WARN;
-            String message = diagnostic.getMessage(null);
-            if (level.equals(Logger.Level.WARN) && ignoreWarningForNamespace(message)) {
+            if (level.equals(Logger.Level.WARN) && IGNORE_NAMESPACES.stream()
+                    .anyMatch(diagnostic.getMessage(null)::contains)) {
                 continue;
             }
-
-            log.logf(level, "%s, line %d in %s", message, diagnostic.getLineNumber(),
-                    diagnostic.getSource() == null ? "[unknown source]" : diagnostic.getSource().getName());
+            callback.accept(level, diagnostic);
         }
     }
 
-    private static boolean ignoreWarningForNamespace(String message) {
-        for (String ignoreNamespace : IGNORE_NAMESPACES) {
-            if (message.contains(ignoreNamespace)) {
-                return true;
-            }
-        }
-        return false;
+    private String extractCompilationErrorMessage(final DiagnosticCollector<JavaFileObject> diagnosticsCollector) {
+        StringBuilder builder = new StringBuilder();
+        diagnosticsCollector.getDiagnostics().forEach(diagnostic -> builder.append("\n").append(diagnostic));
+        return String.format("\u001B[91mCompilation Failed:%s\u001b[0m", builder);
     }
 
-    static class RuntimeUpdatesClassVisitor extends ClassVisitor {
+    private static class RuntimeUpdatesClassVisitor extends ClassVisitor {
         private final PathCollection sourcePaths;
         private final String classesPath;
         private String sourceFile;
@@ -170,9 +179,7 @@ public class JavaCompilationProvider implements CompilationProvider {
                     return sourceFilePath;
                 }
             }
-
             return null;
         }
     }
-
 }

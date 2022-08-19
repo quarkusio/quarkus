@@ -27,9 +27,8 @@ public class ScalaCompilationProvider implements CompilationProvider {
     @Override
     public void compile(Set<File> files, Context context) {
         Settings settings = new Settings();
-        context.getClasspath().stream()
-                .map(File::getAbsolutePath)
-                .forEach(f -> settings.classpath().append(f));
+        context.getClasspath().forEach(file -> settings.classpath().append(file.getAbsolutePath()));
+        context.getReloadableClasspath().forEach(file -> settings.classpath().append(file.getAbsolutePath()));
         settings.outputDirs().add(context.getSourceDirectory().getAbsolutePath(),
                 context.getOutputDirectory().getAbsolutePath());
         try (Global g = new Global(settings)) {

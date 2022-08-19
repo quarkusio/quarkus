@@ -39,6 +39,7 @@ public interface CompilationProvider extends Closeable {
 
         private final String name;
         private final Set<File> classpath;
+        private final Set<File> reloadableClasspath;
         private final File projectDirectory;
         private final File sourceDirectory;
         private final File outputDirectory;
@@ -53,6 +54,7 @@ public interface CompilationProvider extends Closeable {
         public Context(
                 String name,
                 Set<File> classpath,
+                Set<File> reloadableClasspath,
                 File projectDirectory,
                 File sourceDirectory,
                 File outputDirectory,
@@ -65,6 +67,7 @@ public interface CompilationProvider extends Closeable {
                 List<String> compilerPluginOptions) {
             this.name = name;
             this.classpath = classpath;
+            this.reloadableClasspath = reloadableClasspath;
             this.projectDirectory = projectDirectory;
             this.sourceDirectory = sourceDirectory;
             this.outputDirectory = outputDirectory;
@@ -83,6 +86,10 @@ public interface CompilationProvider extends Closeable {
 
         public Set<File> getClasspath() {
             return classpath;
+        }
+
+        public Set<File> getReloadableClasspath() {
+            return reloadableClasspath;
         }
 
         public File getProjectDirectory() {

@@ -3,7 +3,9 @@ package io.quarkus.redis.runtime.datasource;
 import static io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl.toTransactionResult;
 
 import java.time.Duration;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
@@ -17,6 +19,7 @@ import io.quarkus.redis.datasource.pubsub.PubSubCommands;
 import io.quarkus.redis.datasource.set.SetCommands;
 import io.quarkus.redis.datasource.sortedset.SortedSetCommands;
 import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 import io.vertx.mutiny.redis.client.Command;
@@ -62,7 +65,6 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
             } else {
                 return toTransactionResult(null, th);
             }
-
         } finally {
             connection.closeAndAwait();
         }
@@ -91,6 +93,40 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
                 return toTransactionResult(response, th);
             } else {
                 return toTransactionResult(null, th);
+            }
+
+        } finally {
+            connection.closeAndAwait();
+        }
+    }
+
+    @Override
+    public <I> OptimisticLockingTransactionResult<I> withTransaction(Function<RedisDataSource, I> preTxBlock,
+            BiConsumer<I, TransactionalRedisDataSource> tx, String... watchedKeys) {
+        RedisConnection connection = reactive.redis.connect().await().atMost(timeout);
+        ReactiveRedisDataSourceImpl dataSource = new ReactiveRedisDataSourceImpl(reactive.redis, connection);
+        TransactionHolder th = new TransactionHolder();
+        BlockingTransactionalRedisDataSourceImpl source = new BlockingTransactionalRedisDataSourceImpl(
+                new ReactiveTransactionalRedisDataSourceImpl(dataSource, th), timeout);
+
+        try {
+            Request cmd = Request.cmd(Command.WATCH);
+            for (String watchedKey : watchedKeys) {
+                cmd.arg(watchedKey);
+            }
+            connection.send(cmd).await().atMost(timeout);
+
+            I input = preTxBlock.apply(new BlockingRedisDataSourceImpl(reactive.redis, connection, timeout));
+
+            connection.send(Request.cmd(Command.MULTI)).await().atMost(timeout);
+
+            tx.accept(input, source);
+            if (!source.discarded()) {
+                Response response = connection.send(Request.cmd(Command.EXEC)).await().atMost(timeout);
+                // exec produce null is the transaction has been discarded
+                return toTransactionResult(response, input, th);
+            } else {
+                return toTransactionResult(null, input, th);
             }
 
         } finally {

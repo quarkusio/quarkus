@@ -114,7 +114,7 @@ If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an i
 We will expose `Fruit` instances over HTTP in the JSON format.
 Consequently, you also need to add the `quarkus-resteasy-reactive-jackson` extension:
 
-:add-extension-extensions: resteasy-jackson
+:add-extension-extensions: resteasy-reactive-jackson
 include::{includes}/devtools/extension-add.adoc[]
 
 If you prefer not to use the command line, manually add the dependency to your build file:

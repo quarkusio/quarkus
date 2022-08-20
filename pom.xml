@@ -150,8 +150,8 @@
         <extensions>
             <extension>
                 <groupId>io.quarkus.bot</groupId>
-                <artifactId>build-reporting-maven-extension</artifactId>
-                <version>1.0.5</version>
+                <artifactId>build-reporter-maven-extension</artifactId>
+                <version>2.2.0</version>
             </extension>
         </extensions>
     </build>

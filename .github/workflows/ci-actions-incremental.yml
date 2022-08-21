@@ -781,3 +781,24 @@ jobs:
             target/build-report.json
             LICENSE.txt
           retention-days: 2
+
+  build-report:
+    runs-on: ubuntu-latest
+    name: Build report
+    needs: [build-jdk11,jvm-tests,maven-tests,gradle-tests,devtools-tests,quickstarts-tests,tcks-test,native-tests]
+    if: always()
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          path: build-reports-artifacts
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Produce report and add it as job summary
+        uses: quarkusio/action-build-reporter@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          build-reports-artifacts-path: build-reports-artifacts
+          forks-only: true

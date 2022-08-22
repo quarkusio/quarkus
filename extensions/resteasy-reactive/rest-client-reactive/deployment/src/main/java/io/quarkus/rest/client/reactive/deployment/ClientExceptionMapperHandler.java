@@ -54,8 +54,11 @@ class ClientExceptionMapperHandler {
         MethodInfo targetMethod = null;
         boolean isValid = false;
         if (instance.target().kind() == AnnotationTarget.Kind.METHOD) {
-            if ((instance.target().asMethod().flags() & Modifier.STATIC) != 0) {
-                targetMethod = instance.target().asMethod();
+            targetMethod = instance.target().asMethod();
+            if (ignoreAnnotation(targetMethod)) {
+                return null;
+            }
+            if ((targetMethod.flags() & Modifier.STATIC) != 0) {
                 String returnTypeClassName = targetMethod.returnType().name().toString();
                 try {
                     boolean returnsRuntimeException = RuntimeException.class.isAssignableFrom(
@@ -112,6 +115,12 @@ class ClientExceptionMapperHandler {
         }
 
         return new Result(restClientInterfaceClassInfo.name().toString(), generatedClassName, priority);
+    }
+
+    private static boolean ignoreAnnotation(MethodInfo methodInfo) {
+        // ignore the annotation if it's placed on a Kotlin companion class
+        // this is not a problem since the Kotlin compiler will also place the annotation the static method interface method
+        return methodInfo.declaringClass().name().toString().contains("$Companion");
     }
 
     static class Result {

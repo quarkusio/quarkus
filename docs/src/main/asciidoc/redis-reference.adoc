@@ -573,6 +573,55 @@ TransactionResult result = ds.withTransaction(tx -> {
 
 IMPORTANT: You cannot use the pub/sub feature from within a transaction.
 
+==== Using optimistic locking
+
+To use optimistic locking, you need to use a variant of the `withTransaction` method, allowing the execution of code before the transaction starts.
+In other words, it will be executed as follows:
+
+[source]
+----
+WATCH key
+
+// Pre-transaction block
+// ....
+// Produce a result
+
+MULTI
+  // In transaction code, receive the result produced by the pre-transaction block.
+EXEC
+----
+
+For example, if you need to update a value in a hash only if the field exists, you will use the following API:
+
+[source, java]
+----
+OptimisticLockingTransactionResult<Boolean> result = blocking.withTransaction(ds -> {
+    // The pre-transaction block:
+    HashCommands<String, String, String> hashCommands = ds.hash(String.class);
+    return hashCommands.hexists(key, "field"); // Produce a result (boolean in this case)
+},
+ (exists, tx) -> { // The transactional block, receives the result and the transactional data source
+        if (exists) {
+            tx.hash(String.class).hset(key, "field", "new value");
+        } else {
+            tx.discard();
+        }
+ },
+  key); // The watched key
+----
+
+If one of the watched keys is touched before or during the execution of the pre-transaction or transactional blocks, the transaction is aborted.
+The pre-transactional block produces a result that the transactional block can use.
+This construct is necessary because, within a transaction, the commands do not produce a result.
+Results can only be retrieved after the execution of the transaction.
+
+The pre-transaction and transactional blocks are invoked on the same Redis connection.
+Consequently, the pre-transaction block must use the passed data source to execute commands.
+Thus, the commands are emitted from that connection.
+These commands must not modify the watched keys.
+
+The transaction is aborted if the pre-transaction block throws an exception (or produces a failure when using the reactive API).
+
 ==== Executing custom commands
 
 To execute a custom command, or a command not supported by the API, use the following approach:

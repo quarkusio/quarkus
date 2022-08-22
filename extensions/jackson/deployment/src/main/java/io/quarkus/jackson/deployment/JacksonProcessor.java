@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -67,6 +68,8 @@ public class JacksonProcessor {
     private static final DotName JSON_SERIALIZE = DotName.createSimple(JsonSerialize.class.getName());
 
     private static final DotName JSON_AUTO_DETECT = DotName.createSimple(JsonAutoDetect.class.getName());
+
+    private static final DotName JSON_TYPE_ID_RESOLVER = DotName.createSimple(JsonTypeIdResolver.class.getName());
 
     private static final DotName JSON_CREATOR = DotName.createSimple("com.fasterxml.jackson.annotation.JsonCreator");
 
@@ -185,10 +188,25 @@ public class JacksonProcessor {
         }
 
         for (AnnotationInstance creatorInstance : index.getAnnotations(JSON_AUTO_DETECT)) {
-            if (creatorInstance.target().kind().equals(CLASS)) {
+            if (creatorInstance.target().kind() == CLASS) {
                 reflectiveClass
                         .produce(
                                 new ReflectiveClassBuildItem(true, true, creatorInstance.target().asClass().name().toString()));
+            }
+        }
+
+        // Register @JsonTypeIdResolver implementations for reflection.
+        // Note: @JsonTypeIdResolver is, simply speaking, the "dynamic version" of @JsonSubTypes, i.e. sub-types are
+        // dynamically identified by Jackson's `TypeIdResolver.typeFromId()`, which returns sub-types of the annotated
+        // class. Means: the referenced `TypeIdResolver` _and_ all sub-types of the annotated class must be registered
+        // for reflection.
+        for (AnnotationInstance resolverInstance : index.getAnnotations(JSON_TYPE_ID_RESOLVER)) {
+            AnnotationValue value = resolverInstance.value("value");
+            if (value != null) {
+                // Add the type-id-resolver class
+                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, value.asClass().name().toString()));
+                // Add the whole hierarchy of the annotated class
+                addReflectiveHierarchyClass(resolverInstance.target().asClass().name(), reflectiveHierarchyClass);
             }
         }
 

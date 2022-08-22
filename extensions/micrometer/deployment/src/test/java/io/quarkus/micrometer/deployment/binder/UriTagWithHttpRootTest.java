@@ -84,7 +84,7 @@ public class UriTagWithHttpRootTest {
                 Util.foundServerRequests(registry, "/pong/{message} should be returned by JAX-RS."));
 
         // URI for outbound client request: /foo/pong/{message}
-        Assertions.assertEquals(1, registry.find("http.client.requests").tag("uri", "/foo/pong/{message}").timers().size(),
+        Assertions.assertEquals(1, registry.find("http.client.requests").tag("uri", "/pong/{message}").timers().size(),
                 Util.foundClientRequests(registry, "/foo/pong/{message} should be returned by Rest client."));
     }
 
@@ -95,12 +95,12 @@ public class UriTagWithHttpRootTest {
         @RegisterRestClient(configKey = "pingpong")
         public interface PingPongRestClient {
 
-            @Path("/foo/pong/{message}")
+            @Path("/pong/{message}")
             @GET
             String pingpong(@PathParam("message") String message);
 
             @GET
-            @Path("/foo/pong/{message}")
+            @Path("/pong/{message}")
             CompletionStage<String> asyncPingPong(@PathParam("message") String message);
         }
 

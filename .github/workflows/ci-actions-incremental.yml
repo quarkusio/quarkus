@@ -786,7 +786,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build report
     needs: [build-jdk11,jvm-tests,maven-tests,gradle-tests,devtools-tests,quickstarts-tests,tcks-test,native-tests]
-    if: always()
+    if: always() && github.repository != 'quarkusio/quarkus'
     steps:
       - uses: actions/download-artifact@v3
         with:

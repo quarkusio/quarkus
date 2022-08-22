@@ -28,4 +28,12 @@ open class BasicTest {
         Assertions.assertThat(response.asString()).isEqualTo("OK")
     }
 
+    @Test
+    fun callNotFoundCountries() {
+        val response = RestAssured.with()
+            .body(country)
+            .post("/call-not-found-countries")
+        Assertions.assertThat(response.statusCode).isEqualTo(204)
+    }
+
 }

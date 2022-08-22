@@ -42,6 +42,8 @@ public class WriterInterceptorContextImpl extends AbstractInterceptorContext
     @Override
     public void proceed() throws IOException, WebApplicationException {
         Response response = context.getResponse().get();
+        // this is needed in order to avoid having the headers written out twice
+        context.serverResponse().setPreCommitListener(null);
         if (index == interceptors.length) {
             MessageBodyWriter effectiveWriter = writer;
             if (rediscoveryNeeded) {

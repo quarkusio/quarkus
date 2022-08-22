@@ -3,70 +3,68 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Getting Started with Quarkus Security
-
+= Secure a Quarkus application with Basic authentication
 include::./attributes.adoc[]
 
-This guide demonstartes how you can quickly create a secure Quarkus application by using xref:security-built-in-authentication.adoc#basic-auth[Basic AuthenticationMechanism] and `JPA IdentityProvider` to create `SecurityIdentity` which is authorized by the `Role Based Access Control` (RBAC) layer before the access to application is permitted.
+Secure your Quarkus application endpoints by combining xref:security-built-in-authentication.adoc#basic-auth[Quarkus built-in basic HTTP authentication] with the JPA identity provider to enable role-based access control (RBAC). 
+The JPA `IdentityProvider` creates a `SecurityIdentity` instance, which is used during user authentication to verify and authorize access requests making your Quarkus application secure.
 
-[NOTE]
-====
-Using `Basic AuthenticationMechanism` with `JPA IdentityProvider` is better than configuring the users and roles in `application.properties` therefore this guide recommends to combine `Basic AuthenticationMechanism` and `JPA IdentityProvider`. We will update this recommendation to use a reactive equivalent of the `JPA IdentityProvider` as soon as it is introduced.
-====
-
-This guide will conclude with recommending how to learn more about Quarkus Security, and in particular about its `OpenId Connect Authentication Mechanism`.
-
+This tutorial prepares you for implementing more advanced security mechanisms in Quarkus, for example, how to use the OpenID Connect (OIDC) authentication mechanism.
 
 == Prerequisites
 
 include::{includes}/prerequisites.adoc[]
 
-== Architecture
+== What you will build
 
-In this example, we build a very simple microservice which offers three endpoints:
+The steps in this tutorial guide you through building an application that provides the following endpoints:
 
-* `/api/public`
-* `/api/users/me`
-* `/api/admin`
+[cols="20%,40% ",options="header"]
+|===
+|Endpoint | Description 
+|`/api/public`| The `/api/public` endpoint can be accessed anonymously.
+|`/api/users/me`|The `/api/admin` endpoint is protected with role-based access control (RBAC), and only users who have been granted the `admin` role can access it. 
+At this endpoint, the `@RolesAllowed` annotation is used to declaratively enforce the access constraint.
+| `/api/admin`| The `/api/users/me` endpoint is protected with RBAC and only users that have been granted the `user` role can access it. A JSON document with details about the user is returned as a response.
+|===
 
-The `/api/public` endpoint can be accessed anonymously.
-The `/api/admin` endpoint is protected with RBAC (Role-Based Access Control) where only users granted with the `admin` role can access. At this endpoint, we use the `@RolesAllowed` annotation to declaratively enforce the access constraint.
-The `/api/users/me` endpoint is also protected with RBAC (Role-Based Access Control) where only users granted with the `user` role can access. As a response, it returns a JSON document with details about the user.
+[TIP]
+====
+If you just want to examine the code, you can fast-forward to the completed example by using one of the following ways:
 
-== Solution
+* Download the {quickstarts-archive-url}[archive]
+* Clone the Git repository: `git clone {quickstarts-clone-url}`
 
-We recommend that you follow the instructions in the next sections and create the application step by step.
-However, you can go right to the completed example.
+You can find the solution in the `security-jpa-quickstart` {quickstarts-tree-url}/security-jpa-quickstart[directory].
+====
 
-Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+:sectnums:
+:sectnumlevels: 3
 
-The solution is located in the `security-jpa-quickstart` {quickstarts-tree-url}/security-jpa-quickstart[directory].
+== Create a Maven project
 
-== Creating the Maven Project
+For Quarkus security to be able to map your security source to JPA entities, ensure that the Maven project that is used in this tutorial includes the `security-jpa` extension.
+You can either create a new Maven project with the `security-jpa` extension or you can add the extension to an existing Maven project.
 
-First, we need a new project. Create a new project with the following command:
+* To create the Maven project, use the following command:
 
 :create-app-artifact-id: security-jpa-quickstart
 :create-app-extensions: security-jpa,jdbc-postgresql,resteasy-reactive,hibernate-orm-panache
 include::{includes}/devtools/create-app.adoc[]
-
-This command generates a Maven project, importing the `security-jpa` extension
-which allows you to map your security source to JPA entities.
-
 [NOTE]
 ====
 xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] is used to store your user identities but you can also use xref:hibernate-orm.adoc[Hibernate ORM].
-
-Don't forget to add the database connector library of choice. Here we are using PostgreSQL as identity store.
+You must also add your preferred database connector library.
+The instructions in this example tutorial use a PostgreSQL database for the identity store.
 ====
-
-If you already have your Quarkus project configured, you can add the `security-jpa` extension
-to your project by running the following command in your project base directory:
+* To add the `security-jpa` extension to an existing Maven project, run the following command from your project base directory:
 
 :add-extension-extensions: security-jpa
 include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your build file:
+=== Verification
+
+When you run either command, the following XML is added to your build file:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -83,10 +81,11 @@ This will add the following to your build file:
 implementation("io.quarkus:quarkus-security-jpa")
 ----
 
-== Writing the application
+== Write the application
 
-Let's start by implementing the `/api/public` endpoint. As you can see from the source code below, it is just a regular JAX-RS resource:
-
+* Let's start by implementing the `/api/public` endpoint to allow all users access to access the application.
+Add a regular JAX-RS resource to your Java source code, as outlined in the following code snippet:
++
 [source,java]
 ----
 package org.acme.security.jpa;
@@ -108,10 +107,9 @@ public class PublicResource {
    }
 }
 ----
-
-The source code for the `/api/admin` endpoint is also very simple. The main difference here is that we are using a `@RolesAllowed` annotation to make sure that only users granted with the `admin` role can access the endpoint:
-
-
+* The source code for the `/api/admin` endpoint is similar but instead you use a `@RolesAllowed` annotation to make sure that only users granted the `admin` role can access the endpoint.
+Add a JAX-RS resource with the following `@RolesAllowed` annotation:
++
 [source,java]
 ----
 package org.acme.security.jpa;
@@ -133,10 +131,8 @@ public class AdminResource {
     }
 }
 ----
-
-Finally, let's consider the `/api/users/me` endpoint. As you can see from the source code below, we are trusting only users with the `user` role.
-We are using `SecurityContext` to get access to the current authenticated Principal, and we return the user's name. This information is loaded from the database.
-
+* Finally, implement the `/api/users/me` endpoint. As you can see from the source code example below, we are trusting only users with the `user` role.
+We are also using `SecurityContext` to get access to the currently authenticated `Principal`, and we return the user name, all of which is loaded from the database.
 [source,java]
 ----
 package org.acme.security.jpa;
@@ -160,9 +156,9 @@ public class UserResource {
 }
 ----
 
-=== Defining our user entity
+=== Define the user entity
 
-We can now describe how our security information is stored in our model by adding a few annotations to our `User` entity:
+You can now describe how you want security information to be stored in the model by adding annotations to the `user` entity, as outlined in the following code snippet:
 
 [source,java]
 ----
@@ -190,7 +186,7 @@ public class User extends PanacheEntity {
     public String role;
     
     /**
-     * Adds a new user in the database
+     * Adds a new user to the database
      * @param username the username
      * @param password the unencrypted password (it will be encrypted with bcrypt)
      * @param role the comma-separated roles
@@ -206,20 +202,28 @@ public class User extends PanacheEntity {
 
 ----
 
-The `security-jpa` extension is only initialized if there is a single entity annotated with `@UserDefinition`.
+The `security-jpa` extension initializes only if there is a single entity annotated with `@UserDefinition`.
 
-<1> This annotation must be present on a single entity. It can be a regular Hibernate ORM entity or a Hibernate ORM with Panache entity as in this example.
-<2> This indicates the field used for the username.
-<3> This indicates the field used for the password. This defaults to using bcrypt hashed passwords, but you can also configure it for clear text passwords or custom passwords.
-<4> This indicates the comma-separated list of roles added to the target Principal representation attributes.
+<1> The `@UserDefinition` annotation must be present on a single entity and can be either a regular Hibernate ORM entity or a Hibernate ORM with Panache entity.
+<2> Indicates the field used for the user name.
+<3> Indicates the field used for the password, which defaults to using bcrypt hashed passwords but you can also configure it for plain text or custom passwords.
+<4> This indicates the comma-separated list of roles added to the target principal representation attributes.
 <5> This method allows us to add users while hashing the password with the proper bcrypt hash.
 
-=== Configuring the Application
+=== Configure the application
 
-First, xref:security-built-in-authentication.adoc#basic-auth[Basic HTTPAuthenticationMechanism] has to be enabled with `quarkus.http.auth.basic=true`. In fact, you do not even have to set `quarkus.http.auth.basic=true` to enable it in this demo as `Basic HTTPAuthenticationMechanism` is used as a fallback authentication mechanism when a secure access is required and no other authentication mechanisms are enabled.
-
-Next, configure the datasource. The `security-jpa` extension requires at least one datasource to access to your database.
-
+. Enable xref:security-built-in-authentication.adoc#basic-auth[Quarkus built-in basic HTTP authentication] by setting the `quarkus.http.auth.basic` property to `true`:
++
+`quarkus.http.auth.basic`=true`
++
+[NOTE]
+====
+When secure access is required and no other authentication mechanisms are enabled, xref:security-built-in-authentication.adoc#basic-auth[Quarkus built-in basic HTTP authentication] is the fallback authentication mechanism. 
+Therefore, in this tutorial, you do not need to set the property `quarkus.http.auth.basic=true`.
+====
++
+. Configure at least one data source so that the `security-jpa` extension can access your database.
++
 [source,properties]
 ----
 quarkus.http.auth.basic=true
@@ -231,9 +235,13 @@ quarkus.datasource.jdbc.url=jdbc:postgresql:security_jpa
 
 quarkus.hibernate-orm.database.generation=drop-and-create
 ----
++
+. To initialize the database with users and roles, implement the `Startup` class, as outlined in the following code snippet:
 
-In our context, we are using PostgreSQL as identity store. The database schema is created by Hibernate ORM automatically
-on startup (change this in production), and we initialize the database with users and roles in the `Startup` class:
+[NOTE]
+====
+In this tutorial, a PostgreSQL database is used for the identity store. Hibernate ORM automatically creates the database schema on startup (change this in production).
+====
 
 [source,java]
 ----
@@ -258,24 +266,27 @@ public class Startup {
 }
 ----
 
-The application is now protected and the identities are provided by our database.
+The application is now protected and the user identities are provided by the specified database.
 
 [NOTE]
 ====
-We kindly remind you that you must not store clear-text passwords in production environments ;-).
+In a production environment, do not store plain text passwords.
 As a result, the `security-jpa` defaults to using bcrypt-hashed passwords.
 ====
 
-== Testing the Application
+== Test your application
 
-=== With Dev Services for PostgreSQL
+=== Use Dev Services for PostgreSQL to test your application
 
 include::{includes}/devtools/dev.adoc[]
 
-Lets add the integration tests before running your application in production mode.
+Add the integration tests before you run your application in production mode.
 
-We recommend using xref:https://quarkus.io/guides/dev-services#databases[Dev Services for PostgreSQL] for the integration testing of your application in JVM and native modes.
-`Dev Services for PostgreSQL` will launch and configure a `PostgreSQL` test container if PostgreSQL configuration properties are enabled only in production (`prod`) mode:
+
+Use xref:https://quarkus.io/guides/dev-services#databases[Dev Services for PostgreSQL] for the integration testing of your application in JVM and native modes.
+
+The following properties configuration demonstrates how you can enable PostgreSQL testing to run in production (`prod`) mode only. 
+In this scenario, `Dev Services for PostgreSQL` launches and configures a `PostgreSQL` test container.
 
 [source,properties]
 ----
@@ -287,9 +298,9 @@ We recommend using xref:https://quarkus.io/guides/dev-services#databases[Dev Ser
 quarkus.hibernate-orm.database.generation=drop-and-create
 ----
 
-Note that adding a `%prod.` profile prefix the datasource properties will not make them visible to `Dev Services for PostgreSQL` but only to the application runnnig in production mode.
+If you add the `%prod.` profile prefix, data source properties are not visible to `Dev Services for PostgreSQL` and are only observed by an application running in production mode.
 
-Next you can write the integration test:
+To write the integration test, use the following code sample:
 
 [source,java]
 ----
@@ -357,59 +368,57 @@ public class JpaSecurityRealmTest {
 }
 ----
 
-As you can see you do not have to launch the test container from the test code.
+As you can see in this code sample, you do not need to start the test container from the test code.
 
 [NOTE]
 ====
-If you start your application in `devmode` then `Dev Services for PostgreSQL` will launch a `PostgreSQL` devmode container for a start for you to focus on the application development.
-While developing you can also start adding tests one by one and run them with the xref:continuous-testing.adoc[Continous Testing] feature - 
-`Dev Services for PostgreSQL` will support these tests with a separate `PostgreSQL` test container which will not conflict with the devmode container.
+If you start your application in dev mode, `Dev Services for PostgreSQL` launches a `PostgreSQL` `devmode` container so that you can start developing your application.
+While developing your application, you can also start to add tests one by one and run them by using the xref:continuous-testing.adoc[Continous Testing] feature. 
+`Dev Services for PostgreSQL` supports testing while you develop by providing a separate `PostgreSQL` test container that does not conflict with the `devmode` container.
 ====
 
-=== With Curl or Browser
+=== Use `curl` or a browser to test your application
 
-First, start a PostgreSQL server:
-
+Use the following example to start the PostgreSQL server:
 [source,bash]
 ----
 docker run --rm=true --name security-getting-started -e POSTGRES_USER=quarkus \
            -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=elytron_security_jpa \
            -p 5432:5432 postgres:14.1
 ----
+=== Compile and run the application
 
-Next, compile and run the application in either JVM or Native mode:
+Compile and run your Quarkus application by using one of the following methods:
 
 ==== JVM mode
 
 Compile the application:
-
 include::{includes}/devtools/build.adoc[]
-
-Then run it:
+Run the application:
 
 [source,bash]
 ----
 java -jar target/quarkus-app/quarkus-run.jar
 ----
 
-==== Native Mode
+==== Native mode
 
 Compile the application:
 
 include::{includes}/devtools/build-native.adoc[]
 
-and run it:
-
+Run the application:
 [source,bash]
 ----
 ./target/security-jpa-quickstart-runner
 ----
 
-Now you can test it with `curl` or your favourite browser.
-We will use `curl` in this section but you can try to access the same endpoint URLs from the browser.
+=== Access and test the application security
 
-The very first thing to check is to ensure the anonymous access works.
+When your application is running, you can access your application by using one of the following `curl` commands. 
+You can also access the same endpoint URLs by using a browser.
 
+* Connect to a protected endpoint anonymously:
 [source,shell]
 ----
 $ curl -i -X GET http://localhost:8080/api/public
@@ -420,8 +429,7 @@ Content-Type: text/plain;charset=UTF-8
 public%
 ----
 
-Now, let's try to hit a protected resource anonymously.
-
+* Connect to a protected endpoint anonymously:
 [source,shell]
 ----
 $ curl -i -X GET http://localhost:8080/api/admin
@@ -433,9 +441,12 @@ WWW-Authenticate: Basic
 Not authorized%
 ----
 
-Note, if you are using the browser then you should see the browser displaying a Basic Authentication challenge form.
+[NOTE]
+====
+When you use a browser to anonymously connect to a protected resource, a basic authentication form displays prompting you to enter credentials.
+====
 
-So far so good, now let's try with an allowed user.
+* Connect to a protected endpoint as an authorized user:
 
 [source,shell]
 ----
@@ -446,10 +457,13 @@ Content-Type: text/plain;charset=UTF-8
 
 admin%
 ----
-By providing the `admin:admin` credentials, the extension authenticated the user and loaded their roles.
-The `admin` user is authorized to access to the protected resources.
 
-The user `admin` should be forbidden to access a resource protected with `@RolesAllowed("user")` because it doesn't have this role.
+=== Results
+
+When you provide the credentials of an authorized user, for example, `admin:admin`, the JPA security extension authenticates and loads the roles of the user.
+The `admin` user is authorized to access the protected resources.
+
+If a resource is protected with `@RolesAllowed("user")`, the user `admin` is not authorized to access the resource because it is not assigned to the "user" role, as outlined in the following shell example:
 
 [source,shell]
 ----
@@ -461,7 +475,7 @@ Content-Type: text/html;charset=UTF-8
 Forbidden%
 ----
 
-Finally, using the user `user` works and the security context contains the principal details (username for instance).
+Finally, the user name `user` is authorized and the security context contains the principal details, for example, the user name.
 
 [source,shell]
 ----
@@ -473,9 +487,13 @@ Content-Type: text/plain;charset=UTF-8
 user%
 ----
 
-== Security JPA Reference Guide 
+:sectnums!:
 
-Now that you have run and tested the demo, please have a look at the more specific information about preparing your JPA identity store.
+// The following section needs to be moved as SMEs confirmed that it does not really fit in the new content here. In the next phase of refactoring, consider moving this section into a dedicated concept/reference topic.
+
+== Quarkus Security JPA information
+
+Now that you have successfully run and tested the security quick start project, you are ready to explore more security features of Quarkus Security and the JPA identity store.
 
 === Supported model types
 
@@ -486,7 +504,7 @@ Now that you have run and tested the demo, please have a look at the more specif
 
 === Storing roles in another entity
 
-You can also store roles in another entity:
+Use the following sample to store roles inside another entity:
 
 [source,java]
 ----
@@ -518,17 +536,16 @@ public class Role extends PanacheEntity {
 
 === Password storage and hashing
 
-By default, we consider passwords to be stored hashed with https://en.wikipedia.org/wiki/Bcrypt[bcrypt] under the 
+By default, passwords are stored and hashed by using https://en.wikipedia.org/wiki/Bcrypt[bcrypt] under the 
 https://en.wikipedia.org/wiki/Crypt_(C)[Modular Crypt Format] (MCF).
 
-When you need to create such a hashed password we provide the convenient `String BcryptUtil.bcryptHash(String password)`
-function, which defaults to creating a random salt and hashing in 10 iterations (though you can specify the iterations and salt
-too).
+When you need to create a hashed password we provide the convenient `String BcryptUtil.bcryptHash(String password)`
+function, which defaults to creating a random salt and hashing in 10 iterations. 
+You can also specify the number of iterations and the salt.
 
-NOTE: with MCF you don't need dedicated columns to store the hashing algorithm, the iterations count or the salt because
-they're all stored in the hashed value.
+NOTE: When you use MCF, you don't need dedicated columns to store the hashing algorithm, the iterations count, or the salt because they are all stored in the hashed value.
 
-You also have the possibility to store password using different hashing algorithm `@Password(value = PasswordType.CUSTOM, provider = CustomPasswordProvider.class)`:
+You can also store passwords by using a different hashing algorithm, for example, `@Password(value = PasswordType.CUSTOM, provider = CustomPasswordProvider.class)`, as outlined in the following code snippet:
 
 [source,java]
 ----
@@ -561,22 +578,26 @@ public class CustomPasswordProvider implements PasswordProvider {
 }
 ----
 
-WARN: you can also store passwords in clear text with `@Password(PasswordType.CLEAR)` but we strongly recommend against
-it in production.
+WARNING: In a test environment, you can also store passwords in plain text by using `@Password(PasswordType.CLEAR)`.
+For applications running in production, do not store passwords in plain text.
 
-== What is Next
+== What's next
 
-You have learned how to create and test a secure Quarkus application by using xref:security-built-in-authentication.adoc#basic-auth[Basic HTTPAuthenticationMechanism], `JPA IdentityProvider`.
+Congratulations!
+You have learned how to create and test a secure Quarkus application by combining the xref:security-built-in-authentication.adoc#basic-auth[Quarkus built-in basic HTTP authentication] with the JPA identity provider.
 
-Next we recommend you to see how `OpenId Connect` can be used to provide a secure, single sign on access to your Quarkus endpoints. Please follow xref:security-openid-connect.adoc[Quarkus - Using OpenID Connect to Protect Service Applications using Bearer Token Authorization] and xref:security-openid-connect-web-authentication.adoc[Quarkus - Using OpenID Connect to Protect Web Applications using Authorization Code Flow] guides.
+After you have completed this tutorial, explore some of the more advanced security mechanisms in Quarkus. 
+Use the following information to learn how you can securely use `OpenID Connect` to provide secure single sign-on access to your Quarkus endpoints:
 
-For a complete reference to Quarkus Security please read a xref:security.adoc[Quarkus Security] document.
+* xref:security-openid-connect.adoc[Using OpenID Connect (OIDC) to Protect Service Applications using Bearer Token Authorization]
+* xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect (OIDC) to Protect Web Applications using Authorization Code Flow
+]
 
 == References
 
-* xref:security.adoc[Quarkus Security]
-* xref:security-openid-connect.adoc[Quarkus - Using OpenID Connect to Protect Service Applications using Bearer Token Authorization]
-* xref:security-openid-connect-web-authentication.adoc[Quarkus - Using OpenID Connect to Protect Web Applications using Authorization Code Flow]
-* xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache]
-* xref:hibernate-orm.adoc[Hibernate ORM]
-
+* xref:security.adoc[Security Architecture and Guides]
+* xref:security-openid-connect.adoc[Using OpenID Connect (OIDC) to Protect Service Applications using Bearer Token Authorization]
+* xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect (OIDC) to Protect Web Applications using Authorization Code Flow
+]
+* xref:hibernate-orm-panache.adoc[Simplified Hibernate ORM with Panache]
+* xref:hibernate-orm.adoc[Using Hibernate ORM and JPA]

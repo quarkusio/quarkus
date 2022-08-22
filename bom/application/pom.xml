@@ -117,7 +117,7 @@
         <cronutils.version>9.2.0</cronutils.version>
         <quartz.version>2.3.2</quartz.version>
         <h2.version>2.1.214</h2.version>
-        <postgresql-jdbc.version>42.4.1</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.4.2</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.0.7</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.30</mysql-jdbc.version>
         <mssql-jdbc.version>11.2.0.jre11</mssql-jdbc.version>
@@ -156,7 +156,7 @@
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.0.10</jboss-logmanager.version>
-        <flyway.version>9.1.5</flyway.version>
+        <flyway.version>9.1.6</flyway.version>
         <yasson.version>1.0.11</yasson.version>
         <liquibase.version>4.15.0</liquibase.version>
         <snakeyaml.version>1.30</snakeyaml.version>
@@ -201,7 +201,7 @@
         <aesh.version>2.6</aesh.version>
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.10.0</strimzi-oauth.version>
-        <strimzi-oauth.nimbus.version>9.24.1</strimzi-oauth.nimbus.version>
+        <strimzi-oauth.nimbus.version>9.24.2</strimzi-oauth.nimbus.version>
         <java-buildpack-client.version>0.0.6</java-buildpack-client.version>
         <org-crac.version>0.1.1</org-crac.version>
     </properties>

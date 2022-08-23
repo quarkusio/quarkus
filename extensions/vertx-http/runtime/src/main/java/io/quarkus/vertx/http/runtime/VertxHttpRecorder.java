@@ -340,6 +340,8 @@ public class VertxHttpRecorder {
             List<Filter> filterList, Supplier<Vertx> vertx,
             LiveReloadConfig liveReloadConfig, Optional<RuntimeValue<Router>> mainRouterRuntimeValue,
             RuntimeValue<Router> httpRouterRuntimeValue, RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter,
+            RuntimeValue<Router> frameworkRouter,
+            boolean nonApplicationDedicatedRouter, boolean nonApplicationAttachedToMainRouter,
             String rootPath, LaunchMode launchMode, boolean requireBodyHandler,
             Handler<RoutingContext> bodyHandler,
             GracefulShutdownFilter gracefulShutdownFilter, ShutdownConfig shutdownConfig,
@@ -558,7 +560,11 @@ public class VertxHttpRecorder {
             }
             AccessLogHandler handler = new AccessLogHandler(receiver, accessLog.pattern, getClass().getClassLoader(),
                     accessLog.excludePattern);
+            if (nonApplicationDedicatedRouter && !nonApplicationAttachedToMainRouter) {
+                frameworkRouter.getValue().route().order(Integer.MIN_VALUE).handler(handler);
+            }
             httpRouteRouter.route().order(Integer.MIN_VALUE).handler(handler);
+
             quarkusWrapperNeeded = true;
         }
 

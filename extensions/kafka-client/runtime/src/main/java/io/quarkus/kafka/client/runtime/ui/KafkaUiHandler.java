@@ -13,16 +13,10 @@ import io.quarkus.kafka.client.runtime.ui.model.request.KafkaCreateTopicRequest;
 import io.quarkus.kafka.client.runtime.ui.model.request.KafkaMessageCreateRequest;
 import io.quarkus.kafka.client.runtime.ui.model.request.KafkaMessagesRequest;
 import io.quarkus.kafka.client.runtime.ui.model.request.KafkaOffsetRequest;
-import io.quarkus.security.identity.CurrentIdentityAssociation;
-import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
 public class KafkaUiHandler extends AbstractHttpRequestHandler {
-
-    public KafkaUiHandler(CurrentIdentityAssociation currentIdentityAssociation, CurrentVertxRequest currentVertxRequest) {
-        super(currentIdentityAssociation, currentVertxRequest);
-    }
 
     @Override
     public void handlePost(RoutingContext event) {

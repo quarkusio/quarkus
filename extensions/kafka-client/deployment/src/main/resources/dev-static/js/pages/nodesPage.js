@@ -17,10 +17,9 @@ export default class NodesPage {
             action: "getInfo"
         };
         doPost(req, (data) => {
-            let that = this;
-            setTimeout(function () {
-                that.updateInfo(data);
-                toggleSpinner(that.containerId);
+            setTimeout(() => {
+                this.updateInfo(data);
+                toggleSpinner(this.containerId);
             }, 2000);
         }, data => {
             errorPopUp("Error getting Kafka info: ", data);

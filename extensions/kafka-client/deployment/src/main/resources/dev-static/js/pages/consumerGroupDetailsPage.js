@@ -16,7 +16,7 @@ export default class ConsumerGroupDetailsPage {
         consumerGroupsTable.empty();
         for (let i = 0; i < membersData.length; i++) {
             const d = membersData[i];
-            const groupId = "group-" + window.crypto.randomUUID();
+            const groupId = "group-" + d.memberId;
 
             let tableRow = $("<tr/>");
             let collapseRow;
@@ -37,18 +37,17 @@ export default class ConsumerGroupDetailsPage {
             tableRow.append(createTableItem(d.host));
             tableRow.append(createTableItem("" + new Set(d.partitions.map(x => x.partition)).size));
             tableRow.append(createTableItem("" + d.partitions.map(x => x.lag).reduce((l, r) => l + r, 0)));
-            consumerGroupsTable.append(tableRow);
 
             if (d.partitions.length > 0) {
                 const content = this.createConsumerGroupCollapseInfo(d);
-                tableRow
-                    .addClass("pointer")
-                    .click(collapseRow.collapse);
-                consumerGroupsTable.append(
-                    collapseRow
-                        .getCollapseContent(tableRow.children().length, content)
-                        .addClass("no-hover")
-                );
+                tableRow.addClass("pointer")
+                tableRow.click(() => collapseRow.collapse());
+                consumerGroupsTable.append(tableRow);
+                consumerGroupsTable.append(collapseRow
+                    .getCollapseContent(tableRow.children().length, content)
+                    .addClass("no-hover"));
+            } else {
+                consumerGroupsTable.append(tableRow);
             }
         }
     }

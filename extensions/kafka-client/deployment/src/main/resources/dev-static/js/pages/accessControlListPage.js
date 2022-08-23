@@ -2,7 +2,7 @@ import {doPost, errorPopUp} from "../web/web.js";
 import {createTableItem} from "../util/contentManagement.js";
 import {toggleSpinner} from "../util/spinner.js";
 
-export default class AccessControlListPage{
+export default class AccessControlListPage {
     constructor(containerId) {
         this.containerId = containerId;
         Object.getOwnPropertyNames(AccessControlListPage.prototype).forEach((key) => {
@@ -17,15 +17,15 @@ export default class AccessControlListPage{
         const req = {
             action: "getAclInfo"
         };
+        toggleSpinner(this.containerId);
         doPost(req, (data) => {
-            let that = this;
-            setTimeout(function () {
-                that.updateInfo(data);
-                toggleSpinner(that.containerId);
+            setTimeout(() => {
+                this.updateInfo(data);
+                toggleSpinner(this.containerId);
             }, 2000);
         }, data => {
             errorPopUp("Error getting Kafka ACL info: ", data);
-        });      
+        });
     }
 
     updateInfo(data) {
@@ -33,7 +33,7 @@ export default class AccessControlListPage{
         $('#acluster-controller').html(data.broker);
         $('#acluster-acl').html(data.aclOperations);
 
-        const acls = data.entires;
+        const acls = data.entries;
         let aclTable = $('#acl-table tbody');
         aclTable.empty();
         for (let i = 0; i < acls.length; i++) {

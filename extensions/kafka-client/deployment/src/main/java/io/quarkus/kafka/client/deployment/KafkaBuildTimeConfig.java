@@ -1,6 +1,5 @@
 package io.quarkus.kafka.client.deployment;
 
-import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -30,10 +29,4 @@ public class KafkaBuildTimeConfig {
     @ConfigItem
     public KafkaDevServicesBuildTimeConfig devservices;
 
-    /**
-     * Kafka UI configuration
-     */
-    @ConfigItem
-    @ConfigDocSection
-    public KafkaBuildTimeUiConfig ui;
 }

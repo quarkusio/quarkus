@@ -40,8 +40,7 @@ export default class ConsumerGroupPage {
             tableRow.append(createTableItem(d.protocol));
             tableRow.append(createTableItem(d.members.length));
             tableRow.append(createTableItem(d.lag));
-            const self = this;
-            tableRow.click(() => self.navigator.navigateTo(pages.CONSUMER_GROUPS_DETAILS, [d.name, d.members]));
+            tableRow.click(() => this.navigator.navigateTo(pages.CONSUMER_GROUPS_DETAILS, [d.name, d.members]));
             consumerGroupsTable.append(tableRow);
         }
     }

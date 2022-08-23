@@ -2,24 +2,15 @@ package io.quarkus.kafka.client.runtime.ui;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
-import io.quarkus.security.identity.CurrentIdentityAssociation;
-import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
-import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
 public abstract class AbstractHttpRequestHandler implements Handler<RoutingContext> {
-    private final CurrentIdentityAssociation currentIdentityAssociation;
-    private final CurrentVertxRequest currentVertxRequest;
     private final ManagedContext currentManagedContext;
     private final Handler currentManagedContextTerminationHandler;
 
-    public AbstractHttpRequestHandler(CurrentIdentityAssociation currentIdentityAssociation,
-            CurrentVertxRequest currentVertxRequest) {
-        this.currentIdentityAssociation = currentIdentityAssociation;
-        this.currentVertxRequest = currentVertxRequest;
+    public AbstractHttpRequestHandler() {
         this.currentManagedContext = Arc.container().requestContext();
         this.currentManagedContextTerminationHandler = e -> currentManagedContext.terminate();
     }
@@ -29,7 +20,7 @@ public abstract class AbstractHttpRequestHandler implements Handler<RoutingConte
     public void handle(final RoutingContext ctx) {
 
         if (currentManagedContext.isActive()) {
-            handleWithIdentity(ctx);
+            doHandle(ctx);
         } else {
 
             currentManagedContext.activate();
@@ -39,7 +30,7 @@ public abstract class AbstractHttpRequestHandler implements Handler<RoutingConte
                     .closeHandler(currentManagedContextTerminationHandler);
 
             try {
-                handleWithIdentity(ctx);
+                doHandle(ctx);
             } catch (Throwable t) {
                 currentManagedContext.terminate();
                 throw t;
@@ -68,20 +59,6 @@ public abstract class AbstractHttpRequestHandler implements Handler<RoutingConte
         } catch (Exception e) {
             ctx.fail(e);
         }
-    }
-
-    private void handleWithIdentity(final RoutingContext ctx) {
-        if (currentIdentityAssociation != null) {
-            QuarkusHttpUser existing = (QuarkusHttpUser) ctx.user();
-            if (existing != null) {
-                SecurityIdentity identity = existing.getSecurityIdentity();
-                currentIdentityAssociation.setIdentity(identity);
-            } else {
-                currentIdentityAssociation.setIdentity(QuarkusHttpUser.getSecurityIdentity(ctx, null));
-            }
-        }
-        currentVertxRequest.setCurrent(ctx);
-        doHandle(ctx);
     }
 
     public abstract void handlePost(RoutingContext event);

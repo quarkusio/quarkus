@@ -771,7 +771,7 @@
                         <dependency>
                             <groupId>org.codehaus.groovy</groupId>
                             <artifactId>groovy</artifactId>
-                            <version>3.0.9</version>
+                            <version>3.0.12</version>
                         </dependency>
                     </dependencies>
                 </plugin>

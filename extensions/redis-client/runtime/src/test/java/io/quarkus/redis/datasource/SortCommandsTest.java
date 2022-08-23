@@ -23,7 +23,7 @@ public class SortCommandsTest extends DatasourceTestBase {
 
     @BeforeEach
     void initialize() {
-        ds = new BlockingRedisDataSourceImpl(redis, api, Duration.ofSeconds(5));
+        ds = new BlockingRedisDataSourceImpl(vertx, redis, api, Duration.ofSeconds(5));
 
         lists = ds.list(String.class);
         strings = ds.string(String.class);

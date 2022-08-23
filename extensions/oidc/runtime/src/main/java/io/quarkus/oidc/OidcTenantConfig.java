@@ -112,6 +112,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem
         public Optional<String> secret = Optional.empty();
 
+        /**
+         * Include OpenId Connect Client ID configured with 'quarkus.oidc.client-id'
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean includeClientId = true;
+
         public Optional<String> getName() {
             return name;
         }
@@ -126,6 +132,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setSecret(String secret) {
             this.secret = Optional.of(secret);
+        }
+
+        public boolean isIncludeClientId() {
+            return includeClientId;
+        }
+
+        public void setIncludeClientId(boolean includeClientId) {
+            this.includeClientId = includeClientId;
         }
 
     }

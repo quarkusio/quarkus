@@ -247,7 +247,6 @@ Create the `src/main/java/org/acme/rest/client/ExtensionsResource.java` file wit
 ----
 package org.acme.rest.client;
 
-import io.smallrye.common.annotation.Blocking;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import javax.ws.rs.GET;
@@ -263,7 +262,6 @@ public class ExtensionsResource {
 
     @GET
     @Path("/id/{id}")
-    @Blocking // <2>
     public Set<Extension> id(String id) {
         return extensionsService.getById(id);
     }
@@ -273,7 +271,6 @@ public class ExtensionsResource {
 There are two interesting parts in this listing:
 
 <1> the client stub is injected with the `@RestClient` annotation instead of the usual CDI `@Inject`
-<2> the call we are making with the client is blocking, hence we need the `@Blocking` annotation on the REST endpoint
 
 == Programmatic client creation with RestClientBuilder
 
@@ -408,7 +405,6 @@ Open the `src/main/java/org/acme/rest/client/ExtensionsResource.java` file and u
 ----
 package org.acme.rest.client;
 
-import io.smallrye.common.annotation.Blocking;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import javax.ws.rs.GET;
@@ -425,7 +421,6 @@ public class ExtensionsResource {
 
     @GET
     @Path("/id/{id}")
-    @Blocking
     public Set<Extension> id(String id) {
         return extensionsService.getById(id);
     }
@@ -438,9 +433,9 @@ public class ExtensionsResource {
 }
 ----
 
-Please note that since the invocation is now non-blocking, we don't need the `@Blocking` annotation anymore on the endpoint.
-This means that the `idAsync` method will be invoked on the event loop, i.e. will not get offloaded to a worker pool thread
-and thus reducing hardware resource utilization.
+Please note that since the invocation is now non-blocking, the `idAsync` method will be invoked on the event loop,
+i.e. will not get offloaded to a worker pool thread and thus reducing hardware resource utilization.
+See xref:resteasy-reactive.adoc#execution-model[Resteasy reactive execution model] for more details.
 
 
 To test asynchronous methods, add the test method below in `ExtensionsResourceTest`:

@@ -24,7 +24,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
  */
 public class WebsocketRootPathTestCase {
 
-    @TestHTTPResource("foo/echo")
+    @TestHTTPResource("echo")
     URI echoUri;
 
     @RegisterExtension

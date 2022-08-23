@@ -21,7 +21,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +32,7 @@ import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
+import org.eclipse.aether.graph.Exclusion;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
@@ -114,7 +114,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             throws AppModelResolverException {
         final List<Dependency> mvnDeps;
         if (deps.isEmpty()) {
-            mvnDeps = Collections.emptyList();
+            mvnDeps = List.of();
         } else {
             mvnDeps = new ArrayList<>(deps.size());
             for (io.quarkus.maven.dependency.Dependency dep : deps) {
@@ -144,14 +144,14 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     @Override
     public ApplicationModel resolveModel(ArtifactCoords appArtifact)
             throws AppModelResolverException {
-        return resolveManagedModel(appArtifact, Collections.emptyList(), null, Collections.emptySet());
+        return resolveManagedModel(appArtifact, List.of(), null, Set.of());
     }
 
     @Override
     public ApplicationModel resolveModel(ArtifactCoords appArtifact,
             Collection<io.quarkus.maven.dependency.Dependency> directDeps)
             throws AppModelResolverException {
-        return resolveManagedModel(appArtifact, directDeps, null, Collections.emptySet());
+        return resolveManagedModel(appArtifact, directDeps, null, Set.of());
     }
 
     @Override
@@ -207,7 +207,8 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                 mvn.resolveDescriptor(toAetherArtifact(d)).getManagedDependencies()
                         .forEach(dep -> managedMap.putIfAbsent(getKey(dep.getArtifact()), dep));
             } else {
-                managedMap.put(d.getKey(), new Dependency(toAetherArtifact(d), d.getScope(), d.isOptional()));
+                managedMap.put(d.getKey(), new Dependency(toAetherArtifact(d), d.getScope(), d.isOptional(),
+                        toAetherExclusions(d.getExclusions())));
             }
         }
         final List<Dependency> directDeps = new ArrayList<>(module.getDirectDependencies().size());
@@ -223,7 +224,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             }
             directDeps.add(new Dependency(
                     new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), version),
-                    d.getScope(), d.isOptional()));
+                    d.getScope(), d.isOptional(), toAetherExclusions(d.getExclusions())));
         }
         final List<Dependency> constraints = managedMap.isEmpty() ? List.of() : new ArrayList<>(managedMap.values());
 
@@ -425,7 +426,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             throws AppModelResolverException {
         mvn.install(new DefaultArtifact(artifact.getGroupId(), artifact.getArtifactId(), artifact.getClassifier(),
                 artifact.getType(),
-                artifact.getVersion(), Collections.emptyMap(), localPath.toFile()));
+                artifact.getVersion(), Map.of(), localPath.toFile()));
     }
 
     private String getEarliest(final VersionRangeResult rangeResult) {
@@ -493,13 +494,25 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
     private static List<Dependency> toAetherDeps(Collection<io.quarkus.maven.dependency.Dependency> directDeps) {
         if (directDeps.isEmpty()) {
-            return Collections.emptyList();
+            return List.of();
         }
         final List<Dependency> directMvnDeps = new ArrayList<>(directDeps.size());
         for (io.quarkus.maven.dependency.Dependency dep : directDeps) {
             directMvnDeps.add(new Dependency(toAetherArtifact(dep), dep.getScope()));
         }
         return directMvnDeps;
+    }
+
+    private static List<Exclusion> toAetherExclusions(Collection<ArtifactKey> keys) {
+        if (keys.isEmpty()) {
+            return List.of();
+        }
+        var result = new ArrayList<Exclusion>(keys.size());
+        for (ArtifactKey key : keys) {
+            result.add(new Exclusion(key.getGroupId(), key.getArtifactId(), key.getClassifier(),
+                    key.getType() == null || key.getType().isBlank() ? ArtifactCoords.TYPE_JAR : key.getType()));
+        }
+        return result;
     }
 
     private ArtifactResult resolve(Artifact artifact, List<RemoteRepository> aggregatedRepos)

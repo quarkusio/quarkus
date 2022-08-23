@@ -288,6 +288,9 @@ class RestClientReactiveProcessor {
             for (AnnotationInstance instance : index.getAnnotations(CLIENT_EXCEPTION_MAPPER)) {
                 ClientExceptionMapperHandler.Result result = clientExceptionMapperHandler
                         .generateResponseExceptionMapper(instance);
+                if (result == null) {
+                    continue;
+                }
                 if (ifaceToGeneratedMapper.containsKey(result.interfaceName)) {
                     throw new IllegalStateException("Only a single instance of '" + CLIENT_EXCEPTION_MAPPER
                             + "' is allowed per REST Client interface. Offending class is '" + result.interfaceName + "'");

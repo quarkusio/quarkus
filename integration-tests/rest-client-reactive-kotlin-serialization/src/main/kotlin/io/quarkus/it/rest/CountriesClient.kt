@@ -1,11 +1,10 @@
 package io.quarkus.it.rest
 
-import javax.ws.rs.Consumes
-import javax.ws.rs.GET
-import javax.ws.rs.POST
-import javax.ws.rs.Path
-import javax.ws.rs.Produces
+import io.quarkus.rest.client.reactive.ClientExceptionMapper
+import org.jboss.resteasy.reactive.ClientWebApplicationException
+import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
+import javax.ws.rs.core.Response
 
 @Path("")
 interface CountriesClient {
@@ -19,4 +18,19 @@ interface CountriesClient {
     @Path("/countries")
     @Produces(MediaType.APPLICATION_JSON)
     fun countries(): List<Country>
+
+    @GET
+    @Path("/notFoundCountries")
+    @Produces(MediaType.APPLICATION_JSON)
+    fun notFoundCountries(): List<Country>
+    companion object {
+        @JvmStatic
+        @ClientExceptionMapper
+        fun toException(response: Response): RuntimeException? {
+            return when (response.status) {
+                404 -> CountriesNotFoundException()
+                else -> ClientWebApplicationException(response.status)
+            }
+        }
+    }
 }

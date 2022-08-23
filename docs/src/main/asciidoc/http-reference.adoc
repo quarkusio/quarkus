@@ -377,7 +377,7 @@ Consider activate it only when running behind a reverse proxy.
 To set up this feature, please include the following lines in `src/main/resources/application.properties`:
 [source,properties]
 ----
-quarkus.http.proxy-address-forwarding=true
+quarkus.http.proxy.proxy-address-forwarding=true
 ----
 
 To consider only de-facto standard header (`Forwarded` header), please include the following lines in `src/main/resources/application.properties`:

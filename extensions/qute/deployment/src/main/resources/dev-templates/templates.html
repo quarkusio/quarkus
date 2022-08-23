@@ -1,4 +1,4 @@
-{#include main}
+{#include main fluid=true}
   {#style}
    .annotation {
      color: gray;
@@ -26,7 +26,7 @@
       <td>
         <ul>
         {#each template.variants}
-          <li>{it}</li>
+          <li>{it.key}</li>
         {/each}
         </ul>
       </td>
@@ -36,7 +36,7 @@
       <td>
         {#if template.parameters}
           {#for entry in template.parameters}
-            {entry.key}: {entry.value}</br>
+            <strong>{entry.key}</strong>: {entry.value}</br>
           {/for}
         {/if}
       </td>

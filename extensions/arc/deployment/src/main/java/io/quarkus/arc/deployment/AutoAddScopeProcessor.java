@@ -1,9 +1,10 @@
 package io.quarkus.arc.deployment;
 
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -43,7 +44,8 @@ public class AutoAddScopeProcessor {
         containerAnnotationNames.add(DotNames.PRE_DESTROY);
         containerAnnotationNames.add(DotNames.INJECT);
 
-        Set<DotName> unremovables = new HashSet<>();
+        ConcurrentMap<DotName, AutoAddScopeBuildItem> unremovables = sortedAutoScopes.stream()
+                .anyMatch(AutoAddScopeBuildItem::isUnremovable) ? new ConcurrentHashMap<>() : null;
 
         annotationsTransformers.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
 
@@ -94,8 +96,8 @@ public class AutoAddScopeProcessor {
                         scope = autoScope.getDefaultScope();
                         reason = autoScope.getReason();
                         context.transform().add(scope).done();
-                        if (autoScope.isUnremovable()) {
-                            unremovables.add(clazz.name());
+                        if (unremovables != null && autoScope.isUnremovable()) {
+                            unremovables.put(clazz.name(), autoScope);
                         }
                         LOGGER.debugf("Automatically added scope %s to class %s: %s", scope, clazz, autoScope.getReason());
                     }
@@ -103,12 +105,12 @@ public class AutoAddScopeProcessor {
             }
         }));
 
-        if (!unremovables.isEmpty()) {
+        if (unremovables != null) {
             unremovableBeans.produce(new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
 
                 @Override
                 public boolean test(BeanInfo bean) {
-                    return bean.isClassBean() && unremovables.contains(bean.getBeanClass());
+                    return bean.isClassBean() && unremovables.containsKey(bean.getBeanClass());
                 }
             }));
         }

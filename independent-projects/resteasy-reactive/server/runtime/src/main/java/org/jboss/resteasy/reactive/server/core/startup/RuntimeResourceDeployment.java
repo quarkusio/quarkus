@@ -400,8 +400,7 @@ public class RuntimeResourceDeployment {
                     if (mediaType.isWildcardType() || mediaType.isWildcardSubtype()) {
                         handlers.add(new VariableProducesHandler(serverMediaType, serialisers));
                         score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
-                    } else if (rawEffectiveReturnType != Void.class
-                            && rawEffectiveReturnType != void.class) {
+                    } else if (isNotVoid(rawEffectiveReturnType)) {
                         List<MessageBodyWriter<?>> buildTimeWriters = serialisers.findBuildTimeWriters(rawEffectiveReturnType,
                                 RuntimeType.SERVER, MediaTypeHelper.toListOfMediaType(method.getProduces()));
                         if (buildTimeWriters == null) {
@@ -444,7 +443,8 @@ public class RuntimeResourceDeployment {
                     score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
                 }
             } else {
-                score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
+                score.add(ScoreSystem.Category.Writer, isNotVoid(rawEffectiveReturnType) ? ScoreSystem.Diagnostic.WriterRunTime
+                        : ScoreSystem.Diagnostic.WriterNotRequired);
             }
         } else {
             score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
@@ -485,6 +485,11 @@ public class RuntimeResourceDeployment {
                 lazyMethod,
                 pathParameterIndexes, info.isDevelopmentMode() ? score : null, streamElementType,
                 clazz.resourceExceptionMapper());
+    }
+
+    private static boolean isNotVoid(Class<?> rawEffectiveReturnType) {
+        return rawEffectiveReturnType != Void.class
+                && rawEffectiveReturnType != void.class;
     }
 
     private void addResponseHandler(ServerResourceMethod method, List<ServerRestHandler> handlers) {

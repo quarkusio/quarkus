@@ -91,8 +91,8 @@
         <hibernate-orm.version>5.6.10.Final</hibernate-orm.version> <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below): -->
         <bytebuddy.version>1.12.9</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-reactive.version>1.1.7.Final</hibernate-reactive.version>
-        <hibernate-validator.version>6.2.3.Final</hibernate-validator.version>
-        <hibernate-search.version>6.1.5.Final</hibernate-search.version>
+        <hibernate-validator.version>6.2.4.Final</hibernate-validator.version>
+        <hibernate-search.version>6.1.6.Final</hibernate-search.version>
         <narayana.version>5.12.6.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>1.16</agroal.version>
@@ -117,9 +117,9 @@
         <cronutils.version>9.1.6</cronutils.version>
         <quartz.version>2.3.2</quartz.version>
         <h2.version>2.1.214</h2.version>
-        <postgresql-jdbc.version>42.4.0</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.0.6</mariadb-jdbc.version>
-        <mysql-jdbc.version>8.0.29</mysql-jdbc.version>
+        <postgresql-jdbc.version>42.4.2</postgresql-jdbc.version>
+        <mariadb-jdbc.version>3.0.7</mariadb-jdbc.version>
+        <mysql-jdbc.version>8.0.30</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>21.5.0.0</oracle-jdbc.version>

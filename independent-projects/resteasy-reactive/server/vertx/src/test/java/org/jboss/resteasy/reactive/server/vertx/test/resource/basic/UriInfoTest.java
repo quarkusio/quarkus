@@ -15,6 +15,8 @@ import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.Uri
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.UriInfoEncodedTemplateResource;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.UriInfoEscapedMatrParamResource;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.UriInfoQueryParamsResource;
+import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.UriInfoRelativizeResource;
+import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.UriInfoResolveResource;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.UriInfoSimpleResource;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.UriInfoSimpleSingletonResource;
 import org.jboss.resteasy.reactive.server.vertx.test.simple.PortProviderUtil;
@@ -52,7 +54,8 @@ public class UriInfoTest {
                     war.addClasses(UriInfoSimpleResource.class, UriInfoEncodedQueryResource.class,
                             UriInfoQueryParamsResource.class, UriInfoSimpleSingletonResource.class,
                             UriInfoEncodedTemplateResource.class, UriInfoEscapedMatrParamResource.class,
-                            UriInfoEncodedTemplateResource.class, GetAbsolutePathResource.class);
+                            UriInfoEncodedTemplateResource.class, GetAbsolutePathResource.class,
+                            UriInfoRelativizeResource.class, UriInfoResolveResource.class);
                     return war;
                 }
             });
@@ -132,7 +135,6 @@ public class UriInfoTest {
      * @tpSince RESTEasy 3.0.16
      */
     @Test
-    @Disabled
     @DisplayName("Test Relativize")
     public void testRelativize() throws Exception {
         String uri = PortProviderUtil.generateURL("/");
@@ -145,6 +147,14 @@ public class UriInfoTest {
         Assertions.assertEquals(result, "../../d/e");
         result = target.path("a/b/c").queryParam("to", "http://foobar/a/d/e").request().get(String.class);
         Assertions.assertEquals(result, "http://foobar/a/d/e");
+    }
+
+    @Test
+    @DisplayName("Test Resolve")
+    public void testResolve() throws Exception {
+        WebTarget target = client.target(PortProviderUtil.generateURL("/"));
+        String result = target.path("resolve").queryParam("to", "a/d/e").request().get(String.class);
+        Assertions.assertEquals(PortProviderUtil.generateURL("/a/d/e"), result);
     }
 
     private static void basicTest(String path, String testName) throws Exception {

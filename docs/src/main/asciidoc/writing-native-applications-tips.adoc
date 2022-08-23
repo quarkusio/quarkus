@@ -303,7 +303,23 @@ method com.amazonaws.services.s3.model.CryptoConfiguration.<init>(CryptoMode)
 Call path from entry point to com.amazonaws.services.s3.model.CryptoConfiguration.<init>(CryptoMode):
 ----
 
-If you need to delay the initialization of a class, you can use the `--initialize-at-run-time=<package or class>` configuration knob.
+Another common source of errors is when the image heap taken by GraalVM contains a `Random`/`SplittableRandom` instance:
+
+[source]
+----
+Error: com.oracle.graal.pointsto.constraints.UnsupportedFeatureException: Detected an instance of Random/SplittableRandom class in the image heap. Instances created during image generation have cached seed values and don't behave as expected.
+----
+
+Which is more often than not caused by Quarkus initializing at build time a class with a static `Random`/`SplittableRandom` field,
+causing this particular instance to be tentatively included in the image heap.
+
+[TIP]
+====
+You can find detailed information about this `Random`/`SplittableRandom` issue in https://foivos.zakkak.net/tutorials/working-with-randoms-native-images/[this blog post].
+====
+
+In these cases, delaying the infringing class initialization at runtime might be the solution and, to achieve that,
+you can use the `--initialize-at-run-time=<package or class>` configuration knob.
 
 It should be added to the `native-image` configuration using the `quarkus.native.additional-build-args` configuration property as shown in the examples above.
 

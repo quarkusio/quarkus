@@ -69,6 +69,7 @@ import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
 import io.smallrye.graphql.api.AdaptWith;
 import io.smallrye.graphql.api.Entry;
+import io.smallrye.graphql.api.ErrorExtensionProvider;
 import io.smallrye.graphql.cdi.config.ConfigKey;
 import io.smallrye.graphql.cdi.config.MicroProfileConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
@@ -190,6 +191,10 @@ public class SmallRyeGraphQLProcessor {
         // Config mapping between SmallRye / MP and Quarkus
         serviceProvider
                 .produce(ServiceProviderBuildItem.allProvidersFromClassPath(SmallRyeGraphQLConfigMapping.class.getName()));
+
+        // ErrorCode and Exception Name Provider
+        serviceProvider
+                .produce(ServiceProviderBuildItem.allProvidersFromClassPath(ErrorExtensionProvider.class.getName()));
     }
 
     @BuildStep

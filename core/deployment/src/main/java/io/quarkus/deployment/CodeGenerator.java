@@ -21,6 +21,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SysPropConfigSource;
 
 /**
  * A set of methods to initialize and execute {@link CodeGenProvider}s.
@@ -149,6 +150,7 @@ public class CodeGenerator {
         return callWithClassloader(deploymentClassLoader, () -> {
 
             final PropertiesConfigSource pcs = new PropertiesConfigSource(properties, "Build system");
+            final SysPropConfigSource spcs = new SysPropConfigSource();
 
             // Discovered Config classes may cause issues here, because this goal runs before compile
             final SmallRyeConfig config = ConfigUtils.configBuilder(false, false, launchMode)
@@ -156,7 +158,7 @@ public class CodeGenerator {
                     .setAddDiscoveredInterceptors(false)
                     .setAddDiscoveredConverters(false)
                     .withProfile(launchMode.getDefaultProfile())
-                    .withSources(pcs)
+                    .withSources(pcs, spcs)
                     .build();
 
             CodeGenProvider provider = data.provider;

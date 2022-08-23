@@ -126,7 +126,7 @@ public class OidcProviderClient implements Closeable {
         request.putHeader(ACCEPT_HEADER, APPLICATION_JSON);
         if (introspect && introspectionBasicAuthScheme != null) {
             request.putHeader(AUTHORIZATION_HEADER, introspectionBasicAuthScheme);
-            if (oidcConfig.clientId.isPresent()) {
+            if (oidcConfig.clientId.isPresent() && oidcConfig.introspectionCredentials.includeClientId) {
                 formBody.set(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
             }
         } else if (clientSecretBasicAuthScheme != null) {

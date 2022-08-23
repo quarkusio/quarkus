@@ -161,4 +161,9 @@ public class KubernetesClientBuildConfig {
     @ConfigItem(defaultValue = "true")
     public boolean generateRbac;
 
+    /**
+     * Enable okhttp log messages at STATIC_INIT
+     */
+    @ConfigItem(name = "okhttp.static.logger", defaultValue = "false")
+    public boolean enabled;
 }

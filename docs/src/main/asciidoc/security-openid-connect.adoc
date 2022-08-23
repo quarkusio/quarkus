@@ -8,15 +8,17 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::./attributes.adoc[]
 :toc:
 
-This guide demonstrates how to use Quarkus OpenID Connect (OIDC) Extension to protect your JAX-RS applications using Bearer Token Authorization where Bearer Tokens are issued by OpenID Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org[Keycloak].
+You can use the Quarkus OpenID Connect (OIDC) extension to secure your JAX-RS applications using Bearer Token Authorization. 
+The Bearer Tokens are issued by OIDC and OAuth 2.0 compliant authorization servers, such as https://www.keycloak.org[Keycloak]. 
 
-Bearer Token Authorization is the process of authorizing HTTP requests based on the existence and validity of a Bearer Token which provides valuable information to determine the subject of the call as well as whether an HTTP resource can be accessed.
+Bearer Token authorization authorizes HTTP requests based on the existence and validity of a Bearer Token. 
+The Bearer Token provides information about determining the subject of the call and whether or not an HTTP resource is accessible. 
 
-Please read the xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications] guide if you need to authenticate and authorize the users using OpenID Connect Authorization Code Flow.
+If you want to authenticate and authorize the users using OpenID Connect Authorization Code Flow, see xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications].
+Also, if you use Keycloak and Bearer Tokens, see xref:security-keycloak-authorization.adoc[Using Keycloak to Centralize Authorization].
 
-If you use Keycloak and Bearer tokens then also see the xref:security-keycloak-authorization.adoc[Using Keycloak to Centralize Authorization] guide.
+For information about how to support multiple tenants, see xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy].
 
-Please read the xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy] guide how to support multiple tenants.
 
 == Quickstart
 

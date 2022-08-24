@@ -32,11 +32,18 @@ public class OpenTelemetryDevServicesDatasourcesTest {
                 .statusCode(200)
                 .body(Matchers.startsWith("jdbc:otel:h2"));
 
+        // Test a change in resources that disables OTEL
         TEST.modifyResourceFile("application.properties", s -> "quarkus.datasource.db-kind=h2\n");
-
         RestAssured.when().get("/config/{name}", "quarkus.datasource.jdbc.url").then()
                 .statusCode(200)
                 .body(Matchers.startsWith("jdbc:h2"));
+
+        // Test a change in resources that enables OTEL
+        TEST.modifyResourceFile("application.properties", s -> "quarkus.datasource.db-kind=h2\n" +
+                "quarkus.datasource.jdbc.driver=io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver");
+        RestAssured.when().get("/config/{name}", "quarkus.datasource.jdbc.url").then()
+                .statusCode(200)
+                .body(Matchers.startsWith("jdbc:otel:h2"));
     }
 
     @Path("/config")

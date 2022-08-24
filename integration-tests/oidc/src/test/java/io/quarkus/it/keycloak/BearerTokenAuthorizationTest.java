@@ -75,7 +75,7 @@ public class BearerTokenAuthorizationTest {
                 .when().get("/api/users/me")
                 .then()
                 .statusCode(401)
-                .header("WWW-Authenticate", equalTo("basic realm=\"Quarkus\""));
+                .header("WWW-Authenticate", equalTo("basic"));
     }
 
     @Test
@@ -144,7 +144,7 @@ public class BearerTokenAuthorizationTest {
         RestAssured.given()
                 .when().get("/api/users/me").then()
                 .statusCode(401)
-                .header("WWW-Authenticate", equalTo("basic realm=\"Quarkus\""));
+                .header("WWW-Authenticate", equalTo("basic"));
     }
 
     @Test
@@ -171,7 +171,7 @@ public class BearerTokenAuthorizationTest {
                 .when().get("/basic-only")
                 .then()
                 .statusCode(401)
-                .header("WWW-Authenticate", equalTo("basic realm=\"Quarkus\""));
+                .header("WWW-Authenticate", equalTo("basic"));
     }
 
     @Test

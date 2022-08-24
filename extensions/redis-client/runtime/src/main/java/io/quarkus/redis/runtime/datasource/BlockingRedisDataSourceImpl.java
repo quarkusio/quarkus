@@ -3,7 +3,9 @@ package io.quarkus.redis.runtime.datasource;
 import static io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl.toTransactionResult;
 
 import java.time.Duration;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
@@ -17,8 +19,10 @@ import io.quarkus.redis.datasource.pubsub.PubSubCommands;
 import io.quarkus.redis.datasource.set.SetCommands;
 import io.quarkus.redis.datasource.sortedset.SortedSetCommands;
 import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
+import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisAPI;
@@ -32,8 +36,8 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     final ReactiveRedisDataSourceImpl reactive;
     final RedisConnection connection;
 
-    public BlockingRedisDataSourceImpl(Redis redis, RedisAPI api, Duration timeout) {
-        this(new ReactiveRedisDataSourceImpl(redis, api), timeout);
+    public BlockingRedisDataSourceImpl(Vertx vertx, Redis redis, RedisAPI api, Duration timeout) {
+        this(new ReactiveRedisDataSourceImpl(vertx, redis, api), timeout);
     }
 
     public BlockingRedisDataSourceImpl(ReactiveRedisDataSourceImpl reactive, Duration timeout) {
@@ -42,13 +46,14 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
         this.connection = reactive.connection;
     }
 
-    public BlockingRedisDataSourceImpl(Redis redis, RedisConnection connection, Duration timeout) {
-        this(new ReactiveRedisDataSourceImpl(redis, connection), timeout);
+    public BlockingRedisDataSourceImpl(Vertx vertx, Redis redis, RedisConnection connection, Duration timeout) {
+        this(new ReactiveRedisDataSourceImpl(vertx, redis, connection), timeout);
     }
 
     public TransactionResult withTransaction(Consumer<TransactionalRedisDataSource> ds) {
         RedisConnection connection = reactive.redis.connect().await().atMost(timeout);
-        ReactiveRedisDataSourceImpl dataSource = new ReactiveRedisDataSourceImpl(reactive.redis, connection);
+        ReactiveRedisDataSourceImpl dataSource = new ReactiveRedisDataSourceImpl(reactive.getVertx(), reactive.redis,
+                connection);
         TransactionHolder th = new TransactionHolder();
         BlockingTransactionalRedisDataSourceImpl source = new BlockingTransactionalRedisDataSourceImpl(
                 new ReactiveTransactionalRedisDataSourceImpl(dataSource, th), timeout);
@@ -62,7 +67,6 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
             } else {
                 return toTransactionResult(null, th);
             }
-
         } finally {
             connection.closeAndAwait();
         }
@@ -71,7 +75,8 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     @Override
     public TransactionResult withTransaction(Consumer<TransactionalRedisDataSource> ds, String... watchedKeys) {
         RedisConnection connection = reactive.redis.connect().await().atMost(timeout);
-        ReactiveRedisDataSourceImpl dataSource = new ReactiveRedisDataSourceImpl(reactive.redis, connection);
+        ReactiveRedisDataSourceImpl dataSource = new ReactiveRedisDataSourceImpl(reactive.getVertx(), reactive.redis,
+                connection);
         TransactionHolder th = new TransactionHolder();
         BlockingTransactionalRedisDataSourceImpl source = new BlockingTransactionalRedisDataSourceImpl(
                 new ReactiveTransactionalRedisDataSourceImpl(dataSource, th), timeout);
@@ -99,6 +104,42 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     }
 
     @Override
+    public <I> OptimisticLockingTransactionResult<I> withTransaction(Function<RedisDataSource, I> preTxBlock,
+            BiConsumer<I, TransactionalRedisDataSource> tx, String... watchedKeys) {
+        RedisConnection connection = reactive.redis.connect().await().atMost(timeout);
+        ReactiveRedisDataSourceImpl dataSource = new ReactiveRedisDataSourceImpl(reactive.getVertx(), reactive.redis,
+                connection);
+        TransactionHolder th = new TransactionHolder();
+        BlockingTransactionalRedisDataSourceImpl source = new BlockingTransactionalRedisDataSourceImpl(
+                new ReactiveTransactionalRedisDataSourceImpl(dataSource, th), timeout);
+
+        try {
+            Request cmd = Request.cmd(Command.WATCH);
+            for (String watchedKey : watchedKeys) {
+                cmd.arg(watchedKey);
+            }
+            connection.send(cmd).await().atMost(timeout);
+
+            I input = preTxBlock
+                    .apply(new BlockingRedisDataSourceImpl(reactive.getVertx(), reactive.redis, connection, timeout));
+
+            connection.send(Request.cmd(Command.MULTI)).await().atMost(timeout);
+
+            tx.accept(input, source);
+            if (!source.discarded()) {
+                Response response = connection.send(Request.cmd(Command.EXEC)).await().atMost(timeout);
+                // exec produce null is the transaction has been discarded
+                return toTransactionResult(response, input, th);
+            } else {
+                return toTransactionResult(null, input, th);
+            }
+
+        } finally {
+            connection.closeAndAwait();
+        }
+    }
+
+    @Override
     public void withConnection(Consumer<RedisDataSource> consumer) {
         if (connection != null) {
             // Already on a specific connection, we keep using it
@@ -107,7 +148,7 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
         }
 
         BlockingRedisDataSourceImpl source = reactive.redis.connect()
-                .map(rc -> new BlockingRedisDataSourceImpl(reactive.redis, rc, timeout))
+                .map(rc -> new BlockingRedisDataSourceImpl(reactive.getVertx(), reactive.redis, rc, timeout))
                 .await().atMost(timeout);
 
         try {

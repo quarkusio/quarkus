@@ -6,6 +6,7 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positiveOrZero;
 
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
@@ -19,9 +20,11 @@ import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveSortedSetCommands;
 import io.quarkus.redis.datasource.string.ReactiveStringCommands;
+import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisAPI;
@@ -33,17 +36,22 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
 
     final Redis redis;
     final RedisConnection connection;
+    private final Vertx vertx;
 
-    public ReactiveRedisDataSourceImpl(Redis redis, RedisAPI api) {
+    public ReactiveRedisDataSourceImpl(Vertx vertx, Redis redis, RedisAPI api) {
         nonNull(redis, "redis");
         nonNull(api, "api");
+        nonNull(vertx, "vertx");
+        this.vertx = vertx;
         this.redis = redis;
         this.connection = null;
     }
 
-    public ReactiveRedisDataSourceImpl(Redis redis, RedisConnection connection) {
+    public ReactiveRedisDataSourceImpl(Vertx vertx, Redis redis, RedisConnection connection) {
         nonNull(redis, "redis");
         nonNull(connection, "connection");
+        nonNull(vertx, "vertx");
+        this.vertx = vertx;
         this.redis = redis;
         this.connection = connection;
     }
@@ -61,7 +69,7 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
         nonNull(function, "function");
         return redis.connect()
                 .onItem().transformToUni(connection -> {
-                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(redis, connection);
+                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
                     TransactionHolder th = new TransactionHolder();
                     return connection.send(Request.cmd(Command.MULTI))
                             .chain(x -> function.apply(new ReactiveTransactionalRedisDataSourceImpl(singleConnectionDS, th)))
@@ -85,26 +93,68 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
         doesNotContainNull(keys, "keys");
         return redis.connect()
                 .onItem().transformToUni(connection -> {
-                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(redis, connection);
+                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
                     List<String> watched = List.of(keys);
                     TransactionHolder th = new TransactionHolder();
-                    Request request = Request.cmd(Command.WATCH);
-                    for (String s : watched) {
-                        request.arg(s);
-                    }
-                    return connection.send(request)
+                    return watch(connection, keys) // WATCH keys
                             .chain(() -> connection.send(Request.cmd(Command.MULTI))
                                     .chain(x -> function
                                             .apply(new ReactiveTransactionalRedisDataSourceImpl(singleConnectionDS, th)))
-                                    .chain(ignored -> {
-                                        if (!th.discarded()) {
+                                    .onItemOrFailure().transformToUni((x, failure) -> {
+                                        if (!th.discarded() && failure == null) {
                                             return connection.send(Request.cmd(Command.EXEC));
                                         } else {
+                                            if (!th.discarded()) {
+                                                return connection.send(Request.cmd(Command.DISCARD));
+                                            }
                                             return Uni.createFrom().nullItem();
                                         }
                                     })
                                     .onTermination().call(connection::close)
                                     .map(r -> toTransactionResult(r, th)));
+                });
+    }
+
+    private Uni<Void> watch(RedisConnection connection, String... keys) {
+        List<String> watched = List.of(keys);
+        Request request = Request.cmd(Command.WATCH);
+        for (String s : watched) {
+            request.arg(s);
+        }
+        return connection.send(request)
+                .replaceWithVoid();
+    }
+
+    @Override
+    public <I> Uni<OptimisticLockingTransactionResult<I>> withTransaction(Function<ReactiveRedisDataSource, Uni<I>> preTxBlock,
+            BiFunction<I, ReactiveTransactionalRedisDataSource, Uni<Void>> tx, String... watchedKeys) {
+        nonNull(tx, "tx");
+        notNullOrEmpty(watchedKeys, "watchedKeys");
+        doesNotContainNull(watchedKeys, "watchedKeys");
+        nonNull(preTxBlock, "preTxBlock");
+
+        return redis.connect()
+                .onItem().transformToUni(connection -> {
+                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
+                    TransactionHolder th = new TransactionHolder();
+                    return watch(connection, watchedKeys) // WATCH keys
+                            .chain(x -> preTxBlock.apply(new ReactiveRedisDataSourceImpl(vertx, redis, connection)))// Execute the pre-tx-block
+                            .chain(input -> connection.send(Request.cmd(Command.MULTI))
+                                    .chain(x -> tx
+                                            .apply(input, new ReactiveTransactionalRedisDataSourceImpl(singleConnectionDS, th)))
+                                    .onItemOrFailure().transformToUni((x, failure) -> {
+                                        if (!th.discarded() && failure == null) {
+                                            return connection.send(Request.cmd(Command.EXEC));
+                                        } else {
+                                            if (!th.discarded()) {
+                                                return connection.send(Request.cmd(Command.DISCARD))
+                                                        .replaceWithNull();
+                                            }
+                                            return Uni.createFrom().nullItem();
+                                        }
+                                    })
+                                    .onTermination().call(connection::close)
+                                    .map(r -> toTransactionResult(r, input, th)));
                 });
     }
 
@@ -114,6 +164,15 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
             return TransactionResultImpl.DISCARDED;
         }
         return new TransactionResultImpl(th.discarded(), th.map(response));
+    }
+
+    public static <I> OptimisticLockingTransactionResult<I> toTransactionResult(Response response, I input,
+            TransactionHolder th) {
+        if (response == null) {
+            // Discarded
+            return OptimisticLockingTransactionResultImpl.discarded(input);
+        }
+        return new OptimisticLockingTransactionResultImpl<>(th.discarded(), input, th.map(response));
     }
 
     @Override
@@ -150,7 +209,7 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
         }
         return redis.connect()
                 .onItem().transformToUni(connection -> {
-                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(redis, connection);
+                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
                     return function.apply(singleConnectionDS)
                             .onTermination().call(connection::close);
                 });
@@ -220,5 +279,9 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     @Override
     public Redis getRedis() {
         return redis;
+    }
+
+    public Vertx getVertx() {
+        return vertx;
     }
 }

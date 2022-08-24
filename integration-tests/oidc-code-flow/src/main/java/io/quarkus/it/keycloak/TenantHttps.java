@@ -27,7 +27,8 @@ public class TenantHttps {
     @Path("query")
     @Authenticated
     public String getTenantWithQuery(@QueryParam("code") String value) {
-        return getTenant() + "?code=" + value;
+        return getTenant() + "?code=" + value + "&expiresAt=" + session.expiresAt().getEpochSecond()
+                + "&expiresInDuration=" + session.validFor().getSeconds();
     }
 
     @GET

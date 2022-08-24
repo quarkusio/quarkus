@@ -33,6 +33,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.smallrye.jwt.util.KeyUtils;
+import io.vertx.core.json.JsonObject;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -256,9 +257,17 @@ public class CodeFlowTest {
             URI endpointLocationWithoutQueryUri = URI.create(endpointLocationWithoutQuery);
             assertEquals("code=b", endpointLocationWithoutQueryUri.getRawQuery());
 
-            page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
-            assertEquals("tenant-https:reauthenticated?code=b", page.getBody().asText());
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-https_test");
+            assertNotNull(sessionCookie);
+            JsonObject idToken = OidcUtils.decodeJwtContent(sessionCookie.getValue().split("\\|")[0]);
+            String expiresAt = idToken.getInteger("exp").toString();
+            page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
+            String response = page.getBody().asText();
+            assertTrue(
+                    response.startsWith("tenant-https:reauthenticated?code=b&expiresAt=" + expiresAt + "&expiresInDuration="));
+            Integer duration = Integer.valueOf(response.substring(response.length() - 1));
+            assertTrue(duration > 1 && duration < 5);
+            sessionCookie = getSessionCookie(webClient, "tenant-https_test");
             assertNotNull(sessionCookie);
             webClient.getCookieManager().clearCookies();
         }

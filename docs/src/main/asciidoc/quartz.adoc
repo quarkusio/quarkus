@@ -6,9 +6,12 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Scheduling Periodic Tasks with Quartz
 
 include::./attributes.adoc[]
+:extension-status: preview
 
 Modern applications often need to run specific tasks periodically.
 In this guide, you learn how to schedule periodic clustered tasks using the http://www.quartz-scheduler.org/[Quartz] extension.
+
+include::{includes}/extension-status.adoc[]
 
 TIP: If you only need to run in-memory scheduler use the xref:scheduler.adoc[Scheduler] extension.
 

@@ -25,7 +25,7 @@ public class PubSubTest extends DatasourceTestBase {
 
     @BeforeEach
     void initialize() {
-        ds = new ReactiveRedisDataSourceImpl(redis, api);
+        ds = new ReactiveRedisDataSourceImpl(vertx, redis, api);
         ps = new ReactivePubSubCommandsImpl<>(ds, Person.class);
     }
 

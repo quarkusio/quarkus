@@ -131,23 +131,32 @@ class HelloRouterTest {
         assertEquals(spans.get(0).get("traceId"), spans.get(1).get("traceId"));
         assertEquals(spans.get(1).get("traceId"), spans.get(2).get("traceId"));
 
-        assertEquals(CONSUMER.toString(), spans.get(0).get("kind"));
-        assertEquals("vert.x", ((Map<?, ?>) spans.get(0).get("attributes")).get(MESSAGING_SYSTEM.toString()));
-        assertEquals("topic", ((Map<?, ?>) spans.get(0).get("attributes")).get(MESSAGING_DESTINATION_KIND.toString()));
-        assertEquals("bus", ((Map<?, ?>) spans.get(0).get("attributes")).get(MESSAGING_DESTINATION.toString()));
+        Map<String, Object> consumerSpan = spans.stream()
+                .filter(s -> CONSUMER.toString().equals(s.get("kind")))
+                .findFirst().orElseThrow(() -> new IllegalStateException("Unable to find CONSUMER span"));
+
+        assertEquals("vert.x", ((Map<?, ?>) consumerSpan.get("attributes")).get(MESSAGING_SYSTEM.toString()));
+        assertEquals("topic", ((Map<?, ?>) consumerSpan.get("attributes")).get(MESSAGING_DESTINATION_KIND.toString()));
+        assertEquals("bus", ((Map<?, ?>) consumerSpan.get("attributes")).get(MESSAGING_DESTINATION.toString()));
         assertEquals(MessageOperation.RECEIVE.toString().toLowerCase(Locale.ROOT),
-                ((Map<?, ?>) spans.get(0).get("attributes")).get(MESSAGING_OPERATION.toString()));
+                ((Map<?, ?>) consumerSpan.get("attributes")).get(MESSAGING_OPERATION.toString()));
 
-        assertEquals(PRODUCER.toString(), spans.get(1).get("kind"));
-        assertEquals("vert.x", ((Map<?, ?>) spans.get(1).get("attributes")).get(MESSAGING_SYSTEM.toString()));
-        assertEquals("topic", ((Map<?, ?>) spans.get(1).get("attributes")).get(MESSAGING_DESTINATION_KIND.toString()));
-        assertEquals("bus", ((Map<?, ?>) spans.get(1).get("attributes")).get(MESSAGING_DESTINATION.toString()));
+        Map<String, Object> producerSpan = spans.stream()
+                .filter(s -> PRODUCER.toString().equals(s.get("kind")))
+                .findFirst().orElseThrow(() -> new IllegalStateException("Unable to find PRODUCER span"));
 
-        assertEquals(SERVER.toString(), spans.get(2).get("kind"));
-        assertEquals("/bus", spans.get(2).get("name"));
-        assertEquals(HTTP_OK, ((Map<?, ?>) spans.get(2).get("attributes")).get(HTTP_STATUS_CODE.toString()));
-        assertEquals(HttpMethod.GET.toString(), ((Map<?, ?>) spans.get(2).get("attributes")).get(HTTP_METHOD.toString()));
-        assertEquals("/bus", ((Map<?, ?>) spans.get(2).get("attributes")).get(HTTP_ROUTE.toString()));
+        assertEquals("vert.x", ((Map<?, ?>) producerSpan.get("attributes")).get(MESSAGING_SYSTEM.toString()));
+        assertEquals("topic", ((Map<?, ?>) producerSpan.get("attributes")).get(MESSAGING_DESTINATION_KIND.toString()));
+        assertEquals("bus", ((Map<?, ?>) producerSpan.get("attributes")).get(MESSAGING_DESTINATION.toString()));
+
+        Map<String, Object> serverSpan = spans.stream()
+                .filter(s -> SERVER.toString().equals(s.get("kind")))
+                .findFirst().orElseThrow(() -> new IllegalStateException("Unable to find SERVER span"));
+
+        assertEquals("/bus", serverSpan.get("name"));
+        assertEquals(HTTP_OK, ((Map<?, ?>) serverSpan.get("attributes")).get(HTTP_STATUS_CODE.toString()));
+        assertEquals(HttpMethod.GET.toString(), ((Map<?, ?>) serverSpan.get("attributes")).get(HTTP_METHOD.toString()));
+        assertEquals("/bus", ((Map<?, ?>) serverSpan.get("attributes")).get(HTTP_ROUTE.toString()));
     }
 
     private static List<Map<String, Object>> getSpans() {

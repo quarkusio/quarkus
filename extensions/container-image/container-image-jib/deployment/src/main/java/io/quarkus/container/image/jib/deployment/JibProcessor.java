@@ -333,6 +333,10 @@ public class JibProcessor {
         } else {
             registryImage.addCredentialRetriever(credentialRetrieverFactory.wellKnownCredentialHelpers());
             registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig());
+            String dockerConfigEnv = System.getenv().get("DOCKER_CONFIG");
+            if (dockerConfigEnv != null) {
+                registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig(Path.of(dockerConfigEnv)));
+            }
         }
         return registryImage;
     }

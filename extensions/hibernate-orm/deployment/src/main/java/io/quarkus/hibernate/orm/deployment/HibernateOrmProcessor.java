@@ -277,12 +277,19 @@ public final class HibernateOrmProcessor {
                         "database.generation");
                 if (!ConfigUtils.isAnyPropertyPresent(propertyKeysIndicatingDataSourceConfigured)
                         && !ConfigUtils.isPropertyPresent(databaseGenerationPropertyKey)) {
-                    String forcedValue = "drop-and-create";
                     devServicesAdditionalConfigProducer
-                            .produce(new DevServicesAdditionalConfigBuildItem(propertyKeysIndicatingDataSourceConfigured,
-                                    databaseGenerationPropertyKey, forcedValue,
-                                    () -> LOG.infof("Setting %s=%s to initialize Dev Services managed database",
-                                            databaseGenerationPropertyKey, forcedValue)));
+                            .produce(new DevServicesAdditionalConfigBuildItem(devServicesConfig -> {
+                                // Only force DB generation if the datasource is configured through dev services
+                                if (propertyKeysIndicatingDataSourceConfigured.stream()
+                                        .anyMatch(devServicesConfig::containsKey)) {
+                                    String forcedValue = "drop-and-create";
+                                    LOG.infof("Setting %s=%s to initialize Dev Services managed database",
+                                            databaseGenerationPropertyKey, forcedValue);
+                                    return Map.of(databaseGenerationPropertyKey, forcedValue);
+                                } else {
+                                    return Map.of();
+                                }
+                            }));
                 }
             }
         }

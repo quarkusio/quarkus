@@ -51,9 +51,13 @@ public class DevServicesOpenTelemetryProcessor {
                     ConfigValue driverValue = ConfigProvider.getConfig().getConfigValue(driverKey);
                     if (driverValue.getValue() != null
                             && driverValue.getValue().equals("io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver")) {
-                        devServicesAdditionalConfig.produce(new DevServicesAdditionalConfigBuildItem(key, key,
-                                value.replaceFirst("jdbc:", "jdbc:otel:"), () -> {
-                                }));
+                        devServicesAdditionalConfig.produce(new DevServicesAdditionalConfigBuildItem(devServicesConfig -> {
+                            if (devServicesConfig.containsKey(key)) {
+                                return Map.of(key, value.replaceFirst("jdbc:", "jdbc:otel:"));
+                            } else {
+                                return Map.of();
+                            }
+                        }));
                     }
                 }
             }

@@ -1,13 +1,14 @@
 package io.quarkus.opentelemetry.deployment.dev;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.ConfigValue;
 
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
+import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -20,47 +21,37 @@ import io.quarkus.opentelemetry.deployment.OpenTelemetryEnabled;
 public class DevServicesOpenTelemetryProcessor {
 
     @BuildStep
-    void devServicesDatasources(
-            Optional<DevServicesDatasourceResultBuildItem> devServicesDatasources,
+    void devServicesDatasources(List<JdbcDataSourceBuildItem> jdbcDataSources,
             BuildProducer<DevServicesAdditionalConfigBuildItem> devServicesAdditionalConfig) {
-
-        if (devServicesDatasources.isPresent()) {
-            Map<String, String> properties = new HashMap<>();
-            DevServicesDatasourceResultBuildItem.DbResult defaultDatasource = devServicesDatasources.get()
-                    .getDefaultDatasource();
-            if (defaultDatasource != null) {
-                properties.putAll(defaultDatasource.getConfigProperties());
-            }
-
-            Map<String, DevServicesDatasourceResultBuildItem.DbResult> namedDatasources = devServicesDatasources.get()
-                    .getNamedDatasources();
-            if (namedDatasources != null) {
-                for (DevServicesDatasourceResultBuildItem.DbResult dbResult : namedDatasources.values()) {
-                    if (dbResult != null) {
-                        properties.putAll(dbResult.getConfigProperties());
+        for (JdbcDataSourceBuildItem dataSource : jdbcDataSources) {
+            // if the datasource is explicitly configured to use the OTel driver...
+            if (dataSourceUsesOTelJdbcDriver(dataSource.getName())) {
+                List<String> urlPropertyKeys = DataSourceUtil.dataSourcePropertyKeys(dataSource.getName(), "jdbc.url");
+                devServicesAdditionalConfig.produce(new DevServicesAdditionalConfigBuildItem(devServicesConfig -> {
+                    Map<String, String> overrides = new HashMap<>();
+                    for (String key : urlPropertyKeys) {
+                        String devServicesUrl = devServicesConfig.get(key);
+                        // ... and if the same datasource uses dev services...
+                        if (devServicesUrl != null) {
+                            // ... then we rewrite the jdbc url to add the otel prefix.
+                            overrides.put(key, devServicesUrl.replaceFirst("jdbc:", "jdbc:otel:"));
+                        }
                     }
-                }
-            }
-
-            // if we find a dev service datasource and the OTel driver, we rewrite the jdbc url to add the otel prefix
-            for (Map.Entry<String, String> property : properties.entrySet()) {
-                String key = property.getKey();
-                String value = property.getValue();
-                if (key.endsWith(".url") && value.startsWith("jdbc:")) {
-                    String driverKey = key.substring(0, key.length() - 4) + ".driver";
-                    ConfigValue driverValue = ConfigProvider.getConfig().getConfigValue(driverKey);
-                    if (driverValue.getValue() != null
-                            && driverValue.getValue().equals("io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver")) {
-                        devServicesAdditionalConfig.produce(new DevServicesAdditionalConfigBuildItem(devServicesConfig -> {
-                            if (devServicesConfig.containsKey(key)) {
-                                return Map.of(key, value.replaceFirst("jdbc:", "jdbc:otel:"));
-                            } else {
-                                return Map.of();
-                            }
-                        }));
-                    }
-                }
+                    return overrides;
+                }));
             }
         }
+    }
+
+    private boolean dataSourceUsesOTelJdbcDriver(String dataSourceName) {
+        List<String> driverPropertyKeys = DataSourceUtil.dataSourcePropertyKeys(dataSourceName, "jdbc.driver");
+        for (String driverPropertyKey : driverPropertyKeys) {
+            ConfigValue explicitlyConfiguredDriverValue = ConfigProvider.getConfig().getConfigValue(driverPropertyKey);
+            if (explicitlyConfiguredDriverValue.getValue() != null) {
+                return explicitlyConfiguredDriverValue.getValue()
+                        .equals("io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver");
+            }
+        }
+        return false;
     }
 }

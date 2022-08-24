@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
@@ -197,6 +198,18 @@ public class ProgrammaticApiTest {
         assertSame(thrown, result);
         assertKeySetContains();
         assertGetIfPresentMissingKey(key);
+    }
+
+    @Test
+    public void testPutShouldPopulateCache() {
+        CaffeineCache caffeineCache = cache.as(CaffeineCache.class);
+        try {
+            caffeineCache.put("foo", CompletableFuture.completedFuture("bar"));
+            assertEquals("bar", caffeineCache.get("foo", Function.identity()).await().indefinitely());
+        } finally {
+            // invalidate to remove side effects in other tests
+            cache.invalidate("foo").await().indefinitely();
+        }
     }
 
     private void assertKeySetContains(Object... expectedKeys) {

@@ -2,6 +2,7 @@ package io.quarkus.cache;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 public interface CaffeineCache extends Cache {
 
@@ -26,4 +27,18 @@ public interface CaffeineCache extends Cache {
      * @see com.github.benmanes.caffeine.cache.AsyncCache#getIfPresent(Object)
      */
     <V> CompletableFuture<V> getIfPresent(Object key);
+
+    /**
+     * Associates {@code value} with {@code key} in this cache. If the cache previously contained a
+     * value associated with {@code key}, the old value is replaced by {@code value}. If the
+     * asynchronous computation fails, the entry will be automatically removed.
+     * <p>
+     * Prefer {@link #get(Object, Function)} when using the conventional "if cached, return; otherwise
+     * create, cache and return" pattern.
+     *
+     * @param key key with which the specified value is to be associated
+     * @param valueFuture value to be associated with the specified key
+     * @throws NullPointerException if the specified key or value is null
+     */
+    <V> void put(Object key, CompletableFuture<V> valueFuture);
 }

@@ -218,6 +218,11 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
         return Collections.unmodifiableSet(new HashSet<>(cache.asMap().keySet()));
     }
 
+    @Override
+    public <V> void put(Object key, CompletableFuture<V> valueFuture) {
+        cache.put(key, (CompletableFuture<Object>) valueFuture);
+    }
+
     // For testing purposes only.
     public CaffeineCacheInfo getCacheInfo() {
         return cacheInfo;

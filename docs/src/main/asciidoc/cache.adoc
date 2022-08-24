@@ -597,6 +597,36 @@ public class CacheKeysService {
 }
 ----
 
+=== Populating a `CaffeineCache`
+
+You can populate a `CaffeineCache` using the `CaffeineCache#put(Object, CompletableFuture)` method.
+This method associates the `CompletableFuture` with the given key in the cache. If the cache previously contained a value associated with the key, the old value is replaced by this `CompletableFuture`. If the asynchronous computation fails, the entry will be automatically removed.
+
+[source,java]
+----
+package org.acme.cache;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheName;
+import io.quarkus.cache.CaffeineCache;
+
+import java.util.concurrent.CompletableFuture;
+
+@ApplicationScoped
+public class CacheService {
+
+    @CacheName("my-cache")
+    Cache cache;
+
+    @PostConstruct
+    public void initialize() {
+        cache.as(CaffeineCache.class).put("foo", CompletableFuture.completedFuture("bar"));
+    }
+}
+----
+
 === Retrieving a value if a key is present from a `CaffeineCache`
 
 The cache value from a specific `CaffeineCache` can be retrieved if present as shown below.

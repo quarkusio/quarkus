@@ -4,15 +4,21 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
+import java.util.stream.Collectors;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 
-import io.opentelemetry.extension.annotations.WithSpan;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.instrumentation.annotations.SpanAttribute;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
+import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -37,6 +43,16 @@ import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
 @BuildSteps(onlyIf = OpenTelemetryEnabled.class)
 public class OpenTelemetryProcessor {
+
+    private static final DotName LEGACY_WITH_SPAN = DotName.createSimple(
+            io.opentelemetry.extension.annotations.WithSpan.class.getName());
+    private static final DotName WITH_SPAN = DotName.createSimple(WithSpan.class.getName());
+    private static final DotName SPAN_KIND = DotName.createSimple(SpanKind.class.getName());
+    private static final DotName WITH_SPAN_INTERCEPTOR = DotName.createSimple(WithSpanInterceptor.class.getName());
+    private static final DotName LEGACY_SPAN_ATRIBUTE = DotName.createSimple(
+            io.opentelemetry.extension.annotations.SpanAttribute.class.getName());;
+    private static final DotName SPAN_ATTRIBUTE = DotName.createSimple(SpanAttribute.class.getName());
+
     static class RestClientAvailable implements BooleanSupplier {
         private static final boolean IS_REST_CLIENT_AVAILABLE = isClassPresent("javax.ws.rs.client.ClientRequestFilter");
 
@@ -81,14 +97,42 @@ public class OpenTelemetryProcessor {
     }
 
     @BuildStep
-    void transformWithSpan(
-            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
+    void transformWithSpan(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
+
+        // Transform deprecated annotation into new one
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == AnnotationTarget.Kind.METHOD;
+            }
+
+            @Override
+            public void transform(TransformationContext context) {
+                final AnnotationTarget target = context.getTarget();
+
+                List<AnnotationInstance> legacyWithSpans = context.getAnnotations().stream()
+                        .filter(annotationInstance -> annotationInstance.name().equals(LEGACY_WITH_SPAN))
+                        .collect(Collectors.toList());
+
+                for (AnnotationInstance legacyAnnotation : legacyWithSpans) {
+                    AnnotationValue value = Optional.ofNullable(legacyAnnotation.value("value"))
+                            .orElse(AnnotationValue.createStringValue("value", ""));
+                    AnnotationValue kind = Optional.ofNullable(legacyAnnotation.value("kind"))
+                            .orElse(AnnotationValue.createEnumValue("kind", SPAN_KIND, SpanKind.INTERNAL.name()));
+                    AnnotationInstance annotation = AnnotationInstance.create(
+                            WITH_SPAN,
+                            target,
+                            List.of(value, kind));
+                    context.transform().add(annotation).done();
+                }
+            }
+        }));
 
         annotationsTransformer.produce(new AnnotationsTransformerBuildItem(transformationContext -> {
             AnnotationTarget target = transformationContext.getTarget();
             if (target.kind().equals(AnnotationTarget.Kind.CLASS)) {
-                if (target.asClass().name().equals(DotName.createSimple(WithSpanInterceptor.class.getName()))) {
-                    transformationContext.transform().add(DotName.createSimple(WithSpan.class.getName())).done();
+                if (target.asClass().name().equals(WITH_SPAN_INTERCEPTOR)) {
+                    transformationContext.transform().add(WITH_SPAN).done();
                 }
             }
         }));

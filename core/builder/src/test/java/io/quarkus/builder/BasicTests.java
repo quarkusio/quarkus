@@ -200,7 +200,7 @@ public class BasicTests {
                         "change the return type of the method to a build item type",
                         "add a parameter of type BuildProducer<[some build item type]>/Consumer<[some build item type]>",
                         "annotate the method with @Produces",
-                        "Use @Produce(EmptyBuildItem.class) if you want to always execute this step");
+                        "Use @Produce(ArtifactResultBuildItem.class) if you want to always execute this step");
     }
 
     @Test

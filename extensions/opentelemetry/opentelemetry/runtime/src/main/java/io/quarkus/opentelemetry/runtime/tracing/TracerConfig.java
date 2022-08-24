@@ -23,4 +23,12 @@ public class TracerConfig {
     @ConfigGroup
     public static class SpanExporterConfig {
     }
+
+    /** Build / static runtime config for async */
+    public AsyncConfig async;
+
+    /** Build / static runtime config for async */
+    @ConfigGroup
+    public static class AsyncConfig {
+    }
 }

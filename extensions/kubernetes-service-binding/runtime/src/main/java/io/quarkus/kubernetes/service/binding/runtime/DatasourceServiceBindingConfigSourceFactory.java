@@ -47,6 +47,12 @@ public abstract class DatasourceServiceBindingConfigSourceFactory
             log.debugf("Property 'password' was not found for datasource of type %s", serviceBinding.getType());
         }
 
+        String url = bindingProperties.get("jdbc-url");
+        if (url != null) {
+            properties.put(urlPropertyName, url);
+            return properties;
+        }
+
         String host = bindingProperties.get("host");
         String port = bindingProperties.get("port");
         String database = bindingProperties.get("database");
@@ -72,11 +78,19 @@ public abstract class DatasourceServiceBindingConfigSourceFactory
         public Jdbc() {
             super("jdbc", "quarkus.datasource.jdbc.url", "jdbc:%s://%s%s/%s");
         }
+
+        public Jdbc(String urlFormat) {
+            super("jdbc", "quarkus.datasource.jdbc.url", urlFormat);
+        }
     }
 
     public static class Reactive extends DatasourceServiceBindingConfigSourceFactory {
         public Reactive() {
             super("reactive", "quarkus.datasource.reactive.url", "%s://%s%s/%s");
+        }
+
+        public Reactive(String urlFormat) {
+            super("reactive", "quarkus.datasource.reactive.url", urlFormat);
         }
     }
 }

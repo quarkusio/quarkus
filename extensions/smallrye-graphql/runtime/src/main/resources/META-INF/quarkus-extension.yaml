@@ -16,3 +16,9 @@ metadata:
   - "mp.graphql."
   - "smallrye.graphql."
   - "quarkus.smallrye-graphql."
+  codestart:
+    name: "smallrye-graphql"
+    languages:
+      - "java"
+      - "kotlin"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

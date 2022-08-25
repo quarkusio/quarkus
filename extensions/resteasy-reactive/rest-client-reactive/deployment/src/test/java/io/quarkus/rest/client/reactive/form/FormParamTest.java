@@ -24,7 +24,7 @@ public class FormParamTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(FormClient.class, SubFormClient.class, Resource.class));
+                    .addClasses(FormClient.class, SubFormClient.class, Resource.class, Mode.class));
 
     @TestHTTPResource
     URI baseUri;
@@ -50,6 +50,13 @@ public class FormParamTest {
         assertThat(result).isEqualTo("sub rootParam1:par1,rootParam2:par 2,subParam1:spar1,subParam2:spar 2");
     }
 
+    @Test
+    void shouldSupportParsingDifferentTypes() {
+        FormClient formClient = RestClientBuilder.newBuilder().baseUri(baseUri).build(FormClient.class);
+        String result = formClient.withTypes("a", 1, 2, Mode.On);
+        assertThat(result).isEqualTo("root text:a,number:1,wrapNumber:2,mode:On");
+    }
+
     public interface FormClient {
         @POST
         @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -58,6 +65,13 @@ public class FormParamTest {
 
         @Path("/sub")
         SubFormClient subForm(@FormParam("rootParam1") String formParam1, @FormParam("rootParam2") String formParam2);
+
+        @POST
+        @Path("/types")
+        @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+        @Produces(MediaType.TEXT_PLAIN)
+        String withTypes(@FormParam("text") String text, @FormParam("number") int number,
+                @FormParam("wrapNumber") Integer wrapNumber, @FormParam("mode") Mode mode);
     }
 
     public interface SubFormClient {

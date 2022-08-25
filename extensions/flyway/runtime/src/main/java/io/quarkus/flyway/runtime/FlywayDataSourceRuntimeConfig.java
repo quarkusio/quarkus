@@ -17,7 +17,7 @@ public final class FlywayDataSourceRuntimeConfig {
      *
      * @return {@link FlywayDataSourceRuntimeConfig}
      */
-    public static final FlywayDataSourceRuntimeConfig defaultConfig() {
+    public static FlywayDataSourceRuntimeConfig defaultConfig() {
         return new FlywayDataSourceRuntimeConfig();
     }
 
@@ -126,7 +126,7 @@ public final class FlywayDataSourceRuntimeConfig {
     /**
      * Whether to automatically call validate when performing a migration.
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "true")
     public boolean validateOnMigrate = true;
 
     /**

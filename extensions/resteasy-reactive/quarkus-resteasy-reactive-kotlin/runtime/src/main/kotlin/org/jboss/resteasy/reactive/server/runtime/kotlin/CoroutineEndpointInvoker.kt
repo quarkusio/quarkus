@@ -5,10 +5,7 @@ import org.jboss.resteasy.reactive.server.spi.EndpointInvoker
 /**
  * Base interface implemented by the synthetic beans that represent suspending rest endpoints.
  *
- * @see [EndpointInvoker]
- *
- * Also see {@code io.quarkus.resteasy.reactive.kotlin.deployment.KotlinCoroutineIntegrationProcessor} for the build-time part
- * of coroutine support
+ * @see [KotlinCoroutineIntegrationProcessor] the build-time part of coroutine support
  */
 interface CoroutineEndpointInvoker: EndpointInvoker {
     /**

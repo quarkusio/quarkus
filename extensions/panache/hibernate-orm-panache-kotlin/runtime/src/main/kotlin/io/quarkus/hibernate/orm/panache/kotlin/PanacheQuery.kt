@@ -149,10 +149,10 @@ interface PanacheQuery<Entity: Any> {
     fun withHint(hintName: String, value: Any): PanacheQuery<Entity>
 
     /**
-     * <p>
+     *
      * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared
      * with [FilterDef] on your entity or package, and enabled with [Filter] on your entity.
-     * <p>
+     *
      * WARNING: setting filters can only be done on the underlying Hibernate [Session] and so this
      * will modify the session's filters for the duration of obtaining the results (not while building
      * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
@@ -165,10 +165,10 @@ interface PanacheQuery<Entity: Any> {
     fun filter(filterName: String, parameters: Parameters): PanacheQuery<Entity>
 
     /**
-     * <p>
+     *
      * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared
      * with [FilterDef] on your entity or package, and enabled with [Filter] on your entity.
-     * <p>
+     *
      * WARNING: setting filters can only be done on the underlying Hibernate [Session] and so this
      * will modify the session's filters for the duration of obtaining the results (not while building
      * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
@@ -181,10 +181,10 @@ interface PanacheQuery<Entity: Any> {
     fun filter(filterName: String, parameters: Map<String, Any>): PanacheQuery<Entity>
 
     /**
-     * <p>
+     *
      * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared
      * with [FilterDef] on your entity or package, and enabled with [Filter] on your entity.
-     * <p>
+     *
      * WARNING: setting filters can only be done on the underlying Hibernate [Session] and so this
      * will modify the session's filters for the duration of obtaining the results (not while building
      * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
@@ -197,7 +197,7 @@ interface PanacheQuery<Entity: Any> {
 
     /**
      * Reads and caches the total number of entities this query operates on. This causes a database
-     * query with <code>SELECT COUNT(*)</code> and a query equivalent to the current query, minus
+     * query with `SELECT COUNT(*)` and a query equivalent to the current query, minus
      * ordering.
      *
      * @return the total number of entities this query operates on, cached.

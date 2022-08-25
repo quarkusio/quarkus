@@ -25,7 +25,8 @@ public class NamespacedConfigMapPropertiesTest {
         ConfigMapPropertiesTest.assertProperty("someProp5", "val5FromDemo");
 
         SecretPropertiesTest.assertProperty("dummysecret", "dummysecretFromDemo");
-        SecretPropertiesTest.assertProperty("secretProp1", "val1FromDemo");
+        SecretPropertiesTest.assertProperty("s1SecretProp1", "val1FromDemo");
+        SecretPropertiesTest.assertProperty("s2SecretProp1", "val99FromDemo");
         SecretPropertiesTest.assertProperty("secretProp2", "val2FromDemo");
         SecretPropertiesTest.assertProperty("secretProp3", "val3FromDemo");
         SecretPropertiesTest.assertProperty("secretProp4", "val4FromDemo");
@@ -39,7 +40,7 @@ public class NamespacedConfigMapPropertiesTest {
             conf.put("quarkus.kubernetes-config.enabled", "true");
             conf.put("quarkus.kubernetes-config.config-maps", "cmap3");
             conf.put("quarkus.kubernetes-config.namespace", "demo");
-            conf.put("quarkus.kubernetes-config.secrets", "s1");
+            conf.put("quarkus.kubernetes-config.secrets", "s1,s2");
             conf.put("quarkus.kubernetes-config.secrets.enabled", "true");
             return conf;
         }

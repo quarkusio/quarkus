@@ -1,5 +1,9 @@
 package io.quarkus.kubernetes.config.runtime;
 
+import static io.quarkus.kubernetes.config.runtime.ExpandPropertiesUtil.SECRETS;
+import static io.quarkus.kubernetes.config.runtime.ExpandPropertiesUtil.expandMap;
+import static io.quarkus.kubernetes.config.runtime.ExpandPropertiesUtil.expandYaml;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.UncheckedIOException;
@@ -50,6 +54,7 @@ public class SecretConfigSourceUtil extends AbstractKubernetesConfigSourceUtil {
         for (Map.Entry<String, String> entry : input.entrySet()) {
             decodedMap.put(entry.getKey(), decodeValue(entry.getValue()));
         }
+
         return decodedMap;
     }
 
@@ -58,7 +63,8 @@ public class SecretConfigSourceUtil extends AbstractKubernetesConfigSourceUtil {
         private static final String NAME_PREFIX = "SecretLiteralDataPropertiesConfigSource[secret=";
 
         public SecretLiteralDataPropertiesConfigSource(String secretName, Map<String, String> propertyMap, int ordinal) {
-            super(NAME_PREFIX + secretName + "]", decodeMapValues(propertyMap), ordinal);
+            super(NAME_PREFIX + secretName + "]", expandMap(SECRETS, secretName, decodeMapValues(propertyMap)),
+                    ordinal);
         }
     }
 
@@ -67,7 +73,8 @@ public class SecretConfigSourceUtil extends AbstractKubernetesConfigSourceUtil {
         private static final String NAME_FORMAT = "SecretStringInputPropertiesConfigSource[secret=%s,file=%s]";
 
         SecretStringInputPropertiesConfigSource(String secretName, String fileName, String input, int ordinal) {
-            super(String.format(NAME_FORMAT, secretName, fileName), readProperties(decodeValue(input)), ordinal);
+            super(String.format(NAME_FORMAT, secretName, fileName),
+                    expandMap(SECRETS, secretName, readProperties(decodeValue(input))), ordinal);
         }
 
         @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -87,7 +94,8 @@ public class SecretConfigSourceUtil extends AbstractKubernetesConfigSourceUtil {
         private static final String NAME_FORMAT = "SecretStringInputYamlConfigSource[secret=%s,file=%s]";
 
         public SecretStringInputYamlConfigSource(String secretName, String fileName, String input, int ordinal) {
-            super(String.format(NAME_FORMAT, secretName, fileName), decodeValue(input), ordinal);
+            super(String.format(NAME_FORMAT, secretName, fileName), expandYaml(SECRETS, secretName, decodeValue(input)),
+                    ordinal);
         }
     }
 }

@@ -1,5 +1,9 @@
 package io.quarkus.kubernetes.config.runtime;
 
+import static io.quarkus.kubernetes.config.runtime.ExpandPropertiesUtil.CONFIGMAPS;
+import static io.quarkus.kubernetes.config.runtime.ExpandPropertiesUtil.expandMap;
+import static io.quarkus.kubernetes.config.runtime.ExpandPropertiesUtil.expandYaml;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.UncheckedIOException;
@@ -44,7 +48,7 @@ public class ConfigMapConfigSourceUtil extends AbstractKubernetesConfigSourceUti
         private static final String NAME_PREFIX = "ConfigMapLiteralDataPropertiesConfigSource[configMap=";
 
         public ConfigMapLiteralDataPropertiesConfigSource(String configMapName, Map<String, String> propertyMap, int ordinal) {
-            super(NAME_PREFIX + configMapName + "]", propertyMap, ordinal);
+            super(NAME_PREFIX + configMapName + "]", expandMap(CONFIGMAPS, configMapName, propertyMap), ordinal);
         }
     }
 
@@ -53,7 +57,8 @@ public class ConfigMapConfigSourceUtil extends AbstractKubernetesConfigSourceUti
         private static final String NAME_FORMAT = "ConfigMapStringInputPropertiesConfigSource[configMap=%s,file=%s]";
 
         ConfigMapStringInputPropertiesConfigSource(String configMapName, String fileName, String input, int ordinal) {
-            super(String.format(NAME_FORMAT, configMapName, fileName), readProperties(input), ordinal);
+            super(String.format(NAME_FORMAT, configMapName, fileName),
+                    expandMap(CONFIGMAPS, configMapName, readProperties(input)), ordinal);
         }
 
         @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -73,7 +78,7 @@ public class ConfigMapConfigSourceUtil extends AbstractKubernetesConfigSourceUti
         private static final String NAME_FORMAT = "ConfigMapStringInputYamlConfigSource[configMap=%s,file=%s]";
 
         public ConfigMapStringInputYamlConfigSource(String configMapName, String fileName, String input, int ordinal) {
-            super(String.format(NAME_FORMAT, configMapName, fileName), input, ordinal);
+            super(String.format(NAME_FORMAT, configMapName, fileName), expandYaml(CONFIGMAPS, configMapName, input), ordinal);
         }
     }
 }

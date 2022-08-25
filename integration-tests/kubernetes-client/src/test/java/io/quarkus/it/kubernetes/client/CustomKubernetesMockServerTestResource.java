@@ -49,6 +49,12 @@ public class CustomKubernetesMockServerTestResource extends KubernetesMockServer
                         .addToData("application.yaml", encodeValue("secret:\n  prop4: val4")).build())
                 .once();
 
+        mockServer.expect().get().withPath("/api/v1/namespaces/test/secrets/s2")
+                .andReturn(200, secretBuilder("s2")
+                        .addToData("secret.prop1", encodeValue("val99"))
+                        .build())
+                .once();
+
         mockServer.expect().get().withPath("/api/v1/namespaces/demo/secrets/s1")
                 .andReturn(200, secretBuilder("s1")
                         .addToData("dummysecret", encodeValue("dummysecretFromDemo"))
@@ -57,6 +63,12 @@ public class CustomKubernetesMockServerTestResource extends KubernetesMockServer
                         .addToData("secret.prop2", encodeValue("val2FromDemo"))
                         .addToData("application.properties", encodeValue("secret.prop3=val3FromDemo"))
                         .addToData("application.yaml", encodeValue("secret:\n  prop4: val4FromDemo")).build())
+                .once();
+
+        mockServer.expect().get().withPath("/api/v1/namespaces/demo/secrets/s2")
+                .andReturn(200, secretBuilder("s2")
+                        .addToData("secret.prop1", encodeValue("val99FromDemo"))
+                        .build())
                 .once();
     }
 

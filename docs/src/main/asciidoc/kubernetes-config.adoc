@@ -145,6 +145,73 @@ The end result of the above configuration would be the following `env` part bein
 
 See xref:deploying-to-kubernetes.adoc#secret-mapping[this] for more details.
 
+=== Properties Injection
+
+The properties obtained from the ConfigMaps and Secrets can then be injected in our application beans. See https://quarkus.io/guides/config#inject-the-configuration[this link] for more information.
+
+For example, we have installed the following ConfigMap and Secret resources in the namespace where we'll deploy our application:
+
+[source,yaml]
+.appConfig.yaml
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: appConfig
+data:
+  application.properties: |
+    hello.message=Hello %s from configmap
+----
+
+[source,yaml]
+.appSecret.yaml
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: appSecret
+data:
+  username: YWRtaW4=
+  password: MWYyZDFlMmU2N2Rm
+type: Opaque
+----
+
+Next, we need to configure the Kubernetes Config extension to use these two resources by adding the following configuration:
+
+[source,properties]
+----
+quarkus.kubernetes-config.enabled=true
+quarkus.kubernetes-config.secrets.enabled=true
+quarkus.kubernetes-config.config-maps=appConfig
+quarkus.kubernetes-config.secrets=appSecret
+----
+
+Now, we can inject the properties from the resources using the `@ConfigProperty` annotation:
+
+[source,java]
+----
+// From the config map
+@ConfigProperty(name = "hello.message")
+String message;
+
+// From the secret
+@ConfigProperty(name = "username")
+String username;
+----
+
+Moreover, in case of some of your resources use the same keys, you will deal with property name conflicts. To solve this issue, you can also inject these properties by specifying the source resource and the name:
+
+[source,java]
+----
+// From the config map
+@ConfigProperty(name = "configMaps/appConfig.hello.message")
+String message;
+
+// From the secret
+@ConfigProperty(name = "secrets/appSecret.username")
+String username;
+----
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-kubernetes-config.adoc[opts=optional, leveloffset=+1]

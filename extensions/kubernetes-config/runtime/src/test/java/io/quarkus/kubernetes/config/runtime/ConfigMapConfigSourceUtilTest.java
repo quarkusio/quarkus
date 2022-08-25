@@ -33,7 +33,11 @@ class ConfigMapConfigSourceUtilTest {
 
         assertThat(configSources).singleElement().satisfies(c -> {
             assertThat(c.getProperties()).containsOnly(entry("some.key", "someValue"),
-                    entry("some.other", "someOtherValue"));
+                    entry("configMaps/testOnlyLiteralData.some.key", "someValue"),
+                    entry("configMaps/namespace/testOnlyLiteralData.some.key", "someValue"),
+                    entry("some.other", "someOtherValue"),
+                    entry("configMaps/testOnlyLiteralData.some.other", "someOtherValue"),
+                    entry("configMaps/namespace/testOnlyLiteralData.some.other", "someOtherValue"));
             assertThat(c.getName()).contains("testOnlyLiteralData");
             assertThat(c.getName()).isEqualTo(
                     "ConfigMapLiteralDataPropertiesConfigSource[configMap=namespace/testOnlyLiteralData/uid/version]");
@@ -48,8 +52,15 @@ class ConfigMapConfigSourceUtilTest {
         List<ConfigSource> configSources = sut.toConfigSources(configMap.getMetadata(), configMap.getData(), 0);
 
         assertThat(configSources).singleElement().satisfies(c -> {
-            assertThat(c.getProperties()).containsOnly(entry("key1", "value1"), entry("key2", "value2"),
-                    entry("some.key", "someValue"));
+            assertThat(c.getProperties()).containsOnly(entry("key1", "value1"),
+                    entry("configMaps/testOnlySingleMatchingPropertiesData.key1", "value1"),
+                    entry("configMaps/namespace/testOnlySingleMatchingPropertiesData.key1", "value1"),
+                    entry("key2", "value2"),
+                    entry("configMaps/testOnlySingleMatchingPropertiesData.key2", "value2"),
+                    entry("configMaps/namespace/testOnlySingleMatchingPropertiesData.key2", "value2"),
+                    entry("some.key", "someValue"),
+                    entry("configMaps/testOnlySingleMatchingPropertiesData.some.key", "someValue"),
+                    entry("configMaps/namespace/testOnlySingleMatchingPropertiesData.some.key", "someValue"));
             assertThat(c.getName()).contains("testOnlySingleMatchingPropertiesData");
             assertThat(c.getOrdinal()).isEqualTo(270);
         });
@@ -73,8 +84,15 @@ class ConfigMapConfigSourceUtilTest {
         List<ConfigSource> configSources = sut.toConfigSources(configMap.getMetadata(), configMap.getData(), 0);
 
         assertThat(configSources).singleElement().satisfies(c -> {
-            assertThat(c.getProperties()).containsOnly(entry("key1", "value1"), entry("key2", "value2"),
-                    entry("some.key", "someValue"));
+            assertThat(c.getProperties()).containsOnly(entry("key1", "value1"),
+                    entry("configMaps/testOnlySingleMatchingYamlData.key1", "value1"),
+                    entry("configMaps/namespace/testOnlySingleMatchingYamlData.key1", "value1"),
+                    entry("key2", "value2"),
+                    entry("configMaps/testOnlySingleMatchingYamlData.key2", "value2"),
+                    entry("configMaps/namespace/testOnlySingleMatchingYamlData.key2", "value2"),
+                    entry("some.key", "someValue"),
+                    entry("configMaps/testOnlySingleMatchingYamlData.some.key", "someValue"),
+                    entry("configMaps/namespace/testOnlySingleMatchingYamlData.some.key", "someValue"));
             assertThat(c.getName()).contains("testOnlySingleMatchingYamlData");
         });
     }
@@ -109,7 +127,7 @@ class ConfigMapConfigSourceUtilTest {
 
         assertThat(configSources).filteredOn(c -> !c.getName().toLowerCase().contains("application"))
                 .hasOnlyOneElementSatisfying(c -> {
-                    assertThat(c.getProperties()).containsOnly(
+                    assertThat(c.getProperties()).contains(
                             entry("some.key", "someValue"),
                             entry("app.properties", "ignored1=ignoredValue1"),
                             entry("app.yaml", "ignored2: ignoredValue2"),
@@ -118,16 +136,27 @@ class ConfigMapConfigSourceUtilTest {
 
         assertThat(configSources).filteredOn(c -> c.getName().toLowerCase().contains("application.properties"))
                 .singleElement().satisfies(c -> {
-                    assertThat(c.getProperties()).containsOnly(entry("key1", "value1"), entry("app.key", "val"));
+                    assertThat(c.getProperties()).containsOnly(entry("key1", "value1"),
+                            entry("configMaps/testWithAllKindsOfData.key1", "value1"),
+                            entry("configMaps/namespace/testWithAllKindsOfData.key1", "value1"),
+                            entry("app.key", "val"),
+                            entry("configMaps/testWithAllKindsOfData.app.key", "val"),
+                            entry("configMaps/namespace/testWithAllKindsOfData.app.key", "val"));
                 });
         assertThat(configSources).filteredOn(c -> c.getName().toLowerCase().contains("application.yaml"))
                 .singleElement().satisfies(c -> {
                     assertThat(c.getProperties()).containsOnly(entry("key2", "value2"),
-                            entry("some.otherKey", "someOtherValue"));
+                            entry("configMaps/testWithAllKindsOfData.key2", "value2"),
+                            entry("configMaps/namespace/testWithAllKindsOfData.key2", "value2"),
+                            entry("some.otherKey", "someOtherValue"),
+                            entry("configMaps/testWithAllKindsOfData.some.otherKey", "someOtherValue"),
+                            entry("configMaps/namespace/testWithAllKindsOfData.some.otherKey", "someOtherValue"));
                 });
         assertThat(configSources).filteredOn(c -> c.getName().toLowerCase().contains("application.yml"))
                 .singleElement().satisfies(c -> {
-                    assertThat(c.getProperties()).containsOnly(entry("key3", "value3"));
+                    assertThat(c.getProperties()).containsOnly(entry("key3", "value3"),
+                            entry("configMaps/testWithAllKindsOfData.key3", "value3"),
+                            entry("configMaps/namespace/testWithAllKindsOfData.key3", "value3"));
                 });
     }
 

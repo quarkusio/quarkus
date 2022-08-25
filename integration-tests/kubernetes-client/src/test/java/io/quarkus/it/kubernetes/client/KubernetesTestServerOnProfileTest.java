@@ -60,7 +60,8 @@ public class KubernetesTestServerOnProfileTest {
             overrides.put("some.prop3", "asd");
             overrides.put("some.prop4", "asd");
             overrides.put("some.prop5", "asd");
-            overrides.put("secret.prop1", "asd");
+            overrides.put("secrets/s1.secret.prop1", "asd");
+            overrides.put("secrets/s2.secret.prop1", "asd");
             overrides.put("secret.prop2", "asd");
             overrides.put("secret.prop3", "asd");
             overrides.put("secret.prop4", "asd");

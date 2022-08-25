@@ -14,8 +14,11 @@ public class SecretProperties {
     @ConfigProperty(name = "overridden.secret")
     String overriddenSecret;
 
-    @ConfigProperty(name = "secret.prop1")
-    String secretProp1;
+    @ConfigProperty(name = "secrets/s1.secret.prop1")
+    String s1SecretProp1;
+
+    @ConfigProperty(name = "secrets/s2.secret.prop1")
+    String s2SecretProp1;
 
     @ConfigProperty(name = "secret.prop2")
     String secretProp2;
@@ -39,9 +42,15 @@ public class SecretProperties {
     }
 
     @GET
-    @Path("/secretProp1")
-    public String secretProp1() {
-        return secretProp1;
+    @Path("/s1SecretProp1")
+    public String s1SecretProp1() {
+        return s1SecretProp1;
+    }
+
+    @GET
+    @Path("/s2SecretProp1")
+    public String s2SecretProp1() {
+        return s2SecretProp1;
     }
 
     @GET

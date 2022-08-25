@@ -175,6 +175,15 @@ public class ConfigurationImpl implements Configuration {
         return new HashSet<>(allInstances.values());
     }
 
+    public <T> T getInstance(Class<T> componentClass) {
+        Object object = allInstances.get(componentClass);
+        if (object == null) {
+            return null;
+        }
+
+        return (T) object;
+    }
+
     public void addEnabledFeature(Feature feature) {
         enabledFeatures.add(feature);
     }
@@ -216,103 +225,6 @@ public class ConfigurationImpl implements Configuration {
         register(component, (Integer) null);
     }
 
-    private void register(Object component, Integer priority) {
-        if (allInstances.containsKey(component.getClass())) {
-            return;
-        }
-        boolean added = false;
-        List<Class<?>> contractableClasses = new ArrayList<>();
-        if (component instanceof Feature) {
-            contractableClasses.add(Feature.class);
-
-            Feature thisFeature = (Feature) component;
-            added = true;
-            if (thisFeature.configure(new ConfigFeatureContext())) {
-                enabledFeatures.add(thisFeature);
-            }
-        }
-        if (component instanceof ClientRequestFilter) {
-            contractableClasses.add(ClientRequestFilter.class);
-
-            added = true;
-            int effectivePriority = priority != null ? priority : determinePriority(component);
-            requestFilters.add(effectivePriority, (ClientRequestFilter) component);
-        }
-        if (component instanceof ClientResponseFilter) {
-            contractableClasses.add(ClientRequestFilter.class);
-
-            added = true;
-            int effectivePriority = priority != null ? priority : determinePriority(component);
-            responseFilters.add(effectivePriority, (ClientResponseFilter) component);
-        }
-        if (component instanceof WriterInterceptor) {
-            contractableClasses.add(WriterInterceptor.class);
-
-            added = true;
-            int effectivePriority = priority != null ? priority : determinePriority(component);
-            writerInterceptors.add(effectivePriority, (WriterInterceptor) component);
-        }
-        if (component instanceof ReaderInterceptor) {
-            contractableClasses.add(ReaderInterceptor.class);
-
-            added = true;
-            int effectivePriority = priority != null ? priority : determinePriority(component);
-            readerInterceptors.add(effectivePriority, (ReaderInterceptor) component);
-        }
-        if (component instanceof MessageBodyReader) {
-            contractableClasses.add(MessageBodyReader.class);
-
-            added = true;
-            Class<?> componentClass = component.getClass();
-            ConstrainedTo constrainedTo = componentClass.getAnnotation(ConstrainedTo.class);
-            if ((constrainedTo == null) || (constrainedTo.value() == runtimeType)) {
-                ResourceReader resourceReader = new ResourceReader();
-                resourceReader.setFactory(new UnmanagedBeanFactory(component));
-                Consumes consumes = componentClass.getAnnotation(Consumes.class);
-                resourceReader
-                        .setMediaTypeStrings(
-                                consumes != null ? Arrays.asList(consumes.value()) : WILDCARD_STRING_LIST);
-                Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyReader.class);
-                resourceReaders.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
-                        resourceReader);
-            }
-        }
-        if (component instanceof MessageBodyWriter) {
-            contractableClasses.add(MessageBodyWriter.class);
-
-            added = true;
-            Class<?> componentClass = component.getClass();
-            ConstrainedTo constrainedTo = componentClass.getAnnotation(ConstrainedTo.class);
-            if ((constrainedTo == null) || (constrainedTo.value() == runtimeType)) {
-                ResourceWriter resourceWriter = new ResourceWriter();
-                resourceWriter.setFactory(new UnmanagedBeanFactory(component));
-                Produces produces = componentClass.getAnnotation(Produces.class);
-                resourceWriter
-                        .setMediaTypeStrings(
-                                produces != null ? Arrays.asList(produces.value()) : WILDCARD_STRING_LIST);
-                Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyWriter.class);
-                resourceWriters.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
-                        resourceWriter);
-            }
-        }
-        if (component instanceof RxInvokerProvider) {
-            added = true;
-            Class<?> componentClass = component.getClass();
-            Type[] args = Types.findParameterizedTypes(componentClass, RxInvokerProvider.class);
-            rxInvokerProviders.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
-                    (RxInvokerProvider<?>) component);
-        }
-        if (added) {
-            allInstances.put(component.getClass(), component);
-
-            Map<Class<?>, Integer> contracts = new HashMap<>();
-            for (Class<?> contractableClass : contractableClasses) {
-                contracts.put(contractableClass, priority);
-            }
-            this.contracts.put(component.getClass(), contracts);
-        }
-    }
-
     public void register(Object component, Class<?>[] contracts) {
         if (contracts == null || contracts.length == 0) {
             return;
@@ -332,6 +244,10 @@ public class ConfigurationImpl implements Configuration {
         }
     }
 
+    public void register(Object component, int priority) {
+        register(component, Integer.valueOf(priority));
+    }
+
     public void register(Object component, Map<Class<?>, Integer> componentContracts) {
         if (componentContracts == null || componentContracts.isEmpty()) {
             return;
@@ -340,38 +256,32 @@ public class ConfigurationImpl implements Configuration {
         if (allInstances.containsKey(componentClass)) {
             return;
         }
-        boolean added = false;
+
         Integer priority = componentContracts.get(Feature.class);
         if (component instanceof Feature && priority != null) {
             Feature thisFeature = (Feature) component;
-            added = true;
             if (thisFeature.configure(new ConfigFeatureContext())) {
                 enabledFeatures.add(priority, (Feature) component);
             }
         }
         priority = componentContracts.get(ClientRequestFilter.class);
         if (component instanceof ClientRequestFilter && priority != null) {
-            added = true;
             requestFilters.add(priority, (ClientRequestFilter) component);
         }
         priority = componentContracts.get(ClientResponseFilter.class);
         if (component instanceof ClientResponseFilter && priority != null) {
-            added = true;
             responseFilters.add(priority, (ClientResponseFilter) component);
         }
         priority = componentContracts.get(WriterInterceptor.class);
         if (component instanceof WriterInterceptor && priority != null) {
-            added = true;
             writerInterceptors.add(priority, (WriterInterceptor) component);
         }
         priority = componentContracts.get(ReaderInterceptor.class);
         if (component instanceof ReaderInterceptor && priority != null) {
-            added = true;
             readerInterceptors.add(priority, (ReaderInterceptor) component);
         }
         priority = componentContracts.get(MessageBodyReader.class);
         if (component instanceof MessageBodyReader && priority != null) {
-            added = true;
             ConstrainedTo constrainedTo = componentClass.getAnnotation(ConstrainedTo.class);
             if ((constrainedTo == null) || (constrainedTo.value() == runtimeType)) {
                 ResourceReader resourceReader = new ResourceReader();
@@ -387,7 +297,6 @@ public class ConfigurationImpl implements Configuration {
         }
         priority = componentContracts.get(MessageBodyWriter.class);
         if (component instanceof MessageBodyWriter && priority != null) {
-            added = true;
             ConstrainedTo constrainedTo = componentClass.getAnnotation(ConstrainedTo.class);
             if ((constrainedTo == null) || (constrainedTo.value() == runtimeType)) {
                 ResourceWriter resourceWriter = new ResourceWriter();
@@ -401,15 +310,95 @@ public class ConfigurationImpl implements Configuration {
                         resourceWriter);
             }
         }
-        if (added) {
-            allInstances.put(componentClass, component);
-            contracts.put(componentClass, componentContracts);
-        }
-
+        allInstances.put(componentClass, component);
+        contracts.put(componentClass, componentContracts);
     }
 
-    public void register(Object component, int priority) {
-        register(component, Integer.valueOf(priority));
+    private void register(Object component, Integer priority) {
+        if (allInstances.containsKey(component.getClass())) {
+            return;
+        }
+        List<Class<?>> contractableClasses = new ArrayList<>();
+        if (component instanceof Feature) {
+            contractableClasses.add(Feature.class);
+
+            Feature thisFeature = (Feature) component;
+            if (thisFeature.configure(new ConfigFeatureContext())) {
+                enabledFeatures.add(thisFeature);
+            }
+        }
+        if (component instanceof ClientRequestFilter) {
+            contractableClasses.add(ClientRequestFilter.class);
+
+            int effectivePriority = priority != null ? priority : determinePriority(component);
+            requestFilters.add(effectivePriority, (ClientRequestFilter) component);
+        }
+        if (component instanceof ClientResponseFilter) {
+            contractableClasses.add(ClientRequestFilter.class);
+
+            int effectivePriority = priority != null ? priority : determinePriority(component);
+            responseFilters.add(effectivePriority, (ClientResponseFilter) component);
+        }
+        if (component instanceof WriterInterceptor) {
+            contractableClasses.add(WriterInterceptor.class);
+
+            int effectivePriority = priority != null ? priority : determinePriority(component);
+            writerInterceptors.add(effectivePriority, (WriterInterceptor) component);
+        }
+        if (component instanceof ReaderInterceptor) {
+            contractableClasses.add(ReaderInterceptor.class);
+
+            int effectivePriority = priority != null ? priority : determinePriority(component);
+            readerInterceptors.add(effectivePriority, (ReaderInterceptor) component);
+        }
+        if (component instanceof MessageBodyReader) {
+            contractableClasses.add(MessageBodyReader.class);
+
+            Class<?> componentClass = component.getClass();
+            ConstrainedTo constrainedTo = componentClass.getAnnotation(ConstrainedTo.class);
+            if ((constrainedTo == null) || (constrainedTo.value() == runtimeType)) {
+                ResourceReader resourceReader = new ResourceReader();
+                resourceReader.setFactory(new UnmanagedBeanFactory(component));
+                Consumes consumes = componentClass.getAnnotation(Consumes.class);
+                resourceReader
+                        .setMediaTypeStrings(
+                                consumes != null ? Arrays.asList(consumes.value()) : WILDCARD_STRING_LIST);
+                Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyReader.class);
+                resourceReaders.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
+                        resourceReader);
+            }
+        }
+        if (component instanceof MessageBodyWriter) {
+            contractableClasses.add(MessageBodyWriter.class);
+
+            Class<?> componentClass = component.getClass();
+            ConstrainedTo constrainedTo = componentClass.getAnnotation(ConstrainedTo.class);
+            if ((constrainedTo == null) || (constrainedTo.value() == runtimeType)) {
+                ResourceWriter resourceWriter = new ResourceWriter();
+                resourceWriter.setFactory(new UnmanagedBeanFactory(component));
+                Produces produces = componentClass.getAnnotation(Produces.class);
+                resourceWriter
+                        .setMediaTypeStrings(
+                                produces != null ? Arrays.asList(produces.value()) : WILDCARD_STRING_LIST);
+                Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyWriter.class);
+                resourceWriters.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
+                        resourceWriter);
+            }
+        }
+        if (component instanceof RxInvokerProvider) {
+            Class<?> componentClass = component.getClass();
+            Type[] args = Types.findParameterizedTypes(componentClass, RxInvokerProvider.class);
+            rxInvokerProviders.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
+                    (RxInvokerProvider<?>) component);
+        }
+
+        allInstances.put(component.getClass(), component);
+
+        Map<Class<?>, Integer> contracts = new HashMap<>();
+        for (Class<?> contractableClass : contractableClasses) {
+            contracts.put(contractableClass, priority);
+        }
+        this.contracts.put(component.getClass(), contracts);
     }
 
     public List<ClientRequestFilter> getRequestFilters() {

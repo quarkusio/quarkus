@@ -328,6 +328,78 @@ public class ExtensionsResource {
 }
 ----
 
+== Use Custom HTTP Options
+
+The REST Client Reactive internally uses https://vertx.io/docs/apidocs/io/vertx/core/http/HttpClient.html[the Vert.x HTTP Client] to make the network connections. The REST Client Reactive extensions allows configuring some settings via properties, for example:
+
+- `quarkus.rest-client.client-prefix.connect-timeout` to configure the connect timeout in milliseconds.
+- `quarkus.rest-client.client-prefix.max-redirects` to limit the number of redirects.
+
+However, there are many more options within the Vert.x HTTP Client to configure the connections. See all the options in the Vert.x HTTP Client Options API in https://vertx.io/docs/apidocs/io/vertx/core/http/HttpClientOptions.html[this link].
+
+To fully customize the Vert.x HTTP Client instance that the REST Client Reactive is internally using, you can provide your custom HTTP Client Options instance via CDI or when programmatically creating your client.
+
+Let's see an example about how to provide the HTTP Client Options via CDI:
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import javax.enterprise.inject.Produces;
+
+import io.vertx.core.http.HttpClientOptions;
+import io.quarkus.arc.Unremovable;
+
+public static class Configuration {
+    @Produces
+    @Unremovable
+    public HttpClientOptions customHttpClientOptions() {
+        HttpClientOptions options = new HttpClientOptions();
+        // ...
+        return options;
+    }
+}
+----
+
+Now, all the REST Clients will be using your custom HTTP Client Options.
+
+Another approach is to provide the custom HTTP Client options when creating the client programmatically:
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.RestClientBuilder;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import java.net.URI;
+import java.util.Set;
+
+import io.vertx.core.http.HttpClientOptions;
+
+@Path("/extension")
+public class ExtensionsResource {
+
+    private final ExtensionsService extensionsService;
+
+    public ExtensionsResource() {
+        HttpClientOptions httpOptions = new HttpClientOptions();
+        // configure the options
+        // ...
+
+        extensionsService = RestClientBuilder.newBuilder()
+            .baseUri(URI.create("https://stage.code.quarkus.io/api"))
+            .register(httpOptions) <1>
+            .build(ExtensionsService.class);
+    }
+
+    // ...
+}
+----
+
+<1> the client will use the registered HTTP Client options over the HTTP Client options provided via CDI if any.
+
 == Update the test
 
 Next, we need to update the functional test to reflect the changes made to the endpoint.

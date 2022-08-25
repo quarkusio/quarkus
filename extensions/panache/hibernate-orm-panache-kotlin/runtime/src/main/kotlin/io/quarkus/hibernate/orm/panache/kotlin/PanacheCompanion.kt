@@ -14,14 +14,14 @@ import javax.persistence.LockModeType
  *
  * @param Entity the entity type
  */
-interface PanacheCompanion<Entity : PanacheEntityBase>: PanacheCompanionBase<Entity, Long>
+interface PanacheCompanion<Entity : PanacheEntityBase> : PanacheCompanionBase<Entity, Long>
 
 /**
  * Defines methods to be used via the companion objects of entities.
  *
  * @param Entity the entity type
  */
-interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
+interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
 
     /**
      * Returns the [EntityManager] for the [Entity] for extra operations (eg. CriteriaQueries)
@@ -527,7 +527,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      */
     @GenerateBridge
     fun update(query: String, params: Parameters): Int = throw implementationInjectionMissing()
-
 
     /**
      * Flushes all pending changes to the database.

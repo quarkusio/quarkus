@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.orm.panache.kotlin
 
-
 import javax.persistence.GeneratedValue
 import javax.persistence.Id
 import javax.persistence.MappedSuperclass
@@ -18,7 +17,7 @@ import javax.persistence.MappedSuperclass
  * @see [PanacheEntityBase]
  */
 @MappedSuperclass
-open class PanacheEntity: PanacheEntityBase {
+open class PanacheEntity : PanacheEntityBase {
     /**
      * The auto-generated ID field. This field is set by Hibernate ORM when this entity
      * is persisted.

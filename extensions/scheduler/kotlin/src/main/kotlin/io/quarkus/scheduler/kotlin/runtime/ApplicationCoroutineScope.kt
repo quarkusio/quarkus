@@ -1,6 +1,5 @@
 package io.quarkus.scheduler.kotlin.runtime
 
-import io.quarkus.arc.Unremovable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel

@@ -12,14 +12,14 @@ import javax.ws.rs.core.UriInfo
 class Filters {
 
     @ServerRequestFilter
-    suspend fun addHeader(uriInfo: UriInfo, context: ContainerRequestContext){
+    suspend fun addHeader(uriInfo: UriInfo, context: ContainerRequestContext) {
         delay(100)
         context.headers.add("firstName", "foo")
         delay(100)
     }
 
     @ServerRequestFilter
-    suspend fun addHeaderOrAbort(context: ContainerRequestContext): Response?{
+    suspend fun addHeaderOrAbort(context: ContainerRequestContext): Response? {
         delay(100)
         if (context.headers.containsKey("abort")) {
             return Response.noContent().build()

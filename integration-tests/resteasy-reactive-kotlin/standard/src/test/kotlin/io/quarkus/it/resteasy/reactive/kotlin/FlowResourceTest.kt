@@ -6,7 +6,7 @@ import io.restassured.module.kotlin.extensions.Then
 import io.restassured.module.kotlin.extensions.When
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.util.*
+import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import javax.ws.rs.client.ClientBuilder
@@ -47,9 +47,10 @@ class FlowResourceTest {
     fun testSeeJson() {
         testSse("json", 10) {
             assertThat(it).containsExactly(
-                    "{\"name\":\"Barbados\",\"capital\":\"Bridgetown\"}",
-                    "{\"name\":\"Mauritius\",\"capital\":\"Port Louis\"}",
-                    "{\"name\":\"Fiji\",\"capital\":\"Suva\"}")
+                "{\"name\":\"Barbados\",\"capital\":\"Bridgetown\"}",
+                "{\"name\":\"Mauritius\",\"capital\":\"Port Louis\"}",
+                "{\"name\":\"Fiji\",\"capital\":\"Suva\"}"
+            )
         }
     }
 
@@ -57,13 +58,13 @@ class FlowResourceTest {
         val client = ClientBuilder.newBuilder().build()
         val target: WebTarget = client.target("$flowPath/$path")
         SseEventSource.target(target).reconnectingEvery(Int.MAX_VALUE.toLong(), TimeUnit.SECONDS)
-                .build().use { eventSource ->
-                    val res = CompletableFuture<List<String>>()
-                    val collect = Collections.synchronizedList(ArrayList<String>())
-                    eventSource.register({ inboundSseEvent -> collect.add(inboundSseEvent.readData()) }, { throwable -> res.completeExceptionally(throwable) }) { res.complete(collect) }
-                    eventSource.open()
-                    val list = res.get(timeout, TimeUnit.SECONDS)
-                    assertion(list)
-                }
+            .build().use { eventSource ->
+                val res = CompletableFuture<List<String>>()
+                val collect = Collections.synchronizedList(ArrayList<String>())
+                eventSource.register({ inboundSseEvent -> collect.add(inboundSseEvent.readData()) }, { throwable -> res.completeExceptionally(throwable) }) { res.complete(collect) }
+                eventSource.open()
+                val list = res.get(timeout, TimeUnit.SECONDS)
+                assertion(list)
+            }
     }
 }

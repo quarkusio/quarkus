@@ -1,10 +1,8 @@
 package io.quarkus.hibernate.orm.panache.kotlin
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations
 import io.quarkus.hibernate.orm.panache.kotlin.runtime.KotlinJpaOperations.Companion.INSTANCE
 import javax.json.bind.annotation.JsonbTransient
-import javax.persistence.EntityManager
 
 /**
  * Represents an entity. If your Hibernate entities extend this class they gain auto-generated accessors
@@ -31,9 +29,9 @@ interface PanacheEntityBase {
     /**
      * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already set.
      *
-      * @see [PanacheEntityBase.isPersistent]
-      * @see [PanacheEntityBase.flush]
-      * @see [PanacheEntityBase.persistAndFlush]
+     * @see [PanacheEntityBase.isPersistent]
+     * @see [PanacheEntityBase.flush]
+     * @see [PanacheEntityBase.persistAndFlush]
      */
     fun persist() {
         INSTANCE.persist(this)

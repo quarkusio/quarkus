@@ -10,7 +10,6 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext
 import java.io.OutputStream
 import java.lang.reflect.Type
 import java.nio.charset.StandardCharsets
-import javax.inject.Inject
 import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.MultivaluedMap
@@ -19,14 +18,19 @@ import javax.ws.rs.core.MultivaluedMap
 @OptIn(ExperimentalSerializationApi::class)
 class KotlinSerializationMessageBodyWriter(private val json: Json) : AllWriteableMessageBodyWriter() {
     override fun writeTo(
-        o: Any, type: Class<*>, genericType: Type, annotations: Array<Annotation>, mediaType: MediaType,
-        httpHeaders: MultivaluedMap<String, Any>, entityStream: OutputStream
+        o: Any,
+        type: Class<*>,
+        genericType: Type,
+        annotations: Array<Annotation>,
+        mediaType: MediaType,
+        httpHeaders: MultivaluedMap<String, Any>,
+        entityStream: OutputStream
     ) {
         JsonMessageBodyWriterUtil.setContentTypeIfNecessary(httpHeaders)
         if (o is String) { // YUK: done in order to avoid adding extra quotes...
             entityStream.write(o.toByteArray(StandardCharsets.UTF_8))
         } else {
-            json.encodeToStream(serializer(o.javaClass) , o, entityStream)
+            json.encodeToStream(serializer(o.javaClass), o, entityStream)
         }
     }
 

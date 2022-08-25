@@ -3,7 +3,6 @@ package io.quarkus.it.resteasy.reactive.kotlin
 import io.quarkus.test.common.QuarkusTestResource
 import io.quarkus.test.junit.QuarkusTest
 import io.restassured.RestAssured.get
-import io.restassured.RestAssured.given
 import io.restassured.common.mapper.TypeRef
 import io.restassured.module.kotlin.extensions.Then
 import io.restassured.module.kotlin.extensions.When
@@ -16,7 +15,7 @@ import java.time.Duration
 @QuarkusTestResource(KafkaTestResource::class)
 class ReactiveMessagingTest {
 
-    private val TYPE_REF: TypeRef<List<Country>> = object: TypeRef<List<Country>>() {}
+    private val TYPE_REF: TypeRef<List<Country>> = object : TypeRef<List<Country>>() {}
 
     @Test
     fun test() {

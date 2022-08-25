@@ -3,9 +3,9 @@ package io.quarkus.mongodb.panache.kotlin.runtime
 import com.mongodb.client.ClientSession
 import com.mongodb.client.MongoCollection
 import io.quarkus.mongodb.panache.common.PanacheUpdate
-import io.quarkus.mongodb.panache.kotlin.PanacheQuery
 import io.quarkus.mongodb.panache.common.runtime.MongoOperations
 import io.quarkus.mongodb.panache.common.runtime.PanacheUpdateImpl
+import io.quarkus.mongodb.panache.kotlin.PanacheQuery
 import org.bson.Document
 import java.util.stream.Stream
 
@@ -24,15 +24,13 @@ class KotlinMongoOperations : MongoOperations<PanacheQuery<*>, PanacheUpdate>() 
 
     /**
      * Creates the query implementation
-     * 
-     * @param collection the collection to query
+     * * @param collection the collection to query
      * @param query the query to base the new query off of
      * @param sortDoc the sort document to use
-     * 
-     * @return the new query implementation
+     * * @return the new query implementation
      */
     override fun createQuery(collection: MongoCollection<*>, session: ClientSession?, query: Document?, sortDoc: Document?) =
-            PanacheQueryImpl(collection, session, query, sortDoc)
+        PanacheQueryImpl(collection, session, query, sortDoc)
 
     /**
      * Creates the update implementation
@@ -44,14 +42,12 @@ class KotlinMongoOperations : MongoOperations<PanacheQuery<*>, PanacheUpdate>() 
      * @return the new query implementation
      */
     override fun createUpdate(collection: MongoCollection<*>, entityClass: Class<*>, docUpdate: Document) =
-            PanacheUpdateImpl(this, entityClass, docUpdate, collection)
+        PanacheUpdateImpl(this, entityClass, docUpdate, collection)
 
     /**
      * Extracts the query results in to a List.
-     * 
-     * @param query the query to list
-     * 
-     * @return a [List] of the results
+     * * @param query the query to list
+     * * @return a [List] of the results
      */
     override fun list(query: PanacheQuery<*>): List<*> = query.list()
 

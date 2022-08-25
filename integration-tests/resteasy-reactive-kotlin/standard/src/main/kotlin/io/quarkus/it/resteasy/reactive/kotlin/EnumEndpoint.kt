@@ -12,5 +12,4 @@ class EnumEndpoint {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     fun test(@QueryParam(value = "state") states: List<State>) = "States: $states"
-
 }

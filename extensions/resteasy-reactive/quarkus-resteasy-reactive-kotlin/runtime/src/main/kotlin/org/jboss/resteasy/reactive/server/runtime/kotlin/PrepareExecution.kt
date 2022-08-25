@@ -7,8 +7,8 @@ import javax.enterprise.inject.spi.CDI
 
 fun prepareExecution(requestContext: ResteasyReactiveRequestContext): Pair<CoroutineDispatcher, ApplicationCoroutineScope> {
     val requestScope = requestContext.captureCDIRequestScope()
-    val dispatcher: CoroutineDispatcher = Vertx.currentContext()?.let {VertxDispatcher(it,requestScope, requestContext)}
-            ?: throw IllegalStateException("No Vertx context found")
+    val dispatcher: CoroutineDispatcher = Vertx.currentContext()?.let { VertxDispatcher(it, requestScope, requestContext) }
+        ?: throw IllegalStateException("No Vertx context found")
 
     val coroutineScope = CDI.current().select(ApplicationCoroutineScope::class.java)
     requestContext.suspend()

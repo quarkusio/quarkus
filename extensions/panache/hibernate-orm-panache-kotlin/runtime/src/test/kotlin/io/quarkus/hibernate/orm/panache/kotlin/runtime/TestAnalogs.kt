@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.orm.panache.kotlin.runtime
 
-
 import io.quarkus.gizmo.Gizmo
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanionBase
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
@@ -41,24 +40,26 @@ class TestAnalogs {
     fun testPanacheEntityBase() {
         val javaMethods = map(JavaPanacheEntityBase::class).methods
         val kotlinMethods = map(PanacheEntityBase::class).methods
-        val companionMethods = map(PanacheCompanionBase::class,
-            ByteCodeType(PanacheEntityBase::class.java)).methods
+        val companionMethods = map(
+            PanacheCompanionBase::class,
+            ByteCodeType(PanacheEntityBase::class.java)
+        ).methods
         val implemented = mutableListOf<Method>()
 
         javaMethods
-                .forEach {
-                    if (!it.isStatic()) {
-                        if (it in kotlinMethods) {
-                            kotlinMethods -= it
-                            implemented += it
-                        }
-                    } else {
-                        if (it in companionMethods) {
-                            companionMethods -= it
-                            implemented += it
-                        }
+            .forEach {
+                if (!it.isStatic()) {
+                    if (it in kotlinMethods) {
+                        kotlinMethods -= it
+                        implemented += it
+                    }
+                } else {
+                    if (it in companionMethods) {
+                        companionMethods -= it
+                        implemented += it
                     }
                 }
+            }
         javaMethods.removeIf {
             it.name.endsWith("Optional") || it in implemented
         }
@@ -78,9 +79,8 @@ class TestAnalogs {
         }
     }
 
-
     private fun KClass<*>.bytes() =
-            java.classLoader.getResourceAsStream(qualifiedName.toString().replace(".", "/") + ".class")
+        java.classLoader.getResourceAsStream(qualifiedName.toString().replace(".", "/") + ".class")
 
     private fun compare(javaClass: AnalogVisitor, kotlinClass: AnalogVisitor, allowList: List<String> = listOf()) {
         val javaMethods = javaClass.methods
@@ -88,12 +88,12 @@ class TestAnalogs {
         val implemented = mutableListOf<Method>()
 
         javaMethods
-                .forEach {
-                    if (it in kotlinMethods) {
-                        kotlinMethods -= it
-                        implemented += it
-                    }
+            .forEach {
+                if (it in kotlinMethods) {
+                    kotlinMethods -= it
+                    implemented += it
                 }
+            }
 
         javaMethods.removeIf {
             it.name.endsWith("Optional") ||
@@ -112,29 +112,34 @@ class TestAnalogs {
     private fun methods(label: String, methods: List<Method>) {
         println("$label: ")
         methods.toSortedSet(compareBy { it.toString() })
-                .forEach {
-                    println(it)
-                }
+            .forEach {
+                println(it)
+            }
     }
 }
 
 private fun <E> List<E>.byLine(): String {
     val map = map { it.toString() }
     return map
-        .joinToString("\n" )
+        .joinToString("\n")
 }
 
 class AnalogVisitor(val erasedType: ByteCodeType? = null) : ClassVisitor(Gizmo.ASM_API_VERSION) {
     val methods = mutableListOf<Method>()
-    override fun visitMethod(access: Int, name: String, descriptor: String, signature: String?,
-                             exceptions: Array<out String>?): MethodVisitor? {
+    override fun visitMethod(
+        access: Int,
+        name: String,
+        descriptor: String,
+        signature: String?,
+        exceptions: Array<out String>?
+    ): MethodVisitor? {
         if (name != "<init>") {
             val type = descriptor.substringAfterLast(")").trim()
             var parameters = descriptor.substring(
                 descriptor.indexOf("("),
                 descriptor.lastIndexOf(")") + 1
             )
-            erasedType?.let { type->
+            erasedType?.let { type ->
                 parameters = parameters.replace(type.descriptor(), OBJECT.descriptor())
             }
 
@@ -149,7 +154,7 @@ class Method(val access: Int, val name: String, val type: String, val parameters
 
     override fun toString(): String {
         return (if (isStatic()) "static " else "") + "fun ${name}$parameters" +
-                (if (type.isNotBlank()) ": $type" else "") //+
+            (if (type.isNotBlank()) ": $type" else "") // +
     }
 
     override fun equals(other: Any?): Boolean {
@@ -168,7 +173,6 @@ class Method(val access: Int, val name: String, val type: String, val parameters
         result = 31 * result + parameters.hashCode()
         return result
     }
-
 }
 
 fun Int.matches(mask: Int) = (this and mask) == mask

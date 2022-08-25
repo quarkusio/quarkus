@@ -11,7 +11,7 @@ import org.bson.types.ObjectId
  * instead, and write your own ID field. You will still get auto-generated accessors and
  * all the useful methods.
  *
-  * @see [ReactivePanacheMongoEntityBase]
+ * @see [ReactivePanacheMongoEntityBase]
  */
 abstract class ReactivePanacheMongoEntity : ReactivePanacheMongoEntityBase() {
     /**

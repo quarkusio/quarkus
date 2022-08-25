@@ -5,6 +5,5 @@ import javax.enterprise.context.RequestScoped
 @RequestScoped
 class RequestScopedKotlinClass {
 
-    var message : String = "initial";
-
+    var message: String = "initial"
 }

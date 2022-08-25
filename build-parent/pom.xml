@@ -329,7 +329,7 @@
                 <artifactId>d3js</artifactId>
                 <version>${webjar.d3js.version}</version>
             </dependency>
-           <dependency>
+            <dependency>
                 <groupId>org.webjars</groupId>
                 <artifactId>chartjs</artifactId>
                 <version>${webjar.chartjs.version}</version>
@@ -770,6 +770,49 @@
                                 </goals>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>format-kotlin</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>!no-format</name>
+                </property>
+                <file>
+                    <exists>src/main/kotlin</exists>
+                </file>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.diffplug.spotless</groupId>
+                        <artifactId>spotless-maven-plugin</artifactId>
+                        <version>2.25.0</version>
+                        <executions>
+                            <execution>
+                                <id>format-kotlin</id>
+                                <phase>process-sources</phase>
+                                <goals>
+                                    <goal>apply</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+
+                        <configuration>
+                            <kotlin>
+                                <!--
+                                    <ktfmt>
+                                        <style>DEFAULT</style> &lt;!&ndash; optional, other options are DEFAULT, DROPBOX, GOOGLE and KOTLINLANG &ndash;&gt;
+                                    </ktfmt>
+                                -->
+                                <ktlint/>
+
+                            </kotlin>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

@@ -1,13 +1,12 @@
 package ilove.quark.us
 
-import java.io.IOException
 import javax.enterprise.context.ApplicationScoped
 import javax.websocket.*
 import javax.websocket.server.PathParam
 import javax.websocket.server.ServerEndpoint
 
-@ServerEndpoint("/start-websocket/{name}")
 @ApplicationScoped
+@ServerEndpoint("/start-websocket/{name}")
 class StartWebSocket {
 
     @OnOpen

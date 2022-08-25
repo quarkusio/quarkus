@@ -7,7 +7,6 @@ import kotlinx.serialization.serializer
 import org.jboss.resteasy.reactive.common.util.StreamUtil
 import java.io.InputStream
 import java.lang.reflect.Type
-import javax.inject.Inject
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.MultivaluedMap
 import javax.ws.rs.ext.MessageBodyReader
@@ -17,10 +16,15 @@ class ClientKotlinMessageBodyReader(private val json: Json) : MessageBodyReader<
     override fun isReadable(type: Class<*>?, generic: Type?, annotations: Array<out Annotation>?, mediaType: MediaType?) = true
 
     override fun readFrom(
-        type: Class<Any>, generic: Type, annotations: Array<out Annotation>?, mediaType: MediaType?,
-        httpHeaders: MultivaluedMap<String, String>?, entityStream: InputStream
+        type: Class<Any>,
+        generic: Type,
+        annotations: Array<out Annotation>?,
+        mediaType: MediaType?,
+        httpHeaders: MultivaluedMap<String, String>?,
+        entityStream: InputStream
     ): Any? {
-        return if (StreamUtil.isEmpty(entityStream)) null else
+        return if (StreamUtil.isEmpty(entityStream)) null else {
             json.decodeFromStream(serializer(generic), entityStream)
+        }
     }
 }

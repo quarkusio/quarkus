@@ -7,4 +7,4 @@ package io.quarkus.hibernate.orm.panache.kotlin
  *
  * @param Entity The type of entity to operate on
  */
-interface PanacheRepository<Entity : Any>: PanacheRepositoryBase<Entity, Long>
+interface PanacheRepository<Entity : Any> : PanacheRepositoryBase<Entity, Long>

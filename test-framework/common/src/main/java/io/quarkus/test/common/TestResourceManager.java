@@ -41,6 +41,7 @@ public class TestResourceManager implements Closeable {
     private final Map<String, String> configProperties = new ConcurrentHashMap<>();
     private boolean started = false;
     private boolean hasPerTestResources = false;
+    private TestStatus testStatus = new TestStatus(null);
 
     public TestResourceManager(Class<?> testClass) {
         this(testClass, null, Collections.emptyList(), false);
@@ -89,6 +90,10 @@ public class TestResourceManager implements Closeable {
         }
     }
 
+    public void setTestErrorCause(Throwable testErrorCause) {
+        this.testStatus = new TestStatus(testErrorCause);
+    }
+
     public void init(String testProfileName) {
         for (TestResourceEntry entry : allTestResourceEntries) {
             try {
@@ -97,6 +102,11 @@ public class TestResourceManager implements Closeable {
                     @Override
                     public String testProfile() {
                         return testProfileName;
+                    }
+
+                    @Override
+                    public TestStatus getTestStatus() {
+                        return TestResourceManager.this.testStatus;
                     }
                 });
                 if (testResource instanceof QuarkusTestResourceConfigurableLifecycleManager

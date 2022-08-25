@@ -657,8 +657,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
         Class<? extends QuarkusTestProfile> selectedProfile = getQuarkusTestProfile(extensionContext);
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
-        // we reload the test resources if we changed test class and if we had or will have per-test test resources
+        // we reload the test resources if we changed test class and the new test class is not a nested class, and if we had or will have per-test test resources
         boolean reloadTestResources = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
+                && !isNested(currentJUnitTestClass, extensionContext.getRequiredTestClass())
                 && (hasPerTestResources || hasPerTestResources(extensionContext));
         if ((state == null && !failedBoot) || wrongProfile || reloadTestResources) {
             if (wrongProfile || reloadTestResources) {
@@ -682,6 +683,15 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
         }
         return state;
+    }
+
+    private boolean isNested(Class<?> testClass, Class<?> currentTestClass) {
+        if (testClass == null || currentTestClass.getEnclosingClass() == null) {
+            return false;
+        }
+
+        Class<?> enclosingTestClass = currentTestClass.getEnclosingClass();
+        return Objects.equals(testClass, enclosingTestClass) || isNested(testClass, enclosingTestClass);
     }
 
     private static ClassLoader setCCL(ClassLoader cl) {

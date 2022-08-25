@@ -18,6 +18,8 @@ import io.quarkus.test.common.QuarkusTestResource.List;
  * and their corresponding {@code QuarkusTestResourceLifecycleManager}
  * started <b>before</b> <b>any</b> test is run.
  *
+ * Note that test resources are never restarted when running {@code @Nested} test classes.
+ *
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

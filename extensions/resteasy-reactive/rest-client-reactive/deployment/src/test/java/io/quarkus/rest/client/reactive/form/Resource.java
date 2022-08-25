@@ -30,4 +30,12 @@ public class Resource {
         return Response.ok(String.format("sub rootParam1:%s,rootParam2:%s,subParam1:%s,subParam2:%s",
                 rootParam1, rootParam2, subParam1, subParam2)).build();
     }
+
+    @POST
+    @Path("/types")
+    public Response getWithTypes(@RestForm String text, @RestForm int number, @RestForm Integer wrapNumber,
+            @RestForm Mode mode) {
+        return Response.ok(String.format("root text:%s,number:%s,wrapNumber:%s,mode:%s", text, number, wrapNumber, mode))
+                .build();
+    }
 }

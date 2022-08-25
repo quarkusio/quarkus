@@ -24,6 +24,8 @@ public class TemplateResponseUniHandler implements ServerRestHandler {
             return;
         }
 
+        requestContext.requireCDIRequestScope();
+
         if (engine == null) {
             synchronized (this) {
                 if (engine == null) {

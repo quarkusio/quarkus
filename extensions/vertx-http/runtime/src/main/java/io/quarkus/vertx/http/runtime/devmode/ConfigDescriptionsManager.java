@@ -28,6 +28,9 @@ public class ConfigDescriptionsManager extends DevConsolePostHandler implements 
     private final Set<String> devServicesProperties;
     private ClassLoader currentCl;
 
+    private static final String QUOTED_DOT = "\".\"";
+    private static final String QUOTED_DOT_KEY = "$$QUOTED_DOT$$";
+
     volatile Map<ConfigSourceName, List<ConfigDescription>> values;
 
     /**
@@ -80,7 +83,9 @@ public class ConfigDescriptionsManager extends DevConsolePostHandler implements 
         Set<String> propertyNames = new HashSet<>(addedConfigKeys);
         current.getPropertyNames().forEach(propertyNames::add);
         for (String propertyName : propertyNames) {
+            propertyName = propertyName.replace(QUOTED_DOT, QUOTED_DOT_KEY); // Make sure dots can be quoted
             String[] parts = propertyName.split("\\.");
+
             List<String> accumulate = new ArrayList<>();
             //we never want to add the full string
             //hence -1
@@ -90,6 +95,11 @@ public class ConfigDescriptionsManager extends DevConsolePostHandler implements 
                     //so skip
                     break;
                 }
+                // If there was a quoted dot, put that back
+                if (parts[i].contains(QUOTED_DOT_KEY)) {
+                    parts[i] = parts[i].replaceAll(QUOTED_DOT_KEY, QUOTED_DOT);
+                }
+
                 accumulate.add(parts[i]);
                 //if there is both a quoted and unquoted version we only want to apply the quoted version
                 //and remove the unquoted one

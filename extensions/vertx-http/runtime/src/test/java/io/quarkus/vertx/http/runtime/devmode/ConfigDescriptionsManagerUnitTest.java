@@ -159,6 +159,24 @@ public class ConfigDescriptionsManagerUnitTest {
         }
     }
 
+    /**
+     * Make sure a config key with a quoted dot works
+     */
+    @Test
+    public void testQuotedDot() {
+        //dot is quoted in the config
+        char[] quotedDot = { '\"', '.', '\"' };
+
+        String configWithQuotedDotIn = "bla.bla." + String.valueOf(quotedDot);
+        try (var handle = setupConfig(Map.of(configWithQuotedDotIn, "foo"))) {
+            ConfigDescriptionsManager manager = new ConfigDescriptionsManager();
+            ConfigDescription configDescription = find(manager, configWithQuotedDotIn);
+            Assertions.assertNotNull(configDescription);
+            Assertions.assertEquals(configWithQuotedDotIn, configDescription.getName());
+            Assertions.assertEquals("foo", configDescription.getConfigValue().getRawValue());
+        }
+    }
+
     //this happens with dev services
     //make sure that we use the quoted one only
     @Test

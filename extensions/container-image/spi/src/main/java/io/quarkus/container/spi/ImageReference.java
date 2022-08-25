@@ -19,7 +19,7 @@ package io.quarkus.container.spi;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.common.base.Strings;
+import io.quarkus.runtime.util.StringUtil;
 
 /**
  * This is basically a simplified version of {@code com.google.cloud.tools.jib.api.ImageReference}
@@ -147,11 +147,11 @@ public class ImageReference {
         String digest = matcher.group(4);
 
         // If no registry was matched, use Docker Hub by default.
-        if (Strings.isNullOrEmpty(registry)) {
+        if (StringUtil.isNullOrEmpty(registry)) {
             registry = DOCKER_HUB_REGISTRY;
         }
 
-        if (Strings.isNullOrEmpty(repository)) {
+        if (StringUtil.isNullOrEmpty(repository)) {
             throw new IllegalArgumentException("Reference " + reference + " is invalid: The repository was not set");
         }
         /*
@@ -175,13 +175,13 @@ public class ImageReference {
             repository = LIBRARY_REPOSITORY_PREFIX + repository;
         }
 
-        if (Strings.isNullOrEmpty(tag) && Strings.isNullOrEmpty(digest)) {
+        if (StringUtil.isNullOrEmpty(tag) && StringUtil.isNullOrEmpty(digest)) {
             tag = DEFAULT_TAG;
         }
-        if (Strings.isNullOrEmpty(tag)) {
+        if (StringUtil.isNullOrEmpty(tag)) {
             tag = null;
         }
-        if (Strings.isNullOrEmpty(digest)) {
+        if (StringUtil.isNullOrEmpty(digest)) {
             digest = null;
         }
 

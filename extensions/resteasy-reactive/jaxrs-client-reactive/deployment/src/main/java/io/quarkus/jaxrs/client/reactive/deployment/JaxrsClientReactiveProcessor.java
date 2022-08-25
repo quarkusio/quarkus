@@ -57,7 +57,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
 
-import org.apache.http.entity.ContentType;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
@@ -193,6 +192,8 @@ public class JaxrsClientReactiveProcessor {
     public static final DotName BYTE = DotName.createSimple(Byte.class.getName());
     public static final MethodDescriptor MULTIPART_RESPONSE_DATA_ADD_FILLER = MethodDescriptor
             .ofMethod(MultipartResponseDataBase.class, "addFiller", void.class, FieldFiller.class);
+
+    private static final String MULTIPART_FORM_DATA = "multipart/form-data";
 
     @BuildStep
     void registerClientResponseBuilder(BuildProducer<ServiceProviderBuildItem> serviceProviders) {
@@ -1006,7 +1007,7 @@ public class JaxrsClientReactiveProcessor {
             String[] producesValues = produces.value().asStringArray();
             for (String producesValue : producesValues) {
                 if (producesValue.toLowerCase(Locale.ROOT)
-                        .startsWith(ContentType.MULTIPART_FORM_DATA.getMimeType())) {
+                        .startsWith(MULTIPART_FORM_DATA)) {
                     multipartResponseTypes.add(returnTypeAsClass(method, index));
                 }
             }

@@ -373,7 +373,7 @@ public class QuarkusDev extends QuarkusTask {
                     .equals(localDep.getWorkspaceModule().getId()));
         }
 
-        addQuarkusDevModeDeps(builder);
+        addQuarkusDevModeDeps(builder, appModel);
 
         //look for an application.properties
         Set<Path> resourceDirs = new HashSet<>();
@@ -439,8 +439,21 @@ public class QuarkusDev extends QuarkusTask {
 
     }
 
-    private void addQuarkusDevModeDeps(GradleDevModeLauncher.Builder builder) {
-        final String pomPropsPath = "META-INF/maven/io.quarkus/quarkus-core-deployment/pom.properties";
+    private void addQuarkusDevModeDeps(GradleDevModeLauncher.Builder builder, ApplicationModel appModel) {
+
+        ResolvedDependency coreDeployment = null;
+        for (ResolvedDependency d : appModel.getDependencies()) {
+            if (d.isDeploymentCp() && d.getArtifactId().equals("quarkus-core-deployment")
+                    && d.getGroupId().equals("io.quarkus")) {
+                coreDeployment = d;
+                break;
+            }
+        }
+        if (coreDeployment == null) {
+            throw new GradleException("Failed to locate io.quarkus:quarkus-core-deployment on the application build classpath");
+        }
+
+        final String pomPropsPath = "META-INF/maven/io.quarkus/quarkus-bootstrap-gradle-resolver/pom.properties";
         final InputStream devModePomPropsIs = DevModeMain.class.getClassLoader().getResourceAsStream(pomPropsPath);
         if (devModePomPropsIs == null) {
             throw new GradleException("Failed to locate " + pomPropsPath + " on the classpath");
@@ -464,11 +477,14 @@ public class QuarkusDev extends QuarkusTask {
             throw new GradleException("Classpath resource " + pomPropsPath + " is missing version");
         }
 
-        Dependency devModeDependency = getProject().getDependencies()
+        Dependency gradleResolverDep = getProject().getDependencies()
                 .create(String.format("%s:%s:%s", devModeGroupId, devModeArtifactId, devModeVersion));
+        Dependency coreDeploymentDep = getProject().getDependencies()
+                .create(String.format("%s:%s:%s", coreDeployment.getGroupId(), coreDeployment.getArtifactId(),
+                        coreDeployment.getVersion()));
 
         final Configuration devModeDependencyConfiguration = getProject().getConfigurations()
-                .detachedConfiguration(devModeDependency);
+                .detachedConfiguration(gradleResolverDep, coreDeploymentDep);
 
         for (ResolvedArtifact appDep : devModeDependencyConfiguration.getResolvedConfiguration().getResolvedArtifacts()) {
             ModuleVersionIdentifier artifactId = appDep.getModuleVersion().getId();

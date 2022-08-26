@@ -3,8 +3,10 @@ package io.quarkus.runtime.configuration;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.microprofile.config.Config;
@@ -155,6 +157,34 @@ public class ConfigInstantiatorTestCase {
         assertThat(config.value).isEqualTo("val7");
     }
 
+    @Test
+    public void createEmptyObjectWithConfigIgnored() {
+        LogConfig logConfig = ConfigInstantiator.createEmptyObject(LogConfig.class);
+
+        // On contrary to the test "handleLogConfig" above,
+        // here we expect configuration to be ignored:
+        // we only want the defaults.
+        // This is arguably more useful for config groups than for config roots.
+        assertThat(logConfig.level).isEqualTo(Level.INFO);
+        assertThat(logConfig.categories).isEmpty();
+    }
+
+    @Test
+    public void createEmptyObjectWithDefaults() {
+        WithDefaultsConfig config = ConfigInstantiator.createEmptyObject(WithDefaultsConfig.class);
+
+        assertThat(config.noDefaultStringValue).isNull();
+        assertThat(config.withDefaultStringValue).isEqualTo("someDefault");
+        assertThat(config.noDefaultConvertedValue).isNull();
+        assertThat(config.withDefaultConvertedValue).isEqualTo(42);
+        assertThat(config.optionalStringValue).isNotNull().isEmpty();
+        assertThat(config.optionalConvertedValue).isNotNull().isEmpty();
+        assertThat(config.listOfStringsValue).isNull();
+        assertThat(config.listOfConvertedValue).isNull();
+        assertThat(config.mapOfStringsValue).isNotNull().isEmpty();
+        assertThat(config.mapOfGroupsValue).isNotNull().isEmpty();
+    }
+
     private static class MapOfMapsConfig {
 
         @ConfigItem
@@ -274,5 +304,39 @@ public class ConfigInstantiatorTestCase {
         public String getName() {
             return "ConfigInstantiatorTestCase config source";
         }
+    }
+
+    @ConfigGroup
+    public static class WithDefaultsConfig {
+
+        @ConfigItem
+        public String noDefaultStringValue;
+
+        @ConfigItem(defaultValue = "someDefault")
+        public String withDefaultStringValue;
+
+        @ConfigItem
+        public Integer noDefaultConvertedValue;
+
+        @ConfigItem(defaultValue = "42")
+        public Integer withDefaultConvertedValue;
+
+        @ConfigItem
+        public Optional<String> optionalStringValue;
+
+        @ConfigItem
+        public Optional<Integer> optionalConvertedValue;
+
+        @ConfigItem
+        public List<String> listOfStringsValue;
+
+        @ConfigItem
+        public List<Integer> listOfConvertedValue;
+
+        @ConfigItem
+        public Map<String, String> mapOfStringsValue;
+
+        @ConfigItem
+        public Map<String, MapValueConfig> mapOfGroupsValue;
     }
 }

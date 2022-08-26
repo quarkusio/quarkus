@@ -10,14 +10,6 @@ public class QuarkusRestClientProperties {
      * maximum number of redirects for a client call. Works only if the client has `followingRedirects enabled
      */
     public static final String MAX_REDIRECTS = "io.quarkus.rest.client.max-redirects";
-    /**
-     * maximum length of all headers for HTTP/1.x.
-     */
-    public static final String MAX_HEADER_SIZE = "io.quarkus.rest.client.max-header-size";
-    /**
-     * maximum length of the initial line for HTTP/1.x.
-     */
-    public static final String MAX_INITIAL_LINE_LENGTH = "io.quarkus.rest.client.max-initial-line-length";
 
     public static final String READ_TIMEOUT = "io.quarkus.rest.client.read-timeout";
 

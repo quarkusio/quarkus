@@ -2,16 +2,20 @@ package org.jboss.resteasy.reactive.server.core.multipart;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.MediaType;
@@ -100,6 +104,55 @@ public final class MultipartSupport {
             }
         }
         throw new NotSupportedException("Media type '" + mediaType + "' in multipart request is not supported");
+    }
+
+    public static String getSingleFileUploadAsString(String formName, ResteasyReactiveRequestContext context) {
+        DefaultFileUpload upload = getSingleFileUpload(formName, context);
+        if (upload != null) {
+            try {
+                return Files.readString(upload.filePath(), Charset.defaultCharset());
+            } catch (IOException e) {
+                throw new MultipartPartReadingException(e);
+            }
+        }
+
+        return null;
+    }
+
+    public static byte[] getSingleFileUploadAsArrayBytes(String formName, ResteasyReactiveRequestContext context) {
+        DefaultFileUpload upload = getSingleFileUpload(formName, context);
+        if (upload != null) {
+            try {
+                return Files.readAllBytes(upload.filePath());
+            } catch (IOException e) {
+                throw new MultipartPartReadingException(e);
+            }
+        }
+
+        return null;
+    }
+
+    public static InputStream getSingleFileUploadAsInputStream(String formName, ResteasyReactiveRequestContext context) {
+        DefaultFileUpload upload = getSingleFileUpload(formName, context);
+        if (upload != null) {
+            try {
+                return new FileInputStream(upload.filePath().toFile());
+            } catch (IOException e) {
+                throw new MultipartPartReadingException(e);
+            }
+        }
+
+        return null;
+    }
+
+    public static DefaultFileUpload getSingleFileUpload(String formName, ResteasyReactiveRequestContext context) {
+        List<DefaultFileUpload> uploads = getFileUploads(formName, context);
+        if (uploads.size() > 1) {
+            throw new BadRequestException("Found more than one files for attribute '" + formName + "'. Expected only one file");
+        } else if (uploads.size() == 1) {
+            return uploads.get(0);
+        }
+        return null;
     }
 
     public static DefaultFileUpload getFileUpload(String formName, ResteasyReactiveRequestContext context) {

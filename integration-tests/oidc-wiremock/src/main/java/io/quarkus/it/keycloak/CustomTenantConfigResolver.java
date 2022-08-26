@@ -1,5 +1,7 @@
 package io.quarkus.it.keycloak;
 
+import java.util.Map;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
@@ -36,7 +38,8 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
             config.setClientId("quarkus-web-app");
             config.getCredentials()
                     .setSecret("AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow");
-
+            config.getCodeGrant().setHeaders(Map.of("X-Custom", "XCustomHeaderValue"));
+            config.getCodeGrant().setExtraParams(Map.of("extra-param", "extra-param-value"));
             return Uni.createFrom().item(config);
         }
 

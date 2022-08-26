@@ -168,6 +168,11 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public Authentication authentication = new Authentication();
 
     /**
+     * Authorization code grant configuration
+     */
+    public CodeGrant codeGrant = new CodeGrant();
+
+    /**
      * Default token state manager configuration
      */
     @ConfigItem
@@ -931,6 +936,42 @@ public class OidcTenantConfig extends OidcCommonConfig {
         }
     }
 
+    /**
+     * Authorization Code grant configuration
+     */
+    @ConfigGroup
+    public static class CodeGrant {
+
+        /**
+         * Additional parameters, in addition to the required `code` and `redirect-uri` parameters,
+         * which have to be included to complete the authorization code grant request.
+         */
+        @ConfigItem
+        public Map<String, String> extraParams = new HashMap<>();
+
+        /**
+         * Custom HTTP headers which have to be sent to complete the authorization code grant request.
+         */
+        @ConfigItem
+        public Map<String, String> headers = new HashMap<>();
+
+        public Map<String, String> getExtraParams() {
+            return extraParams;
+        }
+
+        public void setExtraParams(Map<String, String> extraParams) {
+            this.extraParams = extraParams;
+        }
+
+        public Map<String, String> getHeaders() {
+            return headers;
+        }
+
+        public void setHeaders(Map<String, String> headers) {
+            this.headers = headers;
+        }
+    }
+
     @ConfigGroup
     public static class Token {
 
@@ -1288,5 +1329,13 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
     public void setIntrospectionCredentials(IntrospectionCredentials introspectionCredentials) {
         this.introspectionCredentials = introspectionCredentials;
+    }
+
+    public CodeGrant getCodeGrant() {
+        return codeGrant;
+    }
+
+    public void setCodeGrant(CodeGrant codeGrant) {
+        this.codeGrant = codeGrant;
     }
 }

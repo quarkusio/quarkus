@@ -55,7 +55,7 @@ public class ClientRestResponseImpl<T> extends RestResponseImpl<T> {
         MediaType mediaType = getMediaType();
         try {
             entity = (T) ClientSerialisers.invokeClientReader(annotations, entityType, genericType, mediaType,
-                    restClientRequestContext.properties, getStringHeaders(),
+                    restClientRequestContext.properties, restClientRequestContext, getStringHeaders(),
                     restClientRequestContext.getRestClient().getClientContext().getSerialisers(),
                     entityStream, restClientRequestContext.getReaderInterceptors(), restClientRequestContext.configuration);
             consumed = true;

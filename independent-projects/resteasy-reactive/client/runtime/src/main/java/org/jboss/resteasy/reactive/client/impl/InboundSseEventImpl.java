@@ -118,7 +118,7 @@ public class InboundSseEventImpl implements InboundSseEvent {
         InputStream in = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
         try {
             return (T) ClientSerialisers.invokeClientReader(null, type.getRawType(), type.getType(),
-                    mediaType, null, Serialisers.EMPTY_MULTI_MAP,
+                    mediaType, null, null, Serialisers.EMPTY_MULTI_MAP,
                     serialisers, in, Serialisers.NO_READER_INTERCEPTOR, configuration);
         } catch (IOException e) {
             throw new UncheckedIOException(e);

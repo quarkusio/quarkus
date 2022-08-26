@@ -25,6 +25,7 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.providers.serialisers.ClientDefaultTextPlainBodyHandler;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.core.UnmanagedBeanFactory;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -104,19 +105,28 @@ public class ClientSerialisers extends Serialisers {
     // FIXME: pass InvocationState to wrap args?
     public static Buffer invokeClientWriter(Entity<?> entity, Object entityObject, Class<?> entityClass, Type entityType,
             MultivaluedMap<String, String> headerMap, MessageBodyWriter writer, WriterInterceptor[] writerInterceptors,
-            Map<String, Object> properties, Serialisers serialisers, ConfigurationImpl configuration)
+            Map<String, Object> properties, RestClientRequestContext clientRequestContext, Serialisers serialisers,
+            ConfigurationImpl configuration)
             throws IOException {
 
         if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
             if ((writerInterceptors == null) || writerInterceptors.length == 0) {
                 VertxBufferOutputStream out = new VertxBufferOutputStream();
+                if (writer instanceof ClientRestHandler) {
+                    try {
+                        ((ClientRestHandler) writer).handle(clientRequestContext);
+                    } catch (Exception e) {
+                        throw new WebApplicationException("Can't inject the client request context", e);
+                    }
+                }
+
                 writer.writeTo(entityObject, entityClass, entityType, entity.getAnnotations(),
                         entity.getMediaType(), headerMap, out);
                 return out.getBuffer();
             } else {
                 return runClientWriterInterceptors(entityObject, entityClass, entityType, entity.getAnnotations(),
-                        entity.getMediaType(), headerMap, writer, writerInterceptors, properties, serialisers,
-                        configuration);
+                        entity.getMediaType(), headerMap, writer, writerInterceptors, properties, clientRequestContext,
+                        serialisers, configuration);
             }
         }
 
@@ -124,25 +134,26 @@ public class ClientSerialisers extends Serialisers {
     }
 
     public static Buffer runClientWriterInterceptors(Object entity, Class<?> entityClass, Type entityType,
-            Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> headers, MessageBodyWriter writer,
-            WriterInterceptor[] writerInterceptors, Map<String, Object> properties, Serialisers serialisers,
+            Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, String> headers, MessageBodyWriter writer,
+            WriterInterceptor[] writerInterceptors, Map<String, Object> properties,
+            RestClientRequestContext clientRequestContext, Serialisers serialisers,
             ConfigurationImpl configuration) throws IOException {
         ClientWriterInterceptorContextImpl wc = new ClientWriterInterceptorContextImpl(writerInterceptors, writer,
-                annotations, entityClass, entityType, entity, mediaType, headers, properties, serialisers, configuration);
+                annotations, entityClass, entityType, entity, mediaType, headers, properties, clientRequestContext, serialisers,
+                configuration);
         wc.proceed();
         return wc.getResult();
     }
 
     public static Object invokeClientReader(Annotation[] annotations, Class<?> entityClass, Type entityType,
-            MediaType mediaType, Map<String, Object> properties,
+            MediaType mediaType, Map<String, Object> properties, RestClientRequestContext clientRequestContext,
             MultivaluedMap metadata, Serialisers serialisers, InputStream in, ReaderInterceptor[] interceptors,
             ConfigurationImpl configuration)
             throws WebApplicationException, IOException {
         // FIXME: perhaps optimise for when we have no interceptor?
         ClientReaderInterceptorContextImpl context = new ClientReaderInterceptorContextImpl(annotations,
-                entityClass, entityType, mediaType,
-                properties, metadata, configuration, serialisers, in, interceptors);
+                entityClass, entityType, mediaType, properties, clientRequestContext,
+                metadata, configuration, serialisers, in, interceptors);
         return context.proceed();
     }
 

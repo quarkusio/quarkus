@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 
 import javax.inject.Inject;
 import javax.ws.rs.WebApplicationException;
@@ -14,13 +17,18 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
 
+import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-public class ClientJacksonMessageBodyWriter implements MessageBodyWriter<Object> {
+public class ClientJacksonMessageBodyWriter implements MessageBodyWriter<Object>, ClientRestHandler {
 
     protected final ObjectMapper originalMapper;
     protected final ObjectWriter defaultWriter;
+    private final ConcurrentMap<ObjectMapper, ObjectWriter> contextResolverMap = new ConcurrentHashMap<>();
+    private RestClientRequestContext context;
 
     @Inject
     public ClientJacksonMessageBodyWriter(ObjectMapper mapper) {
@@ -36,6 +44,30 @@ public class ClientJacksonMessageBodyWriter implements MessageBodyWriter<Object>
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-        doLegacyWrite(o, annotations, httpHeaders, entityStream, defaultWriter);
+        doLegacyWrite(o, annotations, httpHeaders, entityStream, getEffectiveWriter());
+    }
+
+    @Override
+    public void handle(RestClientRequestContext requestContext) throws Exception {
+        this.context = context;
+    }
+
+    protected ObjectWriter getEffectiveWriter() {
+        if (context == null) {
+            // no context injected when writer is not running within a rest client context
+            return defaultWriter;
+        }
+
+        ObjectMapper objectMapper = context.getConfiguration().getFromContext(ObjectMapper.class);
+        if (objectMapper == null) {
+            return defaultWriter;
+        }
+
+        return contextResolverMap.computeIfAbsent(objectMapper, new Function<>() {
+            @Override
+            public ObjectWriter apply(ObjectMapper objectMapper) {
+                return createDefaultWriter(objectMapper);
+            }
+        });
     }
 }

@@ -13,6 +13,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import java.io.File;
+import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -241,11 +242,10 @@ public final class MultipartPopulatorGenerator {
                                 "Setter '" + setterName + "' of class '" + multipartClassInfo + "' must be public");
                     }
 
-                    if (fieldDotName.equals(DotNames.INPUT_STREAM_NAME)
-                            || fieldDotName.equals(DotNames.INPUT_STREAM_READER_NAME)) {
+                    if (fieldDotName.equals(DotNames.INPUT_STREAM_READER_NAME)) {
                         // don't support InputStream as it's too easy to get into trouble
                         throw new IllegalArgumentException(
-                                "InputStream and InputStreamReader are not supported as a field type of a Multipart POJO class. Offending field is '"
+                                "InputStreamReader are not supported as a field type of a Multipart POJO class. Offending field is '"
                                         + field.name() + "' of class '" + multipartClassName + "'");
                     }
 
@@ -331,6 +331,33 @@ public final class MultipartPopulatorGenerator {
                                             ResteasyReactiveRequestContext.class),
                                     rrCtxHandle);
                             populate.assign(resultVariableHandle, allFileUploadsHandle);
+                        }
+                    } else if (partType.equals(MediaType.APPLICATION_OCTET_STREAM)) {
+                        if (fieldType.kind() == Type.Kind.ARRAY
+                                && fieldType.asArrayType().component().name().equals(DotNames.BYTE_NAME)) {
+                            populate.assign(resultVariableHandle,
+                                    populate.invokeStaticMethod(MethodDescriptor.ofMethod(MultipartSupport.class,
+                                            "getSingleFileUploadAsArrayBytes", byte[].class, String.class,
+                                            ResteasyReactiveRequestContext.class),
+                                            formAttrNameHandle, rrCtxHandle));
+                        } else if (fieldDotName.equals(DotNames.INPUT_STREAM_NAME)) {
+                            populate.assign(resultVariableHandle,
+                                    populate.invokeStaticMethod(MethodDescriptor.ofMethod(MultipartSupport.class,
+                                            "getSingleFileUploadAsInputStream", InputStream.class, String.class,
+                                            ResteasyReactiveRequestContext.class),
+                                            formAttrNameHandle, rrCtxHandle));
+                        } else if (fieldDotName.equals(DotNames.STRING_NAME)) {
+                            populate.assign(resultVariableHandle,
+                                    populate.invokeStaticMethod(MethodDescriptor.ofMethod(MultipartSupport.class,
+                                            "getSingleFileUploadAsString", String.class, String.class,
+                                            ResteasyReactiveRequestContext.class),
+                                            formAttrNameHandle, rrCtxHandle));
+                        } else {
+                            throw new IllegalArgumentException(
+                                    "Unsupported type to read multipart file contents. Offending field is '"
+                                            + field.name() + "' of class '"
+                                            + field.declaringClass().name()
+                                            + "'. If you need to read the contents of the uploaded file, use 'Path' or 'File' as the field type and use File IO APIs to read the bytes, while making sure you annotate the endpoint with '@Blocking'");
                         }
                     } else {
                         // this is a common enough mistake, so let's provide a good error message

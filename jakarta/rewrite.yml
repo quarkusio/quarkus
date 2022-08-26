@@ -604,7 +604,7 @@ recipeList:
       newValue: 4.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-jwt-auth-tck.version
-      newValue: 2.1-RC2
+      newValue: 2.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-lra-tck.version
       newValue: 2.0-RC1

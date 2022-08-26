@@ -54,9 +54,8 @@ public class ConfigInstantiator {
 
     public static void handleObject(Object o) {
         final SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
-        final String clsNameSuffix = getClassNameSuffix(o);
-        if (clsNameSuffix == null) {
-            // unsupported object type
+        if (o == null) {
+            // Nothing to do
             return;
         }
 
@@ -69,6 +68,11 @@ public class ConfigInstantiator {
                 throw new IllegalArgumentException("Found unsupported @ConfigRoot.name = " + name + " on " + cls);
             }
         } else {
+            final String clsNameSuffix = getClassNameSuffix(o);
+            if (clsNameSuffix == null) {
+                // unsupported object type
+                return;
+            }
             name = dashify(cls.getSimpleName().substring(0, cls.getSimpleName().length() - clsNameSuffix.length()));
         }
         handleObject(QUARKUS_PROPERTY_PREFIX + name, o, config, gatherQuarkusPropertyNames(config));
@@ -88,7 +92,7 @@ public class ConfigInstantiator {
 
         try {
             final Class<?> cls = o.getClass();
-            if (!isClassNameSuffixSupported(o)) {
+            if (!isSupportedRootOrGroupClass(cls)) {
                 return;
             }
             for (Field field : cls.getDeclaredFields()) {
@@ -249,11 +253,13 @@ public class ConfigInstantiator {
         return null;
     }
 
-    private static boolean isClassNameSuffixSupported(final Object o) {
-        if (o == null) {
-            return false;
+    private static boolean isSupportedRootOrGroupClass(Class<?> clazz) {
+        if (clazz.getAnnotation(ConfigRoot.class) != null || clazz.getAnnotation(ConfigGroup.class) != null) {
+            return true;
         }
-        final String klassName = o.getClass().getName();
+
+        // Legacy code; we might want to remove this at some point....
+        final String klassName = clazz.getName();
         for (final String supportedSuffix : SUPPORTED_CLASS_NAME_SUFFIXES) {
             if (klassName.endsWith(supportedSuffix)) {
                 return true;

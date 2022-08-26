@@ -40,7 +40,10 @@ public class ConfigInstantiatorTestCase {
             entry("quarkus.map-of-maps.map-of-maps.\"outer2.key\".inner1.value", "o2i1"),
             entry("quarkus.map-of-maps.map-of-maps.\"outer2.key\".\"inner2.key\".value", "o2i2"),
 
-            entry("quarkus.named.value", "val"));
+            entry("quarkus.named.value", "val"),
+
+            entry("quarkus.named2.value", "val1"),
+            entry("quarkus.named2.group.value", "val2"));
 
     private static Config testConfig;
     private static Config cfgToRestore;
@@ -115,6 +118,14 @@ public class ConfigInstantiatorTestCase {
         assertThat(config.value).isEqualTo("val");
     }
 
+    @Test
+    public void handleWithoutConfigSuffix() {
+        RootWithoutConfigSuffix config = new RootWithoutConfigSuffix();
+        ConfigInstantiator.handleObject(config);
+        assertThat(config.value).isEqualTo("val1");
+        assertThat(config.group.value).isEqualTo("val2");
+    }
+
     private static class MapOfMapsConfig {
 
         @ConfigItem
@@ -167,6 +178,26 @@ public class ConfigInstantiatorTestCase {
 
     @ConfigRoot(name = "named")
     private static class WithNameConfig {
+
+        @ConfigItem
+        public String value;
+    }
+
+    @ConfigRoot(name = "named2")
+    private static class RootWithoutConfigSuffix {
+
+        @ConfigItem
+        public String value;
+
+        @ConfigItem
+        public GroupWithoutConfigSuffix group;
+    }
+
+    @ConfigGroup
+    private static class GroupWithoutConfigSuffix {
+
+        public GroupWithoutConfigSuffix() {
+        }
 
         @ConfigItem
         public String value;

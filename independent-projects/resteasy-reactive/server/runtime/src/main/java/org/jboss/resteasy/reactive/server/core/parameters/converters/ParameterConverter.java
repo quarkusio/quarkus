@@ -11,4 +11,9 @@ public interface ParameterConverter {
     default void init(ParamConverterProviders deployment, Class<?> rawType, Type genericType, Annotation[] annotations) {
 
     }
+
+    // TODO: this API method may be too limiting
+    default boolean isForSingleObjectContainer() {
+        return false;
+    }
 }

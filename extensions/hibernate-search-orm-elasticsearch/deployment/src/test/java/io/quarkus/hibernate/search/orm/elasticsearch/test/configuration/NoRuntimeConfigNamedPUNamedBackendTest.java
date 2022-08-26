@@ -2,10 +2,6 @@ package io.quarkus.hibernate.search.orm.elasticsearch.test.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.metamodel.Bindable;
-
-import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
 import org.hibernate.search.mapper.orm.entity.SearchIndexedEntity;
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import org.junit.jupiter.api.Disabled;
@@ -14,6 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.PersistenceUnit.PersistenceUnitLiteral;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**

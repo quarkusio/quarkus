@@ -3,6 +3,8 @@ package io.quarkus.hibernate.search.orm.elasticsearch.deployment;
 import static io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchElasticsearchProcessor.HIBERNATE_SEARCH_ELASTICSEARCH;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -36,7 +38,10 @@ class HibernateSearchElasticsearchDisabledProcessor {
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeIntegrations) {
-        recorder.checkNoExplicitActiveTrue(runtimeConfig);
+        Set<String> persistenceUnitNames = persistenceUnitDescriptorBuildItems.stream()
+                .map(PersistenceUnitDescriptorBuildItem::getPersistenceUnitName)
+                .collect(Collectors.toSet());
+        recorder.checkNoExplicitActiveTrue(runtimeConfig, persistenceUnitNames);
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
             String puName = puDescriptor.getPersistenceUnitName();
             runtimeIntegrations.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,

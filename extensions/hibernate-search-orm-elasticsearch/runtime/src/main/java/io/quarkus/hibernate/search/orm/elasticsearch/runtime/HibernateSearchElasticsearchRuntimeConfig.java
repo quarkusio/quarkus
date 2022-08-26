@@ -2,7 +2,6 @@ package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
@@ -10,6 +9,7 @@ import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.configuration.ConfigInstantiator;
 
 @ConfigRoot(name = "hibernate-search-orm", phase = ConfigPhase.RUN_TIME)
 public class HibernateSearchElasticsearchRuntimeConfig {
@@ -28,13 +28,17 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     @ConfigItem(name = ConfigItem.PARENT)
     public Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> persistenceUnits;
 
-    public Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> getAllPersistenceUnitConfigsAsMap() {
-        Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> map = new TreeMap<>();
-        if (defaultPersistenceUnit != null) {
-            map.put(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, defaultPersistenceUnit);
+    public HibernateSearchElasticsearchRuntimeConfigPersistenceUnit getPersistenceUnitConfig(String name) {
+        HibernateSearchElasticsearchRuntimeConfigPersistenceUnit result;
+        if (PersistenceUnitUtil.isDefaultPersistenceUnit(name)) {
+            result = defaultPersistenceUnit;
+        } else {
+            result = persistenceUnits.get(name);
         }
-        map.putAll(persistenceUnits);
-        return map;
+        if (result == null) {
+            result = ConfigInstantiator.createEmptyObject(HibernateSearchElasticsearchRuntimeConfigPersistenceUnit.class);
+        }
+        return result;
     }
 
     public static String elasticsearchVersionPropertyKey(String persistenceUnitName, String backendName) {

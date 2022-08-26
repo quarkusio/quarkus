@@ -1,12 +1,13 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 
 import java.time.Duration;
-import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 
 import org.hibernate.search.backend.elasticsearch.index.IndexStatus;
 import org.hibernate.search.engine.cfg.spi.ParseUtils;
@@ -18,6 +19,7 @@ import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.configuration.ConfigInstantiator;
 
 @ConfigGroup
 public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
@@ -76,15 +78,28 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     @ConfigItem
     MultiTenancyConfig multiTenancy;
 
-    Map<String, ElasticsearchBackendRuntimeConfig> getAllBackendConfigsAsMap() {
-        Map<String, ElasticsearchBackendRuntimeConfig> map = new LinkedHashMap<>();
+    Set<String> getConfiguredBackendNames() {
+        Set<String> names = new LinkedHashSet<>();
         if (defaultBackend != null) {
-            map.put(null, defaultBackend);
+            names.add(null);
         }
         if (namedBackends != null) {
-            map.putAll(namedBackends.backends);
+            names.addAll(namedBackends.backends.keySet());
         }
-        return map;
+        return names;
+    }
+
+    ElasticsearchBackendRuntimeConfig getBackendConfig(String name) {
+        ElasticsearchBackendRuntimeConfig result;
+        if (name == null) {
+            result = defaultBackend;
+        } else {
+            result = namedBackends == null ? null : namedBackends.backends.get(name);
+        }
+        if (result == null) {
+            result = ConfigInstantiator.createEmptyObject(ElasticsearchBackendRuntimeConfig.class);
+        }
+        return result;
     }
 
     @ConfigGroup

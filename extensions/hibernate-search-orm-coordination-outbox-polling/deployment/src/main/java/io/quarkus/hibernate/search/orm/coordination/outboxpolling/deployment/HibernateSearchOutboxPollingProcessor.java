@@ -77,9 +77,6 @@ class HibernateSearchOutboxPollingProcessor {
 
     private boolean isUsingOutboxPolling(HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem persistenceUnit) {
         HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit puConfig = persistenceUnit.getBuildTimeConfig();
-        if (puConfig == null) {
-            return false;
-        }
         Optional<String> configuredStrategy = puConfig.coordination.strategy;
         return configuredStrategy.isPresent()
                 && configuredStrategy.get().equals(HibernateOrmMapperOutboxPollingSettings.COORDINATION_STRATEGY_NAME);

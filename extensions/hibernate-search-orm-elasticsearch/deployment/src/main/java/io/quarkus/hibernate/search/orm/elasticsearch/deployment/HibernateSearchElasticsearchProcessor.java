@@ -87,9 +87,6 @@ class HibernateSearchElasticsearchProcessor {
         Map<String, Map<String, Set<String>>> persistenceUnitAndBackendAndIndexNamesForSearchExtensions = collectPersistenceUnitAndBackendAndIndexNamesForSearchExtensions(
                 index);
 
-        Map<String, HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit> configByPU = buildTimeConfig
-                .getAllPersistenceUnitConfigsAsMap();
-
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
             Collection<AnnotationInstance> indexedAnnotationsForPU = new ArrayList<>();
             for (AnnotationInstance indexedAnnotation : indexedAnnotations) {
@@ -101,7 +98,7 @@ class HibernateSearchElasticsearchProcessor {
             Map<String, Set<String>> backendAndIndexNamesForSearchExtensions = persistenceUnitAndBackendAndIndexNamesForSearchExtensions
                     .getOrDefault(puDescriptor.getPersistenceUnitName(), Collections.emptyMap());
             String puName = puDescriptor.getPersistenceUnitName();
-            buildForPersistenceUnit(recorder, indexedAnnotationsForPU, puName, configByPU.get(puName),
+            buildForPersistenceUnit(recorder, indexedAnnotationsForPU, puName, buildTimeConfig.getPersistenceUnitConfig(puName),
                     backendAndIndexNamesForSearchExtensions,
                     configuredPersistenceUnits, staticIntegrations, runtimeIntegrations);
         }
@@ -255,9 +252,7 @@ class HibernateSearchElasticsearchProcessor {
                 .getBuildTimeConfig();
 
         Set<String> propertyKeysWithNoVersion = new LinkedHashSet<>();
-        Map<String, ElasticsearchBackendBuildTimeConfig> backends = buildTimeConfig != null
-                ? buildTimeConfig.getAllBackendConfigsAsMap()
-                : Collections.emptyMap();
+        Map<String, ElasticsearchBackendBuildTimeConfig> backends = buildTimeConfig.getAllBackendConfigsAsMap();
 
         Set<String> allBackendNames = new LinkedHashSet<>(configuredPersistenceUnit.getBackendNamesForIndexedEntities());
         allBackendNames.addAll(backends.keySet());

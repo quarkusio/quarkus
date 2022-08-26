@@ -17,11 +17,11 @@ import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 
 public class JacksonBasicMessageBodyReader extends AbstractJsonMessageBodyReader {
 
-    protected final ObjectReader reader;
+    protected final ObjectReader defaultReader;
 
     @Inject
     public JacksonBasicMessageBodyReader(ObjectMapper mapper) {
-        this.reader = mapper.reader();
+        this.defaultReader = mapper.reader();
     }
 
     @Override
@@ -34,10 +34,15 @@ public class JacksonBasicMessageBodyReader extends AbstractJsonMessageBodyReader
         }
     }
 
+    protected ObjectReader getEffectiveReader() {
+        return defaultReader;
+    }
+
     private Object doReadFrom(Class<Object> type, Type genericType, InputStream entityStream) throws IOException {
         if (entityStream instanceof EmptyInputStream) {
             return null;
         }
+        ObjectReader reader = getEffectiveReader();
         return reader.forType(reader.getTypeFactory().constructType(genericType != null ? genericType : type))
                 .readValue(entityStream);
     }

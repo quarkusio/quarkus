@@ -14,6 +14,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.ReaderInterceptorContext;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
@@ -21,6 +22,7 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 public class ClientReaderInterceptorContextImpl extends AbstractClientInterceptorContextImpl
         implements ReaderInterceptorContext {
 
+    final RestClientRequestContext clientRequestContext;
     final ConfigurationImpl configuration;
     final Serialisers serialisers;
     InputStream inputStream;
@@ -30,11 +32,13 @@ public class ClientReaderInterceptorContextImpl extends AbstractClientIntercepto
     private final MultivaluedMap<String, String> headers = new CaseInsensitiveMap<>();
 
     public ClientReaderInterceptorContextImpl(Annotation[] annotations, Class<?> entityClass, Type entityType,
-            MediaType mediaType,
-            Map<String, Object> properties, MultivaluedMap<String, String> headers,
+            MediaType mediaType, Map<String, Object> properties,
+            RestClientRequestContext clientRequestContext,
+            MultivaluedMap<String, String> headers,
             ConfigurationImpl configuration, Serialisers serialisers, InputStream inputStream,
             ReaderInterceptor[] interceptors) {
         super(annotations, entityClass, entityType, mediaType, properties);
+        this.clientRequestContext = clientRequestContext;
         this.configuration = configuration;
         this.serialisers = serialisers;
         this.inputStream = inputStream;
@@ -51,6 +55,13 @@ public class ClientReaderInterceptorContextImpl extends AbstractClientIntercepto
             for (MessageBodyReader<?> reader : readers) {
                 if (reader.isReadable(entityClass, entityType, annotations, mediaType)) {
                     try {
+                        if (reader instanceof ClientRestHandler) {
+                            try {
+                                ((ClientRestHandler) reader).handle(clientRequestContext);
+                            } catch (Exception e) {
+                                throw new WebApplicationException("Can't inject the client request context", e);
+                            }
+                        }
                         return ((MessageBodyReader) reader).readFrom(entityClass, entityType, annotations, mediaType, headers,
                                 inputStream);
                     } catch (IOException e) {

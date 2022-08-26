@@ -9,12 +9,11 @@ import java.util.List;
 
 import javax.ws.rs.core.MediaType;
 
-import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
-
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.rest.client.reactive.jackson.runtime.serialisers.ClientJacksonMessageBodyReader;
 import io.quarkus.rest.client.reactive.jackson.runtime.serialisers.ClientJacksonMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.deployment.processor.ResteasyReactiveJacksonProviderDefinedBuildItem;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayBasicMessageBodyReader;
@@ -48,13 +47,13 @@ public class RestClientReactiveJacksonProcessor {
         }
         // make these beans to they can get instantiated with the Quarkus CDI configured Jsonb object
         additionalBean.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(JacksonBasicMessageBodyReader.class.getName())
+                .addBeanClass(ClientJacksonMessageBodyReader.class.getName())
                 .addBeanClass(ClientJacksonMessageBodyWriter.class.getName())
                 .setUnremovable().build());
 
         additionalReaders
                 .produce(
-                        new MessageBodyReaderBuildItem.Builder(JacksonBasicMessageBodyReader.class.getName(),
+                        new MessageBodyReaderBuildItem.Builder(ClientJacksonMessageBodyReader.class.getName(),
                                 Object.class.getName())
                                 .setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES)
                                 .setBuiltin(true)

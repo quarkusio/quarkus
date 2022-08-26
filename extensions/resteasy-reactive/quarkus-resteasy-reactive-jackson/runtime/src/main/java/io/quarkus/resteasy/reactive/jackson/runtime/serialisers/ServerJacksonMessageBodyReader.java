@@ -18,6 +18,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 public class ServerJacksonMessageBodyReader extends JacksonBasicMessageBodyReader implements ServerMessageBodyReader<Object> {
@@ -58,6 +59,7 @@ public class ServerJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
             return null;
         }
         try {
+            ObjectReader reader = getEffectiveReader();
             return reader.forType(reader.getTypeFactory().constructType(genericType != null ? genericType : type))
                     .readValue(entityStream);
         } catch (MismatchedInputException e) {

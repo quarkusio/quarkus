@@ -18,7 +18,7 @@ public @interface Launch {
     /**
      * The program arguments to launch with
      */
-    String[] value();
+    String[] value() default "";
 
     /**
      * Expected return code

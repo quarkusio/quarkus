@@ -22,7 +22,10 @@ import io.quarkus.test.junit.QuarkusMainIntegrationTestExtension;
  * the native image.
  *
  * Injection of beans into a test class using {@code @Inject} is not supported
- * in {@code QuarkusMainIntegrationTest}.
+ * in {@code QuarkusMainIntegrationTest}
+ *
+ * Methods inside the test class must be annotated with {@link io.quarkus.test.junit.main.Launch} or have a
+ * {@link io.quarkus.test.junit.main.QuarkusMainLauncher} parameter to be able to start the application manually.
  */
 @Target(ElementType.TYPE)
 @ExtendWith({ QuarkusMainIntegrationTestExtension.class })

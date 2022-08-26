@@ -103,7 +103,7 @@ To upload this image to your ACR, you must tag and push the image under the ACR 
 
 [source,shell]
 ----
-$ az acr show -n <registry-name> --query loginServer
+$ az acr show -n <registry-name> --query loginServer -o tsv
 ----
 
 To upload, now do:

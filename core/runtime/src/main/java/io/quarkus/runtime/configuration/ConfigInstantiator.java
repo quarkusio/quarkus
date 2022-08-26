@@ -108,8 +108,10 @@ public class ConfigInstantiator {
                     name = dashify(field.getName());
                 } else if (name.equals(ConfigItem.ELEMENT_NAME)) {
                     name = field.getName();
+                } else if (name.equals(ConfigItem.PARENT)) {
+                    name = null;
                 }
-                String fullName = prefix + "." + name;
+                String fullName = prefix + (name == null ? "" : "." + name);
                 if (fieldClass == Map.class) {
                     field.set(o, handleMap(fullName, genericType, config, quarkusPropertyNames));
                 } else if (configItem == null || fieldClass.isAnnotationPresent(ConfigGroup.class)) {

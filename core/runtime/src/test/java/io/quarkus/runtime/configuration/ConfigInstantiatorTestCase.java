@@ -48,7 +48,9 @@ public class ConfigInstantiatorTestCase {
             entry("quarkus.named3.value", "val3"),
             entry("quarkus.named3.group.value", "val4"),
             entry("quarkus.named3.map-of-groups.foo.value", "val5"),
-            entry("quarkus.named3.map-of-groups.bar.value", "val6"));
+            entry("quarkus.named3.map-of-groups.bar.value", "val6"),
+
+            entry("quarkus.named4", "val7"));
 
     private static Config testConfig;
     private static Config cfgToRestore;
@@ -144,6 +146,15 @@ public class ConfigInstantiatorTestCase {
         assertThat(config.mapOfGroups.get("bar").value).isEqualTo("val6");
     }
 
+    // Not adding @ConfigItem to properties feels wrong, but it's supported,
+    // so ConfigInstantiator should support it too.
+    @Test
+    public void handleElementNameParent() {
+        RootWithElementNameParent config = new RootWithElementNameParent();
+        ConfigInstantiator.handleObject(config);
+        assertThat(config.value).isEqualTo("val7");
+    }
+
     private static class MapOfMapsConfig {
 
         @ConfigItem
@@ -237,6 +248,12 @@ public class ConfigInstantiatorTestCase {
         }
 
         @ConfigItem
+        public String value;
+    }
+
+    @ConfigRoot(name = "named4")
+    private static class RootWithElementNameParent {
+        @ConfigItem(name = ConfigItem.PARENT)
         public String value;
     }
 

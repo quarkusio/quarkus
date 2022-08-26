@@ -102,25 +102,23 @@ public class ConfigInstantiator {
                 field.setAccessible(true);
                 ConfigItem configItem = field.getDeclaredAnnotation(ConfigItem.class);
                 final Class<?> fieldClass = field.getType();
-                if (configItem == null || fieldClass.isAnnotationPresent(ConfigGroup.class)) {
+                final Type genericType = field.getGenericType();
+                String name = configItem == null ? null : configItem.name();
+                if (name == null || name.equals(ConfigItem.HYPHENATED_ELEMENT_NAME)) {
+                    name = dashify(field.getName());
+                } else if (name.equals(ConfigItem.ELEMENT_NAME)) {
+                    name = field.getName();
+                }
+                String fullName = prefix + "." + name;
+                if (fieldClass == Map.class) {
+                    field.set(o, handleMap(fullName, genericType, config, quarkusPropertyNames));
+                } else if (configItem == null || fieldClass.isAnnotationPresent(ConfigGroup.class)) {
                     Constructor<?> constructor = fieldClass.getConstructor();
                     constructor.setAccessible(true);
                     Object newInstance = constructor.newInstance();
                     field.set(o, newInstance);
-                    handleObject(prefix + "." + dashify(field.getName()), newInstance, config, quarkusPropertyNames);
+                    handleObject(fullName, newInstance, config, quarkusPropertyNames);
                 } else {
-                    String name = configItem.name();
-                    if (name.equals(ConfigItem.HYPHENATED_ELEMENT_NAME)) {
-                        name = dashify(field.getName());
-                    } else if (name.equals(ConfigItem.ELEMENT_NAME)) {
-                        name = field.getName();
-                    }
-                    String fullName = prefix + "." + name;
-                    final Type genericType = field.getGenericType();
-                    if (fieldClass == Map.class) {
-                        field.set(o, handleMap(fullName, genericType, config, quarkusPropertyNames));
-                        continue;
-                    }
                     final Converter<?> conv = getConverterFor(genericType, config);
                     try {
                         Optional<?> value = config.getOptionalValue(fullName, conv);

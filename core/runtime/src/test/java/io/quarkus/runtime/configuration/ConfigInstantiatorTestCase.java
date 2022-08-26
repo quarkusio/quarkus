@@ -43,7 +43,12 @@ public class ConfigInstantiatorTestCase {
             entry("quarkus.named.value", "val"),
 
             entry("quarkus.named2.value", "val1"),
-            entry("quarkus.named2.group.value", "val2"));
+            entry("quarkus.named2.group.value", "val2"),
+
+            entry("quarkus.named3.value", "val3"),
+            entry("quarkus.named3.group.value", "val4"),
+            entry("quarkus.named3.map-of-groups.foo.value", "val5"),
+            entry("quarkus.named3.map-of-groups.bar.value", "val6"));
 
     private static Config testConfig;
     private static Config cfgToRestore;
@@ -126,6 +131,19 @@ public class ConfigInstantiatorTestCase {
         assertThat(config.group.value).isEqualTo("val2");
     }
 
+    // Not adding @ConfigItem to properties feels wrong, but it's supported,
+    // so ConfigInstantiator should support it too.
+    @Test
+    public void handleWithoutConfigItem() {
+        RootWithoutConfigItem config = new RootWithoutConfigItem();
+        ConfigInstantiator.handleObject(config);
+        assertThat(config.value).isEqualTo("val3");
+        assertThat(config.group.value).isEqualTo("val4");
+        assertThat(config.mapOfGroups).containsKeys("foo", "bar");
+        assertThat(config.mapOfGroups.get("foo").value).isEqualTo("val5");
+        assertThat(config.mapOfGroups.get("bar").value).isEqualTo("val6");
+    }
+
     private static class MapOfMapsConfig {
 
         @ConfigItem
@@ -197,6 +215,25 @@ public class ConfigInstantiatorTestCase {
     private static class GroupWithoutConfigSuffix {
 
         public GroupWithoutConfigSuffix() {
+        }
+
+        @ConfigItem
+        public String value;
+    }
+
+    @ConfigRoot(name = "named3")
+    private static class RootWithoutConfigItem {
+        @ConfigItem
+        public String value;
+
+        public GroupInRootWithoutConfigItem group;
+
+        public Map<String, GroupInRootWithoutConfigItem> mapOfGroups;
+    }
+
+    @ConfigGroup
+    private static class GroupInRootWithoutConfigItem {
+        public GroupInRootWithoutConfigItem() {
         }
 
         @ConfigItem

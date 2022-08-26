@@ -3,6 +3,8 @@ package org.jboss.resteasy.reactive.client.impl;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_POOL_SIZE;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_TTL;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECT_TIMEOUT;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_HEADER_SIZE;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_INITIAL_LINE_LENGTH;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_REDIRECTS;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.NAME;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.SHARED;
@@ -96,8 +98,6 @@ public class ClientImpl implements Client {
             ClientLogger clientLogger, String userAgent) {
         this.userAgent = userAgent;
         configuration = configuration != null ? configuration : new ConfigurationImpl(RuntimeType.CLIENT);
-        // TODO: ssl context
-        // TODO: hostnameVerifier
         this.configuration = configuration;
         this.clientContext = clientContext;
         this.hostnameVerifier = hostnameVerifier;
@@ -126,6 +126,16 @@ public class ClientImpl implements Client {
         Object maxRedirects = configuration.getProperty(MAX_REDIRECTS);
         if (maxRedirects != null) {
             options.setMaxRedirects((Integer) maxRedirects);
+        }
+
+        Object maxHeaderSize = configuration.getProperty(MAX_HEADER_SIZE);
+        if (maxHeaderSize != null) {
+            options.setMaxHeaderSize((Integer) maxHeaderSize);
+        }
+
+        Object maxInitialLineLength = configuration.getProperty(MAX_INITIAL_LINE_LENGTH);
+        if (maxInitialLineLength != null) {
+            options.setMaxInitialLineLength((Integer) maxInitialLineLength);
         }
 
         Object connectionTTL = configuration.getProperty(CONNECTION_TTL);

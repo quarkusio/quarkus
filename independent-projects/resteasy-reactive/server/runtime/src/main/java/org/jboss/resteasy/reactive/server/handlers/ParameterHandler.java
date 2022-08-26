@@ -95,7 +95,7 @@ public class ParameterHandler implements ServerRestHandler {
                     } catch (WebApplicationException x) {
                         toThrow = x;
                     } catch (Throwable x) {
-                        log.debug("Unable to handle parameter", x);
+                        log.warn("Unable to handle parameter", x);
                         toThrow = new BadRequestException(x);
                     }
                     break;
@@ -107,7 +107,7 @@ public class ParameterHandler implements ServerRestHandler {
                     } catch (WebApplicationException x) {
                         toThrow = x;
                     } catch (Throwable x) {
-                        log.debug("Unable to handle parameter", x);
+                        log.warn("Unable to handle parameter", x);
                         toThrow = new NotFoundException(x);
                     }
                     break;
@@ -115,7 +115,7 @@ public class ParameterHandler implements ServerRestHandler {
                     try {
                         result = converter.convert(result);
                     } catch (Throwable x) {
-                        log.debug("Unable to handle parameter", x);
+                        log.warn("Unable to handle parameter", x);
                         toThrow = x;
                     }
                     break;

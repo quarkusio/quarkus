@@ -221,12 +221,12 @@ triage:
         - extensions/resteasy-qute/
     - labels: [area/reactive-messaging, area/smallrye]
       title: "reactive.messaging"
-      notify: [cescoffier, michalszynkiewicz, ozangunalp]
+      notify: [cescoffier, ozangunalp]
       directories:
         - extensions/smallrye-reactive-messaging
     - labels: [area/rest-client]
       title: "rest.client"
-      notify: [michalszynkiewicz]
+      notify: [cescoffier, geoand, Sgitario]
       directories:
         - extensions/rest-client/
     - labels: [area/smallrye]
@@ -286,7 +286,7 @@ triage:
         - integration-tests/infinispan-client/
     - labels: [area/grpc]
       title: "grpc"
-      notify: [michalszynkiewicz, cescoffier]
+      notify: [alesj, cescoffier]
       directories:
         - extensions/grpc-common
         - extensions/grpc
@@ -567,7 +567,7 @@ triage:
         - extensions/smallrye-context-propagation
     - labels: [area/stork]
       title: "stork"
-      notify: [michalszynkiewicz]
+      notify: [aureamunoz, cescoffier, Sgitario]
       directories:
         - extensions/smallrye-stork/
     - labels: [area/jakarta]

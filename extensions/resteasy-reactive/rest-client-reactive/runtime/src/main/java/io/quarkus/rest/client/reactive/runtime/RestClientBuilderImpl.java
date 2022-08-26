@@ -37,7 +37,6 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.rest.client.reactive.runtime.ProxyAddressUtil.HostAndPort;
 import io.quarkus.restclient.config.RestClientLoggingConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
-import io.vertx.core.http.HttpClientOptions;
 
 /**
  * Builder implementation for MicroProfile Rest Client
@@ -287,13 +286,6 @@ public class RestClientBuilderImpl implements RestClientBuilder {
                 .instance(AnnotationRegisteredProviders.class).get();
         for (Map.Entry<Class<?>, Integer> mapper : annotationRegisteredProviders.getProviders(aClass).entrySet()) {
             register(mapper.getKey(), mapper.getValue());
-        }
-
-        if (!getConfiguration().isRegistered(HttpClientOptions.class)) {
-            InstanceHandle<HttpClientOptions> httpClientOptions = Arc.container().instance(HttpClientOptions.class);
-            if (httpClientOptions.isAvailable()) {
-                clientBuilder.register(httpClientOptions.get());
-            }
         }
 
         Object defaultMapperDisabled = getConfiguration().getProperty(DEFAULT_MAPPER_DISABLED);

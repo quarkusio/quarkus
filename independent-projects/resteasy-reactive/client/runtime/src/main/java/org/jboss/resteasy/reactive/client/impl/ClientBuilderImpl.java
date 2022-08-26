@@ -14,7 +14,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -60,6 +59,7 @@ public class ClientBuilderImpl extends ClientBuilder {
     private Integer loggingBodySize = 100;
     private MultiQueryParamMode multiQueryParamMode;
 
+    private HttpClientOptions httpClientOptions = new HttpClientOptions();
     private ClientLogger clientLogger = new DefaultClientLogger();
     private String userAgent = "Resteasy Reactive Client";
 
@@ -136,6 +136,11 @@ public class ClientBuilderImpl extends ClientBuilder {
         return this;
     }
 
+    public ClientBuilder httpClientOptions(HttpClientOptions httpClientOptions) {
+        this.httpClientOptions = httpClientOptions;
+        return this;
+    }
+
     public ClientBuilder followRedirects(boolean followRedirects) {
         this.followRedirects = followRedirects;
         return this;
@@ -166,8 +171,7 @@ public class ClientBuilderImpl extends ClientBuilder {
         Buffer keyStore = asBuffer(this.keyStore, keystorePassword);
         Buffer trustStore = asBuffer(this.trustStore, EMPTY_CHAR_ARARAY);
 
-        HttpClientOptions options = Optional.ofNullable(configuration.getInstance(HttpClientOptions.class))
-                .orElseGet(HttpClientOptions::new);
+        HttpClientOptions options = httpClientOptions == null ? new HttpClientOptions() : httpClientOptions;
 
         if (trustAll) {
             options.setTrustAll(true);
@@ -239,7 +243,7 @@ public class ClientBuilderImpl extends ClientBuilder {
 
         clientLogger.setBodySize(loggingBodySize);
 
-        return new ClientImpl(options,
+        return new ClientImpl(httpClientOptions,
                 configuration,
                 CLIENT_CONTEXT_RESOLVER.resolve(Thread.currentThread().getContextClassLoader()),
                 hostnameVerifier,

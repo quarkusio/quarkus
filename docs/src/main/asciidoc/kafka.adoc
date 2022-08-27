@@ -196,7 +196,6 @@ public class PriceResource {
 
     @GET
     @Path("/prices")
-    @Produces(MediaType.SERVER_SENT_EVENTS)
     @RestStreamElementType(MediaType.TEXT_PLAIN)
     public Multi<Double> stream() {
         return prices;

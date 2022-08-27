@@ -42,7 +42,6 @@ public class SseResource {
 
     @Path("json")
     @GET
-    @Produces(MediaType.SERVER_SENT_EVENTS)
     @RestStreamElementType(MediaType.APPLICATION_JSON)
     public void sseJson(Sse sse, SseEventSink sink) throws IOException {
         if (sink == null) {
@@ -93,7 +92,6 @@ public class SseResource {
 
     @Path("json/multi")
     @GET
-    @Produces(MediaType.SERVER_SENT_EVENTS)
     @RestStreamElementType(MediaType.APPLICATION_JSON)
     public Multi<Message> multiJson() {
         return Multi.createFrom().items(new Message("hello"), new Message("stef"));

@@ -87,7 +87,6 @@ them to the client, you can do it like this:
     @Transactional
     @GET
     @Path("/prices")
-    @Produces(MediaType.SERVER_SENT_EVENTS)
     @RestStreamElementType(MediaType.TEXT_PLAIN)
     public Publisher<Double> prices() {
         // get the next three prices from the price stream
@@ -238,7 +237,6 @@ annotation:
 
     @GET
     @Path("/prices")
-    @Produces(MediaType.SERVER_SENT_EVENTS)
     @RestStreamElementType(MediaType.TEXT_PLAIN)
     // Get rid of all context propagation, since we don't need it here
     @CurrentThreadContext(unchanged = ThreadContext.ALL_REMAINING)
@@ -265,7 +263,6 @@ You can also inject a custom-built `ThreadContext` using the https://javadoc.io/
 
     @GET
     @Path("/prices")
-    @Produces(MediaType.SERVER_SENT_EVENTS)
     @RestStreamElementType(MediaType.TEXT_PLAIN)
     public Publisher<Double> prices() {
         // Get rid of all context propagation, since we don't need it here

@@ -596,15 +596,20 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             Type nonAsyncReturnType = getNonAsyncReturnType(methodContextReturnTypeOrReturnType);
             addWriterForType(additionalWriters, nonAsyncReturnType);
 
-            String[] produces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentMethodInfo, PRODUCES),
-                    basicResourceClassInfo.getProduces());
-            produces = applyDefaultProduces(produces, nonAsyncReturnType, httpMethod);
-            produces = addDefaultCharsets(produces);
-
             String streamElementType = basicResourceClassInfo.getStreamElementType();
             String streamElementTypeInMethod = getStreamAnnotationValue(currentMethodInfo);
             if (streamElementTypeInMethod != null) {
                 streamElementType = streamElementTypeInMethod;
+            }
+
+            String[] produces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentMethodInfo, PRODUCES),
+                    basicResourceClassInfo.getProduces());
+            if (((produces == null) || (produces.length == 0)) && (streamElementType != null)) {
+                // when @RestStreamElementType is used, we automatically determine SSE as the @Produces MediaType
+                produces = applyDefaultProducesAndAddCharsets(httpMethod, nonAsyncReturnType,
+                        new String[] { MediaType.SERVER_SENT_EVENTS });
+            } else {
+                produces = applyDefaultProducesAndAddCharsets(httpMethod, nonAsyncReturnType, produces);
             }
 
             boolean returnsMultipart = false;
@@ -692,6 +697,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             throw new RuntimeException("Failed to process method '" + currentMethodInfo.declaringClass().name() + "#"
                     + currentMethodInfo.name() + "'", e);
         }
+    }
+
+    private String[] applyDefaultProducesAndAddCharsets(DotName httpMethod, Type nonAsyncReturnType, String[] produces) {
+        return addDefaultCharsets(applyDefaultProduces(produces, nonAsyncReturnType, httpMethod));
     }
 
     protected void handleClientSubResource(ResourceMethod resourceMethod, MethodInfo method, IndexView index) {

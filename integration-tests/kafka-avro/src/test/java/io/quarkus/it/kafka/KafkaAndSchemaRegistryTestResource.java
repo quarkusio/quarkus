@@ -21,7 +21,7 @@ public class KafkaAndSchemaRegistryTestResource implements QuarkusTestResourceLi
 
     @Override
     public Map<String, String> start() {
-        registry = new GenericContainer<>("apicurio/apicurio-registry-mem:1.2.2.Final")
+        registry = new GenericContainer<>("apicurio/apicurio-registry-mem:2.2.5.Final")
                 .withExposedPorts(8080)
                 .withEnv("QUARKUS_PROFILE", "prod");
         registry.start();

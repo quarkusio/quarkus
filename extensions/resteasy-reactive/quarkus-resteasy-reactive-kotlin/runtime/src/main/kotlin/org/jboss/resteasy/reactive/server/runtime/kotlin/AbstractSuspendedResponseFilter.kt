@@ -8,7 +8,7 @@ import javax.ws.rs.container.ContainerResponseContext
 
 /**
  * Base class used by Quarkus to generate an implementation at build-time that calls
- * a {@code suspend} method annotated with {@code @ServerResponseFilter}
+ * a `suspend` method annotated with [org.jboss.resteasy.reactive.server.ServerResponseFilter](ServerResponseFilter)
  */
 @Suppress("unused")
 abstract class AbstractSuspendedResponseFilter : ResteasyReactiveContainerResponseFilter {

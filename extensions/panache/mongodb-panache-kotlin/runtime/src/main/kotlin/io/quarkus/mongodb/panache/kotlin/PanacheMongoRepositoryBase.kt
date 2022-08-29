@@ -12,14 +12,14 @@ import java.util.stream.Stream
 import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations.Companion.INSTANCE
 
 /**
- * Represents a Repository for a specific type of entity `Entity`, with an ID type
- * of `Id`. Implementing this repository will gain you the exact same useful methods
+ * Represents a Repository for a specific type of entity [Entity], with an ID type
+ * of [Id]. Implementing this repository will gain you the exact same useful methods
  * that are on [PanacheMongoEntityBase]. Unless you have a custom ID strategy, you should not
  * implement this interface directly but implement [PanacheMongoRepository] instead.
  *
  * @param Entity The type of entity to operate on
  * @param Id The ID type of the entity
- * @see PanacheMongoRepository<Id><Entity>
+ * @see [PanacheMongoRepository]
  */
 interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
     /**
@@ -27,7 +27,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * This will set its ID field if not already set.
      *
      * @param entity the entity to insert.
-     * @see [persist]
      */
     fun persist(entity: Entity) = INSTANCE.persist(entity)
 
@@ -35,7 +34,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Update the given entity in the database.
      *
      * @param entity the entity to update.
-     * @see [update]
      */
     fun update(entity: Entity) = INSTANCE.update(entity)
 
@@ -43,7 +41,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Persist the given entity in the database or update it if it already exists.
      *
      * @param entity the entity to update.
-     * @see [persistOrUpdate]
      */
     fun persistOrUpdate(entity: Entity) = INSTANCE.persistOrUpdate(entity)
 
@@ -51,7 +48,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Delete the given entity from the database, if it is already persisted.
      *
      * @param entity the entity to delete.
-     * @see [delete]
      * @see [deleteAll]
      */
     fun delete(entity: Entity) = INSTANCE.delete(entity)
@@ -71,7 +67,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param query a query string
      * @param params optional sequence of indexed parameters
      * @return a new [PanacheQuery] instance for the given query
-     * @see [find]
      * @see [list]
      * @see [stream]
      */
@@ -86,7 +81,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param sort the sort strategy to use
      * @param params optional sequence of indexed parameters
      * @return a new [PanacheQuery] instance for the given query
-     * @see [find]
      * @see [list]
      * @see [stream]
      */
@@ -100,7 +94,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param query a query string
      * @param params [Map] of named parameters
      * @return a new [PanacheQuery] instance for the given query
-     * @see [find]
      * @see [list]
      * @see [stream]
      */
@@ -115,7 +108,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param sort the sort strategy to use
      * @param params [Map] of indexed parameters
      * @return a new [PanacheQuery] instance for the given query
-     * @see [find]
      * @see [list]
      * @see [stream]
      */
@@ -129,7 +121,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param query a query string
      * @param params [Parameters] of named parameters
      * @return a new [PanacheQuery] instance for the given query
-     * @see [find]
      * @see [list]
      * @see [stream]
      */
@@ -144,7 +135,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param sort the sort strategy to use
      * @param params [Parameters] of indexed parameters
      * @return a new [PanacheQuery] instance for the given query
-     * @see [find]
      * @see [list]
      * @see [stream]
      */
@@ -157,7 +147,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      *
      * @param query a [Document] query
      * @return a new [PanacheQuery] instance for the given query
-     * @see [find]
      * @see [list]
      * @see [stream]
      */
@@ -170,7 +159,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param query a [Document] query
      * @param sort the [Document] sort
      * @return a new [PanacheQuery] instance for the given query
-     * @see [find]
      * @see [list]
      * @see [stream]
      */
@@ -181,7 +169,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Find all entities of this type.
      *
      * @return a new [PanacheQuery] instance to find all entities of this type.
-     * @see [findAll]
      * @see [listAll]
      * @see [streamAll]
      */
@@ -193,7 +180,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      *
      * @param sort the sort order to use
      * @return a new [PanacheQuery] instance to find all entities of this type.
-     * @see [findAll]
      * @see [listAll]
      * @see [streamAll]
      */
@@ -207,7 +193,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param query a query string
      * @param params optional sequence of indexed parameters
      * @return a [List] containing all results, without paging
-     * @see [list]
      * @see [find]
      * @see [stream]
      */
@@ -222,7 +207,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param sort the sort strategy to use
      * @param params optional sequence of indexed parameters
      * @return a [List] containing all results, without paging
-     * @see [list]
      * @see [find]
      * @see [stream]
      */
@@ -237,7 +221,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param query a query string
      * @param params [Map] of named parameters
      * @return a [List] containing all results, without paging
-     * @see [list]
      * @see [find]
      * @see [stream]
      */
@@ -252,7 +235,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param sort the sort strategy to use
      * @param params [Map] of indexed parameters
      * @return a [List] containing all results, without paging
-     * @see [list]
      * @see [find]
      * @see [stream]
      */
@@ -267,7 +249,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param query a query string
      * @param params [Parameters] of named parameters
      * @return a [List] containing all results, without paging
-     * @see [list]
      * @see [find]
      * @see [stream]
      */
@@ -282,7 +263,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param sort the sort strategy to use
      * @param params [Parameters] of indexed parameters
      * @return a [List] containing all results, without paging
-     * @see [list]
      * @see [find]
      * @see [stream]
      */
@@ -297,7 +277,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param query a [Document] query
      * @return a [List] containing all results, without paging
      * @see [find]
-     * @see [list]
      * @see [stream]
      */
     @GenerateBridge
@@ -311,7 +290,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param sort the [Document] sort
      * @return a [List] containing all results, without paging
      * @see [find]
-     * @see [list]
      * @see [stream]
      */
     @GenerateBridge
@@ -322,7 +300,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * This method is a shortcut for `findAll().list()`.
      *
      * @return a [List] containing all results, without paging
-     * @see [listAll]
      * @see [findAll]
      * @see [streamAll]
      */
@@ -335,7 +312,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      *
      * @param sort the sort order to use
      * @return a [List] containing all results, without paging
-     * @see [listAll]
      * @see [findAll]
      * @see [streamAll]
      */
@@ -349,7 +325,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param query a query string
      * @param params optional sequence of indexed parameters
      * @return a [Stream] containing all results, without paging
-     * @see [stream]
      * @see [find]
      * @see [list]
      */
@@ -364,7 +339,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param sort the sort strategy to use
      * @param params optional sequence of indexed parameters
      * @return a [Stream] containing all results, without paging
-     * @see [stream]
      * @see [find]
      * @see [list]
      */
@@ -379,7 +353,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param query a query string
      * @param params [Map] of named parameters
      * @return a [Stream] containing all results, without paging
-     * @see [stream]
      * @see [find]
      * @see [list]
      */
@@ -395,7 +368,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param sort the sort strategy to use
      * @param params [Map] of indexed parameters
      * @return a [Stream] containing all results, without paging
-     * @see [stream]
      * @see [find]
      * @see [list]
      */
@@ -410,7 +382,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param query a query string
      * @param params [Parameters] of named parameters
      * @return a [Stream] containing all results, without paging
-     * @see [stream]
      * @see [find]
      * @see [list]
      */
@@ -425,7 +396,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param sort the sort strategy to use
      * @param params [Parameters] of indexed parameters
      * @return a [Stream] containing all results, without paging
-     * @see [stream]
      * @see [find]
      * @see [list]
      */
@@ -441,7 +411,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @return a [Stream] containing all results, without paging
      * @see [find]
      * @see [list]
-     * @see [stream]
      */
     @GenerateBridge
     fun stream(query: Document): Stream<Entity> = throw INSTANCE.implementationInjectionMissing()
@@ -455,7 +424,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @return a [Stream] containing all results, without paging
      * @see [find]
      * @see [list]
-     * @see [stream]
      */
     @GenerateBridge
     fun stream(query: Document, sort: Document): Stream<Entity> = throw INSTANCE.implementationInjectionMissing()
@@ -465,7 +433,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * This method is a shortcut for `findAll().stream()`.
      *
      * @return a [Stream] containing all results, without paging
-     * @see [streamAll]
      * @see [findAll]
      * @see [listAll]
      */
@@ -477,7 +444,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * This method is a shortcut for `findAll(sort).stream()`.
      *
      * @return a [Stream] containing all results, without paging
-     * @see [streamAll]
      * @see [findAll]
      * @see [listAll]
      */
@@ -488,7 +454,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Counts the number of this type of entity in the database.
      *
      * @return the number of this type of entity in the database.
-     * @see [count]
      */
     @GenerateBridge
     fun count(): Long = throw INSTANCE.implementationInjectionMissing()
@@ -499,7 +464,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param query a query string
      * @param params optional sequence of indexed parameters
      * @return the number of entities counted.
-     * @see [count]
      */
     @GenerateBridge
     fun count(query: String, vararg params: Any?): Long = throw INSTANCE.implementationInjectionMissing()
@@ -510,7 +474,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param query a query string
      * @param params [Map] of named parameters
      * @return the number of entities counted.
-     * @see [count]
      */
     @GenerateBridge
     fun count(query: String, params: Map<String, Any?>): Long = throw INSTANCE.implementationInjectionMissing()
@@ -521,7 +484,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param query a query string
      * @param params [Parameters] of named parameters
      * @return the number of entities counted.
-     * @see [count]
      */
     @GenerateBridge
     fun count(query: String, params: Parameters): Long = throw INSTANCE.implementationInjectionMissing()
@@ -530,8 +492,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Counts the number of this type of entity matching the given query
      *
      * @param query a [Document] query
-     * @return he number of entities counted.
-     * @see [count]
+     * @return the number of entities counted.
      */
     @GenerateBridge
     fun count(query: Document): Long = throw INSTANCE.implementationInjectionMissing()
@@ -561,7 +522,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param params optional sequence of indexed parameters
      * @return the number of entities deleted.
      * @see [deleteAll]
-     * @see [delete]
      */
     @GenerateBridge
     fun delete(query: String, vararg params: Any?): Long = throw INSTANCE.implementationInjectionMissing()
@@ -573,7 +533,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param params [Map] of named parameters
      * @return the number of entities deleted.
      * @see [deleteAll]
-     * @see [delete]
      */
     @GenerateBridge
     fun delete(query: String, params: Map<String, Any?>): Long = throw INSTANCE.implementationInjectionMissing()
@@ -585,7 +544,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param params [Parameters] of named parameters
      * @return the number of entities deleted.
      * @see [deleteAll]
-     * @see [delete]
      */
     @GenerateBridge
     fun delete(query: String, params: Parameters): Long = throw INSTANCE.implementationInjectionMissing()
@@ -594,8 +552,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Delete all entities of this type matching the given query
      *
      * @param query a [Document] query
-     * @return he number of entities counted.
-     * @see [count]
+     * @return the number of entities counted.
      */
     @GenerateBridge
     fun delete(query: Document): Long = throw INSTANCE.implementationInjectionMissing()
@@ -604,7 +561,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Persist all given entities.
      *
      * @param entities the entities to insert
-     * @see [persist]
      */
     fun persist(entities: Iterable<Entity>) = INSTANCE.persist(entities)
 
@@ -612,7 +568,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Persist all given entities.
      *
      * @param entities the entities to insert
-     * @see [persist]
      */
     fun persist(entities: Stream<Entity>) = INSTANCE.persist(entities)
 
@@ -620,7 +575,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Persist all given entities.
      *
      * @param entities the entities to insert
-     * @see [persist]
      */
     fun persist(firstEntity: Entity, vararg entities: Entity) = INSTANCE.persist(firstEntity, *entities)
 
@@ -628,7 +582,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Update all given entities.
      *
      * @param entities the entities to update
-     * @see [update]
      */
     fun update(entities: Iterable<Entity>) = INSTANCE.update(entities)
 
@@ -636,7 +589,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Update all given entities.
      *
      * @param entities the entities to update
-     * @see [update]
      */
     fun update(entities: Stream<Entity>) = INSTANCE.update(entities)
 
@@ -644,7 +596,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Update all given entities.
      *
      * @param entities the entities to update
-     * @see [update]
      */
     fun update(firstEntity: Entity, vararg entities: Entity) = INSTANCE.update(firstEntity, *entities)
 
@@ -652,7 +603,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Persist all given entities or update them if they already exist.
      *
      * @param entities the entities to update
-     * @see [persistOrUpdate]
      */
     fun persistOrUpdate(entities: Iterable<Entity>) = INSTANCE.persistOrUpdate(entities)
 
@@ -660,7 +610,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Persist all given entities or update them if they already exist.
      *
      * @param entities the entities to update
-     * @see [persistOrUpdate]
      */
     fun persistOrUpdate(entities: Stream<Entity>) = INSTANCE.persistOrUpdate(entities)
 
@@ -668,7 +617,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Persist all given entities or update them if they already exist.
      *
      * @param entities the entities to update
-     * @see [update]
      */
     fun persistOrUpdate(firstEntity: Entity, vararg entities: Entity) =
             INSTANCE.persistOrUpdate(firstEntity, *entities)
@@ -681,7 +629,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * It can also be expressed as a query string.
      * @param params optional sequence of indexed parameters
      * @return a new [io.quarkus.mongodb.panache.common.PanacheUpdate] instance for the given update document
-     * @see [update]
      */
     @GenerateBridge
     fun update(update: String, vararg params: Any?): io.quarkus.mongodb.panache.common.PanacheUpdate = throw INSTANCE.implementationInjectionMissing()
@@ -694,7 +641,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * It can also be expressed as a query string.
      * @param params [Map] of named parameters
      * @return a new [io.quarkus.mongodb.panache.common.PanacheUpdate] instance for the given update document
-     * @see [update]
      */
     @GenerateBridge
     fun update(update: String, params: Map<String, Any?>): io.quarkus.mongodb.panache.common.PanacheUpdate =
@@ -708,7 +654,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * It can also be expressed as a query string.
      * @param params [Parameters] of named parameters
      * @return a new [io.quarkus.mongodb.panache.common.PanacheUpdate] instance for the given update document
-     * @see [update]
      */
     @GenerateBridge
     fun update(update: String, params: Parameters): io.quarkus.mongodb.panache.common.PanacheUpdate = throw INSTANCE.implementationInjectionMissing()
@@ -719,7 +664,6 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      *
      * @param update the update document, as a [Document].
      * @return a new [io.quarkus.mongodb.panache.common.PanacheUpdate] instance for the given update document
-     * @see [update]
      */
     @GenerateBridge
     fun update(update: Document): io.quarkus.mongodb.panache.common.PanacheUpdate = throw INSTANCE.implementationInjectionMissing()

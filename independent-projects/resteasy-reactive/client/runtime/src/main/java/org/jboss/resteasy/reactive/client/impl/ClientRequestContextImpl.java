@@ -4,6 +4,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
 import io.smallrye.common.vertx.VertxContext;
+import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.Context;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
@@ -28,6 +29,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.GenericEntity;
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
@@ -64,6 +66,16 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
     @Override
     public Context getContext() {
         return context;
+    }
+
+    @Override
+    public GenericType<?> getResponseType() {
+        return restClientRequestContext.getResponseType();
+    }
+
+    @Override
+    public void setCallStatsCollector(ServiceInstance statCollectingServiceInstance) {
+        restClientRequestContext.setCallStatsCollector(statCollectingServiceInstance);
     }
 
     @Override

@@ -2,7 +2,6 @@ package io.quarkus.hibernate.envers;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
@@ -10,6 +9,7 @@ import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.configuration.ConfigInstantiator;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class HibernateEnversBuildTimeConfig {
@@ -41,13 +41,17 @@ public class HibernateEnversBuildTimeConfig {
     @ConfigItem(name = ConfigItem.PARENT)
     public Map<String, HibernateEnversBuildTimeConfigPersistenceUnit> persistenceUnits;
 
-    public Map<String, HibernateEnversBuildTimeConfigPersistenceUnit> getAllPersistenceUnitConfigsAsMap() {
-        Map<String, HibernateEnversBuildTimeConfigPersistenceUnit> map = new TreeMap<>();
-        if (defaultPersistenceUnit != null) {
-            map.put(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, defaultPersistenceUnit);
+    public HibernateEnversBuildTimeConfigPersistenceUnit getPersistenceUnitConfig(String name) {
+        HibernateEnversBuildTimeConfigPersistenceUnit result;
+        if (PersistenceUnitUtil.isDefaultPersistenceUnit(name)) {
+            result = defaultPersistenceUnit;
+        } else {
+            result = persistenceUnits.get(name);
         }
-        map.putAll(persistenceUnits);
-        return map;
+        if (result == null) {
+            result = ConfigInstantiator.createEmptyObject(HibernateEnversBuildTimeConfigPersistenceUnit.class);
+        }
+        return result;
     }
 
     /**

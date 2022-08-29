@@ -2,6 +2,7 @@ package io.quarkus.hibernate.envers.deployment;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -23,7 +24,10 @@ public final class HibernateEnversDisabledProcessor {
             HibernateEnversBuildTimeConfig buildTimeConfig,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> integrationProducer) {
-        checkNoExplicitActiveTrue(buildTimeConfig);
+        Set<String> persistenceUnitNames = persistenceUnitDescriptorBuildItems.stream()
+                .map(PersistenceUnitDescriptorBuildItem::getPersistenceUnitName)
+                .collect(Collectors.toSet());
+        checkNoExplicitActiveTrue(buildTimeConfig, persistenceUnitNames);
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
             integrationProducer.produce(
                     new HibernateOrmIntegrationStaticConfiguredBuildItem(HibernateEnversProcessor.HIBERNATE_ENVERS,
@@ -36,11 +40,10 @@ public final class HibernateEnversDisabledProcessor {
 
     // TODO move this to runtime init once we implement in Hibernate ORM a way
     //  to remove entity types from the metamodel on runtime init
-    public void checkNoExplicitActiveTrue(HibernateEnversBuildTimeConfig buildTimeConfig) {
-        for (var entry : buildTimeConfig.getAllPersistenceUnitConfigsAsMap().entrySet()) {
-            var config = entry.getValue();
+    public void checkNoExplicitActiveTrue(HibernateEnversBuildTimeConfig buildTimeConfig, Set<String> persistenceUnitNames) {
+        for (var puName : persistenceUnitNames) {
+            var config = buildTimeConfig.getPersistenceUnitConfig(puName);
             if (config.active.isPresent() && config.active.get()) {
-                var puName = entry.getKey();
                 String enabledPropertyKey = HibernateEnversBuildTimeConfig.extensionPropertyKey("enabled");
                 String activePropertyKey = HibernateEnversBuildTimeConfig.persistenceUnitPropertyKey(puName, "active");
                 throw new ConfigurationException(

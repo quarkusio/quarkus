@@ -31,8 +31,8 @@ public class HibernateEnversRecorder {
 
         @Override
         public void contributeBootProperties(BiConsumer<String, Object> propertyCollector) {
-            var puConfig = buildTimeConfig.getAllPersistenceUnitConfigsAsMap().get(puName);
-            if (puConfig != null && puConfig.active.isPresent() && !puConfig.active.get()) {
+            var puConfig = buildTimeConfig.getPersistenceUnitConfig(puName);
+            if (puConfig.active.isPresent() && !puConfig.active.get()) {
                 propertyCollector.accept(EnversService.INTEGRATION_ENABLED, "false");
                 // Do not process other properties: Hibernate Envers is inactive anyway.
                 return;

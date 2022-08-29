@@ -263,6 +263,10 @@ See the xref:http-reference.adoc#ssl[Supporting secure connections with SSL] gui
 
 If you plan to make your Quarkus application accessible to another application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the xref:http-reference.adoc#cors-filter[HTTP CORS documentation] for more information.
 
+== Cross-Site Request Forgery Prevention
+
+Quarkus Security provides a RESTEasy Reactive filter which can help protect against a https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery] attack. Please read the xref:csrf-prevention.adoc[Cross-Site Request Forgery Prevention] guide for more information.
+
 == SameSite cookies
 
 Please see xref:http-reference.adoc#same-site-cookie[SameSite cookies] for information about adding a https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite[SameSite] cookie property to any of the cookies set by a Quarkus endpoint.

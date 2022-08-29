@@ -245,12 +245,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-core</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-bootstrap-gradle-resolver</artifactId>
-                </exclusion>
-            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>

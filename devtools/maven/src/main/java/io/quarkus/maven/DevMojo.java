@@ -616,7 +616,7 @@ public class DevMojo extends AbstractMojo {
             return;
         }
         getLog().info("Invoking " + plugin.getGroupId() + ":" + plugin.getArtifactId() + ":" + plugin.getVersion() + ":" + goal
-                + ") @ " + project.getArtifactId());
+                + " @ " + project.getArtifactId());
         executeMojo(
                 plugin(
                         groupId(pluginGroupId),
@@ -1075,7 +1075,7 @@ public class DevMojo extends AbstractMojo {
             }
         }
 
-        addQuarkusDevModeDeps(builder);
+        addQuarkusDevModeDeps(builder, appModel);
         //look for an application.properties
         Set<Path> resourceDirs = new HashSet<>();
         for (Resource resource : project.getResources()) {
@@ -1163,9 +1163,23 @@ public class DevMojo extends AbstractMojo {
                 .ifPresent(builderCall);
     }
 
-    private void addQuarkusDevModeDeps(MavenDevModeLauncher.Builder builder)
+    private void addQuarkusDevModeDeps(MavenDevModeLauncher.Builder builder, ApplicationModel appModel)
             throws MojoExecutionException, DependencyResolutionException {
-        final String pomPropsPath = "META-INF/maven/io.quarkus/quarkus-core-deployment/pom.properties";
+
+        ResolvedDependency coreDeployment = null;
+        for (ResolvedDependency d : appModel.getDependencies()) {
+            if (d.isDeploymentCp() && d.getArtifactId().equals("quarkus-core-deployment")
+                    && d.getGroupId().equals("io.quarkus")) {
+                coreDeployment = d;
+                break;
+            }
+        }
+        if (coreDeployment == null) {
+            throw new MojoExecutionException(
+                    "Failed to locate io.quarkus:quarkus-core-deployment on the application build classpath");
+        }
+
+        final String pomPropsPath = "META-INF/maven/io.quarkus/quarkus-bootstrap-maven-resolver/pom.properties";
         final InputStream devModePomPropsIs = DevModeMain.class.getClassLoader().getResourceAsStream(pomPropsPath);
         if (devModePomPropsIs == null) {
             throw new MojoExecutionException("Failed to locate " + pomPropsPath + " on the classpath");
@@ -1189,12 +1203,21 @@ public class DevMojo extends AbstractMojo {
             throw new MojoExecutionException("Classpath resource " + pomPropsPath + " is missing version");
         }
 
-        final DefaultArtifact devModeJar = new DefaultArtifact(devModeGroupId, devModeArtifactId, "jar", devModeVersion);
+        final DefaultArtifact devModeJar = new DefaultArtifact(devModeGroupId, devModeArtifactId, ArtifactCoords.TYPE_JAR,
+                devModeVersion);
         final DependencyResult cpRes = repoSystem.resolveDependencies(repoSession,
                 new DependencyRequest()
                         .setCollectRequest(
                                 new CollectRequest()
-                                        .setRoot(new org.eclipse.aether.graph.Dependency(devModeJar, JavaScopes.RUNTIME))
+                                        // it doesn't matter what the root artifact is, it's an alias
+                                        .setRootArtifact(new DefaultArtifact("io.quarkus", "quarkus-devmode-alias",
+                                                ArtifactCoords.TYPE_JAR, "1.0"))
+                                        .setDependencies(List.of(
+                                                new org.eclipse.aether.graph.Dependency(devModeJar, JavaScopes.RUNTIME),
+                                                new org.eclipse.aether.graph.Dependency(new DefaultArtifact(
+                                                        coreDeployment.getGroupId(), coreDeployment.getArtifactId(),
+                                                        coreDeployment.getClassifier(), coreDeployment.getType(),
+                                                        coreDeployment.getVersion()), JavaScopes.RUNTIME)))
                                         .setRepositories(repos)));
 
         for (ArtifactResult appDep : cpRes.getArtifactResults()) {

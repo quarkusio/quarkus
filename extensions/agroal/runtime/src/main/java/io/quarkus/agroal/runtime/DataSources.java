@@ -48,6 +48,7 @@ import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
+import io.quarkus.runtime.configuration.ConfigInstantiator;
 
 /**
  * This class is sort of a producer for {@link AgroalDataSource}.
@@ -366,7 +367,7 @@ public class DataSources {
 
         DataSourceBuildTimeConfig namedConfig = dataSourcesBuildTimeConfig.namedDataSources.get(dataSourceName);
 
-        return namedConfig != null ? namedConfig : new DataSourceBuildTimeConfig();
+        return namedConfig != null ? namedConfig : ConfigInstantiator.createEmptyObject(DataSourceBuildTimeConfig.class);
     }
 
     public DataSourceJdbcBuildTimeConfig getDataSourceJdbcBuildTimeConfig(String dataSourceName) {
@@ -377,7 +378,8 @@ public class DataSources {
         DataSourceJdbcOuterNamedBuildTimeConfig namedOuterConfig = dataSourcesJdbcBuildTimeConfig.namedDataSources
                 .get(dataSourceName);
 
-        return namedOuterConfig != null ? namedOuterConfig.jdbc : new DataSourceJdbcBuildTimeConfig();
+        return namedOuterConfig != null ? namedOuterConfig.jdbc
+                : ConfigInstantiator.createEmptyObject(DataSourceJdbcBuildTimeConfig.class);
     }
 
     public DataSourceRuntimeConfig getDataSourceRuntimeConfig(String dataSourceName) {
@@ -387,7 +389,7 @@ public class DataSources {
 
         DataSourceRuntimeConfig namedConfig = dataSourcesRuntimeConfig.namedDataSources.get(dataSourceName);
 
-        return namedConfig != null ? namedConfig : new DataSourceRuntimeConfig();
+        return namedConfig != null ? namedConfig : ConfigInstantiator.createEmptyObject(DataSourceRuntimeConfig.class);
     }
 
     public DataSourceJdbcRuntimeConfig getDataSourceJdbcRuntimeConfig(String dataSourceName) {
@@ -398,7 +400,8 @@ public class DataSources {
         DataSourceJdbcOuterNamedRuntimeConfig namedOuterConfig = dataSourcesJdbcRuntimeConfig.namedDataSources
                 .get(dataSourceName);
 
-        return namedOuterConfig != null ? namedOuterConfig.jdbc : new DataSourceJdbcRuntimeConfig();
+        return namedOuterConfig != null ? namedOuterConfig.jdbc
+                : ConfigInstantiator.createEmptyObject(DataSourceJdbcRuntimeConfig.class);
     }
 
     /**

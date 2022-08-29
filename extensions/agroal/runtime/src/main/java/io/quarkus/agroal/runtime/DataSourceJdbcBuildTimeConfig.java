@@ -14,14 +14,14 @@ public class DataSourceJdbcBuildTimeConfig {
      * If we create a JDBC datasource for this datasource.
      */
     @ConfigItem(name = ConfigItem.PARENT, defaultValue = "true")
-    public boolean enabled = true;
+    public boolean enabled;
 
     /**
      * The datasource driver class name
      */
     @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> driver = Optional.empty();
+    public Optional<String> driver;
 
     /**
      * Whether we want to use regular JDBC transactions, XA, or disable all transactional capabilities.
@@ -29,18 +29,18 @@ public class DataSourceJdbcBuildTimeConfig {
      * When enabling XA you will need a driver implementing {@link javax.sql.XADataSource}.
      */
     @ConfigItem(defaultValue = "enabled")
-    public TransactionIntegration transactions = TransactionIntegration.ENABLED;
+    public TransactionIntegration transactions;
 
     /**
      * Enable datasource metrics collection. If unspecified, collecting metrics will be enabled by default if
      * a metrics extension is active.
      */
     @ConfigItem
-    public Optional<Boolean> enableMetrics = Optional.empty();
+    public Optional<Boolean> enableMetrics;
 
     /**
      * Enable JDBC tracing. Disabled by default.
      */
     @ConfigItem(defaultValue = "false")
-    public boolean tracing = false;
+    public boolean tracing;
 }

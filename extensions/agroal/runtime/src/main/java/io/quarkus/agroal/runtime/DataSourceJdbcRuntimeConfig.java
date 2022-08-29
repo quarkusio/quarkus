@@ -1,7 +1,6 @@
 package io.quarkus.agroal.runtime;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -18,7 +17,7 @@ public class DataSourceJdbcRuntimeConfig {
      * The datasource URL
      */
     @ConfigItem
-    public Optional<String> url = Optional.empty();
+    public Optional<String> url;
 
     /**
      * The initial size of the pool. Usually you will want to set the initial size to match at least the
@@ -26,19 +25,19 @@ public class DataSourceJdbcRuntimeConfig {
      * of the connections on boot, while being able to sustain a minimal pool size after boot.
      */
     @ConfigItem
-    public OptionalInt initialSize = OptionalInt.empty();
+    public OptionalInt initialSize;
 
     /**
      * The datasource pool minimum size
      */
     @ConfigItem
-    public int minSize = 0;
+    public int minSize;
 
     /**
      * The datasource pool maximum size
      */
     @ConfigItem(defaultValue = "20")
-    public int maxSize = 20;
+    public int maxSize;
 
     /**
      * The interval at which we validate idle connections in the background.
@@ -46,43 +45,43 @@ public class DataSourceJdbcRuntimeConfig {
      * Set to {@code 0} to disable background validation.
      */
     @ConfigItem(defaultValue = "2M")
-    public Optional<Duration> backgroundValidationInterval = Optional.of(Duration.ofMinutes(2));
+    public Optional<Duration> backgroundValidationInterval;
 
     /**
      * Perform foreground validation on connections that have been idle for longer than the specified interval.
      */
     @ConfigItem
-    public Optional<Duration> foregroundValidationInterval = Optional.empty();
+    public Optional<Duration> foregroundValidationInterval;
 
     /**
      * The timeout before cancelling the acquisition of a new connection
      */
     @ConfigItem(defaultValue = "5")
-    public Optional<Duration> acquisitionTimeout = Optional.of(Duration.ofSeconds(5));
+    public Optional<Duration> acquisitionTimeout;
 
     /**
      * The interval at which we check for connection leaks.
      */
     @ConfigItem
-    public Optional<Duration> leakDetectionInterval = Optional.empty();
+    public Optional<Duration> leakDetectionInterval;
 
     /**
      * The interval at which we try to remove idle connections.
      */
     @ConfigItem(defaultValue = "5M")
-    public Optional<Duration> idleRemovalInterval = Optional.of(Duration.ofMinutes(5));
+    public Optional<Duration> idleRemovalInterval;
 
     /**
      * The max lifetime of a connection.
      */
     @ConfigItem
-    public Optional<Duration> maxLifetime = Optional.empty();
+    public Optional<Duration> maxLifetime;
 
     /**
      * The transaction isolation level.
      */
     @ConfigItem
-    public Optional<AgroalConnectionFactoryConfiguration.TransactionIsolation> transactionIsolationLevel = Optional.empty();
+    public Optional<AgroalConnectionFactoryConfiguration.TransactionIsolation> transactionIsolationLevel;
 
     /**
      * Collect and display extra troubleshooting info on leaked connections.
@@ -104,26 +103,26 @@ public class DataSourceJdbcRuntimeConfig {
      * no leaks are happening.
      */
     @ConfigItem(defaultValue = "true")
-    public boolean detectStatementLeaks = true;
+    public boolean detectStatementLeaks;
 
     /**
      * Query executed when first using a connection.
      */
     @ConfigItem
-    public Optional<String> newConnectionSql = Optional.empty();
+    public Optional<String> newConnectionSql;
 
     /**
      * Query executed to validate a connection.
      */
     @ConfigItem
-    public Optional<String> validationQuerySql = Optional.empty();
+    public Optional<String> validationQuerySql;
 
     /**
      * Disable pooling to prevent reuse of Connections. Use this with when an external pool manages the life-cycle
      * of Connections.
      */
     @ConfigItem(defaultValue = "true")
-    public boolean poolingEnabled = true;
+    public boolean poolingEnabled;
 
     /**
      * Require an active transaction when acquiring a connection. Recommended for production.
@@ -131,18 +130,18 @@ public class DataSourceJdbcRuntimeConfig {
      * validation. Setting this setting to STRICT may lead to failures in those cases.
      */
     @ConfigItem
-    public Optional<AgroalConnectionPoolConfiguration.TransactionRequirement> transactionRequirement = Optional.empty();
+    public Optional<AgroalConnectionPoolConfiguration.TransactionRequirement> transactionRequirement;
 
     /**
      * Other unspecified properties to be passed to the JDBC driver when creating new connections.
      */
     @ConfigItem
-    public Map<String, String> additionalJdbcProperties = Collections.emptyMap();
+    public Map<String, String> additionalJdbcProperties;
 
     /**
      * Enable JDBC tracing.
      */
     @ConfigItem
-    public DataSourceJdbcTracingRuntimeConfig tracing = new DataSourceJdbcTracingRuntimeConfig();
+    public DataSourceJdbcTracingRuntimeConfig tracing;
 
 }

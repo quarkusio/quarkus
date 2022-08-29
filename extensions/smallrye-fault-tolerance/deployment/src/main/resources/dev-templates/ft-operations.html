@@ -104,6 +104,15 @@
             </li>
             {/if}
 
+            {#if ftOperation.rateLimit}
+            <li>
+              @RateLimit<span class="annotation">(value = {ftOperation.rateLimit.value},
+                window = {ftOperation.rateLimit.window} {ftOperation.rateLimit.windowUnit.name},
+                minSpacing = {ftOperation.rateLimit.minSpacing} {ftOperation.rateLimit.minSpacingUnit.name},
+                type = {ftOperation.rateLimit.type.name})</span>
+            </li>
+            {/if}
+
             {#if ftOperation.retry}
             <li>
               @Retry<span class="annotation">(maxRetries = {ftOperation.retry.maxRetries},

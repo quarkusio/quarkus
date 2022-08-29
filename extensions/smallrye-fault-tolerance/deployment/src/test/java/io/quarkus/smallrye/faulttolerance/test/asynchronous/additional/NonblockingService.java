@@ -17,7 +17,7 @@ import io.smallrye.common.annotation.NonBlocking;
 
 @ApplicationScoped
 @Retry(maxRetries = 3, delay = 0, jitter = 0)
-public class NonblockingHelloService {
+public class NonblockingService {
     private final List<Thread> helloThreads = new CopyOnWriteArrayList<>();
     private final List<StackTraceElement[]> helloStackTraces = new CopyOnWriteArrayList<>();
 

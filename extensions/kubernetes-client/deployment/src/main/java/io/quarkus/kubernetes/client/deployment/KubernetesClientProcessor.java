@@ -46,6 +46,11 @@ public class KubernetesClientProcessor {
             .createSimple("io.fabric8.kubernetes.client.informers.ResourceEventHandler");
     private static final DotName KUBERNETES_RESOURCE = DotName
             .createSimple("io.fabric8.kubernetes.api.model.KubernetesResource");
+    private static final DotName KUBERNETES_RESOURCE_LIST = DotName
+            .createSimple("io.fabric8.kubernetes.api.model.KubernetesResourceList");
+
+    private static final DotName VISITABLE_BUILDER = DotName
+            .createSimple("io.fabric8.kubernetes.api.builder.VisitableBuilder");
     private static final DotName CUSTOM_RESOURCE = DotName.createSimple("io.fabric8.kubernetes.client.CustomResource");
 
     private static final Logger log = Logger.getLogger(KubernetesClientProcessor.class.getName());
@@ -117,36 +122,28 @@ public class KubernetesClientProcessor {
 
         Collection<ClassInfo> kubernetesResourceImpls = combinedIndexBuildItem.getIndex()
                 .getAllKnownImplementors(KUBERNETES_RESOURCE);
+        Collection<ClassInfo> kubernetesResourceListImpls = combinedIndexBuildItem.getIndex()
+                .getAllKnownImplementors(KUBERNETES_RESOURCE_LIST);
+        Collection<ClassInfo> visitableBuilderImpls = combinedIndexBuildItem.getIndex()
+                .getAllKnownImplementors(VISITABLE_BUILDER);
+
         // default sizes determined experimentally - these are only set in order to prevent continuous expansion of the array list
-        List<String> withoutFieldsRegistration = new ArrayList<>(kubernetesResourceImpls.size());
+        List<String> withoutFieldsRegistration = new ArrayList<>(
+                kubernetesResourceImpls.size() + kubernetesResourceListImpls.size());
         List<String> withFieldsRegistration = new ArrayList<>(2);
-        kubernetesResourceImpls
-                .stream()
-                .peek(c -> {
-                    // we need to make sure that the Jackson extension does not try to fully register the model classes
-                    // since we are going to register them weakly
-                    ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(c.name()));
-                })
-                .filter(c -> !watchedClasses.contains(c.name()))
-                .map(c -> {
-                    boolean registerFields = false;
-                    List<AnnotationInstance> jsonFormatInstances = c.annotationsMap().get(JSON_FORMAT);
-                    if (jsonFormatInstances != null) {
-                        for (AnnotationInstance jsonFormatInstance : jsonFormatInstances) {
-                            if (jsonFormatInstance.target().kind() == AnnotationTarget.Kind.FIELD) {
-                                registerFields = true;
-                                break;
-                            }
-                        }
-                    }
-                    return new AbstractMap.SimpleEntry<>(c.name(), registerFields);
-                }).forEach(e -> {
-                    if (e.getValue()) {
-                        withFieldsRegistration.add(e.getKey().toString());
-                    } else {
-                        withoutFieldsRegistration.add(e.getKey().toString());
-                    }
-                });
+        List<DotName> ignoreJsonDeserialization = new ArrayList<>(
+                kubernetesResourceImpls.size() + kubernetesResourceListImpls.size());
+
+        populateReflectionRegistrationLists(kubernetesResourceImpls, watchedClasses, ignoreJsonDeserialization,
+                withoutFieldsRegistration,
+                withFieldsRegistration);
+        populateReflectionRegistrationLists(kubernetesResourceListImpls, watchedClasses, ignoreJsonDeserialization,
+                withoutFieldsRegistration,
+                withFieldsRegistration);
+        populateReflectionRegistrationLists(visitableBuilderImpls, watchedClasses, ignoreJsonDeserialization,
+                withoutFieldsRegistration,
+                withFieldsRegistration);
+
         if (!withFieldsRegistration.isEmpty()) {
             reflectiveClasses.produce(ReflectiveClassBuildItem
                     .builder(withFieldsRegistration.toArray(EMPTY_STRINGS_ARRAY)).weak(true).methods(true).fields(true)
@@ -157,6 +154,8 @@ public class KubernetesClientProcessor {
                     .builder(withoutFieldsRegistration.toArray(EMPTY_STRINGS_ARRAY)).weak(true).methods(true).fields(false)
                     .build());
         }
+
+        ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(ignoreJsonDeserialization));
 
         // we also ignore some classes that are annotated with @JsonDeserialize that would force the registration of the entire model
         ignoredJsonDeserializationClasses.produce(
@@ -204,6 +203,40 @@ public class KubernetesClientProcessor {
 
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.KUBERNETES_CLIENT));
+    }
+
+    private static void populateReflectionRegistrationLists(Collection<ClassInfo> kubernetesResourceImpls,
+            Set<DotName> watchedClasses,
+            List<DotName> ignoredJsonDeserializationClasses,
+            List<String> withoutFieldsRegistration,
+            List<String> withFieldsRegistration) {
+        kubernetesResourceImpls
+                .stream()
+                .peek(c -> {
+                    // we need to make sure that the Jackson extension does not try to fully register the model classes
+                    // since we are going to register them weakly
+                    ignoredJsonDeserializationClasses.add(c.name());
+                })
+                .filter(c -> !watchedClasses.contains(c.name()))
+                .map(c -> {
+                    boolean registerFields = false;
+                    List<AnnotationInstance> jsonFormatInstances = c.annotationsMap().get(JSON_FORMAT);
+                    if (jsonFormatInstances != null) {
+                        for (AnnotationInstance jsonFormatInstance : jsonFormatInstances) {
+                            if (jsonFormatInstance.target().kind() == AnnotationTarget.Kind.FIELD) {
+                                registerFields = true;
+                                break;
+                            }
+                        }
+                    }
+                    return new AbstractMap.SimpleEntry<>(c.name(), registerFields);
+                }).forEach(e -> {
+                    if (e.getValue()) {
+                        withFieldsRegistration.add(e.getKey().toString());
+                    } else {
+                        withoutFieldsRegistration.add(e.getKey().toString());
+                    }
+                });
     }
 
     private void findWatchedClasses(final DotName implementedOrExtendedClass, final ApplicationIndexBuildItem applicationIndex,

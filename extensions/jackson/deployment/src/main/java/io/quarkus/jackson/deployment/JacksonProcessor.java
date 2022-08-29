@@ -123,7 +123,7 @@ public class JacksonProcessor {
 
         Set<DotName> ignoredDotNames = new HashSet<>();
         for (IgnoreJsonDeserializeClassBuildItem ignoreJsonDeserializeClassBuildItem : ignoreJsonDeserializeClassBuildItems) {
-            ignoredDotNames.add(ignoreJsonDeserializeClassBuildItem.getDotName());
+            ignoredDotNames.addAll(ignoreJsonDeserializeClassBuildItem.getDotNames());
         }
 
         // handle the various @JsonDeserialize cases

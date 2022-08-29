@@ -133,7 +133,6 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                     processConfigRoot(roundEnv, annotation);
                     break;
                 case Constants.ANNOTATION_RECORDER:
-                case Constants.ANNOTATION_TEMPLATE:
                     processRecorder(roundEnv, annotation);
                     break;
             }

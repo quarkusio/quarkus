@@ -83,6 +83,8 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     private final Set<String> generatedJavaDocs = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
     private final boolean generateDocs = !(Boolean.getBoolean("skipDocs") || Boolean.getBoolean("quickly"));
 
+    private final Map<String, Boolean> ANNOTATION_USAGE_TRACKER = new ConcurrentHashMap<>();
+
     public ExtensionAnnotationProcessor() {
     }
 
@@ -124,15 +126,19 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         for (TypeElement annotation : annotations) {
             switch (annotation.getQualifiedName().toString()) {
                 case Constants.ANNOTATION_BUILD_STEP:
+                    trackAnnotationUsed(Constants.ANNOTATION_BUILD_STEP);
                     processBuildStep(roundEnv, annotation);
                     break;
                 case Constants.ANNOTATION_CONFIG_GROUP:
+                    trackAnnotationUsed(Constants.ANNOTATION_CONFIG_GROUP);
                     processConfigGroup(roundEnv, annotation);
                     break;
                 case Constants.ANNOTATION_CONFIG_ROOT:
+                    trackAnnotationUsed(Constants.ANNOTATION_CONFIG_ROOT);
                     processConfigRoot(roundEnv, annotation);
                     break;
                 case Constants.ANNOTATION_RECORDER:
+                    trackAnnotationUsed(Constants.ANNOTATION_RECORDER);
                     processRecorder(roundEnv, annotation);
                     break;
             }
@@ -140,6 +146,8 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     }
 
     void doFinish() {
+        validateAnnotationUsage();
+
         final Filer filer = processingEnv.getFiler();
         final FileObject tempResource;
         try {
@@ -256,6 +264,21 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             return;
 
         }
+    }
+
+    private void validateAnnotationUsage() {
+        if (isAnnotationUsed(Constants.ANNOTATION_BUILD_STEP) && isAnnotationUsed(Constants.ANNOTATION_RECORDER)) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                    "Detected use of @Recorder annotation in 'deployment' module. Classes annotated with @Recorder must be part of the extension's 'runtime' module");
+        }
+    }
+
+    private boolean isAnnotationUsed(String annotation) {
+        return ANNOTATION_USAGE_TRACKER.getOrDefault(annotation, false);
+    }
+
+    private void trackAnnotationUsed(String annotation) {
+        ANNOTATION_USAGE_TRACKER.put(annotation, true);
     }
 
     private void writeListResourceFile(Collection<String> crListClasses, FileObject listResource) throws IOException {

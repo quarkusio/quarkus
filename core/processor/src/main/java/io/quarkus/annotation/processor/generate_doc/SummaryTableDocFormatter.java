@@ -75,7 +75,12 @@ final class SummaryTableDocFormatter implements DocFormatter {
         String doc = configDocKey.getConfigDoc();
 
         // Convert a property name to an environment variable name and show it in the config description
-        final var envVarExample = String.format("Environment variable: `+++%s+++`", toEnvVarName(configDocKey.getKey()));
+        final String envVarExample = String.format("ifdef::add-copy-button-to-env-var[]\n" +
+                "Environment variable: env_var_with_copy_button:+++%1$s+++[]\n" +
+                "endif::add-copy-button-to-env-var[]\n" +
+                "ifndef::add-copy-button-to-env-var[]\n" +
+                "Environment variable: `+++%1$s+++`\n" +
+                "endif::add-copy-button-to-env-var[]", toEnvVarName(configDocKey.getKey()));
         if (configDocKey.getConfigDoc().isEmpty()) {
             doc = envVarExample;
         } else {

@@ -4,6 +4,7 @@ import static org.hamcrest.core.Is.is;
 
 import java.io.IOException;
 
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -56,11 +57,11 @@ public class ConfigMappingWithProviderTest {
     @Provider
     public static class MappingFilter implements ContainerRequestFilter {
         @Inject
-        Mapping mapping;
+        Instance<Mapping> mapping;
 
         @Override
         public void filter(final ContainerRequestContext requestContext) throws IOException {
-            requestContext.setProperty("mapping.hello", mapping.hello());
+            requestContext.setProperty("mapping.hello", mapping.get().hello());
         }
     }
 

@@ -13,9 +13,9 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import io.quarkus.oidc.client.filter.runtime.OidcClientFilterConfig;
 import io.quarkus.oidc.client.runtime.AbstractTokensProducer;
 import io.quarkus.oidc.client.runtime.DisabledOidcClientException;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -26,10 +26,8 @@ import io.quarkus.oidc.common.runtime.OidcConstants;
 public class OidcClientRequestFilter extends AbstractTokensProducer implements ClientRequestFilter {
     private static final Logger LOG = Logger.getLogger(OidcClientRequestFilter.class);
     private static final String BEARER_SCHEME_WITH_SPACE = OidcConstants.BEARER_SCHEME + " ";
-
     @Inject
-    @ConfigProperty(name = "quarkus.oidc-client-filter.client-name")
-    Optional<String> clientName;
+    OidcClientFilterConfig oidcClientFilterConfig;
 
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
@@ -50,6 +48,6 @@ public class OidcClientRequestFilter extends AbstractTokensProducer implements C
     }
 
     protected Optional<String> clientId() {
-        return clientName;
+        return oidcClientFilterConfig.clientName;
     }
 }

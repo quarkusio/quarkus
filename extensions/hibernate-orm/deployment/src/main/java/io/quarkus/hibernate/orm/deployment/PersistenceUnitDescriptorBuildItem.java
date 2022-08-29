@@ -25,9 +25,11 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     private final ParsedPersistenceXmlDescriptor descriptor;
 
     // The default PU in Hibernate Reactive is named "default-reactive" instead of "<default>",
-    // but everything related to configuration (e.g. getAllPersistenceUnitConfigsAsMap() still
+    // but everything related to configuration (e.g. getAllPersistenceUnitConfigsAsMap()) still
     // use the name "<default>", so we need to convert between those.
     private final String configurationName;
+    // This config is missing when (and only when) configuring through persistence.xml (see fromPersistenceXml).
+    private final Optional<HibernateOrmConfigPersistenceUnit> buildTimeConfig;
     private final Optional<String> dataSource;
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final String multiTenancySchemaDataSource;
@@ -37,15 +39,17 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     private final boolean fromPersistenceXml;
 
     public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, String configurationName,
+            Optional<HibernateOrmConfigPersistenceUnit> buildTimeConfig,
             List<RecordableXmlMapping> xmlMappings,
             Map<String, String> quarkusConfigUnsupportedProperties,
             boolean isReactive, boolean fromPersistenceXml) {
-        this(descriptor, configurationName,
+        this(descriptor, configurationName, buildTimeConfig,
                 Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME), MultiTenancyStrategy.NONE, null,
                 xmlMappings, quarkusConfigUnsupportedProperties, isReactive, fromPersistenceXml);
     }
 
     public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, String configurationName,
+            Optional<HibernateOrmConfigPersistenceUnit> buildTimeConfig,
             Optional<String> dataSource,
             MultiTenancyStrategy multiTenancyStrategy, String multiTenancySchemaDataSource,
             List<RecordableXmlMapping> xmlMappings,
@@ -53,6 +57,7 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
             boolean isReactive, boolean fromPersistenceXml) {
         this.descriptor = descriptor;
         this.configurationName = configurationName;
+        this.buildTimeConfig = buildTimeConfig;
         this.dataSource = dataSource;
         this.multiTenancyStrategy = multiTenancyStrategy;
         this.multiTenancySchemaDataSource = multiTenancySchemaDataSource;
@@ -72,6 +77,14 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
     public String getPersistenceUnitName() {
         return descriptor.getName();
+    }
+
+    public String getConfigurationName() {
+        return configurationName;
+    }
+
+    public Optional<HibernateOrmConfigPersistenceUnit> getBuildTimeConfig() {
+        return buildTimeConfig;
     }
 
     public Optional<String> getDataSource() {

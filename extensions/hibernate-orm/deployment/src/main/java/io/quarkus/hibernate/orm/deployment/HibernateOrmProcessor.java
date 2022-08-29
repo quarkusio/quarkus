@@ -214,12 +214,15 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    void handleGenerateSql(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> runtimeInfoProducer,
-            BuildProducer<JdbcInitialSQLGeneratorBuildItem> initialSQLGeneratorBuildItemBuildProducer,
-            HibernateOrmConfig config, CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.getAllPersistenceUnitConfigsAsMap().entrySet()) {
-            handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer, entry.getKey(),
-                    entry.getValue().datasource.orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME), curateOutcomeBuildItem);
+    void handleGenerateSql(HibernateOrmConfig config, CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<PersistenceUnitDescriptorBuildItem> puDescriptors,
+            BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> runtimeInfoProducer,
+            BuildProducer<JdbcInitialSQLGeneratorBuildItem> initialSQLGeneratorBuildItemBuildProducer) {
+        for (var puDescriptor : puDescriptors) {
+            String puName = puDescriptor.getPersistenceUnitName();
+            handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer, puName,
+                    puDescriptor.getDataSource().orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
+                    curateOutcomeBuildItem);
         }
     }
 
@@ -244,10 +247,15 @@ public final class HibernateOrmProcessor {
     @Record(RUNTIME_INIT)
     @Consume(ServiceStartBuildItem.class)
     @BuildStep(onlyIf = IsDevelopment.class)
-    void warnOfSchemaProblems(HibernateOrmConfig config, HibernateOrmRecorder recorder) {
-        for (var e : config.getAllPersistenceUnitConfigsAsMap().entrySet()) {
-            if (e.getValue().validateInDevMode) {
-                recorder.doValidation(e.getKey());
+    void warnOfSchemaProblems(HibernateOrmConfig config, List<PersistenceUnitDescriptorBuildItem> puDescriptors,
+            HibernateOrmRecorder recorder) {
+        for (var puDescriptor : puDescriptors) {
+            var puConfig = puDescriptor.getBuildTimeConfig();
+            if (puConfig.isEmpty()) {
+                continue; // PU from persistence.xml -- no Quarkus config.
+            }
+            if (puConfig.get().validateInDevMode) {
+                recorder.doValidation(puDescriptor.getConfigurationName());
             }
         }
     }
@@ -255,19 +263,18 @@ public final class HibernateOrmProcessor {
     @BuildStep(onlyIfNot = IsNormal.class)
     void devServicesAutoGenerateByDefault(List<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItems,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
-            HibernateOrmConfig config,
             BuildProducer<DevServicesAdditionalConfigBuildItem> devServicesAdditionalConfigProducer) {
         Set<String> managedSources = schemaReadyBuildItems.stream().map(JdbcDataSourceSchemaReadyBuildItem::getDatasourceNames)
                 .collect(HashSet::new, Collection::addAll, Collection::addAll);
 
-        for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.getAllPersistenceUnitConfigsAsMap().entrySet()) {
-            Optional<String> dataSourceName = entry.getValue().datasource;
+        for (var puDescriptor : persistenceUnitDescriptorBuildItems) {
+            Optional<String> dataSourceName = puDescriptor.getDataSource();
             List<String> propertyKeysIndicatingDataSourceConfigured = DataSourceUtil
                     .dataSourcePropertyKeys(dataSourceName.orElse(null), "username");
 
             if (!managedSources.contains(dataSourceName.orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME))) {
-                String databaseGenerationPropertyKey = HibernateOrmRuntimeConfig.puPropertyKey(entry.getKey(),
-                        "database.generation");
+                String databaseGenerationPropertyKey = HibernateOrmRuntimeConfig.puPropertyKey(
+                        puDescriptor.getConfigurationName(), "database.generation");
                 if (!ConfigUtils.isAnyPropertyPresent(propertyKeysIndicatingDataSourceConfigured)
                         && !ConfigUtils.isPropertyPresent(databaseGenerationPropertyKey)) {
                     devServicesAdditionalConfigProducer
@@ -393,6 +400,8 @@ public final class HibernateOrmProcessor {
             persistenceUnitDescriptors
                     .produce(new PersistenceUnitDescriptorBuildItem(xmlDescriptor,
                             xmlDescriptor.getName(),
+                            // From the documentation: you have a persistence.xml, then you cannot use the quarkus.hibernate-orm.* properties
+                            Optional.empty(),
                             Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
                             getMultiTenancyStrategy(Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
                                     .getProperties().getProperty(AvailableSettings.MULTI_TENANT))),
@@ -1171,6 +1180,7 @@ public final class HibernateOrmProcessor {
 
         persistenceUnitDescriptors.produce(
                 new PersistenceUnitDescriptorBuildItem(descriptor, descriptor.getName(),
+                        Optional.of(persistenceUnitConfig),
                         jdbcDataSource.map(JdbcDataSourceBuildItem::getName),
                         multiTenancyStrategy,
                         persistenceUnitConfig.multitenantSchemaDatasource.orElse(null),

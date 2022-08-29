@@ -11,13 +11,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class BlockingAsyncTest {
+public class BlockingTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(BlockingHelloService.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BlockingService.class));
 
     @Inject
-    BlockingHelloService service;
+    BlockingService service;
 
     @Test
     public void threadOffloadAndFallback() throws Exception {

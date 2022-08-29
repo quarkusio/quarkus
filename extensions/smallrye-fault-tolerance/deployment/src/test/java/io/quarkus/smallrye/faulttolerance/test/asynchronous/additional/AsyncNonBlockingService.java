@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.faulttolerance.test.asynchronous.noncompat;
+package io.quarkus.smallrye.faulttolerance.test.asynchronous.additional;
 
 import static io.smallrye.faulttolerance.core.util.CompletionStages.failedFuture;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -13,9 +13,11 @@ import javax.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.faulttolerance.Fallback;
 import org.eclipse.microprofile.faulttolerance.Retry;
 
+import io.smallrye.faulttolerance.api.AsynchronousNonBlocking;
+
 @ApplicationScoped
 @Retry(maxRetries = 3, delay = 0, jitter = 0)
-public class NoncompatHelloService {
+public class AsyncNonBlockingService {
     private final List<Thread> helloThreads = new CopyOnWriteArrayList<>();
     private final List<StackTraceElement[]> helloStackTraces = new CopyOnWriteArrayList<>();
 
@@ -23,6 +25,7 @@ public class NoncompatHelloService {
 
     private volatile Thread fallbackThread;
 
+    @AsynchronousNonBlocking
     @Fallback(fallbackMethod = "fallback")
     public CompletionStage<String> hello() {
         invocationCounter.incrementAndGet();

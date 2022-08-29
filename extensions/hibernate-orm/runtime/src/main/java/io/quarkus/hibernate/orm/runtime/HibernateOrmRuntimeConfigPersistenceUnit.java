@@ -74,13 +74,6 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
     @ConfigDocMapKey("full-property-key")
     public Map<String, String> unsupportedProperties = new HashMap<>();
 
-    public boolean isAnyPropertySet() {
-        return database.isAnyPropertySet() ||
-                scripts.isAnyPropertySet() ||
-                log.isAnyPropertySet() ||
-                !unsupportedProperties.isEmpty();
-    }
-
     @ConfigGroup
     public static class HibernateOrmConfigPersistenceUnitDatabase {
 
@@ -103,12 +96,6 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
         @ConfigItem
         @ConvertWith(TrimmedStringConverter.class)
         public Optional<String> defaultSchema = Optional.empty();
-
-        public boolean isAnyPropertySet() {
-            return generation.isAnyPropertySet()
-                    || defaultCatalog.isPresent()
-                    || defaultSchema.isPresent();
-        }
     }
 
     @ConfigGroup
@@ -119,10 +106,6 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          */
         @ConfigItem
         public HibernateOrmConfigPersistenceUnitScriptGeneration generation = new HibernateOrmConfigPersistenceUnitScriptGeneration();
-
-        public boolean isAnyPropertySet() {
-            return generation.isAnyPropertySet();
-        }
     }
 
     @ConfigGroup
@@ -153,12 +136,6 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          */
         @ConfigItem
         public boolean haltOnError = false;
-
-        public boolean isAnyPropertySet() {
-            return !"none".equals(generation)
-                    || createSchemas
-                    || haltOnError;
-        }
     }
 
     @ConfigGroup
@@ -186,12 +163,6 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
         @ConfigItem
         @ConvertWith(TrimmedStringConverter.class)
         public Optional<String> dropTarget = Optional.empty();
-
-        public boolean isAnyPropertySet() {
-            return !"none".equals(generation)
-                    || createTarget.isPresent()
-                    || dropTarget.isPresent();
-        }
     }
 
     @ConfigGroup
@@ -222,10 +193,6 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          */
         @ConfigItem
         public Optional<Long> queriesSlowerThanMs = Optional.empty();
-
-        public boolean isAnyPropertySet() {
-            return sql || !formatSql || jdbcWarnings.isPresent() || queriesSlowerThanMs.isPresent();
-        }
     }
 
 }

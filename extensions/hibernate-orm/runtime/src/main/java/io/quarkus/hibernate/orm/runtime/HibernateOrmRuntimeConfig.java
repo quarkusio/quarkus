@@ -45,9 +45,4 @@ public class HibernateOrmRuntimeConfig {
                 : "quarkus.hibernate-orm.\"" + puName + "\".";
         return prefix + radical;
     }
-
-    public boolean isAnyPropertySet() {
-        return defaultPersistenceUnit.isAnyPropertySet() ||
-                !persistenceUnits.isEmpty();
-    }
 }

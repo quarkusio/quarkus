@@ -1,13 +1,13 @@
 package io.quarkus.hibernate.orm.runtime;
 
 import java.util.Map;
-import java.util.TreeMap;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.configuration.ConfigInstantiator;
 
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public class HibernateOrmRuntimeConfig {
@@ -26,13 +26,17 @@ public class HibernateOrmRuntimeConfig {
     @ConfigItem(name = ConfigItem.PARENT)
     public Map<String, HibernateOrmRuntimeConfigPersistenceUnit> persistenceUnits;
 
-    public Map<String, HibernateOrmRuntimeConfigPersistenceUnit> getAllPersistenceUnitConfigsAsMap() {
-        Map<String, HibernateOrmRuntimeConfigPersistenceUnit> map = new TreeMap<>();
-        if (defaultPersistenceUnit != null) {
-            map.put(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, defaultPersistenceUnit);
+    public HibernateOrmRuntimeConfigPersistenceUnit getPersistenceUnitConfig(String name) {
+        HibernateOrmRuntimeConfigPersistenceUnit result;
+        if (PersistenceUnitUtil.isDefaultPersistenceUnit(name)) {
+            result = defaultPersistenceUnit;
+        } else {
+            result = persistenceUnits.get(name);
         }
-        map.putAll(persistenceUnits);
-        return map;
+        if (result == null) {
+            result = ConfigInstantiator.createEmptyObject(HibernateOrmRuntimeConfigPersistenceUnit.class);
+        }
+        return result;
     }
 
     public static String extensionPropertyKey(String radical) {

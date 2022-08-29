@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.orm.runtime;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -27,28 +26,28 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
      * @asciidoclet
      */
     @ConfigItem(defaultValueDocumentation = "`true` if Hibernate ORM is enabled; `false` otherwise")
-    public Optional<Boolean> active = Optional.empty();
+    public Optional<Boolean> active;
 
     /**
      * Database related configuration.
      */
     @ConfigItem
     @ConfigDocSection
-    public HibernateOrmConfigPersistenceUnitDatabase database = new HibernateOrmConfigPersistenceUnitDatabase();
+    public HibernateOrmConfigPersistenceUnitDatabase database;
 
     /**
      * Database scripts related configuration.
      */
     @ConfigItem
     @ConfigDocSection
-    public HibernateOrmConfigPersistenceUnitScripts scripts = new HibernateOrmConfigPersistenceUnitScripts();
+    public HibernateOrmConfigPersistenceUnitScripts scripts;
 
     /**
      * Logging configuration.
      */
     @ConfigItem
     @ConfigDocSection
-    public HibernateOrmConfigPersistenceUnitLog log = new HibernateOrmConfigPersistenceUnitLog();
+    public HibernateOrmConfigPersistenceUnitLog log;
 
     /**
      * Properties that should be passed on directly to Hibernate ORM.
@@ -72,7 +71,7 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
      */
     @ConfigItem
     @ConfigDocMapKey("full-property-key")
-    public Map<String, String> unsupportedProperties = new HashMap<>();
+    public Map<String, String> unsupportedProperties;
 
     @ConfigGroup
     public static class HibernateOrmConfigPersistenceUnitDatabase {
@@ -81,21 +80,21 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          * Schema generation configuration.
          */
         @ConfigItem
-        public HibernateOrmConfigPersistenceUnitDatabaseGeneration generation = new HibernateOrmConfigPersistenceUnitDatabaseGeneration();
+        public HibernateOrmConfigPersistenceUnitDatabaseGeneration generation;
 
         /**
          * The default catalog to use for the database objects.
          */
         @ConfigItem
         @ConvertWith(TrimmedStringConverter.class)
-        public Optional<String> defaultCatalog = Optional.empty();
+        public Optional<String> defaultCatalog;
 
         /**
          * The default schema to use for the database objects.
          */
         @ConfigItem
         @ConvertWith(TrimmedStringConverter.class)
-        public Optional<String> defaultSchema = Optional.empty();
+        public Optional<String> defaultSchema;
     }
 
     @ConfigGroup
@@ -105,7 +104,7 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          * Schema generation configuration.
          */
         @ConfigItem
-        public HibernateOrmConfigPersistenceUnitScriptGeneration generation = new HibernateOrmConfigPersistenceUnitScriptGeneration();
+        public HibernateOrmConfigPersistenceUnitScriptGeneration generation;
     }
 
     @ConfigGroup
@@ -123,19 +122,19 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          */
         @ConfigItem(name = ConfigItem.PARENT, defaultValue = "none")
         @ConvertWith(TrimmedStringConverter.class)
-        public String generation = "none";
+        public String generation;
 
         /**
          * If Hibernate ORM should create the schemas automatically (for databases supporting them).
          */
         @ConfigItem
-        public boolean createSchemas = false;
+        public boolean createSchemas;
 
         /**
          * Whether we should stop on the first error when applying the schema.
          */
         @ConfigItem
-        public boolean haltOnError = false;
+        public boolean haltOnError;
     }
 
     @ConfigGroup
@@ -148,21 +147,21 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          */
         @ConfigItem(name = ConfigItem.PARENT, defaultValue = "none")
         @ConvertWith(TrimmedStringConverter.class)
-        public String generation = "none";
+        public String generation;
 
         /**
          * Filename or URL where the database create DDL file should be generated.
          */
         @ConfigItem
         @ConvertWith(TrimmedStringConverter.class)
-        public Optional<String> createTarget = Optional.empty();
+        public Optional<String> createTarget;
 
         /**
          * Filename or URL where the database drop DDL file should be generated.
          */
         @ConfigItem
         @ConvertWith(TrimmedStringConverter.class)
-        public Optional<String> dropTarget = Optional.empty();
+        public Optional<String> dropTarget;
     }
 
     @ConfigGroup
@@ -174,25 +173,25 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          * Setting it to true is obviously not recommended in production.
          */
         @ConfigItem
-        public boolean sql = false;
+        public boolean sql;
 
         /**
          * Format the SQL logs if SQL log is enabled
          */
         @ConfigItem(defaultValue = "true")
-        public boolean formatSql = true;
+        public boolean formatSql;
 
         /**
          * Whether JDBC warnings should be collected and logged.
          */
         @ConfigItem(defaultValueDocumentation = "depends on dialect")
-        public Optional<Boolean> jdbcWarnings = Optional.empty();
+        public Optional<Boolean> jdbcWarnings;
 
         /**
          * If set, Hibernate will log queries that took more than specified number of milliseconds to execute.
          */
         @ConfigItem
-        public Optional<Long> queriesSlowerThanMs = Optional.empty();
+        public Optional<Long> queriesSlowerThanMs;
     }
 
 }

@@ -147,8 +147,6 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             throw new PersistenceException("No name provided and multiple persistence units found");
         }
 
-        Map<String, HibernateOrmRuntimeConfigPersistenceUnit> puConfigMap = hibernateOrmRuntimeConfig
-                .getAllPersistenceUnitConfigsAsMap();
         for (RuntimePersistenceUnitDescriptor persistenceUnit : units) {
             log.debugf(
                     "Checking persistence-unit [name=%s, explicit-provider=%s] against incoming persistence unit name [%s]",
@@ -174,8 +172,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                         "Attempting to boot a blocking Hibernate ORM instance on a reactive RecordedState");
             }
             final PrevalidatedQuarkusMetadata metadata = recordedState.getMetadata();
-            var puConfig = puConfigMap.getOrDefault(persistenceUnit.getConfigurationName(),
-                    new HibernateOrmRuntimeConfigPersistenceUnit());
+            var puConfig = hibernateOrmRuntimeConfig.getPersistenceUnitConfig(
+                    persistenceUnit.getConfigurationName());
             if (puConfig.active.isPresent() && !puConfig.active.get()) {
                 throw new IllegalStateException(
                         "Attempting to boot a deactivated Hibernate ORM persistence unit");

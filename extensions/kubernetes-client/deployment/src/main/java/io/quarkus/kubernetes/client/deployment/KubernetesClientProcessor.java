@@ -52,6 +52,7 @@ public class KubernetesClientProcessor {
 
     private static final Predicate<DotName> IS_OKHTTP_CLASS = d -> d.toString().startsWith("okhttp3");
     private static final DotName JSON_FORMAT = DotName.createSimple(JsonFormat.class.getName());
+    private static final String[] EMPTY_STRINGS_ARRAY = new String[0];
 
     @BuildStep
     public void registerBeanProducers(BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem,
@@ -148,11 +149,13 @@ public class KubernetesClientProcessor {
                 });
         if (!withFieldsRegistration.isEmpty()) {
             reflectiveClasses.produce(ReflectiveClassBuildItem
-                    .builder(withFieldsRegistration.toArray(new String[0])).weak(true).methods(true).fields(true).build());
+                    .builder(withFieldsRegistration.toArray(EMPTY_STRINGS_ARRAY)).weak(true).methods(true).fields(true)
+                    .build());
         }
         if (!withoutFieldsRegistration.isEmpty()) {
             reflectiveClasses.produce(ReflectiveClassBuildItem
-                    .builder(withoutFieldsRegistration.toArray(new String[0])).weak(true).methods(true).fields(false).build());
+                    .builder(withoutFieldsRegistration.toArray(EMPTY_STRINGS_ARRAY)).weak(true).methods(true).fields(false)
+                    .build());
         }
 
         // we also ignore some classes that are annotated with @JsonDeserialize that would force the registration of the entire model

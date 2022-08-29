@@ -214,15 +214,9 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    void handleMoveSql(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> runtimeInfoProducer,
+    void handleGenerateSql(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> runtimeInfoProducer,
             BuildProducer<JdbcInitialSQLGeneratorBuildItem> initialSQLGeneratorBuildItemBuildProducer,
             HibernateOrmConfig config, CurateOutcomeBuildItem curateOutcomeBuildItem) {
-
-        DevConsoleRuntimeTemplateInfoBuildItem devConsoleRuntimeTemplateInfoBuildItem = new DevConsoleRuntimeTemplateInfoBuildItem(
-                "create-ddl." + PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
-                new HibernateOrmDevConsoleCreateDDLSupplier(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME), this.getClass(),
-                curateOutcomeBuildItem);
-        runtimeInfoProducer.produce(devConsoleRuntimeTemplateInfoBuildItem);
         for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.getAllPersistenceUnitConfigsAsMap().entrySet()) {
             handleGenerateSqlForPu(runtimeInfoProducer, initialSQLGeneratorBuildItemBuildProducer, entry.getKey(),
                     entry.getValue().datasource.orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME), curateOutcomeBuildItem);

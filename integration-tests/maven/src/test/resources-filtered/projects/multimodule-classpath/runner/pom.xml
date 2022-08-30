@@ -12,12 +12,12 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy</artifactId>
+            <groupId>cp.acme</groupId>
+            <artifactId>multimodule-cp-resources-html</artifactId>
         </dependency>
         <dependency>
             <groupId>cp.acme</groupId>
-            <artifactId>multimodule-cp-resources-html</artifactId>
+            <artifactId>multimodule-cp-resources-html-extra</artifactId>
         </dependency>
         <dependency>
             <groupId>cp.acme</groupId>

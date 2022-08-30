@@ -201,7 +201,7 @@ class BuildIT extends MojoTestBase {
         Process process = JarRunnerIT
                 .doLaunch(new File(testDir, String.format("target/%s%squarkus-app", context.prefix, outputPrefix)),
                         Paths.get(context.jarFileName), output,
-                        Collections.emptyList())
+                        List.of())
                 .start();
         try {
             Assertions.assertEquals(expectedMessage, DevModeTestUtils.getHttpResponse(path));

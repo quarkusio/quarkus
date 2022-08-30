@@ -10,6 +10,7 @@ import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
+import org.jboss.resteasy.reactive.RestPath;
 
 @Path("/cp")
 public class ClassPathResource {
@@ -22,10 +23,10 @@ public class ClassPathResource {
     }
 
     @GET
-    @Path("/resourcesCount")
+    @Path("/resourceCount/{name}")
     @Produces(MediaType.TEXT_PLAIN)
-    public int resourcesCount() throws IOException {
-        Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources("META-INF/resources/a.html");
+    public int resourceCount(@RestPath String name) throws IOException {
+        Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources("META-INF/resources/" + name);
         int count = 0;
         while (resources.hasMoreElements()) {
             count++;

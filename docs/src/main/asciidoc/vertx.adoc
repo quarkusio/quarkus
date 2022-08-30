@@ -219,6 +219,15 @@ So, you should have the following files in your project:
 │        ├── book.txt
 │        └── lorem.txt
 ----
+Add the following imports to the `src/main/java/org/acme/VertxResource.java` file:
+
+[source, java]
+----
+
+import io.smallrye.mutiny.Multi;
+import io.vertx.core.file.OpenOptions;
+
+----
 
 Add the following method to the `VertxResource` class:
 
@@ -275,7 +284,17 @@ Our `VertxResource` will send a message containing a name to the `greetings` add
 Another component will receive the message and produce the "hello $name" response.
 The `VertxResource` will receive the response and return it as the HTTP response.
 
-So, first, let's extend our `VertxResource` class with the following code:
+So, first, add the following imports to the `src/main/java/org/acme/VertxResource.java` file:
+
+[source, java]
+----
+
+import io.vertx.mutiny.core.eventbus.EventBus;
+import javax.ws.rs.QueryParam;
+
+----
+
+Next, let's extend our `VertxResource` class with the following code:
 
 
 [source, java]
@@ -345,7 +364,19 @@ That's not the case with the Web Client.
 Remember, at the beginning of the guide,  we added the `smallrye-mutiny-vertx-web-client` dependency to our `pom.xml` file.
 It's now time to use it.
 
-First, we need to create an instance of `WebClient`.
+
+First, add the following imports to the `src/main/java/org/acme/VertxResource.java` file:
+
+[source, java]
+----
+
+import io.vertx.core.json.JsonArray;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
+import io.vertx.mutiny.ext.web.client.WebClient;
+
+----
+
+Next, we need to create an instance of `WebClient`.
 Extend the `VertxResource` class with the `client` field and the creation of the web client in the constructor:
 
 [source, java]

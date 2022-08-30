@@ -77,7 +77,7 @@ public class GACT implements ArtifactKey, Serializable {
             if ((parts[1] = parts[3]).isEmpty()) {
                 throw new IllegalArgumentException("ArtifactId is empty in `" + str + "`");
             }
-            parts[2] = "";
+            parts[2] = ArtifactCoords.DEFAULT_CLASSIFIER;
             parts[3] = null;
             return parts;
         }
@@ -86,7 +86,7 @@ public class GACT implements ArtifactKey, Serializable {
                     "One of groupId or artifactId is missing from '" + str.substring(0, fromIndex) + "'");
         }
         if (i == fromIndex - 1) {
-            parts[2] = "";
+            parts[2] = ArtifactCoords.DEFAULT_CLASSIFIER;
         } else {
             parts[2] = str.substring(i + 1, fromIndex);
         }

@@ -10,6 +10,8 @@ import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 public class TestContextCheckerBeforeEachCallback implements QuarkusTestBeforeEachCallback {
 
     public static final List<Object> OUTER_INSTANCES = new ArrayList<>();
+    public static QuarkusTestMethodContext CONTEXT;
+
     static boolean testAnnotationChecked;
 
     @Override
@@ -18,6 +20,8 @@ public class TestContextCheckerBeforeEachCallback implements QuarkusTestBeforeEa
         OUTER_INSTANCES.addAll(context.getOuterInstances());
 
         // continue only if this comes into play only for the test we care about
+        TestContextCheckerBeforeEachCallback.CONTEXT = context;
+        // make sure that this comes into play only for the test we care about
 
         Method testMethod = context.getTestMethod();
         if (!testMethod.getDeclaringClass().getName().endsWith("QuarkusTestCallbacksTestCase")) {

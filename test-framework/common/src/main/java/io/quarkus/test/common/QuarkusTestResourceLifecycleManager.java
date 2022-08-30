@@ -40,6 +40,8 @@ public interface QuarkusTestResourceLifecycleManager {
     /**
      * Set the context in which this {@link QuarkusTestResourceLifecycleManager} is being used.
      * This method is executed before the {@code init} method.
+     * The Context instance is automatically populated before calling the `start` and/or `stop` methods, so for example you can
+     * check whether any test failed when stopping the resource by using `context.getTestStatus().isTestFailed()`.
      *
      * The {@code context} is never null.
      */
@@ -177,5 +179,11 @@ public interface QuarkusTestResourceLifecycleManager {
          * {@code QuarkusTestProfile}.
          */
         String testProfile();
+
+        /**
+         * @return the failure result that is thrown during either `BeforeAll`, `BeforeEach`, test method, `AfterAll` or
+         *         `AfterEach` phases.
+         */
+        TestStatus getTestStatus();
     }
 }

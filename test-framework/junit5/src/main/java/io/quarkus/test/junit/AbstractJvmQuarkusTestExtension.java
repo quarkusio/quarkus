@@ -36,7 +36,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.RestorableSystemProperties;
 import io.quarkus.test.common.TestClassIndexer;
 
-public class AbstractJvmQuarkusTestExtension {
+public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithContextExtension {
 
     protected static final String TEST_LOCATION = "test-location";
     protected static final String TEST_CLASS = "test-class";

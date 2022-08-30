@@ -16,19 +16,27 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
 
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestExtension;
 
 /**
  * The purpose of this test is simply to ensure that {@link TestContextCheckerBeforeEachCallback}
  * can read {@code @TestAnnotation} without issue.
  * Also checks that {@link SimpleAnnotationCheckerBeforeClassCallback} is executed properly
  */
-@QuarkusTest
+@ExtendWith({ QuarkusTestCallbacksTestCase.IgnoreCustomExceptions.class, QuarkusTestExtension.class })
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class QuarkusTestCallbacksTestCase {
+
+    private static boolean throwsCustomException = false;
 
     @BeforeAll
     static void beforeAllWithTestInfo(TestInfo testInfo) {
@@ -54,6 +62,9 @@ public class QuarkusTestCallbacksTestCase {
     @AfterEach
     void afterEachWithTestInfo(TestInfo testInfo) throws NoSuchMethodException {
         checkBeforeOrAfterEachTestInfo(testInfo, "afterEachWithTestInfo");
+        if (throwsCustomException) {
+            throw new CustomException();
+        }
     }
 
     private void checkBeforeOrAfterEachTestInfo(TestInfo testInfo, String unexpectedMethodName) throws NoSuchMethodException {
@@ -75,7 +86,7 @@ public class QuarkusTestCallbacksTestCase {
     @Test
     @Order(2)
     public void testBeforeClass() {
-        assertEquals(1, SimpleAnnotationCheckerBeforeClassCallback.count.get());
+        assertEquals(2, SimpleAnnotationCheckerBeforeClassCallback.count.get());
     }
 
     @Test
@@ -89,8 +100,44 @@ public class QuarkusTestCallbacksTestCase {
         assertEquals(QuarkusTestCallbacksTestCase.class, testInfo.getTestClass().get());
     }
 
+    @Test
+    @Order(4)
+    public void testCallbackContextIsNotFailed() {
+        assertFalse(TestContextCheckerBeforeEachCallback.CONTEXT.getTestStatus().isTestFailed());
+        // To force the exception in the before each handler.
+        throwsCustomException = true;
+    }
+
+    @Test
+    @Order(5)
+    public void testCallbackContextIsFailed() {
+        assertTrue(TestContextCheckerBeforeEachCallback.CONTEXT.getTestStatus().isTestFailed());
+    }
+
     @Target({ METHOD })
     @Retention(RUNTIME)
     public @interface TestAnnotation {
+    }
+
+    private static boolean isCustomException(Throwable ex) {
+        try {
+            return ex.getClass().getClassLoader().loadClass(CustomException.class.getName()).isInstance(ex);
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    public static class CustomException extends RuntimeException {
+
+    }
+
+    public static class IgnoreCustomExceptions implements LifecycleMethodExecutionExceptionHandler {
+        @Override
+        public void handleAfterEachMethodExecutionException(ExtensionContext context, Throwable throwable)
+                throws Throwable {
+            if (!isCustomException(throwable)) {
+                throw throwable;
+            }
+        }
     }
 }

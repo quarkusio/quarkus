@@ -115,9 +115,13 @@ In this file, copy the following code:
 ----
 package org.acme;
 
+import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 
+import java.nio.charset.StandardCharsets;
+
 import javax.inject.Inject;
+import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
 @Path("/vertx")                        // <1>

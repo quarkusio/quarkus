@@ -78,6 +78,7 @@ public class SseParser implements Handler<Buffer> {
     @Override
     public void handle(Buffer event) {
         byte[] newBytes = event.getBytes();
+        event.getByteBuf().release();
         // check if we have partial data remaining
         if (bytes != null) {
             // concat old and new data

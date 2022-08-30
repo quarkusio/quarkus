@@ -287,7 +287,7 @@ public final class Beans {
                 + scopes.stream().map(s -> s.getDotName().toString()).collect(Collectors.joining(", ")));
     }
 
-    private static ScopeInfo initStereotypeScope(List<StereotypeInfo> stereotypes, AnnotationTarget target,
+    static ScopeInfo initStereotypeScope(List<StereotypeInfo> stereotypes, AnnotationTarget target,
             BeanDeployment beanDeployment) {
         if (stereotypes.isEmpty()) {
             return null;
@@ -316,7 +316,7 @@ public final class Beans {
         return BeanDeployment.getValidScope(stereotypeScopes.isEmpty() ? additionalBDAScopes : stereotypeScopes, target);
     }
 
-    private static boolean initStereotypeAlternative(List<StereotypeInfo> stereotypes) {
+    static boolean initStereotypeAlternative(List<StereotypeInfo> stereotypes) {
         if (stereotypes.isEmpty()) {
             return false;
         }
@@ -328,7 +328,7 @@ public final class Beans {
         return false;
     }
 
-    private static Integer initStereotypeAlternativePriority(List<StereotypeInfo> stereotypes) {
+    static Integer initStereotypeAlternativePriority(List<StereotypeInfo> stereotypes) {
         if (stereotypes.isEmpty()) {
             return null;
         }
@@ -340,7 +340,7 @@ public final class Beans {
         return null;
     }
 
-    private static String initStereotypeName(List<StereotypeInfo> stereotypes, AnnotationTarget target) {
+    static String initStereotypeName(List<StereotypeInfo> stereotypes, AnnotationTarget target) {
         if (stereotypes.isEmpty()) {
             return null;
         }

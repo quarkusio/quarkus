@@ -17,6 +17,7 @@ import io.quarkus.arc.processor.ObserverRegistrar;
 import io.quarkus.arc.processor.ObserverTransformer;
 import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.arc.processor.ResourceOutput;
+import io.quarkus.arc.processor.StereotypeRegistrar;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -74,6 +75,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         private final List<ContextRegistrar> contextRegistrars;
         private final List<QualifierRegistrar> qualifierRegistrars;
         private final List<InterceptorBindingRegistrar> interceptorBindingRegistrars;
+        private final List<StereotypeRegistrar> stereotypeRegistrars;
         private final List<AnnotationsTransformer> annotationsTransformers;
         private final List<InjectionPointsTransformer> injectionsPointsTransformers;
         private final List<ObserverTransformer> observerTransformers;
@@ -93,6 +95,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             contextRegistrars = new ArrayList<>();
             qualifierRegistrars = new ArrayList<>();
             interceptorBindingRegistrars = new ArrayList<>();
+            stereotypeRegistrars = new ArrayList<>();
             annotationsTransformers = new ArrayList<>();
             injectionsPointsTransformers = new ArrayList<>();
             observerTransformers = new ArrayList<>();
@@ -161,6 +164,11 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             return this;
         }
 
+        public Builder stereotypeRegistrars(StereotypeRegistrar... registrars) {
+            Collections.addAll(this.stereotypeRegistrars, registrars);
+            return this;
+        }
+
         public Builder beanDeploymentValidators(BeanDeploymentValidator... validators) {
             Collections.addAll(this.beanDeploymentValidators, validators);
             return this;
@@ -204,6 +212,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     private final List<ContextRegistrar> contextRegistrars;
     private final List<QualifierRegistrar> qualifierRegistrars;
     private final List<InterceptorBindingRegistrar> interceptorBindingRegistrars;
+    private final List<StereotypeRegistrar> stereotypeRegistrars;
     private final List<AnnotationsTransformer> annotationsTransformers;
     private final List<InjectionPointsTransformer> injectionPointsTransformers;
     private final List<ObserverTransformer> observerTransformers;
@@ -226,6 +235,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.observerRegistrars = Collections.emptyList();
         this.contextRegistrars = Collections.emptyList();
         this.interceptorBindingRegistrars = Collections.emptyList();
+        this.stereotypeRegistrars = Collections.emptyList();
         this.qualifierRegistrars = Collections.emptyList();
         this.annotationsTransformers = Collections.emptyList();
         this.injectionPointsTransformers = Collections.emptyList();
@@ -248,6 +258,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.contextRegistrars = builder.contextRegistrars;
         this.qualifierRegistrars = builder.qualifierRegistrars;
         this.interceptorBindingRegistrars = builder.interceptorBindingRegistrars;
+        this.stereotypeRegistrars = builder.stereotypeRegistrars;
         this.annotationsTransformers = builder.annotationsTransformers;
         this.injectionPointsTransformers = builder.injectionsPointsTransformers;
         this.observerTransformers = builder.observerTransformers;
@@ -370,6 +381,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             contextRegistrars.forEach(builder::addContextRegistrar);
             qualifierRegistrars.forEach(builder::addQualifierRegistrar);
             interceptorBindingRegistrars.forEach(builder::addInterceptorBindingRegistrar);
+            stereotypeRegistrars.forEach(builder::addStereotypeRegistrar);
             annotationsTransformers.forEach(builder::addAnnotationTransformer);
             injectionPointsTransformers.forEach(builder::addInjectionPointTransformer);
             observerTransformers.forEach(builder::addObserverTransformer);

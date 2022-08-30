@@ -10,7 +10,7 @@ import javax.enterprise.inject.Alternative;
  * If a bean is annotated with this annotation, it is considered an enabled alternative with given priority.
  * Effectively, this is a shortcut for {@code Alternative} plus {@code Priority} annotations.
  *
- * This annotation can be used not only on bean classes, but also method and field producers (unlike pure {@code Priority}.
+ * This annotation can be used not only on bean classes, but also method and field producers (unlike pure {@code Priority}).
  *
  * @deprecated Use {@link Alternative} and {@link io.quarkus.arc.Priority}/{@link javax.annotation.Priority} instead
  */

@@ -73,6 +73,7 @@ import io.quarkus.arc.processor.ObserverRegistrar;
 import io.quarkus.arc.processor.ReflectionRegistration;
 import io.quarkus.arc.processor.ResourceOutput;
 import io.quarkus.arc.processor.StereotypeInfo;
+import io.quarkus.arc.processor.StereotypeRegistrar;
 import io.quarkus.arc.processor.Transformation;
 import io.quarkus.arc.processor.Types;
 import io.quarkus.arc.runtime.AdditionalBean;
@@ -156,6 +157,25 @@ public class ArcProcessor {
                 .build();
     }
 
+    @BuildStep
+    StereotypeRegistrarBuildItem convertLegacyAdditionalStereotypes(List<AdditionalStereotypeBuildItem> buildItems) {
+        return new StereotypeRegistrarBuildItem(new StereotypeRegistrar() {
+            @Override
+            public Set<DotName> getAdditionalStereotypes() {
+                Set<DotName> result = new HashSet<>();
+                for (AdditionalStereotypeBuildItem buildItem : buildItems) {
+                    result.addAll(buildItem.getStereotypes()
+                            .values()
+                            .stream()
+                            .flatMap(Collection::stream)
+                            .map(AnnotationInstance::name)
+                            .collect(Collectors.toSet()));
+                }
+                return result;
+            }
+        });
+    }
+
     // PHASE 1 - build BeanProcessor
     @BuildStep
     public ContextRegistrationPhaseBuildItem initialize(
@@ -169,7 +189,7 @@ public class ArcProcessor {
             List<ObserverTransformerBuildItem> observerTransformers,
             List<InterceptorBindingRegistrarBuildItem> interceptorBindingRegistrars,
             List<QualifierRegistrarBuildItem> qualifierRegistrars,
-            List<AdditionalStereotypeBuildItem> additionalStereotypeBuildItems,
+            List<StereotypeRegistrarBuildItem> stereotypeRegistrars,
             List<ApplicationClassPredicateBuildItem> applicationClassPredicates,
             List<AdditionalBeanBuildItem> additionalBeans,
             List<ResourceAnnotationBuildItem> resourceAnnotations,
@@ -253,11 +273,6 @@ public class ArcProcessor {
                 .map((s) -> new BeanDefiningAnnotation(s.getName(), s.getDefaultScope())).collect(Collectors.toList());
         beanDefiningAnnotations.add(new BeanDefiningAnnotation(ADDITIONAL_BEAN, null));
         builder.setAdditionalBeanDefiningAnnotations(beanDefiningAnnotations);
-        final Map<DotName, Collection<AnnotationInstance>> additionalStereotypes = new HashMap<>();
-        for (final AdditionalStereotypeBuildItem item : additionalStereotypeBuildItems) {
-            additionalStereotypes.putAll(item.getStereotypes());
-        }
-        builder.setAdditionalStereotypes(additionalStereotypes);
         builder.addResourceAnnotations(
                 resourceAnnotations.stream().map(ResourceAnnotationBuildItem::getName).collect(Collectors.toList()));
         // register all annotation transformers
@@ -279,6 +294,10 @@ public class ArcProcessor {
         // register additional qualifiers
         for (QualifierRegistrarBuildItem registrar : qualifierRegistrars) {
             builder.addQualifierRegistrar(registrar.getQualifierRegistrar());
+        }
+        // register additional stereotypes
+        for (StereotypeRegistrarBuildItem registrar : stereotypeRegistrars) {
+            builder.addStereotypeRegistrar(registrar.getStereotypeRegistrar());
         }
         builder.setRemoveUnusedBeans(arcConfig.shouldEnableBeanRemoval());
         if (arcConfig.shouldOnlyKeepAppBeans()) {

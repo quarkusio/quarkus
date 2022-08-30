@@ -43,6 +43,30 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
             if (implClass == null) {
                 throw new IllegalStateException("Unable to find the bean class in the index: " + implClazz);
             }
+
+            ScopeInfo scope = this.scope;
+            if (scope == null) {
+                scope = Beans.initStereotypeScope(stereotypes, implClass, beanDeployment);
+            }
+            if (scope == null) {
+                scope = BuiltinScope.DEPENDENT.getInfo();
+            }
+
+            String name = this.name;
+            if (name == null) {
+                name = Beans.initStereotypeName(stereotypes, implClass);
+            }
+
+            Boolean alternative = this.alternative;
+            if (alternative == null) {
+                alternative = Beans.initStereotypeAlternative(stereotypes);
+            }
+
+            Integer priority = this.priority;
+            if (priority == null) {
+                priority = Beans.initStereotypeAlternativePriority(stereotypes);
+            }
+
             beanConsumer.accept(new BeanInfo.Builder()
                     .implClazz(implClass)
                     .providerType(providerType)
@@ -52,6 +76,7 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                     .qualifiers(qualifiers)
                     .alternative(alternative)
                     .priority(priority)
+                    .stereotypes(stereotypes)
                     .name(name)
                     .creator(creatorConsumer)
                     .destroyer(destroyerConsumer)

@@ -42,6 +42,11 @@ public class ListConverter implements ParameterConverter {
             delegate.init(deployment, rawType, genericType, annotations);
     }
 
+    @Override
+    public boolean isForSingleObjectContainer() {
+        return true;
+    }
+
     public ParameterConverter getDelegate() {
         return delegate;
     }

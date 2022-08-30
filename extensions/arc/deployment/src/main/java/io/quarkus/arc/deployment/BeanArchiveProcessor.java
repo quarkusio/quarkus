@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -14,8 +15,6 @@ import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
-
-import com.google.common.base.Objects;
 
 import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
@@ -31,6 +30,7 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.index.IndexDependencyConfig;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.index.PersistentClassIndex;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 public class BeanArchiveProcessor {
@@ -174,11 +174,11 @@ public class BeanArchiveProcessor {
 
     public static boolean archiveMatches(ArtifactKey key, String groupId, String artifactId, Optional<String> classifier) {
 
-        if (Objects.equal(key.getArtifactId(), artifactId)
-                && Objects.equal(key.getGroupId(), groupId)) {
-            if (classifier.isPresent() && Objects.equal(key.getClassifier(), classifier.get())) {
+        if (Objects.equals(key.getArtifactId(), artifactId)
+                && Objects.equals(key.getGroupId(), groupId)) {
+            if (classifier.isPresent() && Objects.equals(key.getClassifier(), classifier.get())) {
                 return true;
-            } else if (!classifier.isPresent() && "".equals(key.getClassifier())) {
+            } else if (!classifier.isPresent() && ArtifactCoords.DEFAULT_CLASSIFIER.equals(key.getClassifier())) {
                 return true;
             }
         }

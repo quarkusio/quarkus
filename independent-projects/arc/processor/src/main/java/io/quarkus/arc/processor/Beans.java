@@ -582,7 +582,6 @@ public final class Beans {
 
     static void validateBean(BeanInfo bean, List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             Set<DotName> classesReceivingNoArgsCtor) {
-
         if (bean.isClassBean()) {
             ClassInfo beanClass = bean.getTarget().get().asClass();
             String classifier = bean.getScope().isNormal() ? "Normal scoped" : null;
@@ -708,6 +707,12 @@ public final class Beans {
                 }
             }
         } else if (bean.isSynthetic()) {
+            // synth beans can accidentally be defined with a non-existing scope, throw exception in such case
+            DotName scopeName = bean.getScope().getDotName();
+            if (bean.getDeployment().getScope(scopeName) == null) {
+                throw new IllegalArgumentException("A synthetic bean " + bean + " was defined with invalid scope annotation - "
+                        + scopeName + ". Please use one of the built-in scopes or a valid, registered custom scope.");
+            }
             // this is for synthetic beans that need to be proxied but their classes don't have no-args constructor
             ClassInfo beanClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), bean.getBeanClass());
             MethodInfo noArgsConstructor = beanClass.method(Methods.INIT);

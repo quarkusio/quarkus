@@ -40,6 +40,10 @@
         <maven-core.version>3.8.6</maven-core.version>
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+        <!--
+           Supported Maven versions, interpreted as a version range (Also defined in build-parent)
+        -->
+        <supported-maven-versions>[3.6.2,)</supported-maven-versions>
     </properties>
 
     <dependencies>
@@ -72,6 +76,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <artifactId>maven-invoker-plugin</artifactId>

@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.util.Map;
 
 import org.jboss.logging.Logger;
 
@@ -108,6 +109,9 @@ public class OidcProviderClient implements Closeable {
         if (codeVerifier != null) {
             codeGrantParams.add(OidcConstants.PKCE_CODE_VERIFIER, codeVerifier);
         }
+        if (oidcConfig.codeGrant.extraParams != null) {
+            codeGrantParams.addAll(oidcConfig.codeGrant.extraParams);
+        }
         return getHttpResponse(metadata.getTokenUri(), codeGrantParams, false)
                 .transform(resp -> getAuthorizationCodeTokens(resp));
     }
@@ -124,6 +128,11 @@ public class OidcProviderClient implements Closeable {
         HttpRequest<Buffer> request = client.postAbs(uri);
         request.putHeader(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
         request.putHeader(ACCEPT_HEADER, APPLICATION_JSON);
+        if (oidcConfig.codeGrant.headers != null) {
+            for (Map.Entry<String, String> headerEntry : oidcConfig.codeGrant.headers.entrySet()) {
+                request.putHeader(headerEntry.getKey(), headerEntry.getValue());
+            }
+        }
         if (introspect && introspectionBasicAuthScheme != null) {
             request.putHeader(AUTHORIZATION_HEADER, introspectionBasicAuthScheme);
             if (oidcConfig.clientId.isPresent() && oidcConfig.introspectionCredentials.includeClientId) {

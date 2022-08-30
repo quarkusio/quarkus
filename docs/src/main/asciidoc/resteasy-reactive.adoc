@@ -759,10 +759,9 @@ public class Endpoint {
     Multi<Book> books;
 
     @GET
-    // Send the stream over SSE
-    @Produces(MediaType.SERVER_SENT_EVENTS)
     // Each element will be sent as JSON
     @RestStreamElementType(MediaType.APPLICATION_JSON)
+    // by using @RestStreamElementType, we don't need to add @Produces(MediaType.SERVER_SENT_EVENTS)
     public Multi<Book> stream() {
         return books;
     }

@@ -65,16 +65,11 @@ class DevServicesConfigBuildStep {
         oldConfig = newProperties;
 
         Map<String, String> newPropertiesWithAdditionalConfig = new HashMap<>(newProperties);
+        var unmodifiableNewProperties = Collections.unmodifiableMap(newProperties);
         // On contrary to dev services config, "additional" config build items are
         // produced on each restart, so we don't want to remember them from one restart to the next.
         for (DevServicesAdditionalConfigBuildItem item : devServicesAdditionalConfigBuildItems) {
-            if (item.getTriggeringKeys().stream().anyMatch(newProperties::containsKey)) {
-                var callback = item.getCallbackWhenEnabled();
-                if (callback != null) {
-                    callback.run(); // This generally involves logging
-                }
-                newPropertiesWithAdditionalConfig.put(item.getKey(), item.getValue());
-            }
+            newPropertiesWithAdditionalConfig.putAll(item.getConfigProvider().provide(unmodifiableNewProperties));
         }
 
         for (Map.Entry<String, String> entry : newPropertiesWithAdditionalConfig.entrySet()) {

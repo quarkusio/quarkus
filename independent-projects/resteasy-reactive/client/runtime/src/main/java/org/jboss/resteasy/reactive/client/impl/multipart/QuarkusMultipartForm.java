@@ -118,8 +118,7 @@ public class QuarkusMultipartForm implements Iterable<QuarkusMultipartFormDataPa
             for (MessageBodyWriter<?> w : writers) {
                 Buffer ret = ClientSerialisers.invokeClientWriter(entity, entityObject, entityClass, entityType, headers, w,
                         context.getConfiguration().getWriterInterceptors().toArray(Serialisers.NO_WRITER_INTERCEPTOR),
-                        context.getProperties(),
-                        serialisers, context.getConfiguration());
+                        context.getProperties(), context, serialisers, context.getConfiguration());
                 if (ret != null) {
                     value = ret;
                     break;

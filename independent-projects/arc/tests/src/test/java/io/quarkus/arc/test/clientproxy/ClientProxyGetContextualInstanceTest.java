@@ -22,6 +22,7 @@ public class ClientProxyGetContextualInstanceTest {
         Moo moo = Arc.container().instance(Moo.class).get();
         assertTrue(moo instanceof ClientProxy);
         assertEquals(10, ((Moo) ((ClientProxy) moo).arc_contextualInstance()).val);
+        assertEquals(10, ClientProxy.unwrap(moo).val);
     }
 
     @ApplicationScoped

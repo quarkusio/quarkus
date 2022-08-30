@@ -13,7 +13,7 @@ public class OracleServiceBindingConverter implements ServiceBindingConverter {
     @Override
     public Optional<ServiceBindingConfigSource> convert(List<ServiceBinding> serviceBindings) {
         return ServiceBinding.singleMatchingByType("oracle", serviceBindings)
-                .map(new DatasourceServiceBindingConfigSourceFactory.Reactive());
+                .map(new DatasourceServiceBindingConfigSourceFactory.Reactive("%s:thin:@%s%s/%s"));
     }
 
 }

@@ -545,7 +545,7 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * Counts the number of this type of entity matching the given query
      *
      * @param query a [Document] query
-     * @return he number of entities counted.
+     * @return the number of entities counted.
      * @see [count]
      * @see [count]
      * @see [count]
@@ -616,7 +616,7 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * Delete all entities of this type matching the given query
      *
      * @param query a [Document] query
-     * @return he number of entities counted.
+     * @return the number of entities counted.
      * @see [count]
      * @see [count]
      * @see [count]

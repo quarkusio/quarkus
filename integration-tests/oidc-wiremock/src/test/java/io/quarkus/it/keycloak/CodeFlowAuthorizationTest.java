@@ -3,6 +3,7 @@ package io.quarkus.it.keycloak;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -141,6 +142,7 @@ public class CodeFlowAuthorizationTest {
     @Test
     public void testCodeFlowUserInfo() throws IOException {
         defineCodeFlowAuthorizationOauth2TokenStub();
+
         doTestCodeFlowUserInfo("code-flow-user-info-only");
         doTestCodeFlowUserInfo("code-flow-user-info-github");
         doTestCodeFlowUserInfo("code-flow-user-info-dynamic-github");
@@ -198,6 +200,8 @@ public class CodeFlowAuthorizationTest {
 
     private void defineCodeFlowAuthorizationOauth2TokenStub() {
         wireMockServer.stubFor(WireMock.post("/auth/realms/quarkus/access_token")
+                .withHeader("X-Custom", matching("XCustomHeaderValue"))
+                .withRequestBody(containing("extra-param=extra-param-value"))
                 .withRequestBody(containing("authorization_code"))
                 .willReturn(WireMock.aResponse()
                         .withHeader("Content-Type", "application/json")

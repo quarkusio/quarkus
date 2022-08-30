@@ -24,9 +24,9 @@ interface PanacheCompanion<Entity : PanacheEntityBase>: PanacheCompanionBase<Ent
 interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
 
     /**
-     * Returns the [EntityManager] for the <Entity> for extra operations (eg. CriteriaQueries)
+     * Returns the [EntityManager] for the [Entity] for extra operations (eg. CriteriaQueries)
      *
-     * @return the [EntityManager] for the <Entity>
+     * @return the [EntityManager] for the [Entity]
      */
     @GenerateBridge
     fun getEntityManager(): EntityManager = throw implementationInjectionMissing()
@@ -56,7 +56,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param query a query string
      * @param params optional sequence of indexed parameters
      * @return a new [PanacheQuery] instance for the given query
-     * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.list]
      * @see [PanacheCompanion.stream]
      */
@@ -70,7 +69,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param sort the sort strategy to use
      * @param params optional sequence of indexed parameters
      * @return a new [PanacheQuery] instance for the given query
-     * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.list]
      * @see [PanacheCompanion.stream]
      */
@@ -83,7 +81,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param query a query string
      * @param params [Map] of named parameters
      * @return a new [PanacheQuery] instance for the given query
-     * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.list]
      * @see [PanacheCompanion.stream]
      */
@@ -97,7 +94,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param sort the sort strategy to use
      * @param params [Map] of indexed parameters
      * @return a new [PanacheQuery] instance for the given query
-     * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.list]
      * @see [PanacheCompanion.stream]
      */
@@ -110,7 +106,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param query a query string
      * @param params Parameters of named parameters
      * @return a new [PanacheQuery] instance for the given query
-     * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.list]
      * @see [PanacheCompanion.stream]
      */
@@ -124,7 +119,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param sort the sort strategy to use
      * @param params Parameters of indexed parameters
      * @return a new [PanacheQuery] instance for the given query
-     * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.list]
      * @see [PanacheCompanion.stream]
      */
@@ -135,7 +129,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * Find all entities of this type.
      *
      * @return a new [PanacheQuery] instance to find all entities of this type.
-     * @see [PanacheCompanion.findAll]
      * @see [PanacheCompanion.listAll]
      * @see [PanacheCompanion.streamAll]
      */
@@ -147,7 +140,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      *
      * @param sort the sort order to use
      * @return a new [PanacheQuery] instance to find all entities of this type.
-     * @see [PanacheCompanion.findAll]
      * @see [PanacheCompanion.listAll]
      * @see [PanacheCompanion.streamAll]
      */
@@ -161,7 +153,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param query a query string
      * @param params optional sequence of indexed parameters
      * @return a [List] containing all results, without paging
-     * @see [PanacheCompanion.list]
      * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.stream]
      */
@@ -176,7 +167,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param sort the sort strategy to use
      * @param params optional sequence of indexed parameters
      * @return a [List] containing all results, without paging
-     * @see [PanacheCompanion.list]
      * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.stream]
      */
@@ -190,7 +180,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param query a query string
      * @param params [Map] of named parameters
      * @return a [List] containing all results, without paging
-     * @see [PanacheCompanion.list]
      * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.stream]
      */
@@ -205,7 +194,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param sort the sort strategy to use
      * @param params [Map] of indexed parameters
      * @return a [List] containing all results, without paging
-     * @see [PanacheCompanion.list]
      * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.stream]
      */
@@ -219,7 +207,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param query a query string
      * @param params Parameters of named parameters
      * @return a [List] containing all results, without paging
-     * @see [PanacheCompanion.list]
      * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.stream]
      */
@@ -234,7 +221,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param sort the sort strategy to use
      * @param params Parameters of indexed parameters
      * @return a [List] containing all results, without paging
-     * @see [PanacheCompanion.list]
      * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.stream]
      */
@@ -246,7 +232,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * This method is a shortcut for `findAll().list()`.
      *
      * @return a [List] containing all results, without paging
-     * @see [PanacheCompanion.listAll]
      * @see [PanacheCompanion.findAll]
      * @see [PanacheCompanion.streamAll]
      */
@@ -259,7 +244,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      *
      * @param sort the sort order to use
      * @return a [List] containing all results, without paging
-     * @see [PanacheCompanion.listAll]
      * @see [PanacheCompanion.findAll]
      * @see [PanacheCompanion.streamAll]
      */
@@ -275,7 +259,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param query a query string
      * @param params optional sequence of indexed parameters
      * @return a Stream containing all results, without paging
-     * @see [PanacheCompanion.stream]
      * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.list]
      */
@@ -292,7 +275,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param sort the sort strategy to use
      * @param params optional sequence of indexed parameters
      * @return a Stream containing all results, without paging
-     * @see [PanacheCompanion.stream]
      * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.list]
      */
@@ -308,7 +290,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param query a query string
      * @param params [Map] of named parameters
      * @return a Stream containing all results, without paging
-     * @see [PanacheCompanion.stream]
      * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.list]
      */
@@ -325,7 +306,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param sort the sort strategy to use
      * @param params [Map] of indexed parameters
      * @return a Stream containing all results, without paging
-     * @see [PanacheCompanion.stream]
      * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.list]
      */
@@ -341,7 +321,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param query a query string
      * @param params Parameters of named parameters
      * @return a Stream containing all results, without paging
-     * @see [PanacheCompanion.stream]
      * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.list]
      */
@@ -358,7 +337,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param sort the sort strategy to use
      * @param params Parameters of indexed parameters
      * @return a Stream containing all results, without paging
-     * @see [PanacheCompanion.stream]
      * @see [PanacheCompanion.find]
      * @see [PanacheCompanion.list]
      */
@@ -372,7 +350,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * Without a transaction, the underlying cursor can be closed before the end of the stream.
      *
      * @return a Stream containing all results, without paging
-     * @see [PanacheCompanion.streamAll]
      * @see [PanacheCompanion.findAll]
      * @see [PanacheCompanion.listAll]
      */
@@ -387,7 +364,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      *
      * @param sort the sort order to use
      * @return a Stream containing all results, without paging
-     * @see [PanacheCompanion.streamAll]
      * @see [PanacheCompanion.findAll]
      * @see [PanacheCompanion.listAll]
      */
@@ -398,7 +374,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * Counts the number of this type of entity in the database.
      *
      * @return the number of this type of entity in the database.
-     * @see [PanacheCompanion.count]
      */
     @GenerateBridge
     fun count(): Long = throw implementationInjectionMissing()
@@ -409,7 +384,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param query a query string
      * @param params optional sequence of indexed parameters
      * @return the number of entities counted.
-     * @see [PanacheCompanion.count]
      */
     @GenerateBridge
     fun count(query: String, vararg params: Any): Long = throw implementationInjectionMissing()
@@ -420,7 +394,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param query a query string
      * @param params [Map] of named parameters
      * @return the number of entities counted.
-     * @see [PanacheCompanion.count]
      */
     @GenerateBridge
     fun count(query: String, params: Map<String, Any>): Long = throw implementationInjectionMissing()
@@ -431,7 +404,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param query a query string
      * @param params Parameters of named parameters
      * @return the number of entities counted.
-     * @see [PanacheCompanion.count]
      */
     @GenerateBridge
     fun count(query: String, params: Parameters): Long = throw implementationInjectionMissing()
@@ -458,7 +430,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param params optional sequence of indexed parameters
      * @return the number of entities deleted.
      * @see [PanacheCompanion.deleteAll]
-     * @see [PanacheCompanion.delete]
      */
     @GenerateBridge
     fun delete(query: String, vararg params: Any): Long = throw implementationInjectionMissing()
@@ -473,7 +444,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param params [Map] of named parameters
      * @return the number of entities deleted.
      * @see [PanacheCompanion.deleteAll]
-     * @see [PanacheCompanion.delete]
      */
     @GenerateBridge
     fun delete(query: String, params: Map<String, Any>): Long = throw implementationInjectionMissing()
@@ -488,7 +458,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param params Parameters of named parameters
      * @return the number of entities deleted.
      * @see [PanacheCompanion.deleteAll]
-     * @see [PanacheCompanion.delete]
      */
     @GenerateBridge
     fun delete(query: String, params: Parameters): Long = throw implementationInjectionMissing()
@@ -506,7 +475,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * Persist all given entities.
      *
      * @param entities the entities to persist
-     * @see [PanacheCompanion.persist]
      */
     fun persist(entities: Iterable<Entity>) {
         INSTANCE.persist(entities)
@@ -516,7 +484,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * Persist all given entities.
      *
      * @param entities the entities to persist
-     * @see [PanacheCompanion.persist]
      */
     fun persist(entities: Stream<Entity>) {
         INSTANCE.persist(entities)
@@ -526,7 +493,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * Persist all given entities.
      *
      * @param entities the entities to persist
-     * @see [PanacheCompanion.persist]
      */
     fun persist(firstEntity: Entity, vararg entities: Entity) {
         INSTANCE.persist(firstEntity, *entities)
@@ -538,7 +504,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param query a query string
      * @param params optional sequence of indexed parameters
      * @return the number of entities updated.
-     * @see [PanacheCompanion.update]
      */
     @GenerateBridge
     fun update(query: String, vararg params: Any): Int = throw implementationInjectionMissing()
@@ -549,7 +514,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param query a query string
      * @param params [Map] of named parameters
      * @return the number of entities updated.
-     * @see [PanacheCompanion.update]
      */
     @GenerateBridge
     fun update(query: String, params: Map<String, Any>): Int = throw implementationInjectionMissing()
@@ -560,7 +524,6 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id: Any> {
      * @param query a query string
      * @param params Parameters of named parameters
      * @return the number of entities updated.
-     * @see [PanacheCompanion.update]
      */
     @GenerateBridge
     fun update(query: String, params: Parameters): Int = throw implementationInjectionMissing()

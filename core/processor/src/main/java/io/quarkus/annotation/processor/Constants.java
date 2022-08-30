@@ -45,7 +45,6 @@ final public class Constants {
     public static final String INSTANCE_SYM = "__instance";
     public static final String QUARKUS = "quarkus";
 
-    public static final String ANNOTATION_TEMPLATE = "io.quarkus.runtime.annotations.Template";
     public static final String ANNOTATION_RECORDER = "io.quarkus.runtime.annotations.Recorder";
     public static final String ANNOTATION_RECORD = "io.quarkus.deployment.annotations.Record";
 
@@ -64,7 +63,7 @@ final public class Constants {
     public static final String ANNOTATION_CONFIG_WITH_DEFAULT = "io.smallrye.config.WithDefault";
 
     public static final Set<String> SUPPORTED_ANNOTATIONS_TYPES = Set.of(ANNOTATION_BUILD_STEP, ANNOTATION_CONFIG_GROUP,
-            ANNOTATION_CONFIG_ROOT, ANNOTATION_TEMPLATE, ANNOTATION_RECORDER);
+            ANNOTATION_CONFIG_ROOT, ANNOTATION_RECORDER);
 
     public static final Map<String, String> ALIASED_TYPES = Map.of(
             OptionalLong.class.getName(), Long.class.getName(),

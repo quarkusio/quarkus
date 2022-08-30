@@ -15,6 +15,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.ext.WriterInterceptorContext;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 
@@ -25,6 +26,7 @@ public class ClientWriterInterceptorContextImpl extends AbstractClientIntercepto
     boolean done = false;
     private int index = 0;
     private OutputStream outputStream = baos;
+    private final RestClientRequestContext clientRequestContext;
     private final Serialisers serialisers;
     private final ConfigurationImpl configuration;
     // as the interceptors can change the type or mediaType, when that happens we need to find a new reader/writer
@@ -40,8 +42,9 @@ public class ClientWriterInterceptorContextImpl extends AbstractClientIntercepto
     public ClientWriterInterceptorContextImpl(WriterInterceptor[] writerInterceptors, MessageBodyWriter writer,
             Annotation[] annotations, Class<?> entityClass, Type entityType, Object entity,
             MediaType mediaType, MultivaluedMap<String, String> headers, Map<String, Object> properties,
-            Serialisers serialisers, ConfigurationImpl configuration) {
+            RestClientRequestContext clientRequestContext, Serialisers serialisers, ConfigurationImpl configuration) {
         super(annotations, entityClass, entityType, mediaType, properties);
+        this.clientRequestContext = clientRequestContext;
         this.interceptors = writerInterceptors;
         this.writer = writer;
         this.entity = entity;
@@ -63,6 +66,15 @@ public class ClientWriterInterceptorContextImpl extends AbstractClientIntercepto
                 }
                 effectiveWriter = newWriters.get(0);
             }
+
+            if (effectiveWriter instanceof ClientRestHandler) {
+                try {
+                    ((ClientRestHandler) effectiveWriter).handle(clientRequestContext);
+                } catch (Exception e) {
+                    throw new WebApplicationException("Can't inject the client request context", e);
+                }
+            }
+
             effectiveWriter.writeTo(entity, entityClass, entityType,
                     annotations, mediaType, headers, outputStream);
             outputStream.close();

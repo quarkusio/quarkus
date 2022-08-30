@@ -216,4 +216,8 @@ public final class StringUtil {
     public static String hyphenate(String orig) {
         return join("-", lowerCase(camelHumpsIterator(orig)));
     }
+
+    public static boolean isNullOrEmpty(String s) {
+        return s == null || s.isEmpty();
+    }
 }

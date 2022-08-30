@@ -9,7 +9,7 @@ import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestFi
 
 /**
  * Base class used by Quarkus to generate an implementation at build-time that calls
- * a {@code suspend} method annotated with {@code @ServerRequestFilter}
+ * a `suspend` method annotated with [org.jboss.resteasy.reactive.server.ServerRequestFilter](ServerRequestFilter)
  */
 @Suppress("unused")
 abstract class AbstractSuspendedRequestFilter : ResteasyReactiveContainerRequestFilter {

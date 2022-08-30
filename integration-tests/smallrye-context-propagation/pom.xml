@@ -62,6 +62,11 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>io.smallrye</groupId>
+            <artifactId>smallrye-context-propagation-propagators-rxjava2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-reactive-converter-rxjava2</artifactId>
             <scope>test</scope>

@@ -75,9 +75,9 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanTypeExclusion;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.builder.item.EmptyBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
@@ -88,7 +88,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
-import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
@@ -191,12 +190,12 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
-    @Produce(EmptyBuildItem.class)
-    void checkTransactionsSupport(Capabilities capabilities) {
+    void checkTransactionsSupport(Capabilities capabilities, BuildProducer<ValidationErrorBuildItem> validationErrors) {
         // JTA is necessary for blocking Hibernate ORM but not necessarily for Hibernate Reactive
         if (capabilities.isMissing(Capability.TRANSACTIONS)
                 && capabilities.isMissing(Capability.HIBERNATE_REACTIVE)) {
-            throw new ConfigurationException("The Hibernate ORM extension is only functional in a JTA environment.");
+            validationErrors.produce(new ValidationErrorBuildItem(
+                    new ConfigurationException("The Hibernate ORM extension is only functional in a JTA environment.")));
         }
     }
 
@@ -277,12 +276,19 @@ public final class HibernateOrmProcessor {
                         "database.generation");
                 if (!ConfigUtils.isAnyPropertyPresent(propertyKeysIndicatingDataSourceConfigured)
                         && !ConfigUtils.isPropertyPresent(databaseGenerationPropertyKey)) {
-                    String forcedValue = "drop-and-create";
                     devServicesAdditionalConfigProducer
-                            .produce(new DevServicesAdditionalConfigBuildItem(propertyKeysIndicatingDataSourceConfigured,
-                                    databaseGenerationPropertyKey, forcedValue,
-                                    () -> LOG.infof("Setting %s=%s to initialize Dev Services managed database",
-                                            databaseGenerationPropertyKey, forcedValue)));
+                            .produce(new DevServicesAdditionalConfigBuildItem(devServicesConfig -> {
+                                // Only force DB generation if the datasource is configured through dev services
+                                if (propertyKeysIndicatingDataSourceConfigured.stream()
+                                        .anyMatch(devServicesConfig::containsKey)) {
+                                    String forcedValue = "drop-and-create";
+                                    LOG.infof("Setting %s=%s to initialize Dev Services managed database",
+                                            databaseGenerationPropertyKey, forcedValue);
+                                    return Map.of(databaseGenerationPropertyKey, forcedValue);
+                                } else {
+                                    return Map.of();
+                                }
+                            }));
                 }
             }
         }

@@ -50,5 +50,9 @@ public final class NativeImageBuildItem extends SimpleBuildItem {
         public String getDistribution() {
             return distribution;
         }
+
+        public static GraalVMVersion unknown() {
+            return new GraalVMVersion("unknown", "unknown", -1, "unknown");
+        }
     }
 }

@@ -23,11 +23,12 @@ public class PerRequestInstanceHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
+        requestContext.requireCDIRequestScope();
         BeanFactory.BeanInstance<Object> instance = factory.createInstance();
         requestContext.setEndpointInstance(instance.getInstance());
         Object unwrapped = instance.getInstance();
         if (clientProxyUnwrapper != null) {
-            clientProxyUnwrapper.apply(instance);
+            unwrapped = clientProxyUnwrapper.apply(unwrapped);
         }
         ((ResteasyReactiveInjectionTarget) unwrapped)
                 .__quarkus_rest_inject(requestContext);

@@ -3,6 +3,7 @@ package io.quarkus.it.rest.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
@@ -19,6 +20,7 @@ import io.restassured.RestAssured;
 public class InjectMockTest {
 
     @InjectMock
+    @RestClient
     ClientWithExceptionMapper mock;
 
     @BeforeEach

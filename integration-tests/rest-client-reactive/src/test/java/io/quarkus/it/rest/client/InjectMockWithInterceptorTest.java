@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +23,7 @@ public class InjectMockWithInterceptorTest {
     CircuitBreakerMaintenance cb;
 
     @InjectMock
+    @RestClient
     FaultToleranceOnInterfaceClient mock;
 
     @BeforeEach

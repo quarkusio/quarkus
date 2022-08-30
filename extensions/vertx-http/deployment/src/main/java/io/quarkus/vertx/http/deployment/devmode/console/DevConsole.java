@@ -184,7 +184,10 @@ public class DevConsole implements Handler<RoutingContext> {
     }
 
     private void sendMainPage(RoutingContext event) {
-        Template devTemplate = engine.getTemplate("index");
+        final Template devTemplate = engine.getTemplate("index");
+        if (devTemplate == null) {
+            throw new RuntimeException("Failed to locate the `index` template");
+        }
         List<Map<String, Object>> actionableExtensions = new ArrayList<>();
         List<Map<String, Object>> nonActionableExtensions = new ArrayList<>();
         for (Entry<String, Map<String, Object>> entry : this.extensions.entrySet()) {

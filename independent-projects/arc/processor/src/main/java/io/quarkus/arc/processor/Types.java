@@ -5,6 +5,7 @@ import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import io.quarkus.arc.impl.GenericArrayTypeImpl;
 import io.quarkus.arc.impl.ParameterizedTypeImpl;
 import io.quarkus.arc.impl.TypeVariableImpl;
+import io.quarkus.arc.impl.TypeVariableReferenceImpl;
 import io.quarkus.arc.impl.WildcardTypeImpl;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
@@ -12,10 +13,12 @@ import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -80,12 +83,35 @@ public final class Types {
 
     public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type, ResultHandle tccl) {
         AssignableResultHandle result = creator.createVariable(Object.class);
-        getTypeHandle(result, creator, type, tccl, null);
+        getTypeHandle(result, creator, type, tccl, null, new ArrayDeque<>());
         return result;
+    }
+
+    private static class TypeVariableInfo {
+        final String name;
+        ResultHandle handle;
+
+        TypeVariableInfo(String name) {
+            this.name = name;
+        }
+
+        static TypeVariableInfo find(String name, Deque<TypeVariableInfo> typeVariableStack) {
+            for (TypeVariableInfo typeVariableInfo : typeVariableStack) {
+                if (typeVariableInfo.name.equals(name)) {
+                    return typeVariableInfo;
+                }
+            }
+            return null;
+        }
     }
 
     static void getTypeHandle(AssignableResultHandle variable, BytecodeCreator creator, Type type, ResultHandle tccl,
             TypeCache cache) {
+        getTypeHandle(variable, creator, type, tccl, cache, new ArrayDeque<>());
+    }
+
+    private static void getTypeHandle(AssignableResultHandle variable, BytecodeCreator creator, Type type,
+            ResultHandle tccl, TypeCache cache, Deque<TypeVariableInfo> typeVariableStack) {
         if (cache != null) {
             ResultHandle cachedType = cache.get(type, creator);
             BranchResult cachedNull = creator.ifNull(cachedType);
@@ -102,6 +128,7 @@ public final class Types {
         } else if (Kind.TYPE_VARIABLE.equals(type.kind())) {
             // E.g. T -> new TypeVariableImpl("T")
             TypeVariable typeVariable = type.asTypeVariable();
+            typeVariableStack.push(new TypeVariableInfo(typeVariable.identifier()));
             ResultHandle boundsHandle;
             List<Type> bounds = typeVariable.bounds();
             if (bounds.isEmpty()) {
@@ -110,7 +137,7 @@ public final class Types {
                 boundsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(bounds.size()));
                 for (int i = 0; i < bounds.size(); i++) {
                     AssignableResultHandle boundHandle = creator.createVariable(Object.class);
-                    getTypeHandle(boundHandle, creator, bounds.get(i), tccl, cache);
+                    getTypeHandle(boundHandle, creator, bounds.get(i), tccl, cache, typeVariableStack);
                     creator.writeArrayValue(boundsHandle, i, boundHandle);
                 }
             }
@@ -122,15 +149,21 @@ public final class Types {
             }
             creator.assign(variable, typeVariableHandle);
 
+            TypeVariableInfo recursive = typeVariableStack.pop();
+            if (recursive.handle != null) {
+                creator.invokeVirtualMethod(MethodDescriptor.ofMethod(TypeVariableReferenceImpl.class, "setDelegate",
+                        void.class, TypeVariableImpl.class), recursive.handle, typeVariableHandle);
+            }
+
         } else if (Kind.PARAMETERIZED_TYPE.equals(type.kind())) {
             // E.g. List<String> -> new ParameterizedTypeImpl(List.class, String.class)
-            getParameterizedType(variable, creator, tccl, type.asParameterizedType(), cache);
+            getParameterizedType(variable, creator, tccl, type.asParameterizedType(), cache, typeVariableStack);
 
         } else if (Kind.ARRAY.equals(type.kind())) {
             Type componentType = type.asArrayType().component();
             // E.g. String[] -> new GenericArrayTypeImpl(String.class)
             AssignableResultHandle componentTypeHandle = creator.createVariable(Object.class);
-            getTypeHandle(componentTypeHandle, creator, componentType, tccl, cache);
+            getTypeHandle(componentTypeHandle, creator, componentType, tccl, cache, typeVariableStack);
             ResultHandle arrayHandle = creator.newInstance(
                     MethodDescriptor.ofConstructor(GenericArrayTypeImpl.class, java.lang.reflect.Type.class),
                     componentTypeHandle);
@@ -145,14 +178,14 @@ public final class Types {
             ResultHandle wildcardHandle;
             if (wildcardType.superBound() == null) {
                 AssignableResultHandle extendsBoundHandle = creator.createVariable(Object.class);
-                getTypeHandle(extendsBoundHandle, creator, wildcardType.extendsBound(), tccl, cache);
+                getTypeHandle(extendsBoundHandle, creator, wildcardType.extendsBound(), tccl, cache, typeVariableStack);
                 wildcardHandle = creator.invokeStaticMethod(
                         MethodDescriptor.ofMethod(WildcardTypeImpl.class, "withUpperBound",
                                 java.lang.reflect.WildcardType.class, java.lang.reflect.Type.class),
                         extendsBoundHandle);
             } else {
                 AssignableResultHandle superBoundHandle = creator.createVariable(Object.class);
-                getTypeHandle(superBoundHandle, creator, wildcardType.superBound(), tccl, cache);
+                getTypeHandle(superBoundHandle, creator, wildcardType.superBound(), tccl, cache, typeVariableStack);
                 wildcardHandle = creator.invokeStaticMethod(
                         MethodDescriptor.ofMethod(WildcardTypeImpl.class, "withLowerBound",
                                 java.lang.reflect.WildcardType.class, java.lang.reflect.Type.class),
@@ -191,18 +224,31 @@ public final class Types {
                 default:
                     throw new IllegalArgumentException("Unsupported primitive type: " + type);
             }
+        } else if (Kind.UNRESOLVED_TYPE_VARIABLE.equals(type.kind())) {
+            String identifier = type.asUnresolvedTypeVariable().identifier();
+            TypeVariableInfo recursive = TypeVariableInfo.find(identifier, typeVariableStack);
+            if (recursive != null) {
+                ResultHandle typeVariableHandle = creator.newInstance(
+                        MethodDescriptor.ofConstructor(TypeVariableReferenceImpl.class, String.class),
+                        creator.load(identifier));
+                creator.assign(variable, typeVariableHandle);
+                recursive.handle = typeVariableHandle;
+                return;
+            }
+
+            throw new IllegalArgumentException("Can't resolve type variable: " + type);
         } else {
             throw new IllegalArgumentException("Unsupported bean type: " + type.kind() + ", " + type);
         }
     }
 
-    static void getParameterizedType(AssignableResultHandle variable, BytecodeCreator creator, ResultHandle tccl,
-            ParameterizedType parameterizedType, TypeCache cache) {
+    private static void getParameterizedType(AssignableResultHandle variable, BytecodeCreator creator, ResultHandle tccl,
+            ParameterizedType parameterizedType, TypeCache cache, Deque<TypeVariableInfo> typeVariableStack) {
         List<Type> arguments = parameterizedType.arguments();
         ResultHandle typeArgsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(arguments.size()));
         for (int i = 0; i < arguments.size(); i++) {
             AssignableResultHandle argumentHandle = creator.createVariable(Object.class);
-            getTypeHandle(argumentHandle, creator, arguments.get(i), tccl, cache);
+            getTypeHandle(argumentHandle, creator, arguments.get(i), tccl, cache, typeVariableStack);
             creator.writeArrayValue(typeArgsHandle, i, argumentHandle);
         }
         Type rawType = Type.create(parameterizedType.name(), Kind.CLASS);
@@ -228,13 +274,13 @@ public final class Types {
 
     public static void getParameterizedType(AssignableResultHandle variable, BytecodeCreator creator, ResultHandle tccl,
             ParameterizedType parameterizedType) {
-        getParameterizedType(variable, creator, tccl, parameterizedType, null);
+        getParameterizedType(variable, creator, tccl, parameterizedType, null, new ArrayDeque<>());
     }
 
     public static ResultHandle getParameterizedType(BytecodeCreator creator, ResultHandle tccl,
             ParameterizedType parameterizedType) {
         AssignableResultHandle result = creator.createVariable(Object.class);
-        getParameterizedType(result, creator, tccl, parameterizedType, null);
+        getParameterizedType(result, creator, tccl, parameterizedType, null, new ArrayDeque<>());
         return result;
     }
 

@@ -72,6 +72,16 @@ public class ArcCDIProvider implements CDIProvider {
         }
 
         @Override
+        public Handle<Object> getHandle() {
+            return this.instanceDelegate.getHandle();
+        }
+
+        @Override
+        public Iterable<? extends Handle<Object>> handles() {
+            return this.instanceDelegate.handles();
+        }
+
+        @Override
         public Iterator<Object> iterator() {
             return instanceDelegate.iterator();
         }

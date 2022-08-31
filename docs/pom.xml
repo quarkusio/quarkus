@@ -2882,6 +2882,7 @@
                         <grpc-version>${grpc.version}</grpc-version>
                         <protoc-version>${protoc.version}</protoc-version>
                         <elasticsearch-version>${elasticsearch-server.version}</elasticsearch-version>
+                        <gcf-invoker-version>${gcf-invoker.version}</gcf-invoker-version>
 
                         <!-- Project website home page -->
                         <quarkus-home-url>${quarkus-home-url}</quarkus-home-url>

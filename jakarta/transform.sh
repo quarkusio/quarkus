@@ -310,6 +310,41 @@ git checkout -- integration-tests/gradle/gradle/wrapper/gradle-wrapper.jar
 git checkout -- independent-projects/tools/base-codestarts/src/main/resources/codestarts/quarkus/tooling/gradle-wrapper/base/gradle/wrapper/gradle-wrapper.jar
 git checkout -- extensions/kubernetes-service-binding/runtime/src/test/resources/k8s/test-k8s/
 
+# Format source code (cannot use mvn process-sources unfortunately)
+./mvnw -B -pl :quarkus-bootstrap-maven-plugin -pl :quarkus-extension-maven-plugin -pl :quarkus-enforcer-rules -pl :quarkus-maven-plugin -pl :quarkus-bom-test -am clean install -DskipTests -DskipITs -Dinvoker.skip
+
+./mvnw -f independent-projects/arc formatter:format impsort:sort
+./mvnw -f independent-projects/bootstrap formatter:format impsort:sort
+./mvnw -f independent-projects/enforcer-rules formatter:format impsort:sort
+./mvnw -f independent-projects/extension-maven-plugin formatter:format impsort:sort
+./mvnw -f independent-projects/qute formatter:format impsort:sort
+./mvnw -f independent-projects/resteasy-reactive formatter:format impsort:sort
+./mvnw -f independent-projects/tools formatter:format impsort:sort
+
+./mvnw -f core formatter:format impsort:sort
+./mvnw -f extensions formatter:format impsort:sort
+./mvnw -f coverage-report formatter:format impsort:sort
+./mvnw -f devtools formatter:format impsort:sort
+./mvnw -f tcks formatter:format impsort:sort
+./mvnw -f docs formatter:format impsort:sort
+./mvnw -f integration-tests formatter:format impsort:sort
+./mvnw -f test-framework formatter:format impsort:sort
+
+# Disable non-compilable ITs
+# - Confluent registry client doesn't have a version supporting Jakarta packages
+sed -i 's@<module>kafka-avro</module>@<!-- <module>kafka-avro</module> -->@g' integration-tests/pom.xml
+
+# Commit what we have before cherry-picking stuff
+git add .
+git commit -m 'Transform sources to Jakarta'
+
+# Apply EE 10 updates
+
+## CDI/ArC
+git fetch origin jakarta-10-cdi
+JAKARTA_10_CDI_HASH=$(git rev-parse origin/jakarta-10-cdi)
+git cherry-pick -x ${JAKARTA_10_CDI_HASH}
+
 # Build phase
 
 if [ "${REWRITE_TESTS_CONTAINERS-false}" == "true" ]; then
@@ -319,11 +354,6 @@ elif [ "${REWRITE_NO_TESTS-false}" != "true" ]; then
 else
   ./mvnw -B clean install -Dno-test-modules -DskipTests -DskipITs
 fi
-
-# Disable non-compilable ITs
-# - Infinispan uses the @javax.annotation.Generated annotation in code generation and it's not available
-# - Confluent registry client doesn't have a version supporting Jakarta packages
-sed -i 's@<module>kafka-avro</module>@<!-- <module>kafka-avro</module> -->@g' integration-tests/pom.xml
 
 ./mvnw -B clean install -f integration-tests -DskipTests -DskipITs
 ./mvnw -B clean install -f tcks -DskipTests -DskipITs

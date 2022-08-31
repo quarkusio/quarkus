@@ -28,10 +28,10 @@ recipeList:
   # Annotation
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jakarta-annotation
-      newValue: 2.0.0
+      newValue: 2.1.1
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.annotation-api.version
-      newValue: 2.0.0
+      newValue: 2.1.1
   # EL
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.glassfish
@@ -57,10 +57,10 @@ recipeList:
   # CDI
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.cdi
-      newValue: 3.0.0
+      newValue: 4.0.1
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.enterprise.cdi-api.version
-      newValue: 3.0.0
+      newValue: 4.0.1
   # Inject
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.inject-api.version
@@ -145,10 +145,10 @@ recipeList:
   # Transaction
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jta
-      newValue: 2.0.0
+      newValue: 2.0.1
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.transaction-api.version
-      newValue: 2.0.0
+      newValue: 2.0.1
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.jboss.narayana.jta
       oldArtifactId: narayana-jta

@@ -52,7 +52,7 @@ recipeList:
       version: "${jakarta.el-api.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.el-api.version
-      newValue: 5.0.0
+      newValue: 5.0.1
       addIfMissing: true
   # CDI
   - org.openrewrite.maven.ChangePropertyValue:
@@ -64,11 +64,11 @@ recipeList:
   # Inject
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.inject-api.version
-      newValue: 2.0.0
+      newValue: 2.0.1
   # Interceptor
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.interceptor-api.version
-      newValue: 2.0.0
+      newValue: 2.1.0
   # JAX-RS - See below for the specs
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy.version
@@ -136,6 +136,7 @@ recipeList:
       key: quarkus-security.version
       newValue: 2.0.0.Alpha1
   # Servlet
+  # TODO EE 10 6.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.servlet-api.version
       newValue: 5.0.0
@@ -170,6 +171,7 @@ recipeList:
       key: hibernate-validator.version
       newValue: 8.0.0.CR3
   # Websockets
+  # TODO EE 10 2.1.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.websocket-api.version
       newValue: 2.0.0
@@ -183,7 +185,7 @@ recipeList:
   # WildFly Security
   - org.openrewrite.maven.ChangePropertyValue:
       key: wildfly-elytron.version
-      newValue: 2.0.0.Beta1
+      newValue: 2.0.0.Beta3
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-jaxrs-jaxb
@@ -343,10 +345,12 @@ recipeList:
       groupId: jakarta.authentication
       artifactId: jakarta.authentication-api
       version: "${jakarta.authentication-api}"
+  # TODO EE 10 2.1.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.authorization-api.version
       newValue: 2.0.0
       addIfMissing: true
+  # TODO EE 10 3.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.authentication-api
       newValue: 2.0.0

@@ -382,6 +382,7 @@ These are normal Quarkus config properties, so if you always want to build in a 
 it is recommended you add these to your `application.properties` in order to avoid specifying them every time.
 ====
 
+[#tip-quarkus-native-remote-container-build]
 [TIP]
 ====
 If you see the following invalid path error for your application JAR when trying to create a native executable using a container build, even though your JAR was built successfully, you're most likely using a remote daemon for your container runtime.
@@ -424,6 +425,14 @@ If one of those extensions is present, then creating a container image for the n
 ----
 
 * `quarkus.native.container-build=true` allows for creating a Linux executable without GraalVM being installed (and is only necessary if you don't have GraalVM installed locally or your local operating system is not Linux)
+
+[NOTE]
+====
+If you're running a remote Docker daemon, you need to replace `quarkus.native.container-build=true` with `quarkus.native.remote-container-build=true`.
+
+See <<tip-quarkus-native-remote-container-build, Creating a Linux executable without GraalVM installed>> for more details.
+====
+
 * `quarkus.container-image.build=true` instructs Quarkus to create a container-image using the final application artifact (which is the native executable in this case)
 
 See the xref:container-image.adoc[Container Image guide] for more details.

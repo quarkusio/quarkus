@@ -425,7 +425,7 @@ public class JarResultBuildStep {
      */
     private static boolean includeAppDep(ResolvedDependency appDep, Optional<Set<ArtifactKey>> optionalDependencies,
             Set<ArtifactKey> removedArtifacts) {
-        if (!"jar".equals(appDep.getType())) {
+        if (!appDep.isJar()) {
             return false;
         }
         if (appDep.isOptional()) {
@@ -577,7 +577,6 @@ public class JarResultBuildStep {
         } else {
             IoUtils.createOrEmptyDir(quarkus);
         }
-        Map<ArtifactKey, List<Path>> copiedArtifacts = new HashMap<>();
 
         Path decompiledOutputDir = null;
         boolean wasDecompiledSuccessfully = true;
@@ -672,14 +671,15 @@ public class JarResultBuildStep {
             }
         }
         final Set<ArtifactKey> parentFirstKeys = getParentFirstKeys(curateOutcomeBuildItem, classLoadingConfig);
-        StringBuilder classPath = new StringBuilder();
+        final StringBuilder classPath = new StringBuilder();
         final Set<ArtifactKey> removed = getRemovedKeys(classLoadingConfig);
+        final Map<ArtifactKey, List<Path>> copiedArtifacts = new HashMap<>();
         for (ResolvedDependency appDep : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
-            if (rebuild) {
-                appDep.getResolvedPaths().forEach(jars::add);
-            } else {
+            if (!rebuild) {
                 copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, mainLib, baseLib, jars, true,
                         classPath, appDep, transformedClasses, removed);
+            } else if (includeAppDep(appDep, outputTargetBuildItem.getIncludedOptionalDependencies(), removed)) {
+                appDep.getResolvedPaths().forEach(jars::add);
             }
             if (parentFirstKeys.contains(appDep.getKey())) {
                 appDep.getResolvedPaths().forEach(parentFirst::add);
@@ -745,15 +745,13 @@ public class JarResultBuildStep {
 
             //now copy the deployment artifacts, if required
             if (mutableJar) {
-
                 Path deploymentLib = libDir.resolve(DEPLOYMENT_LIB);
                 Files.createDirectories(deploymentLib);
                 for (ResolvedDependency appDep : curateOutcomeBuildItem.getApplicationModel().getDependencies()) {
                     copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, deploymentLib, baseLib, jars,
                             false, classPath,
-                            appDep, new TransformedClassesBuildItem(Collections.emptyMap()), removed); //we don't care about transformation here, so just pass in an empty item
+                            appDep, new TransformedClassesBuildItem(Map.of()), removed); //we don't care about transformation here, so just pass in an empty item
                 }
-
                 Map<ArtifactKey, List<String>> relativePaths = new HashMap<>();
                 for (Map.Entry<ArtifactKey, List<Path>> e : copiedArtifacts.entrySet()) {
                     relativePaths.put(e.getKey(),
@@ -804,7 +802,6 @@ public class JarResultBuildStep {
             }
         } else {
             //if it is a rebuild we might have classes
-
         }
         try (Stream<Path> files = Files.walk(buildDir)) {
             files.forEach(new Consumer<Path>() {

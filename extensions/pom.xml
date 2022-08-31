@@ -136,6 +136,7 @@
         <module>oidc-token-propagation</module>
         <module>oidc-token-propagation-reactive</module>
         <module>keycloak-authorization</module>
+        <module>keycloak-admin-client-common</module>
         <module>keycloak-admin-client</module>
         <module>keycloak-admin-client-reactive</module>
         <module>credentials</module>

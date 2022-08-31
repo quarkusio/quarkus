@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -11,7 +12,6 @@ import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -25,13 +25,14 @@ public class AdminClientResource {
     @ConfigProperty(name = "admin-url")
     String url;
 
+    @Inject
+    Keycloak keycloak;
+
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("realm")
     public RealmRepresentation getRealm() {
-        try (Keycloak keycloak = keycloak()) {
-            return keycloak.realm("quarkus").toRepresentation();
-        }
+        return keycloak.realm("quarkus").toRepresentation();
     }
 
     @GET
@@ -42,28 +43,8 @@ public class AdminClientResource {
 
         newRealm.getClients().add(createClient("quarkus-app2"));
         newRealm.getUsers().add(createUser("alice", "user"));
-
-        try (Keycloak keycloak = keycloak()) {
-            keycloak.realms().create(newRealm);
-        }
-
-        try (Keycloak keycloak = keycloak()) {
-            return keycloak.realm("quarkus2").toRepresentation();
-        }
-    }
-
-    private Keycloak keycloak() {
-        try {
-            return KeycloakBuilder.builder()
-                    .serverUrl(url)
-                    .realm("master")
-                    .clientId("admin-cli")
-                    .username("admin")
-                    .password("admin")
-                    .build();
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
+        keycloak.realms().create(newRealm);
+        return keycloak.realm("quarkus2").toRepresentation();
     }
 
     private static RealmRepresentation createRealm(String name) {

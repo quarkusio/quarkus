@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -282,28 +283,23 @@ public class ApplicationDependencyTreeResolver {
                 @Override
                 public DependencyNode transformGraph(DependencyNode node, DependencyGraphTransformationContext context)
                         throws RepositoryException {
-                    final Set<ArtifactKey> visited = new HashSet<>();
+                    final Map<DependencyNode, DependencyNode> visited = new IdentityHashMap<>();
                     for (DependencyNode c : node.getChildren()) {
                         walk(c, visited);
                     }
                     return resolver.getSession().getDependencyGraphTransformer().transformGraph(node, context);
                 }
 
-                private void walk(DependencyNode node, Set<ArtifactKey> visited) {
-                    if (node.getChildren().isEmpty()) {
+                private void walk(DependencyNode node, Map<DependencyNode, DependencyNode> visited) {
+                    if (visited.put(node, node) != null || node.getChildren().isEmpty()) {
                         return;
                     }
                     final Set<ArtifactKey> deps = artifactDeps
                             .computeIfAbsent(DependencyUtils.getCoords(node.getArtifact()),
                                     k -> new HashSet<>(node.getChildren().size()));
                     for (DependencyNode c : node.getChildren()) {
-                        final ArtifactKey key = getKey(c.getArtifact());
-                        if (!visited.add(key)) {
-                            continue;
-                        }
-                        deps.add(key);
+                        deps.add(getKey(c.getArtifact()));
                         walk(c, visited);
-                        visited.remove(key);
                     }
                 }
             });

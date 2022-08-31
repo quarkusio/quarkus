@@ -17,12 +17,12 @@ public class StereotypeInfo {
     private final ClassInfo target;
     // allows to differentiate between standard stereotype and one that is in fact additional bean defining annotation
     private final boolean isAdditionalBeanDefiningAnnotation;
-    // allows to differentiate between standard stereotype and one that was added through an AdditionalStereotypeBuildItem
-    private final boolean isAdditionalStereotypeBuildItem;
+    // allows to differentiate between standard stereotype and one that was added through StereotypeRegistrarBuildItem
+    private final boolean isAdditionalStereotype;
 
     public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
             Integer alternativePriority,
-            boolean isNamed, boolean isAdditionalBeanDefiningAnnotation, boolean isAdditionalStereotypeBuildItem,
+            boolean isNamed, boolean isAdditionalBeanDefiningAnnotation, boolean isAdditionalStereotype,
             ClassInfo target, boolean isInherited, List<AnnotationInstance> parentStereotypes) {
         this.defaultScope = defaultScope;
         this.interceptorBindings = interceptorBindings;
@@ -31,7 +31,7 @@ public class StereotypeInfo {
         this.isNamed = isNamed;
         this.target = target;
         this.isAdditionalBeanDefiningAnnotation = isAdditionalBeanDefiningAnnotation;
-        this.isAdditionalStereotypeBuildItem = isAdditionalStereotypeBuildItem;
+        this.isAdditionalStereotype = isAdditionalStereotype;
         this.isInherited = isInherited;
         this.parentStereotypes = parentStereotypes;
     }
@@ -79,12 +79,21 @@ public class StereotypeInfo {
         return isAdditionalBeanDefiningAnnotation;
     }
 
+    /**
+     * @deprecated use {@link #isAdditionalStereotype()};
+     *             this method will be removed at some time after Quarkus 3.0
+     */
+    @Deprecated
     public boolean isAdditionalStereotypeBuildItem() {
-        return isAdditionalStereotypeBuildItem;
+        return isAdditionalStereotype;
+    }
+
+    public boolean isAdditionalStereotype() {
+        return isAdditionalStereotype;
     }
 
     public boolean isGenuine() {
-        return !isAdditionalBeanDefiningAnnotation && !isAdditionalStereotypeBuildItem;
+        return !isAdditionalBeanDefiningAnnotation && !isAdditionalStereotype;
     }
 
     public List<AnnotationInstance> getParentStereotypes() {

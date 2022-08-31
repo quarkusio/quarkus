@@ -440,7 +440,6 @@ public class BeanProcessor {
         IndexView beanArchiveIndex;
         IndexView applicationIndex;
         Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations;
-        Map<DotName, Collection<AnnotationInstance>> additionalStereotypes;
         ResourceOutput output;
         ReflectionRegistration reflectionRegistration;
 
@@ -453,6 +452,7 @@ public class BeanProcessor {
         final List<ContextRegistrar> contextRegistrars;
         final List<QualifierRegistrar> qualifierRegistrars;
         final List<InterceptorBindingRegistrar> interceptorBindingRegistrars;
+        final List<StereotypeRegistrar> stereotypeRegistrars;
         final List<BeanDeploymentValidator> beanDeploymentValidators;
         final List<Function<BeanInfo, Consumer<BytecodeCreator>>> suppressConditionGenerators;
 
@@ -473,7 +473,6 @@ public class BeanProcessor {
         public Builder() {
             name = DEFAULT_NAME;
             additionalBeanDefiningAnnotations = Collections.emptySet();
-            additionalStereotypes = Collections.emptyMap();
             reflectionRegistration = ReflectionRegistration.NOOP;
             resourceAnnotations = new ArrayList<>();
             annotationTransformers = new ArrayList<>();
@@ -484,6 +483,7 @@ public class BeanProcessor {
             contextRegistrars = new ArrayList<>();
             qualifierRegistrars = new ArrayList<>();
             interceptorBindingRegistrars = new ArrayList<>();
+            stereotypeRegistrars = new ArrayList<>();
             beanDeploymentValidators = new ArrayList<>();
             suppressConditionGenerators = new ArrayList<>();
 
@@ -538,9 +538,23 @@ public class BeanProcessor {
             return this;
         }
 
+        /**
+         * @deprecated use {@link #addStereotypeRegistrar(StereotypeRegistrar)};
+         *             this method will be removed at some time after Quarkus 3.0
+         */
+        @Deprecated
         public Builder setAdditionalStereotypes(Map<DotName, Collection<AnnotationInstance>> additionalStereotypes) {
             Objects.requireNonNull(additionalStereotypes);
-            this.additionalStereotypes = additionalStereotypes;
+            this.stereotypeRegistrars.add(new StereotypeRegistrar() {
+                @Override
+                public Set<DotName> getAdditionalStereotypes() {
+                    return additionalStereotypes.values()
+                            .stream()
+                            .flatMap(Collection::stream)
+                            .map(AnnotationInstance::name)
+                            .collect(Collectors.toSet());
+                }
+            });
             return this;
         }
 
@@ -551,6 +565,11 @@ public class BeanProcessor {
 
         public Builder addInterceptorBindingRegistrar(InterceptorBindingRegistrar bindingRegistrar) {
             this.interceptorBindingRegistrars.add(bindingRegistrar);
+            return this;
+        }
+
+        public Builder addStereotypeRegistrar(StereotypeRegistrar stereotypeRegistrar) {
+            this.stereotypeRegistrars.add(stereotypeRegistrar);
             return this;
         }
 

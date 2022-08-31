@@ -175,8 +175,13 @@ public class BeanDeployment {
         repeatingInterceptorBindingAnnotations = findContainerAnnotations(interceptorBindings, this.beanArchiveIndex);
         buildContextPut(Key.INTERCEPTOR_BINDINGS.asString(), Collections.unmodifiableMap(interceptorBindings));
 
+        Set<DotName> additionalStereotypes = new HashSet<>();
+        for (StereotypeRegistrar stereotypeRegistrar : builder.stereotypeRegistrars) {
+            additionalStereotypes.addAll(stereotypeRegistrar.getAdditionalStereotypes());
+        }
+
         this.stereotypes = findStereotypes(this.beanArchiveIndex, interceptorBindings, beanDefiningAnnotations, customContexts,
-                builder.additionalStereotypes, annotationStore);
+                additionalStereotypes, annotationStore);
         buildContextPut(Key.STEREOTYPES.asString(), Collections.unmodifiableMap(stereotypes));
 
         this.transitiveInterceptorBindings = findTransitiveInterceptorBindings(interceptorBindings.keySet(),
@@ -735,19 +740,17 @@ public class BeanDeployment {
     private Map<DotName, StereotypeInfo> findStereotypes(IndexView index, Map<DotName, ClassInfo> interceptorBindings,
             Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts,
-            Map<DotName, Collection<AnnotationInstance>> additionalStereotypes, AnnotationStore annotationStore) {
+            Set<DotName> additionalStereotypes, AnnotationStore annotationStore) {
 
         Map<DotName, StereotypeInfo> stereotypes = new HashMap<>();
-        final List<AnnotationInstance> stereotypeAnnotations = new ArrayList<>(index.getAnnotations(DotNames.STEREOTYPE));
-        for (final Collection<AnnotationInstance> annotations : additionalStereotypes.values()) {
-            stereotypeAnnotations.addAll(annotations);
-        }
+
         Set<DotName> stereotypeNames = new HashSet<>();
-        for (AnnotationInstance stereotype : stereotypeAnnotations) {
-            stereotypeNames.add(stereotype.target().asClass().name());
+        for (AnnotationInstance annotation : index.getAnnotations(DotNames.STEREOTYPE)) {
+            stereotypeNames.add(annotation.target().asClass().name());
         }
-        for (AnnotationInstance stereotype : stereotypeAnnotations) {
-            final DotName stereotypeName = stereotype.target().asClass().name();
+        stereotypeNames.addAll(additionalStereotypes);
+
+        for (DotName stereotypeName : stereotypeNames) {
             ClassInfo stereotypeClass = getClassByName(index, stereotypeName);
             if (stereotypeClass != null && !isExcluded(stereotypeClass)) {
 
@@ -775,6 +778,11 @@ public class BeanDeployment {
                         isNamed = true;
                     } else if (DotNames.PRIORITY.equals(annotation.name())) {
                         alternativePriority = annotation.value().asInt();
+                    } else if (DotNames.ARC_PRIORITY.equals(annotation.name()) && alternativePriority == null) {
+                        alternativePriority = annotation.value().asInt();
+                    } else if (DotNames.ALTERNATIVE_PRIORITY.equals(annotation.name())) {
+                        isAlternative = true;
+                        alternativePriority = annotation.value().asInt();
                     } else {
                         final ScopeInfo scope = getScope(annotation.name(), customContexts);
                         if (scope != null) {
@@ -782,11 +790,11 @@ public class BeanDeployment {
                         }
                     }
                 }
-                boolean isAdditionalStereotypeBuildItem = additionalStereotypes.containsKey(stereotypeName);
+                boolean isAdditionalStereotype = additionalStereotypes.contains(stereotypeName);
                 final ScopeInfo scope = getValidScope(scopes, stereotypeClass);
                 boolean isInherited = stereotypeClass.classAnnotation(DotNames.INHERITED) != null;
                 stereotypes.put(stereotypeName, new StereotypeInfo(scope, bindings, isAlternative, alternativePriority,
-                        isNamed, false, isAdditionalStereotypeBuildItem, stereotypeClass, isInherited, parentStereotypes));
+                        isNamed, false, isAdditionalStereotype, stereotypeClass, isInherited, parentStereotypes));
             }
         }
         //if an additional bean defining annotation has a default scope we register it as a stereotype

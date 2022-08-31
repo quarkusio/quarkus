@@ -27,21 +27,22 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 
-import io.quarkus.arc.deployment.AdditionalStereotypeBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.StereotypeRegistrarBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.StereotypeRegistrar;
 import io.quarkus.arc.processor.Transformation;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 
-/*
- * A simple processor that maps annotations Spring DI annotation to CDI annotation
+/**
+ * A simple processor that maps Spring DI annotations to CDI annotations.
  * Arc's handling of annotation mapping (by creating an extra abstraction layer on top of the Jandex index)
- * suits this sort of handling perfectly
+ * suits this sort of handling perfectly.
  */
 public class SpringDIProcessor {
 
@@ -50,11 +51,10 @@ public class SpringDIProcessor {
     static final DotName SPRING_COMPONENT = DotName.createSimple("org.springframework.stereotype.Component");
     static final DotName SPRING_SERVICE = DotName.createSimple("org.springframework.stereotype.Service");
     static final DotName SPRING_REPOSITORY = DotName.createSimple("org.springframework.stereotype.Repository");
-    private static final Set<DotName> SPRING_STEREOTYPE_ANNOTATIONS = Arrays.stream(new DotName[] {
+    private static final Set<DotName> SPRING_STEREOTYPE_ANNOTATIONS = Set.of(
             SPRING_COMPONENT,
             SPRING_SERVICE,
-            SPRING_REPOSITORY,
-    }).collect(Collectors.toSet());
+            SPRING_REPOSITORY);
 
     private static final DotName CONFIGURATION_ANNOTATION = DotName
             .createSimple("org.springframework.context.annotation.Configuration");
@@ -120,18 +120,24 @@ public class SpringDIProcessor {
     @BuildStep
     AnnotationsTransformerBuildItem beanTransformer(
             final BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            final BuildProducer<AdditionalStereotypeBuildItem> additionalStereotypeBuildItemBuildProducer) {
+            final BuildProducer<StereotypeRegistrarBuildItem> stereotypeRegistrarProducer) {
         final IndexView index = beanArchiveIndexBuildItem.getIndex();
         final Map<DotName, Set<DotName>> stereotypeScopes = getStereotypeScopes(index);
-        final Map<DotName, Collection<AnnotationInstance>> instances = new HashMap<>();
+        final Set<DotName> stereotypeAnnotations = new HashSet<>();
         for (final DotName name : stereotypeScopes.keySet()) {
-            instances.put(name, index.getAnnotations(name)
+            stereotypeAnnotations.addAll(index.getAnnotations(name)
                     .stream()
                     .filter(it -> it.target().kind() == AnnotationTarget.Kind.CLASS
                             && it.target().asClass().isAnnotation())
+                    .map(AnnotationInstance::name)
                     .collect(Collectors.toSet()));
         }
-        additionalStereotypeBuildItemBuildProducer.produce(new AdditionalStereotypeBuildItem(instances));
+        stereotypeRegistrarProducer.produce(new StereotypeRegistrarBuildItem(new StereotypeRegistrar() {
+            @Override
+            public Set<DotName> getAdditionalStereotypes() {
+                return stereotypeAnnotations;
+            }
+        }));
         return new AnnotationsTransformerBuildItem(context -> {
             final Collection<AnnotationInstance> annotations = context.getAnnotations();
             if (annotations.isEmpty()) {

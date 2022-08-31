@@ -34,25 +34,23 @@ public abstract class AbstractNamespaceCreatingTestResource extends AbstractName
         final var client = client();
 
         boolean deleted = false;
-        if (createdNamespace) {
-            // check if we need to preserve the namespace
-            if (!preserveNamespaceOnError || !context.getTestStatus().isTestFailed()) {
-                final var namespace = namespace();
-                logger().info("Deleting namespace '{}'", namespace);
-                try {
-                    deleted = client.namespaces().withName(namespace).delete();
-                } catch (Exception e) {
-                    logger().warn("Couldn't delete namespace '" + namespace + "'", e);
-                }
+        // we preserve the namespace only if it was requested and the test failed
+        if (createdNamespace && !(preserveNamespaceOnError && context.getTestStatus().isTestFailed())) {
+            final var namespace = namespace();
+            logger().info("Deleting namespace '{}'", namespace);
+            try {
+                deleted = client.namespaces().withName(namespace).delete();
+            } catch (Exception e) {
+                logger().warn("Couldn't delete namespace '" + namespace + "'", e);
+            }
 
-                if (deleted) {
-                    if (secondsToWaitForNamespaceDeletion > 0) {
-                        logger().info("Waiting for namespace '{}' to be deleted", namespace);
-                        Awaitility.await("namespace deleted")
-                                .pollInterval(50, TimeUnit.MILLISECONDS)
-                                .atMost(secondsToWaitForNamespaceDeletion, TimeUnit.SECONDS)
-                                .until(() -> client.namespaces().withName(namespace).get() == null);
-                    }
+            if (deleted) {
+                if (secondsToWaitForNamespaceDeletion > 0) {
+                    logger().info("Waiting for namespace '{}' to be deleted", namespace);
+                    Awaitility.await("namespace deleted")
+                            .pollInterval(50, TimeUnit.MILLISECONDS)
+                            .atMost(secondsToWaitForNamespaceDeletion, TimeUnit.SECONDS)
+                            .until(() -> client.namespaces().withName(namespace).get() == null);
                 }
             }
         }

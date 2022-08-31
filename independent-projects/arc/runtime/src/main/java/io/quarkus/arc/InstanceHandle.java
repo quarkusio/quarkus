@@ -2,6 +2,7 @@ package io.quarkus.arc;
 
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.spi.AlterableContext;
+import jakarta.enterprise.inject.Instance;
 
 /**
  * Represents an instance handle.
@@ -10,7 +11,7 @@ import jakarta.enterprise.context.spi.AlterableContext;
  *
  * @param <T>
  */
-public interface InstanceHandle<T> extends AutoCloseable {
+public interface InstanceHandle<T> extends AutoCloseable, Instance.Handle<T> {
 
     /**
      *

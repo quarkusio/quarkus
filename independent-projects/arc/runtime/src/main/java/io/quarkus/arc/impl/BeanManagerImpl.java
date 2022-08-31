@@ -23,7 +23,6 @@ import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.inject.spi.Decorator;
 import jakarta.enterprise.inject.spi.Extension;
 import jakarta.enterprise.inject.spi.InjectionPoint;
-import jakarta.enterprise.inject.spi.InjectionTarget;
 import jakarta.enterprise.inject.spi.InjectionTargetFactory;
 import jakarta.enterprise.inject.spi.InterceptionFactory;
 import jakarta.enterprise.inject.spi.InterceptionType;
@@ -35,7 +34,6 @@ import jakarta.interceptor.InterceptorBinding;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -113,14 +111,6 @@ public class BeanManagerImpl implements BeanManager {
     @Override
     public void validate(InjectionPoint injectionPoint) {
         throw new UnsupportedOperationException();
-    }
-
-    // Deprecated method which can be safely removed once we use CDI 4.0+
-    @Deprecated
-    public void fireEvent(Object event, Annotation... qualifiers) {
-        Set<Annotation> eventQualifiers = new HashSet<>();
-        Collections.addAll(eventQualifiers, qualifiers);
-        new EventImpl<Object>(event.getClass(), eventQualifiers).fire(event);
     }
 
     @Override
@@ -233,12 +223,6 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public <T> AnnotatedType<T> createAnnotatedType(Class<T> type) {
-        throw new UnsupportedOperationException();
-    }
-
-    // Deprecated method which can be safely removed once we use CDI 4.0+
-    @Deprecated
-    public <T> InjectionTarget<T> createInjectionTarget(AnnotatedType<T> type) {
         throw new UnsupportedOperationException();
     }
 

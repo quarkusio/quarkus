@@ -324,6 +324,18 @@ but they require you to specify the parameter name.
 
 See <<parameter-mapping>> for more advanced use-cases.
 
+[NOTE]
+====
+When an exception occurs in RESTEasy Reactive request parameter handling code, the exception is not printed by default to the log (for security reasons).
+This can sometimes make it hard to understand why certain HTTP status codes are returned (as the JAX-RS mandates the use of non-intuitive error codes in various cases).
+In such cases, users are encouraged to set the logging level for the `org.jboss.resteasy.reactive.server.handlers.ParameterHandler` category to `DEBUG` like so:
+
+[source, properties]
+----
+quarkus.log.category."org.jboss.resteasy.reactive.server.handlers.ParameterHandler".level=DEBUG
+----
+====
+
 === Declaring URI parameters
 
 [[uri-parameters]]
@@ -1731,6 +1743,18 @@ It may declare any of the following return types:
 |An asynchronous response to send to the client when the exception occurs
 
 |===
+
+[NOTE]
+====
+When an exception occurs, RESTEasy Reactive does not log it by default (for security reasons).
+This can sometimes make it hard to understand why certain exception handling code was invoked (or not invoked).
+To make RESTEasy Reactive log the actual exception before an exception mapping code is run the `org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext` log category can be set to `DEBUG` like so:
+
+[source, properties]
+----
+quarkus.log.category."org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext".level=DEBUG
+----
+====
 
 === Request or response filters
 

@@ -48,7 +48,7 @@ public abstract class AbstractNamespaceCreatingTestResource extends AbstractName
                 if (secondsToWaitForNamespaceDeletion > 0) {
                     logger().info("Waiting for namespace '{}' to be deleted", namespace);
                     Awaitility.await("namespace deleted")
-                            .pollInterval(50, TimeUnit.MILLISECONDS)
+                            .pollInterval(250, TimeUnit.MILLISECONDS)
                             .atMost(secondsToWaitForNamespaceDeletion, TimeUnit.SECONDS)
                             .until(() -> client.namespaces().withName(namespace).get() == null);
                 }

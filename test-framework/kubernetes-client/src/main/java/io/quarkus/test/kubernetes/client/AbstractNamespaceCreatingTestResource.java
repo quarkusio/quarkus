@@ -25,9 +25,7 @@ public abstract class AbstractNamespaceCreatingTestResource extends AbstractName
 
     @Override
     public Map<String, String> start() {
-        createNamespaceIfRequested();
-        createdNamespace = true;
-
+        createdNamespace = createNamespaceIfRequested();
         return doStart();
     }
 
@@ -64,7 +62,7 @@ public abstract class AbstractNamespaceCreatingTestResource extends AbstractName
         client.close();
     }
 
-    protected void createNamespaceIfRequested() {
+    protected boolean createNamespaceIfRequested() {
         final var client = client();
         final var configuration = client.getConfiguration();
         final var namespace = namespace();
@@ -72,7 +70,7 @@ public abstract class AbstractNamespaceCreatingTestResource extends AbstractName
 
         if (client.namespaces().withName(namespace).get() != null) {
             logger().info("Namespace '{}' already exists", namespace);
-            return;
+            return false;
         }
 
         if (shouldCreateNamespace) {
@@ -81,6 +79,7 @@ public abstract class AbstractNamespaceCreatingTestResource extends AbstractName
                 client.namespaces()
                         .create(new NamespaceBuilder().withNewMetadata().withName(namespace).endMetadata()
                                 .build());
+                return true;
             } catch (KubernetesClientException e) {
                 if (e.getCause() instanceof ConnectException) {
                     logger().error(
@@ -91,6 +90,8 @@ public abstract class AbstractNamespaceCreatingTestResource extends AbstractName
                 throw e;
             }
         }
+
+        return false;
     }
 
     protected void initNamespaceOptions(boolean shouldCreateNamespace, boolean preserveNamespaceOnError,

@@ -17,7 +17,6 @@ public class DisposableNamespaceTestResource extends AbstractNamespaceCreatingTe
         QuarkusTestResourceConfigurableLifecycleManager<WithDisposableNamespace> {
 
     private static final Logger log = LoggerFactory.getLogger(DisposableNamespaceTestResource.class);
-    private int waitAtMostSecondsForNSDeletion;
 
     @Override
     protected Map<String, String> doStart() {
@@ -57,17 +56,12 @@ public class DisposableNamespaceTestResource extends AbstractNamespaceCreatingTe
     @Override
     public void init(WithDisposableNamespace annotation) {
         initNamespaceAndClient(annotation.namespace());
-        waitAtMostSecondsForNSDeletion = annotation.waitAtMostSecondsForDeletion();
-        // preserveNamespaceOnError = annotation.preserveOnError(); todo: ns preservation
+        initNamespaceOptions(true, annotation.preserveNamespaceOnError(),
+                annotation.secondsToWaitForNamespaceDeletion());
     }
 
     @Override
     protected String defaultNamespaceName(KubernetesClient client) {
         return KubernetesResourceUtil.sanitizeName("ns" + UUID.randomUUID());
-    }
-
-    @Override
-    protected int numberOfSecondsToWaitForNamespaceDeletion() {
-        return waitAtMostSecondsForNSDeletion;
     }
 }

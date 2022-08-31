@@ -11,9 +11,9 @@ import io.quarkus.test.common.QuarkusTestResource;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface WithDisposableNamespace {
-    // boolean preserveOnError() default false; todo: ns preservation
+    boolean preserveNamespaceOnError() default false;
 
-    int waitAtMostSecondsForDeletion() default 0;
+    int secondsToWaitForNamespaceDeletion() default 0;
 
     String namespace() default AnnotationConstants.UNSET_STRING_VALUE;
 }

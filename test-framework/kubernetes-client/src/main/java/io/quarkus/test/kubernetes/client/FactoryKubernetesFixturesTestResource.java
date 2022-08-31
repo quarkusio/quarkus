@@ -18,20 +18,23 @@ public class FactoryKubernetesFixturesTestResource extends AbstractKubernetesFix
 
     @Override
     public void init(WithKubernetesResourcesFromFactory annotation) {
-        initNamespaceAndClient(annotation.namespace(), annotation.readinessTimeoutSeconds(),
-                annotation.createNamespaceIfNeeded());
-
         final var factoryClass = annotation.factory();
         try {
             KubernetesResourcesFactory factory = factoryClass.getConstructor().newInstance();
             final var resourceFixtures = new LinkedList<HasMetadata>(factory.build(namespace()));
-            initFixtures(resourceFixtures);
+            initFixturesWithOptions(resourceFixtures,
+                    annotation.readinessTimeoutSeconds(),
+                    annotation.namespace(),
+                    annotation.createNamespaceIfNeeded(),
+                    annotation.preserveNamespaceOnError(),
+                    annotation.secondsToWaitForNamespaceDeletion());
         } catch (InstantiationException | NoSuchMethodException | InvocationTargetException
                 | IllegalAccessException e) {
             logger().error("Couldn't instantiate {} {} class", factoryClass.getSimpleName(),
                     KubernetesResourcesFactory.class.getSimpleName());
             throw new RuntimeException(e);
         }
+
     }
 
     @Override

@@ -19,12 +19,10 @@ public class YAMLKubernetesFixturesTestResource extends AbstractKubernetesFixtur
 
     @Override
     public void init(WithKubernetesResourcesFromYAML annotation) {
-        initNamespaceAndClient(annotation.namespace(), annotation.readinessTimeoutSeconds(),
-                annotation.createNamespaceIfNeeded());
-
+        final LinkedList<HasMetadata> resourceFixtures;
         final var yamlFiles = annotation.yamlFiles();
         if (yamlFiles != null) {
-            final var resourceFixtures = new LinkedList<HasMetadata>();
+            resourceFixtures = new LinkedList<>();
             for (String yamlFile : yamlFiles) {
                 try {
                     resourceFixtures.addAll(client().load(new FileInputStream(yamlFile)).get());
@@ -34,7 +32,12 @@ public class YAMLKubernetesFixturesTestResource extends AbstractKubernetesFixtur
                 }
             }
 
-            initFixtures(resourceFixtures);
+            initFixturesWithOptions(resourceFixtures,
+                    annotation.readinessTimeoutSeconds(),
+                    annotation.namespace(),
+                    annotation.createNamespaceIfNeeded(),
+                    annotation.preserveNamespaceOnError(),
+                    annotation.secondsToWaitForNamespaceDeletion());
         }
     }
 

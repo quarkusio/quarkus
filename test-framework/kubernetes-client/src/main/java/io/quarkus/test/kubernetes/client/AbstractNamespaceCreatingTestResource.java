@@ -14,7 +14,9 @@ public abstract class AbstractNamespaceCreatingTestResource extends AbstractName
 
     private boolean createdNamespace = false;
     private Context context;
-    //    private boolean preserveNamespaceOnError; todo: ns preservation
+    private boolean preserveNamespaceOnError = false;
+    private int secondsToWaitForNamespaceDeletion = 0;
+    private boolean shouldCreateNamespace = true;
 
     @Override
     public void setContext(Context context) {
@@ -35,29 +37,29 @@ public abstract class AbstractNamespaceCreatingTestResource extends AbstractName
 
         boolean deleted = false;
         if (createdNamespace) {
-            // todo: add namespace preservation on error if/when quarkusio/quarkus#25905 becomes available
-            final var namespace = namespace();
-            logger().info("Deleting namespace '{}'", namespace);
-            try {
-                deleted = client.namespaces().withName(namespace).delete();
-            } catch (Exception e) {
-                logger().warn("Couldn't delete namespace '" + namespace + "'", e);
-            }
+            // check if we need to preserve the namespace
+            if (!preserveNamespaceOnError || !context.getTestStatus().isTestFailed()) {
+                final var namespace = namespace();
+                logger().info("Deleting namespace '{}'", namespace);
+                try {
+                    deleted = client.namespaces().withName(namespace).delete();
+                } catch (Exception e) {
+                    logger().warn("Couldn't delete namespace '" + namespace + "'", e);
+                }
 
-            if (deleted) {
-                final var secondsToWaitForNamespaceDeletion = numberOfSecondsToWaitForNamespaceDeletion();
-                if (secondsToWaitForNamespaceDeletion > 0) {
-                    logger().info("Waiting for namespace '{}' to be deleted", namespace);
-                    Awaitility.await("namespace deleted")
-                            .pollInterval(50, TimeUnit.MILLISECONDS)
-                            .atMost(secondsToWaitForNamespaceDeletion, TimeUnit.SECONDS)
-                            .until(() -> client.namespaces().withName(namespace).get() == null);
+                if (deleted) {
+                    if (secondsToWaitForNamespaceDeletion > 0) {
+                        logger().info("Waiting for namespace '{}' to be deleted", namespace);
+                        Awaitility.await("namespace deleted")
+                                .pollInterval(50, TimeUnit.MILLISECONDS)
+                                .atMost(secondsToWaitForNamespaceDeletion, TimeUnit.SECONDS)
+                                .until(() -> client.namespaces().withName(namespace).get() == null);
+                    }
                 }
             }
         }
 
-        // todo: right now, we need clean up if we didn't create the namespace (and therefore, deleted it above)
-        // however when namespace preservation is available, this logic will need to change
+        // let subclasses the opportunity to clean up out of namespace resources they might have created
         doStop(!deleted);
         client.close();
     }
@@ -73,7 +75,7 @@ public abstract class AbstractNamespaceCreatingTestResource extends AbstractName
             return;
         }
 
-        if (shouldCreateNamespace()) {
+        if (shouldCreateNamespace) {
             logger().info("Creating '{}' namespace", namespace);
             try {
                 client.namespaces()
@@ -91,12 +93,11 @@ public abstract class AbstractNamespaceCreatingTestResource extends AbstractName
         }
     }
 
-    protected boolean shouldCreateNamespace() {
-        return true;
-    }
-
-    protected int numberOfSecondsToWaitForNamespaceDeletion() {
-        return 0;
+    protected void initNamespaceOptions(boolean shouldCreateNamespace, boolean preserveNamespaceOnError,
+            int secondsToWaitForNamespaceDeletion) {
+        this.preserveNamespaceOnError = preserveNamespaceOnError;
+        this.shouldCreateNamespace = shouldCreateNamespace;
+        this.secondsToWaitForNamespaceDeletion = secondsToWaitForNamespaceDeletion;
     }
 
     protected abstract Map<String, String> doStart();

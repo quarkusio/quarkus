@@ -17,5 +17,9 @@ public @interface WithKubernetesResourcesFromYAML {
 
     boolean createNamespaceIfNeeded() default true;
 
+    boolean preserveNamespaceOnError() default false;
+
+    int secondsToWaitForNamespaceDeletion() default 0;
+
     int readinessTimeoutSeconds() default AnnotationConstants.DEFAULT_READINESS_TIMEOUT_SECONDS;
 }

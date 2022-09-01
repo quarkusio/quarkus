@@ -198,6 +198,7 @@ Import the {quickstarts-tree-url}/security-openid-connect-quickstart/config/quar
 
 NOTE: If you want to use the Keycloak Admin Client to configure your server from your application you need to include the
 either `quarkus-keycloak-admin-client` or the `quarkus-keycloak-admin-client-reactive` (if the application uses `quarkus-rest-client-reactive`) extension.
+See the xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client] guide for more information.
 
 [[keycloak-dev-mode]]
 === Running the Application in Dev mode
@@ -1151,3 +1152,4 @@ Note Quarkus `web-app` applications always require `quarkus.oidc.client-id` prop
 * xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
 * xref:security.adoc#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
 * xref:security.adoc[Quarkus Security]
+* xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]

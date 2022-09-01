@@ -83,7 +83,7 @@ If you use Keycloak and Bearer tokens then also see the xref:security-keycloak-a
 
 [NOTE]
 ====
-If you need to configure Keycloak programmatically then consider using https://www.keycloak.org/docs/latest/server_development/#admin-rest-api[Keycloak Admin REST API] with the help of the `quarkus-keycloak-admin-client` or `quarkus-keycloak-admin-client-reactive` (if the application uses `quarkus-rest-client-reactive`) extension.
+If you need to configure Keycloak programmatically then consider using https://www.keycloak.org/docs/latest/server_development/#admin-rest-api[Keycloak Admin REST API] with the help of the `quarkus-keycloak-admin-client` or `quarkus-keycloak-admin-client-reactive` (if the application uses `quarkus-rest-client-reactive`) extension. See the xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client] guide for more information.
 ====
 
 === OpenID Connect Client and Filters

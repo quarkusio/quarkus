@@ -172,6 +172,12 @@ public class FunctionScannerBuildStep {
             Set<ClassInfo> withoutDefaultCtor) {
 
         for (ClassInfo classInfo : withoutDefaultCtor) {
+            // don't generate constructor for normal scoped beans as the Quarkus Arc does that for us
+            final BuiltinScope scope = BuiltinScope.from(classInfo);
+            if (scope != null && scope.getInfo().isNormal()) {
+                continue;
+            }
+
             // keep it super simple - only generate default constructor is the object is a direct descendant of Object
             if (!(classInfo.superClassType() != null && classInfo.superClassType().name().equals(DotNames.OBJECT))) {
                 return;

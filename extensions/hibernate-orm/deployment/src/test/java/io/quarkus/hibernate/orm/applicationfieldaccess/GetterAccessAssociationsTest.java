@@ -1,6 +1,8 @@
 package io.quarkus.hibernate.orm.applicationfieldaccess;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +26,7 @@ import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
 
 import org.hibernate.Hibernate;
+import org.hibernate.LazyInitializationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -116,6 +119,17 @@ public class GetterAccessAssociationsTest {
         // The above should have persisted a value that passes the assertion.
         delegate.assertValueAndLaziness(entity, containedEntity);
         transaction.commit();
+
+        // Test find() + access outside of session
+        transaction.begin();
+        entity = em.find(ContainingEntity.class, entity.getId());
+        containedEntity = em.find(ContainedEntity.class, containedEntity.getId());
+        // We're working on an actual entity instance (not a proxy).
+        assertThat(entity).returns(true, Hibernate::isInitialized);
+        transaction.commit();
+        // Access to the property out of session should pass certain assertions
+        // (which are different depending on the type of association).
+        delegate.assertAccessOutOfSession(entity, containedEntity);
     }
 
     @Entity
@@ -288,6 +302,13 @@ public class GetterAccessAssociationsTest {
                 assertThat(entity.getOneToOne()).isEqualTo(containedEntity);
                 consumeValue(entity.getOneToOne());
             }
+
+            @Override
+            public void assertAccessOutOfSession(ContainingEntity entity, ContainedEntity containedEntity) {
+                // No expectations regarding laziness on ToOne associations
+                assertThat(entity.getOneToOne()).isEqualTo(containedEntity);
+                consumeValue(entity.getOneToOne());
+            }
         },
         MANY_TO_ONE {
             @Override
@@ -297,6 +318,13 @@ public class GetterAccessAssociationsTest {
 
             @Override
             public void assertValueAndLaziness(ContainingEntity entity, ContainedEntity containedEntity) {
+                // No expectations regarding laziness on ToOne associations
+                assertThat(entity.getManyToOne()).isEqualTo(containedEntity);
+                consumeValue(entity.getManyToOne());
+            }
+
+            @Override
+            public void assertAccessOutOfSession(ContainingEntity entity, ContainedEntity containedEntity) {
                 // No expectations regarding laziness on ToOne associations
                 assertThat(entity.getManyToOne()).isEqualTo(containedEntity);
                 consumeValue(entity.getManyToOne());
@@ -314,6 +342,17 @@ public class GetterAccessAssociationsTest {
                 assertThat(entity.getOneToMany()).containsExactly(containedEntity);
                 assertThat((Object) entity.getOneToMany()).returns(true, Hibernate::isInitialized);
             }
+
+            @Override
+            public void assertAccessOutOfSession(ContainingEntity entity, ContainedEntity containedEntity) {
+                // We expect to be able to call the getter outside of the session on an initialized entity.
+                // https://github.com/quarkusio/quarkus/discussions/27657
+                assertThatCode(() -> entity.getOneToMany()).doesNotThrowAnyException();
+                // But of course, the collection is not initialized and accessing the content won't work.
+                var collection = entity.getOneToMany();
+                assertThat((Object) collection).returns(false, Hibernate::isInitialized);
+                assertThatThrownBy(() -> collection.size()).isInstanceOf(LazyInitializationException.class);
+            }
         },
         MANY_TO_MANY {
             @Override
@@ -327,6 +366,17 @@ public class GetterAccessAssociationsTest {
                 assertThat(entity.getManyToMany()).containsExactly(containedEntity);
                 assertThat((Object) entity.getManyToMany()).returns(true, Hibernate::isInitialized);
             }
+
+            @Override
+            public void assertAccessOutOfSession(ContainingEntity entity, ContainedEntity containedEntity) {
+                // We expect to be able to call the getter outside of the session on an initialized entity.
+                // https://github.com/quarkusio/quarkus/discussions/27657
+                assertThatCode(() -> entity.getManyToMany()).doesNotThrowAnyException();
+                // But of course, the collection is not initialized and accessing the content won't work.
+                var collection = entity.getManyToMany();
+                assertThat((Object) collection).returns(false, Hibernate::isInitialized);
+                assertThatThrownBy(() -> collection.size()).isInstanceOf(LazyInitializationException.class);
+            }
         },
         ONE_TO_ONE_MAPPED_BY {
             @Override
@@ -337,6 +387,13 @@ public class GetterAccessAssociationsTest {
 
             @Override
             public void assertValueAndLaziness(ContainingEntity entity, ContainedEntity containedEntity) {
+                // No expectations regarding laziness on ToOne associations
+                assertThat(entity.getOneToOneMappedBy()).isEqualTo(containedEntity);
+                consumeValue(entity.getOneToOneMappedBy());
+            }
+
+            @Override
+            public void assertAccessOutOfSession(ContainingEntity entity, ContainedEntity containedEntity) {
                 // No expectations regarding laziness on ToOne associations
                 assertThat(entity.getOneToOneMappedBy()).isEqualTo(containedEntity);
                 consumeValue(entity.getOneToOneMappedBy());
@@ -355,6 +412,17 @@ public class GetterAccessAssociationsTest {
                 assertThat(entity.getOneToManyMappedBy()).containsExactly(containedEntity);
                 assertThat((Object) entity.getOneToManyMappedBy()).returns(true, Hibernate::isInitialized);
             }
+
+            @Override
+            public void assertAccessOutOfSession(ContainingEntity entity, ContainedEntity containedEntity) {
+                // We expect to be able to call the getter outside of the session on an initialized entity.
+                // https://github.com/quarkusio/quarkus/discussions/27657
+                assertThatCode(() -> entity.getOneToManyMappedBy()).doesNotThrowAnyException();
+                // But of course, the collection is not initialized and accessing the content won't work.
+                var collection = entity.getOneToManyMappedBy();
+                assertThat((Object) collection).returns(false, Hibernate::isInitialized);
+                assertThatThrownBy(() -> collection.size()).isInstanceOf(LazyInitializationException.class);
+            }
         },
         MANY_TO_MANY_MAPPED_BY {
             @Override
@@ -369,6 +437,17 @@ public class GetterAccessAssociationsTest {
                 assertThat(entity.getManyToManyMappedBy()).containsExactly(containedEntity);
                 assertThat((Object) entity.getManyToManyMappedBy()).returns(true, Hibernate::isInitialized);
             }
+
+            @Override
+            public void assertAccessOutOfSession(ContainingEntity entity, ContainedEntity containedEntity) {
+                // We expect to be able to call the getter outside of the session on an initialized entity.
+                // https://github.com/quarkusio/quarkus/discussions/27657
+                assertThatCode(() -> entity.getManyToManyMappedBy()).doesNotThrowAnyException();
+                // But of course, the collection is not initialized and accessing the content won't work.
+                var collection = entity.getManyToManyMappedBy();
+                assertThat((Object) collection).returns(false, Hibernate::isInitialized);
+                assertThatThrownBy(() -> collection.size()).isInstanceOf(LazyInitializationException.class);
+            }
         };
 
         protected void consumeValue(ContainedEntity entity) {
@@ -378,6 +457,8 @@ public class GetterAccessAssociationsTest {
         public abstract void setValue(ContainingEntity entity, ContainedEntity containedEntity);
 
         public abstract void assertValueAndLaziness(ContainingEntity entity, ContainedEntity containedEntity);
+
+        public abstract void assertAccessOutOfSession(ContainingEntity entity, ContainedEntity containedEntity);
 
     }
 }

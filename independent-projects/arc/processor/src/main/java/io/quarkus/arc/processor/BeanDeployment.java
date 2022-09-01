@@ -99,7 +99,7 @@ public class BeanDeployment {
 
     private final Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts;
 
-    private final Collection<BeanDefiningAnnotation> beanDefiningAnnotations;
+    private final Map<DotName, BeanDefiningAnnotation> beanDefiningAnnotations;
 
     final boolean transformUnproxyableClasses;
 
@@ -113,9 +113,11 @@ public class BeanDeployment {
 
     BeanDeployment(BuildContextImpl buildContext, BeanProcessor.Builder builder) {
         this.buildContext = buildContext;
-        Set<BeanDefiningAnnotation> beanDefiningAnnotations = new HashSet<>();
+        Map<DotName, BeanDefiningAnnotation> beanDefiningAnnotations = new HashMap<>();
         if (builder.additionalBeanDefiningAnnotations != null) {
-            beanDefiningAnnotations.addAll(builder.additionalBeanDefiningAnnotations);
+            for (BeanDefiningAnnotation bda : builder.additionalBeanDefiningAnnotations) {
+                beanDefiningAnnotations.put(bda.getAnnotation(), bda);
+            }
         }
         this.beanDefiningAnnotations = beanDefiningAnnotations;
         this.resourceAnnotations = new HashSet<>(builder.resourceAnnotations);
@@ -180,8 +182,8 @@ public class BeanDeployment {
             additionalStereotypes.addAll(stereotypeRegistrar.getAdditionalStereotypes());
         }
 
-        this.stereotypes = findStereotypes(this.beanArchiveIndex, interceptorBindings, beanDefiningAnnotations, customContexts,
-                additionalStereotypes, annotationStore);
+        this.stereotypes = findStereotypes(this.beanArchiveIndex, interceptorBindings, customContexts, additionalStereotypes,
+                annotationStore);
         buildContextPut(Key.STEREOTYPES.asString(), Collections.unmodifiableMap(stereotypes));
 
         this.transitiveInterceptorBindings = findTransitiveInterceptorBindings(interceptorBindings.keySet(),
@@ -221,7 +223,8 @@ public class BeanDeployment {
                 return new ContextConfigurator(scopeAnnotation,
                         c -> {
                             ScopeInfo scope = new ScopeInfo(c.scopeAnnotation, c.isNormal);
-                            beanDefiningAnnotations.add(new BeanDefiningAnnotation(scope.getDotName(), null));
+                            beanDefiningAnnotations.put(scope.getDotName(),
+                                    new BeanDefiningAnnotation(scope.getDotName(), null));
                             customContexts.put(scope, c.creator);
                         });
             }
@@ -242,8 +245,9 @@ public class BeanDeployment {
 
     BeanRegistrar.RegistrationContext registerBeans(List<BeanRegistrar> beanRegistrars) {
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
-        this.beans.addAll(findBeans(initBeanDefiningAnnotations(beanDefiningAnnotations, stereotypes.keySet()), observers,
-                injectionPoints, jtaCapabilities));
+        this.beans.addAll(
+                findBeans(initBeanDefiningAnnotations(beanDefiningAnnotations.values(), stereotypes.keySet()), observers,
+                        injectionPoints, jtaCapabilities));
         // Note that we use unmodifiable views because the underlying collections may change in the next phase
         // E.g. synthetic beans are added and unused interceptors removed
         buildContextPut(Key.BEANS.asString(), Collections.unmodifiableList(beans));
@@ -615,6 +619,10 @@ public class BeanDeployment {
         return stereotypes.get(name);
     }
 
+    BeanDefiningAnnotation getBeanDefiningAnnotation(DotName name) {
+        return beanDefiningAnnotations.get(name);
+    }
+
     Set<DotName> getResourceAnnotations() {
         return resourceAnnotations;
     }
@@ -738,7 +746,6 @@ public class BeanDeployment {
     }
 
     private Map<DotName, StereotypeInfo> findStereotypes(IndexView index, Map<DotName, ClassInfo> interceptorBindings,
-            Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts,
             Set<DotName> additionalStereotypes, AnnotationStore annotationStore) {
 
@@ -756,7 +763,7 @@ public class BeanDeployment {
 
                 boolean isAlternative = false;
                 Integer alternativePriority = null;
-                List<ScopeInfo> scopes = new ArrayList<>();
+                Set<ScopeInfo> scopes = new HashSet<>();
                 List<AnnotationInstance> bindings = new ArrayList<>();
                 List<AnnotationInstance> parentStereotypes = new ArrayList<>();
                 boolean isNamed = false;
@@ -794,25 +801,9 @@ public class BeanDeployment {
                 final ScopeInfo scope = getValidScope(scopes, stereotypeClass);
                 boolean isInherited = stereotypeClass.classAnnotation(DotNames.INHERITED) != null;
                 stereotypes.put(stereotypeName, new StereotypeInfo(scope, bindings, isAlternative, alternativePriority,
-                        isNamed, false, isAdditionalStereotype, stereotypeClass, isInherited, parentStereotypes));
+                        isNamed, isAdditionalStereotype, stereotypeClass, isInherited, parentStereotypes));
             }
         }
-        //if an additional bean defining annotation has a default scope we register it as a stereotype
-        if (additionalBeanDefiningAnnotations != null) {
-            for (BeanDefiningAnnotation i : additionalBeanDefiningAnnotations) {
-                if (i.getDefaultScope() != null) {
-                    ScopeInfo scope = getScope(i.getDefaultScope(), customContexts);
-                    ClassInfo stereotypeClassInfo = getClassByName(index, i.getAnnotation());
-                    boolean isInherited = stereotypeClassInfo.classAnnotation(DotNames.INHERITED) != null;
-                    if (stereotypeClassInfo != null) {
-                        stereotypes.put(i.getAnnotation(), new StereotypeInfo(scope, Collections.emptyList(),
-                                false, null, false, true,
-                                false, stereotypeClassInfo, isInherited, Collections.emptyList()));
-                    }
-                }
-            }
-        }
-
         return stereotypes;
     }
 
@@ -830,15 +821,15 @@ public class BeanDeployment {
         return null;
     }
 
-    static ScopeInfo getValidScope(Collection<ScopeInfo> stereotypeScopes, AnnotationTarget target) {
-        switch (stereotypeScopes.size()) {
+    static ScopeInfo getValidScope(Set<ScopeInfo> scopes, AnnotationTarget target) {
+        switch (scopes.size()) {
             case 0:
                 return null;
             case 1:
-                return stereotypeScopes.iterator().next();
+                return scopes.iterator().next();
             default:
-                throw new DefinitionException("All stereotypes must specify the same scope or the bean must declare a scope: "
-                        + target + " declares scopes " + stereotypeScopes.stream().map(ScopeInfo::getDotName)
+                throw new DefinitionException(
+                        "Different scopes defined for: " + target + "; scopes: " + scopes.stream().map(ScopeInfo::getDotName)
                                 .map(DotName::toString).collect(Collectors.joining(", ")));
         }
     }

@@ -1,0 +1,45 @@
+package io.quarkus.arc.test.stereotypes;
+
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.quarkus.arc.test.ArcTestContainer;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Model;
+import javax.enterprise.inject.Stereotype;
+import javax.enterprise.inject.spi.DefinitionException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+public class MultipleStereotypeScopesTest {
+
+    @RegisterExtension
+    public ArcTestContainer container = ArcTestContainer.builder().beanClasses(ModelBean.class, MyStereotype.class)
+            .shouldFail().build();
+
+    @Test
+    public void testFailure() {
+        assertNotNull(container.getFailure());
+        assertTrue(container.getFailure() instanceof DefinitionException);
+    }
+
+    @MyStereotype
+    @Model
+    static class ModelBean {
+
+    }
+
+    @ApplicationScoped
+    @Stereotype
+    @Target({ TYPE, METHOD, FIELD })
+    @Retention(RUNTIME)
+    @interface MyStereotype {
+    }
+
+}

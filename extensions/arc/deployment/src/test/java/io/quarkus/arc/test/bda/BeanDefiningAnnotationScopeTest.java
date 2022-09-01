@@ -1,9 +1,10 @@
-package io.quarkus.arc.test.stereotype;
+package io.quarkus.arc.test.bda;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.lang.annotation.Retention;
@@ -17,6 +18,7 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Stereotype;
 import javax.inject.Inject;
+import javax.inject.Qualifier;
 
 import org.jboss.jandex.DotName;
 import org.junit.jupiter.api.Test;
@@ -28,12 +30,13 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class BeanDefiningAnnotationStereotypeTestCase {
+public class BeanDefiningAnnotationScopeTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class, MakeItBean.class, DependentStereotype.class))
+            .withApplicationRoot(root -> root
+                    .addClasses(MyBean.class, AnotherBean.class, YetAnotherBean.class, MakeItBean.class,
+                            QualifierMakeItBean.class, DependentStereotype.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -47,6 +50,9 @@ public class BeanDefiningAnnotationStereotypeTestCase {
                     public void execute(BuildContext context) {
                         context.produce(new BeanDefiningAnnotationBuildItem(DotName.createSimple(MakeItBean.class.getName()),
                                 DotName.createSimple(ApplicationScoped.class.getName())));
+                        context.produce(
+                                new BeanDefiningAnnotationBuildItem(DotName.createSimple(QualifierMakeItBean.class.getName()),
+                                        DotName.createSimple(ApplicationScoped.class.getName())));
                     }
                 }).produces(BeanDefiningAnnotationBuildItem.class).build();
             }
@@ -54,11 +60,28 @@ public class BeanDefiningAnnotationStereotypeTestCase {
     }
 
     @Inject
-    Instance<MyBean> instance;
+    Instance<MyBean> my;
+
+    @Inject
+    Instance<AnotherBean> another;
+
+    @Inject
+    @QualifierMakeItBean
+    Instance<YetAnotherBean> yetAnother;
 
     @Test
-    public void test() {
-        assertNotEquals(instance.get().getId(), instance.get().getId());
+    public void testExplicitStereotypeScopeWins() {
+        assertNotEquals(my.get().getId(), my.get().getId());
+    }
+
+    @Test
+    public void testDefaultScopeIsUsed() {
+        assertEquals(another.get().getId(), another.get().getId());
+    }
+
+    @Test
+    public void testQualifierAsBeanDefiningAnnotation() {
+        assertEquals(yetAnother.get().getId(), yetAnother.get().getId());
     }
 
     @DependentStereotype
@@ -78,9 +101,47 @@ public class BeanDefiningAnnotationStereotypeTestCase {
 
     }
 
+    @MakeItBean
+    static class AnotherBean {
+
+        private String id;
+
+        public String getId() {
+            return id;
+        }
+
+        @PostConstruct
+        void init() {
+            this.id = UUID.randomUUID().toString();
+        }
+
+    }
+
+    @QualifierMakeItBean
+    static class YetAnotherBean {
+
+        private String id;
+
+        public String getId() {
+            return id;
+        }
+
+        @PostConstruct
+        void init() {
+            this.id = UUID.randomUUID().toString();
+        }
+
+    }
+
     @Target({ TYPE, METHOD, FIELD })
     @Retention(RUNTIME)
     public @interface MakeItBean {
+    }
+
+    @Qualifier
+    @Target({ TYPE, METHOD, FIELD })
+    @Retention(RUNTIME)
+    public @interface QualifierMakeItBean {
     }
 
     @Dependent

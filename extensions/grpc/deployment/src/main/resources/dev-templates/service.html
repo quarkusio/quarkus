@@ -76,7 +76,7 @@ span.connected-status {
             wsUri = "ws:";
           }
 
-          wsUri += "//" + window.location.host + "/q/dev/io.quarkus.quarkus-grpc/grpc-test";
+          wsUri += "//" + window.location.host + "{devRootAppend}/io.quarkus.quarkus-grpc/grpc-test";
           grpcWS = new WebSocket(wsUri);
           grpcWS.onopen = function (event) {
             console.log("websocket connected");
@@ -219,7 +219,7 @@ span.connected-status {
   <script src="{devRootAppend}/resources/codemirror/addon/selection/active-line.js"></script>
   {/scriptref}
   
-  {#breadcrumbs}<i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> <a href="/q/dev/io.quarkus.quarkus-grpc/services">Services</a>{/breadcrumbs}
+  {#breadcrumbs}<i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> <a href="{devRootAppend}/io.quarkus.quarkus-grpc/services">Services</a>{/breadcrumbs}
   {#title}{info:grpcServices.get(currentRequest.params.get('name')).name}{/title}
   {#body}
   <div class="status" id="status-info">

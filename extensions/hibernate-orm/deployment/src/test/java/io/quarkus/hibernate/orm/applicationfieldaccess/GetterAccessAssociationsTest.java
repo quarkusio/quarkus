@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.publicfields;
+package io.quarkus.hibernate.orm.applicationfieldaccess;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,10 +30,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Checks that public field access is correctly replaced with getter/setter calls,
- * regardless of the field type.
+ * Checks that access to fields through getters by the application works correctly for all association types.
  */
-public class PublicFieldAccessAssociationsTest {
+public class GetterAccessAssociationsTest {
 
     private static final String CONTAINED_VALUE = "someValue";
 
@@ -41,7 +40,7 @@ public class PublicFieldAccessAssociationsTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(ContainingEntity.class)
-                    .addClass(FieldAccessEnhancedDelegate.class))
+                    .addClass(AccessDelegate.class))
             .withConfigurationResource("application-fetch-max-depth-zero.properties");
 
     @Inject
@@ -51,22 +50,22 @@ public class PublicFieldAccessAssociationsTest {
     UserTransaction transaction;
 
     @Test
-    public void testFieldAccess()
+    public void testGetterAccess()
             throws SystemException, NotSupportedException, HeuristicRollbackException, HeuristicMixedException,
             RollbackException {
         // Ideally we'd write a @ParameterizedTest and pass the delegates as parameters,
         // but we cannot do that due to JUnit using a different classloader than the test.
-        for (FieldAccessEnhancedDelegate delegate : FieldAccessEnhancedDelegate.values()) {
-            doTestFieldAccess(delegate);
+        for (AccessDelegate delegate : AccessDelegate.values()) {
+            doTestGetterAccess(delegate);
         }
     }
 
-    private void doTestFieldAccess(FieldAccessEnhancedDelegate delegate)
+    private void doTestGetterAccess(AccessDelegate delegate)
             throws SystemException, NotSupportedException, HeuristicRollbackException, HeuristicMixedException,
             RollbackException {
         ContainingEntity entity = new ContainingEntity();
         ContainedEntity containedEntity = new ContainedEntity();
-        containedEntity.value = CONTAINED_VALUE;
+        containedEntity.setValue(CONTAINED_VALUE);
 
         transaction.begin();
         em.persist(entity);
@@ -74,8 +73,8 @@ public class PublicFieldAccessAssociationsTest {
         transaction.commit();
 
         transaction.begin();
-        entity = em.getReference(ContainingEntity.class, entity.id);
-        containedEntity = em.getReference(ContainedEntity.class, containedEntity.id);
+        entity = em.getReference(ContainingEntity.class, entity.getId());
+        containedEntity = em.getReference(ContainedEntity.class, containedEntity.getId());
         // Initially the assertion doesn't pass: the value was not set yet
         AssertionError expected = null;
         try {
@@ -89,8 +88,8 @@ public class PublicFieldAccessAssociationsTest {
         transaction.rollback();
 
         transaction.begin();
-        entity = em.getReference(ContainingEntity.class, entity.id);
-        containedEntity = em.getReference(ContainedEntity.class, containedEntity.id);
+        entity = em.getReference(ContainingEntity.class, entity.getId());
+        containedEntity = em.getReference(ContainedEntity.class, containedEntity.getId());
         // Since field access is replaced with accessor calls,
         // we expect this change to be detected by dirty tracking and persisted.
         delegate.setValue(entity, containedEntity);
@@ -98,8 +97,8 @@ public class PublicFieldAccessAssociationsTest {
 
         // Test getReference()
         transaction.begin();
-        entity = em.getReference(ContainingEntity.class, entity.id);
-        containedEntity = em.getReference(ContainedEntity.class, containedEntity.id);
+        entity = em.getReference(ContainingEntity.class, entity.getId());
+        containedEntity = em.getReference(ContainedEntity.class, containedEntity.getId());
         // We're working on an uninitialized proxy.
         assertThat(entity).returns(false, Hibernate::isInitialized);
         // The above should have persisted a value that passes the assertion.
@@ -110,8 +109,8 @@ public class PublicFieldAccessAssociationsTest {
 
         // Test find()
         transaction.begin();
-        entity = em.find(ContainingEntity.class, entity.id);
-        containedEntity = em.find(ContainedEntity.class, containedEntity.id);
+        entity = em.find(ContainingEntity.class, entity.getId());
+        containedEntity = em.find(ContainedEntity.class, containedEntity.getId());
         // We're working on an actual entity instance (not a proxy).
         assertThat(entity).returns(true, Hibernate::isInitialized);
         // The above should have persisted a value that passes the assertion.
@@ -127,28 +126,91 @@ public class PublicFieldAccessAssociationsTest {
         public long id;
 
         @OneToOne
-        public ContainedEntity oneToOne;
+        private ContainedEntity oneToOne;
 
         @ManyToOne
-        public ContainedEntity manyToOne;
+        private ContainedEntity manyToOne;
 
         @OneToMany
         @JoinTable(name = "containing_oneToMany")
-        public List<ContainedEntity> oneToMany = new ArrayList<>();
+        private List<ContainedEntity> oneToMany = new ArrayList<>();
 
         @ManyToMany
         @JoinTable(name = "containing_manyToMany")
-        public List<ContainedEntity> manyToMany = new ArrayList<>();
+        private List<ContainedEntity> manyToMany = new ArrayList<>();
 
         @OneToOne(mappedBy = "oneToOne")
-        public ContainedEntity oneToOneMappedBy;
+        private ContainedEntity oneToOneMappedBy;
 
         @OneToMany(mappedBy = "manyToOne")
-        public List<ContainedEntity> oneToManyMappedBy = new ArrayList<>();
+        private List<ContainedEntity> oneToManyMappedBy = new ArrayList<>();
 
         @ManyToMany(mappedBy = "manyToMany")
-        public List<ContainedEntity> manyToManyMappedBy = new ArrayList<>();
+        private List<ContainedEntity> manyToManyMappedBy = new ArrayList<>();
 
+        public long getId() {
+            return id;
+        }
+
+        public void setId(long id) {
+            this.id = id;
+        }
+
+        public ContainedEntity getOneToOne() {
+            return oneToOne;
+        }
+
+        public void setOneToOne(ContainedEntity oneToOne) {
+            this.oneToOne = oneToOne;
+        }
+
+        public ContainedEntity getManyToOne() {
+            return manyToOne;
+        }
+
+        public void setManyToOne(ContainedEntity manyToOne) {
+            this.manyToOne = manyToOne;
+        }
+
+        public List<ContainedEntity> getOneToMany() {
+            return oneToMany;
+        }
+
+        public void setOneToMany(List<ContainedEntity> oneToMany) {
+            this.oneToMany = oneToMany;
+        }
+
+        public List<ContainedEntity> getManyToMany() {
+            return manyToMany;
+        }
+
+        public void setManyToMany(List<ContainedEntity> manyToMany) {
+            this.manyToMany = manyToMany;
+        }
+
+        public ContainedEntity getOneToOneMappedBy() {
+            return oneToOneMappedBy;
+        }
+
+        public void setOneToOneMappedBy(ContainedEntity oneToOneMappedBy) {
+            this.oneToOneMappedBy = oneToOneMappedBy;
+        }
+
+        public List<ContainedEntity> getOneToManyMappedBy() {
+            return oneToManyMappedBy;
+        }
+
+        public void setOneToManyMappedBy(List<ContainedEntity> oneToManyMappedBy) {
+            this.oneToManyMappedBy = oneToManyMappedBy;
+        }
+
+        public List<ContainedEntity> getManyToManyMappedBy() {
+            return manyToManyMappedBy;
+        }
+
+        public void setManyToManyMappedBy(List<ContainedEntity> manyToManyMappedBy) {
+            this.manyToManyMappedBy = manyToManyMappedBy;
+        }
     }
 
     @Entity
@@ -156,122 +218,161 @@ public class PublicFieldAccessAssociationsTest {
 
         @Id
         @GeneratedValue
-        public long id;
+        private long id;
 
         @Column(name = "value_")
-        public String value;
+        private String value;
 
         @OneToOne
-        public ContainingEntity oneToOne;
+        private ContainingEntity oneToOne;
 
         @ManyToOne
-        public ContainingEntity manyToOne;
+        private ContainingEntity manyToOne;
 
         @ManyToMany
         @JoinTable(name = "containing_manyToMany_mappedBy")
-        public List<ContainingEntity> manyToMany = new ArrayList<>();
+        private List<ContainingEntity> manyToMany = new ArrayList<>();
 
+        public long getId() {
+            return id;
+        }
+
+        public void setId(long id) {
+            this.id = id;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+
+        public ContainingEntity getOneToOne() {
+            return oneToOne;
+        }
+
+        public void setOneToOne(ContainingEntity oneToOne) {
+            this.oneToOne = oneToOne;
+        }
+
+        public ContainingEntity getManyToOne() {
+            return manyToOne;
+        }
+
+        public void setManyToOne(ContainingEntity manyToOne) {
+            this.manyToOne = manyToOne;
+        }
+
+        public List<ContainingEntity> getManyToMany() {
+            return manyToMany;
+        }
+
+        public void setManyToMany(List<ContainingEntity> manyToMany) {
+            this.manyToMany = manyToMany;
+        }
     }
 
-    private enum FieldAccessEnhancedDelegate {
+    private enum AccessDelegate {
 
         ONE_TO_ONE {
             @Override
             public void setValue(ContainingEntity entity, ContainedEntity containedEntity) {
-                entity.oneToOne = containedEntity;
+                entity.setOneToOne(containedEntity);
             }
 
             @Override
             public void assertValueAndLaziness(ContainingEntity entity, ContainedEntity containedEntity) {
                 // No expectations regarding laziness on ToOne associations
-                assertThat(entity.oneToOne).isEqualTo(containedEntity);
-                consumeValue(entity.oneToOne);
+                assertThat(entity.getOneToOne()).isEqualTo(containedEntity);
+                consumeValue(entity.getOneToOne());
             }
         },
         MANY_TO_ONE {
             @Override
             public void setValue(ContainingEntity entity, ContainedEntity containedEntity) {
-                entity.manyToOne = containedEntity;
+                entity.setManyToOne(containedEntity);
             }
 
             @Override
             public void assertValueAndLaziness(ContainingEntity entity, ContainedEntity containedEntity) {
                 // No expectations regarding laziness on ToOne associations
-                assertThat(entity.manyToOne).isEqualTo(containedEntity);
-                consumeValue(entity.manyToOne);
+                assertThat(entity.getManyToOne()).isEqualTo(containedEntity);
+                consumeValue(entity.getManyToOne());
             }
         },
         ONE_TO_MANY {
             @Override
             public void setValue(ContainingEntity entity, ContainedEntity containedEntity) {
-                entity.oneToMany.add(containedEntity);
+                entity.getOneToMany().add(containedEntity);
             }
 
             @Override
             public void assertValueAndLaziness(ContainingEntity entity, ContainedEntity containedEntity) {
-                assertThat((Object) entity.oneToMany).returns(false, Hibernate::isInitialized);
-                assertThat(entity.oneToMany).containsExactly(containedEntity);
-                assertThat((Object) entity.oneToMany).returns(true, Hibernate::isInitialized);
+                assertThat((Object) entity.getOneToMany()).returns(false, Hibernate::isInitialized);
+                assertThat(entity.getOneToMany()).containsExactly(containedEntity);
+                assertThat((Object) entity.getOneToMany()).returns(true, Hibernate::isInitialized);
             }
         },
         MANY_TO_MANY {
             @Override
             public void setValue(ContainingEntity entity, ContainedEntity containedEntity) {
-                entity.manyToMany.add(containedEntity);
+                entity.getManyToMany().add(containedEntity);
             }
 
             @Override
             public void assertValueAndLaziness(ContainingEntity entity, ContainedEntity containedEntity) {
-                assertThat((Object) entity.manyToMany).returns(false, Hibernate::isInitialized);
-                assertThat(entity.manyToMany).containsExactly(containedEntity);
-                assertThat((Object) entity.manyToMany).returns(true, Hibernate::isInitialized);
+                assertThat((Object) entity.getManyToMany()).returns(false, Hibernate::isInitialized);
+                assertThat(entity.getManyToMany()).containsExactly(containedEntity);
+                assertThat((Object) entity.getManyToMany()).returns(true, Hibernate::isInitialized);
             }
         },
         ONE_TO_ONE_MAPPED_BY {
             @Override
             public void setValue(ContainingEntity entity, ContainedEntity containedEntity) {
-                entity.oneToOneMappedBy = containedEntity;
-                containedEntity.oneToOne = entity;
+                entity.setOneToOneMappedBy(containedEntity);
+                containedEntity.setOneToOne(entity);
             }
 
             @Override
             public void assertValueAndLaziness(ContainingEntity entity, ContainedEntity containedEntity) {
                 // No expectations regarding laziness on ToOne associations
-                assertThat(entity.oneToOneMappedBy).isEqualTo(containedEntity);
-                consumeValue(entity.oneToOneMappedBy);
+                assertThat(entity.getOneToOneMappedBy()).isEqualTo(containedEntity);
+                consumeValue(entity.getOneToOneMappedBy());
             }
         },
         ONE_TO_MANY_MAPPED_BY {
             @Override
             public void setValue(ContainingEntity entity, ContainedEntity containedEntity) {
-                entity.oneToManyMappedBy.add(containedEntity);
-                containedEntity.manyToOne = entity;
+                entity.getOneToManyMappedBy().add(containedEntity);
+                containedEntity.setManyToOne(entity);
             }
 
             @Override
             public void assertValueAndLaziness(ContainingEntity entity, ContainedEntity containedEntity) {
-                assertThat((Object) entity.oneToManyMappedBy).returns(false, Hibernate::isInitialized);
-                assertThat(entity.oneToManyMappedBy).containsExactly(containedEntity);
-                assertThat((Object) entity.oneToManyMappedBy).returns(true, Hibernate::isInitialized);
+                assertThat((Object) entity.getOneToManyMappedBy()).returns(false, Hibernate::isInitialized);
+                assertThat(entity.getOneToManyMappedBy()).containsExactly(containedEntity);
+                assertThat((Object) entity.getOneToManyMappedBy()).returns(true, Hibernate::isInitialized);
             }
         },
         MANY_TO_MANY_MAPPED_BY {
             @Override
             public void setValue(ContainingEntity entity, ContainedEntity containedEntity) {
-                entity.manyToManyMappedBy.add(containedEntity);
-                containedEntity.manyToMany.add(entity);
+                entity.getManyToManyMappedBy().add(containedEntity);
+                containedEntity.getManyToMany().add(entity);
             }
 
             @Override
             public void assertValueAndLaziness(ContainingEntity entity, ContainedEntity containedEntity) {
-                assertThat((Object) entity.manyToManyMappedBy).returns(false, Hibernate::isInitialized);
-                assertThat(entity.manyToManyMappedBy).containsExactly(containedEntity);
-                assertThat((Object) entity.manyToManyMappedBy).returns(true, Hibernate::isInitialized);
+                assertThat((Object) entity.getManyToManyMappedBy()).returns(false, Hibernate::isInitialized);
+                assertThat(entity.getManyToManyMappedBy()).containsExactly(containedEntity);
+                assertThat((Object) entity.getManyToManyMappedBy()).returns(true, Hibernate::isInitialized);
             }
         };
 
         protected void consumeValue(ContainedEntity entity) {
-            assertThat(entity.value).isEqualTo(CONTAINED_VALUE);
+            assertThat(entity.getValue()).isEqualTo(CONTAINED_VALUE);
         }
 
         public abstract void setValue(ContainingEntity entity, ContainedEntity containedEntity);

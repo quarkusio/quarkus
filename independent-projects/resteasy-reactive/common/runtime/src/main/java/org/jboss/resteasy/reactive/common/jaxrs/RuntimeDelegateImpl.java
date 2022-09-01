@@ -3,10 +3,13 @@ package org.jboss.resteasy.reactive.common.jaxrs;
 import java.util.Date;
 import java.util.Locale;
 import java.util.ServiceLoader;
+import java.util.concurrent.CompletionStage;
 
+import jakarta.ws.rs.SeBootstrap;
 import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.CacheControl;
 import jakarta.ws.rs.core.Cookie;
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.EntityTag;
 import jakarta.ws.rs.core.Link;
 import jakarta.ws.rs.core.MediaType;
@@ -114,5 +117,31 @@ public class RuntimeDelegateImpl extends RuntimeDelegate {
     @Override
     public Link.Builder createLinkBuilder() {
         return new LinkBuilderImpl();
+    }
+
+    @Override
+    public SeBootstrap.Configuration.Builder createConfigurationBuilder() {
+        // RR does not implement currently implement the bootstrapping API
+        throw new UnsupportedOperationException("Pending implementation");
+    }
+
+    @Override
+    public CompletionStage<SeBootstrap.Instance> bootstrap(Application application,
+            SeBootstrap.Configuration configuration) {
+        // RR does not implement currently implement the bootstrapping API
+        throw new UnsupportedOperationException("Pending implementation");
+    }
+
+    @Override
+    public CompletionStage<SeBootstrap.Instance> bootstrap(Class<? extends Application> aClass,
+            SeBootstrap.Configuration configuration) {
+        // RR does not implement currently implement the bootstrapping API
+        throw new UnsupportedOperationException("Pending implementation");
+    }
+
+    @Override
+    public EntityPart.Builder createEntityPartBuilder(String s) throws IllegalArgumentException {
+        // TODO: figure out how to implement this
+        throw new UnsupportedOperationException("Pending implementation");
     }
 }

@@ -42,9 +42,9 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
-import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
@@ -271,11 +271,11 @@ class SmallRyeHealthProcessor {
 
     @BuildStep
     public void processSmallRyeHealthConfigValues(SmallRyeHealthConfig healthConfig,
-            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> config) {
         if (healthConfig.contextPropagation) {
-            systemProperties.produce(new SystemPropertyBuildItem("io.smallrye.health.context.propagation", "true"));
+            config.produce(new RunTimeConfigurationDefaultBuildItem("io.smallrye.health.context.propagation", "true"));
         }
-        systemProperties.produce(new SystemPropertyBuildItem("io.smallrye.health.delayChecksInitializations", "true"));
+        config.produce(new RunTimeConfigurationDefaultBuildItem("io.smallrye.health.delayChecksInitializations", "true"));
     }
 
     @BuildStep(onlyIf = OpenAPIIncluded.class)

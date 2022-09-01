@@ -77,15 +77,17 @@ public final class Beans {
         boolean isAlternative = false;
         boolean isDefaultBean = false;
         List<StereotypeInfo> stereotypes = new ArrayList<>();
+        Set<ScopeInfo> beanDefiningAnnotationScopes = new HashSet<>();
         String name = null;
 
         for (AnnotationInstance annotation : beanDeployment.getAnnotations(producerMethod)) {
+            DotName annotationName = annotation.name();
             //only check for method annotations since at this point we will get both
             // method and method param annotations
             if (annotation.target().kind() != AnnotationTarget.Kind.METHOD) {
                 continue;
             }
-            if (DotNames.NAMED.equals(annotation.name())) {
+            if (DotNames.NAMED.equals(annotationName)) {
                 AnnotationValue nameValue = annotation.value();
                 if (nameValue != null) {
                     name = nameValue.asString();
@@ -93,6 +95,10 @@ public final class Beans {
                     name = getDefaultName(producerMethod);
                     annotation = normalizedNamedQualifier(name, annotation);
                 }
+            }
+            BeanDefiningAnnotation bda = beanDeployment.getBeanDefiningAnnotation(annotationName);
+            if (bda != null && bda.getDefaultScope() != null) {
+                beanDefiningAnnotationScopes.add(beanDeployment.getScope(bda.getDefaultScope()));
             }
             Collection<AnnotationInstance> qualifierCollection = beanDeployment.extractQualifiers(annotation);
             for (AnnotationInstance qualifierAnnotation : qualifierCollection) {
@@ -103,34 +109,34 @@ public final class Beans {
                 // we needn't process it further, the annotation was a qualifier (or multiple repeating ones)
                 continue;
             }
-            if (DotNames.ALTERNATIVE.equals(annotation.name())) {
+            if (DotNames.ALTERNATIVE.equals(annotationName)) {
                 isAlternative = true;
                 continue;
             }
-            if (DotNames.ALTERNATIVE_PRIORITY.equals(annotation.name())) {
+            if (DotNames.ALTERNATIVE_PRIORITY.equals(annotationName)) {
                 isAlternative = true;
                 priority = annotation.value().asInt();
                 continue;
             }
             // This is not supported ATM but should work once we upgrade to Common Annotations 2.1
-            if ((!isAlternative || priority == null) && annotation.name().equals(DotNames.PRIORITY)) {
+            if ((!isAlternative || priority == null) && annotationName.equals(DotNames.PRIORITY)) {
                 priority = annotation.value().asInt();
                 continue;
             }
-            if (priority == null && DotNames.ARC_PRIORITY.equals(annotation.name())) {
+            if (priority == null && DotNames.ARC_PRIORITY.equals(annotationName)) {
                 priority = annotation.value().asInt();
                 continue;
             }
-            if (DotNames.DEFAULT_BEAN.equals(annotation.name())) {
+            if (DotNames.DEFAULT_BEAN.equals(annotationName)) {
                 isDefaultBean = true;
                 continue;
             }
-            ScopeInfo scopeAnnotation = beanDeployment.getScope(annotation.name());
+            ScopeInfo scopeAnnotation = beanDeployment.getScope(annotationName);
             if (scopeAnnotation != null) {
                 scopes.add(scopeAnnotation);
                 continue;
             }
-            StereotypeInfo stereotype = beanDeployment.getStereotype(annotation.name());
+            StereotypeInfo stereotype = beanDeployment.getStereotype(annotationName);
             if (stereotype != null) {
                 stereotypes.add(stereotype);
                 continue;
@@ -140,12 +146,19 @@ public final class Beans {
         if (scopes.size() > 1) {
             throw multipleScopesFound("Producer method " + producerMethod, scopes);
         }
+        // 1. Explicit scope
+        // 2. Stereotype scope
+        // 3. Bean defining annotation default scope
         ScopeInfo scope;
         if (scopes.isEmpty()) {
             scope = initStereotypeScope(stereotypes, producerMethod, beanDeployment);
+            if (scope == null) {
+                scope = initBeanDefiningAnnotationScope(beanDefiningAnnotationScopes, producerMethod);
+            }
         } else {
             scope = scopes.get(0);
         }
+
         if (!isAlternative) {
             isAlternative = initStereotypeAlternative(stereotypes);
         }
@@ -185,10 +198,12 @@ public final class Beans {
         boolean isAlternative = false;
         boolean isDefaultBean = false;
         List<StereotypeInfo> stereotypes = new ArrayList<>();
+        Set<ScopeInfo> beanDefiningAnnotationScopes = new HashSet<>();
         String name = null;
 
         for (AnnotationInstance annotation : beanDeployment.getAnnotations(producerField)) {
-            if (DotNames.NAMED.equals(annotation.name())) {
+            DotName annotationName = annotation.name();
+            if (DotNames.NAMED.equals(annotationName)) {
                 AnnotationValue nameValue = annotation.value();
                 if (nameValue != null) {
                     name = nameValue.asString();
@@ -196,6 +211,10 @@ public final class Beans {
                     name = producerField.name();
                     annotation = normalizedNamedQualifier(name, annotation);
                 }
+            }
+            BeanDefiningAnnotation bda = beanDeployment.getBeanDefiningAnnotation(annotationName);
+            if (bda != null && bda.getDefaultScope() != null) {
+                beanDefiningAnnotationScopes.add(beanDeployment.getScope(bda.getDefaultScope()));
             }
             Collection<AnnotationInstance> qualifierCollection = beanDeployment.extractQualifiers(annotation);
             for (AnnotationInstance qualifierAnnotation : qualifierCollection) {
@@ -206,11 +225,11 @@ public final class Beans {
                 // we needn't process it further, the annotation was a qualifier (or multiple repeating ones)
                 continue;
             }
-            if (DotNames.ALTERNATIVE.equals(annotation.name())) {
+            if (DotNames.ALTERNATIVE.equals(annotationName)) {
                 isAlternative = true;
                 continue;
             }
-            if (DotNames.ALTERNATIVE_PRIORITY.equals(annotation.name())) {
+            if (DotNames.ALTERNATIVE_PRIORITY.equals(annotationName)) {
                 isAlternative = true;
                 priority = annotation.value().asInt();
                 continue;
@@ -220,21 +239,21 @@ public final class Beans {
                 priority = annotation.value().asInt();
                 continue;
             }
-            if (priority == null && DotNames.ARC_PRIORITY.equals(annotation.name())) {
+            if (priority == null && DotNames.ARC_PRIORITY.equals(annotationName)) {
                 priority = annotation.value().asInt();
                 continue;
             }
-            ScopeInfo scopeAnnotation = beanDeployment.getScope(annotation.name());
+            ScopeInfo scopeAnnotation = beanDeployment.getScope(annotationName);
             if (scopeAnnotation != null) {
                 scopes.add(scopeAnnotation);
                 continue;
             }
-            StereotypeInfo stereotype = beanDeployment.getStereotype(annotation.name());
+            StereotypeInfo stereotype = beanDeployment.getStereotype(annotationName);
             if (stereotype != null) {
                 stereotypes.add(stereotype);
                 continue;
             }
-            if (DotNames.DEFAULT_BEAN.equals(annotation.name())) {
+            if (DotNames.DEFAULT_BEAN.equals(annotationName)) {
                 isDefaultBean = true;
                 continue;
             }
@@ -243,9 +262,15 @@ public final class Beans {
         if (scopes.size() > 1) {
             throw multipleScopesFound("Producer field " + producerField, scopes);
         }
+        // 1. Explicit scope
+        // 2. Stereotype scope
+        // 3. Bean defining annotation default scope
         ScopeInfo scope;
         if (scopes.isEmpty()) {
             scope = initStereotypeScope(stereotypes, producerField, beanDeployment);
+            if (scope == null) {
+                scope = initBeanDefiningAnnotationScope(beanDefiningAnnotationScopes, producerField);
+            }
         } else {
             scope = scopes.get(0);
         }
@@ -293,27 +318,28 @@ public final class Beans {
             return null;
         }
         final Set<ScopeInfo> stereotypeScopes = new HashSet<>();
-        final Set<ScopeInfo> additionalBDAScopes = new HashSet<>();
         for (StereotypeInfo stereotype : stereotypes) {
-            if (!stereotype.isAdditionalBeanDefiningAnnotation()) {
-                ScopeInfo defaultScope = stereotype.getDefaultScope();
-                if (defaultScope == null) {
-                    List<StereotypeInfo> parentStereotypes = new ArrayList<>(stereotype.getParentStereotypes().size());
-                    for (AnnotationInstance annotation : stereotype.getParentStereotypes()) {
-                        StereotypeInfo parentStereotype = beanDeployment.getStereotype(annotation.name());
-                        parentStereotypes.add(parentStereotype);
-                    }
-                    defaultScope = initStereotypeScope(parentStereotypes, target, beanDeployment);
+            ScopeInfo defaultScope = stereotype.getDefaultScope();
+            if (defaultScope == null) {
+                List<StereotypeInfo> parentStereotypes = new ArrayList<>(stereotype.getParentStereotypes().size());
+                for (AnnotationInstance annotation : stereotype.getParentStereotypes()) {
+                    StereotypeInfo parentStereotype = beanDeployment.getStereotype(annotation.name());
+                    parentStereotypes.add(parentStereotype);
                 }
-                if (defaultScope != null) {
-                    stereotypeScopes.add(defaultScope);
-                }
-            } else {
-                additionalBDAScopes.add(stereotype.getDefaultScope());
+                defaultScope = initStereotypeScope(parentStereotypes, target, beanDeployment);
+            }
+            if (defaultScope != null) {
+                stereotypeScopes.add(defaultScope);
             }
         }
-        // if the stereotypeScopes set is empty, operate on additional BDA stereotypes instead
-        return BeanDeployment.getValidScope(stereotypeScopes.isEmpty() ? additionalBDAScopes : stereotypeScopes, target);
+        return BeanDeployment.getValidScope(stereotypeScopes, target);
+    }
+
+    static ScopeInfo initBeanDefiningAnnotationScope(Set<ScopeInfo> beanDefiningAnnotationScopes, AnnotationTarget target) {
+        if (beanDefiningAnnotationScopes.isEmpty()) {
+            return null;
+        }
+        return BeanDeployment.getValidScope(beanDefiningAnnotationScopes, target);
     }
 
     static boolean initStereotypeAlternative(List<StereotypeInfo> stereotypes) {
@@ -965,8 +991,10 @@ public final class Beans {
                 BeanDeployment beanDeployment,
                 Set<AnnotationInstance> qualifiers,
                 List<StereotypeInfo> stereotypes,
-                List<ScopeInfo> scopes) {
-            if (DotNames.NAMED.equals(annotation.name())) {
+                List<ScopeInfo> scopes,
+                Set<ScopeInfo> beanDefiningAnnotationScopes) {
+            DotName annotationName = annotation.name();
+            if (DotNames.NAMED.equals(annotationName)) {
                 AnnotationValue nameValue = annotation.value();
                 if (nameValue != null) {
                     name = nameValue.asString();
@@ -975,45 +1003,46 @@ public final class Beans {
                     annotation = normalizedNamedQualifier(name, annotation);
                 }
             }
+            BeanDefiningAnnotation bda = beanDeployment.getBeanDefiningAnnotation(annotationName);
+            if (bda != null && bda.getDefaultScope() != null) {
+                beanDefiningAnnotationScopes.add(beanDeployment.getScope(bda.getDefaultScope()));
+            }
             // Qualifiers
             Collection<AnnotationInstance> qualifierCollection = beanDeployment.extractQualifiers(annotation);
             for (AnnotationInstance qualifierAnnotation : qualifierCollection) {
                 qualifiers.add(qualifierAnnotation);
             }
-            // Treat the case when an additional bean defining annotation that is also a qualifier declares the default scope
-            StereotypeInfo stereotype = beanDeployment.getStereotype(annotation.name());
-            if (stereotype != null) {
-                stereotypes.add(stereotype);
-                return;
-            }
             if (!qualifierCollection.isEmpty()) {
                 // we needn't process it further, the annotation was a qualifier (or multiple repeating ones)
                 return;
             }
-            if (annotation.name()
-                    .equals(DotNames.ALTERNATIVE)) {
+            if (annotationName.equals(DotNames.ALTERNATIVE)) {
                 isAlternative = true;
                 return;
             }
-            if (annotation.name()
-                    .equals(DotNames.ALTERNATIVE_PRIORITY)) {
+            if (annotationName.equals(DotNames.ALTERNATIVE_PRIORITY)) {
                 isAlternative = true;
                 priority = annotation.value().asInt();
                 return;
             }
-            if (DotNames.DEFAULT_BEAN.equals(annotation.name())) {
+            if (DotNames.DEFAULT_BEAN.equals(annotationName)) {
                 isDefaultBean = true;
                 return;
             }
-            if ((!isAlternative || priority == null) && annotation.name().equals(DotNames.PRIORITY)) {
+            if ((!isAlternative || priority == null) && annotationName.equals(DotNames.PRIORITY)) {
                 priority = annotation.value().asInt();
                 return;
             }
-            if (priority == null && annotation.name().equals(DotNames.ARC_PRIORITY)) {
+            if (priority == null && annotationName.equals(DotNames.ARC_PRIORITY)) {
                 priority = annotation.value().asInt();
                 return;
             }
-            ScopeInfo scopeAnnotation = beanDeployment.getScope(annotation.name());
+            StereotypeInfo stereotype = beanDeployment.getStereotype(annotationName);
+            if (stereotype != null) {
+                stereotypes.add(stereotype);
+                return;
+            }
+            ScopeInfo scopeAnnotation = beanDeployment.getScope(annotationName);
             if (scopeAnnotation != null) {
                 if (!scopes.contains(scopeAnnotation)) {
                     scopes.add(scopeAnnotation);
@@ -1028,22 +1057,29 @@ public final class Beans {
 
             List<StereotypeInfo> stereotypes = new ArrayList<>();
             Collection<AnnotationInstance> annotations = beanDeployment.getAnnotations(beanClass);
+            Set<ScopeInfo> beanDefiningAnnotationScopes = new HashSet<>();
 
             for (AnnotationInstance annotation : annotations) {
-                processAnnotation(annotation, beanClass, beanDeployment, qualifiers, stereotypes, scopes);
+                processAnnotation(annotation, beanClass, beanDeployment, qualifiers, stereotypes, scopes,
+                        beanDefiningAnnotationScopes);
             }
             processSuperClass(beanClass, beanDeployment, qualifiers, stereotypes);
 
             if (scopes.size() > 1) {
                 throw multipleScopesFound("Bean class " + beanClass, scopes);
             }
+            // 1. Explicit scope (including inherited one)
+            // 2. Stereotype scope
+            // 3. Bean defining annotation default scope
             ScopeInfo scope;
             if (scopes.isEmpty()) {
-                // try to search stereotypes for scope
-                scope = initStereotypeScope(stereotypes, beanClass, beanDeployment);
-                // if that fails, try inheriting them
+                // Inheritance of type-level metadata: "A scope type explicitly declared by X and inherited by Y from X takes precedence over default scopes of stereotypes declared or inherited by Y."
+                scope = inheritScope(beanClass, beanDeployment);
                 if (scope == null) {
-                    scope = inheritScope(beanClass, beanDeployment);
+                    scope = initStereotypeScope(stereotypes, beanClass, beanDeployment);
+                    if (scope == null) {
+                        scope = initBeanDefiningAnnotationScope(beanDefiningAnnotationScopes, beanClass);
+                    }
                 }
             } else {
                 scope = scopes.get(0);

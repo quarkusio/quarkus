@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.publicfields;
+package io.quarkus.hibernate.orm.applicationfieldaccess;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,8 +22,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Checks that public field access is correctly replaced with getter/setter calls,
- * regardless of where the field is declared in the class hierarchy.
+ * Checks that access to public fields by the application is correctly replaced with getter/setter calls
+ * and works correctly regardless of where the field is declared in the class hierarchy.
  */
 public class PublicFieldAccessInheritanceTest {
 

@@ -105,13 +105,20 @@ public class SseBroadcasterImpl implements SseBroadcaster {
 
     @Override
     public synchronized void close() {
+        close(true);
+    }
+
+    @Override
+    public synchronized void close(boolean cascading) {
         if (isClosed) {
             return;
         }
         isClosed = true;
-        for (SseEventSink sink : sinks) {
-            // this will in turn fire close events to our listeners
-            sink.close();
+        if (cascading) {
+            for (SseEventSink sink : sinks) {
+                // this will in turn fire close events to our listeners
+                sink.close();
+            }
         }
     }
 

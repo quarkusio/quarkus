@@ -1,7 +1,6 @@
 package io.quarkus.smallrye.jwt.deployment;
 
 import java.util.HashSet;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -120,18 +119,16 @@ class SmallRyeJwtProcessor {
      * @return NativeImageResourceBuildItem
      */
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    NativeImageResourceBuildItem registerNativeImageResources() {
-        final Config config = ConfigProvider.getConfig();
-        try {
-            Optional<String> publicKeyLocationOpt = config.getOptionalValue("mp.jwt.verify.publickey.location", String.class);
-            if (publicKeyLocationOpt.isPresent()) {
-                final String publicKeyLocation = publicKeyLocationOpt.get();
-                if (publicKeyLocation.indexOf(':') < 0 || publicKeyLocation.startsWith("classpath:")) {
-                    log.infof("Adding %s to native image", publicKeyLocation);
-                    return new NativeImageResourceBuildItem(publicKeyLocation);
-                }
+    void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> nativeImageResource) {
+        Config config = ConfigProvider.getConfig();
+        Optional<String> publicKeyLocationOpt = config.getOptionalValue("mp.jwt.verify.publickey.location", String.class);
+        if (publicKeyLocationOpt.isPresent()) {
+            String publicKeyLocation = publicKeyLocationOpt.get();
+            if (publicKeyLocation.indexOf(':') < 0 || publicKeyLocation.startsWith("classpath:")) {
+                log.infof("Adding %s to native image", publicKeyLocation);
+                nativeImageResource.produce(new NativeImageResourceBuildItem(publicKeyLocation));
             }
-        } catch (NoSuchElementException e) {
+        } else {
             // The Config may contain expansion variables. Don't fail in this case because the config is not build time.
             // The user will have to provide the config for runtime and register the resource manually
             String publicKeyRawValue = Expressions.withoutExpansion(new Supplier<String>() {
@@ -142,9 +139,7 @@ class SmallRyeJwtProcessor {
             });
             log.warnf("Cannot determine %s of mp.jwt.verify.publickey.location to register with the native image",
                     publicKeyRawValue);
-            return null;
         }
-        return null;
     }
 
     /**

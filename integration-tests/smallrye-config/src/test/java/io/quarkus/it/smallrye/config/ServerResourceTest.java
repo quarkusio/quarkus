@@ -10,25 +10,13 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.RestAssured;
 import io.restassured.http.Header;
 
 @QuarkusTest
 class ServerResourceTest {
-    @BeforeAll
-    static void beforeAll() {
-        RestAssured.filters(
-                (requestSpec, responseSpec, ctx) -> {
-                    requestSpec.header(new Header(CONTENT_TYPE, APPLICATION_JSON));
-                    requestSpec.header(new Header(ACCEPT, APPLICATION_JSON));
-                    return ctx.next(requestSpec, responseSpec);
-                });
-    }
-
     @Test
     void mapping() {
         given()
@@ -99,7 +87,10 @@ class ServerResourceTest {
 
     @Test
     void invalid() {
-        given().get("/server/validator/{prefix}", "cloud")
+        given()
+                .header(new Header(CONTENT_TYPE, APPLICATION_JSON))
+                .header(new Header(ACCEPT, APPLICATION_JSON))
+                .get("/server/validator/{prefix}", "cloud")
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("errors", hasSize(9))

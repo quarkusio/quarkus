@@ -1,13 +1,11 @@
 package io.quarkus.smallrye.health.deployment;
 
-import static io.quarkus.arc.processor.Annotations.containsAny;
 import static io.quarkus.arc.processor.Annotations.getAnnotations;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -24,20 +22,15 @@ import org.eclipse.microprofile.health.spi.HealthCheckResponseProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
-import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
-import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
-import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -49,9 +42,9 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
-import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
@@ -158,12 +151,12 @@ class SmallRyeHealthProcessor {
 
         // Discover the beans annotated with @Health, @Liveness, @Readiness, @Startup, @HealthGroup,
         // @HealthGroups and @Wellness even if no scope is defined
-        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(LIVENESS));
-        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(READINESS));
-        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(STARTUP));
-        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH_GROUP));
-        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH_GROUPS));
-        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(WELLNESS));
+        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(LIVENESS, BuiltinScope.SINGLETON.getName()));
+        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(READINESS, BuiltinScope.SINGLETON.getName()));
+        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(STARTUP, BuiltinScope.SINGLETON.getName()));
+        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH_GROUP, BuiltinScope.SINGLETON.getName()));
+        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH_GROUPS, BuiltinScope.SINGLETON.getName()));
+        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(WELLNESS, BuiltinScope.SINGLETON.getName()));
 
         // Add additional beans
         additionalBean.produce(new AdditionalBeanBuildItem(QuarkusAsyncHealthCheckFactory.class));
@@ -278,11 +271,11 @@ class SmallRyeHealthProcessor {
 
     @BuildStep
     public void processSmallRyeHealthConfigValues(SmallRyeHealthConfig healthConfig,
-            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> config) {
         if (healthConfig.contextPropagation) {
-            systemProperties.produce(new SystemPropertyBuildItem("io.smallrye.health.context.propagation", "true"));
+            config.produce(new RunTimeConfigurationDefaultBuildItem("io.smallrye.health.context.propagation", "true"));
         }
-        systemProperties.produce(new SystemPropertyBuildItem("io.smallrye.health.delayChecksInitializations", "true"));
+        config.produce(new RunTimeConfigurationDefaultBuildItem("io.smallrye.health.delayChecksInitializations", "true"));
     }
 
     @BuildStep(onlyIf = OpenAPIIncluded.class)
@@ -348,59 +341,6 @@ class SmallRyeHealthProcessor {
     @BuildStep
     ShutdownListenerBuildItem shutdownListener() {
         return new ShutdownListenerBuildItem(new ShutdownReadinessListener());
-    }
-
-    @BuildStep
-    AnnotationsTransformerBuildItem annotationTransformer(BeanArchiveIndexBuildItem beanArchiveIndex,
-            CustomScopeAnnotationsBuildItem scopes) {
-
-        // Transform health checks that are not annotated with a scope or a stereotype with a default scope
-        Set<DotName> stereotypeAnnotations = new HashSet<>();
-        for (AnnotationInstance annotation : beanArchiveIndex.getIndex().getAnnotations(DotNames.STEREOTYPE)) {
-            ClassInfo annotationClass = beanArchiveIndex.getIndex().getClassByName(annotation.name());
-            if (annotationClass != null && scopes.isScopeIn(annotationClass.classAnnotations())) {
-                // Stereotype annotation with a default scope
-                stereotypeAnnotations.add(annotationClass.name());
-            }
-        }
-        List<DotName> healthAnnotations = new ArrayList<>(5);
-        healthAnnotations.add(LIVENESS);
-        healthAnnotations.add(READINESS);
-        healthAnnotations.add(STARTUP);
-        healthAnnotations.add(HEALTH_GROUP);
-        healthAnnotations.add(HEALTH_GROUPS);
-        healthAnnotations.add(WELLNESS);
-
-        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-
-            @Override
-            public boolean appliesTo(Kind kind) {
-                return kind == Kind.CLASS || kind == Kind.METHOD;
-            }
-
-            @Override
-            public void transform(TransformationContext ctx) {
-                if (ctx.getAnnotations().isEmpty()) {
-                    return;
-                }
-                Collection<AnnotationInstance> annotations;
-                if (ctx.isClass()) {
-                    annotations = ctx.getAnnotations();
-                    if (containsAny(annotations, stereotypeAnnotations)) {
-                        return;
-                    }
-                } else {
-                    annotations = getAnnotations(Kind.METHOD, ctx.getAnnotations());
-                }
-                if (scopes.isScopeIn(annotations)) {
-                    return;
-                }
-                if (containsAny(annotations, healthAnnotations)) {
-                    ctx.transform().add(BuiltinScope.SINGLETON.getName()).done();
-                }
-            }
-
-        });
     }
 
     // UI

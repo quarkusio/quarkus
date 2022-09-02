@@ -10,8 +10,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-smallrye-context-propagation-deployment-spi</artifactId>
-    <name>Quarkus - SmallRye Context Propagation - Deployment - SPI</name>
+    <artifactId>quarkus-smallrye-context-propagation-spi</artifactId>
+    <name>Quarkus - SmallRye Context Propagation - SPI</name>
 
     <dependencies>
         <dependency>

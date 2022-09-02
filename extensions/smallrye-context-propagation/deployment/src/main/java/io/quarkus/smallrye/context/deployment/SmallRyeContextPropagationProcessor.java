@@ -65,7 +65,7 @@ class SmallRyeContextPropagationProcessor {
         List<ThreadContextProvider> discoveredProviders = new ArrayList<>();
         List<ContextManagerExtension> discoveredExtensions = new ArrayList<>();
         List<Class<?>> providers = threadContextProviders.stream().map(ThreadContextProviderBuildItem::getProvider)
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(ArrayList::new));
         ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
                 "META-INF/services/" + ThreadContextProvider.class.getName()).forEach(providers::add);
         for (Class<?> provider : providers) {

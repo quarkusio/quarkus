@@ -6,7 +6,7 @@ import static org.hamcrest.Matchers.is;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit.DisabledOnNativeImage;
+import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
@@ -34,7 +34,7 @@ public class ClasspathTestCase {
     @Test
     // Static init may happen in a container when testing a native image,
     // in which case we don't have any classpath record to check.
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     public void testStaticInitMainClassNoDuplicate() {
         given().param("resourceName", CLASS_FILE)
                 .param("phase", "static_init")
@@ -45,7 +45,7 @@ public class ClasspathTestCase {
     @Test
     // Static init may happen in a container when testing a native image,
     // in which case we don't have any classpath record to check.
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     public void testStaticInitMainResourceNoDuplicate() {
         given().param("resourceName", RESOURCE_FILE)
                 .param("phase", "static_init")

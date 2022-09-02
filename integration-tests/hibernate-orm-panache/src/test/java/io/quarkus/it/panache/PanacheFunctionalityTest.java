@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
-import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -64,7 +63,7 @@ public class PanacheFunctionalityTest {
                         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><person><id>666</id><name>Eddie</name><serialisationTrick>1</serialisationTrick><status>DECEASED</status></person>"));
     }
 
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Test
     public void testPanacheInTest() {
         Assertions.assertEquals(0, Person.count());
@@ -105,7 +104,7 @@ public class PanacheFunctionalityTest {
      * This test does not interact with the Quarkus application itself. It is just using the Jackson ObjectMapper with a
      * PanacheEntity. Thus this test is disabled in native mode. The test code runs the JVM and not native.
      */
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Test
     public void jacksonDeserializationIgnoresPersistentAttribute() throws JsonProcessingException {
         // set Up
@@ -126,7 +125,7 @@ public class PanacheFunctionalityTest {
     /**
      * This test is disabled in native mode as there is no interaction with the quarkus integration test endpoint.
      */
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Test
     public void jaxbDeserializationHasAllFields() throws JsonProcessingException, JAXBException {
         // set Up
@@ -198,14 +197,14 @@ public class PanacheFunctionalityTest {
                         + PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME + "\",result=\"miss\"}"));
     }
 
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Transactional
     @Test
     void testBug7102InOneTransaction() {
         testBug7102();
     }
 
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Test
     public void testBug7102() {
         Person person = createBug7102();

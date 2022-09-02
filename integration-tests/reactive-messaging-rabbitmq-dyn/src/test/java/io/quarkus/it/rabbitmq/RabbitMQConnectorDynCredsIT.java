@@ -1,8 +1,8 @@
 package io.quarkus.it.rabbitmq;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class RabbitMQConnectorDynCredsIT extends RabbitMQConnectorDynCredsTest {
 
 }

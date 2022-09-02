@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
 import io.quarkus.test.TestReactiveTransaction;
-import io.quarkus.test.junit.DisabledOnNativeImage;
+import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
@@ -64,7 +64,7 @@ public class PanacheFunctionalityTest {
                 .body(is("{\"id\":666,\"dogs\":[],\"name\":\"Eddie\",\"serialisationTrick\":1,\"status\":\"DECEASED\"}"));
     }
 
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Test
     public void testPanacheInTest() {
         Assertions.assertEquals(0, Person.count().await().indefinitely());
@@ -87,7 +87,7 @@ public class PanacheFunctionalityTest {
      * This test does not interact with the Quarkus application itself. It is just using the Jackson ObjectMapper with a
      * PanacheEntity. Thus this test is disabled in native mode. The test code runs the JVM and not native.
      */
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Test
     public void jacksonDeserializationIgnoresPersistentAttribute() throws JsonProcessingException {
         // set Up
@@ -108,7 +108,7 @@ public class PanacheFunctionalityTest {
     /**
      * This test is disabled in native mode as there is no interaction with the quarkus integration test endpoint.
      */
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Test
     public void jsonbDeserializationHasAllFields() throws JsonProcessingException {
         // set Up
@@ -156,7 +156,7 @@ public class PanacheFunctionalityTest {
         RestAssured.when().get("/test/testSortByNullPrecedence").then().body(is("OK"));
     }
 
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @ReactiveTransactional
     @Test
     Uni<Void> testTransaction() {
@@ -165,14 +165,14 @@ public class PanacheFunctionalityTest {
         return Uni.createFrom().nullItem();
     }
 
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Test
     void testNoTransaction() {
         Transaction transaction = Panache.currentTransaction().await().indefinitely();
         Assertions.assertNull(transaction);
     }
 
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Test
     public void testBug7102() {
         createBug7102()
@@ -212,7 +212,7 @@ public class PanacheFunctionalityTest {
         return Person.findById(id);
     }
 
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @TestReactiveTransaction
     @Test
     @Order(100)
@@ -223,7 +223,7 @@ public class PanacheFunctionalityTest {
         asserter.assertEquals(() -> Person.count(), 1l);
     }
 
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @TestReactiveTransaction
     @Test
     @Order(101)
@@ -233,7 +233,7 @@ public class PanacheFunctionalityTest {
         asserter.assertEquals(() -> Person.count(), 0l);
     }
 
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @ReactiveTransactional
     @Test
     @Order(200)
@@ -244,7 +244,7 @@ public class PanacheFunctionalityTest {
         asserter.assertEquals(() -> Person.count(), 1l);
     }
 
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @ReactiveTransactional
     @Test
     @Order(201)
@@ -257,7 +257,7 @@ public class PanacheFunctionalityTest {
         asserter.execute(() -> Panache.currentTransaction().invoke(tx -> tx.markForRollback()));
     }
 
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @ReactiveTransactional
     @Test
     @Order(202)
@@ -269,7 +269,7 @@ public class PanacheFunctionalityTest {
         asserter.assertEquals(() -> Person.deleteAll(), 1l);
     }
 
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @RunOnVertxContext
     @Test
     @Order(300)

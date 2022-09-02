@@ -578,10 +578,8 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: testng.version
       newValue: 7.4.0
-# In progress, these ones need a change:
+# TODO, these ones probably still need a change:
 #        <microprofile-reactive-streams-operators.version>1.0.1</microprofile-reactive-streams-operators.version>
-#        <microprofile-lra.version>1.0</microprofile-lra.version>
-#        <smallrye-graphql.version>1.4.3</smallrye-graphql.version>
 #        <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
 #        <smallrye-reactive-types-converter.version>2.6.0</smallrye-reactive-types-converter.version>
 #        <smallrye-mutiny-vertx-binding.version>2.19.0</smallrye-mutiny-vertx-binding.version>

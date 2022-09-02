@@ -332,11 +332,17 @@ git checkout -- extensions/kubernetes-service-binding/runtime/src/test/resources
 
 # Disable non-compilable ITs
 # - Confluent registry client doesn't have a version supporting Jakarta packages
-sed -i 's@<module>kafka-avro</module>@<!-- <module>kafka-avro</module> -->@g' integration-tests/pom.xml
 
 # Commit what we have before cherry-picking stuff
 git add .
 git commit -m 'Transform sources to Jakarta'
+
+# Remove integration-tests/kafka-avro as it's testing old versions
+# We have a new module for newer versions that work with Jakarta
+sed -i '/<module>kafka-avro<\/module>/d' integration-tests/pom.xml
+rm -rf integration-tests/kafka-avro
+git add .
+git commit -m 'Remove integration-tests/kafka-avro - see kafka-avro-apicurio2 instead'
 
 # Apply EE 10 updates
 

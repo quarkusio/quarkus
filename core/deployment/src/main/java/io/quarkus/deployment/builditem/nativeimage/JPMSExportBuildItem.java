@@ -13,17 +13,22 @@ public final class JPMSExportBuildItem extends MultiBuildItem {
     private final String moduleName;
     private final String packageName;
     private final GraalVM.Version exportAfter;
+    private final GraalVM.Version exportBefore;
 
     public JPMSExportBuildItem(String moduleName, String packageName) {
-        this.moduleName = moduleName;
-        this.packageName = packageName;
-        this.exportAfter = GraalVM.Version.MINIMUM;
+        this(moduleName, packageName, GraalVM.Version.MINIMUM, null);
     }
 
     public JPMSExportBuildItem(String moduleName, String packageName, GraalVM.Version exportAfter) {
+        this(moduleName, packageName, exportAfter, null);
+    }
+
+    public JPMSExportBuildItem(String moduleName, String packageName, GraalVM.Version exportAfter,
+            GraalVM.Version exportBefore) {
         this.moduleName = moduleName;
         this.packageName = packageName;
         this.exportAfter = exportAfter;
+        this.exportBefore = exportBefore;
     }
 
     public String getPackage() {
@@ -53,5 +58,9 @@ public final class JPMSExportBuildItem extends MultiBuildItem {
 
     public GraalVM.Version getExportAfter() {
         return exportAfter;
+    }
+
+    public GraalVM.Version getExportBefore() {
+        return exportBefore;
     }
 }

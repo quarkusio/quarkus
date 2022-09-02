@@ -857,7 +857,9 @@ public class NativeImageBuildStep {
                 if (jpmsExports != null) {
                     HashSet<JPMSExportBuildItem> deduplicatedJpmsExport = new HashSet<>(jpmsExports);
                     for (JPMSExportBuildItem jpmsExport : deduplicatedJpmsExport) {
-                        if (graalVMVersion.isNewerThan(jpmsExport.getExportAfter())) {
+                        GraalVM.Version exportBeforeVersion = jpmsExport.getExportBefore();
+                        if (graalVMVersion.isNewerThan(jpmsExport.getExportAfter()) &&
+                                (exportBeforeVersion == null || graalVMVersion.isOlderThan(exportBeforeVersion))) {
                             nativeImageArgs.add(
                                     "-J--add-exports=" + jpmsExport.getModule() + "/" + jpmsExport.getPackage()
                                             + "=ALL-UNNAMED");

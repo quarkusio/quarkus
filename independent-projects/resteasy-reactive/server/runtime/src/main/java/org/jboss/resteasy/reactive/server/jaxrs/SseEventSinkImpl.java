@@ -75,7 +75,13 @@ public class SseEventSinkImpl implements SseEventSink {
                     // I don't think we should be firing the exception on the broadcaster here
                 }
             });
-            response.addCloseHandler(this::close);
+            response.addCloseHandler(() -> {
+                if (broadcaster != null) {
+                    broadcaster.fireClose(this);
+                }
+                // Not sure if this call is necessary, as the sink results already closed when executing this handler
+                close();
+            });
         }
     }
 

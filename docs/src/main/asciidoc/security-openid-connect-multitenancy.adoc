@@ -149,7 +149,7 @@ public class CustomTenantResolver implements TenantResolver {
 From the implementation above, tenants are resolved from the request path so that in case no tenant could be inferred, `null` is returned to indicate that the default tenant configuration should be used.
 
 [NOTE]
-===
+====
 When a current tenant represents an OIDC `web-app` application, the current `io.vertx.ext.web.RoutingContext` will contain a `tenant-id` attribute by the time the custom tenant resolver has been called for all the requests completing the code authentication flow and the already authenticated requests, when either a tenant specific state or session cookie already exists.
 Therefore, when working with multiple OpenID Connect Providers, you only need a path specific check to resolve a tenant id if the `RoutingContext` does not have the `tenant-id` attribute set, for example:
 
@@ -184,11 +184,10 @@ public class CustomTenantResolver implements TenantResolver {
     }
 }
 ----
-
-===
+====
 
 [NOTE]
-===
+====
 If you also use xref:hibernate-orm.adoc#multitenancy[Hibernate ORM multitenancy] and both OIDC and Hibernate ORM tenant IDs are the same and must be extracted from the Vert.x `RoutingContext` then you can pass the tenant id from the OIDC Tenant Resolver to the Hibernate ORM Tenant Resolver as a `RoutingContext` attribute, for example:
 
 [source,java]
@@ -203,7 +202,7 @@ public class CustomTenantResolver implements TenantResolver {
     }
 }
 ----
-===
+====
 
 == Configuring the application
 

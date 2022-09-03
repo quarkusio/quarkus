@@ -72,7 +72,9 @@ public class SseBroadcasterImpl implements SseBroadcaster {
 
     synchronized void fireClose(SseEventSinkImpl sseEventSink) {
         for (Consumer<SseEventSink> listener : onCloseListeners) {
-            listener.accept(sseEventSink);
+            if (sinks.remove(sseEventSink)) {
+                listener.accept(sseEventSink);
+            }
         }
     }
 

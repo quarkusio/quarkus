@@ -75,10 +75,7 @@ public class SseEventSinkImpl implements SseEventSink {
                     // I don't think we should be firing the exception on the broadcaster here
                 }
             });
-            //            response.closeHandler(v -> {
-            //                // FIXME: notify of client closing
-            //                System.err.println("Server connection closed");
-            //            });
+            response.addCloseHandler(this::close);
         }
     }
 

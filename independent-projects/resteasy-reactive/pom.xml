@@ -72,6 +72,7 @@
         <awaitility.version>4.2.0</awaitility.version>
         <smallrye-mutiny-vertx-core.version>3.7.2</smallrye-mutiny-vertx-core.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
+        <mockito.version>4.8.0</mockito.version>
         <mutiny-zero.version>1.0.0</mutiny-zero.version>
 
         <!-- Forbidden API checks -->
@@ -95,6 +96,15 @@
                 <version>${jackson-bom.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
+            </dependency>
+
+            <!-- Mockito BOM -->
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-bom</artifactId>
+                <version>${mockito.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <dependency>

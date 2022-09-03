@@ -86,6 +86,9 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
             } catch (Error e) {
                 resultBuilder.clearErrors().data(null).error(new AbortExecutionException(e));
                 return (T) resultBuilder.build();
+            } catch (Throwable ex) {
+                eventEmitter.fireOnDataFetchError(dfe.getExecutionId().toString(), ex);
+                throw ex;
             }
         });
 

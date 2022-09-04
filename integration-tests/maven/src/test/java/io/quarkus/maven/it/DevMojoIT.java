@@ -1339,4 +1339,61 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
 
         assertTrue(source.exists());
     }
+
+    @Test
+    public void testExternalReloadableArtifacts() throws Exception {
+        final String rootProjectPath = "projects/external-reloadable-artifacts";
+
+        // Set up the external project
+        final File externalJarDir = initProject(rootProjectPath + "/external-lib");
+
+        // Clean and install the external JAR in local repository (.m2)
+        install(externalJarDir, true);
+
+        // Set up the main project that uses the external dependency
+        this.testDir = initProject(rootProjectPath + "/app");
+
+        // Run quarkus:dev process
+        run(true);
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("Hello"));
+
+        final File greetingJava = externalJarDir.toPath().resolve("src").resolve("main")
+                .resolve("java").resolve("org").resolve("acme").resolve("lib")
+                .resolve("Greeting.java").toFile();
+        assertThat(greetingJava).exists();
+
+        // Uncomment the method bonjour() in Greeting.java
+        filter(greetingJava, Map.of("/*", "", "*/", ""));
+        install(externalJarDir, false);
+
+        final File greetingResourceJava = this.testDir.toPath().resolve("src").resolve("main")
+                .resolve("java").resolve("org").resolve("acme")
+                .resolve("GreetingResource.java").toFile();
+        assertThat(greetingResourceJava).exists();
+
+        // Update the GreetingResource.java to call the Greeting.bonjour() method
+        final String greetingBonjourCall = "Greeting.bonjour()";
+        filter(greetingResourceJava, Map.of("Greeting.hello()", greetingBonjourCall));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("Bonjour"));
+
+        // Change bonjour() method content in Greeting.java
+        filter(greetingJava, Map.of("Bonjour", "Bonjour!"));
+        install(externalJarDir, false);
+
+        // Change GreetingResource.java endpoint response to upper case letters
+        filter(greetingResourceJava, Map.of(greetingBonjourCall, greetingBonjourCall.concat(".toUpperCase()")));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("BONJOUR!"));
+    }
 }

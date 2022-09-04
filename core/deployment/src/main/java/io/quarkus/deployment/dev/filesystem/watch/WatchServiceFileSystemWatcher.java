@@ -1,4 +1,4 @@
-package io.quarkus.deployment.dev.filewatch;
+package io.quarkus.deployment.dev.filesystem.watch;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;

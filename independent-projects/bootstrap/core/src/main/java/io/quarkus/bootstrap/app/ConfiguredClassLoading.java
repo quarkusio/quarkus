@@ -205,6 +205,10 @@ public class ConfiguredClassLoading implements Serializable {
         return reloadableArtifacts.contains(key);
     }
 
+    public boolean hasReloadableArtifacts() {
+        return !reloadableArtifacts.isEmpty();
+    }
+
     public boolean isRemovedArtifact(ArtifactKey key) {
         return removedArtifacts.contains(key);
     }

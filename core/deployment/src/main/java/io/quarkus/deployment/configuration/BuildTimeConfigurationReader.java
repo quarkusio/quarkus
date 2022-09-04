@@ -404,7 +404,7 @@ public final class BuildTimeConfigurationReader {
                         // we always have to set the map entry ourselves
                         Field field = matched.findField();
                         Converter<?> converter = getConverter(config, field, ConverterType.of(field));
-                        map.put(key, config.convertValue(configValue.getNameProfiled(), configValue.getValue(), converter));
+                        map.put(key, config.convertValue(configValue, converter));
                         allBuildTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
                         continue;
                     }
@@ -437,7 +437,7 @@ public final class BuildTimeConfigurationReader {
                         // we always have to set the map entry ourselves
                         Field field = matched.findField();
                         Converter<?> converter = getConverter(config, field, ConverterType.of(field));
-                        map.put(key, config.convertValue(configValue.getNameProfiled(), configValue.getValue(), converter));
+                        map.put(key, config.convertValue(configValue, converter));
                         // cache the resolved value
                         allBuildTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
                         buildTimeRunTimeValues.put(configValue.getNameProfiled(), configValue.getValue());

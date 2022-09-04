@@ -647,7 +647,7 @@ public class VertxHttpRecorder {
                 websocketSubProtocols);
         HttpServerOptions domainSocketOptions = createDomainSocketOptions(httpBuildTimeConfig, httpConfiguration,
                 websocketSubProtocols);
-        HttpServerOptions sslConfig = createSslOptions(httpBuildTimeConfig, httpConfiguration, launchMode,
+        HttpServerOptions tmpSslConfig = createSslOptions(httpBuildTimeConfig, httpConfiguration, launchMode,
                 websocketSubProtocols);
 
         // Customize
@@ -659,14 +659,20 @@ public class VertxHttpRecorder {
                 if (httpServerOptions != null) {
                     customizer.customizeHttpServer(httpServerOptions);
                 }
-                if (sslConfig != null) {
-                    customizer.customizeHttpsServer(sslConfig);
+                if (tmpSslConfig != null) {
+                    customizer.customizeHttpsServer(tmpSslConfig);
                 }
                 if (domainSocketOptions != null) {
                     customizer.customizeDomainSocketServer(domainSocketOptions);
                 }
             }
         }
+
+        // Disable TLS if certificate options are still missing after customize hooks.
+        if (tmpSslConfig != null && tmpSslConfig.getKeyCertOptions() == null) {
+            tmpSslConfig = null;
+        }
+        final HttpServerOptions sslConfig = tmpSslConfig;
 
         if (httpConfiguration.insecureRequests != HttpConfiguration.InsecureRequests.ENABLED && sslConfig == null) {
             throw new IllegalStateException("Cannot set quarkus.http.redirect-insecure-requests without enabling SSL.");
@@ -852,8 +858,6 @@ public class VertxHttpRecorder {
                     sslConfig.certificate.keyStoreKeyAlias,
                     keyStoreKeyPassword);
             serverOptions.setKeyCertOptions(options);
-        } else {
-            return null;
         }
 
         if (trustStoreFile.isPresent()) {

@@ -28,7 +28,7 @@ public class HttpServerOptionsCustomizerTest {
 
     @Test
     void test() {
-        Assertions.assertThat(customizer.count()).isEqualTo(1);
+        Assertions.assertThat(customizer.count()).isEqualTo(2);
         Assertions.assertThat(RestAssured.get("http://localhost:9998").body().asString()).isEqualTo("hello");
     }
 

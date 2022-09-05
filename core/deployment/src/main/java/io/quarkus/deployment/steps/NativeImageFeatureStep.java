@@ -366,52 +366,54 @@ public class NativeImageFeatureStep {
                     overallCatch.invokeStaticMethod(VERSION_CURRENT),
                     overallCatch.marshalAsArray(int.class, overallCatch.load(22), overallCatch.load(3))));
             /* GraalVM >= 22.3 */
-            BytecodeCreator greaterThan22_2 = graalVm22_3Test.trueBranch();
+            try (BytecodeCreator greaterThan22_2 = graalVm22_3Test.trueBranch()) {
 
-            ResultHandle runtimeResourceSupportClass = greaterThan22_2.loadClassFromTCCL(RUNTIME_RESOURCE_SUPPORT);
-            ResultHandle addResourceBundlesParams = greaterThan22_2.marshalAsArray(Class.class,
-                    greaterThan22_2.loadClassFromTCCL(ConfigurationCondition.class),
-                    greaterThan22_2.loadClassFromTCCL(String.class));
-            ResultHandle addResourceBundlesMethod = greaterThan22_2.invokeStaticMethod(
-                    LOOKUP_METHOD,
-                    runtimeResourceSupportClass, greaterThan22_2.load("addResourceBundles"), addResourceBundlesParams);
-            ResultHandle runtimeResourceSupport = greaterThan22_2.invokeStaticMethod(
-                    IMAGE_SINGLETONS_LOOKUP,
-                    runtimeResourceSupportClass);
-            ResultHandle configAlwaysTrue = greaterThan22_2.invokeStaticMethod(CONFIGURATION_ALWAYS_TRUE);
+                ResultHandle runtimeResourceSupportClass = greaterThan22_2.loadClassFromTCCL(RUNTIME_RESOURCE_SUPPORT);
+                ResultHandle addResourceBundlesParams = greaterThan22_2.marshalAsArray(Class.class,
+                        greaterThan22_2.loadClassFromTCCL(ConfigurationCondition.class),
+                        greaterThan22_2.loadClassFromTCCL(String.class));
+                ResultHandle addResourceBundlesMethod = greaterThan22_2.invokeStaticMethod(
+                        LOOKUP_METHOD,
+                        runtimeResourceSupportClass, greaterThan22_2.load("addResourceBundles"), addResourceBundlesParams);
+                ResultHandle runtimeResourceSupport = greaterThan22_2.invokeStaticMethod(
+                        IMAGE_SINGLETONS_LOOKUP,
+                        runtimeResourceSupportClass);
+                ResultHandle configAlwaysTrue = greaterThan22_2.invokeStaticMethod(CONFIGURATION_ALWAYS_TRUE);
 
-            for (NativeImageResourceBundleBuildItem i : resourceBundles) {
-                TryBlock et = greaterThan22_2.tryBlock();
+                for (NativeImageResourceBundleBuildItem i : resourceBundles) {
+                    TryBlock et = greaterThan22_2.tryBlock();
 
-                et.invokeVirtualMethod(
-                        INVOKE,
-                        addResourceBundlesMethod, runtimeResourceSupport,
-                        et.marshalAsArray(Object.class, configAlwaysTrue, et.load(i.getBundleName())));
-                CatchBlockCreator c = et.addCatch(Throwable.class);
-                //c.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), c.getCaughtException());
+                    et.invokeVirtualMethod(
+                            INVOKE,
+                            addResourceBundlesMethod, runtimeResourceSupport,
+                            et.marshalAsArray(Object.class, configAlwaysTrue, et.load(i.getBundleName())));
+                    CatchBlockCreator c = et.addCatch(Throwable.class);
+                    //c.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), c.getCaughtException());
+                }
             }
 
             /* GraalVM < 22.3 */
-            BytecodeCreator smallerThan22_3 = graalVm22_3Test.falseBranch();
+            try (BytecodeCreator smallerThan22_3 = graalVm22_3Test.falseBranch()) {
 
-            ResultHandle locClass = smallerThan22_3.loadClassFromTCCL(LOCALIZATION_FEATURE);
-            ResultHandle newParams = smallerThan22_3.marshalAsArray(Class.class,
-                    smallerThan22_3.loadClassFromTCCL(String.class));
-            ResultHandle registerMethod = smallerThan22_3.invokeStaticMethod(
-                    LOOKUP_METHOD,
-                    locClass, smallerThan22_3.load("prepareBundle"), newParams);
+                ResultHandle locClass = smallerThan22_3.loadClassFromTCCL(LOCALIZATION_FEATURE);
+                ResultHandle newParams = smallerThan22_3.marshalAsArray(Class.class,
+                        smallerThan22_3.loadClassFromTCCL(String.class));
+                ResultHandle registerMethod = smallerThan22_3.invokeStaticMethod(
+                        LOOKUP_METHOD,
+                        locClass, smallerThan22_3.load("prepareBundle"), newParams);
 
-            ResultHandle locSupport = smallerThan22_3.invokeStaticMethod(
-                    IMAGE_SINGLETONS_LOOKUP,
-                    locClass);
+                ResultHandle locSupport = smallerThan22_3.invokeStaticMethod(
+                        IMAGE_SINGLETONS_LOOKUP,
+                        locClass);
 
-            for (NativeImageResourceBundleBuildItem i : resourceBundles) {
-                TryBlock et = smallerThan22_3.tryBlock();
+                for (NativeImageResourceBundleBuildItem i : resourceBundles) {
+                    TryBlock et = smallerThan22_3.tryBlock();
 
-                et.invokeVirtualMethod(ofMethod(Method.class, "invoke", Object.class, Object.class, Object[].class),
-                        registerMethod, locSupport, et.marshalAsArray(Object.class, et.load(i.getBundleName())));
-                CatchBlockCreator c = et.addCatch(Throwable.class);
-                //c.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), c.getCaughtException());
+                    et.invokeVirtualMethod(ofMethod(Method.class, "invoke", Object.class, Object.class, Object[].class),
+                            registerMethod, locSupport, et.marshalAsArray(Object.class, et.load(i.getBundleName())));
+                    CatchBlockCreator c = et.addCatch(Throwable.class);
+                    //c.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), c.getCaughtException());
+                }
             }
         }
         int count = 0;
@@ -577,48 +579,51 @@ public class NativeImageFeatureStep {
                 BranchResult graalVm22_3Test = tc.ifGreaterEqualZero(tc.invokeVirtualMethod(VERSION_COMPARE_TO,
                         tc.invokeStaticMethod(VERSION_CURRENT), tc.marshalAsArray(int.class, tc.load(22), tc.load(3))));
                 /* GraalVM >= 22.3 */
-                BytecodeCreator greaterThan22_2 = graalVm22_3Test.trueBranch();
-                greaterThan22_2.invokeStaticMethod(ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Class[].class),
-                        carray);
+                try (BytecodeCreator greaterThan22_2 = graalVm22_3Test.trueBranch()) {
+                    greaterThan22_2.invokeStaticMethod(ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Class[].class),
+                            carray);
 
-                if (jniAccessible.isConstructors()) {
-                    greaterThan22_2.invokeStaticMethod(
-                            ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
-                            constructors);
-                }
+                    if (jniAccessible.isConstructors()) {
+                        greaterThan22_2.invokeStaticMethod(
+                                ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
+                                constructors);
+                    }
 
-                if (jniAccessible.isMethods()) {
-                    greaterThan22_2.invokeStaticMethod(
-                            ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
-                            methods);
-                }
+                    if (jniAccessible.isMethods()) {
+                        greaterThan22_2.invokeStaticMethod(
+                                ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
+                                methods);
+                    }
 
-                if (jniAccessible.isFields()) {
-                    greaterThan22_2.invokeStaticMethod(
-                            ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Field[].class),
-                            fields);
+                    if (jniAccessible.isFields()) {
+                        greaterThan22_2.invokeStaticMethod(
+                                ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Field[].class),
+                                fields);
+                    }
                 }
                 /* GraalVM < 22.3 */
-                BytecodeCreator smallerThan22_3 = graalVm22_3Test.falseBranch();
-                smallerThan22_3.invokeStaticMethod(ofMethod(LEGACY_JNI_RUNTIME_ACCESS, "register", void.class, Class[].class),
-                        carray);
-
-                if (jniAccessible.isConstructors()) {
+                try (BytecodeCreator smallerThan22_3 = graalVm22_3Test.falseBranch()) {
                     smallerThan22_3.invokeStaticMethod(
-                            ofMethod(LEGACY_JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
-                            constructors);
-                }
+                            ofMethod(LEGACY_JNI_RUNTIME_ACCESS, "register", void.class, Class[].class),
+                            carray);
 
-                if (jniAccessible.isMethods()) {
-                    smallerThan22_3.invokeStaticMethod(
-                            ofMethod(LEGACY_JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
-                            methods);
-                }
+                    if (jniAccessible.isConstructors()) {
+                        smallerThan22_3.invokeStaticMethod(
+                                ofMethod(LEGACY_JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
+                                constructors);
+                    }
 
-                if (jniAccessible.isFields()) {
-                    smallerThan22_3.invokeStaticMethod(
-                            ofMethod(LEGACY_JNI_RUNTIME_ACCESS, "register", void.class, boolean.class, Field[].class),
-                            smallerThan22_3.load(jniAccessible.isFinalFieldsWriteable()), fields);
+                    if (jniAccessible.isMethods()) {
+                        smallerThan22_3.invokeStaticMethod(
+                                ofMethod(LEGACY_JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
+                                methods);
+                    }
+
+                    if (jniAccessible.isFields()) {
+                        smallerThan22_3.invokeStaticMethod(
+                                ofMethod(LEGACY_JNI_RUNTIME_ACCESS, "register", void.class, boolean.class, Field[].class),
+                                smallerThan22_3.load(jniAccessible.isFinalFieldsWriteable()), fields);
+                    }
                 }
 
                 CatchBlockCreator cc = tc.addCatch(Throwable.class);

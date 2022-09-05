@@ -37,6 +37,7 @@ public class TransactionalSortedSetCommandsTest extends DatasourceTestBase {
     public void setBlocking() {
         TransactionResult result = blocking.withTransaction(tx -> {
             TransactionalSortedSetCommands<String, String> set = tx.sortedSet(String.class);
+            assertThat(set.getDataSource()).isEqualTo(tx);
             set.zadd(key, Map.of("a", 1.0, "b", 2.0, "c", 3.0, "d", 4.0));
             set.zadd(key, 3.0, "e");
             set.zpopmin(key);

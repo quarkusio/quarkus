@@ -38,47 +38,49 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
     @Override
     public <K, F, V> TransactionalHashCommands<K, F, V> hash(Class<K> redisKeyType, Class<F> typeOfField,
             Class<V> typeOfValue) {
-        return new BlockingTransactionalHashCommandsImpl<>(reactive.hash(redisKeyType, typeOfField, typeOfValue), timeout);
+        return new BlockingTransactionalHashCommandsImpl<>(this, reactive.hash(redisKeyType, typeOfField, typeOfValue),
+                timeout);
     }
 
     @Override
     public <K, V> TransactionalGeoCommands<K, V> geo(Class<K> redisKeyType, Class<V> memberType) {
-        return new BlockingTransactionalGeoCommandsImpl<>(reactive.geo(redisKeyType, memberType), timeout);
+        return new BlockingTransactionalGeoCommandsImpl<>(this, reactive.geo(redisKeyType, memberType), timeout);
     }
 
     @Override
     public <K> TransactionalKeyCommands<K> key(Class<K> redisKeyType) {
-        return new BlockingTransactionalKeyCommandsImpl<>(reactive.key(redisKeyType), timeout);
+        return new BlockingTransactionalKeyCommandsImpl<>(this, reactive.key(redisKeyType), timeout);
     }
 
     @Override
     public <K, V> TransactionalSetCommands<K, V> set(Class<K> redisKeyType, Class<V> memberType) {
-        return new BlockingTransactionalSetCommandsImpl<>(reactive.set(redisKeyType, memberType), timeout);
+        return new BlockingTransactionalSetCommandsImpl<>(this, reactive.set(redisKeyType, memberType), timeout);
     }
 
     @Override
     public <K, V> TransactionalSortedSetCommands<K, V> sortedSet(Class<K> redisKeyType, Class<V> valueType) {
-        return new BlockingTransactionalSortedSetCommandsImpl<>(reactive.sortedSet(redisKeyType, valueType), timeout);
+        return new BlockingTransactionalSortedSetCommandsImpl<>(this, reactive.sortedSet(redisKeyType, valueType), timeout);
     }
 
     @Override
     public <K, V> TransactionalStringCommands<K, V> string(Class<K> redisKeyType, Class<V> valueType) {
-        return new BlockingTransactionalStringCommandsImpl<>(reactive.string(redisKeyType, valueType), timeout);
+        return new BlockingTransactionalStringCommandsImpl<>(this, reactive.string(redisKeyType, valueType), timeout);
     }
 
     @Override
     public <K, V> TransactionalListCommands<K, V> list(Class<K> redisKeyType, Class<V> memberType) {
-        return new BlockingTransactionalListCommandsImpl<>(reactive.list(redisKeyType, memberType), timeout);
+        return new BlockingTransactionalListCommandsImpl<>(this, reactive.list(redisKeyType, memberType), timeout);
     }
 
     @Override
     public <K, V> TransactionalHyperLogLogCommands<K, V> hyperloglog(Class<K> redisKeyType, Class<V> memberType) {
-        return new BlockingTransactionalHyperLogLogCommandsImpl<>(reactive.hyperloglog(redisKeyType, memberType), timeout);
+        return new BlockingTransactionalHyperLogLogCommandsImpl<>(this, reactive.hyperloglog(redisKeyType, memberType),
+                timeout);
     }
 
     @Override
     public <K> TransactionalBitMapCommands<K> bitmap(Class<K> redisKeyType) {
-        return new BlockingTransactionalBitMapCommandsImpl<>(reactive.bitmap(redisKeyType), timeout);
+        return new BlockingTransactionalBitMapCommandsImpl<>(this, reactive.bitmap(redisKeyType), timeout);
     }
 
     @Override

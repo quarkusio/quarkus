@@ -7,16 +7,17 @@ import io.quarkus.redis.datasource.string.GetExArgs;
 import io.quarkus.redis.datasource.string.ReactiveTransactionalStringCommands;
 import io.quarkus.redis.datasource.string.SetArgs;
 import io.quarkus.redis.datasource.string.TransactionalStringCommands;
+import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 
-public class BlockingTransactionalStringCommandsImpl<K, V> implements TransactionalStringCommands<K, V> {
+public class BlockingTransactionalStringCommandsImpl<K, V> extends AbstractTransactionalRedisCommandGroup
+        implements TransactionalStringCommands<K, V> {
 
     private final ReactiveTransactionalStringCommands<K, V> reactive;
 
-    private final Duration timeout;
-
-    public BlockingTransactionalStringCommandsImpl(ReactiveTransactionalStringCommands<K, V> reactive, Duration timeout) {
+    public BlockingTransactionalStringCommandsImpl(TransactionalRedisDataSource ds,
+            ReactiveTransactionalStringCommands<K, V> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

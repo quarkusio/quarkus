@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.OptionalLong;
 
+import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.SortArgs;
 import io.quarkus.redis.datasource.list.KeyValue;
 import io.quarkus.redis.datasource.list.LPosArgs;
@@ -11,14 +12,13 @@ import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.list.Position;
 import io.quarkus.redis.datasource.list.ReactiveListCommands;
 
-public class BlockingListCommandsImpl<K, V> implements ListCommands<K, V> {
+public class BlockingListCommandsImpl<K, V> extends AbstractRedisCommandGroup implements ListCommands<K, V> {
 
     private final ReactiveListCommands<K, V> reactive;
-    private final Duration timeout;
 
-    public BlockingListCommandsImpl(ReactiveListCommands<K, V> reactive, Duration timeout) {
+    public BlockingListCommandsImpl(RedisDataSource ds, ReactiveListCommands<K, V> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

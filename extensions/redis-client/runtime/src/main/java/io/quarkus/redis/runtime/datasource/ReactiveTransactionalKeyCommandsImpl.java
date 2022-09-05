@@ -7,6 +7,7 @@ import io.quarkus.redis.datasource.keys.CopyArgs;
 import io.quarkus.redis.datasource.keys.ExpireArgs;
 import io.quarkus.redis.datasource.keys.ReactiveTransactionalKeyCommands;
 import io.quarkus.redis.datasource.keys.RedisKeyNotFoundException;
+import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
 
@@ -15,8 +16,9 @@ public class ReactiveTransactionalKeyCommandsImpl<K> extends AbstractTransaction
 
     private final ReactiveKeyCommandsImpl<K> reactive;
 
-    public ReactiveTransactionalKeyCommandsImpl(ReactiveKeyCommandsImpl<K> reactive, TransactionHolder tx) {
-        super(tx);
+    public ReactiveTransactionalKeyCommandsImpl(ReactiveTransactionalRedisDataSource ds, ReactiveKeyCommandsImpl<K> reactive,
+            TransactionHolder tx) {
+        super(ds, tx);
         this.reactive = reactive;
     }
 

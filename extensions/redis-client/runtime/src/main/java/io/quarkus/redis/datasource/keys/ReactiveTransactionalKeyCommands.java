@@ -3,9 +3,10 @@ package io.quarkus.redis.datasource.keys;
 import java.time.Duration;
 import java.time.Instant;
 
+import io.quarkus.redis.datasource.ReactiveTransactionalRedisCommands;
 import io.smallrye.mutiny.Uni;
 
-public interface ReactiveTransactionalKeyCommands<K> {
+public interface ReactiveTransactionalKeyCommands<K> extends ReactiveTransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/copy">COPY</a>.

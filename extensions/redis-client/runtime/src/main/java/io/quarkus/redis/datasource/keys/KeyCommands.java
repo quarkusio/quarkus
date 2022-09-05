@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
+import io.quarkus.redis.datasource.RedisCommands;
+
 /**
  * Allows executing commands manipulating keys.
  * See <a href="https://redis.io/commands/?group=generic">the generic command list</a> for further information about these
@@ -13,7 +15,7 @@ import java.util.Set;
  *
  * @param <K> the type of the keys, often {@link String}
  */
-public interface KeyCommands<K> {
+public interface KeyCommands<K> extends RedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/copy">COPY</a>.

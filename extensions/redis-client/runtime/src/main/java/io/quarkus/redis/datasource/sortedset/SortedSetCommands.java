@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.OptionalDouble;
 import java.util.OptionalLong;
 
+import io.quarkus.redis.datasource.RedisCommands;
 import io.quarkus.redis.datasource.ScanArgs;
 import io.quarkus.redis.datasource.SortArgs;
 import io.quarkus.redis.datasource.list.KeyValue;
@@ -23,7 +24,7 @@ import io.quarkus.redis.datasource.list.KeyValue;
  * @param <K> the type of the key
  * @param <V> the type of the scored item
  */
-public interface SortedSetCommands<K, V> {
+public interface SortedSetCommands<K, V> extends RedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/zadd">ZADD</a>.

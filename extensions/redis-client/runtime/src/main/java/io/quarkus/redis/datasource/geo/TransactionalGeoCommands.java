@@ -1,6 +1,8 @@
 package io.quarkus.redis.datasource.geo;
 
-public interface TransactionalGeoCommands<K, V> {
+import io.quarkus.redis.datasource.TransactionalRedisCommands;
+
+public interface TransactionalGeoCommands<K, V> extends TransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/geoadd">GEOADD</a>.

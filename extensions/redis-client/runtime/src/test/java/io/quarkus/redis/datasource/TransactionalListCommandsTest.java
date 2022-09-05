@@ -34,6 +34,7 @@ public class TransactionalListCommandsTest extends DatasourceTestBase {
     public void listBlocking() {
         TransactionResult result = blocking.withTransaction(tx -> {
             TransactionalListCommands<String, String> list = tx.list(String.class);
+            assertThat(list.getDataSource()).isEqualTo(tx);
             list.lpush(key, "a", "b", "c", "d");
             list.linsertBeforePivot(key, "c", "1");
             list.lpos(key, "c");

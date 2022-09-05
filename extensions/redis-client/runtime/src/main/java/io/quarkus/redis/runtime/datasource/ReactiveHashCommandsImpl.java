@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.ScanArgs;
 import io.quarkus.redis.datasource.hash.ReactiveHashCommands;
 import io.quarkus.redis.datasource.hash.ReactiveHashScanCursor;
@@ -14,8 +15,16 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class ReactiveHashCommandsImpl<K, F, V> extends AbstractHashCommands<K, F, V> implements ReactiveHashCommands<K, F, V> {
 
-    public ReactiveHashCommandsImpl(RedisCommandExecutor redis, Class<K> k, Class<F> f, Class<V> v) {
+    private final ReactiveRedisDataSource reactive;
+
+    public ReactiveHashCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k, Class<F> f, Class<V> v) {
         super(redis, k, f, v);
+        this.reactive = redis;
+    }
+
+    @Override
+    public ReactiveRedisDataSource getDataSource() {
+        return reactive;
     }
 
     @SafeVarargs

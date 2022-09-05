@@ -71,6 +71,11 @@ public class GeoCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    void getDataSource() {
+        assertThat(ds).isEqualTo(geo.getDataSource());
+    }
+
+    @Test
     void geoadd() {
         boolean added = geo.geoadd(key, 44.9396, CRUSSOL_LATITUDE, Place.crussol);
         assertThat(added).isTrue();

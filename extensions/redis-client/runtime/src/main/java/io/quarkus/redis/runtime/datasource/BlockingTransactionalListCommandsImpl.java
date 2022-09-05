@@ -6,16 +6,17 @@ import io.quarkus.redis.datasource.list.LPosArgs;
 import io.quarkus.redis.datasource.list.Position;
 import io.quarkus.redis.datasource.list.ReactiveTransactionalListCommands;
 import io.quarkus.redis.datasource.list.TransactionalListCommands;
+import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 
-public class BlockingTransactionalListCommandsImpl<K, V> implements TransactionalListCommands<K, V> {
+public class BlockingTransactionalListCommandsImpl<K, V> extends AbstractTransactionalRedisCommandGroup
+        implements TransactionalListCommands<K, V> {
 
     private final ReactiveTransactionalListCommands<K, V> reactive;
 
-    private final Duration timeout;
-
-    public BlockingTransactionalListCommandsImpl(ReactiveTransactionalListCommands<K, V> reactive, Duration timeout) {
+    public BlockingTransactionalListCommandsImpl(TransactionalRedisDataSource ds,
+            ReactiveTransactionalListCommands<K, V> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

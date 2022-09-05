@@ -2,17 +2,17 @@ package io.quarkus.redis.runtime.datasource;
 
 import java.time.Duration;
 
+import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.hyperloglog.HyperLogLogCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveHyperLogLogCommands;
 
-public class BlockingHyperLogLogCommandsImpl<K, V> implements HyperLogLogCommands<K, V> {
+public class BlockingHyperLogLogCommandsImpl<K, V> extends AbstractRedisCommandGroup implements HyperLogLogCommands<K, V> {
 
     private final ReactiveHyperLogLogCommands<K, V> reactive;
-    private final Duration timeout;
 
-    public BlockingHyperLogLogCommandsImpl(ReactiveHyperLogLogCommands<K, V> reactive, Duration timeout) {
+    public BlockingHyperLogLogCommandsImpl(RedisDataSource ds, ReactiveHyperLogLogCommands<K, V> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

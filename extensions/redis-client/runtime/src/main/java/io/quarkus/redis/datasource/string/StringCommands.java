@@ -2,6 +2,8 @@ package io.quarkus.redis.datasource.string;
 
 import java.util.Map;
 
+import io.quarkus.redis.datasource.RedisCommands;
+
 /**
  * Allows executing commands from the {@code string} group.
  * See <a href="https://redis.io/commands/?group=string">the string command list</a> for further information
@@ -13,7 +15,7 @@ import java.util.Map;
  * @param <K> the type of the key
  * @param <V> the type of the value
  */
-public interface StringCommands<K, V> {
+public interface StringCommands<K, V> extends RedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/append">APPEND</a>.

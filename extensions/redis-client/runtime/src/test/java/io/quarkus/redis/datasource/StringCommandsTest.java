@@ -41,6 +41,11 @@ public class StringCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    void getDataSource() {
+        assertThat(ds).isEqualTo(strings.getDataSource());
+    }
+
+    @Test
     void append() {
         assertThat(strings.append(key, value)).isEqualTo(value.length());
         assertThat(strings.append(key, "X")).isEqualTo(value.length() + 1);

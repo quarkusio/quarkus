@@ -51,6 +51,11 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    void getDataSource() {
+        assertThat(ds).isEqualTo(keys.getDataSource());
+    }
+
+    @Test
     void del() {
         strings.set(key, Person.person7);
         assertThat((long) keys.del(key)).isEqualTo(1);

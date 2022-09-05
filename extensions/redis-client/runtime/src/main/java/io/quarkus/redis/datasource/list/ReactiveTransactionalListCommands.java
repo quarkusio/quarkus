@@ -2,9 +2,10 @@ package io.quarkus.redis.datasource.list;
 
 import java.time.Duration;
 
+import io.quarkus.redis.datasource.ReactiveTransactionalRedisCommands;
 import io.smallrye.mutiny.Uni;
 
-public interface ReactiveTransactionalListCommands<K, V> {
+public interface ReactiveTransactionalListCommands<K, V> extends ReactiveTransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/blmove">BLMOVE</a>.

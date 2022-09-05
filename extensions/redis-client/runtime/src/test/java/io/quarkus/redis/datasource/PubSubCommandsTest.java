@@ -54,6 +54,11 @@ public class PubSubCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    void getDataSource() {
+        assertThat(ds).isEqualTo(pubsub.getDataSource());
+    }
+
+    @Test
     void testPubSub() {
 
         List<Person> people = new CopyOnWriteArrayList<>();

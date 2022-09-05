@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.keys.CopyArgs;
 import io.quarkus.redis.datasource.keys.ExpireArgs;
 import io.quarkus.redis.datasource.keys.KeyScanArgs;
@@ -18,8 +19,16 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class ReactiveKeyCommandsImpl<K> extends AbstractKeyCommands<K> implements ReactiveKeyCommands<K> {
 
-    public ReactiveKeyCommandsImpl(RedisCommandExecutor redis, Class<K> k) {
+    private final ReactiveRedisDataSource reactive;
+
+    public ReactiveKeyCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k) {
         super(redis, k);
+        this.reactive = redis;
+    }
+
+    @Override
+    public ReactiveRedisDataSource getDataSource() {
+        return reactive;
     }
 
     @Override

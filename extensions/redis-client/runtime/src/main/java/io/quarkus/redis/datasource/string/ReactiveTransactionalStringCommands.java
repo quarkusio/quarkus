@@ -2,9 +2,10 @@ package io.quarkus.redis.datasource.string;
 
 import java.util.Map;
 
+import io.quarkus.redis.datasource.ReactiveTransactionalRedisCommands;
 import io.smallrye.mutiny.Uni;
 
-public interface ReactiveTransactionalStringCommands<K, V> {
+public interface ReactiveTransactionalStringCommands<K, V> extends ReactiveTransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/append">APPEND</a>.

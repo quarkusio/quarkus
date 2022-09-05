@@ -5,16 +5,17 @@ import java.time.Duration;
 import io.quarkus.redis.datasource.bitmap.BitFieldArgs;
 import io.quarkus.redis.datasource.bitmap.ReactiveTransactionalBitMapCommands;
 import io.quarkus.redis.datasource.bitmap.TransactionalBitMapCommands;
+import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 
-public class BlockingTransactionalBitMapCommandsImpl<K> implements TransactionalBitMapCommands<K> {
+public class BlockingTransactionalBitMapCommandsImpl<K> extends AbstractTransactionalRedisCommandGroup
+        implements TransactionalBitMapCommands<K> {
 
     private final ReactiveTransactionalBitMapCommands<K> reactive;
 
-    private final Duration timeout;
-
-    public BlockingTransactionalBitMapCommandsImpl(ReactiveTransactionalBitMapCommands<K> reactive, Duration timeout) {
+    public BlockingTransactionalBitMapCommandsImpl(TransactionalRedisDataSource ds,
+            ReactiveTransactionalBitMapCommands<K> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

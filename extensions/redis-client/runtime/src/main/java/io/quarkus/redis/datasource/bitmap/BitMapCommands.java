@@ -2,6 +2,8 @@ package io.quarkus.redis.datasource.bitmap;
 
 import java.util.List;
 
+import io.quarkus.redis.datasource.RedisCommands;
+
 /**
  * Allows executing commands from the {@code bitmap} group.
  * See <a href="https://redis.io/commands/?group=bitmap">the bitmap command list</a> for further information about these
@@ -9,7 +11,7 @@ import java.util.List;
  *
  * @param <K> the type of the key
  */
-public interface BitMapCommands<K> {
+public interface BitMapCommands<K> extends RedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/bitcount">BITCOUNT</a>.

@@ -3,10 +3,11 @@ package io.quarkus.redis.datasource.pubsub;
 import java.util.List;
 import java.util.function.Consumer;
 
+import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-public interface ReactivePubSubCommands<V> {
+public interface ReactivePubSubCommands<V> extends ReactiveRedisCommands {
 
     /**
      * Publishes a message to a given channel

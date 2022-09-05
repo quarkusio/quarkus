@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.quarkus.redis.datasource.ScanArgs;
 import io.quarkus.redis.datasource.SortArgs;
 import io.quarkus.redis.datasource.list.KeyValue;
@@ -22,7 +23,7 @@ import io.smallrye.mutiny.Uni;
  * @param <K> the type of the key
  * @param <V> the type of the scored item
  */
-public interface ReactiveSortedSetCommands<K, V> {
+public interface ReactiveSortedSetCommands<K, V> extends ReactiveRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/zadd">ZADD</a>.

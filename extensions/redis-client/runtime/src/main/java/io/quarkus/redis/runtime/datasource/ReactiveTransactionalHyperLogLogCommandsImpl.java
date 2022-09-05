@@ -1,6 +1,7 @@
 package io.quarkus.redis.runtime.datasource;
 
 import io.quarkus.redis.datasource.hyperloglog.ReactiveTransactionalHyperLogLogCommands;
+import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
 
@@ -9,8 +10,9 @@ public class ReactiveTransactionalHyperLogLogCommandsImpl<K, V> extends Abstract
 
     private final ReactiveHyperLogLogCommandsImpl<K, V> reactive;
 
-    public ReactiveTransactionalHyperLogLogCommandsImpl(ReactiveHyperLogLogCommandsImpl<K, V> reactive, TransactionHolder tx) {
-        super(tx);
+    public ReactiveTransactionalHyperLogLogCommandsImpl(ReactiveTransactionalRedisDataSource ds,
+            ReactiveHyperLogLogCommandsImpl<K, V> reactive, TransactionHolder tx) {
+        super(ds, tx);
         this.reactive = reactive;
     }
 

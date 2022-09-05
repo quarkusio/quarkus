@@ -8,6 +8,7 @@ import java.util.OptionalDouble;
 import java.util.OptionalLong;
 import java.util.stream.Collectors;
 
+import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.ScanArgs;
 import io.quarkus.redis.datasource.SortArgs;
 import io.quarkus.redis.datasource.list.KeyValue;
@@ -21,14 +22,13 @@ import io.quarkus.redis.datasource.sortedset.ZAggregateArgs;
 import io.quarkus.redis.datasource.sortedset.ZRangeArgs;
 import io.quarkus.redis.datasource.sortedset.ZScanCursor;
 
-public class BlockingSortedSetCommandsImpl<K, V> implements SortedSetCommands<K, V> {
+public class BlockingSortedSetCommandsImpl<K, V> extends AbstractRedisCommandGroup implements SortedSetCommands<K, V> {
 
     private final ReactiveSortedSetCommands<K, V> reactive;
-    private final Duration timeout;
 
-    public BlockingSortedSetCommandsImpl(ReactiveSortedSetCommands<K, V> reactive, Duration timeout) {
+    public BlockingSortedSetCommandsImpl(RedisDataSource ds, ReactiveSortedSetCommands<K, V> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

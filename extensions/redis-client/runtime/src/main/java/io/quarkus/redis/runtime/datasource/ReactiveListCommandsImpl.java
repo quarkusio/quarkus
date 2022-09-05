@@ -3,6 +3,7 @@ package io.quarkus.redis.runtime.datasource;
 import java.time.Duration;
 import java.util.List;
 
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.list.KeyValue;
 import io.quarkus.redis.datasource.list.LPosArgs;
 import io.quarkus.redis.datasource.list.Position;
@@ -12,8 +13,16 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class ReactiveListCommandsImpl<K, V> extends AbstractListCommands<K, V> implements ReactiveListCommands<K, V> {
 
-    public ReactiveListCommandsImpl(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    private final ReactiveRedisDataSource reactive;
+
+    public ReactiveListCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k, Class<V> v) {
         super(redis, k, v);
+        this.reactive = redis;
+    }
+
+    @Override
+    public ReactiveRedisDataSource getDataSource() {
+        return reactive;
     }
 
     @Override

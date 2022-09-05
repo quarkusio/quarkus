@@ -6,17 +6,17 @@ import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 
+import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.pubsub.PubSubCommands;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 
-public class BlockingPubSubCommandsImpl<V> implements PubSubCommands<V> {
+public class BlockingPubSubCommandsImpl<V> extends AbstractRedisCommandGroup implements PubSubCommands<V> {
 
     private final ReactivePubSubCommands<V> reactive;
-    private final Duration timeout;
 
-    public BlockingPubSubCommandsImpl(ReactivePubSubCommands<V> reactive, Duration timeout) {
+    public BlockingPubSubCommandsImpl(RedisDataSource ds, ReactivePubSubCommands<V> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

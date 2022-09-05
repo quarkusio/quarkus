@@ -17,6 +17,7 @@ public class RestClientReactiveConfig {
     /**
      * Default scope for Rest Client Reactive. Use `javax.enterprise.context.Dependent` for spec-compliant behavior
      */
+    @Deprecated // Deprecated in favour of RestClientsConfig.scope
     @ConfigItem(name = "scope", defaultValue = "javax.enterprise.context.ApplicationScoped")
     public String scope;
 
@@ -27,6 +28,7 @@ public class RestClientReactiveConfig {
      * MicroProfile Rest Client spec requires the implementations to always default to application/json.
      * This build item disables the "smart" behavior of RESTEasy Reactive to comply to the spec
      */
+    @Deprecated // Deprecated in favour of RestClientsConfig.disableSmartProduces
     @ConfigItem(name = "disable-smart-produces", defaultValue = "false")
     public boolean disableSmartProduces;
 

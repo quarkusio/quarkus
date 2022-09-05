@@ -7,7 +7,6 @@ import java.util.Set;
 
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
-import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
@@ -18,22 +17,17 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.rest.client.reactive.configuration.EchoResource;
 import io.quarkus.restclient.config.RestClientConfig;
-import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ConfigurationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloClientWithBaseUri.class, EchoResource.class))
+            .withApplicationRoot(jar -> jar.addClasses(HelloClientWithBaseUri.class, EchoResource.class))
             .withConfigurationResource("configuration-test-application.properties");
 
     @RestClient
     HelloClientWithBaseUri client;
-
-    @Inject
-    RestClientsConfig configRoot;
 
     @Test
     void shouldHaveSingletonScope() {
@@ -49,12 +43,7 @@ public class ConfigurationTest {
     }
 
     @Test
-    void configurationShouldBeLoaded() {
-        assertThat(configRoot.disableSmartProduces).isPresent();
-        assertThat(configRoot.disableSmartProduces.get()).isTrue();
-        assertThat(configRoot.multipartPostEncoderMode).isPresent();
-        assertThat(configRoot.multipartPostEncoderMode.get()).isEqualTo("HTML5");
-
+    void checkClientSpecificConfigs() {
         RestClientConfig clientConfig = RestClientConfig.load(io.quarkus.rest.client.reactive.HelloClientWithBaseUri.class);
         verifyClientConfig(clientConfig, true);
 
@@ -71,8 +60,6 @@ public class ConfigurationTest {
 
         clientConfig = RestClientConfig.load("mp-client-prefix");
         verifyClientConfig(clientConfig, false);
-        assertThat(clientConfig.maxRedirects.isPresent()).isTrue();
-        assertThat(clientConfig.maxRedirects.get()).isEqualTo(4);
     }
 
     private void verifyClientConfig(RestClientConfig clientConfig, boolean checkExtraProperties) {

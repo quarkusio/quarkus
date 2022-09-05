@@ -31,6 +31,7 @@ public class RestClientCDIDelegateBuilder<T> {
 
     private static final String REST_URL_FORMAT = "quarkus.rest-client.%s.url";
     private static final String REST_URI_FORMAT = "quarkus.rest-client.%s.uri";
+    private static final String NONE = "none";
 
     private final Class<T> jaxrsInterface;
     private final String baseUriFromAnnotation;
@@ -84,13 +85,13 @@ public class RestClientCDIDelegateBuilder<T> {
         }
 
         Optional<Integer> poolSize = oneOf(clientConfigByClassName().connectionPoolSize,
-                clientConfigByConfigKey().connectionPoolSize);
+                clientConfigByConfigKey().connectionPoolSize, configRoot.connectionPoolSize);
         if (poolSize.isPresent()) {
             builder.property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, poolSize.get());
         }
 
         Optional<Integer> connectionTTL = oneOf(clientConfigByClassName().connectionTTL,
-                clientConfigByConfigKey().connectionTTL);
+                clientConfigByConfigKey().connectionTTL, configRoot.connectionTTL);
         if (connectionTTL.isPresent()) {
             // configuration bean contains value in milliseconds
             int connectionTTLSeconds = connectionTTL.get() / 1000;
@@ -98,10 +99,13 @@ public class RestClientCDIDelegateBuilder<T> {
         }
 
         Map<String, String> headers = clientConfigByClassName().headers;
-        if (headers.isEmpty()) {
+        if (headers == null || headers.isEmpty()) {
             headers = clientConfigByConfigKey().headers;
         }
-        if ((headers != null) && !headers.isEmpty()) {
+        if (headers == null || headers.isEmpty()) {
+            headers = configRoot.headers;
+        }
+        if (headers != null && !headers.isEmpty()) {
             builder.property(QuarkusRestClientProperties.STATIC_HEADERS, headers);
         }
 
@@ -116,8 +120,8 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void configureProxy(RestClientBuilderImpl builder) {
-        Optional<String> maybeProxy = oneOf(clientConfigByClassName().proxyAddress,
-                clientConfigByConfigKey().proxyAddress);
+        Optional<String> maybeProxy = oneOf(clientConfigByClassName().proxyAddress, clientConfigByConfigKey().proxyAddress,
+                configRoot.proxyAddress);
         if (maybeProxy.isEmpty()) {
             return;
         }
@@ -129,18 +133,18 @@ public class RestClientCDIDelegateBuilder<T> {
             ProxyAddressUtil.HostAndPort hostAndPort = ProxyAddressUtil.parseAddress(proxyAddress);
             builder.proxyAddress(hostAndPort.host, hostAndPort.port);
 
-            oneOf(clientConfigByClassName().proxyUser, clientConfigByConfigKey().proxyUser)
+            oneOf(clientConfigByClassName().proxyUser, clientConfigByConfigKey().proxyUser, configRoot.proxyUser)
                     .ifPresent(builder::proxyUser);
-            oneOf(clientConfigByClassName().proxyPassword, clientConfigByConfigKey().proxyPassword)
+            oneOf(clientConfigByClassName().proxyPassword, clientConfigByConfigKey().proxyPassword, configRoot.proxyPassword)
                     .ifPresent(builder::proxyPassword);
-            oneOf(clientConfigByClassName().nonProxyHosts, clientConfigByConfigKey().nonProxyHosts)
+            oneOf(clientConfigByClassName().nonProxyHosts, clientConfigByConfigKey().nonProxyHosts, configRoot.nonProxyHosts)
                     .ifPresent(builder::nonProxyHosts);
         }
     }
 
     private void configureQueryParamStyle(RestClientBuilder builder) {
         Optional<QueryParamStyle> maybeQueryParamStyle = oneOf(clientConfigByClassName().queryParamStyle,
-                clientConfigByConfigKey().queryParamStyle);
+                clientConfigByConfigKey().queryParamStyle, configRoot.queryParamStyle);
         if (maybeQueryParamStyle.isPresent()) {
             QueryParamStyle queryParamStyle = maybeQueryParamStyle.get();
             builder.queryParamStyle(queryParamStyle);
@@ -149,13 +153,13 @@ public class RestClientCDIDelegateBuilder<T> {
 
     private void configureRedirects(RestClientBuilder builder) {
         Optional<Integer> maxRedirects = oneOf(clientConfigByClassName().maxRedirects,
-                clientConfigByConfigKey().maxRedirects);
+                clientConfigByConfigKey().maxRedirects, configRoot.maxRedirects);
         if (maxRedirects.isPresent()) {
             builder.property(QuarkusRestClientProperties.MAX_REDIRECTS, maxRedirects.get());
         }
 
         Optional<Boolean> maybeFollowRedirects = oneOf(clientConfigByClassName().followRedirects,
-                clientConfigByConfigKey().followRedirects);
+                clientConfigByConfigKey().followRedirects, configRoot.followRedirects);
         if (maybeFollowRedirects.isPresent()) {
             builder.followRedirects(maybeFollowRedirects.get());
         }
@@ -180,20 +184,20 @@ public class RestClientCDIDelegateBuilder<T> {
 
     private void configureSsl(RestClientBuilder builder) {
 
-        Optional<String> maybeTrustStore = oneOf(clientConfigByClassName().trustStore,
-                clientConfigByConfigKey().trustStore);
-        if (maybeTrustStore.isPresent()) {
+        Optional<String> maybeTrustStore = oneOf(clientConfigByClassName().trustStore, clientConfigByConfigKey().trustStore,
+                configRoot.trustStore);
+        if (maybeTrustStore.isPresent() && !maybeTrustStore.get().isBlank() && !NONE.equals(maybeTrustStore.get())) {
             registerTrustStore(maybeTrustStore.get(), builder);
         }
 
-        Optional<String> maybeKeyStore = oneOf(clientConfigByClassName().keyStore,
-                clientConfigByConfigKey().keyStore);
-        if (maybeKeyStore.isPresent()) {
+        Optional<String> maybeKeyStore = oneOf(clientConfigByClassName().keyStore, clientConfigByConfigKey().keyStore,
+                configRoot.keyStore);
+        if (maybeKeyStore.isPresent() && !maybeKeyStore.get().isBlank() && !NONE.equals(maybeKeyStore.get())) {
             registerKeyStore(maybeKeyStore.get(), builder);
         }
 
         Optional<String> maybeHostnameVerifier = oneOf(clientConfigByClassName().hostnameVerifier,
-                clientConfigByConfigKey().hostnameVerifier);
+                clientConfigByConfigKey().hostnameVerifier, configRoot.hostnameVerifier);
         if (maybeHostnameVerifier.isPresent()) {
             registerHostnameVerifier(maybeHostnameVerifier.get(), builder);
         }
@@ -221,9 +225,9 @@ public class RestClientCDIDelegateBuilder<T> {
 
     private void registerKeyStore(String keyStorePath, RestClientBuilder builder) {
         Optional<String> keyStorePassword = oneOf(clientConfigByClassName().keyStorePassword,
-                clientConfigByConfigKey().keyStorePassword);
+                clientConfigByConfigKey().keyStorePassword, configRoot.keyStorePassword);
         Optional<String> keyStoreType = oneOf(clientConfigByClassName().keyStoreType,
-                clientConfigByConfigKey().keyStoreType);
+                clientConfigByConfigKey().keyStoreType, configRoot.keyStoreType);
 
         try {
             KeyStore keyStore = KeyStore.getInstance(keyStoreType.orElse("JKS"));
@@ -247,9 +251,9 @@ public class RestClientCDIDelegateBuilder<T> {
 
     private void registerTrustStore(String trustStorePath, RestClientBuilder builder) {
         Optional<String> maybeTrustStorePassword = oneOf(clientConfigByClassName().trustStorePassword,
-                clientConfigByConfigKey().trustStorePassword);
+                clientConfigByConfigKey().trustStorePassword, configRoot.trustStorePassword);
         Optional<String> maybeTrustStoreType = oneOf(clientConfigByClassName().trustStoreType,
-                clientConfigByConfigKey().trustStoreType);
+                clientConfigByConfigKey().trustStoreType, configRoot.trustStoreType);
 
         try {
             KeyStore trustStore = KeyStore.getInstance(maybeTrustStoreType.orElse("JKS"));
@@ -297,8 +301,8 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void configureProviders(RestClientBuilder builder) {
-        Optional<String> maybeProviders = oneOf(clientConfigByClassName().providers,
-                clientConfigByConfigKey().providers);
+        Optional<String> maybeProviders = oneOf(clientConfigByClassName().providers, clientConfigByConfigKey().providers,
+                configRoot.providers);
         if (maybeProviders.isPresent()) {
             registerProviders(builder, maybeProviders.get());
         }
@@ -371,7 +375,7 @@ public class RestClientCDIDelegateBuilder<T> {
     @SafeVarargs
     private static <T> Optional<T> oneOf(Optional<T>... optionals) {
         for (Optional<T> o : optionals) {
-            if (o.isPresent()) {
+            if (o != null && o.isPresent()) {
                 return o;
             }
         }

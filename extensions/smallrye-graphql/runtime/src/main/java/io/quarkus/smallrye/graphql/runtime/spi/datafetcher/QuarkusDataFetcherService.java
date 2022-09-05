@@ -1,7 +1,10 @@
 package io.quarkus.smallrye.graphql.runtime.spi.datafetcher;
 
+import io.smallrye.graphql.execution.datafetcher.PlugableBatchableDataFetcher;
 import io.smallrye.graphql.execution.datafetcher.PlugableDataFetcher;
+import io.smallrye.graphql.schema.model.Field;
 import io.smallrye.graphql.schema.model.Operation;
+import io.smallrye.graphql.schema.model.Reference;
 import io.smallrye.graphql.schema.model.Type;
 import io.smallrye.graphql.spi.DataFetcherService;
 
@@ -18,18 +21,22 @@ public class QuarkusDataFetcherService implements DataFetcherService {
     }
 
     @Override
-    public PlugableDataFetcher getUniDataFetcher(Operation operation, Type type) {
+    public PlugableBatchableDataFetcher getUniDataFetcher(Operation operation, Type type) {
         return new QuarkusUniDataFetcher(operation, type);
     }
 
     @Override
-    public PlugableDataFetcher getDefaultDataFetcher(Operation operation, Type type) {
+    public PlugableBatchableDataFetcher getDefaultDataFetcher(Operation operation, Type type) {
         return new QuarkusDefaultDataFetcher(operation, type);
     }
 
     @Override
-    public PlugableDataFetcher getCompletionStageDataFetcher(Operation operation, Type type) {
+    public PlugableBatchableDataFetcher getCompletionStageDataFetcher(Operation operation, Type type) {
         return new QuarkusCompletionStageDataFetcher(operation, type);
     }
 
+    @Override
+    public PlugableDataFetcher getFieldDataFetcher(Field field, Type type, Reference owner) {
+        return new QuarkusFieldDataFetcher(field, type, owner);
+    }
 }

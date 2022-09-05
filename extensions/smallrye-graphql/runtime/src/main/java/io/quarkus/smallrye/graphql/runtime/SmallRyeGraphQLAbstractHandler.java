@@ -81,7 +81,7 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
         }
     }
 
-    private Void handleWithIdentity(final RoutingContext ctx) {
+    private void handleWithIdentity(final RoutingContext ctx) {
         if (currentIdentityAssociation != null) {
             QuarkusHttpUser existing = (QuarkusHttpUser) ctx.user();
             if (existing != null) {
@@ -93,7 +93,6 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
         }
         currentVertxRequest.setCurrent(ctx);
         doHandle(ctx);
-        return null;
     }
 
     protected abstract void doHandle(final RoutingContext ctx);

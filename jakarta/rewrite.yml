@@ -28,10 +28,10 @@ recipeList:
   # Annotation
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jakarta-annotation
-      newValue: 2.0.0
+      newValue: 2.1.1
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.annotation-api.version
-      newValue: 2.0.0
+      newValue: 2.1.1
   # EL
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.glassfish
@@ -52,23 +52,23 @@ recipeList:
       version: "${jakarta.el-api.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.el-api.version
-      newValue: 5.0.0
+      newValue: 5.0.1
       addIfMissing: true
   # CDI
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.cdi
-      newValue: 3.0.0
+      newValue: 4.0.1
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.enterprise.cdi-api.version
-      newValue: 3.0.0
+      newValue: 4.0.1
   # Inject
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.inject-api.version
-      newValue: 2.0.0
+      newValue: 2.0.1
   # Interceptor
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.interceptor-api.version
-      newValue: 2.0.0
+      newValue: 2.1.0
   # JAX-RS - See below for the specs
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy.version
@@ -136,6 +136,7 @@ recipeList:
       key: quarkus-security.version
       newValue: 2.0.0.Alpha1
   # Servlet
+  # TODO EE 10 6.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.servlet-api.version
       newValue: 5.0.0
@@ -145,10 +146,10 @@ recipeList:
   # Transaction
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jta
-      newValue: 2.0.0
+      newValue: 2.0.1
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.transaction-api.version
-      newValue: 2.0.0
+      newValue: 2.0.1
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.jboss.narayana.jta
       oldArtifactId: narayana-jta
@@ -170,6 +171,7 @@ recipeList:
       key: hibernate-validator.version
       newValue: 8.0.0.CR3
   # Websockets
+  # TODO EE 10 2.1.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.websocket-api.version
       newValue: 2.0.0
@@ -183,7 +185,7 @@ recipeList:
   # WildFly Security
   - org.openrewrite.maven.ChangePropertyValue:
       key: wildfly-elytron.version
-      newValue: 2.0.0.Beta1
+      newValue: 2.0.0.Beta3
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-jaxrs-jaxb
@@ -343,10 +345,12 @@ recipeList:
       groupId: jakarta.authentication
       artifactId: jakarta.authentication-api
       version: "${jakarta.authentication-api}"
+  # TODO EE 10 2.1.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.authorization-api.version
       newValue: 2.0.0
       addIfMissing: true
+  # TODO EE 10 3.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.authentication-api
       newValue: 2.0.0
@@ -498,7 +502,7 @@ displayName: Adjust SmallRye dependencies
 recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-common.version
-      newValue: 2.0.0-RC3
+      newValue: 2.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-context-propagation.version
       newValue: 1.3
@@ -510,13 +514,13 @@ recipeList:
       newValue: 3.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-config.version
-      newValue: 3.0.0-RC4
+      newValue: 3.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-fault-tolerance.version
       newValue: 6.0.0-RC4
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-graphql.version
-      newValue: 2.0.0.RC7
+      newValue: 2.0.0.RC8
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-health.version
       newValue: 4.0.0-RC2
@@ -574,10 +578,8 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: testng.version
       newValue: 7.4.0
-# In progress, these ones need a change:
+# TODO, these ones probably still need a change:
 #        <microprofile-reactive-streams-operators.version>1.0.1</microprofile-reactive-streams-operators.version>
-#        <microprofile-lra.version>1.0</microprofile-lra.version>
-#        <smallrye-graphql.version>1.4.3</smallrye-graphql.version>
 #        <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
 #        <smallrye-reactive-types-converter.version>2.6.0</smallrye-reactive-types-converter.version>
 #        <smallrye-mutiny-vertx-binding.version>2.19.0</smallrye-mutiny-vertx-binding.version>
@@ -604,7 +606,7 @@ recipeList:
       newValue: 4.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-jwt-auth-tck.version
-      newValue: 2.1-RC2
+      newValue: 2.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-lra-tck.version
       newValue: 2.0-RC1
@@ -626,7 +628,7 @@ recipeList:
       newValue: 3.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy-reactive-testsuite.repo.ref
-      newValue: 8462ad44c9981a1c31de3563e80399cba609986b
+      newValue: c5785f3465fa87395574fde1274c1712b3aa728b
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.maven.javax.managed

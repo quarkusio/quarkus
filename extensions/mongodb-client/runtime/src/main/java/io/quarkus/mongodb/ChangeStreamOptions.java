@@ -16,6 +16,7 @@ public class ChangeStreamOptions {
 
     private FullDocument fullDocument;
     private BsonDocument resumeToken;
+    private BsonDocument startAfterResumeToken;
     private BsonTimestamp startAtOperationTime;
     private long maxAwaitTime;
     private Collation collation;
@@ -40,6 +41,18 @@ public class ChangeStreamOptions {
      */
     public ChangeStreamOptions resumeAfter(BsonDocument resumeToken) {
         this.resumeToken = resumeToken;
+        return this;
+    }
+
+    /**
+     * Sets the logical starting point for the new change stream.
+     * Unlike resumeAfter, startAfter can resume notifications after an invalidate event by creating a new change stream.
+     *
+     * @param resumeToken the resume token
+     * @return this
+     */
+    public ChangeStreamOptions startAfter(BsonDocument resumeToken) {
+        this.startAfterResumeToken = resumeToken;
         return this;
     }
 
@@ -103,6 +116,9 @@ public class ChangeStreamOptions {
         }
         if (resumeToken != null) {
             publisher = publisher.resumeAfter(resumeToken);
+        }
+        if (startAfterResumeToken != null) {
+            publisher = publisher.startAfter(startAfterResumeToken);
         }
         if (startAtOperationTime != null) {
             publisher = publisher.startAtOperationTime(startAtOperationTime);

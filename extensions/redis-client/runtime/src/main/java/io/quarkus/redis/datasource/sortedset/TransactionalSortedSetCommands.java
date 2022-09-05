@@ -3,7 +3,9 @@ package io.quarkus.redis.datasource.sortedset;
 import java.time.Duration;
 import java.util.Map;
 
-public interface TransactionalSortedSetCommands<K, V> {
+import io.quarkus.redis.datasource.TransactionalRedisCommands;
+
+public interface TransactionalSortedSetCommands<K, V> extends TransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/zadd">ZADD</a>.

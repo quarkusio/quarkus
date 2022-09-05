@@ -37,7 +37,7 @@ import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.junit.launcher.ConfigUtil;
 import io.quarkus.test.junit.launcher.NativeImageLauncherProvider;
 
-public class NativeTestExtension
+public class NativeTestExtension extends AbstractQuarkusTestWithContextExtension
         implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, TestInstancePostProcessor {
 
     private static boolean failedBoot;
@@ -75,14 +75,14 @@ public class NativeTestExtension
         ensureStarted(extensionContext);
     }
 
-    private IntegrationTestExtensionState ensureStarted(ExtensionContext extensionContext) {
+    private QuarkusTestExtensionState ensureStarted(ExtensionContext extensionContext) {
         Class<?> testClass = extensionContext.getRequiredTestClass();
         ensureNoInjectAnnotationIsUsed(testClass);
 
         ExtensionContext root = extensionContext.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
-        IntegrationTestExtensionState state = store.get(IntegrationTestExtensionState.class.getName(),
-                IntegrationTestExtensionState.class);
+        QuarkusTestExtensionState state = store.get(QuarkusTestExtensionState.class.getName(),
+                QuarkusTestExtensionState.class);
         Class<? extends QuarkusTestProfile> selectedProfile = IntegrationTestUtil.findProfile(testClass);
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
@@ -100,7 +100,7 @@ public class NativeTestExtension
             }
             try {
                 state = doNativeStart(extensionContext, selectedProfile);
-                store.put(IntegrationTestExtensionState.class.getName(), state);
+                store.put(QuarkusTestExtensionState.class.getName(), state);
 
             } catch (Throwable e) {
                 failedBoot = true;
@@ -110,7 +110,7 @@ public class NativeTestExtension
         return state;
     }
 
-    private IntegrationTestExtensionState doNativeStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile)
+    private QuarkusTestExtensionState doNativeStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile)
             throws Throwable {
         Map<String, String> devServicesProps = handleDevServices(context, false).properties();
         quarkusTestProfile = profile;

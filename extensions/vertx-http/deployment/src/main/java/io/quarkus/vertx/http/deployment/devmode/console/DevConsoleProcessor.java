@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.UncheckedIOException;
-import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -14,7 +13,6 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +35,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.IsDevelopment;
@@ -65,6 +64,7 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
@@ -87,7 +87,6 @@ import io.quarkus.qute.ValueResolvers;
 import io.quarkus.qute.Variant;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.TemplateHtmlBuilder;
-import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.utilities.OS;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
@@ -727,96 +726,57 @@ public class DevConsoleProcessor {
 
     @BuildStep
     void collectTemplates(BuildProducer<DevTemplatePathBuildItem> devTemplatePaths) {
-        final Enumeration<URL> devTemplateURLs;
-        try {
-            devTemplateURLs = DevConsoleProcessor.class.getClassLoader().getResources("/dev-templates");
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        while (devTemplateURLs.hasMoreElements()) {
-            URL devTemplatesUrl = devTemplateURLs.nextElement();
-            ClassPathUtils.consumeAsPath(devTemplatesUrl, devTemplatesDir -> {
-                final Path classesDir = devTemplatesDir.getParent();
-                if (classesDir == null) {
-                    return;
-                }
-                final Entry<String, String> entry = readPomPropertiesIfBuilt(devTemplatesUrl, classesDir);
-                if (entry == null) {
-                    return;
-                }
-                try {
-                    scanTemplates(entry, devTemplatesDir, devTemplatePaths);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            });
+        for (ClassPathElement pe : QuarkusClassLoader.getElements("dev-templates", false)) {
+            scanTemplates(pe, devTemplatePaths);
         }
     }
 
-    private Entry<String, String> readPomPropertiesIfBuilt(URL devTemplatesURL, final Path classesDir) {
-        Entry<String, String> entry = null;
-        try {
-            if ("jar".equals(devTemplatesURL.getProtocol())) {
-                final Path metaInf = classesDir.resolve("META-INF").resolve("maven");
-                if (Files.exists(metaInf)) {
-                    entry = ArtifactInfoUtil.groupIdAndArtifactId(metaInf);
-                }
-            } else {
-                final Path rootDir = classesDir.getParent();
-                final Path mavenArchiver = rootDir == null ? null : rootDir.resolve("maven-archiver");
-                if (mavenArchiver == null || !mavenArchiver.toFile().canRead()) {
-                    // it's a module output dir and the Maven metadata hasn't been generated
-                    return null;
-                }
-                entry = ArtifactInfoUtil.groupIdAndArtifactId(mavenArchiver);
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+    private void scanTemplates(ClassPathElement cpe, BuildProducer<DevTemplatePathBuildItem> devTemplatePaths) {
+        final ArtifactKey key = cpe.getDependencyKey();
+        if (key == null) {
+            return;
         }
-        if (entry == null) {
-            throw new RuntimeException("Missing POM metadata in " + devTemplatesURL);
-        }
-        return entry;
-    }
-
-    private void scanTemplates(Entry<String, String> entry, Path devTemplatesPath,
-            BuildProducer<DevTemplatePathBuildItem> devTemplatePaths)
-            throws IOException {
         String prefix;
         // don't move stuff for our "root" dev console artifact, since it includes the main template
-        if (entry.getKey().equals("io.quarkus")
-                && entry.getValue().equals("quarkus-vertx-http"))
+        if (key.getArtifactId().equals("quarkus-vertx-http-deployment") && key.getGroupId().equals("io.quarkus")) {
             prefix = "";
-        else
-            prefix = entry.getKey() + "." + entry.getValue() + "/";
-
-        final Path root = devTemplatesPath.getParent();
-        Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                if (dir.equals(root) || dir.toString().equals("/") || dir.startsWith(devTemplatesPath)) {
-                    return FileVisitResult.CONTINUE;
-                }
-                return FileVisitResult.SKIP_SUBTREE;
+        } else {
+            final StringBuilder sb = new StringBuilder()
+                    .append(key.getGroupId()).append('.');
+            if (key.getArtifactId().endsWith(ArtifactInfoUtil.DEPLOYMENT)) {
+                sb.append(
+                        key.getArtifactId().substring(0, key.getArtifactId().length() - ArtifactInfoUtil.DEPLOYMENT.length()));
+            } else {
+                sb.append(key.getArtifactId());
             }
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                String contents = Files.readString(file);
-                // don't move tags yet, since we don't know how to use them afterwards
-                String relativePath = devTemplatesPath.relativize(file).toString();
-                String correctedPath;
-                if (File.separatorChar == '\\') {
-                    relativePath = relativePath.replace('\\', '/');
-                }
-                if (relativePath.startsWith(DevTemplatePathBuildItem.TAGS))
-                    correctedPath = relativePath;
-                else
-                    correctedPath = prefix + relativePath;
-                devTemplatePaths
-                        .produce(new DevTemplatePathBuildItem(correctedPath, contents));
-                return super.visitFile(file, attrs);
+            prefix = sb.append('/').toString();
+        }
+        cpe.apply(tree -> {
+            final Path devTemplatesPath = tree.getPath("dev-templates");
+            try {
+                Files.walkFileTree(devTemplatesPath, new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        String contents = Files.readString(file);
+                        // don't move tags yet, since we don't know how to use them afterwards
+                        String relativePath = devTemplatesPath.relativize(file).toString();
+                        String correctedPath;
+                        if (File.separatorChar == '\\') {
+                            relativePath = relativePath.replace('\\', '/');
+                        }
+                        if (relativePath.startsWith(DevTemplatePathBuildItem.TAGS)) {
+                            correctedPath = relativePath;
+                        } else {
+                            correctedPath = prefix + relativePath;
+                        }
+                        devTemplatePaths.produce(new DevTemplatePathBuildItem(correctedPath, contents));
+                        return super.visitFile(file, attrs);
+                    }
+                });
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
+            return null;
         });
     }
 

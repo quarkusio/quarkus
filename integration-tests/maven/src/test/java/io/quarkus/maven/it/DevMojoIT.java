@@ -1168,7 +1168,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         RunningInvoker invoker = new RunningInvoker(testDir, false);
 
         // to properly surface the problem of multiple classpath entries, we need to install the project to the local m2
-        MavenProcessInvocationResult installInvocation = invoker.execute(Arrays.asList("clean", "install", "-DskipTests"),
+        MavenProcessInvocationResult installInvocation = invoker.execute(List.of("clean", "install", "-DskipTests"),
                 Collections.emptyMap());
         assertThat(installInvocation.getProcess().waitFor(2, TimeUnit.MINUTES)).isTrue();
         assertThat(installInvocation.getExecutionException()).isNull();
@@ -1185,7 +1185,8 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .until(() -> DevModeTestUtils.getHttpResponse("/cp/hello").equals("hello"));
 
         // test that we don't get multiple instances of a resource when loading from the ClassLoader
-        assertThat(DevModeTestUtils.getHttpResponse("/cp/resourcesCount")).isEqualTo("1");
+        assertThat(DevModeTestUtils.getHttpResponse("/cp/resourceCount/a.html")).isEqualTo("1");
+        assertThat(DevModeTestUtils.getHttpResponse("/cp/resourceCount/entry")).isEqualTo("2");
     }
 
     @Test
@@ -1337,5 +1338,62 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("Hallo"));
 
         assertTrue(source.exists());
+    }
+
+    @Test
+    public void testExternalReloadableArtifacts() throws Exception {
+        final String rootProjectPath = "projects/external-reloadable-artifacts";
+
+        // Set up the external project
+        final File externalJarDir = initProject(rootProjectPath + "/external-lib");
+
+        // Clean and install the external JAR in local repository (.m2)
+        install(externalJarDir, true);
+
+        // Set up the main project that uses the external dependency
+        this.testDir = initProject(rootProjectPath + "/app");
+
+        // Run quarkus:dev process
+        run(true);
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("Hello"));
+
+        final File greetingJava = externalJarDir.toPath().resolve("src").resolve("main")
+                .resolve("java").resolve("org").resolve("acme").resolve("lib")
+                .resolve("Greeting.java").toFile();
+        assertThat(greetingJava).exists();
+
+        // Uncomment the method bonjour() in Greeting.java
+        filter(greetingJava, Map.of("/*", "", "*/", ""));
+        install(externalJarDir, false);
+
+        final File greetingResourceJava = this.testDir.toPath().resolve("src").resolve("main")
+                .resolve("java").resolve("org").resolve("acme")
+                .resolve("GreetingResource.java").toFile();
+        assertThat(greetingResourceJava).exists();
+
+        // Update the GreetingResource.java to call the Greeting.bonjour() method
+        final String greetingBonjourCall = "Greeting.bonjour()";
+        filter(greetingResourceJava, Map.of("Greeting.hello()", greetingBonjourCall));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("Bonjour"));
+
+        // Change bonjour() method content in Greeting.java
+        filter(greetingJava, Map.of("Bonjour", "Bonjour!"));
+        install(externalJarDir, false);
+
+        // Change GreetingResource.java endpoint response to upper case letters
+        filter(greetingResourceJava, Map.of(greetingBonjourCall, greetingBonjourCall.concat(".toUpperCase()")));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("BONJOUR!"));
     }
 }

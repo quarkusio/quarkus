@@ -33,7 +33,8 @@ import io.quarkus.test.junit.main.LaunchResult;
 import io.quarkus.test.junit.main.QuarkusMainLauncher;
 import io.quarkus.test.junit.util.CloseAdaptor;
 
-public class QuarkusMainIntegrationTestExtension implements BeforeEachCallback, AfterEachCallback, ParameterResolver {
+public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWithContextExtension
+        implements BeforeEachCallback, AfterEachCallback, ParameterResolver {
 
     public static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace
             .create("io.quarkus.test.main.integration");

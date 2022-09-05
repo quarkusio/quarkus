@@ -10,12 +10,12 @@ import javax.persistence.MappedSuperclass
  * Hibernate entities extend this class they gain the ID field and auto-generated accessors
  * to all their public fields (unless annotated with [Transient]), as well as all
  * the useful methods from [PanacheEntityBase].
- * <p>
+ *
  * If you want a custom ID type or strategy, you can directly extend [PanacheEntityBase]
  * instead, and write your own ID field. You will still get auto-generated accessors and
  * all the useful methods.
  *
- * @see PanacheEntityBase
+ * @see [PanacheEntityBase]
  */
 @MappedSuperclass
 open class PanacheEntity: PanacheEntityBase {
@@ -30,7 +30,7 @@ open class PanacheEntity: PanacheEntityBase {
     open var id: Long? = null
 
     /**
-     * Default toString() implementation
+     * Default `toString()` implementation
      *
      * @return the class type and ID type
      */

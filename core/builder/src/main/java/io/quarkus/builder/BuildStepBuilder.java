@@ -1,5 +1,6 @@
 package io.quarkus.builder;
 
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -8,7 +9,6 @@ import java.util.function.BooleanSupplier;
 import org.wildfly.common.Assert;
 
 import io.quarkus.builder.item.BuildItem;
-import io.quarkus.builder.item.EmptyBuildItem;
 
 /**
  * A builder for build step instances within a chain. A build step can consume and produce items. It may also register
@@ -89,9 +89,7 @@ public final class BuildStepBuilder {
      */
     public BuildStepBuilder produces(Class<? extends BuildItem> type) {
         Assert.checkNotNullParam("type", type);
-        if (EmptyBuildItem.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Cannot produce an empty build item, use @Produce(class) instead");
-        }
+        checkType(type);
         addProduces(new ItemId(type), Constraint.REAL, ProduceFlags.NONE);
         return this;
     }
@@ -108,9 +106,7 @@ public final class BuildStepBuilder {
     public BuildStepBuilder produces(Class<? extends BuildItem> type, ProduceFlag flag) {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("flag", flag);
-        if (EmptyBuildItem.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Cannot produce an empty build item, use @Produce(class) instead");
-        }
+        checkType(type);
         addProduces(new ItemId(type), Constraint.REAL, ProduceFlags.of(flag));
         return this;
     }
@@ -128,9 +124,7 @@ public final class BuildStepBuilder {
     public BuildStepBuilder produces(Class<? extends BuildItem> type, ProduceFlag flag1, ProduceFlag flag2) {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("flag", flag1);
-        if (EmptyBuildItem.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Cannot produce an empty build item, use @Produce(class) instead");
-        }
+        checkType(type);
         addProduces(new ItemId(type), Constraint.REAL, ProduceFlags.of(flag1).with(flag2));
         return this;
     }
@@ -147,9 +141,7 @@ public final class BuildStepBuilder {
     public BuildStepBuilder produces(Class<? extends BuildItem> type, ProduceFlags flags) {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("flag", flags);
-        if (EmptyBuildItem.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Cannot produce an empty build item, use @Produce(class) instead");
-        }
+        checkType(type);
         addProduces(new ItemId(type), Constraint.REAL, flags);
         return this;
     }
@@ -163,9 +155,7 @@ public final class BuildStepBuilder {
      */
     public BuildStepBuilder consumes(Class<? extends BuildItem> type) {
         Assert.checkNotNullParam("type", type);
-        if (EmptyBuildItem.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Cannot consume an empty build item, use @Consume(class) instead");
-        }
+        checkType(type);
         addConsumes(new ItemId(type), Constraint.REAL, ConsumeFlags.NONE);
         return this;
     }
@@ -180,9 +170,7 @@ public final class BuildStepBuilder {
      */
     public BuildStepBuilder consumes(Class<? extends BuildItem> type, ConsumeFlags flags) {
         Assert.checkNotNullParam("type", type);
-        if (EmptyBuildItem.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Cannot consume an empty build item, use @Consume(class) instead");
-        }
+        checkType(type);
         addConsumes(new ItemId(type), Constraint.REAL, flags);
         return this;
     }
@@ -201,7 +189,7 @@ public final class BuildStepBuilder {
                             + " Either change the return type of the method to a build item type,"
                             + " add a parameter of type BuildProducer<[some build item type]>/Consumer<[some build item type]>,"
                             + " or annotate the method with @Produces."
-                            + " Use @Produce(EmptyBuildItem.class) if you want to always execute this step.");
+                            + " Use @Produce(ArtifactResultBuildItem.class) if you want to always execute this step.");
         }
         if (BuildChainBuilder.LOG_CONFLICT_CAUSING) {
             chainBuilder.addStep(this, new Exception().getStackTrace());
@@ -265,5 +253,12 @@ public final class BuildStepBuilder {
         builder.append(buildStep);
         builder.append("]");
         return builder.toString();
+    }
+
+    private void checkType(Class<?> type) {
+        int modifiers = type.getModifiers();
+        if (Modifier.isInterface(modifiers) || Modifier.isAbstract(modifiers)) {
+            throw new IllegalArgumentException("Cannot consume/produce interface or abstract class build items");
+        }
     }
 }

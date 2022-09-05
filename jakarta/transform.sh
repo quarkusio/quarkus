@@ -132,16 +132,16 @@ rewrite_module_cleanup () {
 
 # Remove a banned dependency
 remove_banned_dependency () {
-  sed -i "s@<exclude>$2</exclude>@<!-- $3 -->@g" $1/pom.xml
+  sed -i "s@<exclude>$2</exclude>@<!-- $3 -->@g" $1
 }
 
 # Update a banned dependency
 update_banned_dependency () {
-  sed -i "s@<exclude>$2</exclude>@<exclude>$3</exclude>@g" $1/pom.xml
+  sed -i "s@<exclude>$2</exclude>@<exclude>$3</exclude>@g" $1
 }
 
 update_banned_dependency_advanced () {
-  sed -i "s@$2@$3@g" $1/pom.xml
+  sed -i "s@$2@$3@g" $1
 }
 
 # Build, test and install a particular maven module (chosen by relative path)
@@ -203,24 +203,14 @@ clean_project
 ./mvnw -B -e rewrite:run -Dtcks -Denforcer.skip -Dprotoc.skip -Dmaven.main.skip -Dmaven.test.skip -Dforbiddenapis.skip -Dinvoker.skip -Dquarkus.generate-code.skip -Dquarkus.build.skip -Dbytebuddy.skip -DskipExtensionValidation -DskipCodestartValidation -Pbom-descriptor-json-hollow -pl '!:io.quarkus.gradle.plugin' -pl '!:io.quarkus.extension.gradle.plugin' -pl '!:quarkus-integration-test-gradle-plugin' -pl '!:quarkus-documentation' -Drewrite.pomCacheEnabled=false -Djakarta-rewrite
 
 ## remove banned dependencies
-remove_banned_dependency "independent-projects/bootstrap" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
-remove_banned_dependency "independent-projects/bootstrap" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
-remove_banned_dependency "independent-projects/extension-maven-plugin" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
-remove_banned_dependency "independent-projects/extension-maven-plugin" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
-remove_banned_dependency "independent-projects/tools" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
-remove_banned_dependency "independent-projects/tools" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
-update_banned_dependency "independent-projects/resteasy-reactive" 'jakarta.xml.bind:jakarta.xml.bind-api' 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec'
-update_banned_dependency "independent-projects/resteasy-reactive" 'jakarta.ws.rs:jakarta.ws.rs-api' 'org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_3.0_spec'
-remove_banned_dependency "build-parent" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
-remove_banned_dependency "build-parent" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
-update_banned_dependency "build-parent" 'jakarta.xml.bind:jakarta.xml.bind-api' 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec'
-# TODO: due to an issue in the MicroProfile REST Client, we cannot exclude jakarta.ws.rs:jakarta.ws.rs-api yet
-#update_banned_dependency_advanced "build-parent" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>\n                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
-update_banned_dependency_advanced "build-parent" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_3.0_spec</exclude>\n                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
-update_banned_dependency_advanced "build-parent" '<exclude>jakarta.json:jakarta.json-api</exclude>' "<exclude>jakarta.json:jakarta.json-api</exclude>\n                                            <exclude>org.glassfish:jakarta.json</exclude>"
-update_banned_dependency_advanced "build-parent" '<exclude>org.glassfish:javax.el</exclude>' "<exclude>org.glassfish:javax.el</exclude>\n                                            <exclude>org.glassfish:jakarta.el</exclude>"
-sed -i 's@<!-- Exclude jakarta.activation-api as the implementation contains it -->@<!-- Exclude com.sun.activation:jakarta.activation as we switched to Angus Activation -->@g' 'build-parent/pom.xml'
-update_banned_dependency "build-parent" 'jakarta.activation:jakarta.activation-api' 'com.sun.activation:jakarta.activation'
+remove_banned_dependency "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
+remove_banned_dependency "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
+update_banned_dependency "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" 'jakarta.xml.bind:jakarta.xml.bind-api' 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec'
+update_banned_dependency_advanced "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_3.0_spec</exclude>\n                <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
+update_banned_dependency_advanced "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" '<exclude>jakarta.json:jakarta.json-api</exclude>' "<exclude>jakarta.json:jakarta.json-api</exclude>\n                <exclude>org.glassfish:jakarta.json</exclude>"
+update_banned_dependency_advanced "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" '<exclude>org.glassfish:javax.el</exclude>' "<exclude>org.glassfish:javax.el</exclude>\n                <exclude>org.glassfish:jakarta.el</exclude>"
+sed -i 's@<!-- Exclude jakarta.activation-api as the implementation contains it -->@<!-- Exclude com.sun.activation:jakarta.activation as we switched to Angus Activation -->@g' 'independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml'
+update_banned_dependency "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" 'jakarta.activation:jakarta.activation-api' 'com.sun.activation:jakarta.activation'
 
 ## some additional wild changes to clean up at some point
 sed -i 's@FilterConfigSourceImpl@FilterConfigSource@g' extensions/resteasy-classic/resteasy-common/deployment/src/main/java/io/quarkus/resteasy/common/deployment/ResteasyCommonProcessor.java
@@ -320,6 +310,47 @@ git checkout -- integration-tests/gradle/gradle/wrapper/gradle-wrapper.jar
 git checkout -- independent-projects/tools/base-codestarts/src/main/resources/codestarts/quarkus/tooling/gradle-wrapper/base/gradle/wrapper/gradle-wrapper.jar
 git checkout -- extensions/kubernetes-service-binding/runtime/src/test/resources/k8s/test-k8s/
 
+# Format source code (cannot use mvn process-sources unfortunately)
+./mvnw -B -pl :quarkus-bootstrap-maven-plugin -pl :quarkus-extension-maven-plugin -pl :quarkus-enforcer-rules -pl :quarkus-maven-plugin -pl :quarkus-bom-test -am clean install -DskipTests -DskipITs -Dinvoker.skip
+
+./mvnw -f independent-projects/arc formatter:format impsort:sort
+./mvnw -f independent-projects/bootstrap formatter:format impsort:sort
+./mvnw -f independent-projects/enforcer-rules formatter:format impsort:sort
+./mvnw -f independent-projects/extension-maven-plugin formatter:format impsort:sort
+./mvnw -f independent-projects/qute formatter:format impsort:sort
+./mvnw -f independent-projects/resteasy-reactive formatter:format impsort:sort
+./mvnw -f independent-projects/tools formatter:format impsort:sort
+
+./mvnw -f core formatter:format impsort:sort
+./mvnw -f extensions formatter:format impsort:sort
+./mvnw -f coverage-report formatter:format impsort:sort
+./mvnw -f devtools formatter:format impsort:sort
+./mvnw -f tcks formatter:format impsort:sort
+./mvnw -f docs formatter:format impsort:sort
+./mvnw -f integration-tests formatter:format impsort:sort
+./mvnw -f test-framework formatter:format impsort:sort
+
+# Disable non-compilable ITs
+# - Confluent registry client doesn't have a version supporting Jakarta packages
+
+# Commit what we have before cherry-picking stuff
+git add .
+git commit -m 'Transform sources to Jakarta'
+
+# Remove integration-tests/kafka-avro as it's testing old versions
+# We have a new module for newer versions that work with Jakarta
+sed -i '/<module>kafka-avro<\/module>/d' integration-tests/pom.xml
+rm -rf integration-tests/kafka-avro
+git add .
+git commit -m 'Remove integration-tests/kafka-avro - see kafka-avro-apicurio2 instead'
+
+# Apply EE 10 updates
+
+## CDI/ArC
+git fetch origin jakarta-10-cdi
+JAKARTA_10_CDI_HASH=$(git rev-parse origin/jakarta-10-cdi)
+git cherry-pick -x ${JAKARTA_10_CDI_HASH}
+
 # Build phase
 
 if [ "${REWRITE_TESTS_CONTAINERS-false}" == "true" ]; then
@@ -329,11 +360,6 @@ elif [ "${REWRITE_NO_TESTS-false}" != "true" ]; then
 else
   ./mvnw -B clean install -Dno-test-modules -DskipTests -DskipITs
 fi
-
-# Disable non-compilable ITs
-# - Infinispan uses the @javax.annotation.Generated annotation in code generation and it's not available
-# - Confluent registry client doesn't have a version supporting Jakarta packages
-sed -i 's@<module>kafka-avro</module>@<!-- <module>kafka-avro</module> -->@g' integration-tests/pom.xml
 
 ./mvnw -B clean install -f integration-tests -DskipTests -DskipITs
 ./mvnw -B clean install -f tcks -DskipTests -DskipITs

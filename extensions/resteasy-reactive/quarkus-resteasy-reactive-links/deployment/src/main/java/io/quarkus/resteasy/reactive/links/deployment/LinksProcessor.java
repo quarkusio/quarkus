@@ -17,7 +17,6 @@ import org.jboss.jandex.IndexView;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.builder.item.EmptyBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -29,6 +28,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.resteasy.reactive.common.deployment.JaxRsResourceIndexBuildItem;
 import io.quarkus.resteasy.reactive.links.runtime.GetterAccessorsContainer;
@@ -85,7 +85,7 @@ final class LinksProcessor {
     }
 
     @BuildStep
-    @Produce(EmptyBuildItem.class)
+    @Produce(ArtifactResultBuildItem.class)
     void validateJsonNeededForHal(Capabilities capabilities,
             ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntriesBuildItem) {
         boolean isHalSupported = capabilities.isPresent(Capability.HAL);
@@ -93,6 +93,7 @@ final class LinksProcessor {
 
             if (!capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JSONB) && !capabilities.isPresent(
                     Capability.RESTEASY_REACTIVE_JSON_JACKSON)) {
+
                 throw new IllegalStateException("Cannot generate HAL endpoints without "
                         + "either 'quarkus-resteasy-reactive-jsonb' or 'quarkus-resteasy-reactive-jackson'");
             }

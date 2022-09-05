@@ -1,11 +1,16 @@
 package io.quarkus.infinispan.client.runtime;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.net.ssl.SSLContext;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 
+import org.infinispan.client.hotrod.configuration.NearCacheMode;
+
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -127,6 +132,65 @@ public class InfinispanClientRuntimeConfig {
      */
     @ConfigItem
     Optional<String> trustStoreType;
+
+    /**
+     * Configures caches from the client with the provided configuration.
+     */
+    @ConfigItem
+    Map<String, RemoteCacheConfig> cache = new HashMap<>();
+
+    @ConfigGroup
+    public static class RemoteCacheConfig {
+
+        // @formatter:off
+        /**
+         * Cache configuration in inlined XML to create the cache on first access.
+         * Will be ignored if the configuration-uri is provided for the same cache name.
+         * An example of the user defined property:
+         * quarkus.infinispan-client.cache.bookscache.configuration=<distributed-cache><encoding media-type="application/x-protostream"/></distributed-cache>
+         */
+        // @formatter:on
+        @ConfigItem
+        public Optional<String> configuration;
+
+        // @formatter:off
+        /**
+         * Cache configuration file in XML whose path will be converted to URI to create the cache on first access.
+         * An example of the user defined property. cacheConfig.xml file is located in the 'resources' folder:
+         * quarkus.infinispan-client.cache.bookscache.configuration-uri=cacheConfig.xml
+         */
+        // @formatter:on
+        @ConfigItem
+        public Optional<String> configurationUri;
+
+        /**
+         * The maximum number of entries to keep locally for the specified cache.
+         */
+        @ConfigItem
+        public Optional<Integer> nearCacheMaxEntries;
+
+        // @formatter:off
+        /**
+         * Sets near cache mode used by the Infinispan Client
+         * Available values:
+         * * `DISABLED` - Means that near caching is disabled. This is the default value.
+         * * `INVALIDATED` - Means is near caching is invalidated, so when entries are updated or removed server-side,
+         *                   invalidation messages will be sent to clients to remove them from the near cache.
+         */
+        // @formatter:on
+        @ConfigItem
+        public Optional<NearCacheMode> nearCacheMode;
+
+        // @formatter:off
+        /**
+         * Enables bloom filter for near caching.
+         * Bloom filters optimize performance for write operations by reducing the total number of
+         * invalidation messages.
+         */
+        // @formatter:on
+        @ConfigItem
+        public Optional<Boolean> nearCacheUseBloomFilter;
+    }
 
     @Override
     public String toString() {

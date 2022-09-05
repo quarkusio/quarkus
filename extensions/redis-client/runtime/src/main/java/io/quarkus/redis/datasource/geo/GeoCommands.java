@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.OptionalDouble;
 import java.util.Set;
 
+import io.quarkus.redis.datasource.RedisCommands;
+
 /**
  * Allows executing commands from the {@code geo} group.
  * See <a href="https://redis.io/commands/?group=geo">the geo command list</a> for further information about these commands.
@@ -14,7 +16,7 @@ import java.util.Set;
  * @param <K> the type of the key
  * @param <V> the type of the value
  */
-public interface GeoCommands<K, V> {
+public interface GeoCommands<K, V> extends RedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/geoadd">GEOADD</a>.

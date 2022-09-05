@@ -75,7 +75,7 @@ public class KafkaDevServicesContinuousTestingTestCase {
         result = utils.waitForNextCompletion();
         Assertions.assertEquals(0, result.getTotalTestsPassed());
         Assertions.assertEquals(1, result.getTotalTestsFailed());
-        test.modifySourceFile(PriceConverter.class, s -> s.replaceAll("//", ""));
+        test.modifySourceFile(PriceResource.class, s -> s.replaceAll("//", ""));
         result = utils.waitForNextCompletion();
         Assertions.assertEquals(0, result.getTotalTestsPassed());
         Assertions.assertEquals(1, result.getTotalTestsFailed());
@@ -83,7 +83,7 @@ public class KafkaDevServicesContinuousTestingTestCase {
         result = utils.waitForNextCompletion();
         Assertions.assertEquals(0, result.getTotalTestsPassed());
         Assertions.assertEquals(1, result.getTotalTestsFailed());
-        test.modifySourceFile(PriceResource.class, s -> s.replaceAll("//", ""));
+        test.modifySourceFile(PriceConverter.class, s -> s.replaceAll("//", ""));
         result = utils.waitForNextCompletion();
         Assertions.assertEquals(1, result.getTotalTestsPassed());
         Assertions.assertEquals(0, result.getTotalTestsFailed());

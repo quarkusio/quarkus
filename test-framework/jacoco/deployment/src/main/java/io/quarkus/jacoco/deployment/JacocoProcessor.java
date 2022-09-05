@@ -11,7 +11,6 @@ import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.codehaus.plexus.util.FileUtils;
-import org.codehaus.plexus.util.StringUtils;
 import org.jacoco.core.instr.Instrumenter;
 import org.jacoco.core.runtime.OfflineInstrumentationAccessGenerator;
 import org.jboss.jandex.ClassInfo;
@@ -100,8 +99,8 @@ public class JacocoProcessor {
                     outputTargetBuildItem.getOutputDirectory().toAbsolutePath().toString() + File.separator
                             + config.reportLocation);
             info.reportDir = targetdir.getAbsolutePath();
-            String includes = StringUtils.join(config.includes.iterator(), ",");
-            String excludes = StringUtils.join(config.excludes.orElse(Collections.emptyList()).iterator(), ",");
+            String includes = String.join(",", config.includes);
+            String excludes = String.join(",", config.excludes.orElse(Collections.emptyList()));
             Set<String> classes = new HashSet<>();
             info.classFiles = classes;
 

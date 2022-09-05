@@ -6,6 +6,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.enterprise.inject.CreationException;
 
+import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -60,8 +62,9 @@ public class RestClientsConfig {
 
     /**
      * A string value in the form of `<proxyHost>:<proxyPort>` that specifies the HTTP proxy server hostname
-     * (or IP address) and port for requests of clients to use. Can be overwritten by client-specific settings
+     * (or IP address) and port for requests of clients to use.
      *
+     * Can be overwritten by client-specific settings.
      *
      * This property is applicable to reactive REST clients only.
      */
@@ -71,6 +74,8 @@ public class RestClientsConfig {
     /**
      * Proxy username, equivalent to the http.proxy or https.proxy JVM settings.
      *
+     * Can be overwritten by client-specific settings.
+     *
      * This property is applicable to reactive REST clients only.
      */
     @ConfigItem
@@ -79,6 +84,8 @@ public class RestClientsConfig {
     /**
      * Proxy password, equivalent to the http.proxyPassword or https.proxyPassword JVM settings.
      *
+     * Can be overwritten by client-specific settings.
+     *
      * This property is applicable to reactive REST clients only.
      */
     @ConfigItem
@@ -86,7 +93,9 @@ public class RestClientsConfig {
 
     /**
      * Hosts to access without proxy, similar to the http.nonProxyHosts or https.nonProxyHosts JVM settings.
-     * Please note that unlike the JVM settings, this property is empty by default
+     * Please note that unlike the JVM settings, this property is empty by default.
+     *
+     * Can be overwritten by client-specific settings.
      *
      * This property is applicable to reactive REST clients only.
      */
@@ -96,33 +105,167 @@ public class RestClientsConfig {
     public RestClientLoggingConfig logging;
 
     /**
-     * Global default connect timeout for automatically generated REST Clients. The attribute specifies a timeout
-     * in milliseconds that a client should wait to connect to the remote endpoint.
+     * A timeout in milliseconds that REST clients should wait to connect to the remote endpoint.
+     *
+     * Can be overwritten by client-specific settings.
      */
     @ConfigItem(defaultValue = "15000", defaultValueDocumentation = "15000 ms")
     public Long connectTimeout;
 
     /**
-     * Global default read timeout for automatically generated REST clients. The attribute specifies a timeout
-     * in milliseconds that a client should wait for a response from the remote endpoint.
+     * A timeout in milliseconds that REST clients should wait for a response from the remote endpoint.
+     *
+     * Can be overwritten by client-specific settings.
      */
     @ConfigItem(defaultValue = "30000", defaultValueDocumentation = "30000 ms")
     public Long readTimeout;
 
     /**
-     * If true, the reactive REST clients will not provide additional contextual information (like REST client class and method
+     * If true, the REST clients will not provide additional contextual information (like REST client class and method
      * names) when exception occurs during a client invocation.
+     *
+     * This property is applicable to reactive REST clients only.
      */
     @ConfigItem(defaultValue = "false")
     public boolean disableContextualErrorMessages;
 
     /**
-     * Configure the HTTP user-agent header to use.
+     * Default configuration for the HTTP user-agent header to use in all REST clients.
+     *
+     * Can be overwritten by client-specific settings.
      *
      * This property is applicable to reactive REST clients only.
      */
     @ConfigItem
     public Optional<String> userAgent;
+
+    /**
+     * The HTTP headers that should be applied to all requests of the rest client.
+     */
+    @ConfigItem
+    public Map<String, String> headers;
+
+    /**
+     * The class name of the host name verifier. The class must have a public no-argument constructor.
+     *
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    public Optional<String> hostnameVerifier;
+
+    /**
+     * The time in ms for which a connection remains unused in the connection pool before being evicted and closed.
+     * A timeout of {@code 0} means there is no timeout.
+     *
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    public Optional<Integer> connectionTTL;
+
+    /**
+     * The size of the connection pool for this client.
+     *
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    public Optional<Integer> connectionPoolSize;
+
+    /**
+     * The maximum number of redirection a request can follow.
+     *
+     * Can be overwritten by client-specific settings.
+     *
+     * This property is applicable to reactive REST clients only.
+     */
+    @ConfigItem
+    public Optional<Integer> maxRedirects;
+
+    /**
+     * A boolean value used to determine whether the client should follow HTTP redirect responses.
+     *
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    public Optional<Boolean> followRedirects;
+
+    /**
+     * Map where keys are fully-qualified provider classnames to include in the client, and values are their integer
+     * priorities. The equivalent of the `@RegisterProvider` annotation.
+     *
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    public Optional<String> providers;
+
+    /**
+     * The CDI scope to use for injections of REST client instances. Value can be either a fully qualified class name of a CDI
+     * scope annotation (such as "javax.enterprise.context.ApplicationScoped") or its simple name (such as"ApplicationScoped").
+     *
+     * Default scope for the rest-client extension is "Dependent" (which is the spec-compliant behavior).
+     *
+     * Default scope for the rest-client-reactive extension is "ApplicationScoped".
+     *
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    public Optional<String> scope;
+
+    /**
+     * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
+     * or "ARRAY_PAIRS" that specifies the format in which multiple values for the same query parameter is used.
+     *
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    public Optional<QueryParamStyle> queryParamStyle;
+
+    /**
+     * The trust store location. Can point to either a classpath resource or a file.
+     *
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    public Optional<String> trustStore;
+
+    /**
+     * The trust store password.
+     *
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    public Optional<String> trustStorePassword;
+
+    /**
+     * The type of the trust store. Defaults to "JKS".
+     *
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    public Optional<String> trustStoreType;
+
+    /**
+     * The key store location. Can point to either a classpath resource or a file.
+     *
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    public Optional<String> keyStore;
+
+    /**
+     * The key store password.
+     *
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    public Optional<String> keyStorePassword;
+
+    /**
+     * The type of the key store. Defaults to "JKS".
+     *
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    public Optional<String> keyStoreType;
 
     public RestClientConfig getClientConfig(String configKey) {
         if (configKey == null) {

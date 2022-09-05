@@ -2,6 +2,7 @@ package io.quarkus.redis.runtime.datasource;
 
 import java.util.Map;
 
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.string.GetExArgs;
 import io.quarkus.redis.datasource.string.ReactiveStringCommands;
 import io.quarkus.redis.datasource.string.SetArgs;
@@ -10,8 +11,16 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class ReactiveStringCommandsImpl<K, V> extends AbstractStringCommands<K, V> implements ReactiveStringCommands<K, V> {
 
-    public ReactiveStringCommandsImpl(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    private final ReactiveRedisDataSource reactive;
+
+    public ReactiveStringCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k, Class<V> v) {
         super(redis, k, v);
+        this.reactive = redis;
+    }
+
+    @Override
+    public ReactiveRedisDataSource getDataSource() {
+        return reactive;
     }
 
     @Override

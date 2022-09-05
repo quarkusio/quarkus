@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.maven.plugin.AbstractMojo;
@@ -30,14 +29,13 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.runtime.LaunchMode;
 
 /**
  * This goal downloads all the Maven artifact dependencies required to build, run, test and
  * launch the application dev mode.
  */
-@Mojo(name = "go-offline")
+@Mojo(name = "go-offline", threadSafe = true)
 public class GoOfflineMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
@@ -66,7 +64,7 @@ public class GoOfflineMojo extends AbstractMojo {
         final MavenArtifactResolver resolver = getResolver();
         final DependencyNode root;
         try {
-            root = resolver.collectDependencies(pom, Collections.emptyList()).getRoot();
+            root = resolver.collectDependencies(pom, List.of()).getRoot();
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to collect dependencies of " + pom, e);
         }
@@ -74,7 +72,7 @@ public class GoOfflineMojo extends AbstractMojo {
         final List<Path> createdDirs = new ArrayList<>();
         try {
             ensureResolvableModule(root, resolver.getMavenContext().getWorkspace(), createdDirs);
-            final ArtifactCoords appArtifact = new GACTV(pom.getGroupId(), pom.getArtifactId(), pom.getClassifier(),
+            final ArtifactCoords appArtifact = ArtifactCoords.of(pom.getGroupId(), pom.getArtifactId(), pom.getClassifier(),
                     pom.getExtension(), pom.getVersion());
             resolveAppModel(resolver, appArtifact, LaunchMode.NORMAL);
             resolveAppModel(resolver, appArtifact, LaunchMode.DEVELOPMENT);

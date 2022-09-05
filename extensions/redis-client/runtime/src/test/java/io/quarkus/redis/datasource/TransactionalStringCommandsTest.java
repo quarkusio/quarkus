@@ -35,6 +35,7 @@ public class TransactionalStringCommandsTest extends DatasourceTestBase {
     public void setBlocking() {
         TransactionResult result = blocking.withTransaction(tx -> {
             TransactionalStringCommands<String, String> string = tx.string(String.class);
+            assertThat(string.getDataSource()).isEqualTo(tx);
             string.set(key, "hello");
             string.setnx("k2", "bonjour");
             string.append(key, "-1");

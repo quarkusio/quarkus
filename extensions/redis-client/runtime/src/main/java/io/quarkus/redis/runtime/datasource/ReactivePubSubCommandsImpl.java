@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
@@ -34,6 +35,11 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
         this.client = ds.redis;
         this.datasource = ds;
         this.classOfMessage = classOfMessage;
+    }
+
+    @Override
+    public ReactiveRedisDataSource getDataSource() {
+        return datasource;
     }
 
     @Override

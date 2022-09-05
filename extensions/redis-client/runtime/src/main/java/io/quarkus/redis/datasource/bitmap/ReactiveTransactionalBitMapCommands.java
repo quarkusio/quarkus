@@ -1,8 +1,9 @@
 package io.quarkus.redis.datasource.bitmap;
 
+import io.quarkus.redis.datasource.ReactiveTransactionalRedisCommands;
 import io.smallrye.mutiny.Uni;
 
-public interface ReactiveTransactionalBitMapCommands<K> {
+public interface ReactiveTransactionalBitMapCommands<K> extends ReactiveTransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/bitcount">BITCOUNT</a>.

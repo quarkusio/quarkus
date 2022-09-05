@@ -5,16 +5,17 @@ import java.util.Map;
 
 import io.quarkus.redis.datasource.hash.ReactiveTransactionalHashCommands;
 import io.quarkus.redis.datasource.hash.TransactionalHashCommands;
+import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 
-public class BlockingTransactionalHashCommandsImpl<K, F, V> implements TransactionalHashCommands<K, F, V> {
+public class BlockingTransactionalHashCommandsImpl<K, F, V> extends AbstractTransactionalRedisCommandGroup
+        implements TransactionalHashCommands<K, F, V> {
 
     private final ReactiveTransactionalHashCommands<K, F, V> reactive;
 
-    private final Duration timeout;
-
-    public BlockingTransactionalHashCommandsImpl(ReactiveTransactionalHashCommands<K, F, V> reactive, Duration timeout) {
+    public BlockingTransactionalHashCommandsImpl(TransactionalRedisDataSource ds,
+            ReactiveTransactionalHashCommands<K, F, V> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

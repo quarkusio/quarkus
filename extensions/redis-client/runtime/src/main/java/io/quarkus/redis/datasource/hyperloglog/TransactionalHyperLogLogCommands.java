@@ -1,6 +1,8 @@
 package io.quarkus.redis.datasource.hyperloglog;
 
-public interface TransactionalHyperLogLogCommands<K, V> {
+import io.quarkus.redis.datasource.TransactionalRedisCommands;
+
+public interface TransactionalHyperLogLogCommands<K, V> extends TransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/pfadd">PFADD</a>.

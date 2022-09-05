@@ -12,7 +12,7 @@ import javax.persistence.EntityManager
  * methods. Unless you have a custom ID strategy, you should not extend this class directly but extend
  * [PanacheEntity] instead.
  *
- * @see PanacheEntity
+ * @see [PanacheEntity]
  */
 interface PanacheEntityBase {
     // Operations
@@ -31,9 +31,9 @@ interface PanacheEntityBase {
     /**
      * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already set.
      *
-     * @see PanacheEntityBase.isPersistent
-     * @see PanacheEntityBase.flush
-     * @see PanacheEntityBase.persistAndFlush
+      * @see [PanacheEntityBase.isPersistent]
+      * @see [PanacheEntityBase.flush]
+      * @see [PanacheEntityBase.persistAndFlush]
      */
     fun persist() {
         INSTANCE.persist(this)

@@ -2,7 +2,9 @@ package io.quarkus.redis.datasource.hash;
 
 import java.util.Map;
 
-public interface TransactionalHashCommands<K, F, V> {
+import io.quarkus.redis.datasource.TransactionalRedisCommands;
+
+public interface TransactionalHashCommands<K, F, V> extends TransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/hdel">HDEL</a>.

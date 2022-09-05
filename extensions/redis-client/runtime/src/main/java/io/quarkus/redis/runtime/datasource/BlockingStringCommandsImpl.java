@@ -3,19 +3,19 @@ package io.quarkus.redis.runtime.datasource;
 import java.time.Duration;
 import java.util.Map;
 
+import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.string.GetExArgs;
 import io.quarkus.redis.datasource.string.ReactiveStringCommands;
 import io.quarkus.redis.datasource.string.SetArgs;
 import io.quarkus.redis.datasource.string.StringCommands;
 
-public class BlockingStringCommandsImpl<K, V> implements StringCommands<K, V> {
+public class BlockingStringCommandsImpl<K, V> extends AbstractRedisCommandGroup implements StringCommands<K, V> {
 
     private final ReactiveStringCommands<K, V> reactive;
-    private final Duration timeout;
 
-    public BlockingStringCommandsImpl(ReactiveStringCommands<K, V> reactive, Duration timeout) {
+    public BlockingStringCommandsImpl(RedisDataSource ds, ReactiveStringCommands<K, V> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

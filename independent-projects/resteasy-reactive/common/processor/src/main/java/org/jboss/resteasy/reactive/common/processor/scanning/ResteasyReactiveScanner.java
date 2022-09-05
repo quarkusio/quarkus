@@ -350,6 +350,7 @@ public class ResteasyReactiveScanner {
         Set<String> beanParams = new HashSet<>();
 
         Set<ClassInfo> beanParamAsBeanUsers = new HashSet<>(scannedResources.values());
+        beanParamAsBeanUsers.addAll(possibleSubResources.values());
 
         Collection<AnnotationInstance> unregisteredBeanParamAnnotations = new ArrayList<>(
                 index.getAnnotations(ResteasyReactiveDotNames.BEAN_PARAM));

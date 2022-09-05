@@ -24,6 +24,7 @@ import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
@@ -51,6 +52,7 @@ public class ConfigurationImpl implements Configuration {
     private final MultivaluedMap<Class<?>, ResourceWriter> resourceWriters;
     private final MultivaluedMap<Class<?>, ResourceReader> resourceReaders;
     private final MultivaluedMap<Class<?>, RxInvokerProvider<?>> rxInvokerProviders;
+    private final MultivaluedMap<Class<?>, ContextResolver<?>> contextResolvers;
 
     public ConfigurationImpl(RuntimeType runtimeType) {
         this.runtimeType = runtimeType;
@@ -65,6 +67,7 @@ public class ConfigurationImpl implements Configuration {
         this.resourceReaders = new QuarkusMultivaluedHashMap<>();
         this.resourceWriters = new QuarkusMultivaluedHashMap<>();
         this.rxInvokerProviders = new QuarkusMultivaluedHashMap<>();
+        this.contextResolvers = new QuarkusMultivaluedHashMap<>();
     }
 
     public ConfigurationImpl(Configuration configuration) {
@@ -91,6 +94,8 @@ public class ConfigurationImpl implements Configuration {
             this.resourceWriters.putAll(configurationImpl.resourceWriters);
             this.rxInvokerProviders = new QuarkusMultivaluedHashMap<>();
             this.rxInvokerProviders.putAll(configurationImpl.rxInvokerProviders);
+            this.contextResolvers = new QuarkusMultivaluedHashMap<>();
+            this.contextResolvers.putAll(configurationImpl.contextResolvers);
         } else {
             this.allInstances = new HashMap<>();
             this.enabledFeatures = new ArrayList<>();
@@ -104,6 +109,7 @@ public class ConfigurationImpl implements Configuration {
             this.resourceReaders = new QuarkusMultivaluedHashMap<>();
             this.resourceWriters = new QuarkusMultivaluedHashMap<>();
             this.rxInvokerProviders = new QuarkusMultivaluedHashMap<>();
+            this.contextResolvers = new QuarkusMultivaluedHashMap<>();
             // this is the best we can do - we don't have any of the metadata associated with the registration
             for (Object i : configuration.getInstances()) {
                 register(i);
@@ -302,6 +308,13 @@ public class ConfigurationImpl implements Configuration {
             rxInvokerProviders.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
                     (RxInvokerProvider<?>) component);
         }
+        if (component instanceof ContextResolver) {
+            added = true;
+            Class<?> componentClass = component.getClass();
+            Type[] args = Types.findParameterizedTypes(componentClass, ContextResolver.class);
+            contextResolvers.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
+                    (ContextResolver<?>) component);
+        }
         if (added) {
             allInstances.put(component.getClass(), component);
 
@@ -401,6 +414,12 @@ public class ConfigurationImpl implements Configuration {
                         resourceWriter);
             }
         }
+        if (component instanceof ContextResolver) {
+            added = true;
+            Type[] args = Types.findParameterizedTypes(componentClass, ContextResolver.class);
+            contextResolvers.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
+                    (ContextResolver<?>) component);
+        }
         if (added) {
             allInstances.put(componentClass, component);
             contracts.put(componentClass, componentContracts);
@@ -465,6 +484,21 @@ public class ConfigurationImpl implements Configuration {
             if (invokerProvider.isProviderFor(wantedClass))
                 return invokerProvider;
         }
+        return null;
+    }
+
+    public <T> T getFromContext(Class<T> wantedClass) {
+        List<ContextResolver<?>> candidates = contextResolvers.get(wantedClass);
+        if (candidates == null) {
+            return null;
+        }
+        for (ContextResolver<?> contextResolver : candidates) {
+            Object instance = contextResolver.getContext(wantedClass);
+            if (instance != null) {
+                return (T) instance;
+            }
+        }
+
         return null;
     }
 

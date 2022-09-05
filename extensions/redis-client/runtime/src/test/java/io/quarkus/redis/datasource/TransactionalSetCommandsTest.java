@@ -34,6 +34,7 @@ public class TransactionalSetCommandsTest extends DatasourceTestBase {
     public void setBlocking() {
         TransactionResult result = blocking.withTransaction(tx -> {
             TransactionalSetCommands<String, String> set = tx.set(String.class);
+            assertThat(set.getDataSource()).isEqualTo(tx);
             set.sadd(key, "a", "b", "c", "d");
             set.sadd(key, "c", "1");
             set.spop(key);

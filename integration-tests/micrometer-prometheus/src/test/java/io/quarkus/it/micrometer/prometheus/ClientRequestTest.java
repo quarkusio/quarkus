@@ -3,11 +3,13 @@ package io.quarkus.it.micrometer.prometheus;
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.CoreMatchers.containsString;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
+@Disabled("flaky")
 public class ClientRequestTest {
     @Test
     void testClientRequests() {

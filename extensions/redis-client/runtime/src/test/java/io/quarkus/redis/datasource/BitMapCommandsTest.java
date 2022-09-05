@@ -37,6 +37,11 @@ public class BitMapCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    void getDataSource() {
+        assertThat(ds).isEqualTo(bitmap.getDataSource());
+    }
+
+    @Test
     void bitcount() {
         assertThat(bitmap.bitcount(key)).isEqualTo(0);
 

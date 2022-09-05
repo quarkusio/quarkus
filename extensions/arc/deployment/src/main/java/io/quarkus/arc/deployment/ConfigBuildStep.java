@@ -177,6 +177,7 @@ public class ConfigBuildStep {
                         || DotNames.OPTIONAL_INT.equals(injectedType.name())
                         || DotNames.OPTIONAL_LONG.equals(injectedType.name())
                         || DotNames.OPTIONAL_DOUBLE.equals(injectedType.name())
+                        || DotNames.INSTANCE.equals(injectedType.name())
                         || DotNames.PROVIDER.equals(injectedType.name())
                         || SUPPLIER_NAME.equals(injectedType.name())
                         || SR_CONFIG_VALUE_NAME.equals(injectedType.name())

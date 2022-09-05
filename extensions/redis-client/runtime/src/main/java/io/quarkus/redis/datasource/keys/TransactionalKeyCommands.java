@@ -3,7 +3,9 @@ package io.quarkus.redis.datasource.keys;
 import java.time.Duration;
 import java.time.Instant;
 
-public interface TransactionalKeyCommands<K> {
+import io.quarkus.redis.datasource.TransactionalRedisCommands;
+
+public interface TransactionalKeyCommands<K> extends TransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/copy">COPY</a>.

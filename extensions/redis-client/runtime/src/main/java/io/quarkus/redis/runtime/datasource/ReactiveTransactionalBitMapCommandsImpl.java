@@ -2,6 +2,7 @@ package io.quarkus.redis.runtime.datasource;
 
 import io.quarkus.redis.datasource.bitmap.BitFieldArgs;
 import io.quarkus.redis.datasource.bitmap.ReactiveTransactionalBitMapCommands;
+import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
 
@@ -10,8 +11,9 @@ public class ReactiveTransactionalBitMapCommandsImpl<K> extends AbstractTransact
 
     private final ReactiveBitMapCommandsImpl<K> reactive;
 
-    public ReactiveTransactionalBitMapCommandsImpl(ReactiveBitMapCommandsImpl<K> reactive, TransactionHolder tx) {
-        super(tx);
+    public ReactiveTransactionalBitMapCommandsImpl(ReactiveTransactionalRedisDataSource ds,
+            ReactiveBitMapCommandsImpl<K> reactive, TransactionHolder tx) {
+        super(ds, tx);
         this.reactive = reactive;
     }
 

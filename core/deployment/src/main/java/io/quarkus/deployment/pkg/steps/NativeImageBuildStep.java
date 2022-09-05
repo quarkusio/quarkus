@@ -202,6 +202,12 @@ public class NativeImageBuildStep {
         String resultingExecutableName = getResultingExecutableName(nativeImageName, isContainerBuild);
         Path generatedExecutablePath = outputDir.resolve(resultingExecutableName);
         Path finalExecutablePath = outputTargetBuildItem.getOutputDirectory().resolve(resultingExecutableName);
+        if (nativeConfig.reuseExisting) {
+            if (Files.exists(finalExecutablePath)) {
+                return new NativeImageBuildItem(finalExecutablePath,
+                        NativeImageBuildItem.GraalVMVersion.unknown());
+            }
+        }
 
         NativeImageBuildRunner buildRunner = getNativeImageBuildRunner(nativeConfig, outputDir,
                 nativeImageName, resultingExecutableName);
@@ -212,15 +218,6 @@ public class NativeImageBuildStep {
             checkGraalVMVersion(graalVMVersion);
         } else {
             log.error("Unable to get GraalVM version from the native-image binary.");
-        }
-        if (nativeConfig.reuseExisting) {
-            if (Files.exists(finalExecutablePath)) {
-                return new NativeImageBuildItem(finalExecutablePath,
-                        new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
-                                graalVMVersion.version.toString(),
-                                graalVMVersion.javaFeatureVersion,
-                                graalVMVersion.distribution.name()));
-            }
         }
 
         try {
@@ -677,19 +674,21 @@ public class NativeImageBuildStep {
                 }
                 nativeImageArgs.add("--features=" + String.join(",", featuresList));
 
-                /*
-                 * Instruct GraalVM / Mandrel parse compiler graphs twice, once for the static analysis and once again
-                 * for the AOT compilation.
-                 *
-                 * We do this because single parsing significantly increases memory usage at build time
-                 * see https://github.com/oracle/graal/issues/3435 and
-                 * https://github.com/graalvm/mandrel/issues/304#issuecomment-952070568 for more details.
-                 *
-                 * Note: This option must come before the invocation of
-                 * {@code handleAdditionalProperties(nativeImageArgs)} to ensure that devs and advanced users can
-                 * override it by passing -Dquarkus.native.additional-build-args=-H:+ParseOnce
-                 */
-                nativeImageArgs.add("-H:-ParseOnce");
+                if (graalVMVersion.isOlderThan(GraalVM.Version.VERSION_22_2_0)) {
+                    /*
+                     * Instruct GraalVM / Mandrel parse compiler graphs twice, once for the static analysis and once again
+                     * for the AOT compilation.
+                     *
+                     * We do this because single parsing significantly increases memory usage at build time
+                     * see https://github.com/oracle/graal/issues/3435 and
+                     * https://github.com/graalvm/mandrel/issues/304#issuecomment-952070568 for more details.
+                     *
+                     * Note: This option must come before the invocation of
+                     * {@code handleAdditionalProperties(nativeImageArgs)} to ensure that devs and advanced users can
+                     * override it by passing -Dquarkus.native.additional-build-args=-H:+ParseOnce
+                     */
+                    nativeImageArgs.add("-H:-ParseOnce");
+                }
 
                 /**
                  * This makes sure the Kerberos integration module is made available in case any library
@@ -858,7 +857,9 @@ public class NativeImageBuildStep {
                 if (jpmsExports != null) {
                     HashSet<JPMSExportBuildItem> deduplicatedJpmsExport = new HashSet<>(jpmsExports);
                     for (JPMSExportBuildItem jpmsExport : deduplicatedJpmsExport) {
-                        if (graalVMVersion.isNewerThan(jpmsExport.getExportAfter())) {
+                        GraalVM.Version exportBeforeVersion = jpmsExport.getExportBefore();
+                        if (graalVMVersion.isNewerThan(jpmsExport.getExportAfter()) &&
+                                (exportBeforeVersion == null || graalVMVersion.isOlderThan(exportBeforeVersion))) {
                             nativeImageArgs.add(
                                     "-J--add-exports=" + jpmsExport.getModule() + "/" + jpmsExport.getPackage()
                                             + "=ALL-UNNAMED");

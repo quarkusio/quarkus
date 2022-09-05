@@ -4,19 +4,19 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.ScanArgs;
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.datasource.hash.HashScanCursor;
 import io.quarkus.redis.datasource.hash.ReactiveHashCommands;
 
-public class BlockingHashCommandsImpl<K, F, V> implements HashCommands<K, F, V> {
+public class BlockingHashCommandsImpl<K, F, V> extends AbstractRedisCommandGroup implements HashCommands<K, F, V> {
 
     private final ReactiveHashCommands<K, F, V> reactive;
-    private final Duration timeout;
 
-    public BlockingHashCommandsImpl(ReactiveHashCommands<K, F, V> reactive, Duration timeout) {
+    public BlockingHashCommandsImpl(RedisDataSource ds, ReactiveHashCommands<K, F, V> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

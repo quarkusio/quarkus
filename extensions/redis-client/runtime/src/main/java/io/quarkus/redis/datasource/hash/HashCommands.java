@@ -3,6 +3,7 @@ package io.quarkus.redis.datasource.hash;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.redis.datasource.RedisCommands;
 import io.quarkus.redis.datasource.ScanArgs;
 
 /**
@@ -18,7 +19,7 @@ import io.quarkus.redis.datasource.ScanArgs;
  * @param <F> the type of the field
  * @param <V> the type of the value
  */
-public interface HashCommands<K, F, V> {
+public interface HashCommands<K, F, V> extends RedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/hdel">HDEL</a>.

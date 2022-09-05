@@ -180,8 +180,8 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         if (in == null)
             return null;
         return (T) ClientSerialisers.invokeClientReader(null, responseType.getRawType(), responseType.getType(),
-                mediaType, properties, metadata, restClient.getClientContext().getSerialisers(), in, getReaderInterceptors(),
-                configuration);
+                mediaType, properties, this, metadata, restClient.getClientContext().getSerialisers(), in,
+                getReaderInterceptors(), configuration);
     }
 
     public ReaderInterceptor[] getReaderInterceptors() {
@@ -244,7 +244,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
                 RuntimeType.CLIENT);
         for (MessageBodyWriter<?> w : writers) {
             Buffer ret = ClientSerialisers.invokeClientWriter(entity, entityObject, entityClass, entityType, headerMap, w,
-                    interceptors, properties, restClient.getClientContext().getSerialisers(), configuration);
+                    interceptors, properties, this, restClient.getClientContext().getSerialisers(), configuration);
             if (ret != null) {
                 return ret;
             }

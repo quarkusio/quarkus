@@ -24,8 +24,8 @@
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
-        <opentelemetry.version>1.16.0</opentelemetry.version>
-        <opentelemetry-alpha.version>1.16.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry.version>1.17.0</opentelemetry.version>
+        <opentelemetry-alpha.version>1.17.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.8.1</jaeger.version>
         <quarkus-http.version>4.1.9</quarkus-http.version>
         <micrometer.version>1.9.3</micrometer.version><!-- keep in sync with hdrhistogram -->
@@ -39,12 +39,12 @@
         <microprofile-rest-client.version>2.0</microprofile-rest-client.version>
         <microprofile-jwt.version>1.2</microprofile-jwt.version>
         <microprofile-lra.version>1.0</microprofile-lra.version>
-        <smallrye-common.version>1.13.0</smallrye-common.version>
-        <smallrye-config.version>2.11.1</smallrye-config.version>
+        <smallrye-common.version>1.13.1</smallrye-common.version>
+        <smallrye-config.version>2.12.0</smallrye-config.version>
         <smallrye-health.version>3.2.1</smallrye-health.version>
         <smallrye-metrics.version>3.0.5</smallrye-metrics.version>
         <smallrye-open-api.version>2.2.0</smallrye-open-api.version>
-        <smallrye-graphql.version>1.7.0</smallrye-graphql.version>
+        <smallrye-graphql.version>1.7.1</smallrye-graphql.version>
         <smallrye-opentracing.version>2.1.1</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>5.5.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>3.5.3</smallrye-jwt.version>
@@ -76,7 +76,7 @@
         <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
         <asm.version>9.3</asm.version>
         <commons-io.version>2.11.0</commons-io.version>
-        <jboss-metadata-web.version>15.0.0.Final</jboss-metadata-web.version>
+        <jboss-metadata-web.version>15.1.0.Final</jboss-metadata-web.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <plexus-utils.version>3.3.0</plexus-utils.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
@@ -88,7 +88,7 @@
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-codec.version>1.15</commons-codec.version>
         <classmate.version>1.5.1</classmate.version>
-        <hibernate-orm.version>5.6.10.Final</hibernate-orm.version> <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below): -->
+        <hibernate-orm.version>5.6.11.Final</hibernate-orm.version> <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below): -->
         <bytebuddy.version>1.12.9</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-reactive.version>1.1.7.Final</hibernate-reactive.version>
         <hibernate-validator.version>6.2.4.Final</hibernate-validator.version>
@@ -97,14 +97,14 @@
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>1.16</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>8.3.3</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>8.4.1</elasticsearch-opensource-components.version>
         <!-- for the now proprietary components of Elasticsearch, we use the last Open Source version -->
         <elasticsearch-proprietary-components-keeping-old-opensource-version.version>7.10.2</elasticsearch-proprietary-components-keeping-old-opensource-version.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
         <jboss-logging-annotations.version>2.2.1.Final</jboss-logging-annotations.version>
         <slf4j.version>1.7.36</slf4j.version>
-        <slf4j-jboss-logmanager.version>1.1.0.Final</slf4j-jboss-logmanager.version>
+        <slf4j-jboss-logmanager.version>1.2.0.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>1.5.4.Final-format-001</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>1.20.1.Final</wildfly-elytron.version>
@@ -117,7 +117,7 @@
         <cronutils.version>9.2.0</cronutils.version>
         <quartz.version>2.3.2</quartz.version>
         <h2.version>2.1.214</h2.version>
-        <postgresql-jdbc.version>42.4.2</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.5.0</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.0.7</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.30</mysql-jdbc.version>
         <mssql-jdbc.version>11.2.0.jre11</mssql-jdbc.version>
@@ -152,14 +152,14 @@
         <kotlin.coroutine.version>1.6.4</kotlin.coroutine.version>
         <kotlin-serialization.version>1.4.0</kotlin-serialization.version>
         <kubernetes-client.version>5.12.3</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
-        <dekorate.version>2.11.0</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
+        <dekorate.version>2.11.2</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.0.10</jboss-logmanager.version>
-        <flyway.version>9.1.6</flyway.version>
+        <flyway.version>9.2.2</flyway.version>
         <yasson.version>1.0.11</yasson.version>
         <liquibase.version>4.15.0</liquibase.version>
-        <snakeyaml.version>1.30</snakeyaml.version>
+        <snakeyaml.version>1.31</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>4.7.1</mongo-client.version>
         <mongo-crypt.version>1.5.2</mongo-crypt.version>
@@ -179,9 +179,9 @@
         <quarkus-security.version>1.1.4.Final</quarkus-security.version>
         <keycloak.version>19.0.1</keycloak.version>
         <logstash-gelf.version>1.15.0</logstash-gelf.version>
-        <checker-qual.version>3.24.0</checker-qual.version>
+        <checker-qual.version>3.25.0</checker-qual.version>
         <error-prone-annotations.version>2.15.0</error-prone-annotations.version>
-        <jib-core.version>0.21.0</jib-core.version>
+        <jib-core.version>0.22.0</jib-core.version>
         <google-http-client.version>1.42.2</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
         <picocli.version>4.6.3</picocli.version>
@@ -201,7 +201,7 @@
         <aesh.version>2.6</aesh.version>
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.10.0</strimzi-oauth.version>
-        <strimzi-oauth.nimbus.version>9.24.2</strimzi-oauth.nimbus.version>
+        <strimzi-oauth.nimbus.version>9.24.3</strimzi-oauth.nimbus.version>
         <java-buildpack-client.version>0.0.6</java-buildpack-client.version>
         <org-crac.version>0.1.1</org-crac.version>
     </properties>
@@ -883,6 +883,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-keycloak-admin-client-reactive-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak-admin-client-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak-admin-client-common-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

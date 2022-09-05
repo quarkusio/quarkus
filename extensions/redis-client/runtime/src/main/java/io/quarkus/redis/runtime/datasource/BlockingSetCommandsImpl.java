@@ -4,20 +4,20 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 
+import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.ScanArgs;
 import io.quarkus.redis.datasource.SortArgs;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.quarkus.redis.datasource.set.SScanCursor;
 import io.quarkus.redis.datasource.set.SetCommands;
 
-public class BlockingSetCommandsImpl<K, V> implements SetCommands<K, V> {
+public class BlockingSetCommandsImpl<K, V> extends AbstractRedisCommandGroup implements SetCommands<K, V> {
 
     private final ReactiveSetCommands<K, V> reactive;
-    private final Duration timeout;
 
-    public BlockingSetCommandsImpl(ReactiveSetCommands<K, V> reactive, Duration timeout) {
+    public BlockingSetCommandsImpl(RedisDataSource ds, ReactiveSetCommands<K, V> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

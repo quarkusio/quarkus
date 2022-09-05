@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.OptionalDouble;
 import java.util.Set;
 
+import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.geo.GeoAddArgs;
 import io.quarkus.redis.datasource.geo.GeoCommands;
 import io.quarkus.redis.datasource.geo.GeoItem;
@@ -17,14 +18,13 @@ import io.quarkus.redis.datasource.geo.GeoUnit;
 import io.quarkus.redis.datasource.geo.GeoValue;
 import io.quarkus.redis.datasource.geo.ReactiveGeoCommands;
 
-public class BlockingGeoCommandsImpl<K, V> implements GeoCommands<K, V> {
+public class BlockingGeoCommandsImpl<K, V> extends AbstractRedisCommandGroup implements GeoCommands<K, V> {
 
     private final ReactiveGeoCommands<K, V> reactive;
-    private final Duration timeout;
 
-    public BlockingGeoCommandsImpl(ReactiveGeoCommands<K, V> reactive, Duration timeout) {
+    public BlockingGeoCommandsImpl(RedisDataSource ds, ReactiveGeoCommands<K, V> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

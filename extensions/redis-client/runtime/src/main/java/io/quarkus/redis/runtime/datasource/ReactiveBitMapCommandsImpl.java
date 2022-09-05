@@ -2,16 +2,26 @@ package io.quarkus.redis.runtime.datasource;
 
 import java.util.List;
 
+import io.quarkus.redis.datasource.ReactiveRedisCommands;
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.bitmap.BitFieldArgs;
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
 
 public class ReactiveBitMapCommandsImpl<K> extends AbstractBitMapCommands<K>
-        implements ReactiveBitMapCommands<K> {
+        implements ReactiveBitMapCommands<K>, ReactiveRedisCommands {
 
-    public ReactiveBitMapCommandsImpl(RedisCommandExecutor redis, Class<K> k) {
+    private final ReactiveRedisDataSource reactive;
+
+    public ReactiveBitMapCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k) {
         super(redis, k);
+        this.reactive = redis;
+    }
+
+    @Override
+    public ReactiveRedisDataSource getDataSource() {
+        return reactive;
     }
 
     @Override

@@ -36,6 +36,7 @@ public class TransactionalHashCommandsTest extends DatasourceTestBase {
     public void hgetBlocking() {
         TransactionResult result = blocking.withTransaction(tx -> {
             TransactionalHashCommands<String, String, String> hash = tx.hash(String.class);
+            assertThat(hash.getDataSource()).isEqualTo(tx);
             hash.hget(KEY, "field"); // 0 -> null
             hash.hset(KEY, "field", "hello"); // 1 -> true
             hash.hget(KEY, "field"); // 2 -> "hello

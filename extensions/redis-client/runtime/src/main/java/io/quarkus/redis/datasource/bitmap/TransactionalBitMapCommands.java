@@ -1,5 +1,7 @@
 package io.quarkus.redis.datasource.bitmap;
 
+import io.quarkus.redis.datasource.TransactionalRedisCommands;
+
 /**
  * Allows executing commands from the {@code bitmap} group in a Redis transaction ({@code Multi}).
  * See <a href="https://redis.io/commands/?group=bitmap">the bitmap command list</a> for further information about these
@@ -7,7 +9,7 @@ package io.quarkus.redis.datasource.bitmap;
  *
  * @param <K> the type of the key
  */
-public interface TransactionalBitMapCommands<K> {
+public interface TransactionalBitMapCommands<K> extends TransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/bitcount">BITCOUNT</a>.

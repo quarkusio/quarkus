@@ -43,7 +43,6 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
 
         setOfPlaces = ds.sortedSet(Place.class);
         setOfStrings = ds.sortedSet(String.class);
-
     }
 
     @AfterEach
@@ -53,6 +52,12 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
 
     private void populate() {
         setOfPlaces.zadd(key, Map.of(Place.crussol, 1.0, Place.grignan, 2.0, Place.suze, 3.0));
+    }
+
+    @Test
+    void getDataSource() {
+        assertThat(ds).isEqualTo(setOfStrings.getDataSource());
+        assertThat(ds).isEqualTo(setOfPlaces.getDataSource());
     }
 
     @Test

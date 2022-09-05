@@ -369,12 +369,19 @@ class HibernateSearchElasticsearchProcessor {
             if (!ConfigUtils.isAnyPropertyPresent(propertyKeysIndicatingHostsConfigured)) {
                 String schemaManagementStrategyPropertyKey = mapperPropertyKey(puName, "schema-management.strategy");
                 if (!ConfigUtils.isPropertyPresent(schemaManagementStrategyPropertyKey)) {
-                    String forcedValue = "drop-and-create-and-drop";
                     devServicesAdditionalConfigProducer
-                            .produce(new DevServicesAdditionalConfigBuildItem(propertyKeysIndicatingHostsConfigured,
-                                    schemaManagementStrategyPropertyKey, forcedValue,
-                                    () -> LOG.infof("Setting %s=%s to initialize Dev Services managed Elasticsearch server",
-                                            schemaManagementStrategyPropertyKey, forcedValue)));
+                            .produce(new DevServicesAdditionalConfigBuildItem(devServicesConfig -> {
+                                // Only force DB generation if the datasource is configured through dev services
+                                if (propertyKeysIndicatingHostsConfigured.stream()
+                                        .anyMatch(devServicesConfig::containsKey)) {
+                                    String forcedValue = "drop-and-create-and-drop";
+                                    LOG.infof("Setting %s=%s to initialize Dev Services managed Elasticsearch server",
+                                            schemaManagementStrategyPropertyKey, forcedValue);
+                                    return Map.of(schemaManagementStrategyPropertyKey, forcedValue);
+                                } else {
+                                    return Map.of();
+                                }
+                            }));
                 }
             }
         }

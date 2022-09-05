@@ -40,6 +40,7 @@ public class TransactionalGeoCommandsTest extends DatasourceTestBase {
     public void geoBlocking() {
         TransactionResult result = blocking.withTransaction(tx -> {
             TransactionalGeoCommands<String, String> geo = tx.geo(String.class);
+            assertThat(geo.getDataSource()).isEqualTo(tx);
             geo.geoadd(key, 10, 10, "1"); // 0 - true
             geo.geoadd(key, GeoItem.of("2", GeoPosition.of(-1, -1))); // 1 - true
             geo.geoadd(key, GeoItem.of("3", -20, -20)); // 2 - true

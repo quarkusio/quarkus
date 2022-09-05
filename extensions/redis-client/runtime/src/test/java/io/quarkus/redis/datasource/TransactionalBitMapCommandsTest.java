@@ -37,6 +37,7 @@ public class TransactionalBitMapCommandsTest extends DatasourceTestBase {
     public void bitMapBlocking() {
         TransactionResult result = blocking.withTransaction(tx -> {
             TransactionalBitMapCommands<String> bitmap = tx.bitmap(String.class);
+            assertThat(bitmap.getDataSource()).isEqualTo(tx);
             bitmap.bitcount(key); // 0 -> 0
             bitmap.setbit(key, 0L, 1); // 1 -> 1
             bitmap.setbit(key, 1L, 1); // 2 -> 2

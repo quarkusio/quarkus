@@ -1,5 +1,6 @@
 package io.quarkus.restclient.config.deployment;
 
+import static io.quarkus.restclient.config.Constants.GLOBAL_REST_SCOPE_FORMAT;
 import static io.quarkus.restclient.config.Constants.MP_REST_SCOPE_FORMAT;
 import static io.quarkus.restclient.config.Constants.QUARKUS_REST_SCOPE_FORMAT;
 
@@ -30,6 +31,10 @@ public final class RestClientConfigUtils {
             scopeConfig = config.getOptionalValue(String.format(QUARKUS_REST_SCOPE_FORMAT, configKeyOptional.get()),
                     String.class);
         }
+        if (scopeConfig.isEmpty() && configKeyOptional.isPresent()) { // quarkus style config; quoted configKey
+            scopeConfig = config.getOptionalValue(String.format(QUARKUS_REST_SCOPE_FORMAT, '"' + configKeyOptional.get() + '"'),
+                    String.class);
+        }
         if (scopeConfig.isEmpty() && configKeyOptional.isPresent()) { // microprofile style config; configKey
             scopeConfig = config.getOptionalValue(String.format(MP_REST_SCOPE_FORMAT, configKeyOptional.get()), String.class);
         }
@@ -37,6 +42,9 @@ public final class RestClientConfigUtils {
             scopeConfig = config.getOptionalValue(
                     String.format(QUARKUS_REST_SCOPE_FORMAT, restClientInterface.simpleName()),
                     String.class);
+        }
+        if (scopeConfig.isEmpty()) { // "global" rest-config property as a fallback
+            scopeConfig = config.getOptionalValue(GLOBAL_REST_SCOPE_FORMAT, String.class);
         }
         return scopeConfig;
     }

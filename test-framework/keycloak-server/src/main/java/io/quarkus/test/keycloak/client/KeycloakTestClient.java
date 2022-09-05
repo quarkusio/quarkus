@@ -17,7 +17,7 @@ import io.restassured.specification.RequestSpecification;
 public class KeycloakTestClient implements DevServicesContext.ContextAware {
 
     private final static String CLIENT_AUTH_SERVER_URL_PROP = "client.quarkus.oidc.auth-server-url";
-    private final static String AUTH_SERVER_URL_PROP = "client.quarkus.oidc.auth-server-url";
+    private final static String AUTH_SERVER_URL_PROP = "quarkus.oidc.auth-server-url";
     private final static String CLIENT_ID_PROP = "quarkus.oidc.client-id";
     private final static String CLIENT_SECRET_PROP = "quarkus.oidc.credentials.secret";
 

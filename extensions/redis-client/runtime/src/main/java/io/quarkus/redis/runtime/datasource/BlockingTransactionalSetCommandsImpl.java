@@ -4,16 +4,17 @@ import java.time.Duration;
 
 import io.quarkus.redis.datasource.set.ReactiveTransactionalSetCommands;
 import io.quarkus.redis.datasource.set.TransactionalSetCommands;
+import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 
-public class BlockingTransactionalSetCommandsImpl<K, V> implements TransactionalSetCommands<K, V> {
+public class BlockingTransactionalSetCommandsImpl<K, V> extends AbstractTransactionalRedisCommandGroup
+        implements TransactionalSetCommands<K, V> {
 
     private final ReactiveTransactionalSetCommands<K, V> reactive;
 
-    private final Duration timeout;
-
-    public BlockingTransactionalSetCommandsImpl(ReactiveTransactionalSetCommands<K, V> reactive, Duration timeout) {
+    public BlockingTransactionalSetCommandsImpl(TransactionalRedisDataSource ds,
+            ReactiveTransactionalSetCommands<K, V> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

@@ -1,5 +1,12 @@
 # Jakarta migration
 
+## Status
+
+You can follow the status of the Jakarta migration in [the dedicated project tab](https://github.com/orgs/quarkusio/projects/13/views/20).
+
+The build status is published in an [issue with a full report](https://github.com/quarkusio/quarkus/issues/25363).
+Just scroll to the bottom for the latest.
+
 ## Testing
 
 To test the Jakarta work, there are two approaches:

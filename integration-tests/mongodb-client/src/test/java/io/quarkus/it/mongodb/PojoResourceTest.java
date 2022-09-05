@@ -5,7 +5,11 @@ import static org.hamcrest.CoreMatchers.is;
 
 import java.util.Optional;
 
+import javax.json.bind.Jsonb;
+
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -23,6 +27,18 @@ import io.restassured.response.Response;
 @DisabledOnOs(OS.WINDOWS)
 public class PojoResourceTest {
 
+    private static Jsonb jsonb;
+
+    @BeforeAll
+    public static void giveMeAMapper() {
+        jsonb = Utils.initialiseJsonb();
+    }
+
+    @AfterAll
+    public static void releaseMapper() throws Exception {
+        jsonb.close();
+    }
+
     @BeforeEach
     public void clearCollection() {
         Response response = RestAssured
@@ -37,7 +53,8 @@ public class PojoResourceTest {
         Pojo pojo = new Pojo();
         pojo.description = "description";
         pojo.optionalString = Optional.of("optional");
-        given().header("Content-Type", "application/json").body(pojo)
+        given().header("Content-Type", "application/json")
+                .body(jsonb.toJson(pojo))
                 .when().post("/pojos")
                 .then().statusCode(201);
 

@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.ScanArgs;
 import io.quarkus.redis.datasource.list.KeyValue;
 import io.quarkus.redis.datasource.sortedset.Range;
@@ -24,8 +25,16 @@ import io.vertx.mutiny.redis.client.Response;
 public class ReactiveSortedSetCommandsImpl<K, V> extends AbstractSortedSetCommands<K, V>
         implements ReactiveSortedSetCommands<K, V> {
 
-    public ReactiveSortedSetCommandsImpl(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    private final ReactiveRedisDataSource reactive;
+
+    public ReactiveSortedSetCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k, Class<V> v) {
         super(redis, k, v);
+        this.reactive = redis;
+    }
+
+    @Override
+    public ReactiveRedisDataSource getDataSource() {
+        return reactive;
     }
 
     @Override

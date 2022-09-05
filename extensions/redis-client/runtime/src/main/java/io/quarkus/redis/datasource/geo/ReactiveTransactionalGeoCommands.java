@@ -1,8 +1,9 @@
 package io.quarkus.redis.datasource.geo;
 
+import io.quarkus.redis.datasource.ReactiveTransactionalRedisCommands;
 import io.smallrye.mutiny.Uni;
 
-public interface ReactiveTransactionalGeoCommands<K, V> {
+public interface ReactiveTransactionalGeoCommands<K, V> extends ReactiveTransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/geoadd">GEOADD</a>.

@@ -56,7 +56,36 @@ quarkus.jib.jvm-arguments=-agentlib:jdwp=transport=dt_socket\\,server=y\\,suspen
 
 Other base images might provide launch scripts that enable debugging when an environment variable is set, in which case you would set than environment variable when launching the container.
 
-Finally, the `quarkus.jib.jvm-entrypoint` configuration property can be used to completely override the container entry point and can thus be used to either hard code the JVM debug configuration or point to a script that handles the details.
+==== Custom Entrypoint
+
+The `quarkus.jib.jvm-entrypoint` configuration property can be used to completely override the container entry point and can thus be used to either hard code the JVM debug configuration or point to a script that handles the details.
+
+For example, if the base images `ubi8/openjdk-11-runtime` or `ubi8/openjdk-17-runtime` are used to build the container, the entry point can be hard-coded on the application properties file.
+
+.Example application.properties
+[source,properties]
+----
+quarkus.jib.jvm-entrypoint=java,-Dcustom.param=custom_value,-jar,quarkus-run.jar
+----
+
+Or a custom start-up script can be created and referenced on the properties file. This approach works better if there's a need to set application params using environment variables:
+
+.Example application.properties
+[source,properties]
+----
+quarkus.jib.jvm-entrypoint=/bin/sh,run-java.sh
+----
+
+.Example src/main/jib/home/jboss/run-java.sh
+[source,shell]
+----
+java \
+  -Djavax.net.ssl.trustStore=/deployments/truststore \
+  -Djavax.net.ssl.trustStorePassword="$TRUST_STORE_PASSWORD" \
+  -jar quarkus-run.jar
+----
+
+NOTE: `/home/jboss` is the WORKDIR for all quarkus binaries in the base images `ubi8/openjdk-11-runtime` and `ubi8/openjdk-17-runtime` (https://catalog.redhat.com/software/containers/ubi8/openjdk-17/618bdbf34ae3739687568813?container-tabs=dockerfile[Dockerfile for ubi8/openjdk-17-runtime, window="_blank"])
 
 ==== Multi-module projects and layering
 

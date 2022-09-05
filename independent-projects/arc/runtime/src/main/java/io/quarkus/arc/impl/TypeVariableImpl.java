@@ -7,6 +7,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
 import java.util.List;
+import java.util.StringJoiner;
 
 public class TypeVariableImpl<D extends GenericDeclaration> implements TypeVariable<D> {
 
@@ -54,4 +55,17 @@ public class TypeVariableImpl<D extends GenericDeclaration> implements TypeVaria
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public String toString() {
+        StringJoiner joiner = new StringJoiner(" & ", " extends ", "");
+        joiner.setEmptyValue("");
+        for (Type bound : bounds) {
+            if (bound instanceof Class) {
+                joiner.add(((Class<?>) bound).getName());
+            } else {
+                joiner.add(bound.toString());
+            }
+        }
+        return name + joiner;
+    }
 }

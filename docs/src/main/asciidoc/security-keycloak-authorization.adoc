@@ -472,3 +472,4 @@ include::{generated-dir}/config/quarkus-keycloak-keycloak-policy-enforcer-config
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * xref:security.adoc[Quarkus Security]
+* xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]

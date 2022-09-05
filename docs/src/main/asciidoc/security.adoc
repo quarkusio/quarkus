@@ -55,35 +55,34 @@ Please see xref:security-built-in-authentication.adoc#mutual-tls[Mutual TLS Auth
 
 === OpenID Connect
 
-`quarkus-oidc` extension provides a reactive, interoperable, multi-tenant enabled OpenID Connect adapter which supports `Bearer Token` and `Authorization Code Flow` authentication mechanisms.
+OpenID Connect (OIDC) is an identity layer that works on top of the OAuth 2.0 protocol. OIDC enables client applications to verify the identity of a user based on authentication that is performed by the OIDC provider and retrieves basic information about that user.
 
-`Bearer Token` mechanism extracts the token from HTTP `Authorization` header. 
-`Authorization Code Flow` mechanism uses OpenID Connect Authorization Code flow. It redirects the user to IDP to authenticate and completes the authentication process after the user has been redirected back to Quarkus by exchanging the provided code grant for ID, access and refresh tokens.
+The Quarkus `quarkus-oidc` extension provides a reactive, interoperable, multitenant-enabled OIDC adapter that supports Bearer Token and Authorization Code Flow authentication mechanisms.
 
-ID and access `JWT` tokens are verified with the refreshable `JWK` key set but both JWT and opaque (binary) tokens can be introspected remotely. 
+The Bearer Token mechanism extracts the token from the HTTP Authorization header. 
+The Authorization Code Flow mechanism redirects the user to an OIDC provider to authenticate the identity of this user and, after the user is redirected back to Quarkus, the mechanism completes the authentication process by exchanging the provided code grant for ID, access, and refresh tokens.
 
-See the xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications] guide for more information about `Bearer Token` authentication mechanism.
-
-See the xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Application] guide for more information about `Authorization Code Flow` authentication mechanism.
+You can verify ID and access JSON Web Token (JWT) tokens by using the refreshable JSON Web Key (JWK) set. However, both JWT and opaque (binary) tokens can be introspected remotely.
 
 [NOTE]
 ====
-Both `quarkus-oidc` `Bearer` and `Authorization Code Flow` Authentication mechanisms use <<smallrye-jwt, SmallRye JWT>> to represent JWT tokens as Microprofile JWT `org.eclipse.microprofile.jwt.JsonWebToken`. 
+Using the Quarkus OIDC extension, both Bearer Token and Authorization Code Flow mechanisms use <<smallrye-jwt, SmallRye JWT>> to represent JWT tokens as Microprofile JWT `org.eclipse.microprofile.jwt.JsonWebToken`.
 ====
 
-See xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy] for more information about multiple tenants which can support `Bearer` or `Authorization Code Flow` authentication mechanism and configured statically or dynamically.
+For information about the Bearer Token authentication mechanism, see xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications].
+
+For information about the Authorization Code Flow authentication mechanism, see xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Application].
+
+For information about multiple tenants that can support Bearer Token or Authorization Code Flow mechanisms, see xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy].
+
+For information about using Keycloak to Centralize Authorization, see the xref:security-keycloak-authorization.adoc[Using Keycloak to Centralize Authorization] guide.
+
+For information about configuring Keycloak programmatically, see the xref:security-keycloak-admin-client.adoc[Keycloak Admin Client] guide.
 
 [NOTE]
 ====
-If you prefer to have Quarkus OIDC extension enabled at runtime then set `quarkus.oidc.tenant-enabled=false` at build time and re-enable it at runtime using a system property.
-See also xref:security-openid-connect-multitenancy.adoc#disable-tenant[Disabling Tenant Configurations] for more information about managing the individual tenant configurations in the multi-tenant OIDC deployments.
-====
-
-If you use Keycloak and Bearer tokens then also see the xref:security-keycloak-authorization.adoc[Using Keycloak to Centralize Authorization] guide.
-
-[NOTE]
-====
-If you need to configure Keycloak programmatically then consider using https://www.keycloak.org/docs/latest/server_development/#admin-rest-api[Keycloak Admin REST API] with the help of the `quarkus-keycloak-admin-client` or `quarkus-keycloak-admin-client-reactive` (if the application uses `quarkus-rest-client-reactive`) extension.
+* If you need to enable the Quarkus OIDC extension at runtime, set `quarkus.oidc.tenant-enabled=false` at build time then re-enable it at runtime by using a system property.
+For more information about managing the individual tenant configurations in multitenant OIDC deployments, see xref:security-openid-connect-multitenancy.adoc#disable-tenant[Disabling Tenant Configurations].
 ====
 
 === OpenID Connect Client and Filters

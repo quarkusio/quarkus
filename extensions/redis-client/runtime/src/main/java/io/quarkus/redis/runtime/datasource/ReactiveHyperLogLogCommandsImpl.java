@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveHyperLogLogCommands;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
@@ -7,8 +8,16 @@ import io.vertx.mutiny.redis.client.Response;
 public class ReactiveHyperLogLogCommandsImpl<K, V> extends AbstractHyperLogLogCommands<K, V>
         implements ReactiveHyperLogLogCommands<K, V> {
 
-    public ReactiveHyperLogLogCommandsImpl(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    private final ReactiveRedisDataSource reactive;
+
+    public ReactiveHyperLogLogCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k, Class<V> v) {
         super(redis, k, v);
+        this.reactive = redis;
+    }
+
+    @Override
+    public ReactiveRedisDataSource getDataSource() {
+        return reactive;
     }
 
     @SafeVarargs

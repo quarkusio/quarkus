@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.OptionalLong;
 
+import io.quarkus.redis.datasource.RedisCommands;
 import io.quarkus.redis.datasource.SortArgs;
 
 /**
@@ -16,7 +17,7 @@ import io.quarkus.redis.datasource.SortArgs;
  * @param <K> the type of the key
  * @param <V> the type of the value stored in the lists
  */
-public interface ListCommands<K, V> {
+public interface ListCommands<K, V> extends RedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/blmove">BLMOVE</a>.

@@ -78,7 +78,7 @@ In this example, we will create two background functions and a cloud events func
 Background functions allow you to react to Google Cloud events like PubSub messages, Cloud Storage events, Firestore events, ...
 Cloud events functions allow you to react to supported events using the Cloud Events specification.
 
-NOTE: Quarkus supports Cloud Functions gen 1 and gen 2. For an overview of Cloud Functions gen 2 see https://cloud.google.com/functions/docs/2nd-gen/overview[this page] on the Google Cloud Functions documentation. To use gen 2 you must use `gcloud beta` command and add the `--gen2` parameter.
+NOTE: Quarkus supports Cloud Functions gen 1 and gen 2. For an overview of Cloud Functions gen 2 see https://cloud.google.com/functions/docs/2nd-gen/overview[this page] on the Google Cloud Functions documentation. To use gen 2 you must add the `--gen2` parameter.
 
 [source,java]
 ----
@@ -123,13 +123,13 @@ NOTE: Function return type can also be Mutiny reactive types.
 this is a convenient class to deserialize a PubSub message.
 3. This is a background function that takes as parameter a `io.quarkus.funqy.gcp.functions.event.StorageEvent`,
 this is a convenient class to deserialize a Google Storage event.
-4. This is a cloud events functions, that takes as parameter a `io.cloudevents.CloudEvent`,
-inside it the `getData()` method will return the event content, storage event in this case.
+4. This is a cloud events function, that takes as parameter a `io.cloudevents.CloudEvent`,
+inside it the `getData()` method will return the event content, a storage event in this case.
 
-NOTE: we provide convenience class to deserialize common Google Cloud event inside the `io.quarkus.funqy.gcp.functions.event` package.
+NOTE: we provide convenience class to deserialize common Google Cloud events inside the `io.quarkus.funqy.gcp.functions.event` package.
 They are not mandatory to use, you can use any object you want.
 
-As our project contains multiple function, we need to specify which function needs to be deployed via the following property inside our `application.properties` :
+As our project contains multiple functions, we need to specify which function needs to be deployed via the following property inside our `application.properties` :
 
 [source,property]
 ----
@@ -248,7 +248,7 @@ Then, use this command to deploy to Google Cloud Functions:
 
 [source,bash]
 ----
-gcloud beta functions deploy quarkus-example-cloud-event --gen2 \
+gcloud functions deploy quarkus-example-cloud-event --gen2 \
   --entry-point=io.quarkus.funqy.gcp.functions.FunqyCloudEventsFunction \
   --runtime=java11 --trigger-bucket=example-cloud-event --source=target/deployment
 ----
@@ -274,10 +274,10 @@ The easiest way to locally test your function is using the Cloud Function invoke
 
 You can download it via Maven using the following command:
 
-[source,bash]
+[source,bash,subs="attributes"]
 ----
 mvn dependency:copy \
-    -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.1.0' \
+    -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:{gcf-invoker-version}' \
     -DoutputDirectory=.
 ----
 
@@ -291,9 +291,9 @@ Then you can use it to launch your function locally, again, the command depends 
 
 For background functions, you launch the invoker with a target class of `io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction`.
 
-[source,bash]
+[source,bash,subs="attributes"]
 ----
-java -jar java-function-invoker-1.1.0.jar \
+java -jar java-function-invoker-{gcf-invoker-version}.jar \
   --classpath target/funqy-google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction
 ----
@@ -313,9 +313,9 @@ This will call your PubSub background function with a PubSubMessage `{"data":"he
 
 For background functions, you launch the invoker with a target class of `io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction`.
 
-[source,bash]
+[source,bash,subs="attributes"]
 ----
-java -jar java-function-invoker-1.1.0.jar \
+java -jar java-function-invoker-{gcf-invoker-version}.jar \
   --classpath target/funqy-google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction
 ----
@@ -337,11 +337,11 @@ WARNING: Cloud Events Function is a feature of Cloud Functions gen 2 only.
 
 For cloud events functions, you launch the invoker with a target class of `io.quarkus.funqy.gcp.functions.FunqyCloudEventsFunction``.
 
-[source,bash]
+[source,bash,subs="attributes"]
 ----
-java -jar java-function-invoker-1.1.0.jar \
+java -jar java-function-invoker-{gcf-invoker-version}.jar \
   --classpath target/funqy-google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
-  --target io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction
+  --target io.quarkus.funqy.gcp.functions.FunqyCloudEventsFunction
 ----
 
 IMPORTANT: The `--classpath` parameter needs to be set to the previously packaged JAR that contains your function class and all Quarkus related classes.

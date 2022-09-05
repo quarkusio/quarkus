@@ -59,6 +59,26 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
             });
         }
 
+        void emit(R item) {
+            if (!isCancelled()) {
+                emitter.emit(item);
+            }
+        }
+
+        void fail(Throwable t) {
+            if (!isCancelled()) {
+                emitter.fail(t);
+                cancel();
+            }
+        }
+
+        void complete() {
+            if (!isCancelled()) {
+                emitter.complete();
+                cancel();
+            }
+        }
+
         public boolean isCancelled() {
             return onCancel.get() == CLEARED;
         }
@@ -130,20 +150,20 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         // For now we don't want multi to reconnect
         SseEventSourceImpl sseSource = new SseEventSourceImpl(invocationBuilder.getTarget(),
                 invocationBuilder, Integer.MAX_VALUE, TimeUnit.SECONDS);
-        // FIXME: deal with cancellation
-        sseSource.register(event -> {
-            // DO NOT pass the response mime type because it's SSE: let the event pick between the X-SSE-Content-Type header or
-            // the content-type SSE field
-            multiRequest.emitter.emit((R) event.readData(responseType));
-        }, error -> {
-            multiRequest.emitter.fail(error);
-        }, () -> {
-            multiRequest.emitter.complete();
-        });
-        // watch for user cancelling
+
         multiRequest.onCancel(() -> {
             sseSource.close();
         });
+        sseSource.register(event -> {
+            // DO NOT pass the response mime type because it's SSE: let the event pick between the X-SSE-Content-Type header or
+            // the content-type SSE field
+            multiRequest.emit(event.readData(responseType));
+        }, error -> {
+            multiRequest.fail(error);
+        }, () -> {
+            multiRequest.complete();
+        });
+        // watch for user cancelling
         sseSource.registerAfterRequest(vertxResponse);
     }
 

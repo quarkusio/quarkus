@@ -31,6 +31,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
@@ -56,7 +57,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
 
-import org.apache.http.entity.ContentType;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
@@ -192,6 +192,8 @@ public class JaxrsClientReactiveProcessor {
     public static final DotName BYTE = DotName.createSimple(Byte.class.getName());
     public static final MethodDescriptor MULTIPART_RESPONSE_DATA_ADD_FILLER = MethodDescriptor
             .ofMethod(MultipartResponseDataBase.class, "addFiller", void.class, FieldFiller.class);
+
+    private static final String MULTIPART_FORM_DATA = "multipart/form-data";
 
     @BuildStep
     void registerClientResponseBuilder(BuildProducer<ServiceProviderBuildItem> serviceProviders) {
@@ -1005,7 +1007,7 @@ public class JaxrsClientReactiveProcessor {
             String[] producesValues = produces.value().asStringArray();
             for (String producesValue : producesValues) {
                 if (producesValue.toLowerCase(Locale.ROOT)
-                        .startsWith(ContentType.MULTIPART_FORM_DATA.getMimeType())) {
+                        .startsWith(MULTIPART_FORM_DATA)) {
                     multipartResponseTypes.add(returnTypeAsClass(method, index));
                 }
             }
@@ -2532,15 +2534,36 @@ public class JaxrsClientReactiveProcessor {
                 notNullValue.load(methodIndex));
         ResultHandle isString = notNullValue.instanceOf(convertedFormParam, String.class);
         BranchResult isStringBranch = notNullValue.ifTrue(isString);
-        isStringBranch.falseBranch().throwException(IllegalStateException.class,
-                "Form parameter '" + paramName
-                        + "' could not be converted to 'String' for REST Client interface '"
-                        + restClientInterfaceClassName + "'. A proper implementation of '"
-                        + ParamConverter.class.getName() + "' needs to be returned by a '"
-                        + ParamConverterProvider.class.getName()
-                        + "' that is registered with the client via the @RegisterProvider annotation on the REST Client interface.");
         isStringBranch.trueBranch().invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
                 notNullValue.load(paramName), convertedFormParam);
+
+        // if the converted value is not a string, then:
+        // - if it's a primitive type, use the valueOf() method.
+        if (EndpointIndexer.primitiveTypes.containsKey(parameterType)) {
+            ResultHandle convertedFormParamAsString = isStringBranch.falseBranch().invokeStaticMethod(
+                    MethodDescriptor.ofMethod(Objects.class, "toString", String.class, Object.class),
+                    convertedFormParam);
+            isStringBranch.falseBranch().invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
+                    notNullValue.load(paramName), convertedFormParamAsString);
+        } else {
+            // - if it's an enum, use the name() method.
+            ResultHandle isEnum = isStringBranch.falseBranch().instanceOf(convertedFormParam, Enum.class);
+            BranchResult isEnumBranch = isStringBranch.falseBranch().ifTrue(isEnum);
+            ResultHandle enumAsString = isEnumBranch.trueBranch().invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(Enum.class, "name", String.class),
+                    isEnumBranch.trueBranch().checkCast(convertedFormParam, Enum.class));
+            isEnumBranch.trueBranch().invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
+                    notNullValue.load(paramName), enumAsString);
+
+            // - Otherwise, return exception
+            isEnumBranch.falseBranch().throwException(IllegalStateException.class,
+                    "Form parameter '" + paramName
+                            + "' could not be converted to 'String' for REST Client interface '"
+                            + restClientInterfaceClassName + "'. A proper implementation of '"
+                            + ParamConverter.class.getName() + "' needs to be returned by a '"
+                            + ParamConverterProvider.class.getName()
+                            + "' that is registered with the client via the @RegisterProvider annotation on the REST Client interface.");
+        }
     }
 
     private void addCookieParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,

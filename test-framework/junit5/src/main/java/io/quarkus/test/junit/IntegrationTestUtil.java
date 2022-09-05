@@ -106,9 +106,9 @@ public final class IntegrationTestUtil {
         TestHTTPResourceManager.inject(testInstance);
         ExtensionContext root = context.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
-        IntegrationTestExtensionState state = store.get(IntegrationTestExtensionState.class.getName(),
-                IntegrationTestExtensionState.class);
-        state.getTestResourceManager().inject(testInstance);
+        QuarkusTestExtensionState state = store.get(QuarkusTestExtensionState.class.getName(),
+                QuarkusTestExtensionState.class);
+        ((TestResourceManager) state.testResourceManager).inject(testInstance);
     }
 
     static Map<String, String> getSysPropsToRestore() {

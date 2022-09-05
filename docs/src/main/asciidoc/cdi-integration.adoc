@@ -478,6 +478,28 @@ QualifierRegistrarBuildItem addQualifiers() {
 }
 ----
 
+== Use Case - Additional Stereotypes
+
+It is sometimes useful to register an existing annotation that is not annotated with `@javax.enterprise.inject.Stereotype` as a CDI stereotype.
+This is similar to what CDI achieves through `BeforeBeanDiscovery#addStereotype()`.
+We are going to use `StereotypeRegistrarBuildItem` to get it done.
+
+.`StereotypeRegistrarBuildItem` Example
+[source,java]
+----
+@BuildStep
+StereotypeRegistrarBuildItem addStereotypes() {
+    return new StereotypeRegistrarBuildItem(new StereotypeRegistrar() {
+        @Override
+        public Set<DotName> getAdditionalStereotypes() {
+            return Collections.singleton(DotName.createSimple(NotAStereotype.class.getName()));
+        }
+    });
+}
+----
+
+If the newly registered stereotype annotation doesn't have the appropriate meta-annotations, such as scope or interceptor bindings, use an <<annotations_transformer_build_item,annotation transformation>> to add them.
+
 [[injection_point_transformation]]
 == Use Case - Injection Point Transformation
 

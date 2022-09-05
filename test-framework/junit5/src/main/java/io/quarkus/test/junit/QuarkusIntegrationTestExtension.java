@@ -45,7 +45,7 @@ import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
 
-public class QuarkusIntegrationTestExtension
+public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithContextExtension
         implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, TestInstancePostProcessor {
 
     private static boolean failedBoot;
@@ -85,15 +85,15 @@ public class QuarkusIntegrationTestExtension
         ensureStarted(extensionContext);
     }
 
-    private IntegrationTestExtensionState ensureStarted(ExtensionContext extensionContext) {
+    private QuarkusTestExtensionState ensureStarted(ExtensionContext extensionContext) {
         Class<?> testClass = extensionContext.getRequiredTestClass();
         ensureNoInjectAnnotationIsUsed(testClass);
         Properties quarkusArtifactProperties = readQuarkusArtifactProperties(extensionContext);
 
         ExtensionContext root = extensionContext.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
-        IntegrationTestExtensionState state = store.get(IntegrationTestExtensionState.class.getName(),
-                IntegrationTestExtensionState.class);
+        QuarkusTestExtensionState state = store.get(QuarkusTestExtensionState.class.getName(),
+                QuarkusTestExtensionState.class);
         Class<? extends QuarkusTestProfile> selectedProfile = findProfile(testClass);
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
@@ -111,7 +111,7 @@ public class QuarkusIntegrationTestExtension
             }
             try {
                 state = doProcessStart(quarkusArtifactProperties, selectedProfile, extensionContext);
-                store.put(IntegrationTestExtensionState.class.getName(), state);
+                store.put(QuarkusTestExtensionState.class.getName(), state);
             } catch (Throwable e) {
                 try {
                     Path appLogPath = PropertyTestUtil.getLogFilePath();
@@ -131,7 +131,7 @@ public class QuarkusIntegrationTestExtension
         return state;
     }
 
-    private IntegrationTestExtensionState doProcessStart(Properties quarkusArtifactProperties,
+    private QuarkusTestExtensionState doProcessStart(Properties quarkusArtifactProperties,
             Class<? extends QuarkusTestProfile> profile, ExtensionContext context)
             throws Throwable {
         String artifactType = getArtifactType(quarkusArtifactProperties);

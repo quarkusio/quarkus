@@ -6,6 +6,7 @@ plugins {
 dependencies {
     implementation "io.quarkus:quarkus-devtools-common:${version}"
     implementation "io.quarkus:quarkus-core-deployment:${version}"
+    implementation "io.quarkus:quarkus-bootstrap-gradle-resolver:${version}"
 
     implementation project(":gradle-model")
 

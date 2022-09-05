@@ -65,7 +65,7 @@ For real life applications, you should choose one of this technology and stick t
 
 If you don't need endpoints of each type, you can remove the corresponding extensions from your `pom.xml`.
 
-NOTE: Quarkus supports Cloud Functions gen 1 and gen 2. For an overview of Cloud Functions gen 2 see https://cloud.google.com/functions/docs/2nd-gen/overview[this page] on the Google Cloud Functions documentation. To use gen 2 you must use `gcloud beta` command and add the `--gen2` parameter.
+NOTE: Quarkus supports Cloud Functions gen 1 and gen 2. For an overview of Cloud Functions gen 2 see https://cloud.google.com/functions/docs/2nd-gen/overview[this page] on the Google Cloud Functions documentation. To use gen 2 you must and add the `--gen2` parameter.
 
 === The JAX-RS endpoint
 
@@ -163,7 +163,7 @@ Then you will be able to use `gcloud` to deploy your function to Google Cloud.
 ----
 gcloud functions deploy quarkus-example-http \
   --entry-point=io.quarkus.gcp.functions.http.QuarkusHttpFunction \
-  --runtime=java11 --trigger-http --source=target/deployment
+  --runtime=java11 --trigger-http --allow-unauthenticated --source=target/deployment
 ----
 
 [IMPORTANT]
@@ -202,10 +202,10 @@ The easiest way to locally test your function is using the Cloud Function invoke
 
 You can download it via Maven using the following command:
 
-[source,bash]
+[source,bash,subs="attributes"]
 ----
 mvn dependency:copy \
-  -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.1.0' \
+  -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:{gcf-invoker-version}' \
   -DoutputDirectory=.
 ----
 
@@ -213,9 +213,9 @@ Before using the invoker, you first need to build your function via `mvn package
 
 Then you can use it to launch your function locally.
 
-[source,bash]
+[source,bash,subs="attributes"]
 ----
-java -jar java-function-invoker-1.1.0.jar \
+java -jar java-function-invoker-{gcf-invoker-version}.jar \
   --classpath target/deployment/google-cloud-functions-http-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.http.QuarkusHttpFunction
 ----

@@ -10,8 +10,9 @@ public final class QuarkusTestMethodContext extends QuarkusTestContext {
 
     private final Method testMethod;
 
-    public QuarkusTestMethodContext(Object testInstance, List<Object> outerInstances, Method testMethod) {
-        super(testInstance, outerInstances);
+    public QuarkusTestMethodContext(Object testInstance, List<Object> outerInstances, Method testMethod,
+            Throwable testErrorCause) {
+        super(testInstance, outerInstances, testErrorCause);
         this.testMethod = testMethod;
     }
 

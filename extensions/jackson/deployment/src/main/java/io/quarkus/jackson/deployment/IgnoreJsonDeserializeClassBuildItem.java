@@ -1,5 +1,7 @@
 package io.quarkus.jackson.deployment;
 
+import java.util.List;
+
 import org.jboss.jandex.DotName;
 
 import io.quarkus.builder.item.MultiBuildItem;
@@ -10,13 +12,22 @@ import io.quarkus.builder.item.MultiBuildItem;
  */
 public final class IgnoreJsonDeserializeClassBuildItem extends MultiBuildItem {
 
-    private final DotName dotName;
+    private final List<DotName> dotNames;
 
     public IgnoreJsonDeserializeClassBuildItem(DotName dotName) {
-        this.dotName = dotName;
+        this.dotNames = List.of(dotName);
     }
 
+    public IgnoreJsonDeserializeClassBuildItem(List<DotName> dotNames) {
+        this.dotNames = dotNames;
+    }
+
+    @Deprecated(forRemoval = true)
     public DotName getDotName() {
-        return dotName;
+        return dotNames.size() > 0 ? dotNames.get(0) : null;
+    }
+
+    public List<DotName> getDotNames() {
+        return dotNames;
     }
 }

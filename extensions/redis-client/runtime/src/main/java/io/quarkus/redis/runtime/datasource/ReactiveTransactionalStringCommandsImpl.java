@@ -5,6 +5,7 @@ import java.util.Map;
 import io.quarkus.redis.datasource.string.GetExArgs;
 import io.quarkus.redis.datasource.string.ReactiveTransactionalStringCommands;
 import io.quarkus.redis.datasource.string.SetArgs;
+import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
 
@@ -13,8 +14,9 @@ public class ReactiveTransactionalStringCommandsImpl<K, V> extends AbstractTrans
 
     private final ReactiveStringCommandsImpl<K, V> reactive;
 
-    public ReactiveTransactionalStringCommandsImpl(ReactiveStringCommandsImpl<K, V> reactive, TransactionHolder tx) {
-        super(tx);
+    public ReactiveTransactionalStringCommandsImpl(ReactiveTransactionalRedisDataSource ds,
+            ReactiveStringCommandsImpl<K, V> reactive, TransactionHolder tx) {
+        super(ds, tx);
         this.reactive = reactive;
     }
 

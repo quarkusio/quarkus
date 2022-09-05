@@ -3,18 +3,18 @@ package io.quarkus.redis.runtime.datasource;
 import java.time.Duration;
 import java.util.List;
 
+import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.bitmap.BitFieldArgs;
 import io.quarkus.redis.datasource.bitmap.BitMapCommands;
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
 
-public class BlockingBitmapCommandsImpl<K> implements BitMapCommands<K> {
+public class BlockingBitmapCommandsImpl<K> extends AbstractRedisCommandGroup implements BitMapCommands<K> {
 
     private final ReactiveBitMapCommands<K> reactive;
-    private final Duration timeout;
 
-    public BlockingBitmapCommandsImpl(ReactiveBitMapCommands<K> reactive, Duration timeout) {
+    public BlockingBitmapCommandsImpl(RedisDataSource ds, ReactiveBitMapCommands<K> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

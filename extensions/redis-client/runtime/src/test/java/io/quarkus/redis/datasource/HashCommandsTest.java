@@ -38,6 +38,11 @@ public class HashCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    void getDataSource() {
+        assertThat(ds).isEqualTo(hash.getDataSource());
+    }
+
+    @Test
     void simpleHset() {
         hash.hset("my-hash", "field1", Person.person1);
         Person person = hash.hget("my-hash", "field1");

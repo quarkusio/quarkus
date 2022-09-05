@@ -43,10 +43,6 @@ public class TestServlet {
     RemoteCache<String, Book> cache;
 
     @Inject
-    @Remote("booksOld")
-    RemoteCache<String, Book> boolsOld;
-
-    @Inject
     @Remote(CacheSetup.MAGAZINE_CACHE)
     RemoteCache<String, Magazine> magazineCache;
 
@@ -230,7 +226,7 @@ public class TestServlet {
         cacheSetup.ensureStarted();
         QueryFactory queryFactory = Search.getQueryFactory(magazineCache);
         Query query = queryFactory.create("from magazine_sample.Magazine m where m.name like '%" + name + "%'");
-        List<Magazine> list = query.list();
+        List<Magazine> list = query.execute().list();
         if (list.isEmpty()) {
             return "No one found for " + name;
         }

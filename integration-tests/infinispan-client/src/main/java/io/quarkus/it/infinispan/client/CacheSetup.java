@@ -26,7 +26,6 @@ import org.infinispan.client.hotrod.event.ClientCacheEntryModifiedEvent;
 import org.infinispan.client.hotrod.event.ClientCacheEntryRemovedEvent;
 import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
-import org.infinispan.commons.configuration.XMLStringConfiguration;
 import org.infinispan.query.api.continuous.ContinuousQuery;
 import org.infinispan.query.api.continuous.ContinuousQueryListener;
 import org.infinispan.query.dsl.Query;
@@ -49,16 +48,9 @@ public class CacheSetup {
 
     private CountDownLatch waitUntilStarted = new CountDownLatch(1);
 
-    private static final String CACHE_CONFIG = "<distributed-cache name=\"%s\">"
-            + " <encoding media-type=\"application/x-protostream\"/>"
-            + "</distributed-cache>";
-
     void onStart(@Observes StartupEvent ev) {
-        RemoteCache<String, Book> defaultCache = cacheManager.administration().getOrCreateCache(DEFAULT_CACHE,
-                new XMLStringConfiguration(String.format(CACHE_CONFIG, DEFAULT_CACHE)));
-        RemoteCache<String, Magazine> magazineCache = cacheManager.administration().getOrCreateCache(MAGAZINE_CACHE,
-                new XMLStringConfiguration(String.format(CACHE_CONFIG, MAGAZINE_CACHE)));
-
+        RemoteCache<String, Book> defaultCache = cacheManager.getCache(DEFAULT_CACHE);
+        RemoteCache<String, Magazine> magazineCache = cacheManager.getCache(MAGAZINE_CACHE);
         defaultCache.addClientListener(new EventPrintListener());
 
         ContinuousQuery<String, Book> continuousQuery = Search.getContinuousQuery(defaultCache);

@@ -19,10 +19,10 @@ import org.jboss.logging.Logger;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class GraphicsIT {
 
     private static final Logger LOG = Logger.getLogger(GraphicsIT.class);

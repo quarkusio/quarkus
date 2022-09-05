@@ -6,12 +6,12 @@ import org.junit.jupiter.api.Test;
 import org.wildfly.common.Assert;
 
 import io.quarkus.it.health.SimpleHealthCheck;
-import io.quarkus.test.junit.DisabledOnNativeImage;
+import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-@DisabledOnNativeImage("This test is not meant to be ran in native mode as Quarkus does not yet support injection " +
-        "in native " + "tests - see https://quarkus.io/guides/getting-started-testing#native-executable-testing")
+@DisabledOnIntegrationTest("This test is not meant to be ran in native mode as Quarkus does not yet support injection " +
+        "in native tests - see https://quarkus.io/guides/getting-started-testing#native-executable-testing")
 public class HealthCheckTestCase {
 
     final SimpleHealthCheck simpleHealthCheck;

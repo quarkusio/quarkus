@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.quarkus.it.panache.kotlin.Dog
 import io.quarkus.it.panache.kotlin.Person
-import io.quarkus.test.junit.DisabledOnNativeImage
+import io.quarkus.test.junit.DisabledOnIntegrationTest
 import io.quarkus.test.junit.QuarkusTest
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
@@ -41,7 +41,7 @@ open class KotlinPanacheFunctionalityTest {
      * This test is disabled in native mode as there is no interaction with the quarkus integration test endpoint.
      */
     @Test
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Throws(JsonProcessingException::class)
     fun jacksonDeserializationIgnoresPersistentAttribute() { // set Up
         val person = Person()
@@ -62,7 +62,7 @@ open class KotlinPanacheFunctionalityTest {
     }
 
     @Test
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     fun entityManagerIsInjected() {
         assertNotNull(Dog.getEntityManager())
     }

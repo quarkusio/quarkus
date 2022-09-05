@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 
 /**
@@ -20,7 +20,7 @@ import io.restassured.RestAssured;
  * glibc-all-langpacks
  *
  */
-@NativeImageTest
+@QuarkusIntegrationTest
 public class LocalesIT {
 
     private static final Logger LOG = Logger.getLogger(LocalesIT.class);

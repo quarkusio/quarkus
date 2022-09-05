@@ -132,6 +132,9 @@ public class OpenshiftProcessor {
         String baseJvmImage = config.baseJvmImage
                 .orElse(OpenshiftConfig.getDefaultJvmImage(compiledJavaVersion.getJavaVersion()));
 
+        boolean hasCustomJarPath = config.jarFileName.isPresent() || config.jarDirectory.isPresent();
+        boolean hasCustomJvmArguments = config.jvmArguments.isPresent();
+
         builderImageProducer.produce(new BaseImageInfoBuildItem(baseJvmImage));
         Optional<OpenshiftBaseJavaImage> baseImage = OpenshiftBaseJavaImage.findMatching(baseJvmImage);
 
@@ -150,8 +153,9 @@ public class OpenshiftProcessor {
                 envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJvmOptionsEnvVar(),
                         String.join(" ", config.getEffectiveJvmArguments()), null));
             });
+
             //In all other cases its the responsibility of the image to set those up correctly.
-            if (!baseImage.isPresent()) {
+            if (hasCustomJarPath || hasCustomJvmArguments) {
                 List<String> cmd = new ArrayList<>();
                 cmd.add("java");
                 cmd.addAll(config.getEffectiveJvmArguments());
@@ -180,6 +184,9 @@ public class OpenshiftProcessor {
 
         String nativeBinaryFileName = null;
 
+        boolean hasCustomNativePath = config.nativeBinaryFileName.isPresent() || config.nativeBinaryDirectory.isPresent();
+        boolean hasCustomNativeArguments = config.nativeArguments.isPresent();
+
         //The default openshift builder for native builds, renames the native binary.
         //To make things easier for the user, we need to handle it.
         if (usingDefaultBuilder && !config.nativeBinaryFileName.isPresent()) {
@@ -195,6 +202,7 @@ public class OpenshiftProcessor {
             // 1. explicitly specified by the user.
             // 2. detected via OpenshiftBaseNativeImage
             // 3. fallback value
+
             String nativeBinaryDirectory = config.nativeBinaryDirectory
                     .orElse(baseImage.map(i -> i.getNativeBinaryDirectory()).orElse(config.FALLBACK_NATIVE_BINARY_DIRECTORY));
             String pathToNativeBinary = concatUnixPaths(nativeBinaryDirectory, nativeBinaryFileName);
@@ -209,7 +217,7 @@ public class OpenshiftProcessor {
 
             });
 
-            if (!baseImage.isPresent() && config.nativeArguments.isPresent()) {
+            if (hasCustomNativePath || hasCustomNativeArguments) {
                 commandProducer
                         .produce(KubernetesCommandBuildItem.commandWithArgs(pathToNativeBinary, config.nativeArguments.get()));
             }

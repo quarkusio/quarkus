@@ -99,7 +99,6 @@ public class NativeImageFeatureStep {
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
     static final String DURING_SETUP_ACCESS = Feature.DuringSetupAccess.class.getName();
     static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
-    static final String LEGACY_LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.LocalizationFeature";
     static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.localization.LocalizationFeature";
     public static final MethodDescriptor WEAK_REFLECTION_REGISTRATION = MethodDescriptor.ofMethod(WeakReflection.class,
             "register", void.class, Feature.BeforeAnalysisAccess.class, Class.class, boolean.class, boolean.class,
@@ -354,27 +353,11 @@ public class NativeImageFeatureStep {
                     new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk.localization",
                             GraalVM.Version.VERSION_22_1_0));
 
-            AssignableResultHandle registerMethod = overallCatch.createVariable(Method.class);
-            AssignableResultHandle locClass = overallCatch.createVariable(Class.class);
-            TryBlock locTryBlock = overallCatch.tryBlock();
-            ResultHandle legacyLocClass = locTryBlock.loadClassFromTCCL(LEGACY_LOCALIZATION_FEATURE);
-            locTryBlock.assign(locClass, legacyLocClass);
-
-            ResultHandle legacyParams = locTryBlock.marshalAsArray(Class.class, locTryBlock.loadClassFromTCCL(String.class));
-            ResultHandle legacyRegisterMethod = locTryBlock.invokeVirtualMethod(
-                    ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), legacyLocClass,
-                    locTryBlock.load("addBundleToCache"), legacyParams);
-            locTryBlock.assign(registerMethod, legacyRegisterMethod);
-
-            CatchBlockCreator locCatchBlock = locTryBlock.addCatch(ClassNotFoundException.class);
-            ResultHandle newLocClass = locCatchBlock.loadClassFromTCCL(LOCALIZATION_FEATURE);
-            locCatchBlock.assign(locClass, newLocClass);
-
-            ResultHandle newParams = locCatchBlock.marshalAsArray(Class.class, locCatchBlock.loadClassFromTCCL(String.class));
-            ResultHandle newRegisterMethod = locCatchBlock.invokeVirtualMethod(
-                    ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), newLocClass,
-                    locCatchBlock.load("prepareBundle"), newParams);
-            locCatchBlock.assign(registerMethod, newRegisterMethod);
+            ResultHandle locClass = overallCatch.loadClassFromTCCL(LOCALIZATION_FEATURE);
+            ResultHandle newParams = overallCatch.marshalAsArray(Class.class, overallCatch.loadClassFromTCCL(String.class));
+            ResultHandle registerMethod = overallCatch.invokeVirtualMethod(
+                    ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), locClass,
+                    overallCatch.load("prepareBundle"), newParams);
 
             overallCatch.invokeVirtualMethod(ofMethod(AccessibleObject.class, "setAccessible", void.class, boolean.class),
                     registerMethod, overallCatch.load(true));

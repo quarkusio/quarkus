@@ -55,7 +55,7 @@ public class StreamJsonTest {
             fail("Streaming did not complete in time");
         }
         assertThat(collected).hasSize(4)
-                .contains("one", "two", "3", "four");
+                .contains("\"one\"", "\"two\"", "\"3\"", "\"four\"");
     }
 
     @Test

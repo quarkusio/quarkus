@@ -1,5 +1,6 @@
 package io.quarkus.kubernetes.deployment;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -155,6 +156,12 @@ public class KnativeConfig implements PlatformConfiguration {
      */
     @ConfigItem
     Map<String, ConfigMapVolumeConfig> configMapVolumes;
+
+    /**
+     * EmptyDir volumes
+     */
+    @ConfigItem
+    Optional<List<String>> emptyDirVolumes;
 
     /**
      * Git Repository volumes
@@ -313,6 +320,10 @@ public class KnativeConfig implements PlatformConfiguration {
 
     public Map<String, ConfigMapVolumeConfig> getConfigMapVolumes() {
         return configMapVolumes;
+    }
+
+    public List<String> getEmptyDirVolumes() {
+        return emptyDirVolumes.orElse(Collections.emptyList());
     }
 
     public Map<String, GitRepoVolumeConfig> getGitRepoVolumes() {

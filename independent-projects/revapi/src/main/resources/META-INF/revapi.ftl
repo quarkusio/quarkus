@@ -5,6 +5,11 @@
 The summary of the API changes between artifacts <#list analysis.oldApi.archives as archive>`${archive.name}`<#sep>, </#list> and
 <#list analysis.newApi.archives as archive>`${archive.name}`<#sep>, </#list>
 
+<#assign oldDependencyNames = analysis.oldApi.supplementaryArchives?map(supplementaryArchive -> supplementaryArchive.name)>
+<#assign newDependencyNames = analysis.newApi.supplementaryArchives?map(supplementaryArchive -> supplementaryArchive.name)>
+
+<#assign removedDependencyNames = oldDependencyNames?filter(name -> !newDependencyNames?seq_contains(name))>
+<#assign addedDependencyNames = newDependencyNames?filter(name -> !oldDependencyNames?seq_contains(name))>
 
 <#assign count = 0>
 <#compress>
@@ -49,6 +54,12 @@ xref:fields[${count}]
 </#list>
 </#list>
 xref:others[${count}]
+
+|Dependencies Added
+|xref:added[${addedDependencyNames?size}]
+
+|Dependencies Removed
+|xref:removed[${removedDependencyNames?size}]
 
 |===
 </#compress>
@@ -180,6 +191,22 @@ ${diff.justification!""}
 ===============================
 </#if>
 </#list>
+</#list>
+
+=== [[added]]Added Dependencies
+<#list addedDependencyNames as name>
+===============================
+[.lead]
+${name}
+===============================
+</#list>
+
+=== [[removed]]Removed Dependencies
+<#list removedDependencyNames as name>
+===============================
+[.lead]
+${name}
+===============================
 </#list>
 
 </#if>

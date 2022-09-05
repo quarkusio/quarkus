@@ -134,7 +134,7 @@ recipeList:
   # Security - See below
   - org.openrewrite.maven.ChangePropertyValue:
       key: quarkus-security.version
-      newValue: 2.0.0.Alpha1
+      newValue: 2.0.0.Alpha2
   # Servlet
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.servlet-api.version

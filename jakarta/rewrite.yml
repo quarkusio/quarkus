@@ -345,15 +345,13 @@ recipeList:
       groupId: jakarta.authentication
       artifactId: jakarta.authentication-api
       version: "${jakarta.authentication-api}"
-  # TODO EE 10 2.1.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.authorization-api.version
-      newValue: 2.0.0
+      newValue: 2.1.0
       addIfMissing: true
-  # TODO EE 10 3.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.authentication-api
-      newValue: 2.0.0
+      newValue: 3.0.0
       addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe

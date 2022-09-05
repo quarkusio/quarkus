@@ -136,13 +136,12 @@ recipeList:
       key: quarkus-security.version
       newValue: 2.0.0.Alpha1
   # Servlet
-  # TODO EE 10 6.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.servlet-api.version
-      newValue: 5.0.0
+      newValue: 6.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: quarkus-http.version
-      newValue: 5.0.0.Alpha1
+      newValue: 5.0.0.Alpha2
   # Transaction
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jta
@@ -171,10 +170,9 @@ recipeList:
       key: hibernate-validator.version
       newValue: 8.0.0.CR3
   # Websockets
-  # TODO EE 10 2.1.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.websocket-api.version
-      newValue: 2.0.0
+      newValue: 2.1.0
   # XML Bind
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.xml.bind-api.version

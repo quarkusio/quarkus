@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.ScanArgs;
 import io.quarkus.redis.datasource.set.ReactiveSScanCursor;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
@@ -14,8 +15,16 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class ReactiveSetCommandsImpl<K, V> extends AbstractSetCommands<K, V> implements ReactiveSetCommands<K, V> {
 
-    public ReactiveSetCommandsImpl(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    private final ReactiveRedisDataSource reactive;
+
+    public ReactiveSetCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k, Class<V> v) {
         super(redis, k, v);
+        this.reactive = redis;
+    }
+
+    @Override
+    public ReactiveRedisDataSource getDataSource() {
+        return reactive;
     }
 
     @Override

@@ -3,13 +3,15 @@ package io.quarkus.redis.datasource.pubsub;
 import java.util.List;
 import java.util.function.Consumer;
 
+import io.quarkus.redis.datasource.RedisCommands;
+
 /**
  * Allows executing Pub/Sub commands.
  * See <a href="https://redis.io/docs/manual/pubsub/">the pub/sub documentation</a>.
  *
  * @param <V> the class of the exchanged messages.
  */
-public interface PubSubCommands<V> {
+public interface PubSubCommands<V> extends RedisCommands {
 
     /**
      * Publishes a message to a given channel

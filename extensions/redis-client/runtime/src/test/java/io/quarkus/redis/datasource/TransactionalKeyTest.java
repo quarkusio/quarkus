@@ -38,7 +38,9 @@ public class TransactionalKeyTest extends DatasourceTestBase {
     public void keyBlocking() {
         TransactionResult result = blocking.withTransaction(tx -> {
             TransactionalKeyCommands<String> keys = tx.key();
+            assertThat(keys.getDataSource()).isEqualTo(tx);
             TransactionalHashCommands<String, String, String> hash = tx.hash(String.class);
+            assertThat(hash.getDataSource()).isEqualTo(tx);
             hash.hset("k1", Map.of("1", "a", "2", "b", "3", "c"));
             hash.hset("k2", "4", "d");
             keys.type("k1");

@@ -3,6 +3,7 @@ package io.quarkus.redis.datasource.list;
 import java.time.Duration;
 import java.util.List;
 
+import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.quarkus.redis.datasource.SortArgs;
 import io.smallrye.mutiny.Uni;
 
@@ -16,7 +17,7 @@ import io.smallrye.mutiny.Uni;
  * @param <K> the type of the key
  * @param <V> the type of the value stored in the lists
  */
-public interface ReactiveListCommands<K, V> {
+public interface ReactiveListCommands<K, V> extends ReactiveRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/blmove">BLMOVE</a>.

@@ -3,6 +3,7 @@ package io.quarkus.redis.datasource.geo;
 import java.util.List;
 import java.util.Set;
 
+import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -15,7 +16,7 @@ import io.smallrye.mutiny.Uni;
  * @param <K> the type of the key
  * @param <V> the type of the value
  */
-public interface ReactiveGeoCommands<K, V> {
+public interface ReactiveGeoCommands<K, V> extends ReactiveRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/geoadd">GEOADD</a>.

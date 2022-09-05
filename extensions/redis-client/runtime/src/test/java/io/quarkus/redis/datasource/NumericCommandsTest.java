@@ -31,6 +31,11 @@ public class NumericCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    void getDataSource() {
+        assertThat(ds).isEqualTo(num.getDataSource());
+    }
+
+    @Test
     void decr() {
         assertThat(num.decr(key)).isEqualTo(-1);
         assertThat(num.decr(key)).isEqualTo(-2);

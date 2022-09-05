@@ -12,6 +12,7 @@ import io.quarkus.redis.datasource.geo.GeoSearchArgs;
 import io.quarkus.redis.datasource.geo.GeoSearchStoreArgs;
 import io.quarkus.redis.datasource.geo.GeoUnit;
 import io.quarkus.redis.datasource.geo.ReactiveTransactionalGeoCommands;
+import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
 
@@ -20,8 +21,9 @@ public class ReactiveTransactionalGeoCommandsImpl<K, V> extends AbstractTransact
 
     private final ReactiveGeoCommandsImpl<K, V> reactive;
 
-    public ReactiveTransactionalGeoCommandsImpl(ReactiveGeoCommandsImpl<K, V> reactive, TransactionHolder tx) {
-        super(tx);
+    public ReactiveTransactionalGeoCommandsImpl(ReactiveTransactionalRedisDataSource ds, ReactiveGeoCommandsImpl<K, V> reactive,
+            TransactionHolder tx) {
+        super(ds, tx);
         this.reactive = reactive;
     }
 

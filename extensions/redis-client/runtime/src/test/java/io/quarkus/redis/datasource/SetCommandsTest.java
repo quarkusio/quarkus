@@ -42,6 +42,11 @@ public class SetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    void getDataSource() {
+        assertThat(ds).isEqualTo(sets.getDataSource());
+    }
+
+    @Test
     void sadd() {
         assertThat(sets.sadd(key, person1)).isEqualTo(1L);
         assertThat(sets.sadd(key, person1)).isEqualTo(0);

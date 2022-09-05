@@ -1,6 +1,7 @@
 package io.quarkus.redis.runtime.datasource;
 
 import io.quarkus.redis.datasource.set.ReactiveTransactionalSetCommands;
+import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
 
@@ -9,8 +10,9 @@ public class ReactiveTransactionalSetCommandsImpl<K, V> extends AbstractTransact
 
     private final ReactiveSetCommandsImpl<K, V> reactive;
 
-    public ReactiveTransactionalSetCommandsImpl(ReactiveSetCommandsImpl<K, V> reactive, TransactionHolder tx) {
-        super(tx);
+    public ReactiveTransactionalSetCommandsImpl(ReactiveTransactionalRedisDataSource ds, ReactiveSetCommandsImpl<K, V> reactive,
+            TransactionHolder tx) {
+        super(ds, tx);
         this.reactive = reactive;
     }
 

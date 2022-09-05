@@ -1,5 +1,7 @@
 package io.quarkus.redis.datasource.hyperloglog;
 
+import io.quarkus.redis.datasource.RedisCommands;
+
 /**
  * Allows executing commands from the {@code hyperloglog} group.
  * See <a href="https://redis.io/commands/?group=hyperloglog">the hyperloglog command list</a> for further information about
@@ -9,7 +11,7 @@ package io.quarkus.redis.datasource.hyperloglog;
  * @param <K> the type of the key
  * @param <V> the type of the value stored in the sets
  */
-public interface HyperLogLogCommands<K, V> {
+public interface HyperLogLogCommands<K, V> extends RedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/pfadd">PFADD</a>.

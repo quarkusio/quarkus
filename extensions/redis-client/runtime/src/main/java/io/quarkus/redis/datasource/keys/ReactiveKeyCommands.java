@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
+import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -15,7 +16,7 @@ import io.smallrye.mutiny.Uni;
  *
  * @param <K> the type of the keys, often {@link String}
  */
-public interface ReactiveKeyCommands<K> {
+public interface ReactiveKeyCommands<K> extends ReactiveRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/copy">COPY</a>.

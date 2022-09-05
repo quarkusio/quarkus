@@ -27,6 +27,11 @@ public class HyperLogLogCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    void getDataSource() {
+        assertThat(ds).isEqualTo(hll.getDataSource());
+    }
+
+    @Test
     void pfadd() {
         String k = getKey();
         assertThat(hll.pfadd(k, Person.person1, Person.person1)).isTrue();

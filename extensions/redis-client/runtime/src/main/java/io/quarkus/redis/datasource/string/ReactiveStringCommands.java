@@ -2,6 +2,7 @@ package io.quarkus.redis.datasource.string;
 
 import java.util.Map;
 
+import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -15,7 +16,7 @@ import io.smallrye.mutiny.Uni;
  * @param <K> the type of the key
  * @param <V> the type of the value
  */
-public interface ReactiveStringCommands<K, V> {
+public interface ReactiveStringCommands<K, V> extends ReactiveRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/append">APPEND</a>.

@@ -5,6 +5,7 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import java.util.List;
 import java.util.Set;
 
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.geo.GeoAddArgs;
 import io.quarkus.redis.datasource.geo.GeoItem;
 import io.quarkus.redis.datasource.geo.GeoPosition;
@@ -21,9 +22,16 @@ import io.vertx.mutiny.redis.client.Response;
 public class ReactiveGeoCommandsImpl<K, V> extends AbstractGeoCommands<K, V> implements ReactiveGeoCommands<K, V> {
 
     static final GeoAddArgs DEFAULT_INSTANCE = new GeoAddArgs();
+    private final ReactiveRedisDataSource reactive;
 
-    public ReactiveGeoCommandsImpl(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    public ReactiveGeoCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k, Class<V> v) {
         super(redis, k, v);
+        this.reactive = redis;
+    }
+
+    @Override
+    public ReactiveRedisDataSource getDataSource() {
+        return reactive;
     }
 
     @Override

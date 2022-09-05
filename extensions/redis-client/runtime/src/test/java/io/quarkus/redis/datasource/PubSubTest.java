@@ -35,6 +35,11 @@ public class PubSubTest extends DatasourceTestBase {
     }
 
     @Test
+    void getDataSource() {
+        assertThat(ds).isEqualTo(ps.getDataSource());
+    }
+
+    @Test
     void testWithSingleChannel() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(3);
         ReactivePubSubCommands.ReactiveRedisSubscriber subscriber = ps.subscribe("people",

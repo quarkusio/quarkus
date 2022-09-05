@@ -5,6 +5,7 @@ import java.time.Duration;
 import io.quarkus.redis.datasource.list.LPosArgs;
 import io.quarkus.redis.datasource.list.Position;
 import io.quarkus.redis.datasource.list.ReactiveTransactionalListCommands;
+import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
 
@@ -13,8 +14,9 @@ public class ReactiveTransactionalListCommandsImpl<K, V> extends AbstractTransac
 
     private final ReactiveListCommandsImpl<K, V> reactive;
 
-    public ReactiveTransactionalListCommandsImpl(ReactiveListCommandsImpl<K, V> reactive, TransactionHolder tx) {
-        super(tx);
+    public ReactiveTransactionalListCommandsImpl(ReactiveTransactionalRedisDataSource ds,
+            ReactiveListCommandsImpl<K, V> reactive, TransactionHolder tx) {
+        super(ds, tx);
         this.reactive = reactive;
     }
 

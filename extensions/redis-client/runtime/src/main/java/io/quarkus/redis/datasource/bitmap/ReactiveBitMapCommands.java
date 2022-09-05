@@ -2,6 +2,7 @@ package io.quarkus.redis.datasource.bitmap;
 
 import java.util.List;
 
+import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -11,7 +12,7 @@ import io.smallrye.mutiny.Uni;
  *
  * @param <K> the type of the key
  */
-public interface ReactiveBitMapCommands<K> {
+public interface ReactiveBitMapCommands<K> extends ReactiveRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/bitcount">BITCOUNT</a>.

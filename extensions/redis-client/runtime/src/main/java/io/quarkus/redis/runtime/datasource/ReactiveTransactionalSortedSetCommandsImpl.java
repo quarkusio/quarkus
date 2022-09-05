@@ -10,6 +10,7 @@ import io.quarkus.redis.datasource.sortedset.ScoredValue;
 import io.quarkus.redis.datasource.sortedset.ZAddArgs;
 import io.quarkus.redis.datasource.sortedset.ZAggregateArgs;
 import io.quarkus.redis.datasource.sortedset.ZRangeArgs;
+import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
 
@@ -18,8 +19,9 @@ public class ReactiveTransactionalSortedSetCommandsImpl<K, V> extends AbstractTr
 
     private final ReactiveSortedSetCommandsImpl<K, V> reactive;
 
-    public ReactiveTransactionalSortedSetCommandsImpl(ReactiveSortedSetCommandsImpl<K, V> reactive, TransactionHolder tx) {
-        super(tx);
+    public ReactiveTransactionalSortedSetCommandsImpl(ReactiveTransactionalRedisDataSource ds,
+            ReactiveSortedSetCommandsImpl<K, V> reactive, TransactionHolder tx) {
+        super(ds, tx);
         this.reactive = reactive;
     }
 

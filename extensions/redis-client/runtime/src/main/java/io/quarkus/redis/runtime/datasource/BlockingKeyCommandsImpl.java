@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
+import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.keys.CopyArgs;
 import io.quarkus.redis.datasource.keys.ExpireArgs;
 import io.quarkus.redis.datasource.keys.KeyCommands;
@@ -12,14 +13,13 @@ import io.quarkus.redis.datasource.keys.KeyScanCursor;
 import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
 import io.quarkus.redis.datasource.keys.RedisValueType;
 
-public class BlockingKeyCommandsImpl<K> implements KeyCommands<K> {
+public class BlockingKeyCommandsImpl<K> extends AbstractRedisCommandGroup implements KeyCommands<K> {
 
     private final ReactiveKeyCommands<K> reactive;
-    private final Duration timeout;
 
-    public BlockingKeyCommandsImpl(ReactiveKeyCommands<K> reactive, Duration timeout) {
+    public BlockingKeyCommandsImpl(RedisDataSource ds, ReactiveKeyCommands<K> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

@@ -2,7 +2,9 @@ package io.quarkus.redis.datasource.list;
 
 import java.time.Duration;
 
-public interface TransactionalListCommands<K, V> {
+import io.quarkus.redis.datasource.TransactionalRedisCommands;
+
+public interface TransactionalListCommands<K, V> extends TransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/blmove">BLMOVE</a>.

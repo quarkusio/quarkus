@@ -34,6 +34,7 @@ public class TransactionalHyperLogLogCommandsTest extends DatasourceTestBase {
     public void hllBlocking() {
         TransactionResult result = blocking.withTransaction(tx -> {
             TransactionalHyperLogLogCommands<String, String> hll = tx.hyperloglog(String.class);
+            assertThat(hll.getDataSource()).isEqualTo(tx);
             hll.pfadd(key, "a", "b", "c", "d"); // 0 -> true
             hll.pfcount(key); // 1 -> 4
             hll.pfadd(key, "a", "d", "e"); // 2 -> true

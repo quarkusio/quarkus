@@ -2,7 +2,9 @@ package io.quarkus.redis.datasource.string;
 
 import java.util.Map;
 
-public interface TransactionalStringCommands<K, V> {
+import io.quarkus.redis.datasource.TransactionalRedisCommands;
+
+public interface TransactionalStringCommands<K, V> extends TransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/append">APPEND</a>.

@@ -3,6 +3,7 @@ package io.quarkus.redis.runtime.datasource;
 import java.util.Map;
 
 import io.quarkus.redis.datasource.hash.ReactiveTransactionalHashCommands;
+import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
 
@@ -11,8 +12,9 @@ public class ReactiveTransactionalHashCommandsImpl<K, F, V> extends AbstractTran
 
     private final ReactiveHashCommandsImpl<K, F, V> reactive;
 
-    public ReactiveTransactionalHashCommandsImpl(ReactiveHashCommandsImpl<K, F, V> reactive, TransactionHolder tx) {
-        super(tx);
+    public ReactiveTransactionalHashCommandsImpl(ReactiveTransactionalRedisDataSource ds,
+            ReactiveHashCommandsImpl<K, F, V> reactive, TransactionHolder tx) {
+        super(ds, tx);
         this.reactive = reactive;
     }
 

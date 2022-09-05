@@ -3,6 +3,7 @@ package io.quarkus.redis.datasource.hash;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.quarkus.redis.datasource.ScanArgs;
 import io.smallrye.mutiny.Uni;
 
@@ -19,7 +20,7 @@ import io.smallrye.mutiny.Uni;
  * @param <F> the type of the field
  * @param <V> the type of the value
  */
-public interface ReactiveHashCommands<K, F, V> {
+public interface ReactiveHashCommands<K, F, V> extends ReactiveRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/hdel">HDEL</a>.

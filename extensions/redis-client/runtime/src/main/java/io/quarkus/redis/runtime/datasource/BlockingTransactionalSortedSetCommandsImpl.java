@@ -11,16 +11,17 @@ import io.quarkus.redis.datasource.sortedset.TransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.sortedset.ZAddArgs;
 import io.quarkus.redis.datasource.sortedset.ZAggregateArgs;
 import io.quarkus.redis.datasource.sortedset.ZRangeArgs;
+import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 
-public class BlockingTransactionalSortedSetCommandsImpl<K, V> implements TransactionalSortedSetCommands<K, V> {
+public class BlockingTransactionalSortedSetCommandsImpl<K, V> extends AbstractTransactionalRedisCommandGroup
+        implements TransactionalSortedSetCommands<K, V> {
 
     private final ReactiveTransactionalSortedSetCommands<K, V> reactive;
 
-    private final Duration timeout;
-
-    public BlockingTransactionalSortedSetCommandsImpl(ReactiveTransactionalSortedSetCommands<K, V> reactive, Duration timeout) {
+    public BlockingTransactionalSortedSetCommandsImpl(TransactionalRedisDataSource ds,
+            ReactiveTransactionalSortedSetCommands<K, V> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

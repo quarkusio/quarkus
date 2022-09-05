@@ -12,16 +12,17 @@ import io.quarkus.redis.datasource.geo.GeoSearchStoreArgs;
 import io.quarkus.redis.datasource.geo.GeoUnit;
 import io.quarkus.redis.datasource.geo.ReactiveTransactionalGeoCommands;
 import io.quarkus.redis.datasource.geo.TransactionalGeoCommands;
+import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 
-public class BlockingTransactionalGeoCommandsImpl<K, V> implements TransactionalGeoCommands<K, V> {
+public class BlockingTransactionalGeoCommandsImpl<K, V> extends AbstractTransactionalRedisCommandGroup
+        implements TransactionalGeoCommands<K, V> {
 
     private final ReactiveTransactionalGeoCommands<K, V> reactive;
 
-    private final Duration timeout;
-
-    public BlockingTransactionalGeoCommandsImpl(ReactiveTransactionalGeoCommands<K, V> reactive, Duration timeout) {
+    public BlockingTransactionalGeoCommandsImpl(TransactionalRedisDataSource ds,
+            ReactiveTransactionalGeoCommands<K, V> reactive, Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

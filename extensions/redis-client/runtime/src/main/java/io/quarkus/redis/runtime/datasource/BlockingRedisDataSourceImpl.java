@@ -172,52 +172,52 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
 
     @Override
     public <K1, F, V1> HashCommands<K1, F, V1> hash(Class<K1> redisKeyType, Class<F> typeOfField, Class<V1> typeOfValue) {
-        return new BlockingHashCommandsImpl<>(reactive.hash(redisKeyType, typeOfField, typeOfValue), timeout);
+        return new BlockingHashCommandsImpl<>(this, reactive.hash(redisKeyType, typeOfField, typeOfValue), timeout);
     }
 
     @Override
     public <K1, V1> GeoCommands<K1, V1> geo(Class<K1> redisKeyType, Class<V1> memberType) {
-        return new BlockingGeoCommandsImpl<>(reactive.geo(redisKeyType, memberType), timeout);
+        return new BlockingGeoCommandsImpl<>(this, reactive.geo(redisKeyType, memberType), timeout);
     }
 
     @Override
     public <K1> KeyCommands<K1> key(Class<K1> redisKeyType) {
-        return new BlockingKeyCommandsImpl<>(reactive.key(redisKeyType), timeout);
+        return new BlockingKeyCommandsImpl<>(this, reactive.key(redisKeyType), timeout);
     }
 
     @Override
     public <K1, V1> SortedSetCommands<K1, V1> sortedSet(Class<K1> redisKeyType, Class<V1> valueType) {
-        return new BlockingSortedSetCommandsImpl<>(reactive.sortedSet(redisKeyType, valueType), timeout);
+        return new BlockingSortedSetCommandsImpl<>(this, reactive.sortedSet(redisKeyType, valueType), timeout);
     }
 
     @Override
     public <K1, V1> StringCommands<K1, V1> string(Class<K1> redisKeyType, Class<V1> valueType) {
-        return new BlockingStringCommandsImpl<>(reactive.string(redisKeyType, valueType), timeout);
+        return new BlockingStringCommandsImpl<>(this, reactive.string(redisKeyType, valueType), timeout);
     }
 
     @Override
     public <K1, V1> SetCommands<K1, V1> set(Class<K1> redisKeyType, Class<V1> memberType) {
-        return new BlockingSetCommandsImpl<>(reactive.set(redisKeyType, memberType), timeout);
+        return new BlockingSetCommandsImpl<>(this, reactive.set(redisKeyType, memberType), timeout);
     }
 
     @Override
     public <K1, V1> ListCommands<K1, V1> list(Class<K1> redisKeyType, Class<V1> memberType) {
-        return new BlockingListCommandsImpl<>(reactive.list(redisKeyType, memberType), timeout);
+        return new BlockingListCommandsImpl<>(this, reactive.list(redisKeyType, memberType), timeout);
     }
 
     @Override
     public <K1, V1> HyperLogLogCommands<K1, V1> hyperloglog(Class<K1> redisKeyType, Class<V1> memberType) {
-        return new BlockingHyperLogLogCommandsImpl<>(reactive.hyperloglog(redisKeyType, memberType), timeout);
+        return new BlockingHyperLogLogCommandsImpl<>(this, reactive.hyperloglog(redisKeyType, memberType), timeout);
     }
 
     @Override
     public <K> BitMapCommands<K> bitmap(Class<K> redisKeyType) {
-        return new BlockingBitmapCommandsImpl<>(reactive.bitmap(redisKeyType), timeout);
+        return new BlockingBitmapCommandsImpl<>(this, reactive.bitmap(redisKeyType), timeout);
     }
 
     @Override
     public <V> PubSubCommands<V> pubsub(Class<V> messageType) {
-        return new BlockingPubSubCommandsImpl<>(reactive.pubsub(messageType), timeout);
+        return new BlockingPubSubCommandsImpl<>(this, reactive.pubsub(messageType), timeout);
     }
 
     @Override

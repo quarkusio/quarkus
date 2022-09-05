@@ -4,17 +4,18 @@ import java.time.Duration;
 
 import io.quarkus.redis.datasource.hyperloglog.ReactiveTransactionalHyperLogLogCommands;
 import io.quarkus.redis.datasource.hyperloglog.TransactionalHyperLogLogCommands;
+import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 
-public class BlockingTransactionalHyperLogLogCommandsImpl<K, V> implements TransactionalHyperLogLogCommands<K, V> {
+public class BlockingTransactionalHyperLogLogCommandsImpl<K, V> extends AbstractTransactionalRedisCommandGroup
+        implements TransactionalHyperLogLogCommands<K, V> {
 
     private final ReactiveTransactionalHyperLogLogCommands<K, V> reactive;
 
-    private final Duration timeout;
-
-    public BlockingTransactionalHyperLogLogCommandsImpl(ReactiveTransactionalHyperLogLogCommands<K, V> reactive,
+    public BlockingTransactionalHyperLogLogCommandsImpl(TransactionalRedisDataSource ds,
+            ReactiveTransactionalHyperLogLogCommands<K, V> reactive,
             Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

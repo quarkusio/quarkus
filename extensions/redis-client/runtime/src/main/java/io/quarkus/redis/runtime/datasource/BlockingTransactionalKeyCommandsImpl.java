@@ -8,16 +8,17 @@ import io.quarkus.redis.datasource.keys.ExpireArgs;
 import io.quarkus.redis.datasource.keys.ReactiveTransactionalKeyCommands;
 import io.quarkus.redis.datasource.keys.RedisKeyNotFoundException;
 import io.quarkus.redis.datasource.keys.TransactionalKeyCommands;
+import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 
-public class BlockingTransactionalKeyCommandsImpl<K> implements TransactionalKeyCommands<K> {
+public class BlockingTransactionalKeyCommandsImpl<K> extends AbstractTransactionalRedisCommandGroup
+        implements TransactionalKeyCommands<K> {
 
     private final ReactiveTransactionalKeyCommands<K> reactive;
 
-    private final Duration timeout;
-
-    public BlockingTransactionalKeyCommandsImpl(ReactiveTransactionalKeyCommands<K> reactive, Duration timeout) {
+    public BlockingTransactionalKeyCommandsImpl(TransactionalRedisDataSource ds, ReactiveTransactionalKeyCommands<K> reactive,
+            Duration timeout) {
+        super(ds, timeout);
         this.reactive = reactive;
-        this.timeout = timeout;
     }
 
     @Override

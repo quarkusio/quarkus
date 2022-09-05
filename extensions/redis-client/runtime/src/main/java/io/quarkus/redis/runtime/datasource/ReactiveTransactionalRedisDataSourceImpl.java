@@ -43,56 +43,56 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
     @Override
     public <K, F, V> ReactiveTransactionalHashCommands<K, F, V> hash(Class<K> redisKeyType, Class<F> typeOfField,
             Class<V> typeOfValue) {
-        return new ReactiveTransactionalHashCommandsImpl<>(
+        return new ReactiveTransactionalHashCommandsImpl<>(this,
                 (ReactiveHashCommandsImpl<K, F, V>) this.reactive.hash(redisKeyType, typeOfField, typeOfValue),
                 tx);
     }
 
     @Override
     public <K, V> ReactiveTransactionalGeoCommands<K, V> geo(Class<K> redisKeyType, Class<V> memberType) {
-        return new ReactiveTransactionalGeoCommandsImpl<>(
+        return new ReactiveTransactionalGeoCommandsImpl<>(this,
                 (ReactiveGeoCommandsImpl<K, V>) this.reactive.geo(redisKeyType, memberType), tx);
     }
 
     @Override
     public <K, V> ReactiveTransactionalSortedSetCommands<K, V> sortedSet(Class<K> redisKeyType, Class<V> valueType) {
-        return new ReactiveTransactionalSortedSetCommandsImpl<>(
+        return new ReactiveTransactionalSortedSetCommandsImpl<>(this,
                 (ReactiveSortedSetCommandsImpl<K, V>) this.reactive.sortedSet(redisKeyType, valueType), tx);
     }
 
     @Override
     public <K, V> ReactiveTransactionalStringCommands<K, V> string(Class<K> redisKeyType, Class<V> valueType) {
-        return new ReactiveTransactionalStringCommandsImpl<>(
+        return new ReactiveTransactionalStringCommandsImpl<>(this,
                 (ReactiveStringCommandsImpl<K, V>) this.reactive.string(redisKeyType, valueType), tx);
     }
 
     @Override
     public <K, V> ReactiveTransactionalSetCommands<K, V> set(Class<K> redisKeyType, Class<V> memberType) {
-        return new ReactiveTransactionalSetCommandsImpl<>(
+        return new ReactiveTransactionalSetCommandsImpl<>(this,
                 (ReactiveSetCommandsImpl<K, V>) this.reactive.set(redisKeyType, memberType), tx);
     }
 
     @Override
     public <K, V> ReactiveTransactionalListCommands<K, V> list(Class<K> redisKeyType, Class<V> memberType) {
-        return new ReactiveTransactionalListCommandsImpl<>(
+        return new ReactiveTransactionalListCommandsImpl<>(this,
                 (ReactiveListCommandsImpl<K, V>) this.reactive.list(redisKeyType, memberType), tx);
     }
 
     @Override
     public <K, V> ReactiveTransactionalHyperLogLogCommands<K, V> hyperloglog(Class<K> redisKeyType, Class<V> memberType) {
-        return new ReactiveTransactionalHyperLogLogCommandsImpl<>(
+        return new ReactiveTransactionalHyperLogLogCommandsImpl<>(this,
                 (ReactiveHyperLogLogCommandsImpl<K, V>) this.reactive.hyperloglog(redisKeyType, memberType), tx);
     }
 
     @Override
     public <K> ReactiveTransactionalBitMapCommands<K> bitmap(Class<K> redisKeyType) {
-        return new ReactiveTransactionalBitMapCommandsImpl<>(
+        return new ReactiveTransactionalBitMapCommandsImpl<>(this,
                 (ReactiveBitMapCommandsImpl<K>) this.reactive.bitmap(redisKeyType), tx);
     }
 
     @Override
     public <K> ReactiveTransactionalKeyCommands<K> key(Class<K> redisKeyType) {
-        return new ReactiveTransactionalKeyCommandsImpl<>(
+        return new ReactiveTransactionalKeyCommandsImpl<>(this,
                 (ReactiveKeyCommandsImpl<K>) this.reactive.key(redisKeyType), tx);
     }
 

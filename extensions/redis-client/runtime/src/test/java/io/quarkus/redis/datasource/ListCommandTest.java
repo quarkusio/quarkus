@@ -36,6 +36,11 @@ public class ListCommandTest extends DatasourceTestBase {
     }
 
     @Test
+    void getDataSource() {
+        assertThat(ds).isEqualTo(lists.getDataSource());
+    }
+
+    @Test
     void blpop() {
         lists.rpush("two", Person.person2, Person.person3);
         assertThat(lists.blpop(Duration.ofSeconds(1), "one", "two")).isEqualTo(KeyValue.of("two", Person.person2));

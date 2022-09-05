@@ -1,5 +1,6 @@
 package io.quarkus.redis.datasource.hyperloglog;
 
+import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -11,7 +12,7 @@ import io.smallrye.mutiny.Uni;
  * @param <K> the type of the key
  * @param <V> the type of the value stored in the sets
  */
-public interface ReactiveHyperLogLogCommands<K, V> {
+public interface ReactiveHyperLogLogCommands<K, V> extends ReactiveRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/pfadd">PFADD</a>.

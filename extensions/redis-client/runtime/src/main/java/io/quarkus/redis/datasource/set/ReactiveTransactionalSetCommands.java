@@ -1,8 +1,9 @@
 package io.quarkus.redis.datasource.set;
 
+import io.quarkus.redis.datasource.ReactiveTransactionalRedisCommands;
 import io.smallrye.mutiny.Uni;
 
-public interface ReactiveTransactionalSetCommands<K, V> {
+public interface ReactiveTransactionalSetCommands<K, V> extends ReactiveTransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/sadd">SADD</a>.

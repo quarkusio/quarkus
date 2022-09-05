@@ -2,9 +2,10 @@ package io.quarkus.redis.datasource.hash;
 
 import java.util.Map;
 
+import io.quarkus.redis.datasource.ReactiveTransactionalRedisCommands;
 import io.smallrye.mutiny.Uni;
 
-public interface ReactiveTransactionalHashCommands<K, F, V> {
+public interface ReactiveTransactionalHashCommands<K, F, V> extends ReactiveTransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/hdel">HDEL</a>.

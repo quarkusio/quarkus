@@ -1,6 +1,8 @@
 package io.quarkus.redis.datasource.set;
 
-public interface TransactionalSetCommands<K, V> {
+import io.quarkus.redis.datasource.TransactionalRedisCommands;
+
+public interface TransactionalSetCommands<K, V> extends TransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/sadd">SADD</a>.

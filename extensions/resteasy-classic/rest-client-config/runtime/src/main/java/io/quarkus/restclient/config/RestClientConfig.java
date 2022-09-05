@@ -199,6 +199,8 @@ public class RestClientConfig {
 
     /**
      * The HTTP headers that should be applied to all requests of the rest client.
+     *
+     * This property is applicable to reactive REST clients only.
      */
     @ConfigItem
     public Map<String, String> headers;

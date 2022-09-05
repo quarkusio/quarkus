@@ -42,6 +42,8 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
+import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -57,6 +59,8 @@ import io.quarkus.runtime.graal.WeakReflection;
 public class NativeImageFeatureStep {
 
     public static final String GRAAL_FEATURE = "io.quarkus.runner.Feature";
+    private static final MethodDescriptor VERSION_CURRENT = ofMethod(Version.class, "getCurrent", Version.class);
+    private static final MethodDescriptor VERSION_COMPARE_TO = ofMethod(Version.class, "compareTo", int.class, int[].class);
 
     private static final MethodDescriptor IMAGE_SINGLETONS_LOOKUP = ofMethod(ImageSingletons.class, "lookup", Object.class,
             Class.class);
@@ -89,7 +93,8 @@ public class NativeImageFeatureStep {
     private static final MethodDescriptor INVOKE = ofMethod(
             Method.class, "invoke", Object.class, Object.class, Object[].class);
     static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
-    static final String JNI_RUNTIME_ACCESS = "com.oracle.svm.core.jni.JNIRuntimeAccess";
+    static final String LEGACY_JNI_RUNTIME_ACCESS = "com.oracle.svm.core.jni.JNIRuntimeAccess";
+    static final String JNI_RUNTIME_ACCESS = "org.graalvm.nativeimage.hosted.RuntimeJNIAccess";
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
     static final String DURING_SETUP_ACCESS = Feature.DuringSetupAccess.class.getName();
     static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
@@ -124,10 +129,10 @@ public class NativeImageFeatureStep {
         // required in order to access org.graalvm.nativeimage.impl.RuntimeSerializationSupport and org.graalvm.nativeimage.impl.ConfigurationCondition
         features.produce(
                 new JPMSExportBuildItem("org.graalvm.sdk", "org.graalvm.nativeimage.impl", GraalVM.Version.VERSION_22_1_0));
-        // required in order to access com.oracle.svm.core.jni.JNIRuntimeAccess
+        // required in order to access com.oracle.svm.core.jni.JNIRuntimeAccess in GraalVM 22.2.x
         if (jniRuntimeAccessibleClasses != null && !jniRuntimeAccessibleClasses.isEmpty()) {
             features.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jni",
-                    GraalVM.Version.VERSION_22_1_0));
+                    GraalVM.Version.VERSION_22_1_0, GraalVM.Version.VERSION_22_3_0));
         }
     }
 
@@ -544,26 +549,52 @@ public class NativeImageFeatureStep {
 
                 ResultHandle carray = tc.newArray(Class.class, tc.load(1));
                 tc.writeArrayValue(carray, 0, clazz);
-                tc.invokeStaticMethod(ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Class[].class),
+
+                BranchResult graalVm22_3Test = tc.ifGreaterEqualZero(tc.invokeVirtualMethod(VERSION_COMPARE_TO,
+                        tc.invokeStaticMethod(VERSION_CURRENT), tc.marshalAsArray(int.class, tc.load(22), tc.load(3))));
+                /* GraalVM >= 22.3 */
+                BytecodeCreator greaterThan22_2 = graalVm22_3Test.trueBranch();
+                greaterThan22_2.invokeStaticMethod(ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Class[].class),
                         carray);
 
                 if (jniAccessible.isConstructors()) {
-                    tc.invokeStaticMethod(
+                    greaterThan22_2.invokeStaticMethod(
                             ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
                             constructors);
                 }
 
                 if (jniAccessible.isMethods()) {
-                    tc.invokeStaticMethod(
+                    greaterThan22_2.invokeStaticMethod(
                             ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
                             methods);
                 }
 
                 if (jniAccessible.isFields()) {
-                    tc.invokeStaticMethod(
-                            ofMethod(JNI_RUNTIME_ACCESS, "register", void.class,
-                                    boolean.class, Field[].class),
-                            tc.load(jniAccessible.isFinalFieldsWriteable()), fields);
+                    greaterThan22_2.invokeStaticMethod(
+                            ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Field[].class),
+                            fields);
+                }
+                /* GraalVM < 22.3 */
+                BytecodeCreator smallerThan22_3 = graalVm22_3Test.falseBranch();
+                smallerThan22_3.invokeStaticMethod(ofMethod(LEGACY_JNI_RUNTIME_ACCESS, "register", void.class, Class[].class),
+                        carray);
+
+                if (jniAccessible.isConstructors()) {
+                    smallerThan22_3.invokeStaticMethod(
+                            ofMethod(LEGACY_JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
+                            constructors);
+                }
+
+                if (jniAccessible.isMethods()) {
+                    smallerThan22_3.invokeStaticMethod(
+                            ofMethod(LEGACY_JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
+                            methods);
+                }
+
+                if (jniAccessible.isFields()) {
+                    smallerThan22_3.invokeStaticMethod(
+                            ofMethod(LEGACY_JNI_RUNTIME_ACCESS, "register", void.class, boolean.class, Field[].class),
+                            smallerThan22_3.load(jniAccessible.isFinalFieldsWriteable()), fields);
                 }
 
                 CatchBlockCreator cc = tc.addCatch(Throwable.class);

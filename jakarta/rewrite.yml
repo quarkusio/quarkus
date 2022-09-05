@@ -72,7 +72,7 @@ recipeList:
   # JAX-RS - See below for the specs
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy.version
-      newValue: 6.0.3.Final
+      newValue: 6.1.0.Final
   # JAXB - See below
   # JSON - See below
   # JSON Bind
@@ -134,15 +134,14 @@ recipeList:
   # Security - See below
   - org.openrewrite.maven.ChangePropertyValue:
       key: quarkus-security.version
-      newValue: 2.0.0.Alpha1
+      newValue: 2.0.0.Alpha2
   # Servlet
-  # TODO EE 10 6.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.servlet-api.version
-      newValue: 5.0.0
+      newValue: 6.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: quarkus-http.version
-      newValue: 5.0.0.Alpha1
+      newValue: 5.0.0.Alpha2
   # Transaction
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jta
@@ -171,10 +170,9 @@ recipeList:
       key: hibernate-validator.version
       newValue: 8.0.0.CR3
   # Websockets
-  # TODO EE 10 2.1.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.websocket-api.version
-      newValue: 2.0.0
+      newValue: 2.1.0
   # XML Bind
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.xml.bind-api.version
@@ -205,7 +203,7 @@ recipeList:
       addIfMissing: true
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.ws.rs-api.version
-      newValue: 3.0.0
+      newValue: 3.1.0
       addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe
@@ -345,15 +343,13 @@ recipeList:
       groupId: jakarta.authentication
       artifactId: jakarta.authentication-api
       version: "${jakarta.authentication-api}"
-  # TODO EE 10 2.1.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.authorization-api.version
-      newValue: 2.0.0
+      newValue: 2.1.0
       addIfMissing: true
-  # TODO EE 10 3.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.authentication-api
-      newValue: 2.0.0
+      newValue: 3.0.0
       addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe

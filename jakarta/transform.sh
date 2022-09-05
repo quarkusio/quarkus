@@ -292,6 +292,7 @@ sed -i 's@<excludedArtifact>jakarta.xml.bind:jakarta.xml.bind-api</excludedArtif
 sed -i 's@<excludedArtifact>jakarta.ws.rs:jakarta.ws.rs-api</excludedArtifact>@<excludedArtifact>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_3.0_spec</excludedArtifact>\n                        <excludedArtifact>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</excludedArtifact>@g' extensions/resteasy-classic/resteasy-common/runtime/pom.xml
 rm extensions/resteasy-classic/resteasy-common/runtime/src/main/java/io/quarkus/resteasy/common/runtime/graal/{Target_org_jboss_resteasy_microprofile_config_FilterConfigSource.java,Target_org_jboss_resteasy_microprofile_config_ServletConfigSource.java,Target_org_jboss_resteasy_microprofile_config_ServletContextConfigSource.java,ServletMissing.java}
 sed -i 's@<quarkus.rest-client-reactive.scope>javax.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>@<quarkus.rest-client-reactive.scope>jakarta.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>@g' tcks/microprofile-rest-client-reactive/pom.xml
+sed -i '/public SSLContext getSSLContext() {/i \ \ \ \ @Override' extensions/websockets/client/runtime/src/main/java/io/quarkus/websockets/BearerTokenClientEndpointConfigurator.java
 
 sed -i 's@org.jboss.narayana.rts:narayana-lra@org.jboss.narayana.rts:narayana-lra-jakarta@g' extensions/narayana-lra/runtime/pom.xml
 sed -i 's@org.jboss.narayana.rts:lra-client@org.jboss.narayana.rts:lra-client-jakarta@g' extensions/narayana-lra/runtime/pom.xml
@@ -350,6 +351,11 @@ git commit -m 'Remove integration-tests/kafka-avro - see kafka-avro-apicurio2 in
 git fetch origin jakarta-10-cdi
 JAKARTA_10_CDI_HASH=$(git rev-parse origin/jakarta-10-cdi)
 git cherry-pick -x ${JAKARTA_10_CDI_HASH}
+
+## JAX-RS/RESTEasy Reactive
+git fetch origin jakarta-10-jaxrs
+JAKARTA_10_JAXRS_HASH=$(git rev-parse origin/jakarta-10-jaxrs)
+git cherry-pick -x ${JAKARTA_10_JAXRS_HASH}
 
 # Build phase
 

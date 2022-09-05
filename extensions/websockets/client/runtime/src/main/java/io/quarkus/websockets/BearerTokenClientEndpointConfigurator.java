@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import javax.net.ssl.SSLContext;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.Decoder;
 import javax.websocket.Encoder;
@@ -52,5 +53,9 @@ public class BearerTokenClientEndpointConfigurator implements ClientEndpointConf
     @Override
     public Map<String, Object> getUserProperties() {
         return Collections.emptyMap();
+    }
+
+    public SSLContext getSSLContext() {
+        return null;
     }
 }

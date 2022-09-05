@@ -633,6 +633,26 @@ To use them, you need to add the `io.quarkus:quarkus-test-mongodb` dependency to
 
 For more information about the usage of a `QuarkusTestResourceLifecycleManager` please read xref:getting-started-testing.adoc#quarkus-test-resource[Quarkus test resource].
 
+[TIP]
+====
+To set the desired port MongoDB will listen to when it is launched, the following code should be used:
+
+[source,java]
+----
+@QuarkusTestResource(value = MongoTestResource.class, initArgs = @ResourceArg(name = MongoTestResource.PORT, value = "27017"))
+----
+
+To set the desired MongoDB version that will be launched, the following code should be used:
+
+[source,java]
+----
+@QuarkusTestResource(value = MongoTestResource.class, initArgs = @ResourceArg(name = MongoTestResource.VERSION, value = "V5_0"))
+----
+
+The string value used can be any of one of the `de.flapdoodle.embed.mongo.distribution.Version` or `de.flapdoodle.embed.mongo.distribution.Version.Main` enums.
+If no version is specified, `Version.Main.V4_0` is used by default.
+====
+
 == The legacy client
 
 We don't include the legacy MongoDB client by default. It contains the now retired MongoDB Java API (DB, DBCollection,... )

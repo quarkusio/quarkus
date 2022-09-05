@@ -351,6 +351,11 @@ git fetch origin jakarta-10-cdi
 JAKARTA_10_CDI_HASH=$(git rev-parse origin/jakarta-10-cdi)
 git cherry-pick -x ${JAKARTA_10_CDI_HASH}
 
+## JAX-RS/RESTEasy Reactive
+git fetch origin jakarta-10-jaxrs
+JAKARTA_10_JAXRS_HASH=$(git rev-parse origin/jakarta-10-jaxrs)
+git cherry-pick -x ${JAKARTA_10_JAXRS_HASH}
+
 # Build phase
 
 if [ "${REWRITE_TESTS_CONTAINERS-false}" == "true" ]; then

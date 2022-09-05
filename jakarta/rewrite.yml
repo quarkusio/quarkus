@@ -72,7 +72,7 @@ recipeList:
   # JAX-RS - See below for the specs
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy.version
-      newValue: 6.0.3.Final
+      newValue: 6.1.0.Final
   # JAXB - See below
   # JSON - See below
   # JSON Bind
@@ -205,7 +205,7 @@ recipeList:
       addIfMissing: true
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.ws.rs-api.version
-      newValue: 3.0.0
+      newValue: 3.1.0
       addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe

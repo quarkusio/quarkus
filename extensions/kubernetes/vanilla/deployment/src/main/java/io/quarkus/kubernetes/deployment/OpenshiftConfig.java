@@ -11,6 +11,7 @@ import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 import static io.quarkus.kubernetes.deployment.Constants.S2I;
 import static io.quarkus.kubernetes.deployment.Constants.STATEFULSET;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -221,6 +222,12 @@ public class OpenshiftConfig implements PlatformConfiguration {
     Map<String, ConfigMapVolumeConfig> configMapVolumes;
 
     /**
+     * EmptyDir volumes
+     */
+    @ConfigItem
+    Optional<List<String>> emptyDirVolumes;
+
+    /**
      * Git Repository volumes
      */
     @ConfigItem
@@ -404,6 +411,10 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     public Map<String, ConfigMapVolumeConfig> getConfigMapVolumes() {
         return configMapVolumes;
+    }
+
+    public List<String> getEmptyDirVolumes() {
+        return emptyDirVolumes.orElse(Collections.emptyList());
     }
 
     public Map<String, GitRepoVolumeConfig> getGitRepoVolumes() {

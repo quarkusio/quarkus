@@ -356,11 +356,8 @@ public class NativeImageFeatureStep {
             ResultHandle locClass = overallCatch.loadClassFromTCCL(LOCALIZATION_FEATURE);
             ResultHandle newParams = overallCatch.marshalAsArray(Class.class, overallCatch.loadClassFromTCCL(String.class));
             ResultHandle registerMethod = overallCatch.invokeVirtualMethod(
-                    ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), locClass,
-                    overallCatch.load("prepareBundle"), newParams);
-
-            overallCatch.invokeVirtualMethod(ofMethod(AccessibleObject.class, "setAccessible", void.class, boolean.class),
-                    registerMethod, overallCatch.load(true));
+                    LOOKUP_METHOD,
+                    locClass, overallCatch.load("prepareBundle"), newParams);
 
             ResultHandle locSupport = overallCatch.invokeStaticMethod(
                     IMAGE_SINGLETONS_LOOKUP,

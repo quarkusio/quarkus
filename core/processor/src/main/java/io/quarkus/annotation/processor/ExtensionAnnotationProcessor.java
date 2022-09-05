@@ -460,7 +460,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         for (Element e : clazz.getEnclosedElements()) {
             switch (e.getKind()) {
                 case INTERFACE: {
-                    recordMappingJavadoc(((TypeElement) e), javadocProps);
+                    recordMappingJavadoc(((TypeElement) e));
                     break;
                 }
 

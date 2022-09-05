@@ -66,7 +66,6 @@ final public class ConfigDocItemScanner {
 
         String prefix = Constants.QUARKUS;
         ConfigPhase configPhase = ConfigPhase.BUILD_TIME;
-        boolean isMapping = false;
 
         for (AnnotationMirror annotationMirror : clazz.getAnnotationMirrors()) {
             String annotationName = annotationMirror.getAnnotationType().toString();
@@ -88,7 +87,6 @@ final public class ConfigDocItemScanner {
 
                 for (AnnotationMirror mirror : clazz.getAnnotationMirrors()) {
                     if (mirror.getAnnotationType().toString().equals(Constants.ANNOTATION_CONFIG_MAPPING)) {
-                        isMapping = true;
                         name = Constants.EMPTY;
                         for (Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : mirror.getElementValues()
                                 .entrySet()) {
@@ -113,7 +111,7 @@ final public class ConfigDocItemScanner {
                     fileName = name.replace(Constants.DOT, Constants.DASH.charAt(0)) + Constants.ADOC_EXTENSION;
                 }
 
-                ConfigRootInfo configRootInfo = new ConfigRootInfo(name, clazz, configPhase, isMapping, fileName);
+                ConfigRootInfo configRootInfo = new ConfigRootInfo(name, clazz, configPhase, fileName);
                 configRoots.add(configRootInfo);
                 break;
             }

@@ -111,13 +111,14 @@ Extension developers that want to make their configuration options platform-spec
 package io.quarkus.deployment.pkg;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public class NativeConfig {
+@ConfigMapping(prefix = "quarkus")
+public interface NativeConfig {
 
     /**
      * The docker image to use to do the image build
      */
-    @ConfigItem(defaultValue = "${platform.quarkus.native.builder-image}")
-    public String builderImage;
+    @WithDefault("${platform.quarkus.native.builder-image}")
+    String builderImage();
 }
 ----
 

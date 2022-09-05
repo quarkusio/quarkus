@@ -85,7 +85,7 @@
         <!-- What we actually depend on for the annotations, as latest Graal is not available in Maven fast enough: -->
         <graal-sdk.version>21.3.2</graal-sdk.version>
         <gizmo.version>1.0.10.Final</gizmo.version>
-        <jackson-bom.version>2.13.3</jackson-bom.version>
+        <jackson-bom.version>2.13.4</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-codec.version>1.15</commons-codec.version>

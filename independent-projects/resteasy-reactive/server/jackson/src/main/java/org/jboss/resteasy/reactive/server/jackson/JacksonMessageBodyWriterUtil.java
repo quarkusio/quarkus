@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.nio.charset.StandardCharsets;
 import javax.ws.rs.core.MultivaluedMap;
+import org.jboss.resteasy.reactive.server.StreamingOutputStream;
 
 public final class JacksonMessageBodyWriterUtil {
 
@@ -43,7 +44,8 @@ public final class JacksonMessageBodyWriterUtil {
     public static void doLegacyWrite(Object o, Annotation[] annotations, MultivaluedMap<String, Object> httpHeaders,
             OutputStream entityStream, ObjectWriter defaultWriter) throws IOException {
         setContentTypeIfNecessary(httpHeaders);
-        if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
+        if ((o instanceof String) && (!(entityStream instanceof StreamingOutputStream))) {
+            // YUK: done in order to avoid adding extra quotes... when we are not streaming a result
             entityStream.write(((String) o).getBytes(StandardCharsets.UTF_8));
         } else {
             if (annotations != null) {

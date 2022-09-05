@@ -11,6 +11,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import org.jboss.resteasy.reactive.common.providers.serialisers.JsonMessageBodyWriterUtil;
+import org.jboss.resteasy.reactive.server.StreamingOutputStream;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
@@ -27,7 +28,8 @@ public class JsonbMessageBodyWriter extends ServerMessageBodyWriter.AllWriteable
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
         JsonMessageBodyWriterUtil.setContentTypeIfNecessary(httpHeaders);
-        if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
+        if ((o instanceof String) && (!(entityStream instanceof StreamingOutputStream))) {
+            // YUK: done in order to avoid adding extra quotes... when we are not streaming a result
             entityStream.write(((String) o).getBytes(StandardCharsets.UTF_8));
         } else {
             json.toJson(o, type, entityStream);

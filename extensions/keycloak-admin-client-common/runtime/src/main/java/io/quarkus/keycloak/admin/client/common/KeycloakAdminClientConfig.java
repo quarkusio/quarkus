@@ -13,16 +13,19 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class KeycloakAdminClientConfig {
 
     /**
+     * Keycloak server URL, for example, `https://host:port`.
+     * If this property is not set then the Keycloak Admin Client injection will fail - use
+     * {@linkplain org.keycloak.admin.client.KeycloakBuilder}
+     * to create it instead.
+     */
+    @ConfigItem
+    public Optional<String> serverUrl;
+
+    /**
      * Realm.
      */
     @ConfigItem(defaultValue = "master")
     public String realm;
-
-    /**
-     * Keycloak server URL, for example, `https://host:port`.
-     */
-    @ConfigItem
-    public Optional<String> serverUrl;
 
     /**
      * Client id.

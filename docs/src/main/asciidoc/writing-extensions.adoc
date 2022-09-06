@@ -2274,7 +2274,7 @@ The property is also honored when running tests:
 ./mvnw clean test -Dquarkus.debug.generated-classes-dir=target/dump-generated-classes
 ----
 
-Analogously, you can use the `quarkus.debug.transformed-classes-dir` and `quarkus.debug.transformed-classes-dir` properties to dump the relevant output.
+Analogously, you can use the `quarkus.debug.transformed-classes-dir` and `quarkus.debug.generated-sources-dir` properties to dump the relevant output.
 
 ==== Multi-module Maven Projects and the Development Mode
 

@@ -46,12 +46,14 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.console.ConsoleRuntimeConfig;
+import io.quarkus.runtime.shutdown.ShutdownListener;
 import io.quarkus.runtime.util.ColorSupport;
 
 @Recorder
 public class LoggingSetupRecorder {
 
     private static final org.jboss.logging.Logger log = org.jboss.logging.Logger.getLogger(LoggingSetupRecorder.class);
+    public static final String SHUTDOWN_MESSAGE = " [Error Occurred After Shutdown]";
 
     final RuntimeValue<ConsoleRuntimeConfig> consoleRuntimeConfig;
 
@@ -80,7 +82,7 @@ public class LoggingSetupRecorder {
                 Collections.emptyList(), banner, LaunchMode.DEVELOPMENT);
     }
 
-    public void initializeLogging(LogConfig config, LogBuildTimeConfig buildConfig,
+    public ShutdownListener initializeLogging(LogConfig config, LogBuildTimeConfig buildConfig,
             final Map<String, InheritableLevel> categoryDefaultMinLevels,
             final boolean enableWebStream,
             final RuntimeValue<Optional<Handler>> devUiConsoleHandler,
@@ -90,6 +92,7 @@ public class LoggingSetupRecorder {
             final List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
             final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier, LaunchMode launchMode) {
 
+        ShutdownNotifier shutdownNotifier = new ShutdownNotifier();
         final Map<String, CategoryConfig> categories = config.categories;
         final LogContext logContext = LogContext.getLogContext();
         final Logger rootLogger = logContext.getLogger("");
@@ -118,7 +121,7 @@ public class LoggingSetupRecorder {
                 }
             });
         }
-        LogCleanupFilter cleanupFiler = new LogCleanupFilter(filterElements);
+        LogCleanupFilter cleanupFiler = new LogCleanupFilter(filterElements, shutdownNotifier);
         for (Handler handler : LogManager.getLogManager().getLogger("").getHandlers()) {
             handler.setFilter(cleanupFiler);
         }
@@ -153,7 +156,8 @@ public class LoggingSetupRecorder {
         }
 
         if (config.file.enable) {
-            handlers.add(configureFileHandler(config.file, errorManager, cleanupFiler, possibleFileFormatters));
+            handlers.add(
+                    configureFileHandler(config.file, errorManager, cleanupFiler, possibleFileFormatters));
         }
 
         if (config.syslog.enable) {
@@ -169,7 +173,7 @@ public class LoggingSetupRecorder {
 
             Handler handler = devUiConsoleHandler.getValue().get();
             handler.setErrorManager(errorManager);
-            handler.setFilter(new LogCleanupFilter(filterElements));
+            handler.setFilter(new LogCleanupFilter(filterElements, shutdownNotifier));
 
             if (possibleBannerSupplier != null && possibleBannerSupplier.getValue().isPresent()) {
                 Supplier<String> bannerSupplier = possibleBannerSupplier.getValue().get();
@@ -181,7 +185,8 @@ public class LoggingSetupRecorder {
 
         Map<String, Handler> namedHandlers = shouldCreateNamedHandlers(config, additionalNamedHandlers)
                 ? createNamedHandlers(config, consoleRuntimeConfig.getValue(), additionalNamedHandlers,
-                        possibleConsoleFormatters, possibleFileFormatters, errorManager, cleanupFiler, launchMode)
+                        possibleConsoleFormatters, possibleFileFormatters, errorManager, cleanupFiler, launchMode,
+                        shutdownNotifier)
                 : Collections.emptyMap();
         if (!categories.isEmpty()) {
             Map<String, Handler> additionalNamedHandlersMap;
@@ -191,7 +196,8 @@ public class LoggingSetupRecorder {
                 additionalNamedHandlersMap = new HashMap<>();
                 for (RuntimeValue<Map<String, Handler>> runtimeValue : additionalNamedHandlers) {
                     runtimeValue.getValue().forEach(
-                            new AdditionalNamedHandlersConsumer(additionalNamedHandlersMap, errorManager, filterElements));
+                            new AdditionalNamedHandlersConsumer(additionalNamedHandlersMap, errorManager, filterElements,
+                                    shutdownNotifier));
                 }
             }
 
@@ -229,6 +235,7 @@ public class LoggingSetupRecorder {
         addNamedHandlersToRootHandlers(config.handlers, namedHandlers, handlers, errorManager);
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+        return shutdownNotifier;
     }
 
     /**
@@ -239,6 +246,7 @@ public class LoggingSetupRecorder {
             Map<String, InheritableLevel> categoryDefaultMinLevels,
             ConsoleRuntimeConfig consoleConfig,
             LaunchMode launchMode) {
+        ShutdownNotifier dummy = new ShutdownNotifier();
 
         final Map<String, CategoryConfig> categories = config.categories;
         final LogContext logContext = LogContext.getLogContext();
@@ -253,7 +261,7 @@ public class LoggingSetupRecorder {
             filterElements.add(
                     new LogCleanupFilterElement(entry.getKey(), entry.getValue().targetLevel, entry.getValue().ifStartsWith));
         }
-        LogCleanupFilter logCleanupFilter = new LogCleanupFilter(filterElements);
+        LogCleanupFilter logCleanupFilter = new LogCleanupFilter(filterElements, dummy);
 
         final ArrayList<Handler> handlers = new ArrayList<>(3);
 
@@ -267,7 +275,7 @@ public class LoggingSetupRecorder {
 
         Map<String, Handler> namedHandlers = createNamedHandlers(config, consoleConfig, Collections.emptyList(),
                 Collections.emptyList(),
-                Collections.emptyList(), errorManager, logCleanupFilter, launchMode);
+                Collections.emptyList(), errorManager, logCleanupFilter, launchMode, dummy);
 
         for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
             final String categoryName = entry.getKey();
@@ -349,7 +357,8 @@ public class LoggingSetupRecorder {
             List<RuntimeValue<Optional<Formatter>>> possibleConsoleFormatters,
             List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
             ErrorManager errorManager,
-            LogCleanupFilter cleanupFilter, LaunchMode launchMode) {
+            LogCleanupFilter cleanupFilter, LaunchMode launchMode,
+            ShutdownNotifier shutdownHandler) {
         Map<String, Handler> namedHandlers = new HashMap<>();
         for (Entry<String, ConsoleConfig> consoleConfigEntry : config.consoleHandlers.entrySet()) {
             ConsoleConfig namedConsoleConfig = consoleConfigEntry.getValue();
@@ -389,7 +398,7 @@ public class LoggingSetupRecorder {
             for (RuntimeValue<Map<String, Handler>> runtimeValue : additionalNamedHandlers) {
                 runtimeValue.getValue().forEach(
                         new AdditionalNamedHandlersConsumer(additionalNamedHandlersMap, errorManager,
-                                cleanupFilter.filterElements.values()));
+                                cleanupFilter.filterElements.values(), shutdownHandler));
             }
         }
 
@@ -663,11 +672,14 @@ public class LoggingSetupRecorder {
         private final ErrorManager errorManager;
         private final Collection<LogCleanupFilterElement> filterElements;
 
+        private final ShutdownNotifier shutdownNotifier;
+
         public AdditionalNamedHandlersConsumer(Map<String, Handler> additionalNamedHandlersMap, ErrorManager errorManager,
-                Collection<LogCleanupFilterElement> filterElements) {
+                Collection<LogCleanupFilterElement> filterElements, ShutdownNotifier shutdownNotifier) {
             this.additionalNamedHandlersMap = additionalNamedHandlersMap;
             this.errorManager = errorManager;
             this.filterElements = filterElements;
+            this.shutdownNotifier = shutdownNotifier;
         }
 
         @Override
@@ -679,7 +691,17 @@ public class LoggingSetupRecorder {
                         name, previous, handler));
             }
             handler.setErrorManager(errorManager);
-            handler.setFilter(new LogCleanupFilter(filterElements));
+            handler.setFilter(new LogCleanupFilter(filterElements, shutdownNotifier));
+        }
+    }
+
+    public static class ShutdownNotifier implements ShutdownListener {
+        volatile boolean shutdown;
+
+        @Override
+        public void shutdown(ShutdownNotification notification) {
+            shutdown = true;
+            notification.done();
         }
     }
 }

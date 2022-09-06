@@ -61,6 +61,7 @@ import io.quarkus.deployment.builditem.LogFileFormatBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.NamedLogHandlersBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.WebSocketLogHandlerBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
@@ -187,6 +188,7 @@ public final class LoggingResourceProcessor {
             List<LogFileFormatBuildItem> fileFormatItems,
             Optional<ConsoleFormatterBannerBuildItem> possibleBannerBuildItem,
             List<LogStreamBuildItem> logStreamBuildItems,
+            BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
             LaunchModeBuildItem launchModeBuildItem,
             List<LogCleanupFilterBuildItem> logCleanupFilters) {
         if (!launchModeBuildItem.isAuxiliaryApplication()
@@ -219,11 +221,13 @@ public final class LoggingResourceProcessor {
                     .map(LogFileFormatBuildItem::getFormatterValue).collect(Collectors.toList());
             context.registerSubstitution(InheritableLevel.ActualLevel.class, String.class, InheritableLevel.Substitution.class);
             context.registerSubstitution(InheritableLevel.Inherited.class, String.class, InheritableLevel.Substitution.class);
-            recorder.initializeLogging(log, buildLog, categoryMinLevelDefaults.content, alwaysEnableLogStream,
-                    devUiLogHandler, handlers, namedHandlers,
-                    consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList()),
-                    possibleFileFormatters,
-                    possibleSupplier, launchModeBuildItem.getLaunchMode());
+            shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(
+                    recorder.initializeLogging(log, buildLog, categoryMinLevelDefaults.content, alwaysEnableLogStream,
+                            devUiLogHandler, handlers, namedHandlers,
+                            consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue)
+                                    .collect(Collectors.toList()),
+                            possibleFileFormatters,
+                            possibleSupplier, launchModeBuildItem.getLaunchMode())));
             LogConfig logConfig = new LogConfig();
             ConfigInstantiator.handleObject(logConfig);
             for (LogCleanupFilterBuildItem i : logCleanupFilters) {

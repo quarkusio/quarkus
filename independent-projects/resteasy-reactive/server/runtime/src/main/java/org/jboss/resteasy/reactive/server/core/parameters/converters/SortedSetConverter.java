@@ -47,6 +47,11 @@ public class SortedSetConverter implements ParameterConverter {
         delegate.init(deployment, rawType, genericType, annotations);
     }
 
+    @Override
+    public boolean isForSingleObjectContainer() {
+        return true;
+    }
+
     public static class SortedSetSupplier implements DelegatingParameterConverterSupplier {
         private ParameterConverterSupplier delegate;
 

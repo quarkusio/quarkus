@@ -313,9 +313,11 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
 
     public void handleException(Throwable t, boolean keepSameTarget) {
         if (abortHandlerChainStarted) {
+            log.debug("Attempting to handle unrecoverable exception", t);
             handleUnrecoverableError(unwrapException(t));
         } else {
             this.throwable = unwrapException(t);
+            log.debug("Restarting handler chain for exception exception", this.throwable);
             abortHandlerChainStarted = true;
             restart(abortHandlerChain, keepSameTarget);
         }

@@ -1168,7 +1168,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         RunningInvoker invoker = new RunningInvoker(testDir, false);
 
         // to properly surface the problem of multiple classpath entries, we need to install the project to the local m2
-        MavenProcessInvocationResult installInvocation = invoker.execute(Arrays.asList("clean", "install", "-DskipTests"),
+        MavenProcessInvocationResult installInvocation = invoker.execute(List.of("clean", "install", "-DskipTests"),
                 Collections.emptyMap());
         assertThat(installInvocation.getProcess().waitFor(2, TimeUnit.MINUTES)).isTrue();
         assertThat(installInvocation.getExecutionException()).isNull();
@@ -1185,7 +1185,8 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .until(() -> DevModeTestUtils.getHttpResponse("/cp/hello").equals("hello"));
 
         // test that we don't get multiple instances of a resource when loading from the ClassLoader
-        assertThat(DevModeTestUtils.getHttpResponse("/cp/resourcesCount")).isEqualTo("1");
+        assertThat(DevModeTestUtils.getHttpResponse("/cp/resourceCount/a.html")).isEqualTo("1");
+        assertThat(DevModeTestUtils.getHttpResponse("/cp/resourceCount/entry")).isEqualTo("2");
     }
 
     @Test

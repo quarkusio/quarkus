@@ -369,10 +369,11 @@ class ReactiveRoutesProcessor {
                             }
                         } else {
                             // Path param set
-                            if (!pathValue.asString().startsWith(SLASH)) {
+                            String pathValueStr = pathValue.asString();
+                            if (!pathValueStr.isEmpty() && !pathValueStr.startsWith(SLASH)) {
                                 prefixed.append(SLASH);
                             }
-                            prefixed.append(pathValue.asString());
+                            prefixed.append(pathValueStr);
                         }
                         path = prefixed.toString();
                     } else {

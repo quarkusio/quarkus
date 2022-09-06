@@ -30,6 +30,7 @@ import io.dekorate.kubernetes.decorator.AddAwsElasticBlockStoreVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddAzureDiskVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddAzureFileVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddConfigMapVolumeDecorator;
+import io.dekorate.kubernetes.decorator.AddEmptyDirVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddHostAliasesDecorator;
 import io.dekorate.kubernetes.decorator.AddImagePullSecretDecorator;
@@ -381,6 +382,10 @@ public class KubernetesCommonHelper {
 
         config.getConfigMapVolumes().entrySet().forEach(e -> {
             result.add(new DecoratorBuildItem(target, new AddConfigMapVolumeDecorator(ConfigMapVolumeConverter.convert(e))));
+        });
+
+        config.getEmptyDirVolumes().forEach(e -> {
+            result.add(new DecoratorBuildItem(target, new AddEmptyDirVolumeDecorator(EmptyDirVolumeConverter.convert(e))));
         });
 
         config.getPvcVolumes().entrySet().forEach(e -> {

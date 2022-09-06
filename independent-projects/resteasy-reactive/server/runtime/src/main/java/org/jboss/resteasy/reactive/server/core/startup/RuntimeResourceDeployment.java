@@ -6,6 +6,7 @@ import static org.jboss.resteasy.reactive.common.util.types.Types.getRawType;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -345,8 +346,9 @@ public class RuntimeResourceDeployment {
                     Class<?>[] parameterTypes = javaMethod.getParameterTypes();
                     Type[] genericParameterTypes = javaMethod.getGenericParameterTypes();
                     Annotation[][] parameterAnnotations = javaMethod.getParameterAnnotations();
-                    converter.init(paramConverterProviders, parameterTypes[i], genericParameterTypes[i],
-                            parameterAnnotations[i]);
+                    smartInitParameterConverter(i, converter, paramConverterProviders, parameterTypes, genericParameterTypes,
+                            parameterAnnotations);
+
                     // make sure we give the user provided resolvers the chance to convert
                     converter = new RuntimeResolvedConverter(converter);
                     converter.init(paramConverterProviders, parameterTypes[i], genericParameterTypes[i],
@@ -485,6 +487,34 @@ public class RuntimeResourceDeployment {
                 lazyMethod,
                 pathParameterIndexes, info.isDevelopmentMode() ? score : null, streamElementType,
                 clazz.resourceExceptionMapper());
+    }
+
+    /**
+     * This method takes into account the case where a parameter is for example List<UUID>
+     * and we want to allow users to be able to use their implementation of
+     * ParamConverter<UUID>.
+     */
+    private static void smartInitParameterConverter(int i, ParameterConverter quarkusConverter,
+            ParamConverterProviders paramConverterProviders,
+            Class<?>[] parameterTypes, Type[] genericParameterTypes,
+            Annotation[][] parameterAnnotations) {
+        if (quarkusConverter.isForSingleObjectContainer()) {
+
+            if (genericParameterTypes[i] instanceof ParameterizedType) {
+                Type[] genericArguments = ((ParameterizedType) genericParameterTypes[i]).getActualTypeArguments();
+                if (genericArguments.length == 1) {
+                    quarkusConverter.init(paramConverterProviders, loadClass(genericArguments[0].getTypeName()),
+                            genericArguments[0],
+                            parameterAnnotations[i]);
+                    return;
+                }
+            }
+        }
+
+        // TODO: this is almost certainly wrong when genericParameterTypes[i] is a ParameterizedType not handle above,
+        // but there is no obvious way to handle it...
+        quarkusConverter.init(paramConverterProviders, parameterTypes[i], genericParameterTypes[i],
+                parameterAnnotations[i]);
     }
 
     private static boolean isNotVoid(Class<?> rawEffectiveReturnType) {

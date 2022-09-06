@@ -44,7 +44,7 @@
         <smallrye-health.version>3.2.1</smallrye-health.version>
         <smallrye-metrics.version>3.0.5</smallrye-metrics.version>
         <smallrye-open-api.version>2.2.0</smallrye-open-api.version>
-        <smallrye-graphql.version>1.7.0</smallrye-graphql.version>
+        <smallrye-graphql.version>1.7.1</smallrye-graphql.version>
         <smallrye-opentracing.version>2.1.1</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>5.5.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>3.5.3</smallrye-jwt.version>
@@ -152,7 +152,7 @@
         <kotlin.coroutine.version>1.6.4</kotlin.coroutine.version>
         <kotlin-serialization.version>1.4.0</kotlin-serialization.version>
         <kubernetes-client.version>5.12.3</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
-        <dekorate.version>2.11.0</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
+        <dekorate.version>2.11.2</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.0.10</jboss-logmanager.version>

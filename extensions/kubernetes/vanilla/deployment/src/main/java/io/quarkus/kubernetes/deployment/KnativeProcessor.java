@@ -15,6 +15,7 @@ import io.dekorate.knative.decorator.AddAwsElasticBlockStoreVolumeToRevisionDeco
 import io.dekorate.knative.decorator.AddAzureDiskVolumeToRevisionDecorator;
 import io.dekorate.knative.decorator.AddAzureFileVolumeToRevisionDecorator;
 import io.dekorate.knative.decorator.AddConfigMapVolumeToRevisionDecorator;
+import io.dekorate.knative.decorator.AddEmptyDirVolumeToRevisionDecorator;
 import io.dekorate.knative.decorator.AddHostAliasesToRevisionDecorator;
 import io.dekorate.knative.decorator.AddPvcVolumeToRevisionDecorator;
 import io.dekorate.knative.decorator.AddSecretVolumeToRevisionDecorator;
@@ -331,6 +332,11 @@ public class KnativeProcessor {
         config.getConfigMapVolumes().entrySet().forEach(e -> {
             result.add(new DecoratorBuildItem(KNATIVE,
                     new AddConfigMapVolumeToRevisionDecorator(ConfigMapVolumeConverter.convert(e))));
+        });
+
+        config.getEmptyDirVolumes().forEach(e -> {
+            result.add(new DecoratorBuildItem(KNATIVE,
+                    new AddEmptyDirVolumeToRevisionDecorator(EmptyDirVolumeConverter.convert(e))));
         });
 
         config.getPvcVolumes().entrySet().forEach(e -> {

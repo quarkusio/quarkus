@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -70,8 +71,8 @@ public class JarRunnerIT extends MojoTestBase {
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
 
-        Process process = doLaunch(new File(testDir, "target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
-                Collections.emptyList()).start();
+        Process process = doLaunch(new File(testDir, "target/quarkus-app"), Paths.get("quarkus-run.jar"), output, List.of())
+                .start();
         try {
             // Wait until server up
             dumpFileContentOnFailure(() -> {
@@ -137,7 +138,7 @@ public class JarRunnerIT extends MojoTestBase {
         output.createNewFile();
 
         Process process = doLaunch(new File(testDir, "app/target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
-                Collections.emptyList()).start();
+                List.of()).start();
         try {
             Assertions.assertEquals("builder-image is customized", DevModeTestUtils.getHttpResponse("/hello"));
         } finally {
@@ -162,7 +163,7 @@ public class JarRunnerIT extends MojoTestBase {
         output.createNewFile();
 
         Process process = doLaunch(new File(testDir, "app/target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
-                Collections.emptyList()).start();
+                List.of()).start();
         try {
             Assertions.assertEquals("builder-image is commandline", DevModeTestUtils.getHttpResponse("/hello"));
         } finally {
@@ -247,6 +248,97 @@ public class JarRunnerIT extends MojoTestBase {
             assertApplicationPropertiesSetCorrectly();
             assertResourceReadingFromClassPathWorksCorrectly("");
             assertUsingProtectionDomainWorksCorrectly("");
+        } finally {
+            process.destroy();
+        }
+    }
+
+    @Test
+    public void reaugmentationWithRemovedArtifacts() throws Exception {
+        File testDir = initProject("projects/multimodule-classpath", "projects/multimodule-resources-classpath-reaugmentation");
+        RunningInvoker running = new RunningInvoker(testDir, false);
+
+        // The default build
+        MavenProcessInvocationResult result = running
+                .execute(List.of("package", "-DskipTests", "-Dquarkus.package.type=mutable-jar"), Map.of());
+        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
+        running.stop();
+
+        testDir = testDir.toPath().resolve("runner").toFile();
+
+        Path runJar = testDir.toPath().toAbsolutePath().resolve(Paths.get("target/quarkus-app/quarkus-run.jar"));
+        assertThat(runJar).exists();
+
+        File output = new File(testDir, "target/output.log");
+        output.createNewFile();
+
+        Process process = doLaunch(runJar, output).start();
+        try {
+            AtomicReference<String> response = new AtomicReference<>();
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(1, TimeUnit.MINUTES).until(() -> {
+                        String ret = DevModeTestUtils.getHttpResponse("/cp/resourceCount/entry", false);
+                        response.set(ret);
+                        return true;
+                    });
+
+            // Test that bean is not resolvable
+            assertThat(response.get()).isEqualTo("2");
+        } finally {
+            process.destroy();
+        }
+
+        // re-augment and exclude html-extra
+        process = doLaunch(runJar, output,
+                List.of("-Dquarkus.class-loading.removed-artifacts=cp.acme:multimodule-cp-resources-html-extra",
+                        "-Dquarkus.launch.rebuild=true"))
+                .start();
+        try {
+            assertThat(process.waitFor()).isEqualTo(0);
+        } finally {
+            process.destroy();
+        }
+
+        process = doLaunch(runJar, output).start();
+        try {
+            AtomicReference<String> response = new AtomicReference<>();
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(1, TimeUnit.MINUTES).until(() -> {
+                        String ret = DevModeTestUtils.getHttpResponse("/cp/resourceCount/entry", false);
+                        response.set(ret);
+                        return true;
+                    });
+
+            // Test that bean is not resolvable
+            assertThat(response.get()).isEqualTo("1");
+        } finally {
+            process.destroy();
+        }
+
+        // re-augment with the original dependencies
+        process = doLaunch(runJar, output, List.of("-Dquarkus.launch.rebuild=true")).start();
+        try {
+            assertThat(process.waitFor()).isEqualTo(0);
+        } finally {
+            process.destroy();
+        }
+
+        process = doLaunch(runJar, output).start();
+        try {
+            AtomicReference<String> response = new AtomicReference<>();
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(1, TimeUnit.MINUTES).until(() -> {
+                        String ret = DevModeTestUtils.getHttpResponse("/cp/resourceCount/entry", false);
+                        response.set(ret);
+                        return true;
+                    });
+
+            // Test that bean is not resolvable
+            assertThat(response.get()).isEqualTo("2");
         } finally {
             process.destroy();
         }
@@ -402,7 +494,7 @@ public class JarRunnerIT extends MojoTestBase {
         // by using '-Xshare:on' we ensure that the JVM will fail if for any reason is cannot use the AppCDS
         // '-Xlog:class+path=info' will print diagnostic information that is useful for debugging if something goes wrong
         Process process = doLaunch(jar.getFileName(), output,
-                Arrays.asList("-XX:SharedArchiveFile=app-cds.jsa", "-Xshare:on", "-Xlog:class+path=info"))
+                List.of("-XX:SharedArchiveFile=app-cds.jsa", "-Xshare:on", "-Xlog:class+path=info"))
                 .directory(jar.getParent().toFile()).start();
         try {
             // Wait until server up
@@ -461,7 +553,7 @@ public class JarRunnerIT extends MojoTestBase {
     }
 
     private ProcessBuilder doLaunch(Path jar, File output) throws IOException {
-        return doLaunch(null, jar, output, Collections.emptyList());
+        return doLaunch(null, jar, output, List.of());
     }
 
     private ProcessBuilder doLaunch(Path jar, File output, Collection<String> vmArgs) throws IOException {

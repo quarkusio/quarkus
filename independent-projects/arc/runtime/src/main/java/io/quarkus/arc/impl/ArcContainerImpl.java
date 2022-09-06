@@ -496,7 +496,11 @@ public class ArcContainerImpl implements ArcContainer {
         if (requiredType instanceof TypeVariable) {
             throw new IllegalArgumentException("The given type is a type variable: " + requiredType);
         }
-        Qualifiers.verify(qualifiers, qualifierNonbindingMembers.keySet());
+        if (qualifiers == null || qualifiers.length == 0) {
+            qualifiers = new Annotation[] { Default.Literal.INSTANCE };
+        } else {
+            Qualifiers.verify(qualifiers, qualifierNonbindingMembers.keySet());
+        }
         // This method does not cache the results
         return Set.of(getMatchingBeans(new Resolvable(requiredType, qualifiers)).toArray(new Bean<?>[] {}));
     }

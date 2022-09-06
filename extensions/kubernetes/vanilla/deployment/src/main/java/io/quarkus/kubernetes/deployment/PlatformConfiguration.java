@@ -56,6 +56,8 @@ public interface PlatformConfiguration extends EnvVarHolder {
 
     Map<String, ConfigMapVolumeConfig> getConfigMapVolumes();
 
+    List<String> getEmptyDirVolumes();
+
     Map<String, GitRepoVolumeConfig> getGitRepoVolumes();
 
     Map<String, PvcVolumeConfig> getPvcVolumes();

@@ -44,7 +44,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
             if (requestMethod.equals(HttpMethod.HEAD)) {
                 mapper = mappers.get(HttpMethod.GET);
             } else if (requestMethod.equals(HttpMethod.OPTIONS)) {
-                Set<CharSequence> allowedMethods = new HashSet<>();
+                Set<String> allowedMethods = new HashSet<>();
                 for (String method : mappers.keySet()) {
                     if (method == null) {
                         continue;
@@ -53,7 +53,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
                 }
                 allowedMethods.add(HttpMethod.OPTIONS);
                 allowedMethods.add(HttpMethod.HEAD);
-                requestContext.serverResponse().setResponseHeader(HttpHeaders.ALLOW, allowedMethods).end();
+                requestContext.abortWith(Response.ok().allow(allowedMethods).build());
                 return;
             }
             if (mapper == null) {

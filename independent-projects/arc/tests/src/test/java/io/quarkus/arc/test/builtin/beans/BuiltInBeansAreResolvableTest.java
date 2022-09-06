@@ -44,7 +44,8 @@ public class BuiltInBeansAreResolvableTest {
         // basic BM is resolvable
         assertTrue(instance.select(BeanManager.class).isResolvable());
         // invoke something on the BM
-        assertEquals(1, instance.select(BeanManager.class).get().getBeans(DummyBean.class).size());
+        assertEquals(1,
+                instance.select(BeanManager.class).get().getBeans(DummyBean.class, new DummyQualifier.Literal()).size());
         // you shouldn't be able to select BM with qualifiers
         assertFalse(instance.select(BeanManager.class, new DummyQualifier.Literal()).isResolvable());
     }

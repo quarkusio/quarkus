@@ -35,7 +35,9 @@ public class BuildTimeRunTimeConfigTest {
 
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(DevBean.class)
-                            .addAsResource(new StringAsset(props + "\nquarkus.application.name=my-app\n"),
+                            .addAsResource(new StringAsset(props + "\n" +
+                                    "quarkus.application.name=my-app\n" +
+                                    "quarkus.application.version=${quarkus.http.ssl.client-auth}"),
                                     "application.properties");
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -45,7 +47,7 @@ public class BuildTimeRunTimeConfigTest {
     @Test
     void buildTimeRunTimeConfig() {
         // A combination of QuarkusUnitTest and QuarkusProdModeTest tests ordering may mess with the port leaving it in
-        // 8081 and QuarkusDevModeTest does not changes to the right port.
+        // 8081 and QuarkusDevModeTest does not change to the right port.
         RestAssured.port = -1;
 
         RestAssured.when().get("/application").then()

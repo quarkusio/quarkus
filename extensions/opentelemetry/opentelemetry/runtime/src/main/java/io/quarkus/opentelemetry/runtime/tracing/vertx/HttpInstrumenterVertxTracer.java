@@ -190,7 +190,7 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
 
         @Override
         public String route(final HttpRequest request) {
-            return request.uri().length() > 1 ? request.uri() : null;
+            return null;
         }
 
         @Override

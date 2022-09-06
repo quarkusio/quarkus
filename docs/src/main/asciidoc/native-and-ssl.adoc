@@ -66,18 +66,18 @@ It's not. The magic happens when building the native executable:
 
 [source]
 ----
-[INFO] [io.quarkus.creator.phase.nativeimage.NativeImagePhase] /opt/graalvm/bin/native-image -J-Djava.util.logging.manager=org.jboss.logmanager.LogManager -J-Dcom.sun.xml.internal.bind.v2.bytecode.ClassTailor.noOptimize=true -H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime -jar rest-client-1.0.0-SNAPSHOT-runner.jar -J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1 -H:+PrintAnalysisCallTree -H:EnableURLProtocols=http,https -H:-SpawnIsolates -H:+JNI --no-server -H:-UseServiceLoaderFeature -H:+StackTrace
+[INFO] [io.quarkus.creator.phase.nativeimage.NativeImagePhase] /opt/graalvm/bin/native-image -J-Dsun.nio.ch.maxUpdateArraySize=100 -J-Djava.util.logging.manager=org.jboss.logmanager.LogManager -J-Dio.netty.leakDetection.level=DISABLED -J-Dio.netty.allocator.maxOrder=3 -J-Dvertx.logger-delegate-factory-class-name=io.quarkus.vertx.core.runtime.VertxLogDelegateFactory -J-Dvertx.disableDnsResolver=true -J-Duser.language=en -J-Duser.country=IE -J-Dfile.encoding=UTF-8 --features=io.quarkus.runner.Feature,io.quarkus.runtime.graal.ResourcesFeature,io.quarkus.runtime.graal.DisableLoggingFeature -J--add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED -J--add-opens=java.base/java.text=ALL-UNNAMED -J--add-opens=java.base/java.io=ALL-UNNAMED -J--add-opens=java.base/java.lang.invoke=ALL-UNNAMED -J--add-opens=java.base/java.util=ALL-UNNAMED -H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy\$BySpaceAndTime -H:+AllowFoldMethods -J-Djava.awt.headless=true -H:FallbackThreshold=0 --link-at-build-time -H:+ReportExceptionStackTraces -H:-AddAllCharsets -H:EnableURLProtocols=http,https -H:NativeLinkerOption=-no-pie -H:-UseServiceLoaderFeature -H:+StackTrace -J--add-exports=org.graalvm.sdk/org.graalvm.nativeimage.impl=ALL-UNNAMED -J--add-exports=org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=ALL-UNNAMED -J--add-exports=org.graalvm.nativeimage.builder/com.oracle.svm.core.configure=ALL-UNNAMED -J--add-exports=org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk.proxy=ALL-UNNAMED -J--add-exports=org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk.localization=ALL-UNNAMED rest-client-quickstart-1.0.0-SNAPSHOT-runner -jar rest-client-quickstart-1.0.0-SNAPSHOT-runner.jar
 ----
 
-The important elements are these 2 options that were automatically added by Quarkus:
+The important part is the following option that was automatically added by Quarkus:
 
 [source,bash]
 ----
--H:EnableURLProtocols=http,https -H:+JNI
+-H:EnableURLProtocols=http,https
 ----
 
-They enable the native SSL support for your native executable.
-But you should not set them manually, we have a nice configuration property for this purpose as described below.
+It enables the native SSL support for your native executable.
+But you should not set it manually, we have a nice configuration property for this purpose as described below.
 
 As SSL is de facto the standard nowadays, we decided to enable its support automatically for some of our extensions:
 
@@ -151,7 +151,7 @@ The native executable tests will fail with the following error:
 
 [source]
 ----
-Caused by: java.net.MalformedURLException: Accessing an URL protocol that was not enabled. The URL protocol https is supported but not enabled by default. It must be enabled by adding the --enable-url-protocols=https option to the native-image command..
+Caused by: java.lang.IllegalArgumentException: https://stage.code.quarkus.io/api requires SSL support but it is disabled. You probably have set quarkus.ssl.native to false.
 ----
 
 This error is the one you obtain when trying to use SSL while it was not explicitly enabled in your native executable.

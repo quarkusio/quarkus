@@ -40,6 +40,7 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.smallrye.context.deployment.spi.ThreadContextProviderBuildItem;
 import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationProvider;
 import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationRecorder;
 import io.smallrye.context.SmallRyeManagedExecutor;
@@ -59,12 +60,15 @@ class SmallRyeContextPropagationProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void buildStatic(SmallRyeContextPropagationRecorder recorder)
+    void buildStatic(SmallRyeContextPropagationRecorder recorder, List<ThreadContextProviderBuildItem> threadContextProviders)
             throws ClassNotFoundException, IOException {
         List<ThreadContextProvider> discoveredProviders = new ArrayList<>();
         List<ContextManagerExtension> discoveredExtensions = new ArrayList<>();
-        for (Class<?> provider : ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
-                "META-INF/services/" + ThreadContextProvider.class.getName())) {
+        List<Class<?>> providers = threadContextProviders.stream().map(ThreadContextProviderBuildItem::getProvider)
+                .collect(Collectors.toCollection(ArrayList::new));
+        ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
+                "META-INF/services/" + ThreadContextProvider.class.getName()).forEach(providers::add);
+        for (Class<?> provider : providers) {
             try {
                 discoveredProviders.add((ThreadContextProvider) provider.getDeclaredConstructor().newInstance());
             } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {

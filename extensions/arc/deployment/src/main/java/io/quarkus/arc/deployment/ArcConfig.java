@@ -203,6 +203,12 @@ public class ArcConfig {
     @ConfigItem
     public Optional<List<String>> ignoredSplitPackages;
 
+    /**
+     * Context propagation configuration.
+     */
+    @ConfigItem
+    public ArcContextPropagationConfig contextPropagation;
+
     public final boolean isRemoveUnusedBeansFieldValid() {
         return ALLOWED_REMOVE_UNUSED_BEANS_VALUES.contains(removeUnusedBeans.toLowerCase());
     }

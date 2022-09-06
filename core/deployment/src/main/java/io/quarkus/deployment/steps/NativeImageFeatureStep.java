@@ -264,14 +264,10 @@ public class NativeImageFeatureStep {
         }
 
         if (!proxies.isEmpty()) {
-            // Needed to access DYNAMIC_PROXY_REGISTRY
+            // Needed to access DYNAMIC_PROXY_REGISTRY in GraalVM 22.2
             exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk.proxy",
-                    GraalVM.Version.VERSION_22_1_0));
+                    GraalVM.Version.VERSION_22_1_0, GraalVM.Version.VERSION_22_3_0));
 
-            ResultHandle proxySupportClass = overallCatch.loadClassFromTCCL(DYNAMIC_PROXY_REGISTRY);
-            ResultHandle proxySupport = overallCatch.invokeStaticMethod(
-                    IMAGE_SINGLETONS_LOOKUP,
-                    proxySupportClass);
             for (NativeImageProxyDefinitionBuildItem proxy : proxies) {
                 ResultHandle array = overallCatch.newArray(Class.class, overallCatch.load(proxy.getClasses().size()));
                 int i = 0;
@@ -281,8 +277,29 @@ public class NativeImageFeatureStep {
                     overallCatch.writeArrayValue(array, i++, clazz);
 
                 }
-                overallCatch.invokeInterfaceMethod(ofMethod(DYNAMIC_PROXY_REGISTRY,
-                        "addProxyClass", void.class, Class[].class), proxySupport, array);
+
+                BranchResult graalVm22_3Test = overallCatch
+                        .ifGreaterEqualZero(overallCatch.invokeVirtualMethod(VERSION_COMPARE_TO,
+                                overallCatch.invokeStaticMethod(VERSION_CURRENT),
+                                overallCatch.marshalAsArray(int.class, overallCatch.load(22), overallCatch.load(3))));
+                /* GraalVM >= 22.3 */
+                try (BytecodeCreator greaterThan22_2 = graalVm22_3Test.trueBranch()) {
+                    MethodDescriptor registerMethod = ofMethod("org.graalvm.nativeimage.hosted.RuntimeProxyCreation",
+                            "register", void.class, Class[].class);
+                    greaterThan22_2.invokeStaticMethod(
+                            registerMethod,
+                            array);
+                }
+                /* GraalVM < 22.3 */
+                try (BytecodeCreator smallerThan22_3 = graalVm22_3Test.falseBranch()) {
+                    ResultHandle proxySupportClass = smallerThan22_3.loadClassFromTCCL(DYNAMIC_PROXY_REGISTRY);
+                    ResultHandle proxySupport = smallerThan22_3.invokeStaticMethod(
+                            IMAGE_SINGLETONS_LOOKUP,
+                            proxySupportClass);
+                    smallerThan22_3.invokeInterfaceMethod(ofMethod(DYNAMIC_PROXY_REGISTRY,
+                            "addProxyClass", void.class, Class[].class), proxySupport, array);
+                }
+
             }
         }
 

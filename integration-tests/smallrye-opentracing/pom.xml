@@ -47,7 +47,7 @@
         <!-- Client dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-mutiny</artifactId>
+            <artifactId>quarkus-rest-client-reactive</artifactId>
         </dependency>
 
         <!-- In-memory tracer -->
@@ -130,7 +130,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-mutiny-deployment</artifactId>
+            <artifactId>quarkus-rest-client-reactive-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

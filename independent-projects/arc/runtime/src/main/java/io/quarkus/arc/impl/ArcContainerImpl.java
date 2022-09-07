@@ -46,7 +46,6 @@ import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.Destroyed;
 import javax.enterprise.context.Initialized;
-import javax.enterprise.context.NormalScope;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.event.Event;
 import javax.enterprise.inject.AmbiguousResolutionException;
@@ -61,7 +60,6 @@ import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.inject.spi.InterceptionType;
 import javax.enterprise.inject.spi.Interceptor;
 import javax.enterprise.util.TypeLiteral;
-import javax.inject.Scope;
 import javax.inject.Singleton;
 import org.jboss.logging.Logger;
 
@@ -81,8 +79,7 @@ public class ArcContainerImpl implements ArcContainer {
     private final List<InjectableObserverMethod<?>> observers;
     private final Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings;
     private final Map<String, Set<String>> qualifierNonbindingMembers;
-
-    private final Map<Class<? extends Annotation>, List<InjectableContext>> contexts;
+    private final ContextsMap contexts;
     private final ManagedContext requestContext;
     private final InjectableContext applicationContext;
     private final InjectableContext singletonContext;
@@ -115,10 +112,10 @@ public class ArcContainerImpl implements ArcContainer {
         applicationContext = new ApplicationContext();
         singletonContext = new SingletonContext();
         requestContext = new RequestContext(this.currentContextFactory.create(RequestScoped.class));
-        Map<Class<? extends Annotation>, List<InjectableContext>> contexts = new HashMap<>();
-        putContext(requestContext, contexts);
-        putContext(applicationContext, contexts);
-        putContext(singletonContext, contexts);
+        ContextsMap.Builder contextsBuilder = new ContextsMap.Builder();
+        contextsBuilder.putContext(requestContext);
+        contextsBuilder.putContext(applicationContext);
+        contextsBuilder.putContext(singletonContext);
 
         for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
             Components components = componentsProvider.getComponents();
@@ -143,13 +140,13 @@ public class ArcContainerImpl implements ArcContainer {
                     throw new IllegalStateException(
                             "Failed to register a context - built-in singleton context is always active: " + context);
                 }
-                putContext(context, contexts);
+                contextsBuilder.putContext(context);
             }
             transitiveInterceptorBindings.putAll(components.getTransitiveInterceptorBindings());
             qualifierNonbindingMembers.putAll(components.getQualifierNonbindingMembers());
         }
 
-        this.contexts = Map.copyOf(contexts);
+        this.contexts = contextsBuilder.build();
 
         // register built-in beans
         addBuiltInBeans(beans);
@@ -174,18 +171,6 @@ public class ArcContainerImpl implements ArcContainer {
         this.removedBeans = List.copyOf(removedBeans);
         this.transitiveInterceptorBindings = Map.copyOf(transitiveInterceptorBindings);
         this.qualifierNonbindingMembers = Map.copyOf(qualifierNonbindingMembers);
-    }
-
-    private void putContext(InjectableContext context, Map<Class<? extends Annotation>, List<InjectableContext>> contexts) {
-        Collection<InjectableContext> values = contexts.get(context.getScope());
-        if (values == null) {
-            contexts.put(context.getScope(), Collections.singletonList(context));
-        } else {
-            List<InjectableContext> multi = new ArrayList<>(values.size() + 1);
-            multi.addAll(values);
-            multi.add(context);
-            contexts.put(context.getScope(), List.copyOf(multi));
-        }
     }
 
     private static void addBuiltInBeans(List<InjectableBean<?>> beans) {
@@ -232,12 +217,12 @@ public class ArcContainerImpl implements ArcContainer {
 
     @Override
     public List<InjectableContext> getContexts(Class<? extends Annotation> scopeType) {
-        return contexts.getOrDefault(scopeType, Collections.emptyList());
+        return contexts.getOrEmptyList(scopeType);
     }
 
     @Override
     public Set<Class<? extends Annotation>> getScopes() {
-        return new HashSet<>(contexts.keySet());
+        return contexts.allScopesAsSet();
     }
 
     @Override
@@ -519,30 +504,11 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     boolean isScope(Class<? extends Annotation> annotationType) {
-        if (annotationType.isAnnotationPresent(Scope.class) || annotationType.isAnnotationPresent(NormalScope.class)) {
-            return true;
-        }
-        for (Class<? extends Annotation> scopeType : contexts.keySet()) {
-            if (scopeType.equals(annotationType)) {
-                return true;
-            }
-        }
-        return false;
+        return contexts.isScopeType(annotationType);
     }
 
     boolean isNormalScope(Class<? extends Annotation> annotationType) {
-        if (annotationType.isAnnotationPresent(NormalScope.class)) {
-            return true;
-        }
-        Collection<InjectableContext> injectableContexts = contexts.get(annotationType);
-        if (injectableContexts != null) {
-            for (InjectableContext context : injectableContexts) {
-                if (context.isNormal()) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return contexts.isNormal(annotationType);
     }
 
     private Set<InjectableBean<?>> resolve(Resolvable resolvable) {

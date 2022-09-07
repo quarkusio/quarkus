@@ -62,6 +62,7 @@ import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
+import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.dsl.CompilerOption;
 import io.quarkus.gradle.dsl.CompilerOptions;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
@@ -394,7 +395,7 @@ public class QuarkusDev extends QuarkusTask {
                     if (file.exists() && configuredParentFirst.contains(artifact.getKey())
                             && filesIncludedInClasspath.add(file)) {
                         getProject().getLogger().debug("Adding dependency {}", file);
-                        builder.classpathEntry(file);
+                        builder.classpathEntry(artifact.getKey(), file);
                     }
                 });
             }
@@ -486,6 +487,14 @@ public class QuarkusDev extends QuarkusTask {
         final Configuration devModeDependencyConfiguration = getProject().getConfigurations()
                 .detachedConfiguration(gradleResolverDep, coreDeploymentDep);
 
+        final String platformConfigName = ToolingUtils.toPlatformConfigurationName(
+                ApplicationDeploymentClasspathBuilder.getFinalRuntimeConfigName(LaunchMode.DEVELOPMENT));
+        final Configuration platformConfig = getProject().getConfigurations().findByName(platformConfigName);
+        if (platformConfig != null) {
+            // apply the platforms
+            devModeDependencyConfiguration.extendsFrom(platformConfig);
+        }
+
         for (ResolvedArtifact appDep : devModeDependencyConfiguration.getResolvedConfiguration().getResolvedArtifacts()) {
             ModuleVersionIdentifier artifactId = appDep.getModuleVersion().getId();
             //we only use the launcher for launching from the IDE, we need to exclude it
@@ -495,7 +504,8 @@ public class QuarkusDev extends QuarkusTask {
                         && artifactId.getName().equals("quarkus-class-change-agent")) {
                     builder.jvmArgs("-javaagent:" + appDep.getFile().getAbsolutePath());
                 } else {
-                    builder.classpathEntry(appDep.getFile());
+                    builder.classpathEntry(ArtifactKey.of(appDep.getModuleVersion().getId().getGroup(), appDep.getName(),
+                            appDep.getClassifier(), appDep.getExtension()), appDep.getFile());
                 }
             }
         }

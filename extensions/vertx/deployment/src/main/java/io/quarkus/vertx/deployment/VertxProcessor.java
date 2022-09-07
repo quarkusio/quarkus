@@ -101,8 +101,11 @@ class VertxProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    CurrentContextFactoryBuildItem currentContextFactory(VertxRecorder recorder) {
-        return new CurrentContextFactoryBuildItem(recorder.currentContextFactory());
+    void currentContextFactory(BuildProducer<CurrentContextFactoryBuildItem> currentContextFactory,
+            VertxBuildConfig buildConfig, VertxRecorder recorder) {
+        if (buildConfig.customizeArcContext) {
+            currentContextFactory.produce(new CurrentContextFactoryBuildItem(recorder.currentContextFactory()));
+        }
     }
 
     @BuildStep

@@ -1037,17 +1037,41 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
         }
         if (pos != -1) {
-            List<Type> params = JandexUtil.resolveTypeParameters(actualEndpointClass.name(), currentClass.name(),
-                    indexView);
-
-            Type resolved = params.get(pos);
-            if (resolved.kind() != Type.Kind.TYPE_VARIABLE
-                    || !resolved.asTypeVariable().identifier().equals(typeVariable.identifier())) {
+            Type resolved = resolveTypeParameters(pos, actualEndpointClass, currentClass, indexView);
+            if (resolved != null
+                    && (resolved.kind() != Type.Kind.TYPE_VARIABLE
+                            || !resolved.asTypeVariable().identifier().equals(typeVariable.identifier()))) {
                 return resolved;
             }
         }
 
         return typeVariable.bounds().get(0);
+    }
+
+    private static Type resolveTypeParameters(int position, ClassInfo actualEndpointClass, ClassInfo currentClass,
+            IndexView indexView) {
+        List<Type> params = JandexUtil.resolveTypeParameters(actualEndpointClass.name(), currentClass.name(),
+                indexView);
+
+        if (position < params.size()) {
+            return params.get(position);
+        }
+
+        // if not found, try to find the type from the methods
+        for (MethodInfo method : actualEndpointClass.methods()) {
+            for (int paramIndex = 0; paramIndex < method.parametersCount(); paramIndex++) {
+                Type paramType = method.parameterType(paramIndex);
+                if (paramType.kind() == Kind.PARAMETERIZED_TYPE) {
+                    ParameterizedType parameterizedType = paramType.asParameterizedType();
+                    if (parameterizedType.name().equals(currentClass.name())
+                            && position < parameterizedType.arguments().size()) {
+                        return parameterizedType.arguments().get(position);
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     private static String appendPath(String prefix, String suffix) {
@@ -1265,7 +1289,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 typeHandled = true;
                 elementType = toClassName(pt, currentClassInfo, actualEndpointInfo, index);
                 handleOtherParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
-            } else {
+            } else if (builder.getType() != ParameterType.BEAN) {
                 // the "element" type is not of importance as in this case the signature is used at runtime to determine the proper types
                 elementType = DUMMY_ELEMENT_TYPE.toString();
                 addReaderForType(additionalReaders, pt);

@@ -152,4 +152,12 @@ public class ResourceLocatorTest {
                 .then()
                 .body(is("first and second"));
     }
+
+    @Test
+    @DisplayName("Test @BeanParam annotation using generics in Subresources")
+    public void testBeanParamsWithGenericsInSubresource() {
+        given().get("/sub3/first/resources/subresource4?value=second")
+                .then()
+                .body(is("first and second"));
+    }
 }

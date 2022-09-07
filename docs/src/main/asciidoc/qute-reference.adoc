@@ -1494,6 +1494,7 @@ public class ItemResource {
 
 TIP: By default, the templates defined in a class annotated with `@CheckedTemplate` can only contain type-safe expressions, i.e. expressions that can be validated at build time. You can use `@CheckedTemplate(requireTypeSafeExpressions = false)` to relax this requirement.
 
+==== Top-level Type-safe Templates
  
 You can also declare a top-level Java class annotated with `@CheckedTemplate`:
 
@@ -1537,6 +1538,35 @@ public class HelloResource {
     }
 }
 ----
+
+==== Customized Template Path
+
+The template path of a `@CheckedTemplate` method consists of the _base path_ and a _defaulted name_.
+The _base path_ is supplied by the `@CheckedTemplate#basePath()`.
+By default, the simple name of the declaring class for a nested static class or an empty string for a top level class is used.
+The _defaulted name_ is derived by the strategy specified in `@CheckedTemplate#defaultName()`.
+By default, the name of the `@CheckedTemplate` method is used as is.
+
+.Customized Template Path Example
+[source,java]
+----
+package org.acme.quarkus.sample;
+
+import javax.ws.rs.Path;
+
+import io.quarkus.qute.TemplateInstance;
+import io.quarkus.qute.CheckedTemplate;
+
+@Path("item")
+public class ItemResource {
+
+    @CheckedTemplate(basePath = "items", defaultName = CheckedTemplate.HYPHENATED_ELEMENT_NAME)
+    static class Templates {
+        static native TemplateInstance itemAndOrder(Item item); <1>
+    }
+}
+----
+<1> The template path for this method will be `items/item-and-order`.
 
 [[template_extension_methods]]
 === Template Extension Methods

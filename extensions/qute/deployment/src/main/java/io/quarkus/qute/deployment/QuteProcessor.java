@@ -138,6 +138,7 @@ import io.quarkus.qute.runtime.extensions.MapTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.NumberTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.StringTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.TimeTemplateExtensions;
+import io.quarkus.runtime.util.StringUtil;
 
 public class QuteProcessor {
 
@@ -323,7 +324,7 @@ public class QuteProcessor {
                 if (templatePathBuilder.length() > 0 && templatePathBuilder.charAt(templatePathBuilder.length() - 1) != '/') {
                     templatePathBuilder.append('/');
                 }
-                String templatePath = templatePathBuilder.append(methodInfo.name()).toString();
+                String templatePath = templatePathBuilder.append(getCheckedTemplateName(methodInfo, annotation)).toString();
                 MethodInfo checkedTemplateMethod = checkedTemplateMethods.putIfAbsent(templatePath, methodInfo);
                 if (checkedTemplateMethod != null) {
                     throw new TemplateException(
@@ -375,6 +376,31 @@ public class QuteProcessor {
         }
 
         return ret;
+    }
+
+    private String getCheckedTemplateName(MethodInfo method, AnnotationInstance checkedTemplateAnnotation) {
+        AnnotationValue nameValue = checkedTemplateAnnotation.value("defaultName");
+        String name;
+        if (nameValue == null) {
+            name = CheckedTemplate.ELEMENT_NAME;
+        } else {
+            name = nameValue.asString();
+        }
+        switch (name) {
+            case CheckedTemplate.ELEMENT_NAME:
+                return method.name();
+            case CheckedTemplate.HYPHENATED_ELEMENT_NAME:
+                return StringUtil.hyphenate(method.name());
+            case CheckedTemplate.UNDERSCORED_ELEMENT_NAME:
+                return String.join("_", new Iterable<String>() {
+                    @Override
+                    public Iterator<String> iterator() {
+                        return StringUtil.lowerCase(StringUtil.camelHumpsIterator(method.name()));
+                    }
+                });
+            default:
+                throw new IllegalArgumentException("Unsupported @CheckedTemplate#defaultName() value: " + name);
+        }
     }
 
     private boolean isNotLocatedByCustomTemplateLocator(

@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -28,6 +29,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.maven.shared.utils.cli.CommandLineUtils;
+import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
@@ -147,6 +149,7 @@ public abstract class QuarkusDevModeLauncher {
             return (B) this;
         }
 
+        @SuppressWarnings("unchecked")
         public B compilerOptions(String name, List<String> options) {
             compilerOptions.compute(name, (key, value) -> {
                 if (value == null) {
@@ -158,6 +161,7 @@ public abstract class QuarkusDevModeLauncher {
             return (B) this;
         }
 
+        @SuppressWarnings("unchecked")
         public B compilerOptions(Map<String, Set<String>> options) {
             compilerOptions.putAll(options);
             return (B) this;
@@ -223,6 +227,7 @@ public abstract class QuarkusDevModeLauncher {
             return (B) this;
         }
 
+        @SuppressWarnings("unchecked")
         public B entryPointCustomizer(Consumer<DevModeContext> consumer) {
             QuarkusDevModeLauncher.this.entryPointCustomizer = consumer;
             return (B) this;
@@ -251,11 +256,15 @@ public abstract class QuarkusDevModeLauncher {
         }
 
         @SuppressWarnings("unchecked")
-        public B classpathEntry(File f) {
-            classpath.add(f);
+        public B classpathEntry(ArtifactKey key, File f) {
+            final File prev = classpath.put(key, f);
+            if (prev != null && !f.equals(prev)) {
+                Logger.getLogger(getClass()).warn(key + " classpath entry " + prev + " was overriden with " + f);
+            }
             return (B) this;
         }
 
+        @SuppressWarnings("unchecked")
         public B debugHost(String host) {
             if ((null != host) && !host.isEmpty()) {
                 QuarkusDevModeLauncher.this.debugHost = host;
@@ -263,6 +272,7 @@ public abstract class QuarkusDevModeLauncher {
             return (B) this;
         }
 
+        @SuppressWarnings("unchecked")
         public B debugPort(String port) {
             if ((null != port) && !port.isEmpty()) {
                 QuarkusDevModeLauncher.this.debugPort = port;
@@ -304,7 +314,7 @@ public abstract class QuarkusDevModeLauncher {
     private Set<ArtifactKey> localArtifacts = new HashSet<>();
     private ModuleInfo main;
     private List<ModuleInfo> dependencies = new ArrayList<>(0);
-    private List<File> classpath = new ArrayList<>(0);
+    private LinkedHashMap<ArtifactKey, File> classpath = new LinkedHashMap<>();
 
     protected QuarkusDevModeLauncher() {
     }
@@ -437,12 +447,11 @@ public abstract class QuarkusDevModeLauncher {
             Manifest manifest = new Manifest();
             manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
 
-            if (!classpath.isEmpty()) {
-                classpath.forEach(file -> {
-                    final URI uri = file.toPath().toAbsolutePath().toUri();
-                    classPathManifest.append(uri).append(" ");
-                });
-            }
+            classpath.values().forEach(file -> {
+                final URI uri = file.toPath().toAbsolutePath().toUri();
+                classPathManifest.append(uri).append(" ");
+            });
+
             manifest.getMainAttributes().put(Attributes.Name.CLASS_PATH, classPathManifest.toString());
             manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, DevModeMain.class.getName());
             out.putNextEntry(new ZipEntry("META-INF/MANIFEST.MF"));

@@ -35,6 +35,7 @@ import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -43,6 +44,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -151,16 +153,15 @@ class FlywayProcessor {
     }
 
     @BuildStep
+    @Produce(SyntheticBeansRuntimeInitBuildItem.class)
     @Consume(LoggingSetupBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem createBeansAndStartActions(FlywayRecorder recorder,
+    void createBeans(FlywayRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             List<JdbcInitialSQLGeneratorBuildItem> sqlGeneratorBuildItems,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
-            BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem,
             MigrationStateBuildItem migrationsBuildItem) {
-
         // make a FlywayContainerProducer bean
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(FlywayContainerProducer.class).setUnremovable()
                 .setDefaultScope(DotNames.SINGLETON).build());
@@ -197,7 +198,14 @@ class FlywayProcessor {
 
             syntheticBeanBuildItemBuildProducer.produce(configurator.done());
         }
+    }
 
+    @BuildStep
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public ServiceStartBuildItem startActions(FlywayRecorder recorder,
+            BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem,
+            MigrationStateBuildItem migrationsBuildItem) {
         // will actually run the actions at runtime
         recorder.doStartActions();
 

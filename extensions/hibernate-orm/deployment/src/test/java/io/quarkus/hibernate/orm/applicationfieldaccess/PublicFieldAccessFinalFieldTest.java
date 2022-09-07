@@ -4,7 +4,7 @@
  * License: GNU Lesser General Public License (LGPL), version 2.1 or later.
  * See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
  */
-package io.quarkus.hibernate.orm.publicfields;
+package io.quarkus.hibernate.orm.applicationfieldaccess;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,7 +30,7 @@ import io.quarkus.hibernate.orm.TransactionTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Checks that public, final field access is correctly replaced with getter calls for reads,
+ * Checks that access to public, final fields by the application is correctly replaced with getter calls for reads,
  * but not replaced at all for writes (since writes to final fields can only occur from constructors).
  * <p>
  * See https://github.com/quarkusio/quarkus/issues/20186

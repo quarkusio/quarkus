@@ -34,9 +34,12 @@ See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture do
 == Declaring reactive routes
 
 The first way to use reactive routes is to use the `@Route` annotation.
-To have access to this annotation, you need to add the `quarkus-reactive-routes` extension:
+To have access to this annotation, you need to add the `quarkus-reactive-routes` extension by running this command:
 
-In your build file, add:
+:add-extension-extensions: quarkus-reactive-routes
+include::{includes}/devtools/extension-add.adoc[]
+
+This will add the following to your build file:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -81,8 +84,13 @@ public class MyDeclarativeRoutes {
     }
 
     @Route(path = "/greetings", methods = Route.HttpMethod.GET)
-    void greetings(RoutingExchange ex) { // <5>
-        ex.ok("hello " + ex.getParam("name").orElse("world"));
+    void greetingsQueryParam(RoutingExchange ex) { // <5>
+        ex.ok("hello " + ex.getParam("name").orElse("world")); // <6>
+    }
+
+    @Route(path = "/greetings/:name", methods = Route.HttpMethod.GET) // <7>
+    void greetingsPathParam(@Param String name, RoutingExchange ex) {
+        ex.ok("hello " + name);
     }
 }
 ----
@@ -91,6 +99,8 @@ public class MyDeclarativeRoutes {
 <3> The method gets a https://vertx.io/docs/apidocs/io/vertx/ext/web/RoutingContext.html[`RoutingContext`] as a parameter. From the `RoutingContext` you can retrieve the HTTP request (using `request()`) and write the response using `response().end(...)`.
 <4> If the annotated method does not return `void` the arguments are optional.
 <5> `RoutingExchange` is a convenient wrapper of `RoutingContext` which provides some useful methods.
+<6> The `RoutingExchange` is used to retrieve the request query parameter `name`.
+<7> The path defines a parameter `name` which can be injected inside the method parameters using the annotation `@Param`.
 
 More details about using the `RoutingContext` is available in the https://vertx.io/docs/vertx-web/java/[Vert.x Web documentation].
 
@@ -98,7 +108,7 @@ The `@Route` annotation allows you to configure:
 
 * The `path` - for routing by path, using the https://vertx.io/docs/vertx-web/java/#_capturing_path_parameters[Vert.x Web format]
 * The `regex` - for routing with regular expressions, see https://vertx.io/docs/vertx-web/java/#_routing_with_regular_expressions[for more details]
-* The `methods` - the HTTP verb triggering the route such as `GET`, `POST`...
+* The `methods` - the HTTP verbs triggering the route such as `GET`, `POST`...
 * The `type` - it can be _normal_ (non-blocking), _blocking_ (method dispatched on a worker thread), or _failure_ to indicate that this route is called on failures
 * The `order` - the order of the route when several routes are involved in handling the incoming request.
 Must be positive for regular user routes.
@@ -140,7 +150,7 @@ public void route(RoutingContext rc) {
 ----
 <1> Each route can use different paths, methods...
 
-If no content-type header is set then we will try to use the most acceptable content type as defined by `io.vertx.ext.web.RoutingContext.getAcceptableContentType()`.
+If no content-type header is set, then we will try to use the most acceptable content type by matching the accept header with the value of the `Route` produces attribute as defined by `io.vertx.ext.web.RoutingContext.getAcceptableContentType()`.
 
 [source,java]
 ----
@@ -149,7 +159,7 @@ String person() {
     // ...
 }
 ----
-<1> If the `accept` header matches `text/html` we set the content type automatically.
+<1> If the `accept` header matches `text/html`, we set the content type automatically to `text/html`.
 
 === Handling conflicting routes
 
@@ -159,12 +169,12 @@ In the following example, both route matches `/accounts/me`:
 [source, java]
 ----
 @Route(path = "/accounts/:id", methods = HttpMethod.GET)
-void getAccount(RoutingContext ctx) {
+void getAccount(RoutingContext rc) {
   ...
 }
 
 @Route(path = "/accounts/me", methods = HttpMethod.GET)
-void getCurrentUserAccount(RoutingContext ctx) {
+void getCurrentUserAccount(RoutingContext rc) {
   ...
 }
 ----
@@ -175,12 +185,12 @@ To avoid the conflict, use the `order` attribute:
 [source, java]
 ----
 @Route(path = "/accounts/:id", methods = HttpMethod.GET, order = 2)
-void getAccount(RoutingContext ctx) {
+void getAccount(RoutingContext rc) {
   ...
 }
 
 @Route(path = "/accounts/me", methods = HttpMethod.GET, order = 1)
-void getCurrentUserAccount(RoutingContext ctx) {
+void getCurrentUserAccount(RoutingContext rc) {
   ...
 }
 ----
@@ -225,7 +235,7 @@ A route method can accept arguments of the following types:
 * `io.vertx.mutiny.core.http.HttpServerRequest`
 * `io.vertx.mutiny.core.http.HttpServerResponse`
 
-Furthermore, it is possible to inject the `HttpServerRequest` parameters into a method parameter annotated with `@io.quarkus.vertx.web.Param`:
+Furthermore, it is possible to inject the `HttpServerRequest` parameters into method parameters annotated with `@io.quarkus.vertx.web.Param` using the following types:
 
 [options="header",cols="1,1"]
 |===
@@ -245,7 +255,7 @@ String hello(@Param Optional<String> name) {
 }
 ----
 
-The `HttpServerRequest` headers can be injected into a method parameter annotated with `@io.quarkus.vertx.web.Header`: 
+The `HttpServerRequest` headers can be injected into method parameters annotated with `@io.quarkus.vertx.web.Header` using the following types:
 
 [options="header",cols="1,1"]
 |===
@@ -265,7 +275,7 @@ String helloFromHeader(@Header("My-Header") String header) {
 }
 ----
 
-The request body can be injected into a method parameter annotated with `@io.quarkus.vertx.web.Body`.
+The request body can be injected into a method parameter annotated with `@io.quarkus.vertx.web.Body` using the following types:
 
 [options="header",cols="1,1"]
 |===
@@ -307,12 +317,12 @@ In a reactive route, you can return a `Uni` directly:
 [source,java]
 ----
 @Route(path = "/hello")
-Uni<String> hello(RoutingContext context) {
+Uni<String> hello() {
     return Uni.createFrom().item("Hello world!");
 }
 
 @Route(path = "/person")
-Uni<Person> getPerson(RoutingContext context) {
+Uni<Person> getPerson() {
     return Uni.createFrom().item(() -> new Person("neo", 12345));
 }
 ----
@@ -322,16 +332,16 @@ Returning `Unis` is convenient when using a reactive client:
 [source,java]
 ----
 @Route(path = "/mail")
-Uni<Void> sendEmail(RoutingContext context) {
+Uni<Void> sendEmail() {
     return mailer.send(...);
 }
 ----
 
 The item produced by the returned `Uni` can be:
 
-* a string - written into the HTTP response directly
-* a buffer - written into the HTTP response directly
-* an object - written into the HTTP response after having been encoded into JSON.
+* A string - written into the HTTP response directly.
+* A `io.vertx.core.buffer.Buffer` - written into the HTTP response directly.
+* An object - written into the HTTP response after having been encoded into JSON.
 The `content-type` header is set to `application/json` if not already set.
 
 If the returned `Uni` produces a failure (or is `null`), an HTTP 500 response is written.
@@ -345,7 +355,7 @@ You can also return a result directly:
 [source, java]
 ----
 @Route(path = "/hello")
-String helloSync(RoutingContext context) {
+String helloSync() {
     return "Hello world";
 }
 ----
@@ -355,9 +365,9 @@ Otherwise, set the `type` attribute of the `@Route` annotation to `Route.Handler
 
 The method can return:
 
-* a string - written into the HTTP response directly
-* a buffer - written into the HTTP response directly
-* an object - written into the HTTP response after having been encoded into JSON.
+* A string - written into the HTTP response directly.
+* A `io.vertx.core.buffer.Buffer` - written into the HTTP response directly.
+* An object - written into the HTTP response after having been encoded into JSON.
 The `content-type` header is set to `application/json` if not already set.
 
 === Returning Multis
@@ -369,7 +379,7 @@ The response `Transfer-Encoding` header is set to `chunked`.
 [source, java]
 ----
 @Route(path = "/hello")
-Multi<String> hellos(RoutingContext context) {
+Multi<String> hellos() {
     return Multi.createFrom().items("hello", "world", "!");  // <1>
 }
 ----
@@ -377,15 +387,15 @@ Multi<String> hellos(RoutingContext context) {
 
 The method can return:
 
-* a `Multi<String>` - the items are written one by one (one per _chunk_) in the response.
-* a `Multi<Buffer>` - the buffers are written one by one (one per _chunk_) without any processing.
-* a `Multi<Object>` - the items are encoded to JSON written one by one in the response.
+* A `Multi<String>` - the items are written one by one (one per _chunk_) in the response.
+* A `Multi<Buffer>` - the buffers are written one by one (one per _chunk_) without any processing.
+* A `Multi<Object>` - the items are encoded to JSON written one by one in the response.
 
 
 [source, java]
 ----
 @Route(path = "/people")
-Multi<Person> people(RoutingContext context) {
+Multi<Person> people() {
     return Multi.createFrom().items(
             new Person("superman", 1),
             new Person("batman", 2),
@@ -411,7 +421,7 @@ To do that set the `produces` attribute to `"application/json"` (or `ReactiveRou
 [source, java]
 ----
 @Route(path = "/people", produces = ReactiveRoutes.APPLICATION_JSON)
-Multi<Person> people(RoutingContext context) {
+Multi<Person> people() {
     return Multi.createFrom().items(
             new Person("superman", 1),
             new Person("batman", 2),
@@ -453,7 +463,7 @@ To enable this feature, set the `produces` attribute to `"text/event-stream"` (o
 [source, java]
 ----
 @Route(path = "/people", produces = ReactiveRoutes.EVENT_STREAM)
-Multi<Person> people(RoutingContext context) {
+Multi<Person> people() {
     return Multi.createFrom().items(
             new Person("superman", 1),
             new Person("batman", 2),
@@ -542,7 +552,7 @@ To enable this feature, set the `produces` attribute of the `@Route` annotation 
 [source, java]
 ----
 @Route(path = "/people", produces = ReactiveRoutes.ND_JSON)
-Multi<Person> people(RoutingContext context) {
+Multi<Person> people() {
     return ReactiveRoutes.asJsonStream(Multi.createFrom().items(
             new Person("superman", 1),
             new Person("batman", 2),
@@ -564,12 +574,12 @@ This method would produce:
 TIP: The `produces` attribute is an array. When you pass a single value you can omit the "{" and "}".
 Note that `"application/x-ndjson"` must be the first value in the array.
 
-You can also provide strings instead of Objects, in that case the strings will be wrapped in quotes to become valid JSON values:
+You can also provide strings instead of objects, in that case the strings will be wrapped in quotes to become valid JSON values:
 
 [source, java]
 ----
 @Route(path = "/people", produces = ReactiveRoutes.ND_JSON)
-Multi<Person> people(RoutingContext context) {
+Multi<Person> people() {
     return ReactiveRoutes.asJsonStream(Multi.createFrom().items(
             "superman",
             "batman",
@@ -771,7 +781,7 @@ Also see xref:openapi-swaggerui.adoc[the OpenAPI Guide].
 === Adding MicroProfile OpenAPI Annotations
 
 You can use link:https://github.com/eclipse/microprofile-open-api[MicroProfile OpenAPI] to better document your schema, 
-example, adding header info, or specifying the return type on `void` methods might be useful :
+for instance, adding header info, or specifying the return type on `void` methods might be useful:
 
 [source, java]
 ----
@@ -814,7 +824,7 @@ public class MyDeclarativeRoutes {
 }
 ----
 <1> Header information about your API.
-<2> Defining the response
+<2> Defining the response.
 
 This will generate this OpenAPI schema:
 

@@ -4,12 +4,12 @@ package io.quarkus.mongodb.panache.kotlin
 
 import com.mongodb.client.MongoCollection
 import com.mongodb.client.MongoDatabase
+import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations.Companion.INSTANCE
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
 import io.quarkus.panache.common.impl.GenerateBridge
 import org.bson.Document
 import java.util.stream.Stream
-import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations.Companion.INSTANCE
 
 /**
  * Represents a Repository for a specific type of entity [Entity], with an ID type
@@ -21,7 +21,7 @@ import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations.Companion
  * @param Id The ID type of the entity
  * @see [PanacheMongoRepository]
  */
-interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
+interface PanacheMongoRepositoryBase<Entity : Any, Id : Any> {
     /**
      * Persist the given entity in the database.
      * This will set its ID field if not already set.
@@ -72,7 +72,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun find(query: String, vararg params: Any?): PanacheQuery<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a query and the given sort options, with optional indexed parameters.
@@ -86,7 +86,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun find(query: String, sort: Sort, vararg params: Any?): PanacheQuery<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a query, with named parameters.
@@ -99,7 +99,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun find(query: String, params: Map<String, Any?>): PanacheQuery<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
@@ -113,7 +113,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun find(query: String, sort: Sort, params: Map<String, Any?>): PanacheQuery<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a query, with named parameters.
@@ -126,7 +126,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun find(query: String, params: Parameters): PanacheQuery<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
@@ -140,7 +140,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun find(query: String, sort: Sort, params: Parameters): PanacheQuery<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a BSON query.
@@ -212,7 +212,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun list(query: String, sort: Sort, vararg params: Any?): List<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities matching a query, with named parameters.
@@ -240,7 +240,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun list(query: String, sort: Sort, params: Map<String, Any?>): List<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities matching a query, with named parameters.
@@ -268,7 +268,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun list(query: String, sort: Sort, params: Parameters): List<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a BSON query.
@@ -344,7 +344,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun stream(query: String, sort: Sort, vararg params: Any?): Stream<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities matching a query, with named parameters.
@@ -358,7 +358,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun stream(query: String, params: Map<String, Any?>): Stream<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities matching a query and the given sort options, with named parameters.
@@ -373,7 +373,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun stream(query: String, sort: Sort, params: Map<String, Any?>): Stream<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities matching a query, with named parameters.
@@ -401,7 +401,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun stream(query: String, sort: Sort, params: Parameters): Stream<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a BSON query.
@@ -619,7 +619,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param entities the entities to update
      */
     fun persistOrUpdate(firstEntity: Entity, vararg entities: Entity) =
-            INSTANCE.persistOrUpdate(firstEntity, *entities)
+        INSTANCE.persistOrUpdate(firstEntity, *entities)
 
     /**
      * Update all entities of this type by the given update document, with optional indexed parameters.
@@ -644,7 +644,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun update(update: String, params: Map<String, Any?>): io.quarkus.mongodb.panache.common.PanacheUpdate =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Update all entities of this type by the given update document, with named parameters.

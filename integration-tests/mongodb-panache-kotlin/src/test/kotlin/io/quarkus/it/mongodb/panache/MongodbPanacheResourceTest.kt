@@ -52,66 +52,70 @@ open class MongodbPanacheResourceTest {
     private fun callBookEndpoint(endpoint: String) {
         RestAssured.defaultParser = Parser.JSON
         RestAssured.config
-                .objectMapperConfig(ObjectMapperConfig().jackson2ObjectMapperFactory { _, _ ->
+            .objectMapperConfig(
+                ObjectMapperConfig().jackson2ObjectMapperFactory { _, _ ->
                     ObjectMapper()
-                            .registerModule(Jdk8Module())
-                            .registerModule(JavaTimeModule())
-                            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                })
+                        .registerModule(Jdk8Module())
+                        .registerModule(JavaTimeModule())
+                        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                }
+            )
         var list: List<BookDTO> = get(endpoint).`as`(LIST_OF_BOOK_TYPE_REF)
         Assertions.assertEquals(0, list.size)
         val book1: BookDTO = BookDTO().setAuthor("Victor Hugo").setTitle("Les Misérables")
-                .setCreationDate(yearToDate(1886))
-                .setCategories(listOf("long", "very long"))
-                .setDetails(BookDetail().setRating(3).setSummary("A very long book"))
+            .setCreationDate(yearToDate(1886))
+            .setCategories(listOf("long", "very long"))
+            .setDetails(BookDetail().setRating(3).setSummary("A very long book"))
         var response: Response = RestAssured
-                .given()
-                .header("Content-Type", "application/json")
-                .body(book1)
-                .post(endpoint)
-                .andReturn()
+            .given()
+            .header("Content-Type", "application/json")
+            .body(book1)
+            .post(endpoint)
+            .andReturn()
         Assertions.assertEquals(201, response.statusCode())
-        Assertions.assertTrue(response.header("Location").length > 20) //Assert that id has been populated
+        Assertions.assertTrue(response.header("Location").length > 20) // Assert that id has been populated
         val book2: BookDTO = BookDTO().setAuthor("Victor Hugo").setTitle("Notre-Dame de Paris")
-                .setCreationDate(yearToDate(1831))
-                .setCategories(listOf("long", "quasimodo"))
-                .setDetails(BookDetail().setRating(4).setSummary("quasimodo and esmeralda"))
+            .setCreationDate(yearToDate(1831))
+            .setCategories(listOf("long", "quasimodo"))
+            .setDetails(BookDetail().setRating(4).setSummary("quasimodo and esmeralda"))
         response = RestAssured
-                .given()
-                .header("Content-Type", "application/json")
-                .body(book2)
-                .post(endpoint)
-                .andReturn()
+            .given()
+            .header("Content-Type", "application/json")
+            .body(book2)
+            .post(endpoint)
+            .andReturn()
         Assertions.assertEquals(201, response.statusCode())
         list = get(endpoint).`as`(LIST_OF_BOOK_TYPE_REF)
         Assertions.assertEquals(2, list.size)
         val book3: BookDTO = BookDTO().setAuthor("Charles Baudelaire").setTitle("Les fleurs du mal")
-                .setCreationDate(yearToDate(1857))
-                .setCategories(Collections.singletonList("poem"))
-                .setDetails(BookDetail().setRating(2).setSummary("Les Fleurs du mal is a volume of poetry."))
+            .setCreationDate(yearToDate(1857))
+            .setCategories(Collections.singletonList("poem"))
+            .setDetails(BookDetail().setRating(2).setSummary("Les Fleurs du mal is a volume of poetry."))
         response = RestAssured
-                .given()
-                .header("Content-Type", "application/json")
-                .body(book3)
-                .post(endpoint)
-                .andReturn()
+            .given()
+            .header("Content-Type", "application/json")
+            .body(book3)
+            .post(endpoint)
+            .andReturn()
         Assertions.assertEquals(201, response.statusCode())
         val book4: BookDTO = BookDTO().setAuthor("Charles Baudelaire").setTitle("Le Spleen de Paris")
-                .setCreationDate(yearToDate(1869))
-                .setCategories(Collections.singletonList("poem"))
-                .setDetails(BookDetail().setRating(2)
-                        .setSummary("Le Spleen de Paris is a collection of 50 short prose poems."))
+            .setCreationDate(yearToDate(1869))
+            .setCategories(Collections.singletonList("poem"))
+            .setDetails(
+                BookDetail().setRating(2)
+                    .setSummary("Le Spleen de Paris is a collection of 50 short prose poems.")
+            )
         response = RestAssured
-                .given()
-                .header("Content-Type", "application/json")
-                .body(book4)
-                .patch(endpoint)
-                .andReturn()
+            .given()
+            .header("Content-Type", "application/json")
+            .body(book4)
+            .patch(endpoint)
+            .andReturn()
         Assertions.assertEquals(202, response.statusCode())
         list = get(endpoint).`as`(LIST_OF_BOOK_TYPE_REF)
         Assertions.assertEquals(4, list.size)
 
-        //with sort
+        // with sort
         list = get("$endpoint?sort=author").`as`(LIST_OF_BOOK_TYPE_REF)
         Assertions.assertEquals(4, list.size)
 
@@ -138,52 +142,54 @@ open class MongodbPanacheResourceTest {
         Assertions.assertNotNull(book.id)
         Assertions.assertNotNull(book.details)
 
-        //update a book
+        // update a book
         book.setTitle("Notre-Dame de Paris 2").setTransientDescription("should not be persisted")
         response = RestAssured
-                .given()
-                .header("Content-Type", "application/json")
-                .body(book)
-                .put(endpoint)
-                .andReturn()
+            .given()
+            .header("Content-Type", "application/json")
+            .body(book)
+            .put(endpoint)
+            .andReturn()
         Assertions.assertEquals(202, response.statusCode())
 
-        //check that the title has been updated and the transient description ignored
+        // check that the title has been updated and the transient description ignored
         book = get(endpoint + "/" + book.id.toString()).`as`(BookDTO::class.java)
         Assertions.assertNotNull(book)
         Assertions.assertEquals("Notre-Dame de Paris 2", book.title)
         Assertions.assertNull(book.transientDescription)
 
-        //delete a book
+        // delete a book
         response = RestAssured
-                .given()
-                .delete(endpoint + "/" + book.id.toString())
-                .andReturn()
+            .given()
+            .delete(endpoint + "/" + book.id.toString())
+            .andReturn()
         Assertions.assertEquals(204, response.statusCode())
         list = get(endpoint).`as`(LIST_OF_BOOK_TYPE_REF)
         Assertions.assertEquals(3, list.size)
 
-        //test some special characters
+        // test some special characters
         list = get("$endpoint/search/Victor'\\ Hugo").`as`(LIST_OF_BOOK_TYPE_REF)
         Assertions.assertEquals(0, list.size)
 
-        //delete all
+        // delete all
         response = RestAssured
-                .given()
-                .delete(endpoint)
-                .andReturn()
+            .given()
+            .delete(endpoint)
+            .andReturn()
         Assertions.assertEquals(204, response.statusCode())
     }
 
     private fun callPersonEndpoint(endpoint: String) {
         RestAssured.defaultParser = Parser.JSON
         RestAssured.config
-                .objectMapperConfig(ObjectMapperConfig().jackson2ObjectMapperFactory { _, _ ->
+            .objectMapperConfig(
+                ObjectMapperConfig().jackson2ObjectMapperFactory { _, _ ->
                     ObjectMapper()
-                            .registerModule(Jdk8Module())
-                            .registerModule(JavaTimeModule())
-                            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                })
+                        .registerModule(Jdk8Module())
+                        .registerModule(JavaTimeModule())
+                        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                }
+            )
         var list: List<Person> = get(endpoint).`as`(LIST_OF_PERSON_TYPE_REF)
         Assertions.assertEquals(0, list.size)
         val person1 = Person()
@@ -191,11 +197,11 @@ open class MongodbPanacheResourceTest {
         person1.firstname = "John"
         person1.lastname = "Doe"
         var response: Response = RestAssured
-                .given()
-                .header("Content-Type", "application/json")
-                .body(person1)
-                .post(endpoint)
-                .andReturn()
+            .given()
+            .header("Content-Type", "application/json")
+            .body(person1)
+            .post(endpoint)
+            .andReturn()
         Assertions.assertEquals(201, response.statusCode())
         val person2 = Person()
         person2.id = 2L
@@ -209,80 +215,80 @@ open class MongodbPanacheResourceTest {
         persons.add(person2)
         persons.add(person3)
         response = RestAssured
-                .given()
-                .header("Content-Type", "application/json")
-                .body(persons)
-                .post("$endpoint/multiple")
-                .andReturn()
+            .given()
+            .header("Content-Type", "application/json")
+            .body(persons)
+            .post("$endpoint/multiple")
+            .andReturn()
         Assertions.assertEquals(204, response.statusCode())
         val person4 = Person()
         person4.id = 4L
         person4.firstname = "Charles"
         person4.lastname = "Baudelaire"
         response = RestAssured
-                .given()
-                .header("Content-Type", "application/json")
-                .body(person4)
-                .patch(endpoint)
-                .andReturn()
+            .given()
+            .header("Content-Type", "application/json")
+            .body(person4)
+            .patch(endpoint)
+            .andReturn()
         Assertions.assertEquals(202, response.statusCode())
         list = get(endpoint).`as`(LIST_OF_PERSON_TYPE_REF)
         Assertions.assertEquals(4, list.size)
 
-        //with sort
+        // with sort
         list = get("$endpoint?sort=firstname").`as`(LIST_OF_PERSON_TYPE_REF)
         Assertions.assertEquals(4, list.size)
 
-        //with project
+        // with project
         list = get("$endpoint/search/Doe").`as`(LIST_OF_PERSON_TYPE_REF)
         Assertions.assertEquals(1, list.size)
         Assertions.assertNotNull(list[0].lastname)
-        //expected the firstname field to be null as we project on lastname only
+        // expected the firstname field to be null as we project on lastname only
         Assertions.assertNull(list[0].firstname)
 
-        //rename the Doe
+        // rename the Doe
         RestAssured
-                .given()
-                .queryParam("previousName", "Doe").queryParam("newName", "Dupont")
-                .header("Content-Type", "application/json")
-                .`when`().post("$endpoint/rename")
-                .then().statusCode(200)
+            .given()
+            .queryParam("previousName", "Doe").queryParam("newName", "Dupont")
+            .header("Content-Type", "application/json")
+            .`when`().post("$endpoint/rename")
+            .then().statusCode(200)
         list = get("$endpoint/search/Dupont").`as`(LIST_OF_PERSON_TYPE_REF)
         Assertions.assertEquals(1, list.size)
 
-        //count
+        // count
         var count: Long = get("$endpoint/count").`as`(Long::class.java)
         Assertions.assertEquals(4, count)
 
-        //update a person
+        // update a person
         person3.lastname = "Webster"
         response = RestAssured
-                .given()
-                .header("Content-Type", "application/json")
-                .body(person3)
-                .put(endpoint)
-                .andReturn()
+            .given()
+            .header("Content-Type", "application/json")
+            .body(person3)
+            .put(endpoint)
+            .andReturn()
         Assertions.assertEquals(202, response.statusCode())
 
-        //check that the title has been updated
+        // check that the title has been updated
         person3 = get("$endpoint/${person3.id}").`as`(Person::class.java)
         Assertions.assertEquals(3L, person3.id ?: -1)
         Assertions.assertEquals("Webster", person3.lastname)
 
-        //delete a person
+        // delete a person
         response = RestAssured
-                .given()
-                .delete("$endpoint/${person3.id}")
-                .andReturn()
+            .given()
+            .delete("$endpoint/${person3.id}")
+            .andReturn()
         Assertions.assertEquals(204, response.statusCode())
         count = get("$endpoint/count").`as`(Long::class.java)
         Assertions.assertEquals(3, count)
 
-        //delete all
+        // delete all
         response = RestAssured
-                .given()
-                .delete(endpoint)
-                .andReturn()
+            .given()
+            .delete(endpoint)
+            .andReturn()
         Assertions.assertEquals(204, response.statusCode())
         count = get("$endpoint/count").`as`(Long::class.java)
         Assertions.assertEquals(0, count)

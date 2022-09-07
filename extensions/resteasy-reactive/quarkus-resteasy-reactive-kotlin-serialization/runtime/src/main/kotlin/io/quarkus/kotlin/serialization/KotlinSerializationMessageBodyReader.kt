@@ -11,7 +11,6 @@ import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext
 import java.io.InputStream
 import java.lang.reflect.Type
-import javax.inject.Inject
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.MultivaluedMap
 
@@ -39,7 +38,8 @@ class KotlinSerializationMessageBodyReader(private val json: Json) : AbstractJso
 
     @ExperimentalSerializationApi
     private fun doReadFrom(type: Class<Any>, entityStream: InputStream): Any? {
-        return if (StreamUtil.isEmpty(entityStream)) null else
+        return if (StreamUtil.isEmpty(entityStream)) null else {
             json.decodeFromStream(serializer(type), entityStream)
+        }
     }
 }

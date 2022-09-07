@@ -1,4 +1,3 @@
 package io.quarkus.it.rest
 
-class CountriesNotFoundException : RuntimeException() {
-}
+class CountriesNotFoundException : RuntimeException()

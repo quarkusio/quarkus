@@ -17,8 +17,8 @@ import java.util.stream.Stream
  *
  * @param Entity the entity type
  */
-interface ReactivePanacheMongoCompanion<Entity : ReactivePanacheMongoEntityBase>
-    : ReactivePanacheMongoCompanionBase<Entity, ObjectId>
+interface ReactivePanacheMongoCompanion<Entity : ReactivePanacheMongoEntityBase> :
+    ReactivePanacheMongoCompanionBase<Entity, ObjectId>
 
 /**
  * Define persistence and query methods for an Entity with a type of Id
@@ -26,7 +26,7 @@ interface ReactivePanacheMongoCompanion<Entity : ReactivePanacheMongoEntityBase>
  * @param Entity the entity type
  * @param Id the ID type
  */
-interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityBase, Id: Any> {
+interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityBase, Id : Any> {
     /**
      * Find an entity of this type by ID.
      *
@@ -713,7 +713,7 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [persistOrUpdate]
      */
     fun persistOrUpdate(firstEntity: Entity, vararg entities: Entity): Uni<Void> =
-            INSTANCE.persistOrUpdate(firstEntity, *entities)
+        INSTANCE.persistOrUpdate(firstEntity, *entities)
 
     /**
      * Update all entities of this type by the given update document, with optional indexed parameters.
@@ -766,7 +766,7 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      */
     @GenerateBridge
     fun update(update: Document): io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Allow to access the underlying Mongo Collection.
@@ -779,5 +779,4 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      */
     @GenerateBridge
     fun mongoDatabase(): ReactiveMongoDatabase = throw INSTANCE.implementationInjectionMissing()
-
 }

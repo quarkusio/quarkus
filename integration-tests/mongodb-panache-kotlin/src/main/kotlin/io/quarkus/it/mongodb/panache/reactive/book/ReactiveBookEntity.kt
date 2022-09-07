@@ -1,5 +1,7 @@
 package io.quarkus.it.mongodb.panache.reactive.book
 
+import com.fasterxml.jackson.annotation.JsonFormat
+import com.fasterxml.jackson.annotation.JsonFormat.Shape
 import io.quarkus.it.mongodb.panache.book.BookDetail
 import io.quarkus.mongodb.panache.common.MongoEntity
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheMongoCompanion
@@ -8,12 +10,10 @@ import org.bson.codecs.pojo.annotations.BsonIgnore
 import org.bson.codecs.pojo.annotations.BsonProperty
 import java.time.LocalDate
 import java.util.ArrayList
-import com.fasterxml.jackson.annotation.JsonFormat
-import com.fasterxml.jackson.annotation.JsonFormat.Shape
 
 @MongoEntity(collection = "TheBookEntity", clientName = "cl2")
 class ReactiveBookEntity : ReactivePanacheMongoEntity() {
-    companion object: ReactivePanacheMongoCompanion<ReactiveBookEntity>
+    companion object : ReactivePanacheMongoCompanion<ReactiveBookEntity>
 
     @BsonProperty("bookTitle")
     var title: String? = null
@@ -50,5 +50,4 @@ class ReactiveBookEntity : ReactivePanacheMongoEntity() {
         this.details = details
         return this
     }
-
 }

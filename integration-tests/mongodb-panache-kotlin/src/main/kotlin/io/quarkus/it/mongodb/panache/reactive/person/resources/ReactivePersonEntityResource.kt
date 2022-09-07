@@ -1,6 +1,5 @@
 package io.quarkus.it.mongodb.panache.reactive.person.resources
 
-
 import com.mongodb.ReadPreference
 import io.quarkus.it.mongodb.panache.person.PersonName
 import io.quarkus.it.mongodb.panache.reactive.person.ReactivePersonEntity
@@ -31,11 +30,11 @@ class ReactivePersonEntityResource {
     fun searchPersons(@PathParam("name") name: String): Set<PersonName> {
         val uniqueNames = mutableSetOf<PersonName>()
         val lastnames: List<PersonName> = ReactivePersonEntity.find("lastname", name)
-                .project(PersonName::class.java)
-                .withReadPreference(ReadPreference.primaryPreferred())
-                .list()
-                .await()
-                .indefinitely()
+            .project(PersonName::class.java)
+            .withReadPreference(ReadPreference.primaryPreferred())
+            .list()
+            .await()
+            .indefinitely()
         lastnames.forEach { p -> uniqueNames.add(p) }
         return uniqueNames
     }
@@ -43,7 +42,7 @@ class ReactivePersonEntityResource {
     @POST
     fun addPerson(person: ReactivePersonEntity): Uni<Response> {
         return person.persist<ReactivePersonEntity>()
-                .map { Response.created(URI.create("/persons/entity${person.id}")).build() }
+            .map { Response.created(URI.create("/persons/entity${person.id}")).build() }
     }
 
     @POST
@@ -52,22 +51,22 @@ class ReactivePersonEntityResource {
 
     @PUT
     fun updatePerson(person: ReactivePersonEntity): Uni<Response> =
-            person.update<ReactivePersonEntity>().map { Response.accepted().build() }
+        person.update<ReactivePersonEntity>().map { Response.accepted().build() }
 
     // PATCH is not correct here but it allows to test persistOrUpdate without a specific subpath
     @PATCH
     fun upsertPerson(person: ReactivePersonEntity): Uni<Response> =
-            person.persistOrUpdate<ReactivePersonEntity>().map { Response.accepted().build() }
+        person.persistOrUpdate<ReactivePersonEntity>().map { Response.accepted().build() }
 
     @DELETE
     @Path("/{id}")
     fun deletePerson(@PathParam("id") id: String): Uni<Void> =
-            ReactivePersonEntity.findById(id.toLong()).flatMap { person -> person?.delete() }
+        ReactivePersonEntity.findById(id.toLong()).flatMap { person -> person?.delete() }
 
     @GET
     @Path("/{id}")
     fun getPerson(@PathParam("id") id: String): Uni<ReactivePersonEntity?> =
-            ReactivePersonEntity.findById(id.toLong())
+        ReactivePersonEntity.findById(id.toLong())
 
     @GET
     @Path("/count")
@@ -80,7 +79,7 @@ class ReactivePersonEntityResource {
     @Path("/rename")
     fun rename(@QueryParam("previousName") previousName: String, @QueryParam("newName") newName: String): Uni<Response> {
         return ReactivePersonEntity.update("lastname", newName)
-                .where("lastname", previousName)
-                .map { count -> Response.ok().build() }
+            .where("lastname", previousName)
+            .map { count -> Response.ok().build() }
     }
 }

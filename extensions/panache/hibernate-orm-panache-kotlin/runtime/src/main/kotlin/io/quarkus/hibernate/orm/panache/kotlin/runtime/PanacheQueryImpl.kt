@@ -8,7 +8,7 @@ import java.util.stream.Stream
 import javax.persistence.EntityManager
 import javax.persistence.LockModeType
 
-class PanacheQueryImpl<Entity: Any> : PanacheQuery<Entity> {
+class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
     private var delegate: CommonPanacheQueryImpl<Entity>
 
     internal constructor(em: EntityManager?, query: String?, orderBy: String?, paramsArrayOrMap: Any?) {
@@ -20,7 +20,7 @@ class PanacheQueryImpl<Entity: Any> : PanacheQuery<Entity> {
     }
 
     // Builder
-    override fun <NewEntity: Any> project(type: Class<NewEntity>): PanacheQuery<NewEntity> {
+    override fun <NewEntity : Any> project(type: Class<NewEntity>): PanacheQuery<NewEntity> {
         return PanacheQueryImpl(delegate.project(type))
     }
 

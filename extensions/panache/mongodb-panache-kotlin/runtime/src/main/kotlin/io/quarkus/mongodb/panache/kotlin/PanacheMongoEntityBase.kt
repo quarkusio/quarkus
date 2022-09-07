@@ -7,7 +7,7 @@ import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations.Companion
  * to all their public fields, as well as a lot of useful methods. Unless you have a custom ID strategy, you
  * should not extend this class directly but extend [PanacheMongoEntity] instead.
  *
-  * @see [PanacheMongoEntity]
+ * @see [PanacheMongoEntity]
  */
 @Suppress("unused")
 abstract class PanacheMongoEntityBase {

@@ -8,12 +8,12 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.future.asCompletableFuture
 import java.util.concurrent.CompletableFuture
 
-abstract class AbstractSubscribingCoroutineInvoker(private val beanInstance: Any): Invoker {
+abstract class AbstractSubscribingCoroutineInvoker(private val beanInstance: Any) : Invoker {
 
     override fun invoke(vararg args: Any?): CompletableFuture<Any?> {
         val coroutineScope = Arc.container().instance(ApplicationCoroutineScope::class.java).get()
         val dispatcher: CoroutineDispatcher = Vertx.currentContext()?.let(::VertxDispatcher)
-                ?: throw IllegalStateException("No Vertx context found. Consider using @NonBlocking on the caller method, or make sure the upstream emits items on the Vert.x context")
+            ?: throw IllegalStateException("No Vertx context found. Consider using @NonBlocking on the caller method, or make sure the upstream emits items on the Vert.x context")
 
         return coroutineScope.async(context = dispatcher) {
             invokeBean(beanInstance, args)

@@ -18,8 +18,7 @@ abstract class AbstractSuspendedResponseFilter : ResteasyReactiveContainerRespon
     private val originalTCCL: ClassLoader = Thread.currentThread().contextClassLoader
 
     override fun filter(requestContext: ResteasyReactiveContainerRequestContext, responseContext: ContainerResponseContext) {
-        val (dispatcher,coroutineScope) = prepareExecution(requestContext.serverRequestContext as ResteasyReactiveRequestContext)
-
+        val (dispatcher, coroutineScope) = prepareExecution(requestContext.serverRequestContext as ResteasyReactiveRequestContext)
 
         requestContext.suspend()
         coroutineScope.launch(context = dispatcher) {

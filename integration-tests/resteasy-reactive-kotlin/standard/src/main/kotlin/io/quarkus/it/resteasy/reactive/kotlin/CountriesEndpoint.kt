@@ -10,9 +10,11 @@ import javax.ws.rs.POST
 import javax.ws.rs.Path
 
 @Path("country")
-class CountriesEndpoint(@RestClient private val countriesGateway: CountriesGateway,
-                        private val countryNameConsumer: CountryNameConsumer,
-                        @Channel("countries-emitter") private val countryEmitter: Emitter<String>) {
+class CountriesEndpoint(
+    @RestClient private val countriesGateway: CountriesGateway,
+    private val countryNameConsumer: CountryNameConsumer,
+    @Channel("countries-emitter") private val countryEmitter: Emitter<String>
+) {
 
     @GET
     @Path("/name/{name}")

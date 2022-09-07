@@ -10,9 +10,11 @@ import javax.enterprise.inject.spi.CDI
 /**
  * Intercepts method invocations to force an EndpointInvoker.
  */
-open class CoroutineMethodProcessor @Deprecated("Used only in synthetic code") constructor() : HandlerChainCustomizer {
+open class CoroutineMethodProcessor
+@Deprecated("Used only in synthetic code")
+constructor() : HandlerChainCustomizer {
 
-    constructor(alternativeInvoker: Supplier<EndpointInvoker>): this() {
+    constructor(alternativeInvoker: Supplier<EndpointInvoker>) : this() {
         this.alternativeInvoker = alternativeInvoker
     }
 

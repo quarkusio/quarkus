@@ -4,13 +4,13 @@ import com.mongodb.ReadPreference
 import com.mongodb.client.ClientSession
 import com.mongodb.client.MongoCollection
 import com.mongodb.client.model.Collation
-import io.quarkus.mongodb.panache.kotlin.PanacheQuery
 import io.quarkus.mongodb.panache.common.runtime.CommonPanacheQueryImpl
+import io.quarkus.mongodb.panache.kotlin.PanacheQuery
 import io.quarkus.panache.common.Page
 import org.bson.conversions.Bson
 import java.util.stream.Stream
 
-class PanacheQueryImpl<Entity: Any> : PanacheQuery<Entity> {
+class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
     private val delegate: CommonPanacheQueryImpl<Entity>
 
     internal constructor(collection: MongoCollection<out Entity>?, session: ClientSession?, mongoQuery: Bson?, sort: Bson?) {
@@ -21,7 +21,7 @@ class PanacheQueryImpl<Entity: Any> : PanacheQuery<Entity> {
         this.delegate = delegate
     }
 
-    override fun <T: Any> project(type: Class<T>): PanacheQuery<T> {
+    override fun <T : Any> project(type: Class<T>): PanacheQuery<T> {
         return PanacheQueryImpl(delegate.project(type))
     }
 

@@ -78,8 +78,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.token.setAllowJwtIntrospection(false);
                     config.setClientId("client");
                     return config;
-                } else if ("tenant-oidc-introspection-only".equals(tenantId)
-                        || "tenant-oidc-introspection-only-cache".equals(tenantId)) {
+                } else if ("tenant-oidc-introspection-only".equals(tenantId)) {
                     OidcTenantConfig config = new OidcTenantConfig();
                     config.setTenantId(tenantId);
                     String uri = context.request().absoluteURI();
@@ -89,19 +88,26 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.authentication.setUserInfoRequired(true);
                     config.setIntrospectionPath("introspect");
                     config.setUserInfoPath("userinfo");
-                    if ("tenant-oidc-introspection-only".equals(tenantId)) {
-                        config.setClientId("client-introspection-only");
-                        config.setAllowTokenIntrospectionCache(false);
-                        config.setAllowUserInfoCache(false);
-                        Credentials creds = config.getCredentials();
-                        creds.clientSecret.setMethod(Credentials.Secret.Method.POST_JWT);
-                        creds.getJwt().setKeyFile("ecPrivateKey.pem");
-                        creds.getJwt().setSignatureAlgorithm(SignatureAlgorithm.ES256.getAlgorithm());
-                    } else {
-                        config.setClientId("client-introspection-only-cache");
-                        config.getIntrospectionCredentials().setName("bob");
-                        config.getIntrospectionCredentials().setSecret("bob_secret");
-                    }
+                    config.setClientId("client-introspection-only");
+                    config.setAllowTokenIntrospectionCache(false);
+                    config.setAllowUserInfoCache(false);
+                    Credentials creds = config.getCredentials();
+                    creds.clientSecret.setMethod(Credentials.Secret.Method.POST_JWT);
+                    creds.getJwt().setKeyFile("ecPrivateKey.pem");
+                    creds.getJwt().setSignatureAlgorithm(SignatureAlgorithm.ES256.getAlgorithm());
+                    return config;
+                } else if ("tenant-oidc-introspection-only-cache".equals(tenantId)) {
+                    OidcTenantConfig config = new OidcTenantConfig();
+                    config.setTenantId(tenantId);
+                    String uri = context.request().absoluteURI();
+                    String authServerUri = uri.replace("/tenant/" + tenantId + "/api/user", "/oidc");
+                    config.setAuthServerUrl(authServerUri);
+                    config.authentication.setUserInfoRequired(true);
+                    config.setUserInfoPath("userinfo");
+                    config.setClientId("client-introspection-only-cache");
+                    config.getIntrospectionCredentials().setName("bob");
+                    config.getIntrospectionCredentials().setSecret("bob_secret");
+                    config.getToken().setRequireJwtIntrospectionOnly(true);
                     return config;
                 } else if ("tenant-oidc-no-opaque-token".equals(tenantId)) {
                     OidcTenantConfig config = new OidcTenantConfig();

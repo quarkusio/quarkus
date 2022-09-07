@@ -134,7 +134,7 @@ public class DevModeMain implements Closeable {
                     map);
         } catch (Throwable t) {
             log.error("Quarkus dev mode failed to start", t);
-            throw new RuntimeException(t);
+            throw (t instanceof RuntimeException ? (RuntimeException) t : new RuntimeException(t));
             //System.exit(1);
         }
     }

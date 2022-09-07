@@ -326,6 +326,8 @@ public class AugmentActionImpl implements AugmentAction {
 
             try {
                 return builder.build().run();
+            } catch (RuntimeException e) {
+                throw e;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

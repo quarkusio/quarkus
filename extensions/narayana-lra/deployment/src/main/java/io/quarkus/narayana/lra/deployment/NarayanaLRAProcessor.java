@@ -45,7 +45,7 @@ class NarayanaLRAProcessor {
                     "'quarkus-narayana-lra' can only work if 'quarkus-resteasy-jackson' or 'quarkus-resteasy-reactive-jackson' is present");
         }
 
-        if (!capabilities.isPresent(Capability.REST_CLIENT)) {
+        if (!capabilities.isCapabilityWithPrefixPresent(Capability.REST_CLIENT)) {
             throw new IllegalStateException(
                     "'quarkus-narayana-lra' can only work if 'quarkus-rest-client' or 'quarkus-rest-client-reactive' is present");
         }

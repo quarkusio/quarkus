@@ -27,6 +27,7 @@ import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.deployment.dev.testing.LogCapturingOutputFilter;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
+import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
@@ -65,6 +66,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
     private void ensurePrepared(ExtensionContext extensionContext, Class<? extends QuarkusTestProfile> profile)
             throws Exception {
+        JBossVersion.disableVersionLogging();
+
         ExtensionContext.Store store = extensionContext.getStore(ExtensionContext.Namespace.GLOBAL);
         Class<?> testType = store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
         if (testType != null) {
@@ -190,6 +193,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
     private int doJavaStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile, String[] arguments)
             throws Exception {
+        JBossVersion.disableVersionLogging();
+
         TracingHandler.quarkusStarting();
         Closeable testResourceManager = null;
         try {

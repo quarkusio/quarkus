@@ -88,6 +88,7 @@ import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.runtime.configuration.ProfileManager;
+import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.TestMethodInvoker;
 import io.quarkus.test.common.GroovyCacheCleaner;
@@ -204,6 +205,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     }
 
     private ExtensionState doJavaStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile) throws Throwable {
+        JBossVersion.disableVersionLogging();
+
         TracingHandler.quarkusStarting();
         hangDetectionExecutor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
             @Override

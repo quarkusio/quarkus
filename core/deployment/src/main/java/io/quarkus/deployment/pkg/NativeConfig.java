@@ -49,7 +49,10 @@ public class NativeConfig {
 
     /**
      * If {@code -H:+InlineBeforeAnalysis} flag will be added to the native-image run
+     *
+     * @deprecated inlineBeforeAnalysis is always enabled starting from GraalVM 21.3.
      */
+    @Deprecated
     @ConfigItem(defaultValue = "true")
     public boolean inlineBeforeAnalysis;
 

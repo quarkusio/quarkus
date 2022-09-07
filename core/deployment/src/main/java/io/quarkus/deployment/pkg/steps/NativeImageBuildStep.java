@@ -798,12 +798,7 @@ public class NativeImageBuildStep {
                 if (!protocols.isEmpty()) {
                     nativeImageArgs.add("-H:EnableURLProtocols=" + String.join(",", protocols));
                 }
-                if (inlineBeforeAnalysis) {
-                    if (graalVMVersion.isOlderThan(GraalVM.Version.VERSION_21_3)) {
-                        // Enabled by default in GraalVM >= 21.3
-                        nativeImageArgs.add("-H:+InlineBeforeAnalysis");
-                    }
-                } else {
+                if (!inlineBeforeAnalysis) {
                     nativeImageArgs.add("-H:-InlineBeforeAnalysis");
                 }
                 if (!noPIE.isEmpty()) {

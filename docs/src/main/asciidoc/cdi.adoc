@@ -346,38 +346,79 @@ TIP: It's a good practice to keep the logic in the callbacks "without side effec
 Interceptors are used to separate cross-cutting concerns from business logic. 
 There is a separate specification - Java Interceptors - that defines the basic programming model and semantics.
 
+.Simple Interceptor Binding Example
+[source,java]
+----
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import javax.interceptor.InterceptorBinding;
+
+@InterceptorBinding // <1>
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD, ElementType.CONSTRUCTOR}) // <2>
+@Inherited // <3>
+public @interface Logged {
+}
+----
+<1> This is an interceptor binding annotation. See the following examples for how it's used.
+<2> An interceptor binding annotation is always put on the interceptor type, and may be put on target types or methods.
+<3> Interceptor bindings are often `@Inherited`, but don't have to be.
+
 .Simple Interceptor Example
 [source,java]
 ----
-import javax.interceptor.Interceptor;
 import javax.annotation.Priority;
+import javax.interceptor.AroundInvoke;
+import javax.interceptor.Interceptor;
+import javax.interceptor.InvocationContext;
 
-@Logged <1>
-@Priority(2020) <2>
-@Interceptor <3>
+@Logged // <1>
+@Priority(2020) // <2>
+@Interceptor // <3>
 public class LoggingInterceptor {
 
-   @Inject <4>
+   @Inject // <4>
    Logger logger;
 
-   @AroundInvoke <5>
+   @AroundInvoke // <5>
    Object logInvocation(InvocationContext context) {
       // ...log before
-      Object ret = context.proceed(); <6>
+      Object ret = context.proceed(); // <6>
       // ...log after
       return ret;
    }
     
 }
 ----
-<1> This is an interceptor binding annotation that is used to bind our interceptor to a bean. Simply annotate a bean class with `@Logged`.
+<1> The interceptor binding annotation is used to bind our interceptor to a bean. Simply annotate a bean class with `@Logged`, as in the following example.
 <2> `Priority` enables the interceptor and affects the interceptor ordering. Interceptors with smaller priority values are called first. 
 <3> Marks an interceptor component.
-<4> An interceptor instance may be the target of dependency injection.
+<4> An interceptor may inject dependencies.
 <5> `AroundInvoke` denotes a method that interposes on business methods.
 <6> Proceed to the next interceptor in the interceptor chain or invoke the intercepted business method.
 
 NOTE: Instances of interceptors are dependent objects of the bean instance they intercept, i.e. a new interceptor instance is created for each intercepted bean.
+
+.Simple Example of Interceptor Usage
+[source,java]
+----
+import javax.enterprise.context.ApplicationScoped;
+
+@Logged // <1> <2>
+@ApplicationScoped
+public class MyService {
+   void doSomething() {
+       ...
+   }
+}
+----
+<1> The interceptor binding annotation is put on a bean class so that all business methods are intercepted.
+    The annotation can also be put on individual methods, in which case, only the annotated methods are intercepted.
+<2> Remember that the `@Logged` annotation is `@Inherited`.
+    If there's a bean class that inherits from `MyService`, the `LoggingInterceptor` will also apply to it.
 
 [[decorators]]
 === Decorators

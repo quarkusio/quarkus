@@ -39,15 +39,11 @@ class RequestContext implements ManagedContext {
     private final LazyValue<Notifier<Object>> beforeDestroyedNotifier;
     private final LazyValue<Notifier<Object>> destroyedNotifier;
 
-    private final boolean traceEnabled;
-
     public RequestContext(CurrentContext<RequestContextState> currentContext) {
         this.currentContext = currentContext;
         this.initializedNotifier = new LazyValue<>(RequestContext::createInitializedNotifier);
         this.beforeDestroyedNotifier = new LazyValue<>(RequestContext::createBeforeDestroyedNotifier);
         this.destroyedNotifier = new LazyValue<>(RequestContext::createDestroyedNotifier);
-        // we do not need to check the effective log level
-        this.traceEnabled = LOG.isTraceEnabled();
     }
 
     @Override
@@ -126,7 +122,7 @@ class RequestContext implements ManagedContext {
 
     @Override
     public void activate(ContextState initialState) {
-        if (traceEnabled) {
+        if (LOG.isTraceEnabled()) {
             String stack = Arrays.stream(Thread.currentThread().getStackTrace())
                     .skip(2)
                     .limit(7)
@@ -164,7 +160,7 @@ class RequestContext implements ManagedContext {
 
     @Override
     public void deactivate() {
-        if (traceEnabled) {
+        if (LOG.isTraceEnabled()) {
             String stack = Arrays.stream(Thread.currentThread().getStackTrace())
                     .skip(2)
                     .limit(7)
@@ -182,7 +178,7 @@ class RequestContext implements ManagedContext {
 
     @Override
     public void destroy(ContextState state) {
-        if (traceEnabled) {
+        if (LOG.isTraceEnabled()) {
             String stack = Arrays.stream(Thread.currentThread().getStackTrace())
                     .skip(2)
                     .limit(7)

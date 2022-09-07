@@ -450,9 +450,11 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             //        doStart(false, Collections.emptySet());
             if (deploymentProblem != null || RuntimeUpdatesProcessor.INSTANCE.getCompileProblem() != null) {
                 if (context.isAbortOnFailedStart()) {
-                    throw new RuntimeException(
-                            deploymentProblem == null ? RuntimeUpdatesProcessor.INSTANCE.getCompileProblem()
-                                    : deploymentProblem);
+                    Throwable throwable = deploymentProblem == null ? RuntimeUpdatesProcessor.INSTANCE.getCompileProblem()
+                            : deploymentProblem;
+
+                    throw (throwable instanceof RuntimeException ? (RuntimeException) throwable
+                            : new RuntimeException(throwable));
                 }
             }
             shutdownThread = new Thread(new Runnable() {
@@ -473,7 +475,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             Runtime.getRuntime().addShutdownHook(shutdownThread);
         } catch (Exception e) {
             close();
-            throw new RuntimeException(e);
+            throw (e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e));
         }
     }
 }

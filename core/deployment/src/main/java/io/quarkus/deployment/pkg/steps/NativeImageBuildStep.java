@@ -741,11 +741,11 @@ public class NativeImageBuildStep {
                 }
 
                 if (nativeConfig.enableFallbackImages) {
-                    nativeImageArgs.add("-H:FallbackThreshold=5");
+                    nativeImageArgs.add("--auto-fallback");
                 } else {
                     //Default: be strict as those fallback images aren't very useful
                     //and tend to cover up real problems.
-                    nativeImageArgs.add("-H:FallbackThreshold=0");
+                    nativeImageArgs.add("--no-fallback");
                 }
 
                 // 22.1 removes --allow-incomplete-classpath and makes it the default. --link-at-build-time is now
@@ -757,7 +757,7 @@ public class NativeImageBuildStep {
                 }
 
                 if (nativeConfig.reportErrorsAtRuntime) {
-                    nativeImageArgs.add("-H:+ReportUnsupportedElementsAtRuntime");
+                    nativeImageArgs.add("--report-unsupported-elements-at-runtime");
                 }
                 if (nativeConfig.reportExceptionStackTraces) {
                     nativeImageArgs.add("-H:+ReportExceptionStackTraces");
@@ -796,7 +796,7 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:-AddAllCharsets");
                 }
                 if (!protocols.isEmpty()) {
-                    nativeImageArgs.add("-H:EnableURLProtocols=" + String.join(",", protocols));
+                    nativeImageArgs.add("--enable-url-protocols=" + String.join(",", protocols));
                 }
                 if (!inlineBeforeAnalysis) {
                     nativeImageArgs.add("-H:-InlineBeforeAnalysis");

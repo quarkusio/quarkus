@@ -11,10 +11,16 @@ include::./attributes.adoc[]
 You can use the Quarkus OpenID Connect (OIDC) extension to secure your JAX-RS applications using Bearer Token Authorization. 
 The Bearer Tokens are issued by OIDC and OAuth 2.0 compliant authorization servers, such as https://www.keycloak.org[Keycloak]. 
 
-Bearer Token authorization authorizes HTTP requests based on the existence and validity of a Bearer Token. 
-The Bearer Token provides information about determining the subject of the call and whether or not an HTTP resource is accessible. 
+Bearer Token authorization is the process of authorizing HTTP requests based on the existence and validity of a Bearer Token. 
+The Bearer Token provides information about the subject of the call which is used to determine whether or not an HTTP resource can be accessed.
 
-If you want to authenticate and authorize the users using OpenID Connect Authorization Code Flow, see xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications].
+.Bearer Token Authorization mechanism in Quarkus
+image::security-bearer-token-authorization-mechanism-1.png[alt=Bearer Token Authorization, align=center]
+
+.Bearer Token Authorization mechanism with Client in Quarkus
+image::security-bearer-token-authorization-mechanism-2.png[alt=Bearer Token Authorization, align=center]
+
+If you need to authenticate and authorize the users using OpenID Connect Authorization Code Flow, see xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications].
 Also, if you use Keycloak and Bearer Tokens, see xref:security-keycloak-authorization.adoc[Using Keycloak to Centralize Authorization].
 
 For information about how to support multiple tenants, see xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy].

@@ -8,7 +8,7 @@ ifdef::devtools-wrapped[+]
 [source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
 .Maven
 ----
-./mvnw package -Dnative -Dquarkus.native.container-build=true {build-additional-parameters}
+./mvnw install -Dnative -Dquarkus.native.container-build=true {build-additional-parameters}
 ----
 endif::[]
 ifndef::devtools-no-gradle[]

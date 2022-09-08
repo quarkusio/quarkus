@@ -331,6 +331,8 @@ git checkout -- extensions/kubernetes-service-binding/runtime/src/test/resources
 ./mvnw -f integration-tests formatter:format impsort:sort
 ./mvnw -f test-framework formatter:format impsort:sort
 
+for kotlin_project in `find . -name kotlin | grep -E 'src/main/kotlin$' | grep -v codestart | sed 's@src/main/kotlin@@g' | grep -v '/resources/'`; do mvn spotless:apply -f $kotlin_project; done
+
 # Disable non-compilable ITs
 # - Confluent registry client doesn't have a version supporting Jakarta packages
 

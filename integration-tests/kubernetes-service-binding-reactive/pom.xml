@@ -10,7 +10,7 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>kubernetes-service-binding-reactive</artifactId>
+    <artifactId>quarkus-integration-test-kubernetes-service-binding-reactive</artifactId>
     <name>Quarkus - Integration Tests - Kubernetes Service Binding Reactive</name>
 
     <dependencies>

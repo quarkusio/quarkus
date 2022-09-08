@@ -115,7 +115,7 @@
         <wiremock-maven-plugin.version>7.2.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.24.0</artemis.version>
+        <artemis.version>2.25.0</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>

@@ -53,7 +53,7 @@ public class DependencyInjectionTest {
         GreetingService greetingService;
 
         @Funq
-        String greeting() {
+        public String greeting() {
             return greetingService.sayHello();
         }
 
@@ -68,7 +68,7 @@ public class DependencyInjectionTest {
         }
 
         @Funq
-        String farewell() {
+        public String farewell() {
             return greetingService.sayGoodbye();
         }
 
@@ -81,7 +81,7 @@ public class DependencyInjectionTest {
         GreetingService greetingService;
 
         @Funq
-        String bye() {
+        public String bye() {
             return greetingService.sayBye();
         }
 
@@ -97,7 +97,7 @@ public class DependencyInjectionTest {
         }
 
         @Funq
-        String hi() {
+        public String hi() {
             return greetingService.sayHi();
         }
 

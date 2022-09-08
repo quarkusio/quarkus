@@ -63,6 +63,13 @@ public class FunctionScannerBuildStep {
             classNames.add(className);
             classes.add(method.declaringClass());
             String methodName = method.name();
+
+            if (!Modifier.isPublic(method.flags())) {
+                throw new RuntimeException(
+                        String.format("Method '%s' annotated with '@Funq' declared in the class '%s' is not public.",
+                                methodName, className));
+            }
+
             String functionName = null;
             if (funqMethod.value() != null) {
                 functionName = funqMethod.value().asString();

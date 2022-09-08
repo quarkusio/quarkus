@@ -30,7 +30,9 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 
 /**
- * A client filter for the JAX-RS Client and MicroProfile REST Client that records OpenTelemetry data.
+ * A client filter for the JAX-RS Client and MicroProfile REST Client that records OpenTelemetry data. This is only used
+ * by RESTEasy Classic, because the handling implementation is provided by RESTEasy. This is not used by RESTEasy
+ * Reactive because tracing is handled by Vert.x.
  */
 @Unremovable
 @Provider
@@ -77,9 +79,19 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         if (parentContext == null) {
             parentContext = io.opentelemetry.context.Context.current();
         }
+
+        // For each request, we need a new OTel Context from the **current one**
+        // the parent context needs to be the one from which the call originates.
+
         if (instrumenter.shouldStart(parentContext, request)) {
             Context spanContext = instrumenter.start(parentContext, request);
-            Scope scope = QuarkusContextStorage.INSTANCE.attach(vertxContext, spanContext);
+            // Create a new scope with an empty termination callback.
+            Scope scope = new Scope() {
+                @Override
+                public void close() {
+
+                }
+            };
             request.setProperty(REST_CLIENT_OTEL_SPAN_CLIENT_CONTEXT, spanContext);
             request.setProperty(REST_CLIENT_OTEL_SPAN_CLIENT_PARENT_CONTEXT, parentContext);
             request.setProperty(REST_CLIENT_OTEL_SPAN_CLIENT_SCOPE, scope);

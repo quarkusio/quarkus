@@ -30,9 +30,18 @@ public class ReactiveResource {
     }
 
     @GET
-    @Path("/multiple")
-    public Uni<String> helloMultiple() {
-        return Uni.combine().all().unis(client.helloGet("Naruto"), client.helloGet("Goku"))
+    @Path("/multiple-chain")
+    public Uni<String> helloMultipleUsingChain() {
+        return client.helloGet("Naruto")
+                .chain(s1 -> client.helloGet("Goku").map(s2 -> s1 + " and " + s2));
+    }
+
+    @GET
+    @Path("/multiple-combine")
+    public Uni<String> helloMultipleUsingCombine() {
+        return Uni.combine().all().unis(
+                client.helloGet("Naruto"),
+                client.helloGet("Goku"))
                 .combinedWith((s, s2) -> s + " and " + s2);
     }
 

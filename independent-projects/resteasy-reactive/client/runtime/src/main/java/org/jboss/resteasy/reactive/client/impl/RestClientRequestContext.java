@@ -527,4 +527,9 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         }
         return defaultValue;
     }
+
+    @Override
+    protected boolean isRequestScopeManagementRequired() {
+        return false;
+    }
 }

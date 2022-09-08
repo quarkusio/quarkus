@@ -1,7 +1,5 @@
 package io.quarkus.opentelemetry.runtime.tracing.vertx;
 
-import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
-
 import java.util.Map;
 import java.util.function.BiConsumer;
 
@@ -9,7 +7,6 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.quarkus.opentelemetry.runtime.tracing.vertx.OpenTelemetryVertxTracer.SpanOperation;
-import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.impl.headers.HeadersAdaptor;
@@ -92,10 +89,14 @@ interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOperation, 
         if (instrumenter.shouldStart(parentContext, (REQ) request)) {
             io.opentelemetry.context.Context spanContext = instrumenter.start(parentContext,
                     writableHeaders((REQ) request, headers));
-            Context duplicatedContext = VertxContext.createNewDuplicatedContext(context);
-            setContextSafe(duplicatedContext, true);
-            Scope scope = QuarkusContextStorage.INSTANCE.attach(duplicatedContext, spanContext);
-            return spanOperation(duplicatedContext, (REQ) request, toMultiMap(headers), spanContext, scope);
+            // Create a new scope with an empty termination callback.
+            Scope scope = new Scope() {
+                @Override
+                public void close() {
+
+                }
+            };
+            return spanOperation(context, (REQ) request, toMultiMap(headers), spanContext, scope);
         }
 
         return null;

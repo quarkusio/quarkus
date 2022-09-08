@@ -77,7 +77,6 @@ import io.quarkus.runtime.configuration.RuntimeConfigSourceFactory;
 import io.quarkus.runtime.configuration.RuntimeConfigSourceProvider;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.Converters;
-import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -211,9 +210,6 @@ public final class RunTimeConfigurationGenerator {
     static final MethodDescriptor OPT_IS_PRESENT = MethodDescriptor.ofMethod(Optional.class, "isPresent", boolean.class);
     static final MethodDescriptor OPT_OF = MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class);
 
-    static final MethodDescriptor PCS_NEW = MethodDescriptor.ofConstructor(PropertiesConfigSource.class,
-            Map.class, String.class, int.class);
-
     static final MethodDescriptor PM_SET_RUNTIME_DEFAULT_PROFILE = MethodDescriptor.ofMethod(ProfileManager.class,
             "setRuntimeDefaultProfile", void.class, String.class);
 
@@ -250,6 +246,8 @@ public final class RunTimeConfigurationGenerator {
 
     static final MethodDescriptor PU_IS_PROPERTY_IN_ROOT = MethodDescriptor.ofMethod(PropertiesUtil.class,
             "isPropertyInRoot", boolean.class, Set.class, NameIterator.class);
+    static final MethodDescriptor PU_IS_PROPERTY_QUARKUS_COMPOUND_NAME = MethodDescriptor.ofMethod(PropertiesUtil.class,
+            "isPropertyQuarkusCompoundName", boolean.class, NameIterator.class);
     static final MethodDescriptor HS_NEW = MethodDescriptor.ofConstructor(HashSet.class);
     static final MethodDescriptor HS_PUT = MethodDescriptor.ofMethod(HashSet.class, "add", boolean.class, Object.class);
 
@@ -782,21 +780,22 @@ public final class RunTimeConfigurationGenerator {
             }
 
             // generate sweep for clinit
-            configSweepLoop(siParserBody, clinit, clinitConfig, getRegisteredRoots(BUILD_AND_RUN_TIME_FIXED));
+            configSweepLoop(siParserBody, clinit, clinitConfig, getRegisteredRoots(BUILD_AND_RUN_TIME_FIXED), Type.BUILD_TIME);
 
             clinit.invokeStaticMethod(CD_UNKNOWN_PROPERTIES, clinit.readStaticField(C_UNKNOWN));
 
             if (liveReloadPossible) {
-                configSweepLoop(siParserBody, readConfig, runTimeConfig, getRegisteredRoots(RUN_TIME));
+                configSweepLoop(siParserBody, readConfig, runTimeConfig, getRegisteredRoots(RUN_TIME), Type.RUNTIME);
             }
             // generate sweep for run time
-            configSweepLoop(rtParserBody, readConfig, runTimeConfig, getRegisteredRoots(RUN_TIME));
+            configSweepLoop(rtParserBody, readConfig, runTimeConfig, getRegisteredRoots(RUN_TIME), Type.RUNTIME);
 
             readConfig.invokeStaticMethod(CD_UNKNOWN_PROPERTIES_RT, readConfig.readStaticField(C_UNKNOWN_RUNTIME));
 
             if (bootstrapConfigSetupNeeded()) {
                 // generate sweep for bootstrap config
-                configSweepLoop(bsParserBody, readBootstrapConfig, bootstrapConfig, getRegisteredRoots(BOOTSTRAP));
+                configSweepLoop(bsParserBody, readBootstrapConfig, bootstrapConfig, getRegisteredRoots(BOOTSTRAP),
+                        Type.BOOTSTRAP);
             }
 
             // generate ensure-initialized method
@@ -861,7 +860,7 @@ public final class RunTimeConfigurationGenerator {
         }
 
         private void configSweepLoop(MethodDescriptor parserBody, MethodCreator method, ResultHandle config,
-                Set<String> registeredRoots) {
+                Set<String> registeredRoots, Type type) {
             ResultHandle rootSet;
             ResultHandle nameSet;
             ResultHandle iterator;
@@ -878,9 +877,20 @@ public final class RunTimeConfigurationGenerator {
                 try (BytecodeCreator hasNext = sweepLoop.ifNonZero(sweepLoop.invokeInterfaceMethod(ITR_HAS_NEXT, iterator))
                         .trueBranch()) {
 
-                    final ResultHandle key = hasNext.checkCast(hasNext.invokeInterfaceMethod(ITR_NEXT, iterator), String.class);
+                    ResultHandle key = hasNext.checkCast(hasNext.invokeInterfaceMethod(ITR_NEXT, iterator), String.class);
                     // NameIterator keyIter = new NameIterator(key);
-                    final ResultHandle keyIter = hasNext.newInstance(NI_NEW_STRING, key);
+                    ResultHandle keyIter = hasNext.newInstance(NI_NEW_STRING, key);
+                    BranchResult unknownProperty = hasNext
+                            .ifNonZero(hasNext.invokeStaticMethod(PU_IS_PROPERTY_QUARKUS_COMPOUND_NAME, keyIter));
+                    try (BytecodeCreator trueBranch = unknownProperty.trueBranch()) {
+                        ResultHandle unknown;
+                        if (type == Type.BUILD_TIME) {
+                            unknown = trueBranch.readStaticField(C_UNKNOWN);
+                        } else {
+                            unknown = trueBranch.readStaticField(C_UNKNOWN_RUNTIME);
+                        }
+                        trueBranch.invokeVirtualMethod(AL_ADD, unknown, key);
+                    }
                     // if (! keyIter.hasNext()) continue sweepLoop;
                     hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_HAS_NEXT, keyIter)).falseBranch().continueScope(sweepLoop);
                     // if (! keyIter.nextSegmentEquals("quarkus")) continue sweepLoop;
@@ -1653,7 +1663,7 @@ public final class RunTimeConfigurationGenerator {
             ResultHandle unknown = mc.getMethodParam(1);
 
             // Ignore all build property names. This is to ignore any properties mapped with @ConfigMapping, because
-            // these do not fall into the ignore ConfigPattern.
+            // these do not fall into the ignored ConfigPattern.
             for (String buildTimeProperty : allBuildTimeValues.keySet()) {
                 ResultHandle equalsResult = mc.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(Object.class, "equals", boolean.class, Object.class), unknownProperty,
@@ -1662,7 +1672,7 @@ public final class RunTimeConfigurationGenerator {
             }
 
             // Ignore recorded runtime property names. This is to ignore any properties mapped with @ConfigMapping, because
-            // these do not fall into the ignore ConfigPattern.
+            // these do not fall into the ignored ConfigPattern.
             for (String buildTimeProperty : runTimeDefaultValues.keySet()) {
                 ResultHandle equalsResult = mc.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(Object.class, "equals", boolean.class, Object.class), unknownProperty,

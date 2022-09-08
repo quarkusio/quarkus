@@ -60,10 +60,23 @@ public class ResourceLocatorSubresource {
         return params.param + " and " + params.value;
     }
 
+    @GET
+    @Path("/subresource4")
+    public String getValueFromGenericBeanParam(@BeanParam ParamsWithGeneric<String> params) {
+        return params.param + " and " + params.value;
+    }
+
     public static class Params {
         @RestPath
         String param;
         @QueryParam("value")
         String value;
+    }
+
+    public static class ParamsWithGeneric<T> {
+        @RestPath
+        String param;
+        @QueryParam("value")
+        T value;
     }
 }

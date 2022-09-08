@@ -240,8 +240,10 @@ Because the `mongo+srv` protocol often used to connect to MongoDB requires JNDI,
 === Dev Services (Configuration Free Databases)
 
 Quarkus supports a feature called Dev Services that allows you to create various datasources without any config. In the case of MongoDB this support extends to the default MongoDB connection.
-What that means practically, is that if you have not configured `quarkus.mongodb.connection-string` Quarkus will automatically start a MongoDB container when running tests or dev mode,
+What that means practically, is that if you have not configured `quarkus.mongodb.connection-string`, Quarkus will automatically start a MongoDB container when running tests or in dev mode,
 and automatically configure the connection.
+
+MongoDB Dev Services is based on link:https://www.testcontainers.org/modules/databases/mongodb/[Testcontainers MongoDB module] that will start a single node replicaset.
 
 When running the production version of the application, the MongoDB connection need to be configured as normal, so if you want to include a production database config in your
 `application.properties` and continue to use Dev Services we recommend that you use the `%prod.` profile to define your MongoDB settings.
@@ -298,7 +300,7 @@ As by default, `MongoClient` is configured to access a local MongoDB database on
 If you want to use Docker to run a MongoDB database, you can use the following command to launch one:
 [source,bash]
 ----
-docker run -ti --rm -p 27017:27017 mongo:4.0
+docker run -ti --rm -p 27017:27017 mongo:4.4
 ----
 
 [NOTE]
@@ -316,11 +318,13 @@ In the `src/main/resources/META-INF/resources` directory, add a `fruits.html` fi
 You can now interact with your REST service:
 
 :devtools-wrapped:
+
  * start Quarkus with:
 +
 include::{includes}/devtools/dev.adoc[]
  * open a browser to `http://localhost:8080/fruits.html`
  * add new fruits to the list via the form
+
 :!devtools-wrapped:
 
 [[reactive]]
@@ -328,13 +332,6 @@ include::{includes}/devtools/dev.adoc[]
 A reactive MongoDB Client is included in Quarkus.
 Using it is as easy as using the classic MongoDB Client.
 You can rewrite the previous example to use it like the following.
-
-[NOTE]
-.Deprecation
-====
-The `io.quarkus.mongodb.ReactiveMongoClient` client is deprecated and will be removed in the future.
-It is recommended to switch to the `io.quarkus.mongodb.reactive.ReactiveMongoClient` client providing the `Mutiny` API.
-====
 
 [TIP]
 .Mutiny
@@ -430,7 +427,7 @@ By using a Bson `Codec`, the MongoDB Client will take care of the transformation
 
 First you need to create a Bson `Codec` that will tell Bson how to transform your entity to/from a MongoDB `Document`.
 Here we use a `CollectibleCodec` as our object is retrievable from the database (it has a MongoDB identifier), if not we would have used a `Codec` instead.
-More information in the codec documentation: https://mongodb.github.io/mongo-java-driver/3.10/bson/codecs.
+More information in the codec documentation: https://www.mongodb.com/docs/drivers/java/sync/current/fundamentals/data-formats/codecs/.
 
 [source,java]
 ----
@@ -577,7 +574,7 @@ public class CodecFruitService {
 
 == The POJO Codec
 
-The link:https://mongodb.github.io/mongo-java-driver/3.12/bson/pojos/[POJO Codec] provides a set of annotations that enable the customization of
+The link:https://www.mongodb.com/docs/drivers/java/sync/current/fundamentals/data-formats/document-data-format-pojo/[POJO Codec] provides a set of annotations that enable the customization of
 the way a POJO is mapped to a MongoDB collection and this codec is initialized automatically by Quarkus
 
 One of these annotations is the `@BsonDiscriminator` annotation that allows to storage multiple Java types in a single MongoDB collection by adding
@@ -624,7 +621,10 @@ Read the xref:opentracing.adoc[OpenTracing] guide, for how to configure OpenTrac
 
 == Testing helpers
 
-To start a MongoDB database for your unit tests, Quarkus provides two `QuarkusTestResourceLifecycleManager` that relies on link:https://github.com/flapdoodle-oss/de.flapdoodle.embed.mongo[Flapdoodle embedded MongoDB].
+xref:#dev-services[Dev Services for MongoDB] is your best option to start a MongoDB database for your unit tests.
+
+But if you can't use it, you can start a MongoDB database using one of the two `QuarkusTestResourceLifecycleManager` that Quarkus provides.
+They rely on link:https://github.com/flapdoodle-oss/de.flapdoodle.embed.mongo[Flapdoodle embedded MongoDB].
 
 - `io.quarkus.test.mongodb.MongoTestResource` will start a single instance on port 27017.
 - `io.quarkus.test.mongodb.MongoReplicaSetTestResource` will start a replicaset with two instances, one on port 27017 and the other on port 27018.

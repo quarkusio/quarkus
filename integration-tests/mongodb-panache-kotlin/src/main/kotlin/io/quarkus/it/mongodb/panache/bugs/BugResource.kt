@@ -68,7 +68,7 @@ class BugResource {
         val localDateTomorrow: LocalDate = LocalDate.now().plus(1, ChronoUnit.DAYS)
         val localDateTimeTomorrow: LocalDateTime = LocalDateTime.now().plus(1, ChronoUnit.DAYS)
         val instantTomorrow: Instant = Instant.now().plus(1, ChronoUnit.DAYS)
-        val result: DateEntity = DateEntity
+        DateEntity
             .find(
                 "dateDate < ?1 and localDate < ?2 and localDateTime < ?3 and instant < ?4",
                 dateTomorrow,

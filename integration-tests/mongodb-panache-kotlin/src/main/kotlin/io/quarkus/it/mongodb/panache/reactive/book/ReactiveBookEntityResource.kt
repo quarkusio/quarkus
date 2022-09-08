@@ -127,7 +127,7 @@ class ReactiveBookEntityResource {
         }
 
     @DELETE
-    fun deleteAll(): Uni<Void> = ReactiveBookEntity.deleteAll().map { l -> null }
+    fun deleteAll(): Uni<Void> = ReactiveBookEntity.deleteAll().map { null }
 
     companion object {
         private val LOGGER: Logger = Logger.getLogger(ReactiveBookEntityResource::class.java)

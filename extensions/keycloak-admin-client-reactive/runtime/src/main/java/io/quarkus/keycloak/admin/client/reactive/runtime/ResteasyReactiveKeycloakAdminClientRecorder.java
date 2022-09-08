@@ -29,6 +29,14 @@ public class ResteasyReactiveKeycloakAdminClientRecorder {
 
         final KeycloakAdminClientConfig config = keycloakAdminClientConfigRuntimeValue.getValue();
         validate(config);
+        if (config.serverUrl.isEmpty()) {
+            return new Supplier<Keycloak>() {
+                @Override
+                public Keycloak get() {
+                    return null;
+                }
+            };
+        }
         final KeycloakBuilder keycloakBuilder = KeycloakBuilder
                 .builder()
                 .clientId(config.clientId)
@@ -37,7 +45,7 @@ public class ResteasyReactiveKeycloakAdminClientRecorder {
                 .username(config.username.orElse(null))
                 .password(config.password.orElse(null))
                 .realm(config.realm)
-                .serverUrl(config.serverUrl.orElse(null))
+                .serverUrl(config.serverUrl.get())
                 .scope(config.scope.orElse(null));
         return new Supplier<Keycloak>() {
             @Override

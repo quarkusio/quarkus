@@ -7,8 +7,10 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-The Quarkus Keycloak Admin Client and its reactive twin facilitate running the Keycloak Admin Client in a native mode.
-This guide demonstrates how you can leverage the xref:cdi-reference.adoc[Quarkus ArC] and inject the admin client to your Quarkus application.
+The Quarkus Keycloak Admin Client and its reactive twin support Keycloak Admin Client which can be used to configure a running Keycloak server.
+
+This guide demonstrates how you can leverage the xref:cdi-reference.adoc[Quarkus ArC] and inject the admin client to your Quarkus application, as well as how to create it directly in the application code.
+
 To learn more about the Keycloak Admin Client, please refer to its https://www.keycloak.org/docs/latest/server_development/#example-using-java[reference guide].
 
 == Prerequisites
@@ -74,7 +76,66 @@ import java.util.List;
 public class RolesResource {
 
         @Inject
+        Keycloak keycloak; <1>
+
+        @GET
+        @Path("/roles")
+        public List<RoleRepresentation> getRoles() {
+            return keycloak.realm("quarkus").roles().list();
+        }
+
+}
+----
+<1> Create  a default Keycloak Admin Client which can perform Keycloak `master` realm administration tasks as an `admin-cli` client, such as adding new realms, clients and users.
+
+The only configuration which is required to create this Keycloak Admin Client is a Keycloak server URL, for example:
+
+[source,properties]
+----
+quarkus.keycloak.admin-client.server-url=http://localhost:8081
+----
+
+[NOTE]
+====
+It is important that `quarkus.keycloak.admin-client.server-url` is configured if you would like to have `Keycloak` injected. The injection will fail if you attempt to inject `Keycloak` without configuring this property.
+====
+
+Injecting Keycloak Admin Client instead of creating it directly in the application code is a simpler and more flexible option but you can create the same admin client manually if necessary:
+
+[source,java]
+----
+package org.acme.keycloak.admin.client;
+
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.KeycloakBuilder;
+import org.keycloak.representations.idm.RoleRepresentation;
+
+import javax.annotations.PostConstruct;
+import javax.annotations.PreConstruct;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import java.util.List;
+
+@Path("/api/admin")
+public class RolesResource {
+
         Keycloak keycloak;
+
+        @PostConstruct
+        public void initKeycloak() {
+            keycloak = KeycloakBuilder.builder()
+                .serverUrl("http://localhost:8081")
+                .realm("master")
+                .clientId("admin-cli")
+                .username("admin")
+                .password("admin")
+                .build();
+        }
+
+        @PreDestroy
+        public void closeKeycloak() {
+            keycloak.close();
+        }
 
         @GET
         @Path("/roles")
@@ -85,16 +146,12 @@ public class RolesResource {
 }
 ----
 
-Now, you can produce the `Keycloak` bean yourself, or you can instruct Quarkus to produce `Keycloak` bean.
+You can configure Keycloak Admin Client to administer other realms and clients. It can use either a `password` or `client_credentials` grant to acquire an access token to call the Admin REST API which requires authorization.
 
-NOTE: If you produce the bean yourself, please remember that `org.keycloak.admin.client.Keycloak` implements `AutoCloseable` and it's important to avoid resource exhaustion and related exceptions. If you configure your beans as explained below, Quarkus will do it for you.
-
-The Keycloak admin client needs an access token as its Admin REST API requires authorization.
 If you exchange user's credentials for the access token, here is an example configuration for the `password` grant type:
 
 [source,properties]
 ----
-quarkus.keycloak.admin-client=true
 quarkus.keycloak.admin-client.server-url=http://localhost:8081
 quarkus.keycloak.admin-client.realm=quarkus
 quarkus.keycloak.admin-client.client-id=quarkus-client
@@ -121,7 +178,7 @@ quarkus.keycloak.admin-client.grant-type=CLIENT_CREDENTIALS <1>
 
 NOTE: Note that the xref:security-openid-connect-client.adoc[OidcClient] can also be used to acquire tokens.
 
-[[arc-configuration-reference]]
+[[keycloak-admin-client-configuration-reference]]
 == Quarkus Keycloak Admin Client Configuration Reference
 
 include::{generated-dir}/config/quarkus-keycloak-admin-client.adoc[leveloffset=+1, opts=optional]
@@ -131,6 +188,6 @@ include::{generated-dir}/config/quarkus-keycloak-admin-client.adoc[leveloffset=+
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * xref:security-keycloak-authorization.adoc[Keycloak Authorization extension]
 * xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Application]
-* xref:security.adoc[Quarkus Security]
 * xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications]
 * xref:security-openid-connect-client.adoc[OpenID Connect Client and Token Propagation Quickstart]
+* xref:security.adoc[Quarkus Security]

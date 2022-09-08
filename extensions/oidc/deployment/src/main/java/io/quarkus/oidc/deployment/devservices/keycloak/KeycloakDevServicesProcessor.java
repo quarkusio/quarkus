@@ -575,7 +575,10 @@ public class KeycloakDevServicesProcessor {
                     .retry()
                     .withBackOff(Duration.ofSeconds(2), Duration.ofSeconds(2))
                     .expireIn(10 * 1000)
-                    .onFailure().transform(t -> t.getCause());
+                    .onFailure().transform(t -> {
+                        return new RuntimeException("Keycloak server is not available"
+                                + (t.getMessage() != null ? (": " + t.getMessage()) : ""));
+                    });
             realmStatusCodeUni.await().atMost(Duration.ofSeconds(10));
         } catch (Throwable t) {
             LOG.errorf("Realm %s can not be created: %s", realm.getRealm(), t.getMessage());

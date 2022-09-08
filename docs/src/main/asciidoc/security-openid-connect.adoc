@@ -404,6 +404,18 @@ quarkus.oidc.discovery-enabled=false
 quarkus.oidc.introspection-path=/protocol/openid-connect/tokens/introspect
 ----
 
+An advantage of this indirect enforcement of JWT tokens being only introspected remotely is that two remote call are avoided: a remote OIDC metadata discovery call followed by another remote call fetching the verification keys which will not be used, while its disavantage is that the users need to know the introspection endpoint address and configure it manually.
+
+The alternative approach is to allow discovering the OIDC metadata (which is a default option) but require that only the remote JWT introspection is performed:
+
+[source, properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
+quarkus.oidc.token.require-jwt-introspection-only=true
+----
+
+An advantage of this approach is that the configuration is simple and easy to understand, while its disavantage is that a remote OIDC metadata discovery call is required to discover an introspection endpoint address (though the verification keys will also not be fetched).
+
 Note that `io.quarkus.oidc.TokenIntrospection` (a simple `javax.json.JsonObject` wrapper) object will be created and can be either injected or accessed as a SecurityIdentity `introspection` attribute if either JWT or opaque token has been successfully introspected.
 
 [[token-introspection-userinfo-cache]]

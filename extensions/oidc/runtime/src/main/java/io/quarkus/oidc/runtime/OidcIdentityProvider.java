@@ -283,7 +283,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 throw new AuthenticationFailedException();
             }
             return introspectTokenUni(resolvedContext, token);
-        } else if (resolvedContext.provider.getMetadata().getJsonWebKeySetUri() == null) {
+        } else if (resolvedContext.provider.getMetadata().getJsonWebKeySetUri() == null
+                || resolvedContext.oidcConfig.token.requireJwtIntrospectionOnly) {
             // Verify JWT token with the remote introspection
             return introspectTokenUni(resolvedContext, token);
         } else {

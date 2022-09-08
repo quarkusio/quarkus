@@ -1125,6 +1125,13 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public boolean allowJwtIntrospection = true;
 
         /**
+         * Require that JWT tokens are only introspected remotely.
+         *
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean requireJwtIntrospectionOnly = false;
+
+        /**
          * Allow the remote introspection of the opaque tokens.
          *
          * Set this property to 'false' if only JWT tokens are expected.
@@ -1242,6 +1249,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setRequiredClaims(Map<String, String> requiredClaims) {
             this.requiredClaims = requiredClaims;
+        }
+
+        public boolean isRequireJwtIntrospectionOnly() {
+            return requireJwtIntrospectionOnly;
+        }
+
+        public void setRequireJwtIntrospectionOnly(boolean requireJwtIntrospectionOnly) {
+            this.requireJwtIntrospectionOnly = requireJwtIntrospectionOnly;
         }
     }
 

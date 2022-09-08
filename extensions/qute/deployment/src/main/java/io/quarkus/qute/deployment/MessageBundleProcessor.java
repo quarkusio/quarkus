@@ -1114,7 +1114,6 @@ public class MessageBundleProcessor {
         }
     }
 
-    @SuppressWarnings("deprecation")
     private String getKey(MethodInfo method, AnnotationInstance messageAnnotation, AnnotationValue defaultKeyValue) {
         AnnotationValue keyValue = messageAnnotation.value("key");
         String key;
@@ -1130,7 +1129,13 @@ public class MessageBundleProcessor {
             case Message.HYPHENATED_ELEMENT_NAME:
                 return StringUtil.hyphenate(method.name());
             case Message.UNDERSCORED_ELEMENT_NAME:
-                return StringUtil.join("_", StringUtil.lowerCase(StringUtil.camelHumpsIterator(method.name())));
+                return String.join("_", new Iterable<String>() {
+                    @Override
+                    public Iterator<String> iterator() {
+                        return StringUtil.lowerCase(StringUtil.camelHumpsIterator(method.name()));
+                    }
+
+                });
             default:
                 return keyValue.asString();
         }

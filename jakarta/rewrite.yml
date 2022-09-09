@@ -168,7 +168,7 @@ recipeList:
       newValue: 3.0.1
   - org.openrewrite.maven.ChangePropertyValue:
       key: hibernate-validator.version
-      newValue: 8.0.0.CR3
+      newValue: 8.0.0.Final
   # Websockets
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.websocket-api.version

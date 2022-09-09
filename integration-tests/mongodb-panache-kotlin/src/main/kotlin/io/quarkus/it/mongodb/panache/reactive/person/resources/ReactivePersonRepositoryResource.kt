@@ -63,7 +63,7 @@ class ReactivePersonRepositoryResource {
     // PATCH is not correct here but it allows to test persistOrUpdate without a specific subpath
     @PATCH
     fun upsertPerson(person: Person): Uni<Response> =
-        reactivePersonRepository.persistOrUpdate(person).map { v -> Response.accepted().build() }
+        reactivePersonRepository.persistOrUpdate(person).map { Response.accepted().build() }
 
     @DELETE
     @Path("/{id}")

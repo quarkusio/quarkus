@@ -220,12 +220,12 @@ internal open class ReactiveMongodbPanacheResourceTest {
         RestAssured.defaultParser = Parser.JSON
         RestAssured.config
             .objectMapperConfig(
-                ObjectMapperConfig().jackson2ObjectMapperFactory({ type, s ->
+                ObjectMapperConfig().jackson2ObjectMapperFactory { _, _ ->
                     ObjectMapper()
                         .registerModule(Jdk8Module())
                         .registerModule(JavaTimeModule())
                         .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                })
+                }
             )
         var list: List<Person> = get(endpoint).`as`(LIST_OF_PERSON_TYPE_REF)
         assertEquals(0, list.size)

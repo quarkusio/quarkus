@@ -11,14 +11,32 @@ include::./attributes.adoc[]
 You can use the Quarkus OpenID Connect (OIDC) extension to secure your JAX-RS applications using Bearer Token Authorization. 
 The Bearer Tokens are issued by OIDC and OAuth 2.0 compliant authorization servers, such as https://www.keycloak.org[Keycloak]. 
 
-Bearer Token authorization is the process of authorizing HTTP requests based on the existence and validity of a Bearer Token. 
+Bearer Token Authorization is the process of authorizing HTTP requests based on the existence and validity of a Bearer Token. 
 The Bearer Token provides information about the subject of the call which is used to determine whether or not an HTTP resource can be accessed.
+
+The following figures outline the Bearer Token Authorization mechanism in Quarkus:
 
 .Bearer Token Authorization mechanism in Quarkus
 image::security-bearer-token-authorization-mechanism-1.png[alt=Bearer Token Authorization, align=center]
 
+In the previous figure:
+
+. First, the Quarkus service retrieves verification keys from the OpenID Connect provider.
+. The Quarkus user accesses the single-page application.
+. The single-page application uses Authorization Code Flow to authenticate the user and retrieve tokens from the OpenID Connect provider.
+. The single-page application uses the access token to retrieve the service data from the Quarkus service.
+. The Quarkus service verifies the bearer access token and returns data to the single-page application.
+. The single-page application returns the same data to the Quarkus user.
+
 .Bearer Token Authorization mechanism with Client in Quarkus
 image::security-bearer-token-authorization-mechanism-2.png[alt=Bearer Token Authorization, align=center]
+
+In the previous figure:
+
+. First, the Quarkus service retrieves verification keys from the OpenID Connect provider.
+. The Client uses provided credentials to retrieve the access token from the OpenID Connect provider.
+. The Client uses the access token to retrieve the service data from the Quarkus service.
+. The Quarkus service verifies the bearer access token and returns data to the Client.
 
 If you need to authenticate and authorize the users using OpenID Connect Authorization Code Flow, see xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications].
 Also, if you use Keycloak and Bearer Tokens, see xref:security-keycloak-authorization.adoc[Using Keycloak to Centralize Authorization].

@@ -32,8 +32,7 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
     }
 
     public THIS param(String name, boolean[] value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
@@ -43,8 +42,7 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
     }
 
     public THIS param(String name, byte[] value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
@@ -54,8 +52,7 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
     }
 
     public THIS param(String name, short[] value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
@@ -65,8 +62,7 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
     }
 
     public THIS param(String name, int[] value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
@@ -76,8 +72,7 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
     }
 
     public THIS param(String name, long[] value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
@@ -87,8 +82,7 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
     }
 
     public THIS param(String name, float[] value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
@@ -98,8 +92,7 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
     }
 
     public THIS param(String name, double[] value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
@@ -109,68 +102,57 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
     }
 
     public THIS param(String name, char[] value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, String value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, String[] value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, Enum<?> value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, Enum<?>[] value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, Class<?> value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, Class<?>[] value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, ClassInfo value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, ClassInfo[] value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, AnnotationInstance value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, AnnotationInstance[] value) {
-        Objects.requireNonNull(value, "Parameter value can't be null");
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 

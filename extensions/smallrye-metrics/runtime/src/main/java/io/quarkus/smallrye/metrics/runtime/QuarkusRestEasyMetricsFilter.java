@@ -28,6 +28,7 @@ import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
 
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.ext.web.RoutingContext;
@@ -63,9 +64,11 @@ public class QuarkusRestEasyMetricsFilter implements ContainerRequestFilter, Con
 
     @Override
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) {
-        // mark the request as successful if it finished without exception or with a mapped exception
-        // if it ended with an unmapped exception, this filter is not called by RESTEasy
-        requestContext.setProperty("smallrye.metrics.jaxrs.successful", true);
+        Response.StatusType statusInfo = responseContext.getStatusInfo();
+        // consider all requests ending with 500 as unsuccessful, and anything else as successful
+        if (statusInfo != null && statusInfo.getStatusCode() != 500) {
+            requestContext.setProperty("smallrye.metrics.jaxrs.successful", true);
+        }
     }
 
 }

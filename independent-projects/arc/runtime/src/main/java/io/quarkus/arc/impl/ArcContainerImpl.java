@@ -86,6 +86,10 @@ public class ArcContainerImpl implements ArcContainer {
     private final ManagedContext requestContext;
     private final InjectableContext applicationContext;
     private final InjectableContext singletonContext;
+    // These singletons are used to optimize the getContexts(Class<? extends Annotation>)
+    private final List<InjectableContext> applicationContextSingleton;
+    // this singleton is only set if there is only one context registered for @RequestScoped (99.9% of cases)
+    private final List<InjectableContext> requestContextSingleton;
 
     private final ComputingCache<Resolvable, Set<InjectableBean<?>>> resolved;
     private final ComputingCache<String, InjectableBean<?>> beansById;
@@ -148,6 +152,10 @@ public class ArcContainerImpl implements ArcContainer {
             transitiveInterceptorBindings.putAll(components.getTransitiveInterceptorBindings());
             qualifierNonbindingMembers.putAll(components.getQualifierNonbindingMembers());
         }
+
+        List<InjectableContext> requestContexts = contexts.get(RequestScoped.class);
+        this.requestContextSingleton = requestContexts.size() == 1 ? Collections.singletonList(requestContexts.get(0)) : null;
+        this.applicationContextSingleton = Collections.singletonList(applicationContext);
 
         this.contexts = Map.copyOf(contexts);
 
@@ -232,6 +240,12 @@ public class ArcContainerImpl implements ArcContainer {
 
     @Override
     public List<InjectableContext> getContexts(Class<? extends Annotation> scopeType) {
+        // Optimize for buil-in normal scopes - this method is used internally during client proxy invocation
+        if (ApplicationScoped.class.equals(scopeType)) {
+            return applicationContextSingleton;
+        } else if (requestContextSingleton != null && RequestScoped.class.equals(scopeType)) {
+            return requestContextSingleton;
+        }
         return contexts.getOrDefault(scopeType, Collections.emptyList());
     }
 

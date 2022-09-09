@@ -296,6 +296,26 @@ recipeList:
       artifactId: jakarta.json
   - org.openrewrite.maven.RemoveProperty:
       propertyName: jakarta.json.version
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: io.smallrye
+      artifactId: smallrye-health
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.eclipse
+      artifactId: yasson
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.jboss.resteasy
+      artifactId: resteasy-json-binding-provider
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.jboss.resteasy
+      artifactId: resteasy-json-p-provider
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-json
@@ -303,11 +323,19 @@ displayName: Adjust Jakarta JSON dependencies
 recipeList:
   - org.openrewrite.maven.AddManagedDependency:
       groupId: org.eclipse.parsson
-      artifactId: jakarta.json
+      artifactId: parsson
       version: "${parsson.version}"
+  - org.openrewrite.maven.AddManagedDependency:
+      groupId: jakarta.json
+      artifactId: jakarta.json-api
+      version: "${jakarta.json-api.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: parsson.version
       newValue: 1.1.1
+      addIfMissing: true
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: jakarta.json-api.version
+      newValue: 2.1.1
       addIfMissing: true
   - org.openrewrite.maven.ChangePropertyValue:
       key: jboss-logmanager.version
@@ -321,7 +349,7 @@ recipeList:
       oldGroupId: org.glassfish
       oldArtifactId: jakarta.json
       newGroupId: org.eclipse.parsson
-      newArtifactId: jakarta.json
+      newArtifactId: parsson
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.build-parent

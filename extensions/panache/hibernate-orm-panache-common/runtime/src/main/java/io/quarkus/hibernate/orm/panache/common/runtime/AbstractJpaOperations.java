@@ -119,7 +119,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
     public void delete(Object entity) {
         EntityManager em = getEntityManager(entity.getClass());
-        em.remove(entity);
+        em.remove(em.contains(entity) ? entity : em.merge(entity));
     }
 
     public boolean isPersistent(Object entity) {

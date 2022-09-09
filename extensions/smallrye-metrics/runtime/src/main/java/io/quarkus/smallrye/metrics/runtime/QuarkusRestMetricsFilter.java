@@ -4,6 +4,7 @@ import static io.quarkus.smallrye.metrics.runtime.FilterUtil.maybeCreateMetrics;
 
 import java.lang.reflect.Method;
 
+import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ResourceInfo;
 
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
@@ -16,7 +17,7 @@ import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 public class QuarkusRestMetricsFilter {
 
     @ServerResponseFilter
-    public void filter(ResourceInfo resourceInfo, Throwable throwable) {
+    public void filter(ResourceInfo resourceInfo, ContainerResponseContext responseContext) {
         Class<?> resourceClass = resourceInfo.getResourceClass();
         Method resourceMethod = resourceInfo.getResourceMethod();
         if ((resourceClass == null) || (resourceMethod == null)) {
@@ -26,9 +27,7 @@ public class QuarkusRestMetricsFilter {
         FilterUtil.finishRequest(System.nanoTime(), resourceInfo.getResourceClass(),
                 resourceInfo.getResourceMethod().getName(),
                 resourceInfo.getResourceMethod().getParameterTypes(),
-                // FIXME: we need to know whether the exception is mapped or not, how to find out?
-                // for now let's assume all are unmapped, and therefore if there was an exception,
-                // increment the failure counter rather than the successful calls counter
-                () -> throwable == null);
+                // consider all requests ending with 500 as unsuccessful, and anything else as successful
+                () -> responseContext.getStatus() != 500);
     }
 }

@@ -51,6 +51,8 @@ public class AddStatefulSetResourceDecorator extends ResourceProvidingDecorator<
                 .editOrNewTemplate()
                 .editOrNewSpec()
                 .endSpec()
+                .editOrNewMetadata()
+                .endMetadata()
                 .endTemplate();
 
         // defaults for:

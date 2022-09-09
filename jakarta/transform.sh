@@ -356,8 +356,7 @@ git cherry-pick -x ${JAKARTA_10_CDI_HASH}
 
 ## JAX-RS/RESTEasy Reactive
 git fetch origin jakarta-10-jaxrs
-JAKARTA_10_JAXRS_HASH=$(git rev-parse origin/jakarta-10-jaxrs)
-git cherry-pick -x ${JAKARTA_10_JAXRS_HASH}
+git rev-list e466a63792db2e5d87eb0b662384618f16aaa419..origin/jakarta-10-jaxrs | tac | xargs git cherry-pick -x
 
 # Build phase
 

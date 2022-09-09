@@ -22,7 +22,7 @@ public class MetricsResource {
     @Path("/error")
     @GET
     public Response error() {
-        return Response.serverError().build();
+        return Response.status(501).build();
     }
 
     @Path("/exception")

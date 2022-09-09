@@ -30,7 +30,7 @@ jobs:
     # Skip main in forks
     if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: n1hility/cancel-previous-runs@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

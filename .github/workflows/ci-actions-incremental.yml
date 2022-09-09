@@ -114,7 +114,7 @@ jobs:
       gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
       gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Add quarkusio remote
@@ -228,7 +228,7 @@ jobs:
       run_maven: ${{ steps.calc-run-flags.outputs.run_maven }}
       run_tcks: ${{ steps.calc-run-flags.outputs.run_tcks }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Calculate matrix from native-tests.json
         id: calc-native-matrix
         run: |
@@ -308,7 +308,7 @@ jobs:
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Add quarkusio remote
@@ -411,7 +411,7 @@ jobs:
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -486,7 +486,7 @@ jobs:
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -552,7 +552,7 @@ jobs:
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -608,7 +608,7 @@ jobs:
             os-name: "ubuntu-latest"
           }
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -647,7 +647,7 @@ jobs:
     timeout-minutes: 150
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Add quarkusio remote
@@ -717,7 +717,7 @@ jobs:
       - name: Support longpaths on Windows
         if: "startsWith(matrix.os-name, 'windows')"
         run: git config --global core.longpaths true
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11

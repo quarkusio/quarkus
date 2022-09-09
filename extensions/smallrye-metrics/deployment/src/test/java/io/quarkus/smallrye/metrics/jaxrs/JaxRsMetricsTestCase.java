@@ -51,7 +51,9 @@ public class JaxRsMetricsTestCase {
         when()
                 .get("/error")
                 .then()
-                .statusCode(500);
+                .statusCode(501);
+        // we only consider requests ending with a 500 as "unsuccessful",
+        // so a 501 should count towards successful
         SimpleTimer metric = metricRegistry.simpleTimer("REST.request",
                 new Tag("class", METRIC_RESOURCE_CLASS_NAME),
                 new Tag("method", "error"));
@@ -71,7 +73,7 @@ public class JaxRsMetricsTestCase {
         assertEquals(0, metric.getCount());
         assertEquals(0, metric.getElapsedTime().toNanos());
 
-        // calls throwing an unmapped exception should only be reflected in the REST.request.unmappedException.total metric
+        // calls ending with status code 500 should only be reflected in the REST.request.unmappedException.total metric
         Counter exceptionCounter = metricRegistry.counter("REST.request.unmappedException.total",
                 new Tag("class", METRIC_RESOURCE_CLASS_NAME),
                 new Tag("method", "exception"));

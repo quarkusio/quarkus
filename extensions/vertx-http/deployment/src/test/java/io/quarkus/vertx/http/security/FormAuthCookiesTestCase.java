@@ -43,6 +43,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
 import io.restassured.filter.cookie.CookieFilter;
+import io.restassured.matcher.RestAssuredMatchers;
 
 public class FormAuthCookiesTestCase {
 
@@ -57,6 +58,7 @@ public class FormAuthCookiesTestCase {
             "quarkus.http.auth.form.timeout=PT2S\n" +
             "quarkus.http.auth.form.new-cookie-interval=PT1S\n" +
             "quarkus.http.auth.form.cookie-name=laitnederc-sukrauq\n" +
+            "quarkus.http.auth.form.http-only-cookie=true\n" +
             "quarkus.http.auth.session.encryption-key=CHANGEIT-CHANGEIT-CHANGEIT-CHANGEIT-CHANGEIT\n";
 
     @RegisterExtension
@@ -104,7 +106,7 @@ public class FormAuthCookiesTestCase {
                 .assertThat()
                 .statusCode(302)
                 .header("location", containsString("/admin%E2%9D%A4"))
-                .cookie("laitnederc-sukrauq", notNullValue());
+                .cookie("laitnederc-sukrauq", RestAssuredMatchers.detailedCookie().value(notNullValue()).httpOnly(true));
 
         RestAssured
                 .given()

@@ -124,6 +124,30 @@ public final class LoggingResourceProcessor {
         return new SystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager");
     }
 
+    // ensures that InitialConfigurator uses the build time configured minimum log level
+    @BuildStep
+    void setMinLevelForInitialConfigurator(LogBuildTimeConfig logBuildTimeConfig,
+            BuildProducer<SystemPropertyBuildItem> systemPropertyBuildItemBuildProducer,
+            BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageSystemPropertyBuildItemBuildProducer) {
+        Level effectiveMinLevel = logBuildTimeConfig.minLevel;
+        // go through the category config and if there exists a min-level lower than the root min-level, use it
+        for (CategoryBuildTimeConfig categoryBuildTimeConfig : logBuildTimeConfig.categories.values()) {
+            InheritableLevel inheritableLevel = categoryBuildTimeConfig.minLevel;
+            if (inheritableLevel.isInherited()) {
+                continue;
+            }
+            Level categoryMinLevel = inheritableLevel.getLevel();
+            if (categoryMinLevel.intValue() < effectiveMinLevel.intValue()) {
+                effectiveMinLevel = categoryMinLevel;
+            }
+        }
+        String key = "logging.initial-configurator.min-level";
+        String value = "" + effectiveMinLevel.intValue();
+        systemPropertyBuildItemBuildProducer.produce(new SystemPropertyBuildItem(key,
+                value));
+        nativeImageSystemPropertyBuildItemBuildProducer.produce(new NativeImageSystemPropertyBuildItem(key, value));
+    }
+
     @BuildStep
     void setUpDefaultLevels(List<LogCategoryBuildItem> categories,
             Consumer<RunTimeConfigurationDefaultBuildItem> configOutput,

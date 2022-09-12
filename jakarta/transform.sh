@@ -207,7 +207,8 @@ remove_banned_dependency "independent-projects/enforcer-rules/src/main/resources
 remove_banned_dependency "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
 update_banned_dependency "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" 'jakarta.xml.bind:jakarta.xml.bind-api' 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec'
 update_banned_dependency_advanced "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_3.0_spec</exclude>\n                <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
-update_banned_dependency_advanced "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" '<exclude>jakarta.json:jakarta.json-api</exclude>' "<exclude>jakarta.json:jakarta.json-api</exclude>\n                <exclude>org.glassfish:jakarta.json</exclude>"
+sed -i '/<!-- The API is packaged by the implementation-->/d' 'independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml'
+update_banned_dependency_advanced "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" '<exclude>jakarta.json:jakarta.json-api</exclude>' "<exclude>org.glassfish:jakarta.json</exclude>\n                <exclude>org.eclipse.parsson:jakarta.json</exclude>"
 update_banned_dependency_advanced "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" '<exclude>org.glassfish:javax.el</exclude>' "<exclude>org.glassfish:javax.el</exclude>\n                <exclude>org.glassfish:jakarta.el</exclude>"
 sed -i 's@<!-- Exclude jakarta.activation-api as the implementation contains it -->@<!-- Exclude com.sun.activation:jakarta.activation as we switched to Angus Activation -->@g' 'independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml'
 update_banned_dependency "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" 'jakarta.activation:jakarta.activation-api' 'com.sun.activation:jakarta.activation'
@@ -356,8 +357,7 @@ git cherry-pick -x ${JAKARTA_10_CDI_HASH}
 
 ## JAX-RS/RESTEasy Reactive
 git fetch origin jakarta-10-jaxrs
-JAKARTA_10_JAXRS_HASH=$(git rev-parse origin/jakarta-10-jaxrs)
-git cherry-pick -x ${JAKARTA_10_JAXRS_HASH}
+git rev-list e466a63792db2e5d87eb0b662384618f16aaa419..origin/jakarta-10-jaxrs | tac | xargs git cherry-pick -x
 
 # Build phase
 

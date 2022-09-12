@@ -14,7 +14,9 @@ import io.quarkus.redis.datasource.RedisCommands;
  *
  * @param <K> the type of the key
  * @param <V> the type of the value
+ * @deprecated Use {@link io.quarkus.redis.datasource.value.ValueCommands} instead.
  */
+@Deprecated
 public interface StringCommands<K, V> extends RedisCommands {
 
     /**

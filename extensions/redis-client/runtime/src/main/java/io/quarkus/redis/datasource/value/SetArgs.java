@@ -1,4 +1,4 @@
-package io.quarkus.redis.datasource.string;
+package io.quarkus.redis.datasource.value;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -9,11 +9,8 @@ import io.quarkus.redis.datasource.RedisCommandExtraArguments;
 
 /**
  * Argument list for the Redis <a href="https://redis.io/commands/SET">SET</a> command.
- *
- * @deprecated Use {@link io.quarkus.redis.datasource.value.SetArgs} instead.
  */
-@Deprecated
-public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implements RedisCommandExtraArguments {
+public class SetArgs implements RedisCommandExtraArguments {
 
     private long ex = -1;
     private long exAt = -1;

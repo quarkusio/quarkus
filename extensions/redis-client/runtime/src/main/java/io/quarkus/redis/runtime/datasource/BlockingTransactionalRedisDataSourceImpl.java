@@ -13,6 +13,7 @@ import io.quarkus.redis.datasource.sortedset.TransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.string.TransactionalStringCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
+import io.quarkus.redis.datasource.value.TransactionalValueCommands;
 import io.vertx.mutiny.redis.client.Command;
 
 public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRedisDataSource {
@@ -64,7 +65,12 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
 
     @Override
     public <K, V> TransactionalStringCommands<K, V> string(Class<K> redisKeyType, Class<V> valueType) {
-        return new BlockingTransactionalStringCommandsImpl<>(this, reactive.string(redisKeyType, valueType), timeout);
+        return new BlockingTransactionalStringCommandsImpl<>(this, reactive.value(redisKeyType, valueType), timeout);
+    }
+
+    @Override
+    public <K, V> TransactionalValueCommands<K, V> value(Class<K> redisKeyType, Class<V> valueType) {
+        return new BlockingTransactionalStringCommandsImpl<>(this, reactive.value(redisKeyType, valueType), timeout);
     }
 
     @Override

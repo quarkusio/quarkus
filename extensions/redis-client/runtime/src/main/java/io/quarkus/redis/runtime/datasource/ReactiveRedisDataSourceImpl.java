@@ -23,6 +23,7 @@ import io.quarkus.redis.datasource.string.ReactiveStringCommands;
 import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
+import io.quarkus.redis.datasource.value.ReactiveValueCommands;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.redis.client.Command;
@@ -248,6 +249,11 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
 
     @Override
     public <K, V> ReactiveStringCommands<K, V> string(Class<K> redisKeyType, Class<V> valueType) {
+        return new ReactiveStringCommandsImpl<>(this, redisKeyType, valueType);
+    }
+
+    @Override
+    public <K, V> ReactiveValueCommands<K, V> value(Class<K> redisKeyType, Class<V> valueType) {
         return new ReactiveStringCommandsImpl<>(this, redisKeyType, valueType);
     }
 

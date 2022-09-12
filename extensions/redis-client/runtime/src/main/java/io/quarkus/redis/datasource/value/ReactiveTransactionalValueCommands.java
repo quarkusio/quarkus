@@ -1,11 +1,11 @@
-package io.quarkus.redis.datasource.string;
+package io.quarkus.redis.datasource.value;
 
 import java.util.Map;
 
-import io.quarkus.redis.datasource.TransactionalRedisCommands;
+import io.quarkus.redis.datasource.ReactiveTransactionalRedisCommands;
+import io.smallrye.mutiny.Uni;
 
-@Deprecated
-public interface TransactionalStringCommands<K, V> extends TransactionalRedisCommands {
+public interface ReactiveTransactionalValueCommands<K, V> extends ReactiveTransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/append">APPEND</a>.
@@ -15,8 +15,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param value the value
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void append(K key, V value);
+    Uni<Void> append(K key, V value);
 
     /**
      * Execute the command <a href="https://redis.io/commands/decr">DECR</a>.
@@ -25,8 +27,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * Requires Redis 1.0.0
      *
      * @param key the key
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void decr(K key);
+    Uni<Void> decr(K key);
 
     /**
      * Execute the command <a href="https://redis.io/commands/decrby">DECRBY</a>.
@@ -36,8 +40,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param amount the amount, can be negative
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void decrby(K key, long amount);
+    Uni<Void> decrby(K key, long amount);
 
     /**
      * Execute the command <a href="https://redis.io/commands/get">GET</a>.
@@ -46,8 +52,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * Requires Redis 1.0.0
      *
      * @param key the key
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void get(K key);
+    Uni<Void> get(K key);
 
     /**
      * Execute the command <a href="https://redis.io/commands/getdel">GETDEL</a>.
@@ -56,8 +64,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * Requires Redis 6.2.0
      *
      * @param key the key
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void getdel(K key);
+    Uni<Void> getdel(K key);
 
     /**
      * Execute the command <a href="https://redis.io/commands/getex">GETEX</a>.
@@ -67,8 +77,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param args the getex command extra-arguments
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void getex(K key, GetExArgs args);
+    Uni<Void> getex(K key, GetExArgs args);
 
     /**
      * Execute the command <a href="https://redis.io/commands/getrange">GETRANGE</a>.
@@ -79,8 +91,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * @param key the key
      * @param start the start offset
      * @param end the end offset
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void getrange(K key, long start, long end);
+    Uni<Void> getrange(K key, long start, long end);
 
     /**
      * Execute the command <a href="https://redis.io/commands/getset">GETSET</a>.
@@ -90,9 +104,11 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param value the value
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      * @deprecated See https://redis.io/commands/getset
      */
-    void getset(K key, V value);
+    Uni<Void> getset(K key, V value);
 
     /**
      * Execute the command <a href="https://redis.io/commands/incr">INCR</a>.
@@ -101,8 +117,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * Requires Redis 1.0.0
      *
      * @param key the key
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void incr(K key);
+    Uni<Void> incr(K key);
 
     /**
      * Execute the command <a href="https://redis.io/commands/incrby">INCRBY</a>.
@@ -112,8 +130,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param amount the amount, can be negative
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void incrby(K key, long amount);
+    Uni<Void> incrby(K key, long amount);
 
     /**
      * Execute the command <a href="https://redis.io/commands/incrbyfloat">INCRBYFLOAT</a>.
@@ -123,8 +143,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param amount the amount, can be negative
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void incrbyfloat(K key, double amount);
+    Uni<Void> incrbyfloat(K key, double amount);
 
     /**
      * Execute the command <a href="https://redis.io/commands/lcs">LCS</a>.
@@ -134,8 +156,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key1 the key
      * @param key2 the key
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void lcs(K key1, K key2);
+    Uni<Void> lcs(K key1, K key2);
 
     /**
      * Execute the command <a href="https://redis.io/commands/lcs">LCS</a>.
@@ -145,8 +169,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key1 the key
      * @param key2 the key
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void lcsLength(K key1, K key2);
+    Uni<Void> lcsLength(K key1, K key2);
 
     /**
      * Execute the command <a href="https://redis.io/commands/mget">MGET</a>.
@@ -155,8 +181,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * Requires Redis 1.0.0
      *
      * @param keys the keys
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void mget(K... keys);
+    Uni<Void> mget(K... keys);
 
     /**
      * Execute the command <a href="https://redis.io/commands/mset">MSET</a>.
@@ -165,8 +193,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * Requires Redis 1.0.1
      *
      * @param map the key/value map containing the items to store
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void mset(Map<K, V> map);
+    Uni<Void> mset(Map<K, V> map);
 
     /**
      * Execute the command <a href="https://redis.io/commands/msetnx">MSETNX</a>.
@@ -175,8 +205,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * Requires Redis 1.0.1
      *
      * @param map the key/value map containing the items to store
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void msetnx(Map<K, V> map);
+    Uni<Void> msetnx(Map<K, V> map);
 
     /**
      * Execute the command <a href="https://redis.io/commands/psetex">PSETEX</a>.
@@ -187,8 +219,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * @param key the key
      * @param milliseconds the duration in ms
      * @param value the value
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void psetex(K key, long milliseconds, V value);
+    Uni<Void> psetex(K key, long milliseconds, V value);
 
     /**
      * Execute the command <a href="https://redis.io/commands/set">SET</a>.
@@ -198,8 +232,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param value the value
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void set(K key, V value);
+    Uni<Void> set(K key, V value);
 
     /**
      * Execute the command <a href="https://redis.io/commands/set">SET</a>.
@@ -210,8 +246,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * @param key the key
      * @param value the value
      * @param setArgs the set command extra-arguments
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void set(K key, V value, SetArgs setArgs);
+    Uni<Void> set(K key, V value, SetArgs setArgs);
 
     /**
      * Execute the command <a href="https://redis.io/commands/set">SET</a>.
@@ -221,8 +259,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param value the value
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void setGet(K key, V value);
+    Uni<Void> setGet(K key, V value);
 
     /**
      * Execute the command <a href="https://redis.io/commands/set">SET</a>.
@@ -233,8 +273,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * @param key the key
      * @param value the value
      * @param setArgs the set command extra-arguments
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void setGet(K key, V value, SetArgs setArgs);
+    Uni<Void> setGet(K key, V value, SetArgs setArgs);
 
     /**
      * Execute the command <a href="https://redis.io/commands/setex">SETEX</a>.
@@ -245,7 +287,7 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * @param key the key
      * @param value the value
      */
-    void setex(K key, long seconds, V value);
+    Uni<Void> setex(K key, long seconds, V value);
 
     /**
      * Execute the command <a href="https://redis.io/commands/setnx">SETNX</a>.
@@ -255,8 +297,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param value the value
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void setnx(K key, V value);
+    Uni<Void> setnx(K key, V value);
 
     /**
      * Execute the command <a href="https://redis.io/commands/setrange">SETRANGE</a>.
@@ -266,8 +310,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param value the value
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void setrange(K key, long offset, V value);
+    Uni<Void> setrange(K key, long offset, V value);
 
     /**
      * Execute the command <a href="https://redis.io/commands/strlen">STRLEN</a>.
@@ -276,6 +322,8 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * Requires Redis 2.2.0
      *
      * @param key the key
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *         otherwise. In the case of failure, the transaction is discarded.
      */
-    void strlen(K key);
+    Uni<Void> strlen(K key);
 }

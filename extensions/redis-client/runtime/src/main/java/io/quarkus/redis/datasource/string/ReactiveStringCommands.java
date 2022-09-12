@@ -15,7 +15,9 @@ import io.smallrye.mutiny.Uni;
  *
  * @param <K> the type of the key
  * @param <V> the type of the value
+ * @deprecated Use {@link io.quarkus.redis.datasource.value.ReactiveValueCommands} instead.
  */
+@Deprecated
 public interface ReactiveStringCommands<K, V> extends ReactiveRedisCommands {
 
     /**

@@ -18,7 +18,7 @@ public class IncrementResource {
 
     @GET
     public int increment() {
-        return (int) commands.incrby("counter", INCREMENT);
+        return (int) commands.incrby("counter-dev-mode", INCREMENT);
     }
 
 }

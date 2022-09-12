@@ -253,6 +253,11 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                 LOG.debugf("Authentication failure: %s", t.getCause());
                                                 throw new AuthenticationCompletionException(t.getCause());
                                             }
+                                            if (session.getRefreshToken() == null) {
+                                                LOG.debug(
+                                                        "Token has expired, token refresh is not possible because the refresh token is null");
+                                                throw new AuthenticationFailedException(t.getCause());
+                                            }
                                             if (!configContext.oidcConfig.token.refreshExpired) {
                                                 LOG.debug("Token has expired, token refresh is not allowed");
                                                 throw new AuthenticationFailedException(t.getCause());
@@ -262,13 +267,18 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                     session.getRefreshToken(),
                                                     context,
                                                     identityProviderManager, false, null);
-                                        } else {
+                                        } else if (session.getRefreshToken() != null) {
                                             LOG.debug("Token auto-refresh is starting");
                                             return refreshSecurityIdentity(configContext,
                                                     session.getRefreshToken(),
                                                     context,
                                                     identityProviderManager, true,
                                                     ((TokenAutoRefreshException) t).getSecurityIdentity());
+                                        } else {
+                                            LOG.debug(
+                                                    "Token auto-refresh is required it is not possible because the refresh token is null");
+                                            // Auto-refreshing is not possible, just continue with the current security identity
+                                            return Uni.createFrom().item(((TokenAutoRefreshException) t).getSecurityIdentity());
                                         }
                                     }
                                 });
@@ -894,7 +904,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private Uni<AuthorizationCodeTokens> refreshTokensUni(TenantConfigContext configContext, String refreshToken) {
-        return configContext.provider.refreshTokens(refreshToken);
+        return configContext.provider.refreshTokens(refreshToken).onItem()
+                .transform(new Function<AuthorizationCodeTokens, AuthorizationCodeTokens>() {
+                    @Override
+                    public AuthorizationCodeTokens apply(AuthorizationCodeTokens tokens) {
+                        return tokens.getRefreshToken() != null ? tokens
+                                : new AuthorizationCodeTokens(tokens.getIdToken(), tokens.getAccessToken(), refreshToken);
+                    }
+
+                });
     }
 
     private Uni<AuthorizationCodeTokens> getCodeFlowTokensUni(RoutingContext context, TenantConfigContext configContext,

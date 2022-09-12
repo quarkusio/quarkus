@@ -495,6 +495,15 @@ If the access token needs to be refreshed but no refresh token is available then
 
 Please note that some OpenID Connect Providers will not return a refresh token in a `client_credentials` grant response. For example, starting from Keycloak 12 a refresh token will not be returned by default for `client_credentials`. The providers may also restrict a number of times a refresh token can be used.
 
+[[revoke-access-tokens]]
+=== Revoking Access Tokens
+
+If your OpenId Connect provider such as Keycloak supports a token revocation endpoint then `OidcClient#revokeAccessToken` can be used to revoke the current access token. The revocation endpoint URL will be discovered alongside the token request URI or can be configured with `quarkus.oidc-client.revoke-path`.
+
+You may want to have the access token revoked if using this token with a REST client fails with HTTP `401` or the access token has already been used for a long time and you'd like to refresh it.
+
+This can be achieved by requesting a token refresh using a refresh token. However, if the refresh token is not available then you can refresh it by revoking it first and then request a new access token.
+
 [[oidc-client-authentication]]
 === OidcClient Authentication
 

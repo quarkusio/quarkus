@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.fabric8.kubernetes.client.Config;
+import io.fabric8.kubernetes.client.GenericKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
@@ -25,7 +26,9 @@ public abstract class AbstractKubernetesTestResource<T, C extends KubernetesClie
         server = createServer();
         initServer();
 
-        systemProps.put(Config.KUBERNETES_MASTER_SYSTEM_PROPERTY, getClient().getConfiguration().getMasterUrl());
+        try (GenericKubernetesClient<?> client = getClient()) {
+            systemProps.put(Config.KUBERNETES_MASTER_SYSTEM_PROPERTY, client.getConfiguration().getMasterUrl());
+        }
 
         configureServer();
         //these actually need to be system properties
@@ -37,7 +40,7 @@ public abstract class AbstractKubernetesTestResource<T, C extends KubernetesClie
         return systemProps;
     }
 
-    protected abstract C getClient();
+    protected abstract GenericKubernetesClient<C> getClient();
 
     /**
      * Can be used by subclasses in order to

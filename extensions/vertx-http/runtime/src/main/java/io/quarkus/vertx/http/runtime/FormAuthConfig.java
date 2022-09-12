@@ -97,4 +97,10 @@ public class FormAuthConfig {
      */
     @ConfigItem(defaultValue = "quarkus-credential")
     public String cookieName;
+
+    /**
+     * Set the HttpOnly attribute to prevent access to the cookie via JavaScript.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean httpOnlyCookie;
 }

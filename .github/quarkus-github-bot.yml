@@ -387,7 +387,7 @@ triage:
         - independent-projects/bootstrap/
         - independent-projects/tools/
     - labels: [area/documentation]
-      notify: [ebullient, michelle-purcell, hmanwani-rh, sheilamjones, MichalMaler]
+      notify: [ebullient, inoxx03, sunayna15, michelle-purcell, hmanwani-rh, sheilamjones, MichalMaler]
       directories:
         - docs/
     - labels: [area/infra-automation]

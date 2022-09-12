@@ -1,7 +1,9 @@
 package io.quarkus.deployment.logging;
 
+import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -13,6 +15,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.logging.Filter;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -29,9 +32,13 @@ import org.aesh.command.completer.CompleterInvocation;
 import org.aesh.command.completer.OptionCompleter;
 import org.aesh.command.invocation.CommandInvocation;
 import org.aesh.command.option.Option;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.EmbeddedConfigurator;
 import org.jboss.logmanager.LogManager;
@@ -49,6 +56,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
 import io.quarkus.deployment.builditem.ConsoleFormatterBannerBuildItem;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
@@ -65,6 +73,7 @@ import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.WebSocketLogHandlerBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
@@ -79,6 +88,7 @@ import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.dev.console.CurrentAppExceptionHighlighter;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.gizmo.AnnotationCreator;
@@ -91,11 +101,13 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.logging.LoggingFilter;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.console.ConsoleRuntimeConfig;
 import io.quarkus.runtime.logging.CategoryBuildTimeConfig;
 import io.quarkus.runtime.logging.CleanupFilterConfig;
+import io.quarkus.runtime.logging.DiscoveredLogComponents;
 import io.quarkus.runtime.logging.InheritableLevel;
 import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.runtime.logging.LogCleanupFilterElement;
@@ -113,6 +125,13 @@ public final class LoggingResourceProcessor {
     private static final MethodDescriptor IS_MIN_LEVEL_ENABLED = MethodDescriptor.ofMethod(MIN_LEVEL_COMPUTE_CLASS_NAME,
             "isMinLevelEnabled",
             boolean.class, int.class, String.class);
+
+    private static final DotName LOGGING_FILTER = DotName.createSimple(LoggingFilter.class.getName());
+    private static final DotName FILTER = DotName.createSimple(Filter.class.getName());
+    private static final String ILLEGAL_LOGGING_FILTER_USE_MESSAGE = "'@" + LoggingFilter.class.getName()
+            + "' can only be used on classes that implement '"
+            + Filter.class.getName() + "' and that are marked as final.";
+    private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
     @BuildStep
     void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
@@ -204,6 +223,7 @@ public final class LoggingResourceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     LoggingSetupBuildItem setupLoggingRuntimeInit(RecorderContext context, LoggingSetupRecorder recorder, LogConfig log,
             LogBuildTimeConfig buildLog,
+            CombinedIndexBuildItem combinedIndexBuildItem,
             LogCategoryMinLevelDefaultsBuildItem categoryMinLevelDefaults,
             Optional<WebSocketLogHandlerBuildItem> logStreamHandlerBuildItem,
             List<LogHandlerBuildItem> handlerBuildItems,
@@ -214,7 +234,8 @@ public final class LoggingResourceProcessor {
             List<LogStreamBuildItem> logStreamBuildItems,
             BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
             LaunchModeBuildItem launchModeBuildItem,
-            List<LogCleanupFilterBuildItem> logCleanupFilters) {
+            List<LogCleanupFilterBuildItem> logCleanupFilters,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
         if (!launchModeBuildItem.isAuxiliaryApplication()
                 || launchModeBuildItem.getAuxiliaryDevModeType().orElse(null) == DevModeType.TEST_ONLY) {
             final List<RuntimeValue<Optional<Handler>>> handlers = handlerBuildItems.stream()
@@ -245,13 +266,22 @@ public final class LoggingResourceProcessor {
                     .map(LogFileFormatBuildItem::getFormatterValue).collect(Collectors.toList());
             context.registerSubstitution(InheritableLevel.ActualLevel.class, String.class, InheritableLevel.Substitution.class);
             context.registerSubstitution(InheritableLevel.Inherited.class, String.class, InheritableLevel.Substitution.class);
+
+            DiscoveredLogComponents discoveredLogComponents = discoverLogComponents(combinedIndexBuildItem.getIndex());
+            if (!discoveredLogComponents.getNameToFilterClass().isEmpty()) {
+                reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(true, false, false,
+                        discoveredLogComponents.getNameToFilterClass().values().toArray(
+                                EMPTY_STRING_ARRAY)));
+            }
+
             shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(
-                    recorder.initializeLogging(log, buildLog, categoryMinLevelDefaults.content, alwaysEnableLogStream,
+                    recorder.initializeLogging(log, buildLog, discoveredLogComponents,
+                            categoryMinLevelDefaults.content, alwaysEnableLogStream,
                             devUiLogHandler, handlers, namedHandlers,
                             consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue)
                                     .collect(Collectors.toList()),
                             possibleFileFormatters,
-                            possibleSupplier, launchModeBuildItem.getLaunchMode())));
+                            possibleSupplier, launchModeBuildItem.getLaunchMode(), true)));
             LogConfig logConfig = new LogConfig();
             ConfigInstantiator.handleObject(logConfig);
             for (LogCleanupFilterBuildItem i : logCleanupFilters) {
@@ -274,6 +304,61 @@ public final class LoggingResourceProcessor {
             });
         }
         return new LoggingSetupBuildItem();
+    }
+
+    private DiscoveredLogComponents discoverLogComponents(IndexView index) {
+        Collection<AnnotationInstance> loggingFilterInstances = index.getAnnotations(LOGGING_FILTER);
+        DiscoveredLogComponents result = new DiscoveredLogComponents();
+
+        Map<String, String> filtersMap = new HashMap<>();
+        for (AnnotationInstance instance : loggingFilterInstances) {
+            AnnotationTarget target = instance.target();
+            if (target.kind() != AnnotationTarget.Kind.CLASS) {
+                throw new IllegalStateException("Unimplemented mode of use of '" + LoggingFilter.class.getName() + "'");
+            }
+            ClassInfo classInfo = target.asClass();
+            if (!Modifier.isFinal(classInfo.flags())) {
+                throw new RuntimeException(
+                        ILLEGAL_LOGGING_FILTER_USE_MESSAGE + " Offending class is '" + classInfo.name() + "'");
+            }
+            boolean isFilterImpl = false;
+            ClassInfo currentClassInfo = classInfo;
+            while ((currentClassInfo != null) && (!JandexUtil.DOTNAME_OBJECT.equals(currentClassInfo.name()))) {
+                boolean hasFilterInterface = false;
+                List<DotName> ifaces = currentClassInfo.interfaceNames();
+                for (DotName iface : ifaces) {
+                    if (FILTER.equals(iface)) {
+                        hasFilterInterface = true;
+                        break;
+                    }
+                }
+                if (hasFilterInterface) {
+                    isFilterImpl = true;
+                    break;
+                }
+                currentClassInfo = index.getClassByName(currentClassInfo.superName());
+            }
+            if (!isFilterImpl) {
+                throw new RuntimeException(
+                        ILLEGAL_LOGGING_FILTER_USE_MESSAGE + " Offending class is '" + classInfo.name() + "'");
+            }
+
+            MethodInfo ctor = classInfo.method("<init>");
+            if ((ctor == null) || (ctor.typeParameters().size() > 0)) {
+                throw new RuntimeException("Classes annotated with '" + LoggingFilter.class.getName()
+                        + "' must have a no-args constructor. Offending class is '" + classInfo.name() + "'");
+            }
+            String filterName = instance.value("name").asString();
+            if (filtersMap.containsKey(filterName)) {
+                throw new RuntimeException("Filter '" + filterName + "' was defined multiple times.");
+            }
+            filtersMap.put(filterName, classInfo.name().toString());
+        }
+        if (!filtersMap.isEmpty()) {
+            result.setNameToFilterClass(filtersMap);
+        }
+
+        return result;
     }
 
     @BuildStep(onlyIfNot = IsNormal.class)

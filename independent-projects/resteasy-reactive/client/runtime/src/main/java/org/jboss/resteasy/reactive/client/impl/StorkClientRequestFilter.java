@@ -34,7 +34,8 @@ public class StorkClientRequestFilter implements ResteasyReactiveClientRequestFi
             try {
                 serviceInstance = Stork.getInstance()
                         .getService(serviceName)
-                        .selectInstanceAndRecordStart(measureTime);
+                        .selectInstanceAndRecordStart(measureTime)
+                        .log();
             } catch (Throwable e) {
                 log.error("Error selecting service instance for serviceName: " + serviceName, e);
                 requestContext.resume(e);
@@ -46,8 +47,18 @@ public class StorkClientRequestFilter implements ResteasyReactiveClientRequestFi
                         boolean isHttps = instance.isSecure() || "storks".equals(uri.getScheme());
                         String scheme = isHttps ? "https" : "http";
                         try {
+                            // In the case the service instance does not set the host and/or port
+                            String host = instance.getHost() == null ? "localhost" : instance.getHost();
+                            int port = instance.getPort();
+                            if (instance.getPort() == 0) {
+                                if (isHttps) {
+                                    port = 433;
+                                } else {
+                                    port = 80;
+                                }
+                            }
                             URI newUri = new URI(scheme,
-                                    uri.getUserInfo(), instance.getHost(), instance.getPort(),
+                                    uri.getUserInfo(), host, port,
                                     uri.getPath(), uri.getQuery(), uri.getFragment());
                             requestContext.setUri(newUri);
                             if (measureTime && instance.gatherStatistics()) {

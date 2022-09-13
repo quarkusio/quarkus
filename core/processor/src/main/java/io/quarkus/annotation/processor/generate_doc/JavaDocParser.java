@@ -24,6 +24,7 @@ final class JavaDocParser {
     private static final Pattern START_OF_LINE = Pattern.compile("^", Pattern.MULTILINE);
     private static final Pattern REPLACE_WINDOWS_EOL = Pattern.compile("\r\n");
     private static final Pattern REPLACE_MACOS_EOL = Pattern.compile("\r");
+    private static final Pattern STARTING_SPACE = Pattern.compile("^ +");
 
     private static final String BACKTICK = "`";
     private static final String HASH = "#";
@@ -269,7 +270,21 @@ final class JavaDocParser {
                     sb.append(NEW_LINE);
                     break;
                 case TEXT_NODE:
-                    appendEscapedAsciiDoc(sb, ((TextNode) childNode).text());
+                    String text = ((TextNode) childNode).text();
+
+                    if (text.isEmpty()) {
+                        break;
+                    }
+
+                    // Indenting the first line of a paragraph by one or more spaces makes the block literal
+                    // Please see https://docs.asciidoctor.org/asciidoc/latest/verbatim/literal-blocks/ for more info
+                    // This prevents literal blocks f.e. after <br>
+                    final var startingSpaceMatcher = STARTING_SPACE.matcher(text);
+                    if (sb.length() > 0 && '\n' == sb.charAt(sb.length() - 1) && startingSpaceMatcher.find()) {
+                        text = startingSpaceMatcher.replaceFirst("");
+                    }
+
+                    appendEscapedAsciiDoc(sb, text);
                     break;
                 default:
                     appendHtml(sb, childNode);

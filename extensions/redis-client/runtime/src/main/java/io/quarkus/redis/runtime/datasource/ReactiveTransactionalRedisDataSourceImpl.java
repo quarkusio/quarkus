@@ -15,6 +15,7 @@ import io.quarkus.redis.datasource.set.ReactiveTransactionalSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveTransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.string.ReactiveTransactionalStringCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
+import io.quarkus.redis.datasource.value.ReactiveTransactionalValueCommands;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Command;
 
@@ -61,9 +62,15 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
     }
 
     @Override
+    public <K, V> ReactiveTransactionalValueCommands<K, V> value(Class<K> redisKeyType, Class<V> valueType) {
+        return new ReactiveTransactionalStringCommandsImpl<>(this,
+                (ReactiveStringCommandsImpl<K, V>) this.reactive.value(redisKeyType, valueType), tx);
+    }
+
+    @Override
     public <K, V> ReactiveTransactionalStringCommands<K, V> string(Class<K> redisKeyType, Class<V> valueType) {
         return new ReactiveTransactionalStringCommandsImpl<>(this,
-                (ReactiveStringCommandsImpl<K, V>) this.reactive.string(redisKeyType, valueType), tx);
+                (ReactiveStringCommandsImpl<K, V>) this.reactive.value(redisKeyType, valueType), tx);
     }
 
     @Override

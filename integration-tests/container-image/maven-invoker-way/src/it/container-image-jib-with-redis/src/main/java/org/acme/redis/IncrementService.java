@@ -2,7 +2,7 @@ package org.acme.redis;
 
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.keys.KeyCommands;
-import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.datasource.value.ValueCommands;
 
 import javax.inject.Singleton;
 import java.util.List;
@@ -12,12 +12,12 @@ class IncrementService {
 
 
     private final KeyCommands<String> keyCommands;
-    private final StringCommands<String, Integer> stringCommands;
+    private final ValueCommands<String, Integer> valueCommands;
 
     public IncrementService(RedisDataSource ds) {
 
         keyCommands = ds.key();
-        stringCommands = ds.string(Integer.class);
+        valueCommands = ds.value(Integer.class);
 
     }
 
@@ -26,16 +26,15 @@ class IncrementService {
     }
 
     Integer get(String key) {
-        return stringCommands.get(key);
+        return valueCommands.get(key);
     }
 
     void set(String key, Integer value) {
-        stringCommands.set(key, value);
-        ;
+        valueCommands.set(key, value);
     }
 
     void increment(String key, Integer incrementBy) {
-        stringCommands.incrby(key, incrementBy);
+        valueCommands.incrby(key, incrementBy);
     }
 
     List<String> keys() {

@@ -1,4 +1,4 @@
-package io.quarkus.redis.datasource.string;
+package io.quarkus.redis.datasource.value;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -8,21 +8,15 @@ import java.util.List;
 import io.quarkus.redis.datasource.RedisCommandExtraArguments;
 
 /**
- * Argument list for the Redis <a href="https://redis.io/commands/SET">SET</a> command.
- *
- * @deprecated Use {@link io.quarkus.redis.datasource.value.SetArgs} instead.
+ * Argument list for the Redis <a href="https://redis.io/commands/getex">GETEX</a> command.
  */
-@Deprecated
-public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implements RedisCommandExtraArguments {
+public class GetExArgs implements RedisCommandExtraArguments {
 
     private long ex = -1;
     private long exAt = -1;
     private long px = -1;
     private long pxAt = -1;
-    private boolean nx;
-    private boolean keepttl;
-    private boolean xx;
-    private boolean get;
+    private boolean persist;
 
     /**
      * Set the specified expire time, in seconds.
@@ -30,10 +24,7 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
      * @param timeout expire time in seconds.
      * @return the current {@code GetExArgs}
      */
-    public SetArgs ex(long timeout) {
-        if (timeout <= 0) {
-            throw new IllegalArgumentException("`timeout` must be positive");
-        }
+    public GetExArgs ex(long timeout) {
         this.ex = timeout;
         return this;
     }
@@ -44,7 +35,7 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
      * @param timeout expire time in seconds.
      * @return the current {@code GetExArgs}
      */
-    public SetArgs ex(Duration timeout) {
+    public GetExArgs ex(Duration timeout) {
         if (timeout == null) {
             throw new IllegalArgumentException("`timeout` must not be `null`");
         }
@@ -57,7 +48,7 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
      * @param timestamp the timestamp
      * @return the current {@code GetExArgs}
      */
-    public SetArgs exAt(long timestamp) {
+    public GetExArgs exAt(long timestamp) {
         this.exAt = timestamp;
         return this;
     }
@@ -68,7 +59,7 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
      * @param timestamp the timestamp type: posix time in seconds.
      * @return the current {@code GetExArgs}
      */
-    public SetArgs exAt(Instant timestamp) {
+    public GetExArgs exAt(Instant timestamp) {
         if (timestamp == null) {
             throw new IllegalArgumentException("`timestamp` must not be `null`");
         }
@@ -82,10 +73,7 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
      * @param timeout expire time in milliseconds.
      * @return the current {@code GetExArgs}
      */
-    public SetArgs px(long timeout) {
-        if (timeout < 0) {
-            throw new IllegalArgumentException("`timeout` must be positive");
-        }
+    public GetExArgs px(long timeout) {
         this.px = timeout;
         return this;
     }
@@ -96,7 +84,7 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
      * @param timeout expire time in milliseconds.
      * @return the current {@code GetExArgs}
      */
-    public SetArgs px(Duration timeout) {
+    public GetExArgs px(Duration timeout) {
         if (timeout == null) {
             throw new IllegalArgumentException("`timeout` must not be `null`");
         }
@@ -109,7 +97,7 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
      * @param timestamp the timestamp
      * @return the current {@code GetExArgs}
      */
-    public SetArgs pxAt(long timestamp) {
+    public GetExArgs pxAt(long timestamp) {
         this.pxAt = timestamp;
         return this;
     }
@@ -118,9 +106,9 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
      * Set the specified Unix time at which the key will expire, in milliseconds.
      *
      * @param timestamp the timestamp
-     * @return the current {@code SetArgs}
+     * @return the current {@code GetExArgs}
      */
-    public SetArgs pxAt(Instant timestamp) {
+    public GetExArgs pxAt(Instant timestamp) {
         if (timestamp == null) {
             throw new IllegalArgumentException("`timestamp` must not be `null`");
         }
@@ -128,43 +116,12 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
     }
 
     /**
-     * Only set the key if it does not already exist.
+     * Sets {@code PERSIST}
      *
-     * @return the current {@code SetArgs}
+     * @return the current {@code GetExArgs}
      */
-    public SetArgs nx() {
-        this.nx = true;
-        return this;
-    }
-
-    /**
-     * Set the value and retain the existing TTL.
-     *
-     * @return the current {@code SetArgs}
-     */
-    public SetArgs keepttl() {
-        this.keepttl = true;
-        return this;
-    }
-
-    /**
-     * Only set the key if it already exists.
-     *
-     * @return the current {@code SetArgs}
-     */
-    public SetArgs xx() {
-        this.xx = true;
-        return this;
-    }
-
-    /**
-     * Return the old string stored at key, or nil if key did not exist. An error is returned and SET aborted if the
-     * value stored at key is not a string.
-     *
-     * @return the current {@code SetArgs}
-     */
-    public SetArgs get() {
-        this.get = true;
+    public GetExArgs persist() {
+        this.persist = true;
         return this;
     }
 
@@ -190,20 +147,8 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
             args.add(Long.toString(pxAt));
         }
 
-        if (nx) {
-            args.add("NX");
-        }
-
-        if (xx) {
-            args.add("XX");
-        }
-
-        if (keepttl) {
-            args.add("KEEPTTL");
-        }
-
-        if (get) {
-            args.add("GET");
+        if (persist) {
+            args.add("PERSIST");
         }
         return args;
     }

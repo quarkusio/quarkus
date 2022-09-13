@@ -9,14 +9,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.redis.datasource.string.ReactiveTransactionalStringCommands;
-import io.quarkus.redis.datasource.string.TransactionalStringCommands;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
+import io.quarkus.redis.datasource.value.ReactiveTransactionalValueCommands;
+import io.quarkus.redis.datasource.value.TransactionalValueCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 
-@SuppressWarnings("deprecation")
-public class TransactionalStringCommandsTest extends DatasourceTestBase {
+public class TransactionalValueCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource blocking;
     private ReactiveRedisDataSource reactive;
@@ -35,7 +34,7 @@ public class TransactionalStringCommandsTest extends DatasourceTestBase {
     @Test
     public void setBlocking() {
         TransactionResult result = blocking.withTransaction(tx -> {
-            TransactionalStringCommands<String, String> string = tx.string(String.class);
+            TransactionalValueCommands<String, String> string = tx.value(String.class);
             assertThat(string.getDataSource()).isEqualTo(tx);
             string.set(key, "hello");
             string.setnx("k2", "bonjour");
@@ -55,7 +54,7 @@ public class TransactionalStringCommandsTest extends DatasourceTestBase {
     @Test
     public void setReactive() {
         TransactionResult result = reactive.withTransaction(tx -> {
-            ReactiveTransactionalStringCommands<String, String> string = tx.string(String.class);
+            ReactiveTransactionalValueCommands<String, String> string = tx.value(String.class);
             return string.set(key, "hello")
                     .chain(() -> string.setnx("k2", "bonjour"))
                     .chain(() -> string.append(key, "-1"))

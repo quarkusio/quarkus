@@ -1,11 +1,24 @@
-package io.quarkus.redis.datasource.string;
+package io.quarkus.redis.datasource.value;
 
 import java.util.Map;
 
-import io.quarkus.redis.datasource.TransactionalRedisCommands;
+import io.quarkus.redis.datasource.RedisCommands;
 
-@Deprecated
-public interface TransactionalStringCommands<K, V> extends TransactionalRedisCommands {
+/**
+ * Allows executing commands from the {@code string} group.
+ * See <a href="https://redis.io/commands/?group=string">the string command list</a> for further information
+ * about these commands.
+ * <p>
+ * This group can be used with value of type {@code String}, or a type which will be automatically
+ * serialized/deserialized with a codec.
+ * <p>
+ * <strong>NOTE:</strong> Instead of {@code string}, this group is named {@code value} to avoid the confusion with the
+ * Java String type. Indeed, Redis strings can be strings, numbers, byte arrays...
+ *
+ * @param <K> the type of the key
+ * @param <V> the type of the value
+ */
+public interface ValueCommands<K, V> extends RedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/append">APPEND</a>.
@@ -15,8 +28,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param value the value
-     */
-    void append(K key, V value);
+     * @return the length of the string after the append operation.
+     **/
+    long append(K key, V value);
 
     /**
      * Execute the command <a href="https://redis.io/commands/decr">DECR</a>.
@@ -25,8 +39,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * Requires Redis 1.0.0
      *
      * @param key the key
-     */
-    void decr(K key);
+     * @return the value of key after the decrement
+     **/
+    long decr(K key);
 
     /**
      * Execute the command <a href="https://redis.io/commands/decrby">DECRBY</a>.
@@ -36,8 +51,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param amount the amount, can be negative
-     */
-    void decrby(K key, long amount);
+     * @return the value of key after the decrement
+     **/
+    long decrby(K key, long amount);
 
     /**
      * Execute the command <a href="https://redis.io/commands/get">GET</a>.
@@ -46,8 +62,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * Requires Redis 1.0.0
      *
      * @param key the key
-     */
-    void get(K key);
+     * @return the value of key, or {@code null} when key does not exist.
+     **/
+    V get(K key);
 
     /**
      * Execute the command <a href="https://redis.io/commands/getdel">GETDEL</a>.
@@ -56,8 +73,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * Requires Redis 6.2.0
      *
      * @param key the key
-     */
-    void getdel(K key);
+     * @return the value of key, {@code null} when key does not exist, or an error if the key's value type isn't a string.
+     **/
+    V getdel(K key);
 
     /**
      * Execute the command <a href="https://redis.io/commands/getex">GETEX</a>.
@@ -67,8 +85,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param args the getex command extra-arguments
-     */
-    void getex(K key, GetExArgs args);
+     * @return the value of key, or {@code null} when key does not exist.
+     **/
+    V getex(K key, GetExArgs args);
 
     /**
      * Execute the command <a href="https://redis.io/commands/getrange">GETRANGE</a>.
@@ -79,8 +98,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * @param key the key
      * @param start the start offset
      * @param end the end offset
-     */
-    void getrange(K key, long start, long end);
+     * @return the sub-string
+     **/
+    String getrange(K key, long start, long end);
 
     /**
      * Execute the command <a href="https://redis.io/commands/getset">GETSET</a>.
@@ -90,9 +110,10 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param value the value
+     * @return the old value stored at key, or {@code null} when key did not exist.
      * @deprecated See https://redis.io/commands/getset
-     */
-    void getset(K key, V value);
+     **/
+    V getset(K key, V value);
 
     /**
      * Execute the command <a href="https://redis.io/commands/incr">INCR</a>.
@@ -101,8 +122,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * Requires Redis 1.0.0
      *
      * @param key the key
-     */
-    void incr(K key);
+     * @return the value of key after the increment
+     **/
+    long incr(K key);
 
     /**
      * Execute the command <a href="https://redis.io/commands/incrby">INCRBY</a>.
@@ -112,8 +134,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param amount the amount, can be negative
-     */
-    void incrby(K key, long amount);
+     * @return the value of key after the increment
+     **/
+    long incrby(K key, long amount);
 
     /**
      * Execute the command <a href="https://redis.io/commands/incrbyfloat">INCRBYFLOAT</a>.
@@ -123,8 +146,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param amount the amount, can be negative
-     */
-    void incrbyfloat(K key, double amount);
+     * @return the value of key after the increment.
+     **/
+    double incrbyfloat(K key, double amount);
 
     /**
      * Execute the command <a href="https://redis.io/commands/lcs">LCS</a>.
@@ -134,8 +158,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key1 the key
      * @param key2 the key
-     */
-    void lcs(K key1, K key2);
+     * @return the string representing the longest common substring is returned.
+     **/
+    String lcs(K key1, K key2);
 
     /**
      * Execute the command <a href="https://redis.io/commands/lcs">LCS</a>.
@@ -145,8 +170,11 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key1 the key
      * @param key2 the key
-     */
-    void lcsLength(K key1, K key2);
+     * @return the length of the longest common substring.
+     **/
+    long lcsLength(K key1, K key2);
+
+    // TODO Add LCS with IDX support
 
     /**
      * Execute the command <a href="https://redis.io/commands/mget">MGET</a>.
@@ -155,8 +183,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * Requires Redis 1.0.0
      *
      * @param keys the keys
-     */
-    void mget(K... keys);
+     * @return list of values at the specified keys.
+     **/
+    Map<K, V> mget(K... keys);
 
     /**
      * Execute the command <a href="https://redis.io/commands/mset">MSET</a>.
@@ -165,7 +194,8 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * Requires Redis 1.0.1
      *
      * @param map the key/value map containing the items to store
-     */
+     * @return a Uni producing a {@code null} item on success, a failure otherwise
+     **/
     void mset(Map<K, V> map);
 
     /**
@@ -175,8 +205,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * Requires Redis 1.0.1
      *
      * @param map the key/value map containing the items to store
-     */
-    void msetnx(Map<K, V> map);
+     * @return {@code true} the all the keys were set. {@code false} no key was set (at least one key already existed).
+     **/
+    boolean msetnx(Map<K, V> map);
 
     /**
      * Execute the command <a href="https://redis.io/commands/psetex">PSETEX</a>.
@@ -187,7 +218,8 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * @param key the key
      * @param milliseconds the duration in ms
      * @param value the value
-     */
+     * @return a Uni producing a {@code null} item on success, a failure otherwise
+     **/
     void psetex(K key, long milliseconds, V value);
 
     /**
@@ -198,7 +230,8 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param value the value
-     */
+     * @return a Uni producing a {@code null} item on success, a failure otherwise
+     **/
     void set(K key, V value);
 
     /**
@@ -210,7 +243,8 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * @param key the key
      * @param value the value
      * @param setArgs the set command extra-arguments
-     */
+     * @return a Uni producing a {@code null} item on success, a failure otherwise
+     **/
     void set(K key, V value, SetArgs setArgs);
 
     /**
@@ -221,8 +255,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param value the value
-     */
-    void setGet(K key, V value);
+     * @return the old value, {@code null} if not present
+     **/
+    V setGet(K key, V value);
 
     /**
      * Execute the command <a href="https://redis.io/commands/set">SET</a>.
@@ -233,8 +268,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * @param key the key
      * @param value the value
      * @param setArgs the set command extra-arguments
-     */
-    void setGet(K key, V value, SetArgs setArgs);
+     * @return the old value, {@code null} if not present
+     **/
+    V setGet(K key, V value, SetArgs setArgs);
 
     /**
      * Execute the command <a href="https://redis.io/commands/setex">SETEX</a>.
@@ -244,7 +280,7 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param value the value
-     */
+     **/
     void setex(K key, long seconds, V value);
 
     /**
@@ -255,8 +291,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param value the value
-     */
-    void setnx(K key, V value);
+     * @return {@code true} the key was set {@code false} the key was not set
+     **/
+    boolean setnx(K key, V value);
 
     /**
      * Execute the command <a href="https://redis.io/commands/setrange">SETRANGE</a>.
@@ -266,8 +303,9 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      *
      * @param key the key
      * @param value the value
-     */
-    void setrange(K key, long offset, V value);
+     * @return the length of the string after it was modified by the command.
+     **/
+    long setrange(K key, long offset, V value);
 
     /**
      * Execute the command <a href="https://redis.io/commands/strlen">STRLEN</a>.
@@ -276,6 +314,8 @@ public interface TransactionalStringCommands<K, V> extends TransactionalRedisCom
      * Requires Redis 2.2.0
      *
      * @param key the key
-     */
-    void strlen(K key);
+     * @return the length of the string at key, or 0 when key does not exist.
+     **/
+    long strlen(K key);
+
 }

@@ -1,11 +1,10 @@
-package io.quarkus.redis.datasource.string;
+package io.quarkus.redis.datasource.value;
 
 import java.util.Map;
 
 import io.quarkus.redis.datasource.TransactionalRedisCommands;
 
-@Deprecated
-public interface TransactionalStringCommands<K, V> extends TransactionalRedisCommands {
+public interface TransactionalValueCommands<K, V> extends TransactionalRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/append">APPEND</a>.

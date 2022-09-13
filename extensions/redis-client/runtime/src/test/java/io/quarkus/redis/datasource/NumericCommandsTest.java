@@ -9,7 +9,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
 public class NumericCommandsTest extends DatasourceTestBase {
@@ -17,12 +17,12 @@ public class NumericCommandsTest extends DatasourceTestBase {
     private RedisDataSource ds;
 
     static String key = "key-sort";
-    private StringCommands<String, Long> num;
+    private ValueCommands<String, Long> num;
 
     @BeforeEach
     void initialize() {
         ds = new BlockingRedisDataSourceImpl(vertx, redis, api, Duration.ofSeconds(5));
-        num = ds.string(Long.class);
+        num = ds.value(Long.class);
     }
 
     @AfterEach

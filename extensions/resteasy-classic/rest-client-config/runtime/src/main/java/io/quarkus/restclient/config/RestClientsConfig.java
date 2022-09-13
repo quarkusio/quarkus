@@ -65,8 +65,6 @@ public class RestClientsConfig {
      * (or IP address) and port for requests of clients to use.
      *
      * Can be overwritten by client-specific settings.
-     *
-     * This property is applicable to reactive REST clients only.
      */
     @ConfigItem
     public Optional<String> proxyAddress;

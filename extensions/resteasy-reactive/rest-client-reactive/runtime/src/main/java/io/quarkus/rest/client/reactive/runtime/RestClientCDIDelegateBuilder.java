@@ -60,10 +60,11 @@ public class RestClientCDIDelegateBuilder<T> {
             throw new IllegalStateException("Expected RestClientBuilder to be an instance of "
                     + RestClientBuilderImpl.class.getName() + ", got " + builder.getClass().getName());
         }
-        return build((RestClientBuilderImpl) builder);
+        configureBuilder((RestClientBuilderImpl) builder);
+        return builder.build(jaxrsInterface);
     }
 
-    T build(RestClientBuilderImpl builder) {
+    void configureBuilder(RestClientBuilderImpl builder) {
         configureBaseUrl(builder);
         configureTimeouts(builder);
         configureProviders(builder);
@@ -73,12 +74,11 @@ public class RestClientCDIDelegateBuilder<T> {
         configureProxy(builder);
         configureShared(builder);
         configureCustomProperties(builder);
-        return builder.build(jaxrsInterface);
     }
 
     private void configureCustomProperties(RestClientBuilder builder) {
         Optional<String> encoder = configRoot.multipartPostEncoderMode;
-        if (encoder.isPresent()) {
+        if (encoder != null && encoder.isPresent()) {
             HttpPostRequestEncoder.EncoderMode mode = HttpPostRequestEncoder.EncoderMode
                     .valueOf(encoder.get().toUpperCase(Locale.ROOT));
             builder.property(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE, mode);

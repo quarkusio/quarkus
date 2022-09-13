@@ -8,17 +8,16 @@ final public class ConfigRootInfo {
     private final String name;
     private final TypeElement clazz;
     private final ConfigPhase configPhase;
-    private final boolean mapping;
     private final String fileName;
 
     public ConfigRootInfo(
             final String name,
             final TypeElement clazz,
-            final ConfigPhase configPhase, final boolean mapping, final String fileName) {
+            final ConfigPhase configPhase,
+            final String fileName) {
         this.name = name;
         this.clazz = clazz;
         this.configPhase = configPhase;
-        this.mapping = mapping;
         this.fileName = fileName;
     }
 
@@ -35,8 +34,7 @@ final public class ConfigRootInfo {
             return false;
         }
         final ConfigRootInfo that = (ConfigRootInfo) o;
-        return mapping == that.mapping &&
-                name.equals(that.name) &&
+        return name.equals(that.name) &&
                 clazz.equals(that.clazz) &&
                 configPhase == that.configPhase &&
                 fileName.equals(that.fileName);
@@ -44,7 +42,7 @@ final public class ConfigRootInfo {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, clazz, configPhase, mapping, fileName);
+        return Objects.hash(name, clazz, configPhase, fileName);
     }
 
     @Override
@@ -53,7 +51,6 @@ final public class ConfigRootInfo {
                 "name='" + name + '\'' +
                 ", clazz=" + clazz +
                 ", configPhase=" + configPhase +
-                ", mapping=" + mapping +
                 ", fileName='" + fileName + '\'' +
                 '}';
     }
@@ -68,9 +65,5 @@ final public class ConfigRootInfo {
 
     public ConfigPhase getConfigPhase() {
         return configPhase;
-    }
-
-    public boolean isMapping() {
-        return mapping;
     }
 }

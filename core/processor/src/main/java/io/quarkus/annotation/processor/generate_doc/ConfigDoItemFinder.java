@@ -19,6 +19,7 @@ import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getK
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.hyphenate;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.hyphenateEnumValue;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.stringifyType;
+import static javax.lang.model.element.Modifier.ABSTRACT;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -86,11 +87,11 @@ class ConfigDoItemFinder {
      *
      */
     ScannedConfigDocsItemHolder findInMemoryConfigurationItems() throws IOException {
-
         for (Map.Entry<String, TypeElement> entry : configGroupQualifiedNameToTypeElementMap.entrySet()) {
             ConfigPhase buildTime = ConfigPhase.BUILD_TIME;
-            final List<ConfigDocItem> configDocItems = recursivelyFindConfigItems(
-                    entry.getValue(), EMPTY, EMPTY, buildTime, false, false, 1, false);
+            final List<ConfigDocItem> configDocItems = recursivelyFindConfigItems(entry.getValue(), EMPTY, EMPTY, buildTime,
+                    false, 1,
+                    false);
             allConfigurationGroups.put(entry.getKey(), OBJECT_MAPPER.writeValueAsString(configDocItems));
         }
 
@@ -99,9 +100,8 @@ class ConfigDoItemFinder {
             final TypeElement element = configRootInfo.getClazz();
             String rootName = configRootInfo.getName();
             ConfigPhase configPhase = configRootInfo.getConfigPhase();
-            boolean isMapping = configRootInfo.isMapping();
             final List<ConfigDocItem> configDocItems = recursivelyFindConfigItems(element, rootName, rootName, configPhase,
-                    isMapping, false, sectionLevel, true);
+                    false, sectionLevel, true);
             holder.addConfigRootItems(configRootInfo, configDocItems);
             allConfigurationRoots.put(configRootInfo.getClazz().toString(), OBJECT_MAPPER.writeValueAsString(configDocItems));
         }
@@ -113,8 +113,7 @@ class ConfigDoItemFinder {
      * Recursively find config item found in a config root or config group given as {@link Element}
      */
     private List<ConfigDocItem> recursivelyFindConfigItems(Element element, String rootName, String parentName,
-            ConfigPhase configPhase, boolean isMapping, boolean withinAMap, int sectionLevel,
-            boolean generateSeparateConfigGroupDocsFiles)
+            ConfigPhase configPhase, boolean withinAMap, int sectionLevel, boolean generateSeparateConfigGroupDocsFiles)
             throws JsonProcessingException {
         List<ConfigDocItem> configDocItems = new ArrayList<>();
         TypeElement asTypeElement = (TypeElement) element;
@@ -130,7 +129,7 @@ class ConfigDoItemFinder {
             if (rawConfigItems == null) { // element not yet scanned
                 Element superElement = ((DeclaredType) superType).asElement();
                 superTypeConfigItems = recursivelyFindConfigItems(superElement, rootName, parentName,
-                        configPhase, isMapping, withinAMap, sectionLevel, generateSeparateConfigGroupDocsFiles);
+                        configPhase, withinAMap, sectionLevel, generateSeparateConfigGroupDocsFiles);
             } else {
                 superTypeConfigItems = OBJECT_MAPPER.readValue(rawConfigItems, LIST_OF_CONFIG_ITEMS_TYPE_REF);
             }
@@ -139,7 +138,9 @@ class ConfigDoItemFinder {
         }
 
         for (Element enclosedElement : element.getEnclosedElements()) {
-            if (!enclosedElement.getKind().isField() && (!isMapping || !enclosedElement.getKind().equals(ElementKind.METHOD))) {
+            shouldProcessElement(enclosedElement);
+
+            if (!shouldProcessElement(enclosedElement)) {
                 continue;
             }
 
@@ -221,15 +222,13 @@ class ConfigDoItemFinder {
                 }
 
                 // Mappings
-                if (isMapping) {
-                    for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationMirror
-                            .getElementValues().entrySet()) {
-                        Object value = entry.getValue().getValue();
-                        if (annotationName.equals(ANNOTATION_CONFIG_WITH_NAME)) {
-                            name = parentName + DOT + value;
-                        } else if (annotationName.equals(ANNOTATION_CONFIG_WITH_DEFAULT)) {
-                            defaultValue = value.toString();
-                        }
+                for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationMirror
+                        .getElementValues().entrySet()) {
+                    Object value = entry.getValue().getValue();
+                    if (annotationName.equals(ANNOTATION_CONFIG_WITH_NAME)) {
+                        name = parentName + DOT + value;
+                    } else if (annotationName.equals(ANNOTATION_CONFIG_WITH_DEFAULT)) {
+                        defaultValue = value.toString();
                     }
                 }
             }
@@ -254,7 +253,7 @@ class ConfigDoItemFinder {
 
             if (isConfigGroup(type)) {
                 List<ConfigDocItem> groupConfigItems = readConfigGroupItems(configPhase, rootName, name, type,
-                        configSection, isMapping, withinAMap, generateSeparateConfigGroupDocsFiles);
+                        configSection, withinAMap, generateSeparateConfigGroupDocsFiles);
                 DocGeneratorUtil.appendConfigItemsIntoExistingOnes(configDocItems, groupConfigItems);
             } else {
                 final ConfigDocKey configDocKey = new ConfigDocKey();
@@ -278,7 +277,7 @@ class ConfigDoItemFinder {
                             if (isConfigGroup(type)) {
                                 name += String.format(NAMED_MAP_CONFIG_ITEM_FORMAT, configDocMapKey);
                                 List<ConfigDocItem> groupConfigItems = readConfigGroupItems(configPhase, rootName, name, type,
-                                        configSection, isMapping, true, generateSeparateConfigGroupDocsFiles);
+                                        configSection, true, generateSeparateConfigGroupDocsFiles);
                                 DocGeneratorUtil.appendConfigItemsIntoExistingOnes(configDocItems, groupConfigItems);
                                 continue;
                             } else {
@@ -304,8 +303,7 @@ class ConfigDoItemFinder {
                                     }
                                     configSection.setOptional(true);
                                     List<ConfigDocItem> groupConfigItems = readConfigGroupItems(configPhase, rootName, name,
-                                            typeInString, configSection, isMapping, withinAMap,
-                                            generateSeparateConfigGroupDocsFiles);
+                                            typeInString, configSection, withinAMap, generateSeparateConfigGroupDocsFiles);
                                     DocGeneratorUtil.appendConfigItemsIntoExistingOnes(configDocItems, groupConfigItems);
                                     continue;
                                 } else if ((typeInString.startsWith(List.class.getName())
@@ -390,6 +388,20 @@ class ConfigDoItemFinder {
         return configGroupQualifiedNameToTypeElementMap.containsKey(type) || allConfigurationGroups.hasKey(type);
     }
 
+    private boolean shouldProcessElement(final Element enclosedElement) {
+        if (enclosedElement.getKind().isField()) {
+            return true;
+        }
+
+        // A ConfigMapping method
+        if (enclosedElement.getKind().equals(ElementKind.METHOD)) {
+            Element enclosingElement = enclosedElement.getEnclosingElement();
+            return enclosingElement.getModifiers().contains(ABSTRACT) && enclosedElement.getModifiers().contains(ABSTRACT);
+        }
+
+        return false;
+    }
+
     private String simpleTypeToString(TypeMirror typeMirror) {
         if (typeMirror.getKind().isPrimitive()) {
             return typeMirror.toString();
@@ -456,8 +468,8 @@ class ConfigDoItemFinder {
      *
      */
     private List<ConfigDocItem> readConfigGroupItems(ConfigPhase configPhase, String topLevelRootName, String parentName,
-            String configGroup, ConfigDocSection configSection, boolean isMapping, boolean withinAMap,
-            boolean generateSeparateConfigGroupDocs) throws JsonProcessingException {
+            String configGroup, ConfigDocSection configSection, boolean withinAMap, boolean generateSeparateConfigGroupDocs)
+            throws JsonProcessingException {
 
         configSection.setConfigGroupType(configGroup);
         if (configSection.getSectionDetailsTitle() == null) {
@@ -475,7 +487,7 @@ class ConfigDoItemFinder {
             groupConfigItems = OBJECT_MAPPER.readValue(property, LIST_OF_CONFIG_ITEMS_TYPE_REF);
         } else {
             TypeElement configGroupTypeElement = configGroupQualifiedNameToTypeElementMap.get(configGroup);
-            groupConfigItems = recursivelyFindConfigItems(configGroupTypeElement, EMPTY, EMPTY, configPhase, isMapping,
+            groupConfigItems = recursivelyFindConfigItems(configGroupTypeElement, EMPTY, EMPTY, configPhase,
                     false, 1, generateSeparateConfigGroupDocs);
             allConfigurationGroups.put(configGroup, OBJECT_MAPPER.writeValueAsString(groupConfigItems));
         }

@@ -256,6 +256,7 @@ public class StringCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void lcs() {
         strings.mset(Map.of("key1", "ohmytext", "key2", "mynewtext"));
         assertThat(strings.lcs("key1", "key2")).isEqualTo("mytext");

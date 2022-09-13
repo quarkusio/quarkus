@@ -8,8 +8,10 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisAPI;
+import io.vertx.mutiny.redis.client.Request;
 
 public class DatasourceTestBase {
 
@@ -20,7 +22,7 @@ public class DatasourceTestBase {
     public static RedisAPI api;
 
     static GenericContainer<?> server = new GenericContainer<>(
-            DockerImageName.parse("redis:7-alpine"))
+            DockerImageName.parse(System.getProperty("redis.base.image", "redis:7-alpine")))
             .withExposedPorts(6379);
 
     @BeforeAll
@@ -37,6 +39,14 @@ public class DatasourceTestBase {
         redis.close();
         server.close();
         vertx.closeAndAwait();
+    }
+
+    public static String getRedisVersion() {
+        String info = redis.send(Request.cmd(Command.INFO)).await().indefinitely().toString();
+        // Look for the redis_version line
+        return info.lines().filter(s -> s.startsWith("redis_version")).findAny()
+                .map(line -> line.split(":")[1])
+                .orElseThrow();
     }
 
 }

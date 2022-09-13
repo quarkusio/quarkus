@@ -76,6 +76,7 @@ public class SetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher // because of sintercard
     void sinter() {
         populate();
         assertThat(sets.sinter("key1", "key2", "key3")).isEqualTo(Set.of(person3));

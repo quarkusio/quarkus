@@ -45,6 +45,17 @@ class AbstractStringCommands<K, V> extends AbstractRedisCommands {
         return execute(cmd);
     }
 
+    Uni<Response> _set(K key, V value, io.quarkus.redis.datasource.value.SetArgs setArgs) {
+        nonNull(key, "key");
+        nonNull(value, "value");
+        nonNull(setArgs, "setArgs");
+        RedisCommand cmd = RedisCommand.of(Command.SET);
+        cmd.put(marshaller.encode(key));
+        cmd.put(marshaller.encode(value));
+        cmd.putArgs(setArgs);
+        return execute(cmd);
+    }
+
     Uni<Response> _setGet(K key, V value) {
         nonNull(key, "key");
         nonNull(value, "value");
@@ -60,6 +71,17 @@ class AbstractStringCommands<K, V> extends AbstractRedisCommands {
     }
 
     Uni<Response> _setGet(K key, V value, SetArgs setArgs) {
+        nonNull(key, "key");
+        nonNull(value, "value");
+        nonNull(setArgs, "setArgs");
+        RedisCommand cmd = RedisCommand.of(Command.SET);
+        cmd.put(marshaller.encode(key));
+        cmd.put(marshaller.encode(value));
+        cmd.putArgs(setArgs.get());
+        return execute(cmd);
+    }
+
+    Uni<Response> _setGet(K key, V value, io.quarkus.redis.datasource.value.SetArgs setArgs) {
         nonNull(key, "key");
         nonNull(value, "value");
         nonNull(setArgs, "setArgs");
@@ -140,6 +162,15 @@ class AbstractStringCommands<K, V> extends AbstractRedisCommands {
     }
 
     Uni<Response> _getex(K key, GetExArgs args) {
+        nonNull(key, "key");
+        nonNull(args, "args");
+        RedisCommand cmd = RedisCommand.of(Command.GETEX);
+        cmd.put(marshaller.encode(key));
+        cmd.putArgs(args);
+        return execute(cmd);
+    }
+
+    Uni<Response> _getex(K key, io.quarkus.redis.datasource.value.GetExArgs args) {
         nonNull(key, "key");
         nonNull(args, "args");
         RedisCommand cmd = RedisCommand.of(Command.GETEX);

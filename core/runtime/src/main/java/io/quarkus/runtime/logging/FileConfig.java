@@ -41,6 +41,12 @@ public class FileConfig {
     File path;
 
     /**
+     * The name of the filter to link to the file handler.
+     */
+    @ConfigItem
+    Optional<String> filter;
+
+    /**
      * File async logging config
      */
     AsyncConfig async;

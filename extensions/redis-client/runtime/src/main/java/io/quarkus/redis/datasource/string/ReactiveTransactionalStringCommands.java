@@ -5,6 +5,7 @@ import java.util.Map;
 import io.quarkus.redis.datasource.ReactiveTransactionalRedisCommands;
 import io.smallrye.mutiny.Uni;
 
+@Deprecated
 public interface ReactiveTransactionalStringCommands<K, V> extends ReactiveTransactionalRedisCommands {
 
     /**

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.redis.client.deployment.RedisTestResource;
 import io.quarkus.redis.datasource.RedisDataSource;
-import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.QuarkusTestResource;
 
@@ -52,10 +52,10 @@ public class BinaryTest {
     @ApplicationScoped
     public static class MyBinaryRepository {
 
-        private final StringCommands<String, byte[]> commands;
+        private final ValueCommands<String, byte[]> commands;
 
         public MyBinaryRepository(RedisDataSource ds) {
-            commands = ds.string(byte[].class);
+            commands = ds.value(byte[].class);
         }
 
         public byte[] get(String key) {

@@ -51,4 +51,9 @@ public class InfinispanClientFunctionalityTest {
     public void testQueryWithCustomMarshaller() {
         RestAssured.when().get("/test/magazinequery/IM").then().body(is("[TIME:1923-03,TIME:1997-04]"));
     }
+
+    @Test
+    public void testAuthor() {
+        RestAssured.when().get("/test/create-cache-default-config/authors").then().body(is("[George]"));
+    }
 }

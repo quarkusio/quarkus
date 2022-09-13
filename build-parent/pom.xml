@@ -134,6 +134,8 @@
 
         <!-- Webjars used by the Dev UI -->
         <webjar.bootstrap.version>4.6.1</webjar.bootstrap.version>
+        <webjar.bootstrap-multiselect.version>0.9.15</webjar.bootstrap-multiselect.version>
+        <webjar.bootstrap-icons.version>1.9.1</webjar.bootstrap-icons.version>
         <webjar.font-awesome.version>6.1.2</webjar.font-awesome.version>
         <webjar.jquery.version>3.6.1</webjar.jquery.version>
         <webjar.codemirror.version>5.62.2</webjar.codemirror.version>
@@ -308,6 +310,16 @@
                 <groupId>org.webjars</groupId>
                 <artifactId>bootstrap</artifactId>
                 <version>${webjar.bootstrap.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars</groupId>
+                <artifactId>bootstrap-multiselect</artifactId>
+                <version>${webjar.bootstrap-multiselect.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>bootstrap-icons</artifactId>
+                <version>${webjar.bootstrap-icons.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.webjars</groupId>

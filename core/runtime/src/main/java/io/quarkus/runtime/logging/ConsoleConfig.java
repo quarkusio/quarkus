@@ -56,6 +56,12 @@ public class ConsoleConfig {
     int darken;
 
     /**
+     * The name of the filter to link to the console handler.
+     */
+    @ConfigItem
+    Optional<String> filter;
+
+    /**
      * Console async logging config
      */
     AsyncConfig async;

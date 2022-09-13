@@ -91,6 +91,17 @@ public class MatchedResourceTest {
         response.close();
     }
 
+    @Test
+    @DisplayName("Test Invalid Q Value")
+    public void testInvalidQValue() throws Exception {
+        WebTarget base = client.target(generateURL("/match"));
+        Response response = base.request()
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=malformed")
+                .get();
+        Assertions.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+        response.close();
+    }
+
     public void generalPostTest(String uri, String value) {
         WebTarget base = client.target(uri);
         Response response = base.request().get();

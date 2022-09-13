@@ -864,7 +864,7 @@ The types of values that can be injected include:
 
 - <<build-items,Build items>> produced by previous build steps
 - <<producing-values,Build producers>> to produce items for subsequent build steps
-- <<configuration-roots,Configuration root>> types
+- <<configuration,Configuration Mapping>> types
 - Template objects for <<bytecode-recording,bytecode recording>>
 
 WARNING: Objects which are injected into a build step method or its class _must not_ be used outside that method's
@@ -1050,122 +1050,19 @@ will result in the creation of the `build.dot` file in the project's root direct
 [[configuration]]
 === Configuration
 
-Configuration in Quarkus is based on SmallRye Config, an implementation of the MicroProfile Config specification.
-All the standard features of MP-Config are supported; in addition, there are several extensions which are made available
-by the SmallRye Config project as well as by Quarkus itself.
+Configuration in Quarkus is based on https://smallrye.io/smallrye-config/Main/[SmallRye Config]. All features provided
+by https://smallrye.io/smallrye-config/Main/[SmallRye Config] are also available in Quarkus.
 
-The value of these properties is configured in a `application.properties` file that follows the MicroProfile config format.
+Extensions must use https://smallrye.io/smallrye-config/Main/config/mappings/[SmallRye Config @ConfigMapping] to map
+the configuration required by the Extension. This will allow Quarkus to automatically expose an instance of the mapping
+to each configuration phase and generate the configuration documentation.
 
-Configuration of Quarkus extensions is injection-based, using annotations.
+==== Config Phases
 
-==== Configuration Keys
-
-Leaf configuration keys are mapped to non-`private` fields via the `@io.quarkus.runtime.annotations.ConfigItem` annotation.
-
-NOTE: Though the SmallRye Config project is used for implementation, the standard `@ConfigProperty` annotation does not have the
-same semantics that are needed to support configuration within extensions.
-
-Configuration keys are normally derived from the field names that they are tied to.  This is done by de-camel-casing the name and then
-joining the segments with hyphens (`-`).  Some examples:
-
-* `bindAddress` becomes `bind-address`
-* `keepAliveTime` becomes `keep-alive-time`
-* `requestDNSTimeout` becomes `request-dns-timeout`
-
-The name can also be explicitly specified by giving a `name` attribute to the `@ConfigItem` annotation.
-
-NOTE: Though it is possible to override the configuration key name using the `name` attribute of `@ConfigItem`,
-normally this should only be done in cases where (for example) the configuration key name is the same as a Java keyword.
-
-==== Configuration Value types
-
-The type of the field with the `@ConfigItem` annotation determines the conversion that is applied to it.  Quarkus
-extensions may use the full range of configuration types made available by SmallRye Config, which includes:
-
-* All primitive types and primitive wrapper types
-* `String`
-* Any type which has a constructor accepting a single argument of type `String` or `CharSequence`
-* Any type which has a static method named `of` which accepts a single argument of type `String`
-* Any type which has a static method named `valueOf` or `parse` which accepts a single argument of type `CharSequence` or `String`
-* `java.time.Duration`
-* `java.util.regex.Pattern`
-* `java.nio.file.Path`
-* `io.quarkus.runtime.configuration.MemorySize` to represent data sizes
-* `java.net.InetSocketAddress`, `java.net.InetAddress` and `org.wildfly.common.net.CidrAddress`
-* `java.util.Locale` where the string value is an IETF BCP 47 language tag
-* `java.nio.charset.Charset` where the string value is a canonical name or an alias
-* `java.time.ZoneId` where the string value is parsed via `java.time.ZoneId.of(String)`
-* A `List` or `Optional` of any of the above types
-* `OptionalInt`, `OptionalLong`, `OptionalDouble`
-
-In addition, custom converters may be registered by adding their fully qualified class name in file
-`META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
-
-Though these implicit converters use reflection, Quarkus will automatically ensure that they are loaded at the appropriate time.
-
-===== Optional Values
-
-If the configuration type is one of the optional types, then empty values are allowed for the configuration key; otherwise,
-specification of an empty value will result in a configuration error which prevents the application from starting.  This
-is especially relevant to configuration properties of inherently emptiable values such as `List`, `Set`, and `String`.  Such
-value types will never be empty; in the event of an empty value, an empty `Optional` is always used.
-
-==== Configuration Default Values
-
-A configuration item can be marked to have a default value.  The default value is used when no matching configuration key
-is specified in the configuration.
-
-Configuration items with a primitive type (such as `int` or `boolean`) implicitly use a default value of `0` or `false`.  The
-sole exception to this rule is the `char` type which does not have an implicit default value.
-
-A property with a default value is not implicitly optional.  If a non-optional configuration item with a default value
-is explicitly specified to have an empty value, the application will report a configuration error and will not start.  If
-it is desired for a property to have a default value and also be optional, it must have an `Optional` type as described above.
-
-==== Configuration Groups
-
-Configuration values are always collected into grouping classes which are marked with the `@io.quarkus.runtime.annotations.ConfigGroup`
-annotation.  These classes contain a field for each key within its group.  In addition, configuration groups can be nested.
-
-===== Optional Configuration Groups
-
-A nested configuration group may be wrapped with an `Optional` type.  In this case, the group is not populated unless one
-or more properties within that group are specified in the configuration.  If the group is populated, then any required
-properties in the group must also be specified otherwise a configuration error will be reported and the application will
-not start.
-
-==== Configuration Maps
-
-A `Map` can be used for configuration at any position where a configuration group would be allowed.  The key type of such a
-map *must* be `String`, and its value may be either a configuration group class or a valid leaf type.  The configuration
-key segment following the map's key segment will be used as the key for map values.
-
-[id='configuration-roots']
-==== Configuration Roots
-
-Configuration roots are configuration groups that appear in the root of the configuration tree.  A configuration property's full
-name is determined by joining the string `quarkus.` with the hyphenated name of the fields that form the path from the root to the
-leaf field.  For example, if I define a configuration root group called `ThreadPool`, with a nested group in a field named `sizing`
-that in turn contains a field called `minSize`, the final configuration property will be called `quarkus.thread-pool.sizing.min-size`.
-
-A configuration root's name can be given with the `name` property, or it can be inferred from the class name.  If the latter,
-then the configuration key will be the class name, minus any `Config` or `Configuration` suffix, broken up by camel-case,
-lowercased, and re-joined using hyphens (`-`).
-
-A configuration root's class name can contain an extra suffix segment for the case where there are configuration
-roots for multiple <<Configuration Root Phases>>.  Classes which correspond to the `BUILD_TIME` and `BUILD_AND_RUN_TIME_FIXED`
-may end with `BuildTimeConfig` or `BuildTimeConfiguration`, classes which correspond to the `RUN_TIME` phase
-may end with `RuntimeConfig`, `RunTimeConfig`, `RuntimeConfiguration` or `RunTimeConfiguration` while classes which correspond
-to the `BOOTSTRAP` configuration may end with `BootstrapConfig` or `BootstrapConfiguration`.
-
-Note: The current implementation is still using injection site to determine the root set, so to avoid migration problems, it
-is recommended that the injection site (field or parameter) have the same name as the configuration root class until
-this change is complete.
-
-===== Configuration Root Phases
-
-Configuration roots are strictly bound by configuration phase, and attempting to access a configuration root from outside its corresponding phase will result in an error.
-A configuration root dictates when its contained keys are read from configuration, and when they are available to applications.  The phases defined by `io.quarkus.runtime.annotations.ConfigPhase` are as follows:
+Configuration mappings are strictly bound by configuration phase, and attempting to access a configuration mapping from
+outside its corresponding phase will result in an error. They dictate when its contained keys are read from the
+configuration, and when they are available to applications. The phases defined by
+`io.quarkus.runtime.annotations.ConfigPhase` are as follows:
 
 [cols="<3m,^1,^1,^1,^1,<8",options="header"]
 |===
@@ -1206,7 +1103,7 @@ A configuration root dictates when its contained keys are read from configuratio
 
 |===
 
-For all cases other than the `BUILD_TIME` case, the configuration root class and all the configuration groups and types contained therein must be located in, or reachable from, the extension's run time artifact.  Configuration roots of phase `BUILD_TIME` may be located in or reachable from either of the extension's run time or deployment artifacts.
+For all cases other than the `BUILD_TIME` case, the configuration mapping interface and all the configuration groups and types contained therein must be located in, or reachable from, the extension's run time artifact. Configuration mappings of phase `BUILD_TIME` may be located in or reachable from either of the extension's run time or deployment artifacts.
 
 IMPORTANT: _Bootstrap_ configuration steps are executed during runtime-init *before* any of other runtime steps. This means that code executed as part of this step cannot access anything that gets initialized in runtime init steps (runtime synthetic CDI beans being one such example).
 
@@ -1214,84 +1111,84 @@ IMPORTANT: _Bootstrap_ configuration steps are executed during runtime-init *bef
 
 [source%nowrap,java]
 ----
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.DefaultConverter
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 import java.io.File;
 import java.util.logging.Level;
 
-@ConfigGroup <1>
-public class FileConfig {
-
-    /**
-     * Enable logging to a file.
-     */
-    @ConfigItem(defaultValue = "true")
-    boolean enable;
-
-    /**
-     * The log format.
-     */
-    @ConfigItem(defaultValue = "%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{1.}] (%t) %s%e%n")
-    String format;
-
-    /**
-     * The level of logs to be written into the file.
-     */
-    @ConfigItem(defaultValue = "ALL")
-    Level level;
-
-    /**
-     * The name of the file in which logs will be written.
-     */
-    @ConfigItem(defaultValue = "application.log")
-    File path;
-
-}
-
 /**
  * Logging configuration.
  */
-@ConfigRoot(phase = ConfigPhase.RUN_TIME) <2>
-public class LogConfiguration {
-
+@ConfigMapping(prefix = "quarkus.log")      // <1>
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)   // <2>
+public interface LogConfiguration {
     // ...
 
     /**
      * Configuration properties for the logging file handler.
      */
-    FileConfig file;
-}
+    FileConfig file();
 
+    @ConfigGroup // <3>
+    interface FileConfig {
+        /**
+         * Enable logging to a file.
+         */
+        @WithDefault("true")
+        boolean enable();
+
+        /**
+         * The log format.
+         */
+        @WithDefault("%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{1.}] (%t) %s%e%n")
+        String format();
+
+        /**
+         * The level of logs to be written into the file.
+         */
+        @WithDefault("ALL")
+        Level level();
+
+        /**
+         * The name of the file in which logs will be written.
+         */
+        @WithDefault("application.log")
+        File path();
+    }
+}
+----
+
+[source%nowrap,java]
+----
 public class LoggingProcessor {
     // ...
 
-    /**
+    /*
      * Logging configuration.
      */
-    <3>
-    LogConfiguration config;
+    LogConfiguration config; // <4>
 }
 ----
 
 A configuration property name can be split into segments. For example, a property name like
 `quarkus.log.file.enable` can be split into the following segments:
 
-* `quarkus` - a namespace claimed by Quarkus which is a prefix for all `@ConfigRoot` classes,
-* `log` - a name segment which corresponds to the `LogConfiguration` class annotated with `@ConfigRoot`,
+* `quarkus` - a namespace claimed by Quarkus which is a prefix for `@ConfigMapping` interfaces,
+* `log` - a name segment which corresponds to the prefix set in the interface annotated with `@ConfigMapping`,
 * `file` - a name segment which corresponds to the `file` field in this class,
 * `enabled` - a name segment which corresponds to `enable` field in `FileConfig` class annotated with `@ConfigGroup`.
 
-<1> The `FileConfig` class is annotated with `@ConfigGroup` to indicate that this is an aggregate
+<1> The `@ConfigMapping` annotation indicates that the interface is a configuration mapping, in this case one which
+corresponds to a `quarkus.log` segment.
+<2> The `@ConfigRoot` annotation indicated to which Config phase, the configuration applies to.
+<3> The `FileConfig` class is annotated with `@ConfigGroup` to indicate that this is an aggregate
 configuration object containing a collection of configurable properties, rather than being a simple configuration
 key type.
-<2> The `@ConfigRoot` annotation indicates that this object is a configuration root group, in this case one which
-corresponds to a `log` segment. A class name is used to link configuration root group with the segment from a
-property name. The `Configuration` part is stripped off from a `LogConfiguration` class name and the remaining `Log`
-is lowercased to become a `log`. Since all `@ConfigRoot` annotated classes uses `quarkus` as a prefix, this finally
-becomes `quarkus.log` and represents the properties which names begin with `quarkus.log.*`.
-<3> Here the `LoggingProcessor` injects a `LogConfiguration` instance automatically by detecting the `@ConfigRoot`
+<4> Here the `LoggingProcessor` injects a `LogConfiguration` instance automatically by detecting the `@ConfigRoot`
 annotation.
 
 A corresponding `application.properties` for the above example could be:
@@ -1305,100 +1202,11 @@ quarkus.log.file.path=/tmp/debug.log
 
 Since `format` is not defined in these properties, the default value from `@ConfigItem` will be used instead.
 
-
-==== Enhanced conversion
-You can use enhanced conversion of a config item by using the `@ConvertWith` annotation which accepts a `Converter` class object.
-If the annotation is present on a config item, the implicit or custom-built in converter in use will be overridden by the value provided.
-To do, see the example below which converts `YES` or `NO` values to `boolean`.
-[source%nowrap,java]
-----
-@ConfigRoot
-public class SomeConfig {
-    /**
-     * Config item with enhanced converter
-     */
-    @ConvertWith(YesNoConverter.class) // <1>
-    @ConfigItem(defaultValue = "NO")
-    Boolean answer;
-
-
-    public static class YesNoConverter implements Converter<Boolean> {
-
-        public YesNoConverter() {}
-
-        @Override
-        public Boolean convert(String s) {
-            if (s == null || s.isEmpty()) {
-                return false;
-            }
-
-            switch (s) {
-                case "YES":
-                    return true;
-                case "NO":
-                    return false;
-            }
-
-            throw new IllegalArgumentException("Unsupported value " + s + " given");
-        }
-    }
-}
-----
-<1> Override the default `Boolean` converter and use the provided converter which accepts a `YES` or `NO` config values.
-
-
-The corresponding `application.properties` will look like.
-[source%nowrap,properties]
-----
-quarkus.some.answer=YES
-----
-
-[NOTE]
-=====
-Enum values (config items) are translated to skewed-case (hyphenated) by default. The table below illustrates an enum name and their canonical equivalence:
-
-|===
-|Java enum| Canonical equivalent
-
-|DISCARD
-|discard
-
-|READ_UNCOMMITTED
-|read-uncommitted
-
-|SIGUSR1
-|sigusr1
-
-|JavaEnum
-|java-enum
-
-|MAKING_LifeDifficult
-|making-life-difficult
-
-|YeOldeJBoss
-|ye-olde-jboss
-
-|camelCaseEnum
-|camel-case-enum
-
-|===
-
-To use the default behaviour which is based on implicit converter or a custom defined one add `@DefaultConverter` annotation to the configuration item
-[source%nowrap,java]
-----
-@ConfigRoot
-public class SomeLogConfig {
-    /**
-     * The level of logs to be written into the file.
-     */
-    @DefaultConverter // <1>
-    @ConfigItem(defaultValue = "ALL")
-    Level level;
-}
-----
-<1> Use the default converter (built in or a custom converter) to convert `Level.class` enum.
-=====
-
+A configuration mapping name can contain an extra suffix segment for the case where there are configuration
+mappings for multiple <<Config Phases>>. Classes which correspond to the `BUILD_TIME` and `BUILD_AND_RUN_TIME_FIXED`
+may end with `BuildTimeConfig` or `BuildTimeConfiguration`, classes which correspond to the `RUN_TIME` phase
+may end with `RuntimeConfig`, `RunTimeConfig`, `RuntimeConfiguration` or `RunTimeConfiguration` while classes which
+correspond to the `BOOTSTRAP` configuration may end with `BootstrapConfig` or `BootstrapConfiguration`.
 
 === Conditional Step Inclusion
 
@@ -1407,7 +1215,7 @@ has two optional parameters: `onlyIf` and `onlyIfNot`.  These parameters can be 
 which implement `BooleanSupplier`.  The build step will only be included when the method returns
 `true` (for `onlyIf`) or `false` (for `onlyIfNot`).
 
-The condition class can inject <<configuration-roots,configuration roots>> as long as they belong to
+The condition class can inject <<configuration,configuration mappings>> as long as they belong to
 a build-time phase.  Run time configuration is not available for condition classes.
 
 The condition class may also inject a value of type `io.quarkus.runtime.LaunchMode`.
@@ -3189,15 +2997,27 @@ Then, at the end of your documentation, include the extensive documentation:
 
 Finally, generate the documentation and check it out.
 
+[[ecosystem]]
+== Ecosystem integration
+
+Some extensions may be private, and some may wish to be part of the
+broader Quarkus ecosystem, and available for community re-use.
+Inclusion in the Quarkiverse Hub is a convenient mechanism for handling
+continuous testing and publication.
+The link:https://github.com/quarkiverse/quarkiverse/wiki#getting-an-extension-onboarded[Quarkiverse Hub wiki] has instructions
+for on-boarding your extension.
+
+Alternatively, continuous testing and publication can be handled manually.
+
 [[ecosystem-ci]]
-== Continuous testing of your extension
+=== Continuous testing of your extension
 
 In order to make it easy for extension authors to test their extensions daily against the latest snapshot of Quarkus, Quarkus has introduced
 the notion of Ecosystem CI. The Ecosystem CI link:https://github.com/quarkusio/quarkus-ecosystem-ci/blob/main/README.adoc[README]
 has all the details on how to set up a GitHub Actions job to take advantage of this capability, while this link:https://www.youtube.com/watch?v=VpbRA1n0hHQ[video] provides an overview
 of what the process looks like.
 
-== Publish your extension in registry.quarkus.io
+=== Publish your extension in registry.quarkus.io
 
 Before publishing your extension to the xref:tooling.adoc[Quarkus tooling], make sure that the following requirements are met:
 

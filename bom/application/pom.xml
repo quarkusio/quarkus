@@ -28,7 +28,7 @@
         <opentelemetry-alpha.version>1.17.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.8.1</jaeger.version>
         <quarkus-http.version>4.1.9</quarkus-http.version>
-        <micrometer.version>1.9.3</micrometer.version><!-- keep in sync with hdrhistogram -->
+        <micrometer.version>1.9.4</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <microprofile-config-api.version>2.0.1</microprofile-config-api.version>
@@ -41,7 +41,7 @@
         <microprofile-lra.version>1.0</microprofile-lra.version>
         <smallrye-common.version>1.13.1</smallrye-common.version>
         <smallrye-config.version>2.12.0</smallrye-config.version>
-        <smallrye-health.version>3.2.1</smallrye-health.version>
+        <smallrye-health.version>3.3.0</smallrye-health.version>
         <smallrye-metrics.version>3.0.5</smallrye-metrics.version>
         <smallrye-open-api.version>2.2.1</smallrye-open-api.version>
         <smallrye-graphql.version>1.7.1</smallrye-graphql.version>
@@ -91,7 +91,7 @@
         <hibernate-orm.version>5.6.11.Final</hibernate-orm.version> <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below): -->
         <bytebuddy.version>1.12.9</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-reactive.version>1.1.7.Final</hibernate-reactive.version>
-        <hibernate-validator.version>6.2.4.Final</hibernate-validator.version>
+        <hibernate-validator.version>6.2.5.Final</hibernate-validator.version>
         <hibernate-search.version>6.1.6.Final</hibernate-search.version>
         <narayana.version>5.13.1.Alpha1</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
@@ -108,7 +108,7 @@
         <wildfly-common.version>1.5.4.Final-format-001</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>1.20.1.Final</wildfly-elytron.version>
-        <jboss-threads.version>3.4.2.Final</jboss-threads.version>
+        <jboss-threads.version>3.4.3.Final</jboss-threads.version>
         <vertx.version>4.3.3</vertx.version>
 
         <httpclient.version>4.5.13</httpclient.version>
@@ -158,8 +158,8 @@
         <jboss-logmanager.version>1.0.10</jboss-logmanager.version>
         <flyway.version>9.3.0</flyway.version>
         <yasson.version>1.0.11</yasson.version>
-        <liquibase.version>4.15.0</liquibase.version>
-        <snakeyaml.version>1.31</snakeyaml.version>
+        <liquibase.version>4.16.0</liquibase.version>
+        <snakeyaml.version>1.32</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>4.7.1</mongo-client.version>
         <mongo-crypt.version>1.5.2</mongo-crypt.version>
@@ -173,7 +173,7 @@
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.3.Final</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
-        <mockito.version>4.7.0</mockito.version>
+        <mockito.version>4.8.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.9.2</antlr.version>
         <quarkus-security.version>1.1.4.Final</quarkus-security.version>
@@ -201,7 +201,7 @@
         <aesh.version>2.6</aesh.version>
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.10.0</strimzi-oauth.version>
-        <strimzi-oauth.nimbus.version>9.24.3</strimzi-oauth.nimbus.version>
+        <strimzi-oauth.nimbus.version>9.24.4</strimzi-oauth.nimbus.version>
         <java-buildpack-client.version>0.0.6</java-buildpack-client.version>
         <org-crac.version>0.1.1</org-crac.version>
     </properties>

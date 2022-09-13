@@ -26,7 +26,7 @@ import io.quarkus.redis.datasource.keys.RedisKeyNotFoundException;
 import io.quarkus.redis.datasource.keys.RedisValueType;
 import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.sortedset.SortedSetCommands;
-import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
 public class KeyCommandsTest extends DatasourceTestBase {
@@ -35,13 +35,13 @@ public class KeyCommandsTest extends DatasourceTestBase {
 
     static String key = "key-generic";
     private KeyCommands<String> keys;
-    private StringCommands<String, Person> strings;
+    private ValueCommands<String, Person> values;
 
     @BeforeEach
     void initialize() {
         ds = new BlockingRedisDataSourceImpl(vertx, redis, api, Duration.ofSeconds(1));
 
-        strings = ds.string(Person.class);
+        values = ds.value(Person.class);
         keys = ds.key();
     }
 
@@ -57,75 +57,75 @@ public class KeyCommandsTest extends DatasourceTestBase {
 
     @Test
     void del() {
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat((long) keys.del(key)).isEqualTo(1);
-        strings.set(key + "1", Person.person7);
-        strings.set(key + "2", Person.person7);
+        values.set(key + "1", Person.person7);
+        values.set(key + "2", Person.person7);
 
         assertThat(keys.del(key + "1", key + "2")).isEqualTo(2);
     }
 
     @Test
     void unlink() {
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat((long) keys.unlink(key)).isEqualTo(1);
-        strings.set(key + "1", Person.person7);
-        strings.set(key + "2", Person.person7);
+        values.set(key + "1", Person.person7);
+        values.set(key + "2", Person.person7);
         assertThat(keys.unlink(key + "1", key + "2")).isEqualTo(2);
     }
 
     @Test
     void copy() {
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.copy(key, key + "2")).isTrue();
         assertThat(keys.copy("unknown", key + "2")).isFalse();
-        assertThat(strings.get(key + "2")).isEqualTo(Person.person7);
+        assertThat(values.get(key + "2")).isEqualTo(Person.person7);
     }
 
     @Test
     void copyWithReplace() {
-        strings.set(key, Person.person7);
-        strings.set(key + 2, Person.person1);
+        values.set(key, Person.person7);
+        values.set(key + 2, Person.person1);
         assertThat(keys.copy(key, key + "2", new CopyArgs().replace(true))).isTrue();
-        assertThat(strings.get(key + "2")).isEqualTo(Person.person7);
+        assertThat(values.get(key + "2")).isEqualTo(Person.person7);
     }
 
     @Test
     void copyWithDestinationDb() {
         ds.withConnection(connection -> {
-            connection.string(String.class, Person.class).set(key, Person.person7);
+            connection.value(String.class, Person.class).set(key, Person.person7);
             connection.key(String.class).copy(key, key, new CopyArgs().destinationDb(2));
             connection.select(2);
-            assertThat(connection.string(String.class, Person.class).get(key)).isEqualTo(Person.person7);
+            assertThat(connection.value(String.class, Person.class).get(key)).isEqualTo(Person.person7);
         });
     }
 
     @Test
     void dump() {
         assertThat(keys.dump("invalid")).isNull();
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.dump(key).length() > 0).isTrue();
     }
 
     @Test
     void exists() {
         assertThat(keys.exists(key)).isFalse();
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.exists(key)).isTrue();
     }
 
     @Test
     void existsVariadic() {
         assertThat(keys.exists(key, "key2", "key3")).isEqualTo(0);
-        strings.set(key, Person.person7);
-        strings.set("key2", Person.person7);
+        values.set(key, Person.person7);
+        values.set("key2", Person.person7);
         assertThat(keys.exists(key, "key2", "key3")).isEqualTo(2);
     }
 
     @Test
     void expire() {
         assertThat(keys.expire(key, 10)).isFalse();
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.expire(key, 10)).isTrue();
         assertThat(keys.ttl(key)).isBetween(5L, 10L);
 
@@ -134,9 +134,10 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void expireWithArgs() {
         assertThat(keys.expire(key, 10, new ExpireArgs().xx())).isFalse();
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.expire(key, 10, new ExpireArgs().nx())).isTrue();
         assertThat(keys.ttl(key)).isBetween(5L, 10L);
 
@@ -148,7 +149,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     void expireat() {
         Date expiration = new Date(System.currentTimeMillis() + 10000);
         assertThat(keys.expireat(key, expiration.toInstant().toEpochMilli())).isFalse();
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.expireat(key, expiration.toInstant())).isTrue();
 
         assertThat(keys.ttl(key)).isGreaterThanOrEqualTo(8);
@@ -158,10 +159,11 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void expireatWithArgs() {
         Date expiration = new Date(System.currentTimeMillis() + 10000);
         assertThat(keys.expireat(key, expiration.toInstant().getEpochSecond(), new ExpireArgs().xx())).isFalse();
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.expireat(key, expiration.toInstant(), new ExpireArgs().nx())).isTrue();
 
         assertThat(keys.ttl(key)).isGreaterThanOrEqualTo(8);
@@ -180,7 +182,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
         map.put("one", Person.person1);
         map.put("two", Person.person2);
         map.put("three", Person.person3);
-        strings.mset(map);
+        values.mset(map);
         List<String> k = keys.keys("???");
         assertThat(k).hasSize(2);
         assertThat(k.contains("one")).isTrue();
@@ -190,7 +192,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     @Test
     public void move() {
         ds.withConnection(connection -> {
-            StringCommands<String, Person> commands = connection.string(String.class, Person.class);
+            ValueCommands<String, Person> commands = connection.value(String.class, Person.class);
             commands.set("foo", Person.person3);
             commands.set(key, Person.person7);
             assertThat(connection.key(String.class).move(key, 1)).isTrue();
@@ -204,7 +206,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     @Test
     void persist() {
         assertThat(keys.persist(key)).isFalse();
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.persist(key)).isFalse();
         keys.expire(key, 10);
         assertThat(keys.persist(key)).isTrue();
@@ -213,7 +215,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     @Test
     void pexpire() {
         assertThat(keys.pexpire(key, 5000)).isFalse();
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.pexpire(key, 5000)).isTrue();
         assertThat(keys.pttl(key)).isGreaterThan(0).isLessThanOrEqualTo(5000);
 
@@ -222,9 +224,10 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void pexpireWithArgs() {
         assertThat(keys.pexpire(key, 5000, new ExpireArgs().xx())).isFalse();
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.pexpire(key, 5000, new ExpireArgs().nx())).isTrue();
         assertThat(keys.pttl(key)).isGreaterThan(0).isLessThanOrEqualTo(5000);
 
@@ -235,9 +238,10 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void pexpireWithDuration() {
         assertThat(keys.pexpire(key, Duration.ofSeconds(5))).isFalse();
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.pexpire(key, Duration.ofSeconds(1))).isTrue();
         assertThat(keys.pttl(key)).isGreaterThan(0).isLessThanOrEqualTo(1000);
 
@@ -249,7 +253,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     void pexpireat() {
         Instant expiration = new Date(System.currentTimeMillis() + 5000).toInstant();
         assertThat(keys.pexpireat(key, expiration.getEpochSecond())).isFalse();
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.pexpireat(key, expiration)).isTrue();
         assertThat(keys.pttl(key)).isGreaterThan(0);
 
@@ -258,10 +262,11 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void pexpireatWithArgs() {
         Instant expiration = new Date(System.currentTimeMillis() + 5000).toInstant();
         assertThat(keys.pexpireat(key, expiration.getEpochSecond(), new ExpireArgs().xx())).isFalse();
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.pexpireat(key, expiration, new ExpireArgs().nx())).isTrue();
         assertThat(keys.pttl(key)).isGreaterThan(0);
 
@@ -272,7 +277,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     @Test
     void pttl() {
         assertThatThrownBy(() -> keys.pttl(key)).isInstanceOf(RedisKeyNotFoundException.class);
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.pttl(key)).isEqualTo(-1);
         keys.pexpire(key, 5000);
         assertThat(keys.pttl(key)).isGreaterThan(0).isLessThanOrEqualTo(5000);
@@ -281,20 +286,20 @@ public class KeyCommandsTest extends DatasourceTestBase {
     @Test
     void randomkey() {
         assertThat(keys.randomkey()).isNull();
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.randomkey()).isEqualTo(key);
     }
 
     @Test
     void rename() {
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
 
         keys.rename(key, key + "X");
-        assertThat(strings.get(key)).isNull();
-        assertThat(strings.get(key + "X")).isEqualTo(Person.person7);
-        strings.set(key, Person.person4);
+        assertThat(values.get(key)).isNull();
+        assertThat(values.get(key + "X")).isEqualTo(Person.person7);
+        values.set(key, Person.person4);
         keys.rename(key + "X", key);
-        assertThat(strings.get(key)).isEqualTo(Person.person7);
+        assertThat(values.get(key)).isEqualTo(Person.person7);
     }
 
     @Test
@@ -304,10 +309,10 @@ public class KeyCommandsTest extends DatasourceTestBase {
 
     @Test
     void renamenx() {
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.renamenx(key, key + "X")).isTrue();
-        assertThat(strings.get(key + "X")).isEqualTo(Person.person7);
-        strings.set(key, Person.person7);
+        assertThat(values.get(key + "X")).isEqualTo(Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.renamenx(key + "X", key)).isFalse();
     }
 
@@ -319,14 +324,14 @@ public class KeyCommandsTest extends DatasourceTestBase {
     @Test
     void touch() {
         assertThat((long) keys.touch(key)).isEqualTo(0);
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat((long) keys.touch(key, "key2")).isEqualTo(1);
     }
 
     @Test
     void ttl() {
         assertThatThrownBy(() -> keys.pttl(key)).isInstanceOf(RedisKeyNotFoundException.class);
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.ttl(key)).isEqualTo(-1);
         keys.expire(key, 10);
         assertThat(keys.ttl(key)).isEqualTo(10);
@@ -336,7 +341,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     void type() {
         assertThat(keys.type(key)).isEqualTo(RedisValueType.NONE);
 
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         assertThat(keys.type(key)).isEqualTo(RedisValueType.STRING);
 
         ds.hash(String.class, String.class, Person.class).hset(key + "H", "p3", Person.person3);
@@ -356,7 +361,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
 
     @Test
     void scan() {
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         KeyScanCursor<String> cursor = keys.scan();
         assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
         assertThat(cursor.next()).containsExactly(key);
@@ -384,7 +389,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
 
     @Test
     void scanWithArgs() {
-        strings.set(key, Person.person7);
+        values.set(key, Person.person7);
         KeyScanCursor<String> cursor = keys.scan(new KeyScanArgs().count(10));
         assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
         assertThat(cursor.next()).containsExactly(key);
@@ -394,7 +399,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
 
     @Test
     void scanWithType() {
-        strings.set("key1", Person.person7);
+        values.set("key1", Person.person7);
         ds.list(Person.class).lpush("key2", Person.person7);
 
         KeyScanCursor<String> cursor = keys.scan(new KeyScanArgs().type(RedisValueType.STRING));
@@ -454,7 +459,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
 
     void populateMany(Set<String> expect) {
         for (int i = 0; i < 100; i++) {
-            strings.set(key + i, new Person("a", "b" + i));
+            values.set(key + i, new Person("a", "b" + i));
             expect.add(key + i);
         }
     }

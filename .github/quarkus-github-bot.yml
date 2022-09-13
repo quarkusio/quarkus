@@ -2,6 +2,17 @@
 # The format of this file is documented here:
 # https://github.com/quarkusio/quarkus-bot#triage-issues
 features: [ALL]
+workflows:
+  rules:
+    - allow:
+        users:
+          minContributions: 10
+        files:
+          - "**/*.md"
+          - "**/*.adoc"
+      unless:
+        files:
+          - ".github/**"
 workflowRunAnalysis:
   workflows: ["Quarkus CI"]
 projectsClassic:
@@ -387,7 +398,7 @@ triage:
         - independent-projects/bootstrap/
         - independent-projects/tools/
     - labels: [area/documentation]
-      notify: [ebullient, quarkusio/Documentation]
+      notify: [ebullient, inoxx03, sunayna15, michelle-purcell, hmanwani-rh, sheilamjones, MichalMaler]
       directories:
         - docs/
     - labels: [area/infra-automation]

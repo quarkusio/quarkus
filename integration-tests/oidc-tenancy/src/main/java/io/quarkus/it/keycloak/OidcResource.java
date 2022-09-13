@@ -36,6 +36,7 @@ public class OidcResource {
     private volatile boolean rotate;
     private volatile int jwkEndpointCallCount;
     private volatile int introspectionEndpointCallCount;
+    private volatile int revokeEndpointCallCount;
     private volatile int userInfoEndpointCallCount;
     private volatile boolean enableDiscovery = true;
 
@@ -57,6 +58,7 @@ public class OidcResource {
                     "   \"token_endpoint\":" + "\"" + baseUri + "/token\"," +
                     "   \"introspection_endpoint\":" + "\"" + baseUri + "/introspect\"," +
                     "   \"userinfo_endpoint\":" + "\"" + baseUri + "/userinfo\"," +
+                    "   \"revocation_endpoint\":" + "\"" + baseUri + "/revoke\"," +
                     "   \"jwks_uri\":" + "\"" + baseUri + "/jwks\"" +
                     "  }";
         } else {
@@ -141,6 +143,27 @@ public class OidcResource {
                 "   \"introspection_client_secret\": \"" + introspectionClientSecret + "\"," +
                 "   \"client_id\": \"" + clientId + "\"" +
                 "  }";
+    }
+
+    @GET
+    @Path("revoke-endpoint-call-count")
+    public int revokeEndpointCallCount() {
+        return revokeEndpointCallCount;
+    }
+
+    @POST
+    @Path("revoke-endpoint-call-count")
+    public int resetRevokeEndpointCallCount() {
+        revokeEndpointCallCount = 0;
+        return revokeEndpointCallCount;
+    }
+
+    @POST
+    @Path("revoke")
+    public void revoke(@FormParam("token") String token) throws Exception {
+        if (token != null) {
+            revokeEndpointCallCount++;
+        }
     }
 
     @GET

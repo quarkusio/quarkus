@@ -90,6 +90,12 @@ public class SyslogConfig {
     Level level;
 
     /**
+     * The name of the filter to link to the file handler.
+     */
+    @ConfigItem
+    Optional<String> filter;
+
+    /**
      * Syslog async logging config
      */
     AsyncConfig async;

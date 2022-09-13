@@ -82,7 +82,7 @@ public class RestClientCDIDelegateBuilderTest {
         new RestClientCDIDelegateBuilder<>(TestClient.class,
                 "http://localhost:8080",
                 "test-client",
-                configRoot).build(restClientBuilderMock);
+                configRoot).configureBuilder(restClientBuilderMock);
 
         // then
 
@@ -125,7 +125,7 @@ public class RestClientCDIDelegateBuilderTest {
         new RestClientCDIDelegateBuilder<>(TestClient.class,
                 "http://localhost:8080",
                 "test-client",
-                configRoot).build(restClientBuilderMock);
+                configRoot).configureBuilder(restClientBuilderMock);
 
         // then
 

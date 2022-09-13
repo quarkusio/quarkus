@@ -17,6 +17,7 @@ import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResu
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
+import io.quarkus.redis.datasource.value.ReactiveValueCommands;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
@@ -234,6 +235,9 @@ public interface ReactiveRedisDataSource {
 
     /**
      * Gets the object to execute commands manipulating stored strings.
+     * <p>
+     * <strong>NOTE:</strong> Instead of {@code string}, this group is named {@code value} to avoid the confusion with the
+     * Java String type. Indeed, Redis strings can be strings, numbers, byte arrays...
      *
      * @param redisKeyType the type of the keys
      * @param valueType the type of the value, often String, or the value are encoded/decoded using codecs.
@@ -241,6 +245,33 @@ public interface ReactiveRedisDataSource {
      * @param <V> the type of the value
      * @return the object to manipulate stored strings.
      */
+    <K, V> ReactiveValueCommands<K, V> value(Class<K> redisKeyType, Class<V> valueType);
+
+    /**
+     * Gets the object to execute commands manipulating stored strings.
+     * <p>
+     * <strong>NOTE:</strong> Instead of {@code string}, this group is named {@code value} to avoid the confusion with the
+     * Java String type. Indeed, Redis strings can be strings, numbers, byte arrays...
+     *
+     * @param valueType the type of the value, often String, or the value are encoded/decoded using codecs.
+     * @param <V> the type of the value
+     * @return the object to manipulate stored strings.
+     */
+    default <V> ReactiveValueCommands<String, V> value(Class<V> valueType) {
+        return value(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to execute commands manipulating stored strings.
+     *
+     * @param redisKeyType the type of the keys
+     * @param valueType the type of the value, often String, or the value are encoded/decoded using codecs.
+     * @param <K> the type of the key
+     * @param <V> the type of the value
+     * @return the object to manipulate stored strings.
+     * @deprecated Use {@link #value(Class, Class)} instead
+     */
+    @Deprecated
     <K, V> ReactiveStringCommands<K, V> string(Class<K> redisKeyType, Class<V> valueType);
 
     /**
@@ -249,7 +280,9 @@ public interface ReactiveRedisDataSource {
      * @param valueType the type of the value, often String, or the value are encoded/decoded using codecs.
      * @param <V> the type of the value
      * @return the object to manipulate stored strings.
+     * @deprecated Use {@link #value(Class)} instead
      */
+    @Deprecated
     default <V> ReactiveStringCommands<String, V> string(Class<V> valueType) {
         return string(String.class, valueType);
     }

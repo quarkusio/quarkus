@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.logging.ErrorManager;
+import java.util.logging.Filter;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -29,6 +30,7 @@ import org.jboss.logmanager.EmbeddedConfigurator;
 import org.jboss.logmanager.LogContext;
 import org.jboss.logmanager.Logger;
 import org.jboss.logmanager.errormanager.OnlyOnceErrorManager;
+import org.jboss.logmanager.filters.AllFilter;
 import org.jboss.logmanager.formatters.ColorPatternFormatter;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.AsyncHandler;
@@ -74,15 +76,17 @@ public class LoggingSetupRecorder {
         ConsoleRuntimeConfig consoleRuntimeConfig = new ConsoleRuntimeConfig();
         ConfigInstantiator.handleObject(consoleRuntimeConfig);
         new LoggingSetupRecorder(new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(config, buildConfig,
+                DiscoveredLogComponents.ofEmpty(),
                 Collections.emptyMap(),
                 false, null,
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
-                Collections.emptyList(), banner, LaunchMode.DEVELOPMENT);
+                Collections.emptyList(), banner, LaunchMode.DEVELOPMENT, false);
     }
 
     public ShutdownListener initializeLogging(LogConfig config, LogBuildTimeConfig buildConfig,
+            DiscoveredLogComponents discoveredLogComponents,
             final Map<String, InheritableLevel> categoryDefaultMinLevels,
             final boolean enableWebStream,
             final RuntimeValue<Optional<Handler>> devUiConsoleHandler,
@@ -90,7 +94,9 @@ public class LoggingSetupRecorder {
             final List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
             final List<RuntimeValue<Optional<Formatter>>> possibleConsoleFormatters,
             final List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
-            final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier, LaunchMode launchMode) {
+            final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier,
+            LaunchMode launchMode,
+            boolean validateFilters) {
 
         ShutdownNotifier shutdownNotifier = new ShutdownNotifier();
         final Map<String, CategoryConfig> categories = config.categories;
@@ -126,13 +132,15 @@ public class LoggingSetupRecorder {
             handler.setFilter(cleanupFiler);
         }
 
+        Map<String, Filter> namedFilters = createNamedFilters(discoveredLogComponents);
+
         final ArrayList<Handler> handlers = new ArrayList<>(
                 3 + additionalHandlers.size() + (config.handlers.isPresent() ? config.handlers.get().size() : 0));
 
         if (config.console.enable) {
             final Handler consoleHandler = configureConsoleHandler(config.console, consoleRuntimeConfig.getValue(),
-                    errorManager, cleanupFiler,
-                    possibleConsoleFormatters, possibleBannerSupplier, launchMode);
+                    errorManager, cleanupFiler, namedFilters, possibleConsoleFormatters, possibleBannerSupplier,
+                    launchMode, validateFilters);
             errorManager = consoleHandler.getErrorManager();
             handlers.add(consoleHandler);
         }
@@ -157,11 +165,13 @@ public class LoggingSetupRecorder {
 
         if (config.file.enable) {
             handlers.add(
-                    configureFileHandler(config.file, errorManager, cleanupFiler, possibleFileFormatters));
+                    configureFileHandler(config.file, errorManager, cleanupFiler, namedFilters, possibleFileFormatters,
+                            validateFilters));
         }
 
         if (config.syslog.enable) {
-            final Handler syslogHandler = configureSyslogHandler(config.syslog, errorManager, cleanupFiler);
+            final Handler syslogHandler = configureSyslogHandler(config.syslog, errorManager, cleanupFiler,
+                    namedFilters, validateFilters);
             if (syslogHandler != null) {
                 handlers.add(syslogHandler);
             }
@@ -185,8 +195,8 @@ public class LoggingSetupRecorder {
 
         Map<String, Handler> namedHandlers = shouldCreateNamedHandlers(config, additionalNamedHandlers)
                 ? createNamedHandlers(config, consoleRuntimeConfig.getValue(), additionalNamedHandlers,
-                        possibleConsoleFormatters, possibleFileFormatters, errorManager, cleanupFiler, launchMode,
-                        shutdownNotifier)
+                        possibleConsoleFormatters, possibleFileFormatters, errorManager, cleanupFiler, namedFilters, launchMode,
+                        shutdownNotifier, false)
                 : Collections.emptyMap();
         if (!categories.isEmpty()) {
             Map<String, Handler> additionalNamedHandlersMap;
@@ -238,6 +248,27 @@ public class LoggingSetupRecorder {
         return shutdownNotifier;
     }
 
+    private static Map<String, Filter> createNamedFilters(DiscoveredLogComponents discoveredLogComponents) {
+        if (discoveredLogComponents.getNameToFilterClass().isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, Filter> nameToFilter = new HashMap<>();
+        discoveredLogComponents.getNameToFilterClass().forEach(new BiConsumer<>() {
+            @Override
+            public void accept(String name, String className) {
+                try {
+                    nameToFilter.put(name,
+                            (Filter) Class.forName(className, true, Thread.currentThread().getContextClassLoader())
+                                    .getConstructor().newInstance());
+                } catch (Exception e) {
+                    throw new RuntimeException("Unable to create instance of Logging Filter '" + className + "'");
+                }
+            }
+        });
+        return nameToFilter;
+    }
+
     /**
      * WARNING: this method is part of the recorder but is actually called statically at build time.
      * You may not push RuntimeValue's to it.
@@ -267,15 +298,15 @@ public class LoggingSetupRecorder {
 
         if (config.console.enable) {
             final Handler consoleHandler = configureConsoleHandler(config.console, consoleConfig, errorManager,
-                    logCleanupFilter,
-                    Collections.emptyList(), new RuntimeValue<>(Optional.empty()), launchMode);
+                    logCleanupFilter, Collections.emptyMap(), Collections.emptyList(),
+                    new RuntimeValue<>(Optional.empty()), launchMode, false);
             errorManager = consoleHandler.getErrorManager();
             handlers.add(consoleHandler);
         }
 
         Map<String, Handler> namedHandlers = createNamedHandlers(config, consoleConfig, Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(), errorManager, logCleanupFilter, launchMode, dummy);
+                Collections.emptyList(), Collections.emptyList(), errorManager, logCleanupFilter,
+                Collections.emptyMap(), launchMode, dummy, true);
 
         for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
             final String categoryName = entry.getKey();
@@ -356,18 +387,18 @@ public class LoggingSetupRecorder {
             List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
             List<RuntimeValue<Optional<Formatter>>> possibleConsoleFormatters,
             List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
-            ErrorManager errorManager,
-            LogCleanupFilter cleanupFilter, LaunchMode launchMode,
-            ShutdownNotifier shutdownHandler) {
+            ErrorManager errorManager, LogCleanupFilter cleanupFilter,
+            Map<String, Filter> namedFilters, LaunchMode launchMode,
+            ShutdownNotifier shutdownHandler, boolean validateFilters) {
         Map<String, Handler> namedHandlers = new HashMap<>();
         for (Entry<String, ConsoleConfig> consoleConfigEntry : config.consoleHandlers.entrySet()) {
             ConsoleConfig namedConsoleConfig = consoleConfigEntry.getValue();
             if (!namedConsoleConfig.enable) {
                 continue;
             }
-            final Handler consoleHandler = configureConsoleHandler(namedConsoleConfig, consoleRuntimeConfig, errorManager,
-                    cleanupFilter,
-                    possibleConsoleFormatters, null, launchMode);
+            final Handler consoleHandler = configureConsoleHandler(namedConsoleConfig, consoleRuntimeConfig,
+                    errorManager, cleanupFilter, namedFilters, possibleConsoleFormatters, null, launchMode,
+                    validateFilters);
             addToNamedHandlers(namedHandlers, consoleHandler, consoleConfigEntry.getKey());
         }
         for (Entry<String, FileConfig> fileConfigEntry : config.fileHandlers.entrySet()) {
@@ -375,8 +406,8 @@ public class LoggingSetupRecorder {
             if (!namedFileConfig.enable) {
                 continue;
             }
-            final Handler fileHandler = configureFileHandler(namedFileConfig, errorManager, cleanupFilter,
-                    possibleFileFormatters);
+            final Handler fileHandler = configureFileHandler(namedFileConfig, errorManager, cleanupFilter, namedFilters,
+                    possibleFileFormatters, validateFilters);
             addToNamedHandlers(namedHandlers, fileHandler, fileConfigEntry.getKey());
         }
         for (Entry<String, SyslogConfig> sysLogConfigEntry : config.syslogHandlers.entrySet()) {
@@ -384,7 +415,8 @@ public class LoggingSetupRecorder {
             if (!namedSyslogConfig.enable) {
                 continue;
             }
-            final Handler syslogHandler = configureSyslogHandler(namedSyslogConfig, errorManager, cleanupFilter);
+            final Handler syslogHandler = configureSyslogHandler(namedSyslogConfig, errorManager, cleanupFilter,
+                    namedFilters, validateFilters);
             if (syslogHandler != null) {
                 addToNamedHandlers(namedHandlers, syslogHandler, sysLogConfigEntry.getKey());
             }
@@ -442,8 +474,7 @@ public class LoggingSetupRecorder {
     }
 
     private static void addNamedHandlersToRootHandlers(Optional<List<String>> handlerNames, Map<String, Handler> namedHandlers,
-            ArrayList<Handler> effectiveHandlers,
-            ErrorManager errorManager) {
+            ArrayList<Handler> effectiveHandlers, ErrorManager errorManager) {
         if (handlerNames.isEmpty()) {
             return;
         }
@@ -471,11 +502,15 @@ public class LoggingSetupRecorder {
         }
     }
 
-    private static Handler configureConsoleHandler(final ConsoleConfig config, ConsoleRuntimeConfig consoleRuntimeConfig,
+    private static Handler configureConsoleHandler(final ConsoleConfig config,
+            ConsoleRuntimeConfig consoleRuntimeConfig,
             final ErrorManager defaultErrorManager,
             final LogCleanupFilter cleanupFilter,
+            final Map<String, Filter> namedFilters,
             final List<RuntimeValue<Optional<Formatter>>> possibleFormatters,
-            final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier, LaunchMode launchMode) {
+            final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier,
+            LaunchMode launchMode,
+            boolean validateFilters) {
         Formatter formatter = null;
         boolean formatterWarning = false;
 
@@ -516,7 +551,7 @@ public class LoggingSetupRecorder {
                 config.stderr ? ConsoleHandler.Target.SYSTEM_ERR : ConsoleHandler.Target.SYSTEM_OUT, formatter);
         consoleHandler.setLevel(config.level);
         consoleHandler.setErrorManager(defaultErrorManager);
-        consoleHandler.setFilter(cleanupFilter);
+        applyFilter(validateFilters, defaultErrorManager, cleanupFilter, config.filter, namedFilters, consoleHandler);
 
         Handler handler = config.async.enable ? createAsyncHandler(config.async, config.level, consoleHandler)
                 : consoleHandler;
@@ -554,7 +589,9 @@ public class LoggingSetupRecorder {
     }
 
     private static Handler configureFileHandler(final FileConfig config, final ErrorManager errorManager,
-            final LogCleanupFilter cleanupFilter, final List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters) {
+            final LogCleanupFilter cleanupFilter, Map<String, Filter> namedFilters,
+            final List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
+            final boolean validateFilters) {
         FileHandler handler;
         FileConfig.RotationConfig rotationConfig = config.rotation;
         if (rotationConfig.fileSuffix.isPresent()) {
@@ -596,6 +633,7 @@ public class LoggingSetupRecorder {
         handler.setErrorManager(errorManager);
         handler.setLevel(config.level);
         handler.setFilter(cleanupFilter);
+        applyFilter(validateFilters, errorManager, cleanupFilter, config.filter, namedFilters, handler);
 
         if (formatterWarning) {
             handler.getErrorManager().error("Multiple file formatters were activated", null, ErrorManager.GENERIC_FAILURE);
@@ -607,9 +645,25 @@ public class LoggingSetupRecorder {
         return handler;
     }
 
-    private static Handler configureSyslogHandler(final SyslogConfig config,
-            final ErrorManager errorManager,
-            final LogCleanupFilter logCleanupFilter) {
+    private static void applyFilter(boolean validateFilters, ErrorManager errorManager, LogCleanupFilter cleanupFilter,
+            Optional<String> filterName, Map<String, Filter> namedFilters, Handler handler) {
+        if (filterName.isEmpty() || !validateFilters) {
+            handler.setFilter(cleanupFilter);
+        } else {
+            String name = filterName.get();
+            Filter filter = namedFilters.get(name);
+            if (filter == null) {
+                errorManager.error("Unable to find named filter '" + name + "'", null, ErrorManager.GENERIC_FAILURE);
+                handler.setFilter(cleanupFilter);
+            } else {
+                handler.setFilter(new AllFilter(List.of(cleanupFilter, filter)));
+            }
+        }
+    }
+
+    private static Handler configureSyslogHandler(final SyslogConfig config, final ErrorManager errorManager,
+            final LogCleanupFilter logCleanupFilter,
+            final Map<String, Filter> namedFilters, final boolean validateFilters) {
         try {
             final SyslogHandler handler = new SyslogHandler(config.endpoint.getHostString(), config.endpoint.getPort());
             handler.setAppName(config.appName.orElse(getProcessName()));
@@ -625,6 +679,7 @@ public class LoggingSetupRecorder {
             handler.setFormatter(formatter);
             handler.setErrorManager(errorManager);
             handler.setFilter(logCleanupFilter);
+            applyFilter(validateFilters, errorManager, logCleanupFilter, config.filter, namedFilters, handler);
             if (config.async.enable) {
                 return createAsyncHandler(config.async, config.level, handler);
             }

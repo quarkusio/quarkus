@@ -33,7 +33,9 @@ public class MediaTypeHelper {
                     return rtn;
                 }
             } catch (NumberFormatException e) {
-                throw new RuntimeException(String.format("Media type %s value must be a float: %s", parameterName, type), e);
+                throw new WebApplicationException(
+                        String.format("Media type %s value must be a float: %s", parameterName, type),
+                        Response.Status.BAD_REQUEST);
             }
         }
         return 2.0f;

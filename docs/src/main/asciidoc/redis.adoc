@@ -120,10 +120,10 @@ public class IncrementService {
     // Regular applications will pick one of them.
 
     private ReactiveKeyCommands<String> keyCommands; // <1>
-    private StringCommands<String, Long> countCommands; // <2>
+    private ValueCommands<String, Long> countCommands; // <2>
 
     public IncrementService(RedisDataSource ds, ReactiveRedisDataSource reactive) { // <3>
-        countCommands = ds.string(Long.class); // <4>
+        countCommands = ds.value(Long.class); // <4>
         keyCommands = reactive.key();  // <5>
 
     }

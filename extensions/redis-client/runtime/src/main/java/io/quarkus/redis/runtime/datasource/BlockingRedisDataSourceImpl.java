@@ -22,6 +22,7 @@ import io.quarkus.redis.datasource.string.StringCommands;
 import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
+import io.quarkus.redis.datasource.value.ValueCommands;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
@@ -192,7 +193,12 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
 
     @Override
     public <K1, V1> StringCommands<K1, V1> string(Class<K1> redisKeyType, Class<V1> valueType) {
-        return new BlockingStringCommandsImpl<>(this, reactive.string(redisKeyType, valueType), timeout);
+        return new BlockingStringCommandsImpl<>(this, reactive.value(redisKeyType, valueType), timeout);
+    }
+
+    @Override
+    public <K, V> ValueCommands<K, V> value(Class<K> redisKeyType, Class<V> valueType) {
+        return new BlockingStringCommandsImpl<>(this, reactive.value(redisKeyType, valueType), timeout);
     }
 
     @Override

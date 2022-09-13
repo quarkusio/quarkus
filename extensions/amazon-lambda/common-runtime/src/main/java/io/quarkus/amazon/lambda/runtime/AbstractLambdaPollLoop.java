@@ -21,6 +21,12 @@ import io.quarkus.runtime.ShutdownContext;
 public abstract class AbstractLambdaPollLoop {
     private static final Logger log = Logger.getLogger(AbstractLambdaPollLoop.class);
 
+    private static final String USER_AGENT = "User-Agent";
+    private static final String USER_AGENT_VALUE = String.format(
+            "quarkus/%s-%s",
+            System.getProperty("java.vendor.version"),
+            AbstractLambdaPollLoop.class.getPackage().getImplementationVersion());
+
     private final ObjectMapper objectMapper;
     private final ObjectReader cognitoIdReader;
     private final ObjectReader clientCtxReader;
@@ -71,6 +77,7 @@ public abstract class AbstractLambdaPollLoop {
 
                         try {
                             requestConnection = (HttpURLConnection) requestUrl.openConnection();
+                            requestConnection.setRequestProperty(USER_AGENT, USER_AGENT_VALUE);
                         } catch (IOException e) {
                             if (!running.get()) {
                                 // just return gracefully as we were probably shut down by
@@ -232,6 +239,7 @@ public abstract class AbstractLambdaPollLoop {
 
     protected void postResponse(URL url, Object response) throws IOException {
         HttpURLConnection responseConnection = (HttpURLConnection) url.openConnection();
+        responseConnection.setRequestProperty(USER_AGENT, USER_AGENT_VALUE);
         if (response != null) {
             getOutputWriter().writeHeaders(responseConnection);
         }
@@ -248,6 +256,7 @@ public abstract class AbstractLambdaPollLoop {
     protected void requeue(String baseUrl, String requestId) throws IOException {
         URL url = AmazonLambdaApi.requeue(baseUrl, requestId);
         HttpURLConnection responseConnection = (HttpURLConnection) url.openConnection();
+        responseConnection.setRequestProperty(USER_AGENT, USER_AGENT_VALUE);
         responseConnection.setDoOutput(true);
         responseConnection.setRequestMethod("POST");
         while (responseConnection.getInputStream().read() != -1) {
@@ -257,6 +266,7 @@ public abstract class AbstractLambdaPollLoop {
 
     protected void postError(URL url, Object response) throws IOException {
         HttpURLConnection responseConnection = (HttpURLConnection) url.openConnection();
+        responseConnection.setRequestProperty(USER_AGENT, USER_AGENT_VALUE);
         responseConnection.setRequestProperty("Content-Type", "application/json");
         responseConnection.setDoOutput(true);
         responseConnection.setRequestMethod("POST");
@@ -268,6 +278,7 @@ public abstract class AbstractLambdaPollLoop {
 
     protected HttpURLConnection responseStream(URL url) throws IOException {
         HttpURLConnection responseConnection = (HttpURLConnection) url.openConnection();
+        responseConnection.setRequestProperty(USER_AGENT, USER_AGENT_VALUE);
         responseConnection.setDoOutput(true);
         responseConnection.setRequestMethod("POST");
         return responseConnection;

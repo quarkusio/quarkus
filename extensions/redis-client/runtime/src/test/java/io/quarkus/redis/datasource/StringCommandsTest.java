@@ -21,6 +21,7 @@ import io.quarkus.redis.datasource.string.SetArgs;
 import io.quarkus.redis.datasource.string.StringCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
+@SuppressWarnings("deprecation")
 public class StringCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource ds;
@@ -256,6 +257,7 @@ public class StringCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void lcs() {
         strings.mset(Map.of("key1", "ohmytext", "key2", "mynewtext"));
         assertThat(strings.lcs("key1", "key2")).isEqualTo("mytext");

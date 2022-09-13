@@ -18,6 +18,19 @@ Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {q
 
 The solution is located in the `getting-started-command-mode` {quickstarts-tree-url}/getting-started-command-mode[directory].
 
+== Creating the Maven project
+
+First, we need to create a new Quarkus project with the following command:
+
+:create-app-artifact-id: command-mode-quickstart
+include::{includes}/devtools/create-app.adoc[]
+
+NOTE: The suggested project creation command lines disable the codestarts to avoid including a REST server. Similarly, if you use code.quarkus.io to generate a
+project, you need to go to *MORE OPTIONS -> Starter Code* and select *No* to avoid adding the RESTEasy Reactive extension.
+
+The RESTEasy Reactive extension is added automatically only if you ask for codestarts and you didn't specify any extensions.
+
+
 == Writing Command Mode Applications
 
 There are two different approaches that can be used to implement applications
@@ -183,7 +196,7 @@ public class HelloTest {
     @Test
     @Launch("World")
     public void testLaunchCommand(LaunchResult result) {
-        Assertions.assertEquals("Hello World", result.getOutput());
+        Assertions.assertTrue(result.getOutput().contains("Hello World"));
     }
 
     @Test
@@ -195,11 +208,14 @@ public class HelloTest {
     public void testManualLaunch(QuarkusMainLauncher launcher) {
         LaunchResult result = launcher.launch("Everyone");
         Assertions.assertEquals(0, result.exitCode());
-        Assertions.assertEquals("Hello Everyone", result.getOutput());
+        Assertions.assertTrue(result.getOutput().contains("Hello Everyone"));
     }
 }
 
 ----
+
+Each test method must be annotated with `@Launch` to automatically start the application or have a `QuarkusMainLauncher`
+parameter to manually launch the application.
 
 We can then extend this with an integration test that can be used to test the native executable or runnable jar:
 

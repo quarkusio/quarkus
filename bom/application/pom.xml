@@ -28,7 +28,7 @@
         <opentelemetry-alpha.version>1.17.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.8.1</jaeger.version>
         <quarkus-http.version>4.1.9</quarkus-http.version>
-        <micrometer.version>1.9.3</micrometer.version><!-- keep in sync with hdrhistogram -->
+        <micrometer.version>1.9.4</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <microprofile-config-api.version>2.0.1</microprofile-config-api.version>

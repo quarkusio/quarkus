@@ -69,8 +69,8 @@ public class StartupAnnotationTest {
 
     @Test
     public void testStartup() {
-        // StartMe, SingletonStartMe, ProducerStartMe, DependentStartMe
-        assertEquals(14, LOG.size(), "Unexpected number of log messages: " + LOG);
+        // StartMe, SingletonStartMe, ProducerStartMe, StartupMethods, DependentStartMe
+        assertEquals(17, LOG.size(), "Unexpected number of log messages: " + LOG);
         assertEquals("startMe_c", LOG.get(0));
         assertEquals("startMe_c", LOG.get(1));
         assertEquals("startMe_pc", LOG.get(2));
@@ -82,9 +82,12 @@ public class StartupAnnotationTest {
         assertEquals("producer_pc", LOG.get(8));
         assertEquals("produce_string", LOG.get(9));
         assertEquals("producer_pd", LOG.get(10));
-        assertEquals("dependent_c", LOG.get(11));
-        assertEquals("dependent_pc", LOG.get(12));
-        assertEquals("dependent_pd", LOG.get(13));
+        assertEquals("startup_pc", LOG.get(11));
+        assertEquals("startup_first", LOG.get(12));
+        assertEquals("startup_second", LOG.get(13));
+        assertEquals("dependent_c", LOG.get(14));
+        assertEquals("dependent_pc", LOG.get(15));
+        assertEquals("dependent_pd", LOG.get(16));
     }
 
     // This component should be started first
@@ -109,7 +112,7 @@ public class StartupAnnotationTest {
 
     }
 
-    // @Startup is added by an annotation transformer
+    // @Startup is added by an annotation transformer, the priority is ObserverMethod.DEFAULT_PRIORITY
     @Unremovable // only classes annotated with @Startup are made unremovable
     @Singleton
     static class SingletonStartMe {
@@ -152,14 +155,14 @@ public class StartupAnnotationTest {
 
     static class ProducerStartMe {
 
-        @Startup(Integer.MAX_VALUE - 1)
+        @Startup(Integer.MAX_VALUE - 10)
         @Produces
         String produceString() {
             LOG.add("produce_string");
             return "ok";
         }
 
-        @Startup(Integer.MAX_VALUE - 2)
+        @Startup(Integer.MAX_VALUE - 20)
         @Produces
         Long produceLong() {
             LOG.add("produce_long");
@@ -174,6 +177,28 @@ public class StartupAnnotationTest {
         @PreDestroy
         void destroy() {
             LOG.add("producer_pd");
+        }
+
+    }
+
+    @Singleton
+    @Unremovable // only classes annotated with @Startup are made unremovable
+    static class StartupMethods {
+
+        @Startup(Integer.MAX_VALUE - 2)
+        String first() {
+            LOG.add("startup_first");
+            return "ok";
+        }
+
+        @Startup(Integer.MAX_VALUE - 1)
+        void second() {
+            LOG.add("startup_second");
+        }
+
+        @PostConstruct
+        void init() {
+            LOG.add("startup_pc");
         }
 
     }

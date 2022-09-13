@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.server.vertx;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -53,9 +54,9 @@ public class ResteasyReactiveOutputStream extends OutputStream {
             }
         });
 
-        request.response().endHandler(new Handler<Void>() {
+        context.getContext().addEndHandler(new Handler<AsyncResult<Void>>() {
             @Override
-            public void handle(Void event) {
+            public void handle(AsyncResult<Void> event) {
                 synchronized (request.connection()) {
                     if (waitingForDrain) {
                         request.connection().notifyAll();

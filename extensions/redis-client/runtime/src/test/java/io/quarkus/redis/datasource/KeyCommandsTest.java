@@ -129,6 +129,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void expireWithArgs() {
         assertThat(keys.expire(key, 10, new ExpireArgs().xx())).isFalse();
         strings.set(key, Person.person7);
@@ -153,6 +154,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void expireatWithArgs() {
         Date expiration = new Date(System.currentTimeMillis() + 10000);
         assertThat(keys.expireat(key, expiration.toInstant().getEpochSecond(), new ExpireArgs().xx())).isFalse();
@@ -217,6 +219,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void pexpireWithArgs() {
         assertThat(keys.pexpire(key, 5000, new ExpireArgs().xx())).isFalse();
         strings.set(key, Person.person7);
@@ -230,6 +233,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void pexpireWithDuration() {
         assertThat(keys.pexpire(key, Duration.ofSeconds(5))).isFalse();
         strings.set(key, Person.person7);
@@ -253,6 +257,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void pexpireatWithArgs() {
         Instant expiration = new Date(System.currentTimeMillis() + 5000).toInstant();
         assertThat(keys.pexpireat(key, expiration.getEpochSecond(), new ExpireArgs().xx())).isFalse();

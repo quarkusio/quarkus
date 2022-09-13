@@ -42,6 +42,7 @@ public class ListCommandTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void blmpop() {
         lists.rpush("two", Person.person1, Person.person2, Person.person3);
         assertThat(lists.blmpop(Duration.ofSeconds(1), Position.RIGHT, "one", "two"))
@@ -54,6 +55,7 @@ public class ListCommandTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void blmpopMany() {
         lists.rpush("two", Person.person1, Person.person2, Person.person3);
         assertThat(lists.blmpop(Duration.ofSeconds(1), Position.RIGHT, 2, "one", "two"))
@@ -130,6 +132,7 @@ public class ListCommandTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void lmpop() {
         assertThat(lists.lmpop(Position.RIGHT, key)).isNull();
         lists.rpush(key, Person.person1, Person.person2);
@@ -138,6 +141,7 @@ public class ListCommandTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void lmpopMany() {
         assertThat(lists.lmpop(Position.RIGHT, 2, key)).isEmpty();
         lists.rpush(key, Person.person1, Person.person2);

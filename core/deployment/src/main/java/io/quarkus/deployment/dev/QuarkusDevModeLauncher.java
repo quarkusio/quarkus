@@ -32,6 +32,7 @@ import org.apache.maven.shared.utils.cli.CommandLineUtils;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.util.JavaVersionUtil;
 import io.quarkus.utilities.JavaBinFinder;
 
@@ -313,6 +314,7 @@ public abstract class QuarkusDevModeLauncher {
      * Attempts to prepare the dev mode runner.
      */
     protected void prepare() throws Exception {
+        JBossVersion.disableVersionLogging();
 
         if (!JavaVersionUtil.isGraalvmJdk()) {
             // prevent C2 compiler for kicking in - makes startup a little faster

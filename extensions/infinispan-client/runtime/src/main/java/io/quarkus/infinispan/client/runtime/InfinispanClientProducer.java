@@ -25,6 +25,7 @@ import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
+import org.infinispan.commons.configuration.XMLStringConfiguration;
 import org.infinispan.commons.marshall.Marshaller;
 import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.infinispan.commons.util.Util;
@@ -43,6 +44,7 @@ import org.infinispan.query.remote.client.ProtobufMetadataManagerConstants;
 public class InfinispanClientProducer {
     private static final Log log = LogFactory.getLog(InfinispanClientProducer.class);
 
+    public static final String DEFAULT_CONFIG = "<distributed-cache><encoding media-type=\"application/x-protostream\"/></distributed-cache>";
     public static final String PROTOBUF_FILE_PREFIX = "infinispan.client.hotrod.protofile.";
     public static final String PROTOBUF_INITIALIZERS = "infinispan.client.hotrod.proto-initializers";
 
@@ -324,20 +326,33 @@ public class InfinispanClientProducer {
         final io.quarkus.infinispan.client.Remote remote = getRemoteAnnotation(annotationSet);
 
         if (cacheManager != null && remote != null && !remote.value().isEmpty()) {
-            return cacheManager.getCache(remote.value());
+            RemoteCache<K, V> cache = cacheManager.getCache(remote.value());
+            if (cache == null) {
+                log.warn("Attempt to create cache using minimal default config");
+                return cacheManager.administration()
+                        .getOrCreateCache(remote.value(), new XMLStringConfiguration(DEFAULT_CONFIG));
+            }
+            return cache;
         }
 
         if (cacheManager != null) {
-            return cacheManager.getCache();
+            RemoteCache<K, V> cache = cacheManager.getCache();
+            if (cache == null) {
+                log.warn("Attempt to create cache using minimal default config");
+                return cacheManager.administration()
+                        .getOrCreateCache(remote.value(), new XMLStringConfiguration(DEFAULT_CONFIG));
+            }
+            return cache;
         }
 
+        log.error("Unable to produce RemoteCache. RemoteCacheManager is null");
         return null;
     }
 
     @Produces
-    public CounterManager counterManager() {
-        RemoteCacheManager cacheManager = remoteCacheManager();
+    public CounterManager counterManager(RemoteCacheManager cacheManager) {
         if (cacheManager == null) {
+            log.error("Unable to produce CounterManager. RemoteCacheManager is null");
             return null;
         }
         return RemoteCounterManagerFactory.asCounterManager(cacheManager);

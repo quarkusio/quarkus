@@ -62,17 +62,17 @@ Add the following properties to connect to Infinispan Server:
 
 [source,properties]
 ----
-# Infinispan Server address
-quarkus.infinispan-client.server-list=localhost:11222
+quarkus.infinispan-client.server-list=localhost:11222 <1>
 
-# Authentication
-quarkus.infinispan-client.auth-username=admin
-quarkus.infinispan-client.auth-password=password
+quarkus.infinispan-client.auth-username=admin <2>
+quarkus.infinispan-client.auth-password=password <3>
 
-# Infinispan client intelligence
-# Use BASIC as a Docker for Mac workaround
-quarkus.infinispan-client.client-intelligence=BASIC
+quarkus.infinispan-client.client-intelligence=BASIC <4>
 ----
+<1> Sets Infinispan Server address list, separated with commas
+<2> Sets the authentication username
+<3> Sets the authentication password
+<4> Sets the client intelligence. Use BASIC as a workaround if using Docker for Mac.
 
 .Running Infinispan Server
 
@@ -88,6 +88,31 @@ Infinispan Server also enables authentication and security authorization by defa
 [source,bash]
 ----
 $ ./bin/cli.sh user create admin -p password
+----
+
+=== Creating caches from the client
+
+When a cache is accessed from the client, if the cache does not exist in the Infinispan Server and you want
+to create it on first access, use one of the following properties:
+
+[source,properties]
+----
+quarkus.infinispan-client.cache.books.configuration-uri=cacheConfig.xml <1>
+quarkus.infinispan-client.cache.magazine.configuration=<distributed-cache><encoding media-type="application/x-protostream"/></distributed-cache> <2>
+----
+<1> The file name located under the `resources` folder that contains the configuration of the 'books' cache
+<2> The configuration of the 'magazine' cache as a plain text property
+
+If both `configuration-uri` and `configuration` are configured for the same cache with the same Quarkus profile,
+`configuration-uri` gets preference over `configuration`.
+
+If nothing is configured for a particular cache, it will be created with the following basic configuration:
+
+[source, xml]
+----
+<distributed-cache>
+    <encoding media-type="application/x-protostream"/>
+</distributed-cache>
 ----
 
 === Authentication mechanisms
@@ -478,10 +503,28 @@ You can read more about https://infinispan.org/docs/stable/titles/developing/dev
 
 == Near Caching
 
-Near caching is disabled by default, but you can enable it by setting the profile config property
-`quarkus.infinispan-client.near-cache-max-entries` to a value greater than 0. You can also configure
-a regular expression so that only a subset of caches have near caching applied through the
-`quarkus.infinispan-client.near-cache-name-pattern` attribute.
+Near caching is disabled by default, but you can enable it on a per cache basic by configuring the following properties:
+
+[source,properties]
+----
+quarkus.infinispan-client.cache.books.near-cache-mode=INVALIDATED <1>
+quarkus.infinispan-client.cache.books.near-cache-max-entries=200 <2>
+quarkus.infinispan-client.cache.books.near-cache-use-bloom-filter=true <3>
+----
+
+<1> Enables near caching for the 'books' cache by setting the mode to `INVALIDATED`
+<2> Sets the maximum number of entries that the near cache of the 'books' cache can hold before eviction occurs
+<3> Enables bloom filter for the 'books' cache
+
+=== Bounded near caching
+
+You should always use bounded near caches by specifying the maximum number of entries they can contain.
+
+=== Bloom filters
+
+If you need to optimize the performance for write operations by reducing the total number of invalidation messages,
+enable bloom filter. Bloom filters reside on Infinispan Server and keep track of the entries that the client has requested.
+They cannot be used with unbounded near cache: maximum number of entries must be defined when enabling bloom filters.
 
 == Encryption
 

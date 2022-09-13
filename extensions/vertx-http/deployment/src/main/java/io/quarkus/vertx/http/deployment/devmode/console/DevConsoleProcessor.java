@@ -64,6 +64,7 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleWebjarBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
@@ -88,6 +89,7 @@ import io.quarkus.qute.Variant;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.utilities.OS;
+import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -387,6 +389,46 @@ public class DevConsoleProcessor {
                 .build();
     }
 
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public void setupDevConsoleWebjar(
+            List<DevConsoleWebjarBuildItem> devConsoleWebjarBuildItems,
+            BuildProducer<WebJarBuildItem> webJarBuildItemBuildProducer,
+            LaunchModeBuildItem launchModeBuildItem) {
+        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
+            return;
+        }
+        for (DevConsoleWebjarBuildItem devConsoleWebjar : devConsoleWebjarBuildItems) {
+            webJarBuildItemBuildProducer.produce(WebJarBuildItem.builder()
+                    .artifactKey(devConsoleWebjar.getArtifactKey())
+                    .root(devConsoleWebjar.getRoot())
+                    .useDefaultQuarkusBranding(devConsoleWebjar.getUseDefaultQuarkusBranding())
+                    .onlyCopyNonArtifactFiles(devConsoleWebjar.getOnlyCopyNonArtifactFiles())
+                    .build());
+        }
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public void setupDevConsoleRoutes(
+            List<DevConsoleWebjarBuildItem> devConsoleWebjarBuildItems,
+            DevConsoleRecorder recorder,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            ShutdownContextBuildItem shutdownContext,
+            BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
+            WebJarResultsBuildItem webJarResultsBuildItem) {
+
+        for (DevConsoleWebjarBuildItem webjarBuildItem : devConsoleWebjarBuildItems) {
+            WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem.byArtifactKey(webjarBuildItem.getArtifactKey());
+            if (result == null) {
+                continue;
+            }
+            routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                    .route("dev/" + webjarBuildItem.getRouteRoot() + "/*")
+                    .handler(recorder.fileSystemStaticHandler(result.getWebRootConfigurations(), shutdownContext))
+                    .build());
+        }
+    }
+
     @BuildStep(onlyIf = { IsDevelopment.class })
     public DevConsoleTemplateInfoBuildItem config(List<DevServiceDescriptionBuildItem> serviceDescriptions) {
         return new DevConsoleTemplateInfoBuildItem("devServices", serviceDescriptions);
@@ -404,7 +446,8 @@ public class DevConsoleProcessor {
             ShutdownContextBuildItem shutdownContext,
             BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
             WebJarResultsBuildItem webJarResultsBuildItem,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            BodyHandlerBuildItem bodyHandlerBuildItem) {
 
         WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem.byArtifactKey(DEVCONSOLE_WEBJAR_ARTIFACT_KEY);
 
@@ -432,7 +475,8 @@ public class DevConsoleProcessor {
                 NonApplicationRootPathBuildItem.Builder builder = nonApplicationRootPathBuildItem.routeBuilder()
                         .routeFunction(
                                 "dev/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath(),
-                                new RuntimeDevConsoleRoute(i.getMethod()));
+                                new RuntimeDevConsoleRoute(i.getMethod(),
+                                        i.isBodyHandlerRequired() ? bodyHandlerBuildItem.getHandler() : null));
                 if (i.isBlockingHandler()) {
                     builder.blockingRoute();
                 }

@@ -315,6 +315,42 @@ The console log handler is enabled by default.  It outputs all log events to the
 
 For details of its configuration options, see link:#quarkus-log-logging-log-config_quarkus.log.console-console-logging[the Console Logging configuration reference].
 
+[TIP]
+.Logging filters
+====
+Log handlers (like the console log handler) can have a link:https://docs.oracle.com/en/java/javase/11/docs/api/java.logging/java/util/logging/Filter.html[filter] associated with them, whose
+purpose is to determine whether a record should actually be logged or not.
+
+These filters are registered by placing the `@io.quarkus.logging.LoggingFilter` annotation on a (`final`) class that implements `java.util.logging.Filter` and setting the `name` property.
+
+Finally, the filter is attached using the `filter` configuration property of the appropriate handler.
+
+Let's say for example that we wanted to filter out logging records that contained the word `test` from the console logs.
+We could write a filter like so:
+
+[source,java]
+----
+import io.quarkus.logging.LoggingFilter;
+import java.util.logging.Filter;
+import java.util.logging.LogRecord;
+
+@LoggingFilter(name = "my-filter")
+public final class TestFilter implements Filter {
+    @Override
+    public boolean isLoggable(LogRecord record) {
+        return !record.getMessage().contains("test");
+    }
+}
+----
+
+And we would register this filter to the console handler like so:
+
+[source, properties]
+----
+quarkus.log.console.filter=my-filter
+----
+====
+
 === File log handler
 
 The file log handler is disabled by default. It outputs all log events to a file on the application's host.

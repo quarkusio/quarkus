@@ -133,7 +133,7 @@
         <truststore-maven-plugin.version>3.0.0</truststore-maven-plugin.version>
 
         <!-- Webjars used by the Dev UI -->
-        <webjar.bootstrap.version>4.6.1</webjar.bootstrap.version>
+        <webjar.bootstrap.version>4.6.2</webjar.bootstrap.version>
         <webjar.bootstrap-multiselect.version>0.9.15</webjar.bootstrap-multiselect.version>
         <webjar.bootstrap-icons.version>1.9.1</webjar.bootstrap-icons.version>
         <webjar.font-awesome.version>6.1.2</webjar.font-awesome.version>

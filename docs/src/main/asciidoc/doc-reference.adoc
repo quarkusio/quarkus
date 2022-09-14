@@ -84,7 +84,7 @@ Your titles and headings must also follow the specific guidance for the Quarkus 
 
 == File naming conventions
 
-Quarkus docs are stored in a fairly flat structure in an effort to make things easier to discover.
+To make things easier to discover, Quarkus docs are stored in a fairly flat structure.
 The bulk of the file name should be some representation of its title.
 Use all lowercase letters, separate words with hyphens, and don't use symbols or special characters.
 
@@ -96,6 +96,37 @@ Suffix:: The file name should reflect the type of document:
 - How-to guides should end in `-howto.adoc`
 - References should end in `-reference.adoc`
 - Tutorials should end in `-tutorial.adoc`
+
+== Language and grammar
+
+Write clear, concise, and consistent technical information in US English. 
+Write for a global audience with localization, translation, inclusivity, and diversity in mind. 
+Try to use the following grammar styles:
+
+* link:https://developers.google.com/style/tense?hl=en[Present tense]
+* link:https://developers.google.com/style/voice?hl=en[Active voice] 
+* link:https://developers.google.com/style/person?hl=en[Second person (you)]
+* link:https://developers.google.com/style/tone?hl=en[A conversational tone]
+* link:https://developers.google.com/style/pronouns?hl=en[Gender neutral language]
+
+== Sentence length
+
+Shorter sentences are much easier to read and translate. Try to use less than 32 words per sentence.
+
+== Abstracts (preamble)
+
+Add a short description that helps your audience to quickly find and understand the purpose and intent of the page.
+
+Try to write the abstract by using the following guidelines:
+
+* *User oriented:* Contains terms and keywords that are familiar to users.
+* *Concise:* Avoids self-referential expressions and filler words, for example, "This document..", "This tutorial..", or "The following.."
+* *Brief:* Is no more than three sentences long. 
+
+[IMPORTANT]
+====
+The first sentence of the abstract must explain the value and some benefit of the content in less than 27 words because this automatically displays on the link:https://quarkus.io/guides/[Quarkus guides homepage].
+====
 
 == Asciidoc syntax
 
@@ -113,17 +144,6 @@ The following links provide background on Asciidoc syntax and general convention
 
 Text in paragraphs, lists, and tables should be broken into pieces that are easier to review{semantic-line-breaks}.
 Start a new line at the end of each sentence, and split sentences themselves at natural breaks between clauses.
-
-=== Abstracts (preamble)
-
-For optimum findability, add a short description using user-oriented keywords to summarize the document's purpose, task, and intent in no more than three sentences.
-Avoid self-referential expressions and filler words, such as "This document..", "This tutorial..", and "The following.." 
-Mentioning the benefits users gain from reading the content is also helpful.
-
-[IMPORTANT]
-====
-The first sentence of the abstract must explain the value and some benefit of the content in less than 26 words because this automatically displays on the link:https://quarkus.io/guides/[Quarkus guides homepage].
-====
 
 === Automatic Table of Contents (TOC)
 
@@ -155,7 +175,7 @@ If you end up with deeply nested sections, think about the following:
 
 - Is this information in the right place?
 For example, if this is a reference, should some of this content be moved to a concept doc or how-to guide instead?
-- Can the content be re-organized to make it simpler to consume?
+- Can the content be reorganized to make it simpler to consume?
 
 See xref:{doc-guides}/doc-concepts.adoc[Quarkus documentation concepts] for more information about content types and organization.
 ====

@@ -3,6 +3,7 @@ package io.quarkus.narayana.jta.runtime;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
+import javax.inject.Singleton;
 import javax.transaction.TransactionSynchronizationRegistry;
 
 import org.jboss.tm.JBossXATerminator;
@@ -32,9 +33,12 @@ public class NarayanaJtaProducers {
     }
 
     @Produces
-    @ApplicationScoped
+    @Singleton
     public XAResourceRecoveryRegistry xaResourceRecoveryRegistry() {
-        return new RecoveryManagerService();
+        RecoveryManagerService recoveryManagerService = new RecoveryManagerService();
+        recoveryManagerService.create();
+        recoveryManagerService.start();
+        return recoveryManagerService;
     }
 
     @Produces

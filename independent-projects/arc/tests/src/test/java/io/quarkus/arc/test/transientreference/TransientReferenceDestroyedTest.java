@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -30,7 +31,8 @@ public class TransientReferenceDestroyedTest {
 
     @Test
     public void testTransientReferences() {
-        Controller controller = Arc.container().instance(Controller.class).get();
+        InstanceHandle<Controller> controllerHandle = Arc.container().instance(Controller.class);
+        Controller controller = controllerHandle.get();
         assertNotNull(controller.theBeer);
         assertTrue(Arc.container().instance(Integer.class).get() > 0);
         assertEquals(3, BeerProducer.DESTROYED.size(), "Destroyed beers: " + BeerProducer.DESTROYED);
@@ -38,16 +40,26 @@ public class TransientReferenceDestroyedTest {
         assertTrue(BeerProducer.DESTROYED.contains(2));
         assertTrue(BeerProducer.DESTROYED.contains(3));
 
+        controllerHandle.destroy();
+        // Controller.theBeer is also destroyed
+        assertEquals(4, BeerProducer.DESTROYED.size());
+
         BeerProducer.COUNTER.set(0);
         BeerProducer.DESTROYED.clear();
 
-        InterceptedController interceptedController = Arc.container().instance(InterceptedController.class).get();
+        InstanceHandle<InterceptedController> interceptedControllerHandle = Arc.container()
+                .instance(InterceptedController.class);
+        InterceptedController interceptedController = interceptedControllerHandle.get();
         assertNotNull(interceptedController.getTheBeer());
         assertTrue(Arc.container().instance(Long.class).get() > 0);
         assertEquals(3, BeerProducer.DESTROYED.size(), "Destroyed beers: " + BeerProducer.DESTROYED);
         assertTrue(BeerProducer.DESTROYED.contains(1));
         assertTrue(BeerProducer.DESTROYED.contains(2));
         assertTrue(BeerProducer.DESTROYED.contains(3));
+
+        interceptedControllerHandle.destroy();
+        // InterceptedController.theBeer is also destroyed
+        assertEquals(4, BeerProducer.DESTROYED.size());
     }
 
     @Singleton

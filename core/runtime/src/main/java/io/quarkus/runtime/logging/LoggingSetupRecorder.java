@@ -254,13 +254,12 @@ public class LoggingSetupRecorder {
         }
 
         Map<String, Filter> nameToFilter = new HashMap<>();
+        LogFilterFactory logFilterFactory = LogFilterFactory.load();
         discoveredLogComponents.getNameToFilterClass().forEach(new BiConsumer<>() {
             @Override
             public void accept(String name, String className) {
                 try {
-                    nameToFilter.put(name,
-                            (Filter) Class.forName(className, true, Thread.currentThread().getContextClassLoader())
-                                    .getConstructor().newInstance());
+                    nameToFilter.put(name, logFilterFactory.create(className));
                 } catch (Exception e) {
                     throw new RuntimeException("Unable to create instance of Logging Filter '" + className + "'");
                 }

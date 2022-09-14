@@ -12,6 +12,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
@@ -48,5 +49,10 @@ public class CaffeineProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     NativeImageFeatureBuildItem nativeImageFeature() {
         return new NativeImageFeatureBuildItem(CacheConstructorsFeature.class);
+    }
+
+    @BuildStep
+    void loadDefaultJCacheConfiguration(BuildProducer<NativeImageResourceBuildItem> resource) {
+        resource.produce(new NativeImageResourceBuildItem("reference.conf"));
     }
 }

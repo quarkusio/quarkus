@@ -79,6 +79,8 @@ public class CacheConstructorsFeature implements Feature {
                 "com.github.benmanes.caffeine.cache.SSMSA",
                 "com.github.benmanes.caffeine.cache.SSMSW",
                 "com.github.benmanes.caffeine.cache.SSW",
+
+                "com.github.benmanes.caffeine.jcache.copy.JavaSerializationCopier"
         };
     }
 

@@ -3,11 +3,8 @@ package io.quarkus.jdbc.postgresql.runtime.graal;
 import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.xml.transform.dom.DOMResult;
-
+import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
-import org.graalvm.nativeimage.hosted.RuntimeReflection;
-import org.postgresql.core.BaseConnection;
 
 public final class SQLXMLFeature implements Feature {
 
@@ -17,6 +14,11 @@ public final class SQLXMLFeature implements Feature {
      * To set this, add `-J-Dio.quarkus.jdbc.postgresql.graalvm.diagnostics=true` to the native-image parameters
      */
     private static final boolean log = Boolean.getBoolean("io.quarkus.jdbc.postgresql.graalvm.diagnostics");
+
+    @Override
+    public void afterRegistration(AfterRegistrationAccess access) {
+        ImageSingletons.add(DomHelper.class, new DomHelper());
+    }
 
     @Override
     public void beforeAnalysis(BeforeAnalysisAccess access) {
@@ -39,17 +41,7 @@ public final class SQLXMLFeature implements Feature {
                 System.out.println(
                         "Quarkus' automatic feature for GraalVM native images: enabling support for XML processing in the PostgreSQL JDBC driver");
             }
-            enableDomXMLProcessingInDriver(duringAnalysisAccess);
-        }
-    }
-
-    private void enableDomXMLProcessingInDriver(DuringAnalysisAccess duringAnalysisAccess) {
-        final Class<?> classByName = duringAnalysisAccess.findClassByName("io.quarkus.jdbc.postgresql.runtime.graal.DomHelper");
-        try {
-            final Method method = classByName.getMethod("reallyProcessDomResult", DOMResult.class, BaseConnection.class);
-            RuntimeReflection.register(method);
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
+            DomHelper.enableXmlProcessing();
         }
     }
 

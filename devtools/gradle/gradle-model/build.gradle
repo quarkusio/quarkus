@@ -3,6 +3,7 @@ dependencies {
     implementation "io.quarkus:quarkus-bootstrap-gradle-resolver:${version}"
     implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api:${kotlin_version}"
     testImplementation "io.quarkus:quarkus-devtools-testing:${version}"
+    testImplementation "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlin_version}"
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {

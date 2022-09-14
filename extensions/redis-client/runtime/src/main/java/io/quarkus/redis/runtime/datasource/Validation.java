@@ -18,6 +18,15 @@ public class Validation {
         }
     }
 
+    static <X> void notNullOrBlank(String v, String name) {
+        if (v == null) {
+            throw new IllegalArgumentException("`" + name + "` must not be `null`");
+        }
+        if (v.isBlank()) {
+            throw new IllegalArgumentException("`" + name + "` must not be blank");
+        }
+    }
+
     static <X> void notNullOrEmpty(Collection<X> col, String name) {
         if (col == null) {
             throw new IllegalArgumentException("`" + name + "` must not be `null`");

@@ -6,6 +6,7 @@ import io.quarkus.redis.datasource.bitmap.TransactionalBitMapCommands;
 import io.quarkus.redis.datasource.geo.TransactionalGeoCommands;
 import io.quarkus.redis.datasource.hash.TransactionalHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.TransactionalHyperLogLogCommands;
+import io.quarkus.redis.datasource.json.TransactionalJsonCommands;
 import io.quarkus.redis.datasource.keys.TransactionalKeyCommands;
 import io.quarkus.redis.datasource.list.TransactionalListCommands;
 import io.quarkus.redis.datasource.set.TransactionalSetCommands;
@@ -87,6 +88,11 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
     @Override
     public <K> TransactionalBitMapCommands<K> bitmap(Class<K> redisKeyType) {
         return new BlockingTransactionalBitMapCommandsImpl<>(this, reactive.bitmap(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K> TransactionalJsonCommands<K> json(Class<K> redisKeyType) {
+        return new BlockingTransactionalJsonCommandsImpl<>(this, reactive.json(redisKeyType), timeout);
     }
 
     @Override

@@ -19,7 +19,7 @@
         </dependency>
         <dependency>
             <groupId>io.fabric8</groupId>
-            <artifactId>kubernetes-client-api</artifactId>
+            <artifactId>kubernetes-server-mock</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>javax.annotation</groupId>
@@ -38,14 +38,10 @@
                     <artifactId>jakarta.xml.bind-api</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>io.sundr</groupId>
-                    <artifactId>*</artifactId>
+                  <groupId>io.sundr</groupId>
+                  <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.fabric8</groupId>
-            <artifactId>kubernetes-server-mock</artifactId>
         </dependency>
         <dependency>
             <groupId>jakarta.annotation</groupId>

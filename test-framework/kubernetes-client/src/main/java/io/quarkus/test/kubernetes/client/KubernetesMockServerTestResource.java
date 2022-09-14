@@ -2,6 +2,7 @@ package io.quarkus.test.kubernetes.client;
 
 import java.lang.annotation.Annotation;
 
+import io.fabric8.kubernetes.client.GenericKubernetesClient;
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
 
@@ -13,7 +14,7 @@ public class KubernetesMockServerTestResource
         extends AbstractKubernetesTestResource<KubernetesMockServer, NamespacedKubernetesClient> {
 
     @Override
-    protected NamespacedKubernetesClient getClient() {
+    protected GenericKubernetesClient<NamespacedKubernetesClient> getClient() {
         return server.createClient();
     }
 

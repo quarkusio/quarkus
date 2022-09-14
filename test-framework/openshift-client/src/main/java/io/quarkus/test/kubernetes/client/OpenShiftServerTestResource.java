@@ -3,6 +3,7 @@ package io.quarkus.test.kubernetes.client;
 import java.lang.annotation.Annotation;
 import java.util.function.Consumer;
 
+import io.fabric8.kubernetes.client.GenericKubernetesClient;
 import io.fabric8.openshift.client.NamespacedOpenShiftClient;
 import io.fabric8.openshift.client.server.mock.OpenShiftServer;
 import io.quarkus.test.common.QuarkusTestResourceConfigurableLifecycleManager;
@@ -26,7 +27,7 @@ public class OpenShiftServerTestResource extends AbstractKubernetesTestResource<
     }
 
     @Override
-    protected NamespacedOpenShiftClient getClient() {
+    protected GenericKubernetesClient<NamespacedOpenShiftClient> getClient() {
         return server.getOpenshiftClient();
     }
 

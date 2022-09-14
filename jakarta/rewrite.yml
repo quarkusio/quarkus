@@ -183,7 +183,7 @@ recipeList:
   # WildFly Security
   - org.openrewrite.maven.ChangePropertyValue:
       key: wildfly-elytron.version
-      newValue: 2.0.0.Beta3
+      newValue: 2.0.0.Final
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-jaxrs-jaxb

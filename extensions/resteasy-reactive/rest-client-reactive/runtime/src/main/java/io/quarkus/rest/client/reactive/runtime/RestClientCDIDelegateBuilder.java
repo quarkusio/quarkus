@@ -182,7 +182,7 @@ public class RestClientCDIDelegateBuilder<T> {
         }
     }
 
-    private void configureSsl(RestClientBuilder builder) {
+    private void configureSsl(RestClientBuilderImpl builder) {
 
         Optional<String> maybeTrustStore = oneOf(clientConfigByClassName().trustStore, clientConfigByConfigKey().trustStore,
                 configRoot.trustStore);
@@ -249,7 +249,7 @@ public class RestClientCDIDelegateBuilder<T> {
         }
     }
 
-    private void registerTrustStore(String trustStorePath, RestClientBuilder builder) {
+    private void registerTrustStore(String trustStorePath, RestClientBuilderImpl builder) {
         Optional<String> maybeTrustStorePassword = oneOf(clientConfigByClassName().trustStorePassword,
                 clientConfigByConfigKey().trustStorePassword, configRoot.trustStorePassword);
         Optional<String> maybeTrustStoreType = oneOf(clientConfigByClassName().trustStoreType,
@@ -269,7 +269,7 @@ public class RestClientCDIDelegateBuilder<T> {
                         e);
             }
 
-            builder.trustStore(trustStore);
+            builder.trustStore(trustStore, password);
         } catch (KeyStoreException e) {
             throw new IllegalArgumentException("Failed to initialize trust store from " + trustStorePath, e);
         }

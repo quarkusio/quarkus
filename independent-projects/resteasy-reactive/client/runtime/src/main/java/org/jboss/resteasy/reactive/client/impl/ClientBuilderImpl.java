@@ -46,6 +46,7 @@ public class ClientBuilderImpl extends ClientBuilder {
     private char[] keystorePassword;
     private SSLContext sslContext;
     private KeyStore trustStore;
+    private char[] trustStorePassword;
 
     private String proxyHost;
     private int proxyPort;
@@ -88,7 +89,12 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     @Override
     public ClientBuilder trustStore(KeyStore trustStore) {
+        return trustStore(trustStore, null);
+    }
+
+    public ClientBuilder trustStore(KeyStore trustStore, char[] password) {
         this.trustStore = trustStore;
+        this.trustStorePassword = password;
         return this;
     }
 
@@ -164,7 +170,7 @@ public class ClientBuilderImpl extends ClientBuilder {
     @Override
     public ClientImpl build() {
         Buffer keyStore = asBuffer(this.keyStore, keystorePassword);
-        Buffer trustStore = asBuffer(this.trustStore, EMPTY_CHAR_ARARAY);
+        Buffer trustStore = asBuffer(this.trustStore, this.trustStorePassword);
 
         HttpClientOptions options = Optional.ofNullable(configuration.getFromContext(HttpClientOptions.class))
                 .orElseGet(HttpClientOptions::new);
@@ -185,7 +191,7 @@ public class ClientBuilderImpl extends ClientBuilder {
             if (trustStore != null) {
                 JksOptions jks = new JksOptions();
                 jks.setValue(trustStore);
-                jks.setPassword("");
+                jks.setPassword(trustStorePassword == null ? "" : new String(trustStorePassword));
                 options.setTrustStoreOptions(jks);
             }
         }

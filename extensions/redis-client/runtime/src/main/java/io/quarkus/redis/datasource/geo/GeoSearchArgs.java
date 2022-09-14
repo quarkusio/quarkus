@@ -56,7 +56,7 @@ public class GeoSearchArgs<V> implements RedisCommandExtraArguments {
      * @param latitude the latitude
      * @return the current {@code GeoSearchArgs}
      */
-    private GeoSearchArgs<V> fromCoordinate(double longitude, double latitude) {
+    public GeoSearchArgs<V> fromCoordinate(double longitude, double latitude) {
         this.longitude = longitude;
         this.latitude = latitude;
         return this;

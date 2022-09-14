@@ -181,31 +181,9 @@ In the `src/main/resources/application.properties` file, you need to configure t
 Note that the password can also be configured using system properties and environment variables.
 See the xref:config-reference.adoc[configuration reference guide] for details.
 
-Here is an example using _sendgrid_:
-
-[source,properties]
-----
-# Your email address you send from - must match the "from" address from sendgrid.
-quarkus.mailer.from=test@quarkus.io
-
-# The SMTP host
-quarkus.mailer.host=smtp.sendgrid.net
-# The SMTP port
-quarkus.mailer.port=465
-# If the SMTP connection requires SSL/TLS
-quarkus.mailer.ssl=true
-# Your username
-quarkus.mailer.username=....
-# Your password
-quarkus.mailer.password=....
-
-# By default, in dev mode, the mailer is a mock. This disables the mock and use the configured mailer.
-quarkus.mailer.mock=false
-----
+Configuration of popular mail services is covered in xref:mailer-reference.adoc#popular[the reference guide].
 
 Once you have configured the mailer, if you call the HTTP endpoint as shown above, you will send emails.
-
-Other popular mail services are covered in xref:mailer-reference.adoc#popular[the reference guide].
 
 == Conclusion
 

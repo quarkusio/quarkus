@@ -331,7 +331,7 @@ jobs:
           java-version: ${{ matrix.java.java-version }}
 
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -413,7 +413,7 @@ jobs:
         run: git config --global core.longpaths true
       - uses: actions/checkout@v3
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -488,7 +488,7 @@ jobs:
         run: git config --global core.longpaths true
       - uses: actions/checkout@v3
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -554,7 +554,7 @@ jobs:
         run: git config --global core.longpaths true
       - uses: actions/checkout@v3
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -610,7 +610,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -661,7 +661,7 @@ jobs:
           distribution: temurin
           java-version: 11
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -746,7 +746,7 @@ jobs:
         run: |
           cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .

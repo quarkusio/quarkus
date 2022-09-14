@@ -305,6 +305,12 @@ public class OpenshiftProcessor {
                 .findFirst().orElse(DEFAULT_HTTP_PORT);
         result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyHttpGetActionPortDecorator(name, name, port)));
 
+        // Route target port override
+        config.getRoute().ifPresentOrElse(
+                r -> result.add(new DecoratorBuildItem(OPENSHIFT,
+                        new ApplyRouteTargetPortDecorator(r.targetPort.orElse(HTTP_PORT)))),
+                () -> result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyRouteTargetPortDecorator(HTTP_PORT))));
+
         // Handle non-openshift builds
         if (deploymentResourceKind == DeploymentResourceKind.DeploymentConfig
                 && !OpenshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {

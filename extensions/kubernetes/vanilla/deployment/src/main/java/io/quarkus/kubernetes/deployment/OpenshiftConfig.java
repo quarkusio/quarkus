@@ -552,4 +552,8 @@ public class OpenshiftConfig implements PlatformConfiguration {
     public DeploymentResourceKind getDeploymentResourceKind() {
         return deploymentKind.orElse(DeploymentResourceKind.DeploymentConfig);
     }
+
+    public Optional<RouteConfig> getRoute() {
+        return Optional.ofNullable(route);
+    }
 }

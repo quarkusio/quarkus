@@ -1,6 +1,7 @@
 package io.quarkus.it.kubernetes;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -16,14 +17,14 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class OpenshiftWithRoutePropertiesTest {
+public class OpenshiftWithRoutePropertiesCustomServicePortTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("openshift")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("openshift-with-route.properties");
+            .withConfigurationResource("openshift-with-route-custom-service-port.properties");
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -63,7 +64,7 @@ public class OpenshiftWithRoutePropertiesTest {
                     assertThat(m.getAnnotations()).contains(entry("kubernetes.io/tls-acme", "true"));
                     assertThat(m.getNamespace()).isEqualTo("applications");
                 });
-                assertThat(r.getSpec().getPort().getTargetPort().getStrVal()).isEqualTo("http");
+                assertThat(r.getSpec().getPort().getTargetPort().getStrVal()).isEqualTo("my-port");
                 assertThat(r.getSpec().getHost()).isEqualTo("foo.bar.io");
             });
         });

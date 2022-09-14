@@ -27,4 +27,10 @@ public class RouteConfig {
     @ConfigItem
     Map<String, String> annotations;
 
+    /**
+     * Port of the Service to bind to
+     */
+    @ConfigItem
+    Optional<String> targetPort;
+
 }

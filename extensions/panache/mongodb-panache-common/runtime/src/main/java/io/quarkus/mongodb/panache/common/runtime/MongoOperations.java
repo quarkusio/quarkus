@@ -18,6 +18,7 @@ import javax.transaction.TransactionSynchronizationRegistry;
 
 import org.bson.BsonDocument;
 import org.bson.BsonDocumentWriter;
+import org.bson.BsonNull;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.codecs.Codec;
@@ -33,12 +34,15 @@ import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.panache.common.binder.NativeQueryBinder;
 import io.quarkus.mongodb.panache.common.binder.PanacheQlQueryBinder;
+import io.quarkus.mongodb.panache.common.exception.OptimisticLockException;
+import io.quarkus.mongodb.panache.common.runtime.util.VersionHandler;
 import io.quarkus.mongodb.panache.common.transaction.MongoTransactionException;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
@@ -46,6 +50,7 @@ import io.quarkus.panache.common.Sort;
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public abstract class MongoOperations<QueryType, UpdateType> {
     public static final String ID = "_id";
+    private static final String VERSION = "version";
     public static final Object SESSION_KEY = new Object();
 
     private static final Logger LOGGER = Logger.getLogger(MongoOperations.class);
@@ -175,15 +180,20 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     public void delete(Object entity) {
-        MongoCollection collection = mongoCollection(entity);
-        BsonDocument document = getBsonDocument(collection, entity);
-        BsonValue id = document.get(ID);
-        BsonDocument query = new BsonDocument().append(ID, id);
+        VersionHandler versionHandler = VersionHandler.of(entity);
+        MongoCollection collection = mongoCollection(entity.getClass());
+        BsonDocument query = buildUpdateQuery(entity);
+
         ClientSession session = getSession(entity);
+        DeleteResult deleteResult;
         if (session == null) {
-            collection.deleteOne(query);
+            deleteResult = collection.deleteOne(query);
         } else {
-            collection.deleteOne(session, query);
+            deleteResult = collection.deleteOne(session, query);
+        }
+
+        if (versionHandler.containsVersionAnnotation() && deleteResult.getDeletedCount() == 0) {
+            throwOptimisticLockException(entity);
         }
     }
 
@@ -206,6 +216,12 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     private void persist(MongoCollection collection, Object entity) {
         ClientSession session = getSession(entity);
+
+        VersionHandler versionUtil = VersionHandler.of(entity);
+        if (versionUtil.containsVersionAnnotation()) {
+            versionUtil.adjustVersionValue();
+        }
+
         if (session == null) {
             collection.insertOne(entity);
         } else {
@@ -219,6 +235,14 @@ public abstract class MongoOperations<QueryType, UpdateType> {
             Object firstEntity = entities.get(0);
             MongoCollection collection = mongoCollection(firstEntity);
             ClientSession session = getSession(firstEntity);
+
+            for (Object entity : entities) {
+                VersionHandler versionUtil = VersionHandler.of(entity);
+                if (versionUtil.containsVersionAnnotation()) {
+                    versionUtil.adjustVersionValue();
+                }
+            }
+
             if (session == null) {
                 collection.insertMany(entities);
             } else {
@@ -228,17 +252,21 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     private void update(MongoCollection collection, Object entity) {
-        //we transform the entity as a document first
-        BsonDocument document = getBsonDocument(collection, entity);
-
-        //then we get its id field and create a new Document with only this one that will be our replace query
-        BsonValue id = document.get(ID);
-        BsonDocument query = new BsonDocument().append(ID, id);
+        VersionHandler versionHandler = VersionHandler.of(entity);
         ClientSession session = getSession(entity);
+
+        BsonDocument query = buildUpdateQuery(entity);
+        versionHandler.adjustVersionValue();
+
+        UpdateResult updateResult;
         if (session == null) {
-            collection.replaceOne(query, entity);
+            updateResult = collection.replaceOne(query, entity);
         } else {
-            collection.replaceOne(session, query, entity);
+            updateResult = collection.replaceOne(session, query, entity);
+        }
+
+        if (versionHandler.containsVersionAnnotation() && updateResult.getModifiedCount() == 0) {
+            throwOptimisticLockException(entity);
         }
     }
 
@@ -263,14 +291,28 @@ public abstract class MongoOperations<QueryType, UpdateType> {
                 collection.insertOne(session, entity);
             }
         } else {
-            //insert with user provided ID or update
-            BsonDocument query = new BsonDocument().append(ID, id);
-            if (session == null) {
-                collection.replaceOne(query, entity, new ReplaceOptions().upsert(true));
-            } else {
-                collection.replaceOne(session, query, entity, new ReplaceOptions().upsert(true));
+            VersionHandler versionUtil = VersionHandler.of(entity);
+            if (!versionUtil.containsVersionAnnotation()) {
+                BsonDocument query = buildUpdateQueryWithoutVersion(entity);
+                replaceOne(session, collection, query, entity);
+            } else if (versionUtil.containsVersionAnnotationAndValue()) {
+                update(entity);
+            } else if (!versionUtil.containsVersionValue()) {
+                BsonDocument query = buildUpdateQuery(entity);
+                versionUtil.adjustVersionValue();
+                replaceOne(session, collection, query, entity);
             }
         }
+    }
+
+    private UpdateResult replaceOne(ClientSession session, MongoCollection collection, BsonDocument query, Object entity) {
+        if (session == null) {
+            UpdateResult updateResult = collection.replaceOne(query, entity, new ReplaceOptions().upsert(true));
+            return updateResult;
+        }
+
+        UpdateResult updateResult = collection.replaceOne(session, query, entity, new ReplaceOptions().upsert(true));
+        return updateResult;
     }
 
     private void persistOrUpdate(List<Object> entities) {
@@ -295,10 +337,19 @@ public abstract class MongoOperations<QueryType, UpdateType> {
                 //insert with autogenerated ID
                 bulk.add(new InsertOneModel(entity));
             } else {
-                //insert with user provided ID or update
-                BsonDocument query = new BsonDocument().append(ID, id);
-                bulk.add(new ReplaceOneModel(query, entity,
-                        new ReplaceOptions().upsert(true)));
+                //insert/update with user provided ID or update
+                VersionHandler versionHandler = VersionHandler.of(entity);
+                if (versionHandler.containsVersionAnnotationAndValue()) {
+                    //it will ignore in silence not matching updates.
+                    BsonDocument query = buildUpdateQuery(entity);
+                    versionHandler.adjustVersionValue();
+                    bulk.add(new ReplaceOneModel(query, entity));
+                } else if (!versionHandler.containsVersionValue()) {
+                    //only try upsert when there is no version value
+                    BsonDocument query = buildUpdateQuery(entity);
+                    versionHandler.adjustVersionValue();
+                    bulk.add(new ReplaceOneModel(query, entity, new ReplaceOptions().upsert(true)));
+                }
             }
         }
 
@@ -307,6 +358,47 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         } else {
             collection.bulkWrite(session, bulk);
         }
+    }
+
+    /**
+     * We check if is needed to throw a OptimisticLockException.
+     */
+    private void throwOptimisticLockException(Object entity) {
+        StringBuilder errorMsg = new StringBuilder("Was not possible to update entity: ")
+                .append(entity.toString());
+        throw new OptimisticLockException(errorMsg.toString());
+    }
+
+    /**
+     * We build the query that will be used to update the document, can have id, or id/version.
+     */
+    private BsonDocument buildUpdateQuery(Object entity) {
+        MongoCollection collection = mongoCollection(entity.getClass());
+        //we transform the entity as a document first
+        BsonDocument document = getBsonDocument(collection, entity);
+
+        //then we get its id field and create a new Document with only this one that will be our replace query
+        BsonValue id = document.get(ID);
+
+        VersionHandler versionUtil = VersionHandler.of(entity);
+        if (versionUtil.containsVersionAnnotation()) {
+            BsonValue version = document.get(VERSION);
+            if (version == null) {
+                version = new BsonNull();
+            }
+            return new BsonDocument().append(ID, id).append(VERSION, version);
+        }
+        return new BsonDocument().append(ID, id);
+    }
+
+    private BsonDocument buildUpdateQueryWithoutVersion(Object entity) {
+        MongoCollection collection = mongoCollection(entity.getClass());
+        //we transform the entity as a document first
+        BsonDocument document = getBsonDocument(collection, entity);
+
+        //then we get its id field and create a new Document with only this one that will be our replace query
+        BsonValue id = document.get(ID);
+        return new BsonDocument().append(ID, id);
     }
 
     private BsonDocument getBsonDocument(MongoCollection collection, Object entity) {

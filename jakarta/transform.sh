@@ -230,8 +230,9 @@ sed -i 's@com.sun.xml.bind.v2.ContextFactory@org.glassfish.jaxb.runtime.v2.Conte
 sed -i '/com.sun.xml.internal.bind.v2.ContextFactory/d' extensions/jaxb/deployment/src/main/java/io/quarkus/jaxb/deployment/JaxbProcessor.java
 
 ## JSON-P implementation switch
-sed -i 's@<runnerParentFirstArtifact>org.glassfish:jakarta.json</runnerParentFirstArtifact>@<runnerParentFirstArtifact>org.eclipse.parsson:jakarta.json</runnerParentFirstArtifact>@g' extensions/logging-json/runtime/pom.xml
-sed -i 's@<parentFirstArtifact>org.glassfish:jakarta.json</parentFirstArtifact>@<parentFirstArtifact>org.eclipse.parsson:jakarta.json</parentFirstArtifact>@g' extensions/jsonp/runtime/pom.xml
+sed -i 's@<runnerParentFirstArtifact>org.glassfish:jakarta.json</runnerParentFirstArtifact>@<runnerParentFirstArtifact>org.eclipse.parsson:parsson</runnerParentFirstArtifact>\n                        <runnerParentFirstArtifact>jakarta.json:jakarta.json-api</runnerParentFirstArtifact>@g' extensions/logging-json/runtime/pom.xml
+sed -i 's@<parentFirstArtifact>org.glassfish:jakarta.json</parentFirstArtifact>@<parentFirstArtifact>org.eclipse.parsson:parsson</parentFirstArtifact>@g' extensions/jsonp/runtime/pom.xml
+sed -i 's@<excludedArtifact>org.glassfish:javax.json</excludedArtifact>@<excludedArtifact>org.glassfish:javax.json</excludedArtifact>\n                        <excludedArtifact>org.glassfish:jakarta.json</excludedArtifact>\n                        <excludedArtifact>org.eclipse.parsson:jakarta.json</excludedArtifact>@g' extensions/jsonp/runtime/pom.xml
 sed -i 's@import org.glassfish.json.JsonProviderImpl;@import org.eclipse.parsson.JsonProviderImpl;@g' extensions/jsonp/deployment/src/main/java/io/quarkus/jsonp/deployment/JsonpProcessor.java
 
 ## cleanup phase - needs to be done once everything has been rewritten

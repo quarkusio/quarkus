@@ -111,6 +111,7 @@
                         <configuration>
                             <activeRecipes>
                                 <recipe>io.quarkus.jakarta-jaxb-switch</recipe>
+                                <recipe>io.quarkus.jakarta-json-cleanup</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>

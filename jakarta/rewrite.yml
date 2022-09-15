@@ -677,7 +677,7 @@ recipeList:
       newValue: 3.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy-reactive-testsuite.repo.ref
-      newValue: c5785f3465fa87395574fde1274c1712b3aa728b
+      newValue: 4116f1a0c5605ad00d7779367dac8002af8c6882
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.maven.javax.managed

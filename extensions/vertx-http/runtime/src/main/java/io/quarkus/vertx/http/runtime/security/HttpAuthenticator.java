@@ -137,10 +137,14 @@ public class HttpAuthenticator {
         routingContext.request().resume();
         Uni<Boolean> result = null;
 
-        HttpAuthenticationMechanism matchingMech = routingContext.get(HttpAuthenticationMechanism.class.getName());
-        if (matchingMech != null) {
-            result = matchingMech.sendChallenge(routingContext);
+        // we only require auth mechanism to put itself into routing context when there is more than one mechanism registered
+        if (mechanisms.length > 1) {
+            HttpAuthenticationMechanism matchingMech = routingContext.get(HttpAuthenticationMechanism.class.getName());
+            if (matchingMech != null) {
+                result = matchingMech.sendChallenge(routingContext);
+            }
         }
+
         if (result == null) {
             result = mechanisms[0].sendChallenge(routingContext);
             for (int i = 1; i < mechanisms.length; ++i) {
@@ -169,9 +173,12 @@ public class HttpAuthenticator {
     }
 
     public Uni<ChallengeData> getChallenge(RoutingContext routingContext) {
-        HttpAuthenticationMechanism matchingMech = routingContext.get(HttpAuthenticationMechanism.class.getName());
-        if (matchingMech != null) {
-            return matchingMech.getChallenge(routingContext);
+        // we only require auth mechanism to put itself into routing context when there is more than one mechanism registered
+        if (mechanisms.length > 1) {
+            HttpAuthenticationMechanism matchingMech = routingContext.get(HttpAuthenticationMechanism.class.getName());
+            if (matchingMech != null) {
+                return matchingMech.getChallenge(routingContext);
+            }
         }
         Uni<ChallengeData> result = mechanisms[0].getChallenge(routingContext);
         for (int i = 1; i < mechanisms.length; ++i) {

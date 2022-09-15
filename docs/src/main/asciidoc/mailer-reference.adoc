@@ -368,6 +368,8 @@ quarkus.mailer.port=587
 quarkus.mailer.start-tls=REQUIRED
 quarkus.mailer.username=YOUREMAIL@gmail.com
 quarkus.mailer.password=YOURGENERATEDAPPLICATIONPASSWORD
+
+quarkus.mailer.mock=false # In dev mode, prevent from using the mock SMTP server
 ----
 
 Or with SSL:
@@ -381,6 +383,8 @@ quarkus.mailer.port=465
 quarkus.mailer.ssl=true
 quarkus.mailer.username=YOUREMAIL@gmail.com
 quarkus.mailer.password=YOURGENERATEDAPPLICATIONPASSWORD
+
+quarkus.mailer.mock=false # In dev mode, prevent from using the mock SMTP server
 ----
 
 [NOTE]

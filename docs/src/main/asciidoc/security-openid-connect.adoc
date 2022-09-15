@@ -8,15 +8,37 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::./attributes.adoc[]
 :toc:
 
-This guide demonstrates how to use Quarkus OpenID Connect (OIDC) Extension to protect your JAX-RS applications using Bearer Token Authorization where Bearer Tokens are issued by OpenID Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org[Keycloak].
+You can use the Quarkus OpenID Connect (OIDC) extension to secure your JAX-RS applications using Bearer Token Authorization. 
+The Bearer Tokens are issued by OIDC and OAuth 2.0 compliant authorization servers, such as https://www.keycloak.org[Keycloak]. 
 
-Bearer Token Authorization is the process of authorizing HTTP requests based on the existence and validity of a Bearer Token which provides valuable information to determine the subject of the call as well as whether an HTTP resource can be accessed.
+Bearer Token Authorization is the process of authorizing HTTP requests based on the existence and validity of a Bearer Token. 
+The Bearer Token provides information about the subject of the call which is used to determine whether or not an HTTP resource can be accessed.
 
-Please read the xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications] guide if you need to authenticate and authorize the users using OpenID Connect Authorization Code Flow.
+The following diagrams outline the Bearer Token Authorization mechanism in Quarkus:
 
-If you use Keycloak and Bearer tokens then also see the xref:security-keycloak-authorization.adoc[Using Keycloak to Centralize Authorization] guide.
+.Bearer Token Authorization mechanism in Quarkus with Single-page application
+image::security-bearer-token-authorization-mechanism-1.png[alt=Bearer Token Authorization, width="60%", align=center]
 
-Please read the xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy] guide how to support multiple tenants.
+1. The Quarkus service retrieves verification keys from the OpenID Connect provider. The verification keys are used to verify the bearer access token signatures.
+2. The Quarkus user accesses the Single-page application.
+3. The Single-page application uses Authorization Code Flow to authenticate the user and retrieve tokens from the OpenID Connect provider.
+4. The Single-page application uses the access token to retrieve the service data from the Quarkus service.
+5. The Quarkus service verifies the bearer access token signature using the verification keys, checks the token expiry date and other claims, allows the request to proceed if the token is valid, and returns the service response to the Single-page application.
+6. The Single-page application returns the same data to the Quarkus user.
+
+.Bearer Token Authorization mechanism in Quarkus with Java or command line client
+image::security-bearer-token-authorization-mechanism-2.png[alt=Bearer Token Authorization, width="60%", align=center]
+
+1. The Quarkus service retrieves verification keys from the OpenID Connect provider. The verification keys are used to verify the bearer access token signatures.
+2. The Client uses `client_credentials` that requires client ID and secret or password grant, which also requires client ID, secret, user name, and password to retrieve the access token from the OpenID Connect provider.
+3. The Client uses the access token to retrieve the service data from the Quarkus service.
+4. The Quarkus service verifies the bearer access token signature using the verification keys, checks the token expiry date and other claims, allows the request to proceed if the token is valid, and returns the service response to the Client.
+
+If you need to authenticate and authorize the users using OpenID Connect Authorization Code Flow, see xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications].
+Also, if you use Keycloak and Bearer Tokens, see xref:security-keycloak-authorization.adoc[Using Keycloak to Centralize Authorization].
+
+For information about how to support multiple tenants, see xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy].
+
 
 == Quickstart
 

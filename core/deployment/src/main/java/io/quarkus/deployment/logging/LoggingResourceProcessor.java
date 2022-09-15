@@ -1,6 +1,5 @@
 package io.quarkus.deployment.logging;
 
-import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,7 +37,6 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.EmbeddedConfigurator;
 import org.jboss.logmanager.LogManager;
@@ -112,6 +110,7 @@ import io.quarkus.runtime.logging.InheritableLevel;
 import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.runtime.logging.LogCleanupFilterElement;
 import io.quarkus.runtime.logging.LogConfig;
+import io.quarkus.runtime.logging.LogFilterFactory;
 import io.quarkus.runtime.logging.LogMetricsHandlerRecorder;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 
@@ -126,7 +125,7 @@ public final class LoggingResourceProcessor {
             "isMinLevelEnabled",
             boolean.class, int.class, String.class);
 
-    private static final DotName LOGGING_FILTER = DotName.createSimple(LoggingFilter.class.getName());
+    public static final DotName LOGGING_FILTER = DotName.createSimple(LoggingFilter.class.getName());
     private static final DotName FILTER = DotName.createSimple(Filter.class.getName());
     private static final String ILLEGAL_LOGGING_FILTER_USE_MESSAGE = "'@" + LoggingFilter.class.getName()
             + "' can only be used on classes that implement '"
@@ -235,7 +234,8 @@ public final class LoggingResourceProcessor {
             BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
             LaunchModeBuildItem launchModeBuildItem,
             List<LogCleanupFilterBuildItem> logCleanupFilters,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
+            BuildProducer<ServiceProviderBuildItem> serviceProviderBuildItemBuildProducer) {
         if (!launchModeBuildItem.isAuxiliaryApplication()
                 || launchModeBuildItem.getAuxiliaryDevModeType().orElse(null) == DevModeType.TEST_ONLY) {
             final List<RuntimeValue<Optional<Handler>>> handlers = handlerBuildItems.stream()
@@ -272,6 +272,8 @@ public final class LoggingResourceProcessor {
                 reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(true, false, false,
                         discoveredLogComponents.getNameToFilterClass().values().toArray(
                                 EMPTY_STRING_ARRAY)));
+                serviceProviderBuildItemBuildProducer
+                        .produce(ServiceProviderBuildItem.allProvidersFromClassPath(LogFilterFactory.class.getName()));
             }
 
             shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(
@@ -317,10 +319,6 @@ public final class LoggingResourceProcessor {
                 throw new IllegalStateException("Unimplemented mode of use of '" + LoggingFilter.class.getName() + "'");
             }
             ClassInfo classInfo = target.asClass();
-            if (!Modifier.isFinal(classInfo.flags())) {
-                throw new RuntimeException(
-                        ILLEGAL_LOGGING_FILTER_USE_MESSAGE + " Offending class is '" + classInfo.name() + "'");
-            }
             boolean isFilterImpl = false;
             ClassInfo currentClassInfo = classInfo;
             while ((currentClassInfo != null) && (!JandexUtil.DOTNAME_OBJECT.equals(currentClassInfo.name()))) {
@@ -343,11 +341,6 @@ public final class LoggingResourceProcessor {
                         ILLEGAL_LOGGING_FILTER_USE_MESSAGE + " Offending class is '" + classInfo.name() + "'");
             }
 
-            MethodInfo ctor = classInfo.method("<init>");
-            if ((ctor == null) || (ctor.typeParameters().size() > 0)) {
-                throw new RuntimeException("Classes annotated with '" + LoggingFilter.class.getName()
-                        + "' must have a no-args constructor. Offending class is '" + classInfo.name() + "'");
-            }
             String filterName = instance.value("name").asString();
             if (filtersMap.containsKey(filterName)) {
                 throw new RuntimeException("Filter '" + filterName + "' was defined multiple times.");

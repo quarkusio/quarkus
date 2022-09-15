@@ -300,6 +300,9 @@ sed -i 's@org.jboss.narayana.rts:narayana-lra@org.jboss.narayana.rts:narayana-lr
 sed -i 's@org.jboss.narayana.rts:lra-client@org.jboss.narayana.rts:lra-client-jakarta@g' extensions/narayana-lra/runtime/pom.xml
 sed -i 's@META-INF/services/javax.ws.rs.client.ClientBuilder@META-INF/services/jakarta.ws.rs.client.ClientBuilder@g' extensions/narayana-lra/runtime/pom.xml
 
+find integration-tests/gradle -name build.gradle | xargs sed -i 's/javax.enterprise.context.ApplicationScoped/jakarta.enterprise.context.ApplicationScoped/g'
+find integration-tests/gradle -name build.gradle | xargs sed -i 's/javax.ws.rs.Path/jakarta.ws.rs.Path/g'
+
 transform_documentation
 sed -i 's@javax/ws/rs@jakarta/ws/rs@g' docs/src/main/asciidoc/resteasy-reactive.adoc
 sed -i 's@https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/2.1.1@https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/3.1.0@g' docs/src/main/asciidoc/resteasy-reactive.adoc

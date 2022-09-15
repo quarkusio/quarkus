@@ -15,8 +15,7 @@ After authentication, the OIDC provider redirects the user back to the applicati
 The following diagram outlines the Authorization Code Flow mechanism in Quarkus.
 
 .Authorization code flow mechanism in Quarkus
-image::authorization_code_flow.png[alt=Authorization Code Flow, align=center]
-
+image::authorization_code_flow.png[alt=Authorization Code Flow, role="center"]
 
 . The Quarkus user requests access to a Quarkus web-app application.
 . The Quarkus web-app redirects the user to the authorization endpoint, that is, the OIDC provider for authentication.

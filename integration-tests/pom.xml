@@ -165,7 +165,6 @@
                 <module>kafka-sasl-elytron</module>
                 <module>kafka-oauth-keycloak</module>
                 <module>kafka-snappy</module>
-                <module>kafka-avro</module>
                 <module>kafka-avro-apicurio2</module>
                 <module>kafka-streams</module>
                 <module>kafka-devservices</module>

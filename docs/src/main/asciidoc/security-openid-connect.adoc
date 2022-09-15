@@ -17,9 +17,7 @@ The Bearer Token provides information about the subject of the call which is use
 The following diagrams outline the Bearer Token Authorization mechanism in Quarkus:
 
 .Bearer Token Authorization mechanism in Quarkus with Single-page application
-image::security-bearer-token-authorization-mechanism-1.png[alt=Bearer Token Authorization, align=center]
-
-In the previous diagram:
+image::security-bearer-token-authorization-mechanism-1.png[alt=Bearer Token Authorization, width="60%", align=center]
 
 1. The Quarkus service retrieves verification keys from the OpenID Connect provider. The verification keys are used to verify the bearer access token signatures.
 2. The Quarkus user accesses the Single-page application.
@@ -29,9 +27,7 @@ In the previous diagram:
 6. The Single-page application returns the same data to the Quarkus user.
 
 .Bearer Token Authorization mechanism in Quarkus with Java or command line client
-image::security-bearer-token-authorization-mechanism-2.png[alt=Bearer Token Authorization, align=center]
-
-In the previous diagram:
+image::security-bearer-token-authorization-mechanism-2.png[alt=Bearer Token Authorization, width="60%", align=center]
 
 1. The Quarkus service retrieves verification keys from the OpenID Connect provider. The verification keys are used to verify the bearer access token signatures.
 2. The Client uses `client_credentials` that requires client ID and secret or password grant, which also requires client ID, secret, user name, and password to retrieve the access token from the OpenID Connect provider.

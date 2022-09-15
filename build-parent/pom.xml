@@ -1279,6 +1279,7 @@
                             </activeStyles>
                             <activeRecipes>
                                 <recipe>io.quarkus.build-parent</recipe>
+                                <recipe>io.quarkus.jakarta-json-cleanup</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>

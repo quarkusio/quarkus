@@ -316,6 +316,31 @@ recipeList:
       artifactId: resteasy-json-p-provider
       exclusionGroupId: jakarta.json
       exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.apache.activemq
+      artifactId: artemis-server
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.apache.activemq
+      artifactId: artemis-amqp-protocol
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.eclipse
+      artifactId: yasson
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.eclipse
+      artifactId: yasson
+      exclusionGroupId: org.glassfish
+      exclusionArtifactId: jakarta.json
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: jakarta.json.bind
+      artifactId: jakarta.json.bind-api
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-json

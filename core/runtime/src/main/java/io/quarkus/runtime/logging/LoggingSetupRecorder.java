@@ -55,7 +55,6 @@ import io.quarkus.runtime.util.ColorSupport;
 public class LoggingSetupRecorder {
 
     private static final org.jboss.logging.Logger log = org.jboss.logging.Logger.getLogger(LoggingSetupRecorder.class);
-    public static final String SHUTDOWN_MESSAGE = " [Error Occurred After Shutdown]";
 
     final RuntimeValue<ConsoleRuntimeConfig> consoleRuntimeConfig;
 

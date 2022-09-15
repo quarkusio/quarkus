@@ -9,7 +9,7 @@ metadata:
   guide: "https://quarkus.io/guides/funqy-knative-events"
   categories:
   - "cloud"
-  status: "experimental"
+  status: "stable"
   codestart:
     name: "funqy-knative-events"
     kind: "example"

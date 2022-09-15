@@ -102,8 +102,8 @@ Create the `src/main/java/org/acme/redis/IncrementService.java` file, with the f
 ----
 package org.acme.redis;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
@@ -175,12 +175,12 @@ Create the `src/main/java/org/acme/redis/IncrementResource.java` file, with the 
 ----
 package org.acme.redis;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.POST;
-import javax.ws.rs.DELETE;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.DELETE;
 import java.util.List;
 
 import io.smallrye.mutiny.Uni;

@@ -1,7 +1,7 @@
 package io.quarkus.it.jpa.h2.proxy;
 
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
 
 import org.hibernate.annotations.Proxy;
 

@@ -2,8 +2,8 @@ package io.quarkus.resteasy.reactive.server.test.simple;
 
 import java.util.Objects;
 
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 
 import io.vertx.ext.web.RoutingContext;
 

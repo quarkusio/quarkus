@@ -2,15 +2,15 @@ package io.quarkus.hibernate.orm.attributeconverter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.inject.Inject;
-import javax.persistence.AttributeConverter;
-import javax.persistence.Basic;
-import javax.persistence.Converter;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.transaction.UserTransaction;
+import jakarta.inject.Inject;
+import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Converter;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.transaction.UserTransaction;
 
 import org.hibernate.Session;
 import org.junit.jupiter.api.Test;

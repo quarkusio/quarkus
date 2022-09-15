@@ -1,12 +1,12 @@
 package io.quarkus.arc;
 
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.NormalScope;
+import jakarta.enterprise.context.spi.AlterableContext;
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
 import java.util.Map;
 import java.util.function.Function;
-import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.NormalScope;
-import javax.enterprise.context.spi.AlterableContext;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
 
 /**
  * A context implementing this interface makes it possible to capture and view its state via the {@link ContextState}.

@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic;
 
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Invocation.Builder;
+import jakarta.ws.rs.core.Response;
 import java.util.function.Supplier;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Invocation.Builder;
-import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.InheritenceParentResource;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.InheritenceParentResourceImpl;

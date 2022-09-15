@@ -8,6 +8,7 @@ import io.quarkus.arc.processor.BuildExtension.Key;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import io.quarkus.gizmo.BytecodeCreator;
+import jakarta.annotation.Priority;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,7 +31,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import javax.annotation.Priority;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -657,7 +657,7 @@ public class BeanProcessor {
          * <li>does not have a name,</li>
          * <li>does not declare an observer,</li>
          * <li>does not declare any producer which is eligible for injection to any injection point,</li>
-         * <li>is not directly eligible for injection into any {@link javax.enterprise.inject.Instance} injection point</li>
+         * <li>is not directly eligible for injection into any {@link jakarta.enterprise.inject.Instance} injection point</li>
          * </ul>
          *
          * @param removeUnusedBeans

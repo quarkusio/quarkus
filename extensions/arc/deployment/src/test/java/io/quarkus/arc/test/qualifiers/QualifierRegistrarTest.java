@@ -14,10 +14,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.DotName;
 import org.junit.jupiter.api.Test;

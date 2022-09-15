@@ -3,10 +3,11 @@ package io.quarkus.it.datasource;
 import java.sql.Connection;
 import java.sql.Statement;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
 import javax.sql.DataSource;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class DatasourceSetup {

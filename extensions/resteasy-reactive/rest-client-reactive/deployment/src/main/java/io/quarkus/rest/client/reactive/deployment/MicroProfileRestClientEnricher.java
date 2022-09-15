@@ -17,9 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.core.Configurable;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.core.Configurable;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;

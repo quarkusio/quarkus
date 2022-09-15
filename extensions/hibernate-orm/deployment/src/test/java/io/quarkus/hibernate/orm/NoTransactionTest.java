@@ -1,8 +1,8 @@
 package io.quarkus.hibernate.orm;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.persistence.TransactionRequiredException;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TransactionRequiredException;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

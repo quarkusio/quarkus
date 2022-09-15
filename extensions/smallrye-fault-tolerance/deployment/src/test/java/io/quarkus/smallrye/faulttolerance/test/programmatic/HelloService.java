@@ -3,7 +3,7 @@ package io.quarkus.smallrye.faulttolerance.test.programmatic;
 import java.time.temporal.ChronoUnit;
 import java.util.function.Supplier;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
 

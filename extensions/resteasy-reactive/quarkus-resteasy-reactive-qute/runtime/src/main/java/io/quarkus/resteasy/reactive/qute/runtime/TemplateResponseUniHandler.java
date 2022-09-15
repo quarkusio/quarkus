@@ -3,7 +3,7 @@ package io.quarkus.resteasy.reactive.qute.runtime;
 import static io.quarkus.resteasy.reactive.qute.runtime.Util.*;
 import static io.quarkus.resteasy.reactive.qute.runtime.Util.toUni;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;

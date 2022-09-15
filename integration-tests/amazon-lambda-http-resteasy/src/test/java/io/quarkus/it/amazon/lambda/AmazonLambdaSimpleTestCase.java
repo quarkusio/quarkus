@@ -2,7 +2,7 @@ package io.quarkus.it.amazon.lambda;
 
 import java.util.HashMap;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.codec.binary.Base64;
 import org.junit.jupiter.api.Assertions;

@@ -2,10 +2,10 @@ package io.quarkus.it.mongodb.discriminator.jsonb;
 
 import java.lang.reflect.Type;
 
-import javax.json.JsonObject;
-import javax.json.bind.serializer.DeserializationContext;
-import javax.json.bind.serializer.JsonbDeserializer;
-import javax.json.stream.JsonParser;
+import jakarta.json.JsonObject;
+import jakarta.json.bind.serializer.DeserializationContext;
+import jakarta.json.bind.serializer.JsonbDeserializer;
+import jakarta.json.stream.JsonParser;
 
 import io.quarkus.it.mongodb.discriminator.Car;
 import io.quarkus.it.mongodb.discriminator.Moto;

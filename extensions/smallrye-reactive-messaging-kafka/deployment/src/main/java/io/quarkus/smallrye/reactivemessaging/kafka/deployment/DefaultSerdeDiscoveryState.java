@@ -170,7 +170,7 @@ class DefaultSerdeDiscoveryState {
     boolean hasJsonb() {
         if (hasJsonb == null) {
             try {
-                Class.forName("javax.json.bind.Jsonb", false,
+                Class.forName("jakarta.json.bind.Jsonb", false,
                         Thread.currentThread().getContextClassLoader());
                 hasJsonb = true;
             } catch (ClassNotFoundException e) {

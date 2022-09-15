@@ -2,7 +2,7 @@ package io.quarkus.test.vertx;
 
 import java.util.UUID;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.vertx.ConsumeEvent;
 

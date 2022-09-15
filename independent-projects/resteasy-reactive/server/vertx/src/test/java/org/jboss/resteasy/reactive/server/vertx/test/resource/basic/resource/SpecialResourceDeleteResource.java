@@ -1,8 +1,8 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.Path;
 import org.junit.jupiter.api.Assertions;
 
 @Path("/delete")

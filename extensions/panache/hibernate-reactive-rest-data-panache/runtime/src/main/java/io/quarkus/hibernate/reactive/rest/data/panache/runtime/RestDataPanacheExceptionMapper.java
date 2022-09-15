@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.reactive.rest.data.panache.runtime;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.hibernate.HibernateException;
 import org.jboss.logging.Logger;
@@ -31,7 +31,7 @@ public class RestDataPanacheExceptionMapper {
             return RestResponse.status(Response.Status.CONFLICT.getStatusCode(), message);
         }
 
-        if (throwable instanceof javax.validation.ConstraintViolationException) {
+        if (throwable instanceof jakarta.validation.ConstraintViolationException) {
             return RestResponse.status(Response.Status.BAD_REQUEST.getStatusCode(), message);
         }
 

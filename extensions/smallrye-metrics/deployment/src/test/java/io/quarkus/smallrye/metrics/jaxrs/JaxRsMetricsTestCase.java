@@ -4,8 +4,8 @@ import static io.restassured.RestAssured.when;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import javax.inject.Inject;
-import javax.ws.rs.core.PathSegment;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.core.PathSegment;
 
 import org.eclipse.microprofile.metrics.Counter;
 import org.eclipse.microprofile.metrics.MetricRegistry;

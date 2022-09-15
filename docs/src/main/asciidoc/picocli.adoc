@@ -43,8 +43,8 @@ package com.acme.picocli;
 
 import picocli.CommandLine;
 
-import javax.enterprise.context.Dependent;
-import javax.inject.Inject;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
 
 @CommandLine.Command // <1>
 public class HelloCommand implements Runnable {
@@ -140,8 +140,8 @@ import io.quarkus.picocli.runtime.PicocliCommandLineFactory;
 import io.quarkus.picocli.runtime.annotations.TopCommand;
 import picocli.CommandLine;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 
 @TopCommand
 @CommandLine.Command
@@ -246,7 +246,7 @@ import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import picocli.CommandLine;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @QuarkusMain
 @CommandLine.Command(name = "demo", mixinStandardHelpOptions = true)

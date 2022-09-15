@@ -1,9 +1,9 @@
 package io.quarkus.arc.processor.types;
 
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 import java.util.List;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
 
 @Dependent
 public class Baz {

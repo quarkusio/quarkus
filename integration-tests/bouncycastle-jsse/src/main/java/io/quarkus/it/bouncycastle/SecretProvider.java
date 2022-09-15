@@ -3,7 +3,7 @@ package io.quarkus.it.bouncycastle;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.credentials.CredentialsProvider;

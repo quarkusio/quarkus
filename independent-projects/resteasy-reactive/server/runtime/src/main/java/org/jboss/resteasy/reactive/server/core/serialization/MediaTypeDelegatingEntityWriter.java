@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.server.core.serialization;
 
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Map;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 /**

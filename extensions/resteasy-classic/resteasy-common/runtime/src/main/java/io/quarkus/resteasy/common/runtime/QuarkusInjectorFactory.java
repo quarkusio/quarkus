@@ -4,7 +4,7 @@ import java.lang.reflect.Constructor;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import javax.ws.rs.WebApplicationException;
+import jakarta.ws.rs.WebApplicationException;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.InjectorFactoryImpl;

@@ -5,13 +5,13 @@ import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import javax.annotation.Priority;
-import javax.enterprise.context.control.ActivateRequestContext;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
 
 @Interceptor
 @ActivateRequestContext

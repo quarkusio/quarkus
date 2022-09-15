@@ -1,7 +1,7 @@
 package io.quarkus.arc.impl;
 
 import io.quarkus.arc.InjectableBean;
-import javax.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.context.spi.CreationalContext;
 
 /**
  * Common class for all built-in beans.

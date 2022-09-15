@@ -2,7 +2,7 @@ package io.quarkus.it.smallrye.graphql;
 
 import java.util.concurrent.TimeUnit;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.faulttolerance.Timeout;
 

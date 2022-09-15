@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.multipart;
 
-import javax.ws.rs.FormParam;
+import jakarta.ws.rs.FormParam;
 
 public class OtherFormDataBase {
 

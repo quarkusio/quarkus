@@ -3,8 +3,8 @@ package io.quarkus.oidc.test;
 import java.util.Collections;
 import java.util.Map;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Named;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Named;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.credentials.CredentialsProvider;

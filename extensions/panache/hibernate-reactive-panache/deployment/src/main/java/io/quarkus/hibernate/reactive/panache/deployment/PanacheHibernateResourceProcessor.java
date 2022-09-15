@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.persistence.Id;
-import javax.persistence.Transient;
+import jakarta.persistence.Id;
+import jakarta.persistence.Transient;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.jandex.AnnotationInstance;

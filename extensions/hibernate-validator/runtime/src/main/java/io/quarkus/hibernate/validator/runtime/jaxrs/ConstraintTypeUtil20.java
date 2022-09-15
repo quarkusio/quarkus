@@ -2,9 +2,9 @@ package io.quarkus.hibernate.validator.runtime.jaxrs;
 
 import java.util.Iterator;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ElementKind;
-import javax.validation.Path.Node;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ElementKind;
+import jakarta.validation.Path.Node;
 
 import org.jboss.resteasy.api.validation.ConstraintType;
 import org.jboss.resteasy.resteasy_jaxrs.i18n.Messages;

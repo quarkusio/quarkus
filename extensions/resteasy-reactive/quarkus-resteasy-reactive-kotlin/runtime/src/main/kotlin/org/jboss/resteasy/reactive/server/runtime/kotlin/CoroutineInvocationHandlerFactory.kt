@@ -1,9 +1,9 @@
 package org.jboss.resteasy.reactive.server.runtime.kotlin
 
 import io.quarkus.arc.Unremovable
+import jakarta.inject.Singleton
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler
-import javax.inject.Singleton
 
 /**
  * Factory for the [CoroutineInvocationHandler] that is already part of the CDI container

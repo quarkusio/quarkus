@@ -5,10 +5,10 @@ import io.restassured.http.ContentType.JSON
 import io.restassured.module.kotlin.extensions.Given
 import io.restassured.module.kotlin.extensions.Then
 import io.restassured.module.kotlin.extensions.When
+import jakarta.ws.rs.core.MediaType
 import org.hamcrest.CoreMatchers
 import org.hamcrest.CoreMatchers.`is`
 import org.junit.jupiter.api.Test
-import javax.ws.rs.core.MediaType
 
 @QuarkusTest
 open class ResourceTest {

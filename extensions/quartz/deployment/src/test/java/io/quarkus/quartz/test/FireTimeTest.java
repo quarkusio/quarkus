@@ -8,7 +8,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.jboss.shrinkwrap.api.asset.StringAsset;

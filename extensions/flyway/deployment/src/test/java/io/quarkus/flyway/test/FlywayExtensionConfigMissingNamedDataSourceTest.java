@@ -2,9 +2,9 @@ package io.quarkus.flyway.test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.UnsatisfiedResolutionException;
-import javax.inject.Inject;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.UnsatisfiedResolutionException;
+import jakarta.inject.Inject;
 
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.DisplayName;

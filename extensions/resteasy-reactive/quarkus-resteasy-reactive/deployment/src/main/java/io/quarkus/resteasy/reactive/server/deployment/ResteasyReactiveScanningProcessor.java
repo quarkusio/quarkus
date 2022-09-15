@@ -13,8 +13,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import javax.transaction.RollbackException;
-import javax.ws.rs.Priorities;
+import jakarta.transaction.RollbackException;
+import jakarta.ws.rs.Priorities;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;

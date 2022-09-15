@@ -104,9 +104,9 @@ As you can see from the source code below it is just a regular JAX-RS resource:
 ----
 package org.acme.security.keycloak.authorization;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.annotations.cache.NoCache;
 
@@ -146,10 +146,10 @@ The source code for the `/api/admin` endpoint is also very simple:
 ----
 package org.acme.security.keycloak.authorization;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.security.Authenticated;
 

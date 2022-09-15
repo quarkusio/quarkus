@@ -1,20 +1,20 @@
 package org.jboss.resteasy.reactive.server;
 
 import io.smallrye.common.annotation.Blocking;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.UriInfo;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.UriInfo;
 
 /**
- * When used on a method, then an implementation of {@link javax.ws.rs.container.ContainerRequestFilter} is generated
+ * When used on a method, then an implementation of {@link jakarta.ws.rs.container.ContainerRequestFilter} is generated
  * that calls the annotated method with the proper arguments
  * <p>
  * The idea behind using this is to make it much to write a {@code ServerRequestFilter} as all the necessary information

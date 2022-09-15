@@ -2,11 +2,11 @@ package io.quarkus.arc.impl;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.control.RequestContextController;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.context.control.RequestContextController;
 
 @Dependent
 public class InjectableRequestContextController implements RequestContextController {

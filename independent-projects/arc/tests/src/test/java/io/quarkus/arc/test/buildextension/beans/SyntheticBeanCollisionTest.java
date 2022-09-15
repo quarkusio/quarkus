@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.test.ArcTestContainer;
+import jakarta.enterprise.context.spi.CreationalContext;
 import java.util.Map;
-import javax.enterprise.context.spi.CreationalContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 

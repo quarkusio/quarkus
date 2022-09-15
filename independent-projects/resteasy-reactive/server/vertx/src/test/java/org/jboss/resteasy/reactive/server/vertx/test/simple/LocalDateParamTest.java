@@ -1,14 +1,14 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
 import io.restassured.RestAssured;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.DateFormat;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;

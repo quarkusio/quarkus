@@ -1,7 +1,7 @@
 package io.quarkus.arc.test.interceptors.methodargs;
 
 import io.quarkus.arc.test.interceptors.methodargs.base.BaseExecutor;
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 @Singleton
 @Simple

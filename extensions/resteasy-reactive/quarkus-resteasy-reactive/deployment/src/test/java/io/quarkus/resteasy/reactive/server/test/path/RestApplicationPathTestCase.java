@@ -1,7 +1,7 @@
 package io.quarkus.resteasy.reactive.server.test.path;
 
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
+import jakarta.ws.rs.ApplicationPath;
+import jakarta.ws.rs.core.Application;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -15,21 +15,21 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 
 public final class ResteasyDotNames {
 
-    public static final DotName APPLICATION = DotName.createSimple("javax.ws.rs.core.Application");
-    public static final DotName CONSUMES = DotName.createSimple("javax.ws.rs.Consumes");
-    public static final DotName PRODUCES = DotName.createSimple("javax.ws.rs.Produces");
-    public static final DotName PROVIDER = DotName.createSimple("javax.ws.rs.ext.Provider");
-    public static final DotName GET = DotName.createSimple("javax.ws.rs.GET");
-    public static final DotName HEAD = DotName.createSimple("javax.ws.rs.HEAD");
-    public static final DotName DELETE = DotName.createSimple("javax.ws.rs.DELETE");
-    public static final DotName OPTIONS = DotName.createSimple("javax.ws.rs.OPTIONS");
-    public static final DotName PATCH = DotName.createSimple("javax.ws.rs.PATCH");
-    public static final DotName POST = DotName.createSimple("javax.ws.rs.POST");
-    public static final DotName PUT = DotName.createSimple("javax.ws.rs.PUT");
-    public static final DotName APPLICATION_PATH = DotName.createSimple("javax.ws.rs.ApplicationPath");
-    public static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
-    public static final DotName DYNAMIC_FEATURE = DotName.createSimple("javax.ws.rs.container.DynamicFeature");
-    public static final DotName CONTEXT = DotName.createSimple("javax.ws.rs.core.Context");
+    public static final DotName APPLICATION = DotName.createSimple("jakarta.ws.rs.core.Application");
+    public static final DotName CONSUMES = DotName.createSimple("jakarta.ws.rs.Consumes");
+    public static final DotName PRODUCES = DotName.createSimple("jakarta.ws.rs.Produces");
+    public static final DotName PROVIDER = DotName.createSimple("jakarta.ws.rs.ext.Provider");
+    public static final DotName GET = DotName.createSimple("jakarta.ws.rs.GET");
+    public static final DotName HEAD = DotName.createSimple("jakarta.ws.rs.HEAD");
+    public static final DotName DELETE = DotName.createSimple("jakarta.ws.rs.DELETE");
+    public static final DotName OPTIONS = DotName.createSimple("jakarta.ws.rs.OPTIONS");
+    public static final DotName PATCH = DotName.createSimple("jakarta.ws.rs.PATCH");
+    public static final DotName POST = DotName.createSimple("jakarta.ws.rs.POST");
+    public static final DotName PUT = DotName.createSimple("jakarta.ws.rs.PUT");
+    public static final DotName APPLICATION_PATH = DotName.createSimple("jakarta.ws.rs.ApplicationPath");
+    public static final DotName PATH = DotName.createSimple("jakarta.ws.rs.Path");
+    public static final DotName DYNAMIC_FEATURE = DotName.createSimple("jakarta.ws.rs.container.DynamicFeature");
+    public static final DotName CONTEXT = DotName.createSimple("jakarta.ws.rs.core.Context");
     public static final DotName RESTEASY_QUERY_PARAM = DotName
             .createSimple("org.jboss.resteasy.annotations.jaxrs.QueryParam");
     public static final DotName RESTEASY_FORM_PARAM = DotName
@@ -49,8 +49,8 @@ public final class ResteasyDotNames {
     public static final DotName CDI_INJECT = DotName
             .createSimple(Inject.class.getName());
     public static final DotName JSON_IGNORE = DotName.createSimple("com.fasterxml.jackson.annotation.JsonIgnore");
-    public static final DotName JSONB_TRANSIENT = DotName.createSimple("javax.json.bind.annotation.JsonbTransient");
-    public static final DotName XML_TRANSIENT = DotName.createSimple("javax.xml.bind.annotation.XmlTransient");
+    public static final DotName JSONB_TRANSIENT = DotName.createSimple("jakarta.json.bind.annotation.JsonbTransient");
+    public static final DotName XML_TRANSIENT = DotName.createSimple("jakarta.xml.bind.annotation.XmlTransient");
 
     public static final List<DotName> JAXRS_METHOD_ANNOTATIONS = List.of(GET, POST, HEAD, DELETE, PUT, PATCH, OPTIONS);
 
@@ -103,12 +103,12 @@ public final class ResteasyDotNames {
 
     private static final String[] PACKAGES_IGNORED_FOR_REFLECTION = {
             // JSON-P
-            "javax.json.",
+            "jakarta.json.",
             "jakarta.json.",
             // Jackson
             "com.fasterxml.jackson.databind.",
             // JAX-RS
-            "javax.ws.rs.",
+            "jakarta.ws.rs.",
             // RESTEasy
             "org.jboss.resteasy.",
             // Vert.x JSON layer

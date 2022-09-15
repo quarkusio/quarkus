@@ -1,7 +1,7 @@
 package org.acme.testlib.mock;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Produces;
 import io.quarkus.arc.DefaultBean;
 import org.acme.Service;
 

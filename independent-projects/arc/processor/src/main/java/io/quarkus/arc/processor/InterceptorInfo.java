@@ -2,13 +2,13 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
+import jakarta.enterprise.inject.spi.InterceptionType;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import javax.enterprise.inject.spi.InterceptionType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -86,7 +86,7 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
         if (parameters.size() != 1 || !(parameters.get(0).name().equals(DotNames.INVOCATION_CONTEXT)
                 || parameters.get(0).name().equals(DotNames.ARC_INVOCATION_CONTEXT))) {
             throw new IllegalStateException(
-                    "An interceptor method must accept exactly one parameter of type javax.interceptor.InvocationContext: "
+                    "An interceptor method must accept exactly one parameter of type jakarta.interceptor.InvocationContext: "
                             + method + " declared on " + method.declaringClass());
         }
         if (!method.returnType().kind().equals(Type.Kind.VOID) &&

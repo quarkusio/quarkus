@@ -13,12 +13,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.inject.Inject;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -57,9 +57,9 @@ final class ClassConfigPropertiesUtil {
 
     private static final Logger LOGGER = Logger.getLogger(ClassConfigPropertiesUtil.class);
 
-    private static final String VALIDATOR_CLASS = "javax.validation.Validator";
+    private static final String VALIDATOR_CLASS = "jakarta.validation.Validator";
     private static final String HIBERNATE_VALIDATOR_IMPL_CLASS = "org.hibernate.validator.HibernateValidator";
-    private static final String CONSTRAINT_VIOLATION_EXCEPTION_CLASS = "javax.validation.ConstraintViolationException";
+    private static final String CONSTRAINT_VIOLATION_EXCEPTION_CLASS = "jakarta.validation.ConstraintViolationException";
 
     private final IndexView applicationIndex;
     private final YamlListObjectHandler yamlListObjectHandler;

@@ -64,17 +64,17 @@ public final class ReactiveMessagingDotNames {
             .createSimple("io.smallrye.reactive.messaging.providers.metrics.MicrometerDecorator");
 
     // Used to detect REST endpoints and JAX-RS provider
-    public static final DotName JAXRS_PATH = DotName.createSimple("javax.ws.rs.Path");
+    public static final DotName JAXRS_PATH = DotName.createSimple("jakarta.ws.rs.Path");
     public static final DotName REST_CONTROLLER = DotName
             .createSimple("org.springframework.web.bind.annotation.RestController");
-    public static final DotName JAXRS_PROVIDER = DotName.createSimple("javax.ws.rs.ext.Provider");
+    public static final DotName JAXRS_PROVIDER = DotName.createSimple("jakarta.ws.rs.ext.Provider");
 
     static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
     static final DotName KOTLIN_UNIT = DotName.createSimple("kotlin.Unit");
     static final DotName ABSTRACT_SUBSCRIBING_COROUTINE_INVOKER = DotName
             .createSimple("io.quarkus.smallrye.reactivemessaging.runtime.kotlin.AbstractSubscribingCoroutineInvoker");
 
-    static final DotName TRANSACTIONAL = DotName.createSimple("javax.transaction.Transactional");
+    static final DotName TRANSACTIONAL = DotName.createSimple("jakarta.transaction.Transactional");
 
     private ReactiveMessagingDotNames() {
     }

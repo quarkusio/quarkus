@@ -5,10 +5,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.Prioritized;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.Prioritized;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 

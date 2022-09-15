@@ -1,13 +1,13 @@
 package io.quarkus.it.resteasy.reactive.kotlin
 
+import jakarta.ws.rs.container.ContainerRequestContext
+import jakarta.ws.rs.container.ContainerResponseContext
+import jakarta.ws.rs.core.Response
+import jakarta.ws.rs.core.UriInfo
 import kotlinx.coroutines.delay
 import org.jboss.resteasy.reactive.server.ServerRequestFilter
 import org.jboss.resteasy.reactive.server.ServerResponseFilter
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo
-import javax.ws.rs.container.ContainerRequestContext
-import javax.ws.rs.container.ContainerResponseContext
-import javax.ws.rs.core.Response
-import javax.ws.rs.core.UriInfo
 
 class Filters {
 

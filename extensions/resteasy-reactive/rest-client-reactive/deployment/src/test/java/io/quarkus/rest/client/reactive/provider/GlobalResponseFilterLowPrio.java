@@ -1,8 +1,8 @@
 package io.quarkus.rest.client.reactive.provider;
 
-import javax.annotation.Priority;
-import javax.ws.rs.client.ClientResponseContext;
-import javax.ws.rs.ext.Provider;
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.client.ClientResponseContext;
+import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientResponseFilter;

@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.common.headers;
 
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.RuntimeDelegate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.RuntimeDelegate;
 import org.jboss.resteasy.reactive.common.util.HeaderParameterParser;
 
 /**

@@ -7,8 +7,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import javax.websocket.DeploymentException;
-import javax.websocket.Extension;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.Extension;
 
 import org.jboss.logging.Logger;
 

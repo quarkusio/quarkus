@@ -1,9 +1,9 @@
 package org.jboss.resteasy.reactive.common.util;
 
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.PathSegment;
 import java.util.ArrayList;
 import java.util.List;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.PathSegment;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>

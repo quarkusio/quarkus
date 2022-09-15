@@ -3,10 +3,10 @@ package io.quarkus.arc.impl;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.spi.Contextual;
 import java.util.List;
-import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.context.spi.Contextual;
 
 public final class ClientProxies {
 

@@ -1,9 +1,9 @@
 package io.quarkus.arc.test.bean.lifecycle.inheritance;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.Dependent;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.Dependent;
 
 // base class defining pre destroy and post construct callbacks
 @Dependent

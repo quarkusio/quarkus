@@ -1,9 +1,9 @@
 package org.jboss.resteasy.reactive.server.processor.scanning;
 
+import jakarta.ws.rs.Priorities;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
-import javax.ws.rs.Priorities;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;

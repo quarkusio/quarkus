@@ -2,8 +2,8 @@ package io.quarkus.it.picocli;
 
 import static io.quarkus.it.picocli.TestUtils.createConfig;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;

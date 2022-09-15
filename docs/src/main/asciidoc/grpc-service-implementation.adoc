@@ -61,7 +61,7 @@ public class HelloService implements Greeter { <2>
     }
 }
 ----
-<1> A gRPC service implementation bean must be annotated with the `@GrpcService` annotation and should not declare any other CDI qualifier. All gRPC services have the `javax.inject.Singleton` scope. Additionally, the request context is always active during a service call.
+<1> A gRPC service implementation bean must be annotated with the `@GrpcService` annotation and should not declare any other CDI qualifier. All gRPC services have the `jakarta.inject.Singleton` scope. Additionally, the request context is always active during a service call.
 <2> `hello.Greeter` is the generated service interface.
 
 NOTE: The service implementation bean can also extend the Mutiny implementation base, where the class name is structured as follows: `Mutiny${NAME_OF_THE_SERVICE}Grpc.${NAME_OF_THE_SERVICE}ImplBase`.
@@ -277,7 +277,7 @@ public class StreamingService implements Streaming {
 }
 ----
 
-When you have multiple server interceptors, you can order them by implementing the `javax.enterprise.inject.spi.Prioritized` interface. Please note that all the global interceptors are invoked before the service-specific
+When you have multiple server interceptors, you can order them by implementing the `jakarta.enterprise.inject.spi.Prioritized` interface. Please note that all the global interceptors are invoked before the service-specific
 interceptors.
 
 [source, java]

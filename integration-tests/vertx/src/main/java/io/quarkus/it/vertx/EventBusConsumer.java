@@ -1,6 +1,6 @@
 package io.quarkus.it.vertx;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.vertx.ConsumeEvent;
 

@@ -1,8 +1,8 @@
 package io.quarkus.it.vertx;
 
-import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;

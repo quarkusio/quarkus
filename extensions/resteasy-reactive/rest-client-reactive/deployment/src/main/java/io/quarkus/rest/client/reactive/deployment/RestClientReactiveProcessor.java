@@ -22,12 +22,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.enterprise.context.SessionScoped;
-import javax.enterprise.inject.Typed;
-import javax.inject.Singleton;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.core.MediaType;
+import jakarta.enterprise.context.SessionScoped;
+import jakarta.enterprise.inject.Typed;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;

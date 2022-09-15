@@ -4,10 +4,10 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.file.AsyncFile;
 import io.vertx.core.file.OpenOptions;
 import io.vertx.ext.web.RoutingContext;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import java.io.File;
 import java.nio.file.Paths;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
 import org.jboss.resteasy.reactive.FilePart;
 import org.jboss.resteasy.reactive.PathPart;
 

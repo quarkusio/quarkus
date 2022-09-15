@@ -6,13 +6,13 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.net.URI;
 
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.ParamConverterProvider;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.ParamConverterProvider;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.junit.jupiter.api.Test;
@@ -90,10 +90,10 @@ public class BeanFormParamTest {
     public static class ParamConverter implements ParamConverterProvider {
         @SuppressWarnings("unchecked")
         @Override
-        public <T> javax.ws.rs.ext.ParamConverter<T> getConverter(Class<T> rawType, Type genericType,
+        public <T> jakarta.ws.rs.ext.ParamConverter<T> getConverter(Class<T> rawType, Type genericType,
                 Annotation[] annotations) {
             if (rawType == BeanFormParamTest.Param.class) {
-                return (javax.ws.rs.ext.ParamConverter<T>) new javax.ws.rs.ext.ParamConverter<BeanFormParamTest.Param>() {
+                return (jakarta.ws.rs.ext.ParamConverter<T>) new jakarta.ws.rs.ext.ParamConverter<BeanFormParamTest.Param>() {
                     @Override
                     public BeanFormParamTest.Param fromString(String value) {
                         return null;

@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.unused.subpackage;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 /**
  * Another unused bean that shouldn't be removed.

@@ -2,7 +2,7 @@ package io.quarkus.security.webauthn.test;
 
 import java.util.List;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
 

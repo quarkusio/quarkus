@@ -1,7 +1,7 @@
 package io.quarkus.arc.impl;
 
 import io.quarkus.arc.InjectableReferenceProvider;
-import javax.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.context.spi.CreationalContext;
 
 public class DecoratorDelegateProvider implements InjectableReferenceProvider<Object> {
 

@@ -1,15 +1,15 @@
 package io.quarkus.arc;
 
 import io.quarkus.arc.impl.Qualifiers;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.InjectionPoint;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.Set;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.InjectionPoint;
 
 /**
  * Quarkus representation of an injectable bean.
@@ -128,7 +128,7 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
     /**
      * A bean may have a priority assigned.
      * <p>
-     * Class-based beans can specify the priority declaratively via {@link javax.annotation.Priority} and
+     * Class-based beans can specify the priority declaratively via {@link jakarta.annotation.Priority} and
      * {@link io.quarkus.arc.Priority}. If no priority annotation is used then a bean has the priority of value 0.
      * <p>
      * This priority is used to sort the resolved beans when performing programmatic lookup via

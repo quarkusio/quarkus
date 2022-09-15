@@ -1,9 +1,9 @@
 package io.quarkus.it.resteasy.reactive.kotlin
 
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.core.HttpHeaders
 import org.jboss.resteasy.reactive.RestHeader
-import javax.ws.rs.GET
-import javax.ws.rs.Path
-import javax.ws.rs.core.HttpHeaders
 
 @Path("/greeting")
 class GreetingResource(val headers: HttpHeaders) {

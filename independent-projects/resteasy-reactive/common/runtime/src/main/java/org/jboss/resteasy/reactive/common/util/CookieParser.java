@@ -1,8 +1,8 @@
 package org.jboss.resteasy.reactive.common.util;
 
+import jakarta.ws.rs.core.Cookie;
 import java.util.ArrayList;
 import java.util.List;
-import javax.ws.rs.core.Cookie;
 
 public class CookieParser {
     public static List<Cookie> parseCookies(String cookieHeader) {

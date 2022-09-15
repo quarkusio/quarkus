@@ -64,10 +64,10 @@ public class Fruit {
 ----
 package org.acme.openapi.swaggerui;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Set;
@@ -110,7 +110,7 @@ package org.acme.openapi.swaggerui;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -272,7 +272,7 @@ There are some MicroProfile OpenAPI annotations which describe global API inform
 
 All of this information (and more) can be included in your Java code by using appropriate OpenAPI annotations
 on a JAX-RS `Application` class.  Because a JAX-RS `Application` class is not required in Quarkus, you will
-likely have to create one.  It can simply be an empty class that extends `javax.ws.rs.core.Application`.  This
+likely have to create one.  It can simply be an empty class that extends `jakarta.ws.rs.core.Application`.  This
 empty class can then be annotated with various OpenAPI annotations such as `@OpenAPIDefinition`.  For example:
 
 [source, java]

@@ -3,7 +3,7 @@ package io.quarkus.jwt.test;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.jose4j.jwt.JwtClaims;
 

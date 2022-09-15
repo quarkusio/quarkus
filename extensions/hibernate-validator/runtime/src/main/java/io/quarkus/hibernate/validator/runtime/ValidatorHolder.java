@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.validator.runtime;
 
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
 
 public class ValidatorHolder {
 

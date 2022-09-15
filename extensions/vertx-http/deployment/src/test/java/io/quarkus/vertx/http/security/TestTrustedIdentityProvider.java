@@ -3,7 +3,7 @@ package io.quarkus.vertx.http.security;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.AuthenticationRequestContext;

@@ -1,6 +1,6 @@
 package io.quarkus.it.kafka;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import io.quarkus.it.kafka.avro.AvroKafkaCreator;
 import io.quarkus.test.junit.QuarkusTest;

@@ -1,6 +1,6 @@
 package io.quarkus.it.jpa.entitylistener;
 
-import javax.persistence.EntityListeners;
+import jakarta.persistence.EntityListeners;
 
 @EntityListeners(MyListenerRequiringCdi.class)
 public @interface CustomEntityListenersAnnotation {

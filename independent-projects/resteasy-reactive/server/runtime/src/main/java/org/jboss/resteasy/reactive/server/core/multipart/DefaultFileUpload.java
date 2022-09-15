@@ -1,8 +1,8 @@
 package org.jboss.resteasy.reactive.server.core.multipart;
 
+import jakarta.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.nio.file.Path;
-import javax.ws.rs.core.HttpHeaders;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 

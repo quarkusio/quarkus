@@ -8,6 +8,17 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.GenericEntity;
+import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+import jakarta.ws.rs.ext.ReaderInterceptor;
+import jakarta.ws.rs.ext.WriterInterceptor;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,17 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericEntity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.MessageBodyWriter;
-import javax.ws.rs.ext.ReaderInterceptor;
-import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
@@ -69,7 +69,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     final ConfigurationImpl configuration;
     private final boolean registerBodyHandler;
     // will be used to check if we need to throw a WebApplicationException
-    // see Javadoc of javax.ws.rs.client.Invocation or javax.ws.rs.client.SyncInvoker
+    // see Javadoc of jakarta.ws.rs.client.Invocation or jakarta.ws.rs.client.SyncInvoker
     private final boolean checkSuccessfulFamily;
     private final CompletableFuture<ResponseImpl> result;
     private final ClientRestHandler[] abortHandlerChainWithoutResponseFilters;

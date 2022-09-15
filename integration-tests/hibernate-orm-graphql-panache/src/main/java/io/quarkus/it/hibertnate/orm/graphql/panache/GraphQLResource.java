@@ -2,7 +2,7 @@ package io.quarkus.it.hibertnate.orm.graphql.panache;
 
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.graphql.Description;
 import org.eclipse.microprofile.graphql.GraphQLApi;

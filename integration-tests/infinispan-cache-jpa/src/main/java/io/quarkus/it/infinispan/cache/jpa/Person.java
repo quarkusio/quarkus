@@ -1,6 +1,6 @@
 package io.quarkus.it.infinispan.cache.jpa;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;

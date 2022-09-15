@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.common.util;
 
-import javax.ws.rs.core.CacheControl;
+import jakarta.ws.rs.core.CacheControl;
 
 /**
  * Adds support for the public directive which is not supported by {@link CacheControl} for some reason.

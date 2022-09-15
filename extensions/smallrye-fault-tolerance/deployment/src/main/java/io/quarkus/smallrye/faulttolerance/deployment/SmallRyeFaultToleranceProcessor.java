@@ -12,8 +12,8 @@ import java.util.OptionalInt;
 import java.util.Queue;
 import java.util.Set;
 
-import javax.annotation.Priority;
-import javax.enterprise.inject.spi.DefinitionException;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.spi.DefinitionException;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;

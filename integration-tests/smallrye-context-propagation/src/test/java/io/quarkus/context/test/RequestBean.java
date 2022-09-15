@@ -2,8 +2,8 @@ package io.quarkus.context.test;
 
 import java.util.concurrent.CountDownLatch;
 
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.RequestScoped;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.RequestScoped;
 
 @RequestScoped
 public class RequestBean {

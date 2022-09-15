@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.server.core;
 
+import jakarta.ws.rs.core.Application;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.ws.rs.core.Application;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;

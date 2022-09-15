@@ -1,8 +1,8 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.RxInvoker;
-import javax.ws.rs.core.GenericType;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.RxInvoker;
+import jakarta.ws.rs.core.GenericType;
 
 public abstract class AbstractRxInvoker<T> implements RxInvoker<T> {
 

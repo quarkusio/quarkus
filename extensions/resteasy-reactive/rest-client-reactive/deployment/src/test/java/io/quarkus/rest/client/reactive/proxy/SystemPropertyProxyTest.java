@@ -2,7 +2,7 @@ package io.quarkus.rest.client.reactive.proxy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RestClient;

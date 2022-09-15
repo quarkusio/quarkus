@@ -6,7 +6,7 @@ import static org.hamcrest.Matchers.is;
 
 import java.util.List;
 
-import javax.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.Response.Status;
 
 import org.junit.jupiter.api.Test;
 

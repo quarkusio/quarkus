@@ -2,10 +2,10 @@ package io.quarkus.test.security;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 
-import javax.annotation.security.DenyAll;
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.annotation.security.DenyAll;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;

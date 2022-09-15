@@ -1,10 +1,10 @@
 package io.quarkus.hibernate.orm.runtime;
 
-import javax.persistence.spi.LoadState;
+import jakarta.persistence.spi.LoadState;
 
 import org.hibernate.jpa.internal.util.PersistenceUtilHelper;
 
-public final class ProviderUtil implements javax.persistence.spi.ProviderUtil {
+public final class ProviderUtil implements jakarta.persistence.spi.ProviderUtil {
 
     private final PersistenceUtilHelper.MetadataCache cache = new PersistenceUtilHelper.MetadataCache();
 

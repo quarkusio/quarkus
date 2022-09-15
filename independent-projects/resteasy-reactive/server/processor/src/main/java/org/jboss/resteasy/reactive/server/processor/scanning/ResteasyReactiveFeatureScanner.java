@@ -1,11 +1,11 @@
 package org.jboss.resteasy.reactive.server.processor.scanning;
 
+import jakarta.ws.rs.container.DynamicFeature;
+import jakarta.ws.rs.core.Feature;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
-import javax.ws.rs.container.DynamicFeature;
-import javax.ws.rs.core.Feature;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;

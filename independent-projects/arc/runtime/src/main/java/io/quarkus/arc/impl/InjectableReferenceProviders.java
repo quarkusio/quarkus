@@ -1,8 +1,8 @@
 package io.quarkus.arc.impl;
 
 import io.quarkus.arc.InjectableReferenceProvider;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
 
 public final class InjectableReferenceProviders {
 

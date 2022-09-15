@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.server.spi;
 
+import jakarta.ws.rs.container.ResourceInfo;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Set;
-import javax.ws.rs.container.ResourceInfo;
 import org.jboss.resteasy.reactive.server.util.MethodId;
 
 /**

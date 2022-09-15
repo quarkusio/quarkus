@@ -1,11 +1,11 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.ext.ParamConverterProvider;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.ext.ParamConverterProvider;
 import org.jboss.resteasy.reactive.client.api.InvalidRestClientDefinitionException;
 
 public class ClientProxies {

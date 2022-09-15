@@ -174,7 +174,7 @@ If we were to use the code above, we would get an exception like the following w
 
 [source]
 ----
-Exception handling request to /person: org.jboss.resteasy.spi.UnhandledException: javax.json.bind.JsonbException: Can't create instance of a class: class org.acme.jsonb.Person, No default constructor found
+Exception handling request to /person: org.jboss.resteasy.spi.UnhandledException: jakarta.json.bind.JsonbException: Can't create instance of a class: class org.acme.jsonb.Person, No default constructor found
 ----
 
 or if you are using Jackson:

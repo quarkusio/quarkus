@@ -12,7 +12,7 @@ import io.smallrye.common.annotation.Experimental;
  * then return type when serialized to JSON,
  * will not include fields whose security requirements match the current user's security scope.
  *
- * Warning: This annotation does not work when placed on a JAX-RS method that returns {@link javax.ws.rs.core.Response}.
+ * Warning: This annotation does not work when placed on a JAX-RS method that returns {@link jakarta.ws.rs.core.Response}.
  * Users that wish to use the feature and have the ability to configure the response of the JAX-RS method are advised to
  * use {@link org.jboss.resteasy.reactive.RestResponse}.
  */

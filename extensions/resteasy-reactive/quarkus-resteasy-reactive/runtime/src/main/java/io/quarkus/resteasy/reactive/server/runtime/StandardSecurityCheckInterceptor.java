@@ -5,14 +5,14 @@ import static io.quarkus.security.spi.runtime.SecurityHandlerConstants.SECURITY_
 
 import java.lang.reflect.Method;
 
-import javax.annotation.Priority;
-import javax.annotation.security.DenyAll;
-import javax.annotation.security.PermitAll;
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+import jakarta.annotation.Priority;
+import jakarta.annotation.security.DenyAll;
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 
@@ -59,7 +59,7 @@ public abstract class StandardSecurityCheckInterceptor {
     }
 
     /**
-     * Prevent the SecurityHandler from performing {@link javax.annotation.security.PermitAll} security checks
+     * Prevent the SecurityHandler from performing {@link jakarta.annotation.security.PermitAll} security checks
      */
     @Interceptor
     @PermitAll

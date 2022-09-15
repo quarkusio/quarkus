@@ -20,8 +20,8 @@ import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
-import javax.persistence.SharedCacheMode;
-import javax.persistence.spi.PersistenceUnitTransactionType;
+import jakarta.persistence.SharedCacheMode;
+import jakarta.persistence.spi.PersistenceUnitTransactionType;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;

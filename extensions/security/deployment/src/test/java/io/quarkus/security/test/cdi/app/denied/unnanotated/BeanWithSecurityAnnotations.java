@@ -1,9 +1,9 @@
 package io.quarkus.security.test.cdi.app.denied.unnanotated;
 
-import javax.annotation.security.PermitAll;
-import javax.annotation.security.RolesAllowed;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Named;
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Named;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com

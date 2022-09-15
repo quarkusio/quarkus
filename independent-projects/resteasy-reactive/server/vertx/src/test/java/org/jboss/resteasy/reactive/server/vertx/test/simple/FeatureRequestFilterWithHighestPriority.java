@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
 import java.io.IOException;
-import javax.annotation.Priority;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
 
 @Priority(Priorities.AUTHENTICATION)
 public class FeatureRequestFilterWithHighestPriority implements ContainerRequestFilter {

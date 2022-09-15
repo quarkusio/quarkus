@@ -1,9 +1,9 @@
 package io.quarkus.arc.test.decorators.priority;
 
 import io.quarkus.arc.Priority;
-import javax.decorator.Decorator;
-import javax.decorator.Delegate;
-import javax.inject.Inject;
+import jakarta.decorator.Decorator;
+import jakarta.decorator.Delegate;
+import jakarta.inject.Inject;
 
 @Priority(2)
 @Decorator

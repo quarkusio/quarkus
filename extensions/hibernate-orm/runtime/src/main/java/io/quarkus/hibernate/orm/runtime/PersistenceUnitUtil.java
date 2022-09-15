@@ -3,7 +3,7 @@ package io.quarkus.hibernate.orm.runtime;
 import java.util.Comparator;
 import java.util.Locale;
 
-import javax.enterprise.inject.Default;
+import jakarta.enterprise.inject.Default;
 
 import org.jboss.logging.Logger;
 

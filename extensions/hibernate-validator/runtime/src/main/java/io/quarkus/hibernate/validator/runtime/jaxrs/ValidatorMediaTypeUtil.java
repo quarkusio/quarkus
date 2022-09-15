@@ -3,7 +3,7 @@ package io.quarkus.hibernate.validator.runtime.jaxrs;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 /**
  * Utility class to deal with MediaTypes in JAX-RS endpoints.

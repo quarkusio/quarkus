@@ -2,9 +2,9 @@ package io.quarkus.it.micrometer.prometheus;
 
 import java.util.List;
 
-import javax.transaction.Transactional;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.smallrye.common.annotation.Blocking;

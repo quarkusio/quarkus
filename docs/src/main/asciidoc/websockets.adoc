@@ -77,14 +77,14 @@ package org.acme.websockets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.server.PathParam;
-import javax.websocket.server.ServerEndpoint;
-import javax.websocket.Session;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.websocket.OnClose;
+import jakarta.websocket.OnError;
+import jakarta.websocket.OnMessage;
+import jakarta.websocket.OnOpen;
+import jakarta.websocket.server.PathParam;
+import jakarta.websocket.server.ServerEndpoint;
+import jakarta.websocket.Session;
 
 @ServerEndpoint("/chat/{username}")         // <1>
 @ApplicationScoped
@@ -169,7 +169,7 @@ You can also test your web socket applications using the approach detailed {quic
 
 Quarkus also contains a WebSocket client. You can call `ContainerProvider.getWebSocketContainer().connectToServer` to create a websocket connection. By default, the `quarkus-websockets` artifact includes both client and server support. However, if you only want the client you can include `quarkus-websockets-client` instead.
 
-When you connect to the server you can either pass in the Class of the annotated client endpoint you want to use, or an instance of `javax.websocket.Endpoint`. If you
+When you connect to the server you can either pass in the Class of the annotated client endpoint you want to use, or an instance of `jakarta.websocket.Endpoint`. If you
 are using the annotated endpoint then you can use the exact same annotations as you can on the server, except it must be annotated with `@ClientEndpoint` instead of
 `@ServerEndpoint`.
 
@@ -183,11 +183,11 @@ import java.net.URI;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import javax.websocket.ClientEndpoint;
-import javax.websocket.ContainerProvider;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
+import jakarta.websocket.ClientEndpoint;
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.OnMessage;
+import jakarta.websocket.OnOpen;
+import jakarta.websocket.Session;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

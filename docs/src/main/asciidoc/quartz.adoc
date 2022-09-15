@@ -86,9 +86,9 @@ In the `org.acme.quartz` package, create the `Task` class, with the following co
 ----
 package org.acme.quartz;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 import java.time.Instant;
-import javax.persistence.Table;
+import jakarta.persistence.Table;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
@@ -116,9 +116,9 @@ In the `org.acme.quartz` package, create the `TaskBean` class, with the followin
 ----
 package org.acme.quartz;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 
 import io.quarkus.scheduler.Scheduled;
 
@@ -239,10 +239,10 @@ package org.acme.quartz;
 
 import java.util.List;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/tasks")
 public class TaskResource {

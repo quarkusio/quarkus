@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.common.core;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.RestResponse;
 
 public interface ResponseBuilderFactory {

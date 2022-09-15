@@ -4,8 +4,8 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.inject.Inject;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Path;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;

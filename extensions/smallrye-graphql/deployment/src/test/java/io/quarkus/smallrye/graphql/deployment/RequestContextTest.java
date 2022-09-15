@@ -2,7 +2,7 @@ package io.quarkus.smallrye.graphql.deployment;
 
 import static org.hamcrest.Matchers.containsString;
 
-import javax.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.ContextNotActiveException;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;

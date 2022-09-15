@@ -3,11 +3,11 @@ package io.quarkus.vertx.web.runtime;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.ElementKind;
-import javax.validation.Path.Node;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.ElementKind;
+import jakarta.validation.Path.Node;
+import jakarta.validation.Validator;
 
 import io.quarkus.arc.ArcContainer;
 import io.vertx.core.http.HttpServerResponse;

@@ -2,8 +2,8 @@ package org.jboss.resteasy.reactive.server.vertx.test.providers;
 
 import io.vertx.core.file.AsyncFile;
 import io.vertx.ext.web.RoutingContext;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("providers/file-invalid")
 public class InvalidFileResource {

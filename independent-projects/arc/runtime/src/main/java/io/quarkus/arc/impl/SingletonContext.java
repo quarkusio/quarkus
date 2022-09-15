@@ -2,8 +2,8 @@ package io.quarkus.arc.impl;
 
 import io.quarkus.arc.ContextInstanceHandle;
 import io.quarkus.arc.InstanceHandle;
+import jakarta.inject.Singleton;
 import java.lang.annotation.Annotation;
-import javax.inject.Singleton;
 
 class SingletonContext extends AbstractSharedContext {
 

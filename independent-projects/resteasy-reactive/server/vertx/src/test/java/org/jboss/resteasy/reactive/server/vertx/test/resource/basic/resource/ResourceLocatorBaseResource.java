@@ -1,13 +1,13 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource;
 
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.UriInfo;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.List;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Assertions;
 

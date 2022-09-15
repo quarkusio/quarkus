@@ -1,15 +1,15 @@
 package org.jboss.resteasy.reactive.common.util;
 
+import jakarta.ws.rs.core.MultivaluedMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.ws.rs.core.MultivaluedMap;
 
 /**
- * Unmodifiable implementation of {@link javax.ws.rs.core.MultivaluedMap} interface
+ * Unmodifiable implementation of {@link jakarta.ws.rs.core.MultivaluedMap} interface
  *
  * @author <a href="mailto:mstefank@redhat.conm">Martin Stefanko</a>
  * @version $Revision: 1 $

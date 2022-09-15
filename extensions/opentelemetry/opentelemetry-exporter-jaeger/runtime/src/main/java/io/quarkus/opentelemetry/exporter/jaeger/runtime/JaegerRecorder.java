@@ -2,8 +2,8 @@ package io.quarkus.opentelemetry.exporter.jaeger.runtime;
 
 import java.util.Optional;
 
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.spi.CDI;
 
 import io.opentelemetry.exporter.jaeger.JaegerGrpcSpanExporter;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;

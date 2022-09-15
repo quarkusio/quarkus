@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 import org.jboss.jandex.DotName;
 

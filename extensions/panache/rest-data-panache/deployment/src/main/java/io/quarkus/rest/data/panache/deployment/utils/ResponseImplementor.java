@@ -5,10 +5,10 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import java.lang.annotation.Annotation;
 import java.net.URI;
 
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Link;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Link;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.ResponseBuilder;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;

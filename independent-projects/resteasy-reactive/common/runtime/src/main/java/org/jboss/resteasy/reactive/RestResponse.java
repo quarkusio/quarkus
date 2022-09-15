@@ -1,5 +1,24 @@
 package org.jboss.resteasy.reactive;
 
+import jakarta.ws.rs.ProcessingException;
+import jakarta.ws.rs.core.CacheControl;
+import jakarta.ws.rs.core.EntityTag;
+import jakarta.ws.rs.core.GenericEntity;
+import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.Link;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.core.NoContentException;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status.Family;
+import jakarta.ws.rs.core.Response.StatusType;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Variant;
+import jakarta.ws.rs.ext.MessageBodyReader;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+import jakarta.ws.rs.ext.RuntimeDelegate;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.net.URI;
@@ -8,25 +27,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.core.CacheControl;
-import javax.ws.rs.core.EntityTag;
-import javax.ws.rs.core.GenericEntity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.Link;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.core.NoContentException;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
-import javax.ws.rs.core.Response.StatusType;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.core.Variant;
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.MessageBodyWriter;
-import javax.ws.rs.ext.RuntimeDelegate;
 
 /**
  * Defines the contract between a returned instance and the runtime when
@@ -85,7 +85,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
 
     /**
      * Read the message entity input stream as an instance of specified Java type
-     * using a {@link javax.ws.rs.ext.MessageBodyReader} that supports mapping the
+     * using a {@link jakarta.ws.rs.ext.MessageBodyReader} that supports mapping the
      * message entity stream onto the requested type.
      * <p>
      * Method throws an {@link ProcessingException} if the content of the
@@ -116,13 +116,13 @@ public abstract class RestResponse<T> implements AutoCloseable {
      *         the response has been {@link #close() closed} already,
      *         or if the entity input stream has been fully consumed already and has
      *         not been buffered prior consuming.
-     * @see javax.ws.rs.ext.MessageBodyReader
+     * @see jakarta.ws.rs.ext.MessageBodyReader
      */
     public abstract <OtherT> OtherT readEntity(Class<OtherT> entityType);
 
     /**
      * Read the message entity input stream as an instance of specified Java type
-     * using a {@link javax.ws.rs.ext.MessageBodyReader} that supports mapping the
+     * using a {@link jakarta.ws.rs.ext.MessageBodyReader} that supports mapping the
      * message entity stream onto the requested type.
      * <p>
      * Method throws an {@link ProcessingException} if the content of the
@@ -153,13 +153,13 @@ public abstract class RestResponse<T> implements AutoCloseable {
      *         the response has been {@link #close() closed} already,
      *         or if the entity input stream has been fully consumed already and has
      *         not been buffered prior consuming.
-     * @see javax.ws.rs.ext.MessageBodyReader
+     * @see jakarta.ws.rs.ext.MessageBodyReader
      */
     public abstract <OtherT> OtherT readEntity(GenericType<OtherT> entityType);
 
     /**
      * Read the message entity input stream as an instance of specified Java type
-     * using a {@link javax.ws.rs.ext.MessageBodyReader} that supports mapping the
+     * using a {@link jakarta.ws.rs.ext.MessageBodyReader} that supports mapping the
      * message entity stream onto the requested type.
      * <p>
      * Method throws an {@link ProcessingException} if the content of the
@@ -191,13 +191,13 @@ public abstract class RestResponse<T> implements AutoCloseable {
      *         the response has been {@link #close() closed} already,
      *         or if the entity input stream has been fully consumed already and has
      *         not been buffered prior consuming.
-     * @see javax.ws.rs.ext.MessageBodyReader
+     * @see jakarta.ws.rs.ext.MessageBodyReader
      */
     public abstract <OtherT> OtherT readEntity(Class<OtherT> entityType, Annotation[] annotations);
 
     /**
      * Read the message entity input stream as an instance of specified Java type
-     * using a {@link javax.ws.rs.ext.MessageBodyReader} that supports mapping the
+     * using a {@link jakarta.ws.rs.ext.MessageBodyReader} that supports mapping the
      * message entity stream onto the requested type.
      * <p>
      * Method throws an {@link ProcessingException} if the content of the
@@ -229,7 +229,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
      *         the response has been {@link #close() closed} already,
      *         or if the entity input stream has been fully consumed already and has
      *         not been buffered prior consuming.
-     * @see javax.ws.rs.ext.MessageBodyReader
+     * @see jakarta.ws.rs.ext.MessageBodyReader
      */
     public abstract <OtherT> OtherT readEntity(GenericType<OtherT> entityType, Annotation[] annotations);
 
@@ -238,8 +238,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      * {@code true} if the entity is present, returns {@code false} otherwise.
      * <p>
      * Note that the method may return {@code true} also for response messages with
-     * a zero-length content, in case the <code>{@value javax.ws.rs.core.HttpHeaders#CONTENT_LENGTH}</code> and
-     * <code>{@value javax.ws.rs.core.HttpHeaders#CONTENT_TYPE}</code> headers are specified in the message.
+     * a zero-length content, in case the <code>{@value jakarta.ws.rs.core.HttpHeaders#CONTENT_LENGTH}</code> and
+     * <code>{@value jakarta.ws.rs.core.HttpHeaders#CONTENT_TYPE}</code> headers are specified in the message.
      * In such case, an attempt to read the entity using one of the {@code readEntity(...)}
      * methods will return a corresponding instance representing a zero-length entity for a
      * given Java type or produce a {@link ProcessingException} in case no such instance
@@ -442,8 +442,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      * server side. Changes in the underlying header data are reflected in this view.
      * <p>
      * On the server-side, when the message is sent, the non-string values will be serialized
-     * using a {@link javax.ws.rs.ext.RuntimeDelegate.HeaderDelegate} if one is available via
-     * {@link javax.ws.rs.ext.RuntimeDelegate#createHeaderDelegate(java.lang.Class)} for the
+     * using a {@link jakarta.ws.rs.ext.RuntimeDelegate.HeaderDelegate} if one is available via
+     * {@link jakarta.ws.rs.ext.RuntimeDelegate#createHeaderDelegate(java.lang.Class)} for the
      * class of the value or using the values {@code toString} method if a header delegate is
      * not available.
      * </p>
@@ -476,8 +476,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
      * Get a message header as a single string value.
      *
      * Each single header value is converted to String using a
-     * {@link javax.ws.rs.ext.RuntimeDelegate.HeaderDelegate} if one is available
-     * via {@link javax.ws.rs.ext.RuntimeDelegate#createHeaderDelegate(java.lang.Class)}
+     * {@link jakarta.ws.rs.ext.RuntimeDelegate.HeaderDelegate} if one is available
+     * via {@link jakarta.ws.rs.ext.RuntimeDelegate#createHeaderDelegate(java.lang.Class)}
      * for the header value class or using its {@code toString} method if a header
      * delegate is not available.
      *
@@ -930,7 +930,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
          * @param entity the request entity.
          * @return updated response builder instance.
          * @see #entity(java.lang.Object, java.lang.annotation.Annotation[])
-         * @see #type(javax.ws.rs.core.MediaType)
+         * @see #type(jakarta.ws.rs.core.MediaType)
          * @see #type(java.lang.String)
          */
         public abstract ResponseBuilder<T> entity(T entity);
@@ -953,7 +953,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
          *        method that returns the built response).
          * @return updated response builder instance.
          * @see #entity(java.lang.Object)
-         * @see #type(javax.ws.rs.core.MediaType)
+         * @see #type(jakarta.ws.rs.core.MediaType)
          * @see #type(java.lang.String)
          */
         public abstract ResponseBuilder<T> entity(T entity, Annotation[] annotations);
@@ -1001,8 +1001,8 @@ public abstract class RestResponse<T> implements AutoCloseable {
          *
          * @param name the name of the header
          * @param value the value of the header, the header will be serialized
-         *        using a {@link javax.ws.rs.ext.RuntimeDelegate.HeaderDelegate} if
-         *        one is available via {@link javax.ws.rs.ext.RuntimeDelegate#createHeaderDelegate(java.lang.Class)}
+         *        using a {@link jakarta.ws.rs.ext.RuntimeDelegate.HeaderDelegate} if
+         *        one is available via {@link jakarta.ws.rs.ext.RuntimeDelegate#createHeaderDelegate(java.lang.Class)}
          *        for the class of {@code value} or using its {@code toString} method
          *        if a header delegate is not available. If {@code value} is {@code null}
          *        then all current headers of the same name will be removed.
@@ -1066,7 +1066,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
          * @return the updated response builder.
          * @see #encoding(java.lang.String)
          * @see #language(java.util.Locale)
-         * @see #type(javax.ws.rs.core.MediaType)
+         * @see #type(jakarta.ws.rs.core.MediaType)
          */
         public abstract ResponseBuilder<T> variant(Variant variant);
 

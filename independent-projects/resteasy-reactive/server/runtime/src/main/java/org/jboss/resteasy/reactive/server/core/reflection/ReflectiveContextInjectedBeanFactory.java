@@ -1,5 +1,9 @@
 package org.jboss.resteasy.reactive.server.core.reflection;
 
+import jakarta.inject.Inject;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
@@ -13,10 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.inject.Inject;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.parameters.ContextParamExtractor;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
@@ -80,7 +80,7 @@ public class ReflectiveContextInjectedBeanFactory<T> implements BeanFactory<T> {
         constructorParams = new ArrayList<>();
         for (var i : constructor.getParameterTypes()) {
             //assume @Contextual object
-            if (i.isInterface() && (i.getName().startsWith("javax.ws.rs") || i.getName().startsWith("jakarta.ws.rs"))) {
+            if (i.isInterface() && (i.getName().startsWith("jakarta.ws.rs") || i.getName().startsWith("jakarta.ws.rs"))) {
                 var val = extractContextParam(i);
                 constructorParams.add(() -> val);
             } else if (i.isAnnotationPresent(QueryParam.class)) {

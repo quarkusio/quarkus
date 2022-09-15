@@ -3,7 +3,7 @@ package io.quarkus.scheduler.test.devconsole;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.event.Observes;
 
 import io.quarkus.scheduler.Scheduled;
 import io.vertx.core.Handler;

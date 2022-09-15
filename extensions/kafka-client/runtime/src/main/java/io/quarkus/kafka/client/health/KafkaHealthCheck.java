@@ -1,6 +1,6 @@
 package io.quarkus.kafka.client.health;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.apache.kafka.common.Node;
 import org.eclipse.microprofile.health.HealthCheck;

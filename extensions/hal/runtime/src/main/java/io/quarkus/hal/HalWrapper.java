@@ -2,7 +2,7 @@ package io.quarkus.hal;
 
 import java.util.Map;
 
-import javax.ws.rs.core.Link;
+import jakarta.ws.rs.core.Link;
 
 public abstract class HalWrapper {
 

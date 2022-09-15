@@ -2,7 +2,7 @@ package io.quarkus.spring.web.runtime;
 
 import java.util.List;
 
-import javax.ws.rs.core.Variant;
+import jakarta.ws.rs.core.Variant;
 
 import org.jboss.resteasy.core.request.ServerDrivenNegotiation;
 

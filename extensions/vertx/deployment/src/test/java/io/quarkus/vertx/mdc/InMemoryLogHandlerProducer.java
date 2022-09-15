@@ -1,9 +1,9 @@
 package io.quarkus.vertx.mdc;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.runtime.ShutdownEvent;

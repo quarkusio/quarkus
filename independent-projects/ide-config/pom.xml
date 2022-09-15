@@ -14,7 +14,7 @@
     <artifactId>quarkus-ide-config</artifactId>
     <name>Quarkus - IDE/Tools - Config</name>
     <url>https://github.com/quarkusio/quarkus</url>
-    <version>999-SNAPSHOT</version>
+    <version>999-jakarta-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <licenses>

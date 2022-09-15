@@ -1,7 +1,7 @@
 package io.quarkus.it.faulttolerance;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 
 import io.smallrye.common.annotation.Identifier;
 import io.smallrye.faulttolerance.api.FaultTolerance;

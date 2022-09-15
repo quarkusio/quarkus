@@ -2,8 +2,8 @@ package io.quarkus.elytron.security.runtime;
 
 import java.util.function.Supplier;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 import org.wildfly.security.auth.server.RealmIdentity;

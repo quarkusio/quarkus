@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.sse.SseEventSource;
+import jakarta.ws.rs.sse.SseEventSource.Builder;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.sse.SseEventSource;
-import javax.ws.rs.sse.SseEventSource.Builder;
 
 public class SseEventSourceBuilderImpl extends SseEventSource.Builder {
 

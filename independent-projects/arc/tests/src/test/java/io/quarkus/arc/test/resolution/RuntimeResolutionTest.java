@@ -7,11 +7,11 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.util.AbstractList;
 import java.util.List;
-import javax.enterprise.util.TypeLiteral;
-import javax.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 

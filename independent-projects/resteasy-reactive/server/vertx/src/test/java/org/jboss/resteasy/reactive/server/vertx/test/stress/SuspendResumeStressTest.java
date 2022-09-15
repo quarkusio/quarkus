@@ -1,6 +1,8 @@
 package org.jboss.resteasy.reactive.server.vertx.test.stress;
 
 import io.restassured.RestAssured;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -8,8 +10,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
 import org.hamcrest.Matchers;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;

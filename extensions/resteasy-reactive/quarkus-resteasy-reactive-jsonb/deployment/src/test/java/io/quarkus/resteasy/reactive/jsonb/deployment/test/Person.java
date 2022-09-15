@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.jsonb.deployment.test;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 public class Person {
 

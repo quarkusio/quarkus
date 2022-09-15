@@ -1,7 +1,7 @@
 package io.quarkus.it.panache.reactive;
 
-import javax.persistence.Entity;
-import javax.persistence.ManyToOne;
+import jakarta.persistence.Entity;
+import jakarta.persistence.ManyToOne;
 
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 

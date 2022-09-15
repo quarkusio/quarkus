@@ -89,13 +89,13 @@ The following table matches the legacy RESTEasy annotations with the new RESTEas
 |===
 
 NOTE: The previous table does not include the `org.jboss.resteasy.annotations.Form` annotation because there is no RESTEasy Reactive specific replacement for it.
-Users are instead encouraged to use the JAX-RS standard `javax.ws.rs.BeanParam` annotation which is supported on both the server and the client.
+Users are instead encouraged to use the JAX-RS standard `jakarta.ws.rs.BeanParam` annotation which is supported on both the server and the client.
 
 === JAX-RS providers
 
 Although RESTEasy Reactive provides the same spec compliant behavior as RESTEasy Classic does, it does not include the same exact provider implementations at runtime.
 
-The most common case where the difference in providers might result in different behavior, is the included `javax.ws.rs.ext.ExceptionMapper` implementations. To see what classes are included in the application, launch the application in dev mode and navigate to http://localhost:8080/q/dev/io.quarkus.quarkus-resteasy-reactive/exception-mappers.
+The most common case where the difference in providers might result in different behavior, is the included `jakarta.ws.rs.ext.ExceptionMapper` implementations. To see what classes are included in the application, launch the application in dev mode and navigate to http://localhost:8080/q/dev/io.quarkus.quarkus-resteasy-reactive/exception-mappers.
 
 ==== Service Loading
 

@@ -2,7 +2,7 @@ package io.quarkus.resteasy.multipart.parttype;
 
 import java.net.URISyntaxException;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

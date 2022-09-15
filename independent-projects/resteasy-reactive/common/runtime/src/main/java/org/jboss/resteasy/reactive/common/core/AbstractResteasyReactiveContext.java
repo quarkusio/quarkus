@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.common.core;
 
+import jakarta.ws.rs.container.CompletionCallback;
+import jakarta.ws.rs.container.ConnectionCallback;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -8,8 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import javax.ws.rs.container.CompletionCallback;
-import javax.ws.rs.container.ConnectionCallback;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.PreserveTargetException;
 import org.jboss.resteasy.reactive.spi.RestHandler;

@@ -120,9 +120,9 @@ Let's start with the `Fruit` entity.Create the `src/main/java/org/acme/hibernate
 ----
 package org.acme.hibernate.orm.panache;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
 
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;  // <1>
 
@@ -181,8 +181,8 @@ Create the `src/main/java/org/acme/hibernate/orm/panache/FruitResource.java` fil
 ----
 package org.acme.hibernate.orm.panache;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.Path;
 
 @Path("/fruits")
 @ApplicationScoped

@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.common.model;
 
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.ext.ReaderInterceptor;
+import jakarta.ws.rs.ext.WriterInterceptor;
 import java.util.function.Function;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ContainerResponseFilter;
-import javax.ws.rs.ext.ReaderInterceptor;
-import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class ResourceInterceptors {

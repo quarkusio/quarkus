@@ -3,10 +3,10 @@ package io.quarkus.jsonb.deployment;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
-import javax.json.bind.Jsonb;
-import javax.json.bind.adapter.JsonbAdapter;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.adapter.JsonbAdapter;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

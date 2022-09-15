@@ -1,9 +1,9 @@
 package io.quarkus.security.spi.runtime;
 
-import javax.annotation.Priority;
-import javax.enterprise.inject.Alternative;
-import javax.inject.Singleton;
-import javax.interceptor.Interceptor;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.inject.Singleton;
+import jakarta.interceptor.Interceptor;
 
 import io.quarkus.runtime.LaunchMode;
 

@@ -2,7 +2,7 @@ package io.quarkus.smallrye.graphql.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.metrics.MetricID;
 import org.eclipse.microprofile.metrics.MetricRegistry;

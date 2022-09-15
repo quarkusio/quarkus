@@ -3,11 +3,11 @@ package io.quarkus.narayana.jta;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import javax.enterprise.context.ContextNotActiveException;
-import javax.inject.Inject;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-import javax.transaction.UserTransaction;
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transaction;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.UserTransaction;
 
 import org.junit.jupiter.api.Test;
 

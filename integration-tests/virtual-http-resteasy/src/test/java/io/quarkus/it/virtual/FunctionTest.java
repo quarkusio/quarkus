@@ -7,7 +7,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

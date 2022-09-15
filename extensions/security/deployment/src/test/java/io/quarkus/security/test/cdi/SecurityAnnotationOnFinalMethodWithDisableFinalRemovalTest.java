@@ -2,8 +2,8 @@ package io.quarkus.security.test.cdi;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.inject.Inject;
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;

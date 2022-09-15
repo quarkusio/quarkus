@@ -18,6 +18,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import jakarta.enterprise.inject.spi.DefinitionException;
 import java.lang.reflect.Member;
 import java.util.HashSet;
 import java.util.Set;
@@ -25,7 +26,6 @@ import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import javax.enterprise.inject.spi.DefinitionException;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -219,7 +219,7 @@ enum BuiltinBean {
         ResultHandle qualifiers = ctx.constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         if (!ctx.injectionPoint.getRequiredQualifiers().isEmpty()) {
             // Set<Annotation> instanceProvider1Qualifiers = new HashSet<>()
-            // instanceProvider1Qualifiers.add(javax.enterprise.inject.Default.Literal.INSTANCE)
+            // instanceProvider1Qualifiers.add(jakarta.enterprise.inject.Default.Literal.INSTANCE)
 
             for (AnnotationInstance qualifierAnnotation : ctx.injectionPoint.getRequiredQualifiers()) {
                 BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
@@ -333,15 +333,15 @@ enum BuiltinBean {
             Consumer<Throwable> errors) {
         if (injectionPoint.getType().kind() != Kind.PARAMETERIZED_TYPE) {
             errors.accept(
-                    new DefinitionException("An injection point of raw type javax.enterprise.inject.Instance is defined: "
+                    new DefinitionException("An injection point of raw type jakarta.enterprise.inject.Instance is defined: "
                             + injectionPoint.getTargetInfo()));
         } else if (injectionPoint.getRequiredType().kind() == Kind.WILDCARD_TYPE) {
             errors.accept(
-                    new DefinitionException("Wildcard is not a legal type argument for javax.enterprise.inject.Instance: " +
+                    new DefinitionException("Wildcard is not a legal type argument for jakarta.enterprise.inject.Instance: " +
                             injectionPoint.getTargetInfo()));
         } else if (injectionPoint.getRequiredType().kind() == Kind.TYPE_VARIABLE) {
             errors.accept(new DefinitionException(
-                    "Type variable is not a legal type argument for javax.enterprise.inject.Instance: " +
+                    "Type variable is not a legal type argument for jakarta.enterprise.inject.Instance: " +
                             injectionPoint.getTargetInfo()));
         }
     }

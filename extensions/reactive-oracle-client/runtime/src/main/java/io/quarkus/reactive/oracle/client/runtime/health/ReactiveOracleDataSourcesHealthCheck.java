@@ -2,9 +2,9 @@ package io.quarkus.reactive.oracle.client.runtime.health;
 
 import java.util.Set;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Any;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Any;
 
 import org.eclipse.microprofile.health.Readiness;
 

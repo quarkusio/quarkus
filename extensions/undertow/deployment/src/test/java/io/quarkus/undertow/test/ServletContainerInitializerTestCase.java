@@ -2,7 +2,7 @@ package io.quarkus.undertow.test;
 
 import static org.hamcrest.Matchers.containsString;
 
-import javax.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContainerInitializer;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

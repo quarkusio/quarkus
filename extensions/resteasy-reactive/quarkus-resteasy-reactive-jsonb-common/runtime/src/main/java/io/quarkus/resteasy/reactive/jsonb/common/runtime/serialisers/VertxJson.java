@@ -2,14 +2,14 @@ package io.quarkus.resteasy.reactive.jsonb.common.runtime.serialisers;
 
 import java.lang.reflect.Type;
 
-import javax.json.JsonNumber;
-import javax.json.JsonValue;
-import javax.json.bind.serializer.DeserializationContext;
-import javax.json.bind.serializer.JsonbDeserializer;
-import javax.json.bind.serializer.JsonbSerializer;
-import javax.json.bind.serializer.SerializationContext;
-import javax.json.stream.JsonGenerator;
-import javax.json.stream.JsonParser;
+import jakarta.json.JsonNumber;
+import jakarta.json.JsonValue;
+import jakarta.json.bind.serializer.DeserializationContext;
+import jakarta.json.bind.serializer.JsonbDeserializer;
+import jakarta.json.bind.serializer.JsonbSerializer;
+import jakarta.json.bind.serializer.SerializationContext;
+import jakarta.json.stream.JsonGenerator;
+import jakarta.json.stream.JsonParser;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -26,7 +26,7 @@ public final class VertxJson {
 
     }
 
-    public static void copy(JsonObject object, javax.json.JsonObject origin) {
+    public static void copy(JsonObject object, jakarta.json.JsonObject origin) {
         origin.keySet().forEach(key -> {
             JsonValue value = origin.get(key);
             JsonValue.ValueType kind = value.getValueType();
@@ -68,7 +68,7 @@ public final class VertxJson {
         });
     }
 
-    public static void copy(JsonArray array, javax.json.JsonArray origin) {
+    public static void copy(JsonArray array, jakarta.json.JsonArray origin) {
         for (int i = 0; i < origin.size(); i++) {
             JsonValue value = origin.get(i);
             JsonValue.ValueType kind = value.getValueType();

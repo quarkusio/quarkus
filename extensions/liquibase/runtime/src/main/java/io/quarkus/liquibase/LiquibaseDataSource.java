@@ -10,9 +10,9 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Named;
-import javax.inject.Qualifier;
+import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.inject.Named;
+import jakarta.inject.Qualifier;
 
 /**
  * Qualifier used to specify which datasource will be used and therefore which Liquibase instance will be injected.

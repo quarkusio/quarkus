@@ -2,7 +2,7 @@ package io.quarkus.mongodb.rest.data.panache.runtime;
 
 import java.util.function.Supplier;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.quarkus.rest.data.panache.runtime.UpdateExecutor;
 

@@ -6,17 +6,18 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.xml.bind.annotation.XmlSeeAlso;
+import jakarta.xml.bind.annotation.XmlSeeAlso;
+
+import org.glassfish.jaxb.core.v2.model.annotation.Locatable;
+import org.glassfish.jaxb.runtime.v2.model.annotation.LocatableAnnotation;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.sun.xml.bind.v2.model.annotation.Locatable;
-import com.sun.xml.bind.v2.model.annotation.LocatableAnnotation;
 
-@TargetClass(className = "com.sun.xml.bind.v2.model.nav.ReflectionNavigator")
-final class Target_com_sun_xml_bind_v2_model_nav_ReflectionNavigator {
+@TargetClass(className = "org.glassfish.jaxb.core.v2.model.nav.ReflectionNavigator")
+final class Target_org_glassfish_jaxb_core_v2_model_nav_ReflectionNavigator {
 
     @Substitute
     public Field[] getEnumConstants(Class clazz) {
@@ -35,26 +36,8 @@ final class Target_com_sun_xml_bind_v2_model_nav_ReflectionNavigator {
 
 }
 
-@TargetClass(className = "com.sun.xml.bind.v2.runtime.reflect.opt.AccessorInjector")
-@Substitute
-final class Target_com_sun_xml_bind_v2_runtime_reflect_opt_AccessorInjector {
-
-    /**
-     * Loads the optimized class and returns it.
-     *
-     * @return null
-     *         if it fails for some reason.
-     */
-    @Substitute()
-    public static Class<?> prepare(
-            Class beanClass, String templateClassName, String newClassName, String... replacements) {
-        return null;
-    }
-
-}
-
-@TargetClass(className = "com.sun.xml.bind.v2.model.annotation.RuntimeInlineAnnotationReader")
-final class Target_com_sun_xml_bind_v2_model_annotation_RuntimeInlineAnnotationReader {
+@TargetClass(className = "org.glassfish.jaxb.runtime.v2.model.annotation.RuntimeInlineAnnotationReader")
+final class Target_org_glassfish_jaxb_runtime_v2_model_annotation_RuntimeInlineAnnotationReader {
 
     @Alias
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.NewInstance, declClass = HashMap.class)

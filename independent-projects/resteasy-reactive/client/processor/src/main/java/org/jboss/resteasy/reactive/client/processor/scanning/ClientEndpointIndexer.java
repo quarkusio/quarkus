@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.client.processor.scanning;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_ARRAY;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_NUMBER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_OBJECT;
@@ -8,10 +8,10 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_STRUCTURE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_VALUE;
 
+import jakarta.ws.rs.core.MediaType;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.MediaType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -176,13 +176,13 @@ public class ClientEndpointIndexer
         if (dotName.equals(JSONP_JSON_NUMBER)
                 || dotName.equals(JSONP_JSON_VALUE)
                 || dotName.equals(JSONP_JSON_STRING)) {
-            additionalReaderWriter.add(JsonValueHandler.class, APPLICATION_JSON, javax.json.JsonValue.class);
+            additionalReaderWriter.add(JsonValueHandler.class, APPLICATION_JSON, jakarta.json.JsonValue.class);
         } else if (dotName.equals(JSONP_JSON_ARRAY)) {
-            additionalReaderWriter.add(JsonArrayHandler.class, APPLICATION_JSON, javax.json.JsonArray.class);
+            additionalReaderWriter.add(JsonArrayHandler.class, APPLICATION_JSON, jakarta.json.JsonArray.class);
         } else if (dotName.equals(JSONP_JSON_OBJECT)) {
-            additionalReaderWriter.add(JsonObjectHandler.class, APPLICATION_JSON, javax.json.JsonObject.class);
+            additionalReaderWriter.add(JsonObjectHandler.class, APPLICATION_JSON, jakarta.json.JsonObject.class);
         } else if (dotName.equals(JSONP_JSON_STRUCTURE)) {
-            additionalReaderWriter.add(JsonStructureHandler.class, APPLICATION_JSON, javax.json.JsonStructure.class);
+            additionalReaderWriter.add(JsonStructureHandler.class, APPLICATION_JSON, jakarta.json.JsonStructure.class);
         }
     }
 

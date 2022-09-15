@@ -2,7 +2,7 @@ package io.quarkus.smallrye.openapi.test.jaxrs;
 
 import java.util.Optional;
 
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;

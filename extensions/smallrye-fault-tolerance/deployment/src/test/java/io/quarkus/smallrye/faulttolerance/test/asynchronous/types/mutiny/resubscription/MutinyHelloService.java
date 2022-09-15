@@ -2,7 +2,7 @@ package io.quarkus.smallrye.faulttolerance.test.asynchronous.types.mutiny.resubs
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.faulttolerance.Retry;
 

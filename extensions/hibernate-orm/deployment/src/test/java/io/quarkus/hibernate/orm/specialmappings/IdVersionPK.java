@@ -3,7 +3,7 @@ package io.quarkus.hibernate.orm.specialmappings;
 import java.io.Serializable;
 import java.util.Objects;
 
-import javax.persistence.Id;
+import jakarta.persistence.Id;
 
 public class IdVersionPK implements Serializable {
     @Id

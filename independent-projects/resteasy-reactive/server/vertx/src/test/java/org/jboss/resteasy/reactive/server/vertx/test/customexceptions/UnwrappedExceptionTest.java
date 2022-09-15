@@ -3,11 +3,11 @@ package org.jboss.resteasy.reactive.server.vertx.test.customexceptions;
 import static org.jboss.resteasy.reactive.server.vertx.test.ExceptionUtil.removeStackTrace;
 
 import io.restassured.RestAssured;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
 import org.jboss.jandex.IndexView;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.resteasy.reactive.server.processor.ResteasyReactiveDeploymentManager;

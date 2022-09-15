@@ -1,6 +1,6 @@
 package io.quarkus.elytron.security.oauth2.deployment;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.wildfly.security.auth.server.SecurityRealm;
 

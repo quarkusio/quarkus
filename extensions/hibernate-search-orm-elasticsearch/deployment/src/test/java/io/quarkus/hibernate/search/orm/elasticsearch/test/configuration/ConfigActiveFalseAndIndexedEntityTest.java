@@ -3,7 +3,7 @@ package io.quarkus.hibernate.search.orm.elasticsearch.test.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;

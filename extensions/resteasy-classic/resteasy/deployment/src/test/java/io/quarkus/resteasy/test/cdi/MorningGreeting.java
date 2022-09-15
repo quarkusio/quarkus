@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.test.cdi;
 
-import javax.enterprise.context.Dependent;
+import jakarta.enterprise.context.Dependent;
 
 /**
  *

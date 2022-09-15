@@ -1,8 +1,8 @@
 package io.quarkus.arc.impl;
 
 import io.quarkus.arc.InjectableInterceptor;
-import javax.enterprise.inject.spi.InterceptionType;
-import javax.interceptor.InvocationContext;
+import jakarta.enterprise.inject.spi.InterceptionType;
+import jakarta.interceptor.InvocationContext;
 
 public final class InterceptorInvocation {
 

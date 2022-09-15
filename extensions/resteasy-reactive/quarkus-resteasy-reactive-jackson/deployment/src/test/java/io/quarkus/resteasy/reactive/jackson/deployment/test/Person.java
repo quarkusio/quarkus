@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 import io.quarkus.resteasy.reactive.jackson.SecureField;
 

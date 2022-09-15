@@ -33,7 +33,7 @@ Any input and output objects for the operation will be translated to/from their 
 in the GraphQL query language.
 
 The *dynamic* client, on the other hand, works rather like an equivalent of the JAX-RS client
-from the `javax.ws.rs.client` package. It does not require the domain classes to work, it works with
+from the `jakarta.ws.rs.client` package. It does not require the domain classes to work, it works with
 abstract representations of GraphQL documents instead. Documents are built using a domain-specific language (DSL).
 The exchanged objects are treated as an abstract `JsonObject`, but, when necessary,
 it is possible to convert them to concrete model objects (if suitable model classes are available).

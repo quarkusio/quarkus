@@ -1,6 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.mutiny;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 

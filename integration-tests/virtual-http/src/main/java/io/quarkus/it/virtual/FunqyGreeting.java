@@ -1,6 +1,6 @@
 package io.quarkus.it.virtual;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.funqy.Funq;
 

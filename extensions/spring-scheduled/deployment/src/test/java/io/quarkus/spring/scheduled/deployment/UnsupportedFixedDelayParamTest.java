@@ -1,6 +1,6 @@
 package io.quarkus.spring.scheduled.deployment;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

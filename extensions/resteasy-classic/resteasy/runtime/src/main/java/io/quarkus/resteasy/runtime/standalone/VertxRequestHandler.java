@@ -8,9 +8,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.CDI;
-import javax.ws.rs.core.SecurityContext;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.ws.rs.core.SecurityContext;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.ResteasyContext;

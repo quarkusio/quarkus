@@ -1,7 +1,7 @@
 package io.quarkus.arc.impl;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import java.lang.annotation.Annotation;
-import javax.enterprise.context.ApplicationScoped;
 
 class ApplicationContext extends AbstractSharedContext {
 

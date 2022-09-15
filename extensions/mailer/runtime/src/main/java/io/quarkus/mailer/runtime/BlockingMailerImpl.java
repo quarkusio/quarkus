@@ -1,7 +1,7 @@
 package io.quarkus.mailer.runtime;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.Mailer;

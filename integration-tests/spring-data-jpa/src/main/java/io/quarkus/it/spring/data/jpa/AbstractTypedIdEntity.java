@@ -2,8 +2,8 @@ package io.quarkus.it.spring.data.jpa;
 
 import java.io.Serializable;
 
-import javax.persistence.EmbeddedId;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.MappedSuperclass;
 
 // example "base entity" using strongly typed ids (instead of just long)
 @MappedSuperclass

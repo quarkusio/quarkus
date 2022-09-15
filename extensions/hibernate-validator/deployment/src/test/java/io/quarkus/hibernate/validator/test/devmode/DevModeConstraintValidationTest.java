@@ -48,7 +48,7 @@ public class DevModeConstraintValidationTest {
                 .body(containsString("ok"));
 
         TEST.modifySourceFile("TestBean.java", s -> s.replace("// <placeholder2>",
-                "@javax.validation.constraints.NotNull(message=\"My property message\")"));
+                "@jakarta.validation.constraints.NotNull(message=\"My property message\")"));
 
         RestAssured.given()
                 .header("Content-Type", "application/json")
@@ -69,7 +69,7 @@ public class DevModeConstraintValidationTest {
                 .body(containsString("mymessage"));
 
         TEST.modifySourceFile("DependentTestBean.java", s -> s.replace("/* <placeholder> */",
-                "@javax.validation.constraints.Size(max=1, message=\"My method message\")"));
+                "@jakarta.validation.constraints.Size(max=1, message=\"My method message\")"));
 
         RestAssured.given()
                 .header("Content-Type", "application/json")

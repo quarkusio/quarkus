@@ -2,10 +2,10 @@ package io.quarkus.hibernate.reactive.runtime;
 
 import java.util.concurrent.CompletableFuture;
 
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.Disposes;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Disposes;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
 
 import org.hibernate.reactive.common.spi.MutinyImplementor;
 import org.hibernate.reactive.mutiny.Mutiny;

@@ -3,8 +3,8 @@ package io.quarkus.it.spring.data.jpa;
 import java.io.Serializable;
 import java.util.Objects;
 
-import javax.persistence.Column;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.Column;
+import jakarta.persistence.MappedSuperclass;
 
 // this is a bit artificial, but next to PhoneCallId there could be e.g. a PhoneBookEntryId subclass
 @MappedSuperclass

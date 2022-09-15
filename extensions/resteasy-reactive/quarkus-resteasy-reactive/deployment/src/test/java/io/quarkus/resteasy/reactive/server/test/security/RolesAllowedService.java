@@ -1,7 +1,7 @@
 package io.quarkus.resteasy.reactive.server.test.security;
 
-import javax.annotation.security.RolesAllowed;
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class RolesAllowedService {

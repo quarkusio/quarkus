@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.EnumSet;
 import java.util.Set;
 
-import javax.enterprise.event.TransactionPhase;
-import javax.inject.Inject;
+import jakarta.enterprise.event.TransactionPhase;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;

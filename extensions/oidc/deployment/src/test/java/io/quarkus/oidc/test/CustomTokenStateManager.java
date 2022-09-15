@@ -1,7 +1,7 @@
 package io.quarkus.oidc.test;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import io.quarkus.arc.AlternativePriority;
 import io.quarkus.oidc.AuthorizationCodeTokens;

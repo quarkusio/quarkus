@@ -1,8 +1,8 @@
 package io.quarkus.arc;
 
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
 import java.util.Map;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
 
 /**
  * It can be used by synthetic {@link InjectableBean} definitions to produce a contextual instance.

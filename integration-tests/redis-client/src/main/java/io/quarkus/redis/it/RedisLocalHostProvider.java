@@ -4,7 +4,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.Set;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.redis.client.RedisHostsProvider;
 import io.smallrye.common.annotation.Identifier;

@@ -4,7 +4,7 @@
     <parent>
         <artifactId>quarkus-tck-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>999-jakarta-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - MicroProfile Config</name>
 
     <properties>
-        <microprofile-config-tck.version>2.0.1</microprofile-config-tck.version>
+        <microprofile-config-tck.version>3.0.1</microprofile-config-tck.version>
     </properties>
 
     <build>

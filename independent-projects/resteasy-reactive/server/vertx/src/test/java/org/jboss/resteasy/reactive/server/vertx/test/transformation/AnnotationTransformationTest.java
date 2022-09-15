@@ -5,14 +5,14 @@ import static org.jboss.jandex.AnnotationInstance.create;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.GET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.QUERY_PARAM;
 
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.Path;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Collections;
 import java.util.function.Consumer;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.Path;
 import org.hamcrest.Matchers;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;

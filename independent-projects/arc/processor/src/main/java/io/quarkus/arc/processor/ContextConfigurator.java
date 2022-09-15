@@ -5,6 +5,7 @@ import io.quarkus.arc.InjectableContext;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import jakarta.enterprise.context.NormalScope;
 import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +14,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.enterprise.context.NormalScope;
 
 /**
  * Custom context configurator.

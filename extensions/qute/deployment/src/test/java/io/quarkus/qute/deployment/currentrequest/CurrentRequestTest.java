@@ -2,7 +2,7 @@ package io.quarkus.qute.deployment.currentrequest;
 
 import static io.restassured.RestAssured.when;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;

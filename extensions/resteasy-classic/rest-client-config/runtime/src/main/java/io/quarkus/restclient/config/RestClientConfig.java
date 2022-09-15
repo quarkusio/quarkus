@@ -63,7 +63,7 @@ public class RestClientConfig {
 
     /**
      * The CDI scope to use for injection. This property can contain either a fully qualified class name of a CDI scope
-     * annotation (such as "javax.enterprise.context.ApplicationScoped") or its simple name (such as
+     * annotation (such as "jakarta.enterprise.context.ApplicationScoped") or its simple name (such as
      * "ApplicationScoped").
      */
     @ConfigItem

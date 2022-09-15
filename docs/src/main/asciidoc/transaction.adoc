@@ -42,7 +42,7 @@ the JTA `UserTransaction` API directly, however this is less user-friendly than 
 
 === Declarative approach
 
-The easiest way to define your transaction boundaries is to use the `@Transactional` annotation on your entry method (`javax.transaction.Transactional`).
+The easiest way to define your transaction boundaries is to use the `@Transactional` annotation on your entry method (`jakarta.transaction.Transactional`).
 
 [source,java]
 ----

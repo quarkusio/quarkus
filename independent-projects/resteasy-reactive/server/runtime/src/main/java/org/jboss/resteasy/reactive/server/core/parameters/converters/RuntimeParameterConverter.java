@@ -1,8 +1,8 @@
 package org.jboss.resteasy.reactive.server.core.parameters.converters;
 
+import jakarta.ws.rs.ext.ParamConverter;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import javax.ws.rs.ext.ParamConverter;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 
 public class RuntimeParameterConverter implements ParameterConverter {

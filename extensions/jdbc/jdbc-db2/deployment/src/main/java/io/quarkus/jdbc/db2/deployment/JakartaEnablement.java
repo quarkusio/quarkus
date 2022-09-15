@@ -24,7 +24,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 
 /**
- * The DB2 driver is compiled using references to classes in the javax.transaction
+ * The DB2 driver is compiled using references to classes in the jakarta.transaction
  * package; we need to transform these to fix compatibility with jakarta.transaction.
  * We do this by leveraging the Eclipse Transformer project during Augmentation, so
  * that end users don't need to bother.
@@ -63,7 +63,7 @@ public class JakartaEnablement {
             Map<String, String> renames = new HashMap<>();
             //N.B. we enable only this transformation, not the full set of capabilities of Eclipse Transformer;
             //this might need tailoring if the same idea gets applied to a different context.
-            renames.put("javax.transaction", "jakarta.transaction");
+            renames.put("jakarta.transaction", "jakarta.transaction");
             ctx = new ActionContextImpl(logger,
                     new SelectionRuleImpl(logger, Collections.emptyMap(), Collections.emptyMap()),
                     new SignatureRuleImpl(logger, renames, null, null, null, null, null, Collections.emptyMap()));

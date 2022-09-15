@@ -58,9 +58,9 @@ For demonstration purposes, we create an endpoint that does nothing but log a se
 
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.jboss.logging.Logger;
 

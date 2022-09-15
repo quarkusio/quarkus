@@ -19,7 +19,7 @@ public interface JaxrsClientReactiveEnricher {
      * Class-level alterations
      *
      * Used by MicroProfile Rest Client implementation (quarkus-rest-client-reactive) to support
-     * {@link javax.ws.rs.ext.Provider}, {@code @ClientHeadersFactory}, etc
+     * {@link jakarta.ws.rs.ext.Provider}, {@code @ClientHeadersFactory}, etc
      *
      * Please note that this won't be invoked for sub-resources
      *

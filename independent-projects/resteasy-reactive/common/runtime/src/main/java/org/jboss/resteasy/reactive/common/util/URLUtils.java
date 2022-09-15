@@ -18,11 +18,11 @@
 
 package org.jboss.resteasy.reactive.common.util;
 
+import jakarta.ws.rs.core.MultivaluedMap;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.Set;
 import java.util.regex.Pattern;
-import javax.ws.rs.core.MultivaluedMap;
 
 /**
  * Utilities for dealing with URLs

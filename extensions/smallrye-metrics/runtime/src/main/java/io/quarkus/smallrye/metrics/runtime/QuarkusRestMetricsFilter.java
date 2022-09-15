@@ -4,7 +4,7 @@ import static io.quarkus.smallrye.metrics.runtime.FilterUtil.maybeCreateMetrics;
 
 import java.lang.reflect.Method;
 
-import javax.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.container.ResourceInfo;
 
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 

@@ -2,7 +2,7 @@ package io.quarkus.elytron.security.runtime;
 
 import java.security.Permission;
 
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 import org.wildfly.security.auth.server.RealmMapper;

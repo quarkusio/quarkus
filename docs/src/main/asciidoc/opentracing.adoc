@@ -70,10 +70,10 @@ Create the `src/main/java/org/acme/opentracing/TracedResource.java` file with th
 ----
 package org.acme.opentracing;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import org.jboss.logging.Logger;
 
 @Path("/hello")
@@ -167,7 +167,7 @@ Here is an example of a `FrancophoneService` which methods are traced.
 
 [source, java]
 ----
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.opentracing.Traced;
 

@@ -2,11 +2,12 @@ package io.quarkus.it.keycloak;
 
 import java.util.List;
 
-import javax.inject.Inject;
 import javax.security.auth.AuthPermission;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.keycloak.representations.idm.authorization.Permission;
 

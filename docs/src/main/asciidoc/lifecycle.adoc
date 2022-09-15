@@ -143,8 +143,8 @@ following content:
 ----
 package org.acme.lifecycle;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
@@ -189,7 +189,7 @@ A bean represented by a class, producer method or field annotated with `@Startup
 ----
 package org.acme.lifecycle;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @Startup // <1> 
 @ApplicationScoped

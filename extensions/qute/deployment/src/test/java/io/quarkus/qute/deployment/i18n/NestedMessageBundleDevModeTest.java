@@ -2,7 +2,7 @@ package io.quarkus.qute.deployment.i18n;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.event.Observes;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

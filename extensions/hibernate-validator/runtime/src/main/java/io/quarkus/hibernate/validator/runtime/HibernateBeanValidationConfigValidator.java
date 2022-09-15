@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.validator.runtime;
 
-import javax.validation.Validator;
+import jakarta.validation.Validator;
 
 import io.smallrye.config.validator.BeanValidationConfigValidator;
 

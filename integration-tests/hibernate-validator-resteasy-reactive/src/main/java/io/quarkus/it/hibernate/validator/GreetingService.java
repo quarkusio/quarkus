@@ -1,8 +1,8 @@
 package io.quarkus.it.hibernate.validator;
 
-import javax.annotation.Priority;
-import javax.enterprise.context.ApplicationScoped;
-import javax.validation.constraints.NotNull;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.validation.constraints.NotNull;
 
 @ApplicationScoped
 @Priority(2)

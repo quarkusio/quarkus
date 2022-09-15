@@ -529,10 +529,10 @@ mkdir -p ./greeting-extension/runtime/src/main/java/org/acme/greeting/extension
 ----
 package org.acme.greeting.extension;
 
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @WebServlet
@@ -545,7 +545,7 @@ public class GreetingExtensionServlet extends HttpServlet { // <1>
 }
 ----
 
-<1> As usual, defining a servlet requires to extend `javax.servlet.http.HttpServlet`.
+<1> As usual, defining a servlet requires to extend `jakarta.servlet.http.HttpServlet`.
 <2> Since we want to respond to the HTTP GET verb, we override the `doGet` method and write `Hello` in the Servlet response's output stream.
 
 === Deploying the Greeting feature

@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.server.vertx.test.customexceptions;
 
 import io.smallrye.mutiny.Uni;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
 public class UniExceptionMapper {

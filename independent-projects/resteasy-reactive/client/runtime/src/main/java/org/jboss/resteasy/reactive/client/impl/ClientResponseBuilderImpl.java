@@ -1,8 +1,8 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import jakarta.ws.rs.core.Response;
 import java.io.InputStream;
 import java.net.URI;
-import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.common.NotImplementedYet;
 import org.jboss.resteasy.reactive.common.jaxrs.AbstractResponseBuilder;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;

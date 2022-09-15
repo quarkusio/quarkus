@@ -1,9 +1,9 @@
 package org.jboss.resteasy.reactive.client.providers.serialisers;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.core.NoContentException;
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.ProcessingException;
+import jakarta.ws.rs.core.NoContentException;
+import jakarta.ws.rs.ext.Provider;
 import org.jboss.resteasy.reactive.common.providers.serialisers.DefaultTextPlainBodyHandler;
 
 @Provider

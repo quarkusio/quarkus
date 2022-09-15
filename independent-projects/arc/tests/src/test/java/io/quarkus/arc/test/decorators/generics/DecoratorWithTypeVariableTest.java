@@ -4,14 +4,14 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.Priority;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.test.ArcTestContainer;
+import jakarta.decorator.Decorator;
+import jakarta.decorator.Delegate;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Set;
-import javax.decorator.Decorator;
-import javax.decorator.Delegate;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Any;
-import javax.enterprise.util.TypeLiteral;
-import javax.inject.Inject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -30,7 +30,7 @@ public class DecoratorWithTypeVariableTest {
                 bean.doSomething(new MyParameterizedType<>("test", new Contract())));
 
         // Secondly, assert that this decorator can be resolved at runtime via BM
-        List<javax.enterprise.inject.spi.Decorator<?>> decoratorsFound = Arc.container().beanManager()
+        List<jakarta.enterprise.inject.spi.Decorator<?>> decoratorsFound = Arc.container().beanManager()
                 .resolveDecorators(Set.of(new TypeLiteral<MyInterface<String, Contract>>() {
                 }.getType()), Any.Literal.INSTANCE);
         Assertions.assertTrue(decoratorsFound.size() == 1);

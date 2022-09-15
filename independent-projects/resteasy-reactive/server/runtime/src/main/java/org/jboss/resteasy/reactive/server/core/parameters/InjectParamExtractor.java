@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.core.parameters;
 
-import javax.ws.rs.container.CompletionCallback;
+import jakarta.ws.rs.container.CompletionCallback;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionTarget;
 import org.jboss.resteasy.reactive.spi.BeanFactory;

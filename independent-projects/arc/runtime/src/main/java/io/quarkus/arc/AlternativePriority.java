@@ -1,10 +1,10 @@
 package io.quarkus.arc;
 
+import jakarta.enterprise.inject.Alternative;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import javax.enterprise.inject.Alternative;
 
 /**
  * If a bean is annotated with this annotation, it is considered an enabled alternative with given priority.
@@ -12,7 +12,7 @@ import javax.enterprise.inject.Alternative;
  *
  * This annotation can be used not only on bean classes, but also method and field producers (unlike pure {@code Priority}).
  *
- * @deprecated Use {@link Alternative} and {@link io.quarkus.arc.Priority}/{@link javax.annotation.Priority} instead
+ * @deprecated Use {@link Alternative} and {@link io.quarkus.arc.Priority}/{@link jakarta.annotation.Priority} instead
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE, ElementType.FIELD })

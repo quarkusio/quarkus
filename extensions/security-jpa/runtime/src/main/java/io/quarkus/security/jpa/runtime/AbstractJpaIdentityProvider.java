@@ -3,7 +3,7 @@ package io.quarkus.security.jpa.runtime;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 
-import javax.persistence.Query;
+import jakarta.persistence.Query;
 
 import org.wildfly.security.credential.PasswordCredential;
 import org.wildfly.security.evidence.PasswordGuessEvidence;

@@ -1,9 +1,9 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
 import io.vertx.ext.web.RoutingContext;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.ws.rs.core.Context;
 import java.util.Objects;
-import javax.enterprise.context.RequestScoped;
-import javax.ws.rs.core.Context;
 
 @RequestScoped
 public class HelloService {

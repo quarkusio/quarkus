@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.common.util;
 
+import jakarta.ws.rs.core.MediaType;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -7,7 +8,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.ws.rs.core.MediaType;
 
 /**
  * A representation of a server side media type.

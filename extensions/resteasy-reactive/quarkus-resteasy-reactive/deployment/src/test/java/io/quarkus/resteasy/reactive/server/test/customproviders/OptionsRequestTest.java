@@ -8,9 +8,9 @@ import static org.hamcrest.Matchers.is;
 
 import java.util.function.Supplier;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.container.ContainerResponseContext;
 
 import org.assertj.core.api.Assertions;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;

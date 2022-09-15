@@ -1,6 +1,6 @@
 package io.quarkus.test.devconsole;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;

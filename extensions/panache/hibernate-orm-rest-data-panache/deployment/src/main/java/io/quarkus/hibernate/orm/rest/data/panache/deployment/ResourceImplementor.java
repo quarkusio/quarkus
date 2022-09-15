@@ -4,8 +4,8 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.util.List;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.transaction.Transactional;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 
 import org.jboss.jandex.FieldInfo;
 import org.jboss.logging.Logger;

@@ -1,6 +1,6 @@
 package io.quarkus.vertx.web.runtime;
 
-import javax.enterprise.event.Event;
+import jakarta.enterprise.event.Event;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableContext.ContextState;

@@ -1,8 +1,8 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
 import java.io.IOException;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
 
 public class FeatureRequestFilterWithNormalPriority implements ContainerRequestFilter {
 

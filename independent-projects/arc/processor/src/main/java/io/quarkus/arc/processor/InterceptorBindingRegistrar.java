@@ -1,11 +1,11 @@
 package io.quarkus.arc.processor;
 
+import jakarta.enterprise.util.Nonbinding;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
-import javax.enterprise.util.Nonbinding;
 import org.jboss.jandex.DotName;
 
 public interface InterceptorBindingRegistrar extends BuildExtension {

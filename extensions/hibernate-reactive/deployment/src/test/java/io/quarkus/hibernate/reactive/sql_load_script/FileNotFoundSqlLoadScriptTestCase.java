@@ -2,8 +2,8 @@ package io.quarkus.hibernate.reactive.sql_load_script;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

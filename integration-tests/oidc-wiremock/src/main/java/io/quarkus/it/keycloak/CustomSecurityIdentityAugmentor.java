@@ -2,7 +2,7 @@ package io.quarkus.it.keycloak;
 
 import java.security.Principal;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.security.identity.AuthenticationRequestContext;

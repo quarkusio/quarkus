@@ -7,7 +7,7 @@ import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.regex.Pattern;
 
-import javax.annotation.Priority;
+import jakarta.annotation.Priority;
 
 import org.eclipse.microprofile.config.spi.Converter;
 

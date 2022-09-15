@@ -5,7 +5,7 @@ import static org.hamcrest.CoreMatchers.is;
 
 import java.util.Optional;
 
-import javax.json.bind.Jsonb;
+import jakarta.json.bind.Jsonb;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;

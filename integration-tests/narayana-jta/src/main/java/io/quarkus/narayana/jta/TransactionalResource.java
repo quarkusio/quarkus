@@ -1,13 +1,13 @@
 package io.quarkus.narayana.jta;
 
-import javax.inject.Inject;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-import javax.transaction.Transactional;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transaction;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/tx")
 public class TransactionalResource {
@@ -18,7 +18,7 @@ public class TransactionalResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Transactional
-    public String status() throws javax.transaction.SystemException {
+    public String status() throws jakarta.transaction.SystemException {
         Transaction txn = tm.getTransaction();
         return String.valueOf(txn.getStatus());
     }

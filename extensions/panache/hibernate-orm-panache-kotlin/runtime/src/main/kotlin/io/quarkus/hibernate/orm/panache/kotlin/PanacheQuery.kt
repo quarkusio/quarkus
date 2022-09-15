@@ -2,12 +2,12 @@ package io.quarkus.hibernate.orm.panache.kotlin
 
 import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.Parameters
+import jakarta.persistence.LockModeType
+import jakarta.persistence.NonUniqueResultException
 import org.hibernate.Session
 import org.hibernate.annotations.Filter
 import org.hibernate.annotations.FilterDef
 import java.util.stream.Stream
-import javax.persistence.LockModeType
-import javax.persistence.NonUniqueResultException
 
 /**
  * Interface representing an entity query, which abstracts the use of paging, getting the number of results, and

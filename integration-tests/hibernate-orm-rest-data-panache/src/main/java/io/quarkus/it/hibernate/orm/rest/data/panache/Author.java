@@ -2,7 +2,7 @@ package io.quarkus.it.hibernate.orm.rest.data.panache;
 
 import java.time.LocalDate;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 

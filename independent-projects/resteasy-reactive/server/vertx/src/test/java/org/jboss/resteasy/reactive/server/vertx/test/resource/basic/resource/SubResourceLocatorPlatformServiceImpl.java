@@ -1,8 +1,8 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource;
 
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import java.util.List;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
 
 public class SubResourceLocatorPlatformServiceImpl implements SubResourceLocatorPlatformServiceResource {
     @Override

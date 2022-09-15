@@ -2,11 +2,11 @@ package io.quarkus.jwt.test;
 
 import java.security.PublicKey;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.Path;
 
 import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.util.KeyUtils;

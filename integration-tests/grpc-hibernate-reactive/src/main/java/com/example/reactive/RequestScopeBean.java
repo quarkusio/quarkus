@@ -2,8 +2,8 @@ package com.example.reactive;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.RequestScoped;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.RequestScoped;
 
 import io.smallrye.common.vertx.ContextLocals;
 

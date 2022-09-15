@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.client.impl;
 
 import io.vertx.core.Vertx;
+import jakarta.ws.rs.RuntimeType;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Supplier;
-import javax.ws.rs.RuntimeType;
 import org.jboss.resteasy.reactive.client.spi.ClientContext;
 import org.jboss.resteasy.reactive.client.spi.ClientContextResolver;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;

@@ -1,7 +1,7 @@
 package io.quarkus.it.panache.kotlin
 
-import javax.persistence.Entity
-import javax.persistence.Transient
+import jakarta.persistence.Entity
+import jakarta.persistence.Transient
 
 @Entity
 open class AccessorEntity : GenericEntity<Int>() {

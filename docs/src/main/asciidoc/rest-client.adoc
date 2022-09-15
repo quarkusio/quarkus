@@ -111,9 +111,9 @@ package org.acme.rest.client;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.annotations.jaxrs.QueryParam;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 import java.util.Set;
 
 @Path("/extensions")
@@ -159,8 +159,8 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
 import org.jboss.resteasy.annotations.jaxrs.QueryParam;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import java.util.Set;
 
 @Path("/extensions")
@@ -183,7 +183,7 @@ The name of the property needs to follow a certain convention which is best disp
 ----
 # Your configuration properties
 quarkus.rest-client."org.acme.rest.client.ExtensionsService".url=https://stage.code.quarkus.io/api # // <1>
-quarkus.rest-client."org.acme.rest.client.ExtensionsService".scope=javax.inject.Singleton # // <2>
+quarkus.rest-client."org.acme.rest.client.ExtensionsService".scope=jakarta.inject.Singleton # // <2>
 ----
 
 <1> Having this configuration means that all requests performed using `ExtensionsService` will use `https://stage.code.quarkus.io` as the base URL.
@@ -200,7 +200,7 @@ The standard MicroProfile Rest Client properties notation can also be used to co
 [source,properties]
 ----
 org.acme.rest.client.ExtensionsService/mp-rest/url=https://stage.code.quarkus.io/api
-org.acme.rest.client.ExtensionsService/mp-rest/scope=javax.inject.Singleton
+org.acme.rest.client.ExtensionsService/mp-rest/scope=jakarta.inject.Singleton
 ----
 
 If a property is specified via both the Quarkus notation and the MicroProfile notation, the Quarkus notation takes a precedence.
@@ -222,7 +222,7 @@ public interface ExtensionsService {
 ----
 # Your configuration properties
 quarkus.rest-client.extensions-api.url=https://stage.code.quarkus.io/api
-quarkus.rest-client.extensions-api.scope=javax.inject.Singleton
+quarkus.rest-client.extensions-api.scope=jakarta.inject.Singleton
 ----
 
 === Disabling Hostname Verification
@@ -258,9 +258,9 @@ package org.acme.rest.client;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import java.util.Set;
 
 @Path("/extension")
@@ -336,8 +336,8 @@ package org.acme.rest.client;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.annotations.jaxrs.QueryParam;
@@ -364,9 +364,9 @@ package org.acme.rest.client;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
@@ -419,8 +419,8 @@ package org.acme.rest.client;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.annotations.jaxrs.QueryParam;
@@ -447,9 +447,9 @@ package org.acme.rest.client;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
@@ -512,8 +512,8 @@ package org.acme.rest.client;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
@@ -545,9 +545,9 @@ package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 import java.util.UUID;
 
 @ApplicationScoped

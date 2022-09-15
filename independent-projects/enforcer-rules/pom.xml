@@ -13,7 +13,7 @@
     <artifactId>quarkus-enforcer-rules</artifactId>
     <name>Quarkus - Enforcer Rules</name>
     <url>https://github.com/quarkusio/quarkus</url>
-    <version>999-SNAPSHOT</version>
+    <version>999-jakarta-SNAPSHOT</version>
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>

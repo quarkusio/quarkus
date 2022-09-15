@@ -1,6 +1,6 @@
 package io.quarkus.it.spring.data.jpa;
 
-import javax.persistence.Embeddable;
+import jakarta.persistence.Embeddable;
 
 @Embeddable
 public class PhoneCallId extends PhoneNumberId {

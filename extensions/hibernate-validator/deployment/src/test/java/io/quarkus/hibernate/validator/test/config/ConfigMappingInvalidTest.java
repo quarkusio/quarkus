@@ -2,8 +2,8 @@ package io.quarkus.hibernate.validator.test.config;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import javax.inject.Inject;
-import javax.validation.constraints.Max;
+import jakarta.inject.Inject;
+import jakarta.validation.constraints.Max;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.shrinkwrap.api.ShrinkWrap;

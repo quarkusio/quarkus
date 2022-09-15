@@ -4,10 +4,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
 
 import io.restassured.RestAssured;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
 import org.jboss.resteasy.reactive.Cache;
 import org.jboss.resteasy.reactive.server.processor.ResteasyReactiveDeploymentManager;
 import org.jboss.resteasy.reactive.server.processor.scanning.CacheControlScanner;

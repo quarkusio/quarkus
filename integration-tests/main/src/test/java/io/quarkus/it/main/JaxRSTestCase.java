@@ -8,8 +8,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.StringWriter;
 import java.util.zip.GZIPOutputStream;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Marshaller;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.Marshaller;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;

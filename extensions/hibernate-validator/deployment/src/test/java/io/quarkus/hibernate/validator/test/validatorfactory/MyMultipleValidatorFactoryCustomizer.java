@@ -1,8 +1,8 @@
 package io.quarkus.hibernate.validator.test.validatorfactory;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.validation.constraints.Email;
-import javax.validation.constraints.Min;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Min;
 
 import org.hibernate.validator.BaseHibernateValidatorConfiguration;
 import org.hibernate.validator.cfg.ConstraintMapping;

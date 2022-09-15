@@ -5,7 +5,7 @@ import static io.restassured.RestAssured.when;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

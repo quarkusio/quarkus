@@ -1,9 +1,9 @@
 package io.quarkus.hibernate.orm.sql_load_script;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.hibernate.orm.MyEntity;
 

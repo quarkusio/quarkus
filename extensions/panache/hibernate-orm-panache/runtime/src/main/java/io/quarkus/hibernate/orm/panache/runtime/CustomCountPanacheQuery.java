@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.orm.panache.runtime;
 
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 
 import org.hibernate.query.internal.QueryImpl;
 

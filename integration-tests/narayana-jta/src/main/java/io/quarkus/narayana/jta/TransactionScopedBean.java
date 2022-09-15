@@ -2,9 +2,9 @@ package io.quarkus.narayana.jta;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.transaction.TransactionScoped;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.transaction.TransactionScoped;
 
 @TransactionScoped
 public class TransactionScopedBean {

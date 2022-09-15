@@ -117,8 +117,8 @@ The default object lifecycle for a Funqy class is `@Dependent`.
 ----
 import io.quarkus.funqy.Funq;
 
-import javax.inject.Inject;
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class GreetingFunction {

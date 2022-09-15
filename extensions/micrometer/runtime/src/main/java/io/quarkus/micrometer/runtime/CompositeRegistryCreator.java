@@ -1,9 +1,9 @@
 package io.quarkus.micrometer.runtime;
 
-import static javax.interceptor.Interceptor.Priority.PLATFORM_AFTER;
+import static jakarta.interceptor.Interceptor.Priority.PLATFORM_AFTER;
 
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;

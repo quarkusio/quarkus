@@ -4,7 +4,7 @@ import static io.quarkus.smallrye.graphql.deployment.AbstractGraphQLTest.MEDIATY
 
 import java.util.concurrent.CompletionStage;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;

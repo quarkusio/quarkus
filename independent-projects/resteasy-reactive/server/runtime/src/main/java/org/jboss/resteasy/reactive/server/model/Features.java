@@ -1,9 +1,9 @@
 package org.jboss.resteasy.reactive.server.model;
 
+import jakarta.ws.rs.core.Feature;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-import javax.ws.rs.core.Feature;
 import org.jboss.resteasy.reactive.common.model.ResourceFeature;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 

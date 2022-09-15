@@ -1,6 +1,6 @@
 package io.quarkus.deployment.recording;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 public class TestRecorderWithNonSerializableInjectedInConstructor {
 

@@ -1,6 +1,6 @@
 package io.quarkus.smallrye.faulttolerance.test.timeout;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.faulttolerance.Timeout;
 

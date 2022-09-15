@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 /**
  * Very simple reusable tests that simply check that persistence doesn't seem to explode.

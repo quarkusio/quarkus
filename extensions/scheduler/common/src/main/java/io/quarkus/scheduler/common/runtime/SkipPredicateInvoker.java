@@ -3,7 +3,7 @@ package io.quarkus.scheduler.common.runtime;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import javax.enterprise.event.Event;
+import jakarta.enterprise.event.Event;
 
 import org.jboss.logging.Logger;
 

@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.vertx.test.customproviders;
 
-import javax.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 
 public class MetalFilter {

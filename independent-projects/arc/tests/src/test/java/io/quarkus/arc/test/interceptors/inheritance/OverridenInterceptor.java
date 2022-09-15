@@ -1,7 +1,7 @@
 package io.quarkus.arc.test.interceptors.inheritance;
 
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.InvocationContext;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.InvocationContext;
 
 public class OverridenInterceptor {
 

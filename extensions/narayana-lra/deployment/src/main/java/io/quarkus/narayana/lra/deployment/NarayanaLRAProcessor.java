@@ -33,7 +33,7 @@ import io.quarkus.narayana.lra.runtime.NarayanaLRARecorder;
 
 class NarayanaLRAProcessor {
 
-    private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
+    private static final DotName PATH = DotName.createSimple("jakarta.ws.rs.Path");
 
     @BuildStep
     void registerFeature(BuildProducer<FeatureBuildItem> feature, Capabilities capabilities) {

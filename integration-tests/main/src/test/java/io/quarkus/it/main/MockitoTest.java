@@ -2,7 +2,7 @@ package io.quarkus.it.main;
 
 import static org.mockito.Mockito.mock;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;

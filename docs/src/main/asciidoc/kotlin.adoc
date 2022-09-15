@@ -43,10 +43,10 @@ The addition of `resteasy-reactive-jackson` in the extension list results in imp
 ----
 package org.acme
 
-import javax.ws.rs.GET
-import javax.ws.rs.Path
-import javax.ws.rs.Produces
-import javax.ws.rs.core.MediaType
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.Produces
+import jakarta.ws.rs.core.MediaType
 
 @Path("/hello")
 class ReactiveGreetingResource {
@@ -73,9 +73,9 @@ We also update the `ReactiveGreetingResource` class like so:
 
 [source,kotlin]
 ----
-import javax.ws.rs.GET
-import javax.ws.rs.Path
-import javax.ws.rs.core.MediaType
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.core.MediaType
 
 @Path("/hello")
 class GreetingResource {
@@ -153,7 +153,7 @@ The generated `pom.xml` contains the following modifications compared to its cou
 
         <pluginOptions>
             <!-- Each annotation is placed on its own line -->
-            <option>all-open:annotation=javax.ws.rs.Path</option>
+            <option>all-open:annotation=jakarta.ws.rs.Path</option>
         </pluginOptions>
     </configuration>
 
@@ -174,10 +174,10 @@ In order to understand why this plugin is needed, first we need to note that by 
 Having `final` classes however does not work well with various frameworks that need to create https://docs.oracle.com/javase/8/docs/technotes/guides/reflection/proxy.html[Dynamic Proxies].
 
 Thus, the `all-open` Kotlin compiler plugin allows us to configure the compiler to *not* mark as `final` classes that have certain annotations. In the snippet above,
-we have specified that classes annotated with `javax.ws.rs.Path` should not be `final`.
+we have specified that classes annotated with `jakarta.ws.rs.Path` should not be `final`.
 
-If your application contains Kotlin classes annotated with `javax.enterprise.context.ApplicationScoped`
-for example, then `<option>all-open:annotation=javax.enterprise.context.ApplicationScoped</option>` needs to be added as well. Same goes for any class that needs to have a dynamic proxy created at runtime.
+If your application contains Kotlin classes annotated with `jakarta.enterprise.context.ApplicationScoped`
+for example, then `<option>all-open:annotation=jakarta.enterprise.context.ApplicationScoped</option>` needs to be added as well. Same goes for any class that needs to have a dynamic proxy created at runtime.
 
 Future versions of Quarkus will configure the Kotlin compiler plugin in a way that will make it unnecessary to alter this configuration.
 
@@ -229,8 +229,8 @@ java {
 }
 
 allOpen { // <2>
-    annotation("javax.ws.rs.Path")
-    annotation("javax.enterprise.context.ApplicationScoped")
+    annotation("jakarta.ws.rs.Path")
+    annotation("jakarta.enterprise.context.ApplicationScoped")
     annotation("io.quarkus.test.junit.QuarkusTest")
 }
 
@@ -297,8 +297,8 @@ java {
 }
 
 allOpen { // <2>
-    annotation("javax.ws.rs.Path")
-    annotation("javax.enterprise.context.ApplicationScoped")
+    annotation("jakarta.ws.rs.Path")
+    annotation("jakarta.enterprise.context.ApplicationScoped")
     annotation("io.quarkus.test.junit.QuarkusTest")
 }
 
@@ -518,14 +518,14 @@ In the example below, this can be easily solved by adapting the annotation, addi
 
 [source,kotlin]
 ----
-import javax.inject.Inject
-import javax.enterprise.inject.Default
-import javax.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
+import jakarta.enterprise.inject.Default
+import jakarta.enterprise.context.ApplicationScoped
 
-import javax.ws.rs.GET
-import javax.ws.rs.Path
-import javax.ws.rs.Produces
-import javax.ws.rs.core.MediaType
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.Produces
+import jakarta.ws.rs.core.MediaType
 
 
 
@@ -560,12 +560,12 @@ Alternatively, prefer the use of constructor injection which works without modif
 
 [source,kotlin]
 ----
-import javax.enterprise.context.ApplicationScoped
+import jakarta.enterprise.context.ApplicationScoped
 
-import javax.ws.rs.GET
-import javax.ws.rs.Path
-import javax.ws.rs.Produces
-import javax.ws.rs.core.MediaType
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.Produces
+import jakarta.ws.rs.core.MediaType
 
 @ApplicationScoped
 class GreetingService {

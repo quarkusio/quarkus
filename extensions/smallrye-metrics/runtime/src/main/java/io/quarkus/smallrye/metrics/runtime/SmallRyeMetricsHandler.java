@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 

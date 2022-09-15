@@ -1,6 +1,6 @@
 package io.quarkus.it.jpa.h2;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 /**
  * This entity isn't directly referenced: its mere presence is

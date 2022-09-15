@@ -3,7 +3,7 @@ package io.quarkus.resteasy.common.runtime;
 import java.lang.reflect.Constructor;
 import java.util.function.Supplier;
 
-import javax.ws.rs.WebApplicationException;
+import jakarta.ws.rs.WebApplicationException;
 
 import org.jboss.resteasy.spi.ApplicationException;
 import org.jboss.resteasy.spi.ConstructorInjector;

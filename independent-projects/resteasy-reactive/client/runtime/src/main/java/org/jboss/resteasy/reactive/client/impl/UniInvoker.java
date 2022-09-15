@@ -1,11 +1,11 @@
 package org.jboss.resteasy.reactive.client.impl;
 
 import io.smallrye.mutiny.Uni;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.Response;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.Response;
 
 public class UniInvoker extends AbstractRxInvoker<Uni<?>> {
 

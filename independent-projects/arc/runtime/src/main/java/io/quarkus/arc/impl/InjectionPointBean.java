@@ -1,9 +1,9 @@
 package io.quarkus.arc.impl;
 
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.spi.InjectionPoint;
 import java.lang.reflect.Type;
 import java.util.Set;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.InjectionPoint;
 
 public class InjectionPointBean extends BuiltInBean<InjectionPoint> {
     private static final Set<Type> IP_TYPES = Set.of(InjectionPoint.class, Object.class);

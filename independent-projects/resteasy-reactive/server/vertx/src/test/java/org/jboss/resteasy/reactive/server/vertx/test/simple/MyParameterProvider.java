@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
+import jakarta.ws.rs.ext.ParamConverter;
+import jakarta.ws.rs.ext.ParamConverterProvider;
+import jakarta.ws.rs.ext.Provider;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import javax.ws.rs.ext.ParamConverter;
-import javax.ws.rs.ext.ParamConverterProvider;
-import javax.ws.rs.ext.Provider;
 
 @Provider
 public class MyParameterProvider implements ParamConverterProvider {

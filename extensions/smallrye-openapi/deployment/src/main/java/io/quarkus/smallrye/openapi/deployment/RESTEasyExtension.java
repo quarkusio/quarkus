@@ -16,7 +16,7 @@ import io.smallrye.openapi.runtime.scanner.AnnotationScannerExtension;
 
 public class RESTEasyExtension implements AnnotationScannerExtension {
 
-    private static final DotName DOTNAME_PROVIDER = DotName.createSimple("javax.ws.rs.ext.Provider");
+    private static final DotName DOTNAME_PROVIDER = DotName.createSimple("jakarta.ws.rs.ext.Provider");
     private static final DotName DOTNAME_ASYNC_RESPONSE_PROVIDER = DotName
             .createSimple("org.jboss.resteasy.spi.AsyncResponseProvider");
 
@@ -35,7 +35,7 @@ public class RESTEasyExtension implements AnnotationScannerExtension {
                     Thread.currentThread().getContextClassLoader());
             // can't use the ServiceLoader API because Providers is not an interface
             for (String provider : ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
-                    "META-INF/services/javax.ws.rs.ext.Providers")) {
+                    "META-INF/services/jakarta.ws.rs.ext.Providers")) {
                 scanAsyncResponseProvidersFromClassName(asyncResponseProvider, provider);
             }
         } catch (IOException e) {

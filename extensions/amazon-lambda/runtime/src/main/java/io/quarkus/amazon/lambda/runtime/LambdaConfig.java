@@ -10,7 +10,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class LambdaConfig {
 
     /**
-     * The handler name. Handler names are specified on handler classes using the {@link @javax.inject.Named} annotation.
+     * The handler name. Handler names are specified on handler classes using the {@link @jakarta.inject.Named} annotation.
      *
      * If this name is unspecified and there is exactly one unnamed implementation of
      * {@link com.amazonaws.services.lambda.runtime.RequestHandler}

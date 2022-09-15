@@ -3,8 +3,8 @@ package io.quarkus.kafka.client.runtime;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.config.Config;
 

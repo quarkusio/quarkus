@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.server.model;
 
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.ResponseBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.server.handlers.PublisherResponseHandler;

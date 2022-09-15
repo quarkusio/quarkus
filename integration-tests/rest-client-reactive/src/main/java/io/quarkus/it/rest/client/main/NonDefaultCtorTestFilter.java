@@ -1,7 +1,7 @@
 package io.quarkus.it.rest.client.main;
 
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

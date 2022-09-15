@@ -1,7 +1,7 @@
 package io.quarkus.it.keycloak;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("/api")
 public class PublicResource {

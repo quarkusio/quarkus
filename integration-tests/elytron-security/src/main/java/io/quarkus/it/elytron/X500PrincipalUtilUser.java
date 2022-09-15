@@ -2,9 +2,10 @@ package io.quarkus.it.elytron;
 
 import java.security.Principal;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
 import javax.security.auth.x500.X500Principal;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 
 import org.wildfly.security.x500.util.X500PrincipalUtil;
 

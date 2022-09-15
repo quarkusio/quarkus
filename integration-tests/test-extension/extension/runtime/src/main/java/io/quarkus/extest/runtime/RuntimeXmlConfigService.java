@@ -33,7 +33,7 @@ public class RuntimeXmlConfigService {
     public void startService() throws IOException {
         log.infof("startService, config: %s", config);
         try {
-            log.infof("Class.forName(XmlRootElement): %s", Class.forName("javax.xml.bind.annotation.XmlRootElement"));
+            log.infof("Class.forName(XmlRootElement): %s", Class.forName("jakarta.xml.bind.annotation.XmlRootElement"));
         } catch (Exception e) {
             log.info("Failed to load XmlRootElement", e);
         }

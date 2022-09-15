@@ -1,7 +1,7 @@
 package org.acme.level2.submodule;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.acme.level1.Level1Service;
 

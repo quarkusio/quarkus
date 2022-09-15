@@ -1,8 +1,8 @@
 package io.quarkus.hibernate.validator.test.validatorfactory;
 
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
-import javax.validation.constraints.Email;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
+import jakarta.validation.constraints.Email;
 
 public class MyEmailValidator implements ConstraintValidator<Email, CharSequence> {
     @Override

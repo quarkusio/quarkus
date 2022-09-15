@@ -2,8 +2,8 @@ package io.quarkus.smallrye.opentracing.deployment;
 
 import java.lang.reflect.Method;
 
-import javax.enterprise.inject.spi.ObserverMethod;
-import javax.servlet.DispatcherType;
+import jakarta.enterprise.inject.spi.ObserverMethod;
+import jakarta.servlet.DispatcherType;
 
 import io.opentracing.Tracer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;

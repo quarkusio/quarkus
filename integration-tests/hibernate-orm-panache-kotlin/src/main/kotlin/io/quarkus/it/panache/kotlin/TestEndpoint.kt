@@ -5,6 +5,19 @@ import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
 import io.quarkus.panache.common.exception.PanacheQueryException
+import jakarta.inject.Inject
+import jakarta.persistence.LockModeType
+import jakarta.persistence.NoResultException
+import jakarta.persistence.NonUniqueResultException
+import jakarta.persistence.PersistenceException
+import jakarta.transaction.Transactional
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.Produces
+import jakarta.ws.rs.core.MediaType
+import jakarta.xml.bind.annotation.XmlAttribute
+import jakarta.xml.bind.annotation.XmlElements
+import jakarta.xml.bind.annotation.XmlTransient
 import org.hibernate.engine.spi.SelfDirtinessTracker
 import org.hibernate.jpa.QueryHints
 import org.junit.jupiter.api.Assertions
@@ -15,19 +28,6 @@ import java.lang.reflect.Method
 import java.util.UUID
 import java.util.stream.Collectors
 import java.util.stream.Stream
-import javax.inject.Inject
-import javax.persistence.LockModeType
-import javax.persistence.NoResultException
-import javax.persistence.NonUniqueResultException
-import javax.persistence.PersistenceException
-import javax.transaction.Transactional
-import javax.ws.rs.GET
-import javax.ws.rs.Path
-import javax.ws.rs.Produces
-import javax.ws.rs.core.MediaType
-import javax.xml.bind.annotation.XmlAttribute
-import javax.xml.bind.annotation.XmlElements
-import javax.xml.bind.annotation.XmlTransient
 
 /**
  * Various tests covering Panache functionality. All tests should work in both standard JVM and in native mode.

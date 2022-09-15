@@ -5,7 +5,7 @@ import java.sql.SQLException;
 import java.util.Locale;
 import java.util.Optional;
 
-import javax.enterprise.inject.Default;
+import jakarta.enterprise.inject.Default;
 
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.jboss.logging.Logger;

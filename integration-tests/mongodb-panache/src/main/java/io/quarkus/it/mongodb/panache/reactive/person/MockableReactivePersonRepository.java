@@ -2,7 +2,7 @@ package io.quarkus.it.mongodb.panache.reactive.person;
 
 import java.util.List;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepositoryBase;
 import io.quarkus.panache.common.Sort;

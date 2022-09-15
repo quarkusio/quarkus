@@ -23,9 +23,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Unmarshaller;
 
 import org.jboss.logging.Logger;
 

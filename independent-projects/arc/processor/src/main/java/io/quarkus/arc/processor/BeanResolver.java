@@ -1,8 +1,8 @@
 package io.quarkus.arc.processor;
 
+import jakarta.enterprise.inject.AmbiguousResolutionException;
 import java.util.Collections;
 import java.util.Set;
-import javax.enterprise.inject.AmbiguousResolutionException;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.Type;
 

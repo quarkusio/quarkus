@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.server;
 
+import jakarta.ws.rs.container.ResourceInfo;
 import java.lang.reflect.Method;
-import javax.ws.rs.container.ResourceInfo;
 
 /**
  * Type that can be injected into places where ResourceInfo can.

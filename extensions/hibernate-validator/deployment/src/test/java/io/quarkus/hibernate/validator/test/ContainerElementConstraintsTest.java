@@ -7,9 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Inject;
-import javax.validation.ValidatorFactory;
-import javax.validation.constraints.NotBlank;
+import jakarta.inject.Inject;
+import jakarta.validation.ValidatorFactory;
+import jakarta.validation.constraints.NotBlank;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;

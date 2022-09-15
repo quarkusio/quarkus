@@ -1,8 +1,8 @@
 package io.quarkus.arc.impl;
 
 import io.quarkus.arc.InjectableReferenceProvider;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.spi.BeanManager;
 
 /**
  * {@link BeanManager} provider.

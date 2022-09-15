@@ -1,8 +1,8 @@
 package io.quarkus.test.devconsole;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.inject.Named;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Named;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;

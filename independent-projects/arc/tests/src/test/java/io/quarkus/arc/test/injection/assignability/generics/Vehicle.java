@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.injection.assignability.generics;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 public abstract class Vehicle<T extends Engine> {
 

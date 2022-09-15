@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.runtime.websocket;
 
-import javax.ws.rs.container.CompletionCallback;
+import jakarta.ws.rs.container.CompletionCallback;
 
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;

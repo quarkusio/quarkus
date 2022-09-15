@@ -7,7 +7,7 @@
     <parent>
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>999-jakarta-SNAPSHOT</version>
     </parent>
 
     <artifactId>quarkus-integration-test-kotlin-serialization</artifactId>
@@ -22,7 +22,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-reactive-kotlin-serialization</artifactId>
-            <version>999-SNAPSHOT</version>
+            <version>999-jakarta-SNAPSHOT</version>
         </dependency>
 
         <dependency>

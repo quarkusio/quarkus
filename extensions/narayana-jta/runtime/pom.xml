@@ -5,7 +5,7 @@
     <parent>
         <artifactId>quarkus-narayana-jta-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>999-jakarta-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -58,11 +58,11 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.narayana.jta</groupId>
-            <artifactId>narayana-jta</artifactId>
+            <artifactId>narayana-jta-jakarta</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.narayana.jts</groupId>
-            <artifactId>narayana-jts-integration</artifactId>
+            <artifactId>narayana-jts-integration-jakarta</artifactId>
         </dependency>
     </dependencies>
 

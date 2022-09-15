@@ -2,6 +2,10 @@ package org.jboss.resteasy.reactive.server.core.startup;
 
 import static org.jboss.resteasy.reactive.common.util.DeploymentUtils.loadClass;
 
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Feature;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,10 +16,6 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Feature;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceFeature;

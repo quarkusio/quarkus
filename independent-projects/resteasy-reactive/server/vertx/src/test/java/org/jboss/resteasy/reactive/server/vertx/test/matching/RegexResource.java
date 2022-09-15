@@ -1,8 +1,8 @@
 package org.jboss.resteasy.reactive.server.vertx.test.matching;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 
 @Path("/regex")
 public class RegexResource {

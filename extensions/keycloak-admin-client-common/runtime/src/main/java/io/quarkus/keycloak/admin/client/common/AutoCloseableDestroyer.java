@@ -2,7 +2,7 @@ package io.quarkus.keycloak.admin.client.common;
 
 import java.util.Map;
 
-import javax.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.context.spi.CreationalContext;
 
 import io.quarkus.arc.BeanDestroyer;
 

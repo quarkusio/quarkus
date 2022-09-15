@@ -1,6 +1,6 @@
 package io.quarkus.it.micrometer.mpmetrics;
 
-import javax.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.RequestScoped;
 
 import org.eclipse.microprofile.metrics.annotation.Counted;
 

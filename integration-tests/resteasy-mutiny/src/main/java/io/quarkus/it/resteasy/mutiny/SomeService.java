@@ -3,9 +3,9 @@ package io.quarkus.it.resteasy.mutiny;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;

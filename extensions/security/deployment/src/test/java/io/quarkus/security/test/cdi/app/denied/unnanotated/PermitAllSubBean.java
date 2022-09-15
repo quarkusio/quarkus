@@ -1,7 +1,7 @@
 package io.quarkus.security.test.cdi.app.denied.unnanotated;
 
-import javax.annotation.security.DenyAll;
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.annotation.security.DenyAll;
+import jakarta.enterprise.context.ApplicationScoped;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com

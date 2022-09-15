@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;

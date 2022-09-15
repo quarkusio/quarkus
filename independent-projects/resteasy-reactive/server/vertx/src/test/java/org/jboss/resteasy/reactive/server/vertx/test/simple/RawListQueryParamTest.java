@@ -1,9 +1,9 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
 import io.restassured.RestAssured;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import java.util.List;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;

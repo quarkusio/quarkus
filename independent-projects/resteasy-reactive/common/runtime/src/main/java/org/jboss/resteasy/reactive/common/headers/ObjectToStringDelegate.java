@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.common.headers;
 
+import jakarta.ws.rs.ext.RuntimeDelegate;
 import java.util.Objects;
-import javax.ws.rs.ext.RuntimeDelegate;
 
 public class ObjectToStringDelegate implements RuntimeDelegate.HeaderDelegate<Object> {
     public static final ObjectToStringDelegate INSTANCE = new ObjectToStringDelegate();

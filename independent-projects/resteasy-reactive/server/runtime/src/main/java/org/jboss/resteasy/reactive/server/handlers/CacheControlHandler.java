@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
-import javax.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.HttpHeaders;
 import org.jboss.resteasy.reactive.common.util.ExtendedCacheControl;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;

@@ -3,8 +3,8 @@ package io.quarkus.spring.boot.properties.runtime;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Qualifier;
+import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.inject.Qualifier;
 
 /**
  * This annotation is added as a qualifier to bean producer methods that produce @ConfigProperties beans

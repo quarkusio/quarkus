@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource;
 
-import javax.ws.rs.PUT;
+import jakarta.ws.rs.PUT;
 
 public interface ParameterSubResInternalInterface<T extends Number> {
     @PUT

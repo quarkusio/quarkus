@@ -1,11 +1,11 @@
 package org.jboss.resteasy.reactive.common.jaxrs;
 
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Variant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Variant;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>

@@ -9,7 +9,7 @@ public interface ContextInstanceHandle<T> extends InstanceHandle<T> {
 
     /**
      * Destroy the instance as defined by
-     * {@link javax.enterprise.context.spi.Contextual#destroy(Object, javax.enterprise.context.spi.CreationalContext)}.
+     * {@link jakarta.enterprise.context.spi.Contextual#destroy(Object, jakarta.enterprise.context.spi.CreationalContext)}.
      */
     void destroy();
 

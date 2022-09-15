@@ -1,6 +1,6 @@
 package io.quarkus.it.arc.interceptor;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class SimpleBean {

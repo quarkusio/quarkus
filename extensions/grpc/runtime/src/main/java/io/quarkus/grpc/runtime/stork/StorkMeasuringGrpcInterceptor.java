@@ -2,8 +2,8 @@ package io.quarkus.grpc.runtime.stork;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.spi.Prioritized;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.Prioritized;
 
 import io.grpc.CallOptions;
 import io.grpc.Channel;

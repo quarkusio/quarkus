@@ -11,8 +11,8 @@ import java.lang.annotation.Target;
 import java.util.Collections;
 import java.util.function.Consumer;
 
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.Path;
 
 import org.hamcrest.Matchers;
 import org.jboss.jandex.AnnotationInstance;

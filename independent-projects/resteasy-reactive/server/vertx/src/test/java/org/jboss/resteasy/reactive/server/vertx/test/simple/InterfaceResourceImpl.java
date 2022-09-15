@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 public class InterfaceResourceImpl implements InterfaceResource {
 

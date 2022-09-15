@@ -26,8 +26,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.CreationException;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.CreationException;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigValue;

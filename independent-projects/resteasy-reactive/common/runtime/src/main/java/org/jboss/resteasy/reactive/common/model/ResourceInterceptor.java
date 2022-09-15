@@ -1,8 +1,8 @@
 package org.jboss.resteasy.reactive.common.model;
 
+import jakarta.ws.rs.Priorities;
 import java.util.Collections;
 import java.util.Set;
-import javax.ws.rs.Priorities;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class ResourceInterceptor<T>

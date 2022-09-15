@@ -1,8 +1,8 @@
 package io.quarkus.kubernetes.client.runtime;
 
-import javax.annotation.PreDestroy;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;

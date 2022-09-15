@@ -3,7 +3,7 @@ package io.quarkus.hibernate.orm.panache.runtime;
 import java.util.List;
 import java.util.stream.Stream;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 

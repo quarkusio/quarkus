@@ -2,10 +2,10 @@ package io.quarkus.hibernate.reactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.inject.Inject;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import jakarta.inject.Inject;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
@@ -39,8 +39,8 @@ public class MultiLineImportTest {
     @Table(name = "hero")
     public static class Hero {
 
-        @javax.persistence.Id
-        @javax.persistence.GeneratedValue
+        @jakarta.persistence.Id
+        @jakarta.persistence.GeneratedValue
         public java.lang.Long id;
 
         @Column(unique = true)

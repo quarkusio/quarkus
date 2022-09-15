@@ -2,10 +2,10 @@ package io.quarkus.restclient.jsonb.deployment;
 
 import java.time.ZonedDateTime;
 
-import javax.inject.Inject;
-import javax.json.bind.Jsonb;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.json.bind.Jsonb;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("/hello")
 public class HelloResource {

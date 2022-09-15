@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Request;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Request;
 
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.TemplateException;
@@ -36,12 +36,12 @@ final class Util {
         Object variantsAttr = result.getAttribute(TemplateInstance.VARIANTS);
         if (variantsAttr != null) {
             List<Variant> quteVariants = (List<Variant>) variantsAttr;
-            List<javax.ws.rs.core.Variant> jaxRsVariants = new ArrayList<>(quteVariants.size());
+            List<jakarta.ws.rs.core.Variant> jaxRsVariants = new ArrayList<>(quteVariants.size());
             for (Variant variant : quteVariants) {
-                jaxRsVariants.add(new javax.ws.rs.core.Variant(MediaType.valueOf(variant.getMediaType()), variant.getLocale(),
+                jaxRsVariants.add(new jakarta.ws.rs.core.Variant(MediaType.valueOf(variant.getMediaType()), variant.getLocale(),
                         variant.getEncoding()));
             }
-            javax.ws.rs.core.Variant selected = request
+            jakarta.ws.rs.core.Variant selected = request
                     .selectVariant(jaxRsVariants);
 
             if (selected != null) {

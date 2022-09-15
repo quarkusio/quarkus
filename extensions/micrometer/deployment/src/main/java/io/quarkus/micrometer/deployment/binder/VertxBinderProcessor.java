@@ -2,7 +2,7 @@ package io.quarkus.micrometer.deployment.binder;
 
 import java.util.function.BooleanSupplier;
 
-import javax.interceptor.Interceptor;
+import jakarta.interceptor.Interceptor;
 
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;

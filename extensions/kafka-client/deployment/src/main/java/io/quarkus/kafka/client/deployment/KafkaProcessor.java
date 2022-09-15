@@ -471,7 +471,7 @@ public class KafkaProcessor {
                 "io.quarkus.jackson.ObjectMapperProducer",
                 "com.fasterxml.jackson.databind.ObjectMapper",
                 "io.quarkus.jsonb.JsonbProducer",
-                "javax.json.bind.Jsonb");
+                "jakarta.json.bind.Jsonb");
     }
 
     @BuildStep

@@ -8,8 +8,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import javax.persistence.EntityManager;
-import javax.persistence.LockModeType;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;

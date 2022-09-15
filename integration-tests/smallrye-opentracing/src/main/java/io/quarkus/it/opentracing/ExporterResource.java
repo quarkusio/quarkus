@@ -3,9 +3,9 @@ package io.quarkus.it.opentracing;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;

@@ -1,6 +1,6 @@
 package io.quarkus.it.mongodb;
 
-import javax.json.bind.Jsonb;
+import jakarta.json.bind.Jsonb;
 
 import org.bson.codecs.Codec;
 import org.bson.codecs.configuration.CodecProvider;

@@ -440,7 +440,7 @@ The following method return types are supported:
 === Controller method parameter types
 
 In addition to the method parameters that can be annotated with the appropriate Spring Web annotations from the previous table,
-`javax.servlet.http.HttpServletRequest` and `javax.servlet.http.HttpServletResponse` are also supported.
+`jakarta.servlet.http.HttpServletRequest` and `jakarta.servlet.http.HttpServletResponse` are also supported.
 For this to function however, users need to add the `quarkus-undertow` dependency.
 
 === Exception handler method return types
@@ -513,7 +513,7 @@ The following table shows how Spring Web annotations can be converted to JAX-RS 
 
 |@ExceptionHandler
 |
-|No equivalent annotation in JAX-RS. Exceptions are handled by implementing `javax.ws.rs.ext.ExceptionMapper`
+|No equivalent annotation in JAX-RS. Exceptions are handled by implementing `jakarta.ws.rs.ext.ExceptionMapper`
 |===
 
 == More Spring guides

@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.sql_load_script;
 
-import javax.persistence.PersistenceException;
+import jakarta.persistence.PersistenceException;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

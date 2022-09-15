@@ -2,7 +2,7 @@ package io.quarkus.it.rest.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.ClientBuilder;
 
 import org.junit.jupiter.api.Test;
 

@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.test.ArcTestContainer;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.spi.DeploymentException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 

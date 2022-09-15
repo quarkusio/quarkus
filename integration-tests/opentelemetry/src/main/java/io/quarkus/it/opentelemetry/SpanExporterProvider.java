@@ -1,8 +1,8 @@
 package io.quarkus.it.opentelemetry;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 

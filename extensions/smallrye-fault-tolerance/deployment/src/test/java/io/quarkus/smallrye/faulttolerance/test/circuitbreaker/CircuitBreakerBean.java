@@ -2,7 +2,7 @@ package io.quarkus.smallrye.faulttolerance.test.circuitbreaker;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
 

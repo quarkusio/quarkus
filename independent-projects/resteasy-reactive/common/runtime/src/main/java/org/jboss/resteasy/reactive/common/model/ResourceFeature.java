@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.common.model;
 
-import javax.ws.rs.core.Feature;
+import jakarta.ws.rs.core.Feature;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class ResourceFeature {

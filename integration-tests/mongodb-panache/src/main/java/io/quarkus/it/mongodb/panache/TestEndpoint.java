@@ -2,8 +2,8 @@ package io.quarkus.it.mongodb.panache;
 
 import java.lang.reflect.Method;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.junit.jupiter.api.Assertions;
 

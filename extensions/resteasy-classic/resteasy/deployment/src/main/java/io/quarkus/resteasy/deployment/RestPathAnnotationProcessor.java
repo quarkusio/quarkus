@@ -27,7 +27,7 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 
 public class RestPathAnnotationProcessor {
 
-    static final DotName REST_PATH = DotName.createSimple("javax.ws.rs.Path");
+    static final DotName REST_PATH = DotName.createSimple("jakarta.ws.rs.Path");
     static final DotName REGISTER_REST_CLIENT = DotName
             .createSimple("org.eclipse.microprofile.rest.client.inject.RegisterRestClient");
     static final DotName TEMPLATE_PATH = DotName.createSimple(QuarkusRestPathTemplate.class.getName());

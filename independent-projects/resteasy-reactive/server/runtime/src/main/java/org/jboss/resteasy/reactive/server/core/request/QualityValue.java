@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.core.request;
 
-import javax.ws.rs.BadRequestException;
+import jakarta.ws.rs.BadRequestException;
 
 /**
  * @author Pascal S. de Kloe

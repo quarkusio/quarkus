@@ -7,14 +7,14 @@ import io.quarkus.it.mongodb.panache.person.PersonRepository
 import io.quarkus.mongodb.panache.kotlin.PanacheMongoRepositoryBase
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.mockito.InjectMock
+import jakarta.inject.Inject
+import jakarta.ws.rs.WebApplicationException
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.DisabledOnOs
 import org.junit.jupiter.api.condition.OS
 import org.mockito.Mockito
 import java.util.Collections
-import javax.inject.Inject
-import javax.ws.rs.WebApplicationException
 
 @QuarkusTest
 @DisabledOnOs(OS.WINDOWS)

@@ -2,7 +2,7 @@ package io.quarkus.resteasy.jaxb.deployment;
 
 import java.util.Objects;
 
-import javax.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 public class Bar {

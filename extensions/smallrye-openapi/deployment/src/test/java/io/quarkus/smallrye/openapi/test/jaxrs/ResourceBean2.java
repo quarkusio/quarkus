@@ -1,6 +1,6 @@
 package io.quarkus.smallrye.openapi.test.jaxrs;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.security.Authenticated;
 

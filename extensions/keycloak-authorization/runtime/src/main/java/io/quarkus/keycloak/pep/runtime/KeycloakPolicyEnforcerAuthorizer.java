@@ -6,10 +6,10 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.keycloak.AuthorizationContext;
 import org.keycloak.adapters.authorization.KeycloakAdapterPolicyEnforcer;

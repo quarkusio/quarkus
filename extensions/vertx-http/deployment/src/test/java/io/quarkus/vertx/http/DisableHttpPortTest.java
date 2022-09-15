@@ -7,8 +7,8 @@ import static org.hamcrest.core.Is.is;
 
 import java.io.File;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;

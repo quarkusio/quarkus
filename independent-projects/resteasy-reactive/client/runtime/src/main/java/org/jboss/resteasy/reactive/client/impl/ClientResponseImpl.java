@@ -1,11 +1,11 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import jakarta.ws.rs.ProcessingException;
+import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 

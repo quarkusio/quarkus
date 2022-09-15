@@ -7,8 +7,8 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import javax.servlet.DispatcherType;
-import javax.ws.rs.core.Application;
+import jakarta.servlet.DispatcherType;
+import jakarta.ws.rs.core.Application;
 
 import org.jboss.logging.Logger;
 import org.jboss.metadata.web.spec.ServletMappingMetaData;

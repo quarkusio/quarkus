@@ -6,7 +6,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;

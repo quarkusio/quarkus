@@ -1,7 +1,7 @@
 package io.quarkus.arc.test.interceptors.postConstruct.inherited;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class OriginalBean {

@@ -135,8 +135,8 @@ public class RestClientTestCase {
                 .when().get("/client/cdi/default-scope-on-interface")
                 .getBody().print();
 
-        Assertions.assertEquals("javax.inject.Singleton", responseWithSingletonScope);
-        Assertions.assertEquals("javax.enterprise.context.Dependent", responseWithDefaultScope);
+        Assertions.assertEquals("jakarta.inject.Singleton", responseWithSingletonScope);
+        Assertions.assertEquals("jakarta.enterprise.context.Dependent", responseWithDefaultScope);
     }
 
     @Test

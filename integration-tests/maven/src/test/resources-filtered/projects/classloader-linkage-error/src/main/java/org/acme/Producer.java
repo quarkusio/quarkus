@@ -1,8 +1,8 @@
 package org.acme;
 
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
-import javax.xml.bind.JAXBContext;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
+import jakarta.xml.bind.JAXBContext;
 
 public class Producer {
 

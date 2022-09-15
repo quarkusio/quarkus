@@ -2,7 +2,7 @@ package io.quarkus.arc.runtime.devconsole;
 
 import java.lang.reflect.Method;
 
-import javax.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.RequestScoped;
 
 import io.quarkus.arc.InjectableBean;
 

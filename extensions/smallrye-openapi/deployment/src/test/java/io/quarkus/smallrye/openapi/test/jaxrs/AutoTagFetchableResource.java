@@ -2,7 +2,7 @@ package io.quarkus.smallrye.openapi.test.jaxrs;
 
 import java.util.List;
 
-import javax.ws.rs.GET;
+import jakarta.ws.rs.GET;
 
 public abstract class AutoTagFetchableResource<T> implements AbstractAutoTagResource<T> {
 

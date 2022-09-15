@@ -3,8 +3,8 @@ package io.quarkus.resteasy.reactive.spi;
 import java.util.Collections;
 import java.util.List;
 
-import javax.ws.rs.Priorities;
-import javax.ws.rs.RuntimeType;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.RuntimeType;
 
 import io.quarkus.builder.item.MultiBuildItem;
 

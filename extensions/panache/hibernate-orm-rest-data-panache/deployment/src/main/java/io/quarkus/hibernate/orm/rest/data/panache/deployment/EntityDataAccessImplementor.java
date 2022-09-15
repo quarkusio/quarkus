@@ -4,7 +4,7 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.util.List;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ResultHandle;

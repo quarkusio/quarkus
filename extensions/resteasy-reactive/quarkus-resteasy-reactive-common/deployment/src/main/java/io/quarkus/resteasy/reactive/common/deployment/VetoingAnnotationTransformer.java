@@ -12,7 +12,7 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
  * If a JAX-RS resource uses something like @QueryParam, @HeaderParam or the like in a constructor parameter,
  * then we need to make sure that Arc doesn't create a bean for it automatically (as it will fail validation because
  * there is no way to pass the parameter).
- * For these resources we add {@link javax.enterprise.inject.Vetoed}, and we generate custom CDI producers under the hood
+ * For these resources we add {@link jakarta.enterprise.inject.Vetoed}, and we generate custom CDI producers under the hood
  * in {@link CustomResourceProducersGenerator#generate}.
  */
 public class VetoingAnnotationTransformer implements AnnotationsTransformer {

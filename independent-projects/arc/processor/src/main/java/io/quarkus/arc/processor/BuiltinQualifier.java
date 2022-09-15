@@ -3,9 +3,9 @@ package io.quarkus.arc.processor;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Default;
 import java.util.Collections;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Default;
 import org.jboss.jandex.AnnotationInstance;
 
 enum BuiltinQualifier {

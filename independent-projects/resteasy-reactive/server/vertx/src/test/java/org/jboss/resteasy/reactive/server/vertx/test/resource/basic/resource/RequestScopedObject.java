@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource;
 
+import jakarta.enterprise.context.RequestScoped;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.enterprise.context.RequestScoped;
 
 @RequestScoped
 public class RequestScopedObject {

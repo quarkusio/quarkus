@@ -2,13 +2,13 @@ package io.quarkus.smallrye.opentracing.runtime;
 
 import java.io.IOException;
 
-import javax.enterprise.inject.spi.CDI;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.DynamicFeature;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.FeatureContext;
-import javax.ws.rs.ext.Provider;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.DynamicFeature;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.FeatureContext;
+import jakarta.ws.rs.ext.Provider;
 
 import io.opentracing.tag.Tags;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;

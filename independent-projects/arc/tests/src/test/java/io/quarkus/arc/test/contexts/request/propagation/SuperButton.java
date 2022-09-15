@@ -1,8 +1,8 @@
 package io.quarkus.arc.test.contexts.request.propagation;
 
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.Dependent;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.Dependent;
 
 @Dependent
 public class SuperButton {

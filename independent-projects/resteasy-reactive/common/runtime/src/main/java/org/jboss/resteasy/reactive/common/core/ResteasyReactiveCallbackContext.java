@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.common.core;
 
-import javax.ws.rs.container.CompletionCallback;
-import javax.ws.rs.container.ConnectionCallback;
+import jakarta.ws.rs.container.CompletionCallback;
+import jakarta.ws.rs.container.ConnectionCallback;
 
 public interface ResteasyReactiveCallbackContext {
     public void registerCompletionCallback(CompletionCallback callback);

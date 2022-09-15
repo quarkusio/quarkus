@@ -1,7 +1,8 @@
 package io.quarkus.hibernate.orm.runtime.boot.xml;
 
-import javax.xml.bind.JAXBElement;
 import javax.xml.namespace.QName;
+
+import jakarta.xml.bind.JAXBElement;
 
 import io.quarkus.runtime.ObjectSubstitution;
 import io.quarkus.runtime.annotations.RecordableConstructor;

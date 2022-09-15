@@ -4,10 +4,10 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import java.util.Properties;
 
-import javax.annotation.Priority;
-import javax.interceptor.Interceptor;
-import javax.transaction.TransactionManager;
-import javax.transaction.TransactionScoped;
+import jakarta.annotation.Priority;
+import jakarta.interceptor.Interceptor;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.TransactionScoped;
 
 import com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean;
 import com.arjuna.ats.arjuna.recovery.TransactionStatusConnectionManager;

@@ -6,8 +6,8 @@ import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

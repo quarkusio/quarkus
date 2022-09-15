@@ -5,8 +5,8 @@ import java.lang.annotation.Annotation;
 
 /**
  * This factory can be used to create a new {@link CurrentContext} for a normal scope, e.g. for
- * {@link javax.enterprise.context.RequestScoped}. It's usually not necessary for shared contexts, such as
- * {@link javax.enterprise.context.ApplicationScoped}.
+ * {@link jakarta.enterprise.context.RequestScoped}. It's usually not necessary for shared contexts, such as
+ * {@link jakarta.enterprise.context.ApplicationScoped}.
  */
 public interface CurrentContextFactory {
 

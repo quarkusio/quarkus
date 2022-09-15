@@ -1,5 +1,10 @@
 package org.jboss.resteasy.reactive.common.jaxrs;
 
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriBuilderException;
+import jakarta.ws.rs.ext.RuntimeDelegate;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.ArrayList;
@@ -9,11 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.UriBuilderException;
-import javax.ws.rs.ext.RuntimeDelegate;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.PathHelper;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;

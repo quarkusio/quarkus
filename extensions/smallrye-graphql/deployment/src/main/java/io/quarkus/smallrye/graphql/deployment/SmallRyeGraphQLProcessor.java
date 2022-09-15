@@ -378,7 +378,7 @@ public class SmallRyeGraphQLProcessor {
         adapterClasses.addAll(
                 getAdapterClasses(index, DotName.createSimple("jakarta.json.bind.annotation.JsonbTypeAdapter")));
         adapterClasses.addAll(
-                getAdapterClasses(index, DotName.createSimple("javax.json.bind.annotation.JsonbTypeAdapter")));
+                getAdapterClasses(index, DotName.createSimple("jakarta.json.bind.annotation.JsonbTypeAdapter")));
         return adapterClasses;
     }
 

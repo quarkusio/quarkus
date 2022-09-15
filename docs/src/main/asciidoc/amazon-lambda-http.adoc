@@ -294,7 +294,7 @@ For the AWS HTTP API you can inject the AWS variables `com.amazonaws.services.la
 
 [source, java]
 ----
-import javax.ws.rs.core.Context;
+import jakarta.ws.rs.core.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 
 
@@ -318,7 +318,7 @@ For the AWS REST API you can inject the AWS variables `com.amazonaws.services.la
 
 [source, java]
 ----
-import javax.ws.rs.core.Context;
+import jakarta.ws.rs.core.Context;
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequestContext;
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
 
@@ -352,7 +352,7 @@ request that can be consumed by any HTTP framework Quarkus supports (JAX-RS, ser
 API Gateway supports many ways to securely invoke on your HTTP endpoints that are backed by Lambda and Quarkus.
 If you enable it, Quarkus will automatically parse relevant parts of the https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html[event json document]
 and look for security based metadata and register a `java.security.Principal` internally that can be looked up in JAX-RS
-by injecting a `javax.ws.rs.core.SecurityContext`, via `HttpServletRequest.getUserPrincipal()` in servlet, and `RouteContext.user()` in Reactive Routes.
+by injecting a `jakarta.ws.rs.core.SecurityContext`, via `HttpServletRequest.getUserPrincipal()` in servlet, and `RouteContext.user()` in Reactive Routes.
 If you want more security information, the `Principal` object can be typecast to
 a class that will give you more information.
 
@@ -480,7 +480,7 @@ package org.acme;
 
 import java.security.Principal;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 
@@ -511,7 +511,7 @@ package org.acme;
 
 import java.security.Principal;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
 

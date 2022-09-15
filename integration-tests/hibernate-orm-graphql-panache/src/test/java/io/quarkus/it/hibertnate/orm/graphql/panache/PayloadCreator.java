@@ -1,7 +1,7 @@
 package io.quarkus.it.hibertnate.orm.graphql.panache;
 
-import javax.json.Json;
-import javax.json.JsonObject;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
 
 public class PayloadCreator {
 

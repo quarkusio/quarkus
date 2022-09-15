@@ -41,7 +41,7 @@ public class ResteasyJaxbProcessor {
             if (!index.getAnnotations(annotation).isEmpty()) {
                 addReflectiveClass(reflectiveClass, true, true, "org.jboss.resteasy.plugins.providers.jaxb.JaxbCollection");
                 addReflectiveClass(reflectiveClass, true, true, "org.jboss.resteasy.plugins.providers.jaxb.JaxbMap");
-                addReflectiveClass(reflectiveClass, true, true, "javax.xml.bind.annotation.W3CDomHandler");
+                addReflectiveClass(reflectiveClass, true, true, "jakarta.xml.bind.annotation.W3CDomHandler");
                 break;
             }
         }

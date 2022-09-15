@@ -1,6 +1,6 @@
 package ${package};
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class ProcessingService {

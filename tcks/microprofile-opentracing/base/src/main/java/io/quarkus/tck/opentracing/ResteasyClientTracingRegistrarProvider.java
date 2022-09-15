@@ -4,8 +4,8 @@ package io.quarkus.tck.opentracing;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.enterprise.inject.spi.CDI;
-import javax.ws.rs.client.ClientBuilder;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.ws.rs.client.ClientBuilder;
 
 import org.eclipse.microprofile.opentracing.ClientTracingRegistrarProvider;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;

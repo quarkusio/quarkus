@@ -5,7 +5,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Makes it possible to register annotations that should be considered stereotypes but are not annotated with
- * {@code javax.enterprise.inject.Stereotype}.
+ * {@code jakarta.enterprise.inject.Stereotype}.
  */
 public final class StereotypeRegistrarBuildItem extends MultiBuildItem {
 

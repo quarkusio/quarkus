@@ -2,13 +2,13 @@ package io.quarkus.resteasy.reactive.server.test.providers;
 
 import java.io.IOException;
 
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.ext.Provider;
-import javax.ws.rs.ext.WriterInterceptorContext;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.ext.Provider;
+import jakarta.ws.rs.ext.WriterInterceptorContext;
 
 @WithWriterInterceptor
 @Provider
-public class WriterInterceptor implements javax.ws.rs.ext.WriterInterceptor {
+public class WriterInterceptor implements jakarta.ws.rs.ext.WriterInterceptor {
 
     @Override
     public void aroundWriteTo(WriterInterceptorContext context) throws IOException, WebApplicationException {

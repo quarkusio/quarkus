@@ -2,7 +2,7 @@ package io.quarkus.qute.runtime.extensions;
 
 import java.util.Locale;
 
-import javax.enterprise.inject.Vetoed;
+import jakarta.enterprise.inject.Vetoed;
 
 import io.quarkus.qute.TemplateExtension;
 

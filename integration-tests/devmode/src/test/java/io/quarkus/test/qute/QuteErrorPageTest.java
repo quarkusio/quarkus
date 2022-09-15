@@ -2,7 +2,7 @@ package io.quarkus.test.qute;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
-import javax.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.Response.Status;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;

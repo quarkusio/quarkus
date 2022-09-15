@@ -1,9 +1,9 @@
 package io.quarkus.arc.processor;
 
+import jakarta.enterprise.event.Reception;
+import jakarta.enterprise.event.TransactionPhase;
 import java.util.Collection;
 import java.util.Set;
-import javax.enterprise.event.Reception;
-import javax.enterprise.event.TransactionPhase;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;

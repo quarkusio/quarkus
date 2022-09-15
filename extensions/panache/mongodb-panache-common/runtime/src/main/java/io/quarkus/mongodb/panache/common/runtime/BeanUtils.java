@@ -2,7 +2,7 @@ package io.quarkus.mongodb.panache.common.runtime;
 
 import java.lang.annotation.Annotation;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;

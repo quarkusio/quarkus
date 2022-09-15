@@ -614,9 +614,9 @@ package org.acme.optaplanner.rest;
 
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 
 import org.acme.optaplanner.domain.TimeTable;
 import org.optaplanner.core.api.solver.SolverJob;
@@ -747,7 +747,7 @@ package org.acme.optaplanner.solver;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.acme.optaplanner.domain.Lesson;
@@ -815,7 +815,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.acme.optaplanner.domain.Room;
@@ -952,11 +952,11 @@ and use those accordingly:
 ----
 package org.acme.optaplanner.rest;
 
-import javax.inject.Inject;
-import javax.transaction.Transactional;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 
 import io.quarkus.panache.common.Sort;
 import org.acme.optaplanner.domain.Lesson;
@@ -1053,7 +1053,7 @@ Poll for the latest solution until the solver finishes solving:
 ----
 package org.acme.optaplanner.rest;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.acme.optaplanner.domain.Lesson;

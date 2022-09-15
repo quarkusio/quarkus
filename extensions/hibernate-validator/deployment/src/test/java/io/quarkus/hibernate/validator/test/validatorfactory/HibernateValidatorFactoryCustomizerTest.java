@@ -2,10 +2,10 @@ package io.quarkus.hibernate.validator.test.validatorfactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.inject.Inject;
-import javax.validation.ValidatorFactory;
-import javax.validation.constraints.Email;
-import javax.validation.constraints.Min;
+import jakarta.inject.Inject;
+import jakarta.validation.ValidatorFactory;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Min;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;

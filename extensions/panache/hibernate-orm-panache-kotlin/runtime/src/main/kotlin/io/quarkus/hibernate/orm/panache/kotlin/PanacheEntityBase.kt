@@ -2,7 +2,7 @@ package io.quarkus.hibernate.orm.panache.kotlin
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import io.quarkus.hibernate.orm.panache.kotlin.runtime.KotlinJpaOperations.Companion.INSTANCE
-import javax.json.bind.annotation.JsonbTransient
+import jakarta.json.bind.annotation.JsonbTransient
 
 /**
  * Represents an entity. If your Hibernate entities extend this class they gain auto-generated accessors

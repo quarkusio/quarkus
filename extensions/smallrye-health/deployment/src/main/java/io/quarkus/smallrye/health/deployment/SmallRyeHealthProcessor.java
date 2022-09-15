@@ -85,7 +85,7 @@ class SmallRyeHealthProcessor {
     private static final DotName HEALTH_GROUP = DotName.createSimple(HealthGroup.class.getName());
     private static final DotName HEALTH_GROUPS = DotName.createSimple(HealthGroups.class.getName());
     private static final DotName WELLNESS = DotName.createSimple(Wellness.class.getName());
-    private static final DotName JAX_RS_PATH = DotName.createSimple("javax.ws.rs.Path");
+    private static final DotName JAX_RS_PATH = DotName.createSimple("jakarta.ws.rs.Path");
 
     // For the UI
     private static final GACT HEALTH_UI_WEBJAR_ARTIFACT_KEY = new GACT("io.smallrye", "smallrye-health-ui", null, "jar");

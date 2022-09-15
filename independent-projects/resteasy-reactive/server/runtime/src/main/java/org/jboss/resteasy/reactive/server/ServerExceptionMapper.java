@@ -1,18 +1,18 @@
 package org.jboss.resteasy.reactive.server;
 
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.UriInfo;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.UriInfo;
 
 /**
- * When used on a method, then an implementation of {@link javax.ws.rs.ext.ExceptionMapper} is generated
+ * When used on a method, then an implementation of {@link jakarta.ws.rs.ext.ExceptionMapper} is generated
  * that calls the annotated method with the proper arguments.
  *
  * When the annotation is placed on a method that is not a JAX-RS Resource class, the method handles exceptions in global
@@ -23,7 +23,7 @@ import javax.ws.rs.core.UriInfo;
  * that JAX-RS Resource class.
  * Methods in a JAX-RS class annotated with this annotation will be used first when determining how to handle a thrown
  * exception.
- * This means that these methods take precedence over the global {@link javax.ws.rs.ext.ExceptionMapper} classes.
+ * This means that these methods take precedence over the global {@link jakarta.ws.rs.ext.ExceptionMapper} classes.
  *
  * In addition to the exception being handled, an annotated method can also declare any of the following
  * parameters (in any order):

@@ -5,13 +5,13 @@ import io.quarkus.it.panache.kotlin.AddressDao
 import io.quarkus.it.panache.kotlin.Person
 import io.quarkus.it.panache.kotlin.TestEndpoint
 import io.quarkus.test.junit.QuarkusTest
+import jakarta.inject.Inject
+import jakarta.persistence.EntityManager
 import org.hibernate.internal.SessionImpl
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 import java.sql.ResultSet
-import javax.inject.Inject
-import javax.persistence.EntityManager
 
 @QuarkusTest
 class TestEndpointRunner {

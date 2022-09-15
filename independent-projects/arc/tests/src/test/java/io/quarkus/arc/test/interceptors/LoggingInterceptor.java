@@ -1,10 +1,10 @@
 package io.quarkus.arc.test.interceptors;
 
 import io.quarkus.arc.Priority;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
 
 @Logging
 @Priority(10)

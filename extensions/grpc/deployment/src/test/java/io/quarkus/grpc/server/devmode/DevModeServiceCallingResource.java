@@ -2,8 +2,8 @@ package io.quarkus.grpc.server.devmode;
 
 import java.time.Duration;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import devmodetest.v1.DevModeService;
 import devmodetest.v1.Devmodetest;

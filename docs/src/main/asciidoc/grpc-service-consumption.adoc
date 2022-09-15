@@ -77,10 +77,10 @@ import io.smallrye.mutiny.Uni;
 
 import hello.Greeter;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/hello")
 public class ExampleResource {
@@ -106,10 +106,10 @@ import io.quarkus.grpc.GrpcClient;
 
 import hello.GreeterGrpc.GreeterBlockingStub;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/hello")
 public class ExampleResource {
@@ -153,11 +153,11 @@ import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/streaming")
 @Produces(MediaType.APPLICATION_JSON)
@@ -258,7 +258,7 @@ Headers can be useful e.g. for authentication.
 To set headers for a gRPC call, create a client with headers attached and then perform the call on this client:
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import examples.Greeter;
 import examples.HelloReply;
@@ -337,7 +337,7 @@ class MyBean {
 ----
 <1> Registers the `MySpecialInterceptor` for this particular client.
 
-When you have multiple client interceptors, you can order them by implementing the `javax.enterprise.inject.spi.Prioritized` interface:
+When you have multiple client interceptors, you can order them by implementing the `jakarta.enterprise.inject.spi.Prioritized` interface:
 
 [source, java]
 ----

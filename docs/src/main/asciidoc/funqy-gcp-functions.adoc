@@ -82,7 +82,7 @@ NOTE: Quarkus supports Cloud Functions gen 1 and gen 2. For an overview of Cloud
 
 [source,java]
 ----
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import io.cloudevents.CloudEvent;
 import io.quarkus.funqy.Funq;

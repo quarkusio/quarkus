@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.orm.deployment.test;
 
-import javax.enterprise.inject.spi.CDI;
-import javax.persistence.EntityManager;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.persistence.EntityManager;
 
 import io.quarkus.narayana.jta.runtime.test.TestTransactionCallback;
 

@@ -6,9 +6,9 @@ import static io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProduc
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.ws.rs.Priorities;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;

@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.server.model;
 
+import jakarta.ws.rs.ext.ParamConverterProvider;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
-import javax.ws.rs.ext.ParamConverterProvider;
 import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 

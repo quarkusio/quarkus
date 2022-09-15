@@ -1,8 +1,8 @@
 package io.quarkus.it.panache;
 
-import javax.transaction.Transactional;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 /**
  * Run a simple, no paged PanacheQueryTest in order to log the generated SQL.

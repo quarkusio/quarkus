@@ -1,7 +1,7 @@
 package io.quarkus.grpc.runtime.supports.context;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.spi.Prioritized;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.Prioritized;
 
 import org.jboss.logging.Logger;
 

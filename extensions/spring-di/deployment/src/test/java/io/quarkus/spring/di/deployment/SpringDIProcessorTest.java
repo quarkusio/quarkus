@@ -15,12 +15,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.spi.DefinitionException;
-import javax.inject.Named;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.spi.DefinitionException;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -169,7 +169,7 @@ class SpringDIProcessorTest {
     }
 
     /**
-     * Do not add javax.inject.Singleton, as it is not spring-specific and Arc processor already handles it.
+     * Do not add jakarta.inject.Singleton, as it is not spring-specific and Arc processor already handles it.
      * Otherwise, it would cause "declares multiple scope type annotations" error.
      */
     @Test

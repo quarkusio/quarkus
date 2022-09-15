@@ -1,7 +1,7 @@
 package io.quarkus.liquibase.runtime;
 
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.UnsatisfiedResolutionException;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;

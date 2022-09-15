@@ -3,11 +3,11 @@ package io.quarkus.arc.impl;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import jakarta.enterprise.context.Initialized;
+import jakarta.enterprise.inject.Any;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.Set;
-import javax.enterprise.context.Initialized;
-import javax.enterprise.inject.Any;
 import org.junit.jupiter.api.Test;
 
 public class QualifiersTest {

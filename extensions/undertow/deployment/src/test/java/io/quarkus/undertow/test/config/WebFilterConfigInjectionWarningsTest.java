@@ -10,17 +10,17 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 
-import javax.enterprise.inject.Instance;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.annotation.WebFilter;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.enterprise.inject.Instance;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.annotation.WebFilter;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.hamcrest.Matchers;
@@ -42,10 +42,11 @@ public class WebFilterConfigInjectionWarningsTest {
                 assertEquals(1, logRecords.size());
                 Set<String> messages = logRecords.stream().map(LogRecord::getMessage).collect(Collectors.toSet());
                 assertTrue(messages.contains(
-                        "Directly injecting a org.eclipse.microprofile.config.inject.ConfigProperty into a javax.servlet" +
+                        "Directly injecting a org.eclipse.microprofile.config.inject.ConfigProperty into a jakarta.servlet" +
                                 ".annotation.WebFilter may lead to unexpected results. To ensure proper results, please change the "
                                 +
-                                "type of the field to javax.enterprise.inject.Instance<java.lang.String>. Offending field is " +
+                                "type of the field to jakarta.enterprise.inject.Instance<java.lang.String>. Offending field is "
+                                +
                                 "'configProperty' of class 'io.quarkus.undertow.test.config" +
                                 ".WebFilterConfigInjectionWarningsTest$ConfigFilter'"));
             });

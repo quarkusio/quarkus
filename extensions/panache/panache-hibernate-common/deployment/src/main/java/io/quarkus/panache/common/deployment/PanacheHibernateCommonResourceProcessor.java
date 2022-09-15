@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.persistence.Transient;
+import jakarta.persistence.Transient;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;

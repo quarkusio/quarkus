@@ -1,6 +1,6 @@
 package io.quarkus.it.metrics.inheritance;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class InheritanceMetricsExtended extends InheritanceMetricsBase {

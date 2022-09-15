@@ -288,7 +288,7 @@ link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin re
 allows restricted resources on a web page to be requested from another domain outside the domain from which the first resource
 was served.
 
-Quarkus comes with a CORS filter which implements the `javax.servlet.Filter` interface and intercepts all incoming HTTP
+Quarkus comes with a CORS filter which implements the `jakarta.servlet.Filter` interface and intercepts all incoming HTTP
 requests. It can be enabled in the Quarkus configuration file, `src/main/resources/application.properties`:
 
 [source, properties]

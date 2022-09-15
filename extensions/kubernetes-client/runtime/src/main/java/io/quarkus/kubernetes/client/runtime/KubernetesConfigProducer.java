@@ -1,7 +1,7 @@
 package io.quarkus.kubernetes.client.runtime;
 
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import io.fabric8.kubernetes.client.Config;
 import io.quarkus.arc.DefaultBean;

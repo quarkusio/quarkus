@@ -11,7 +11,7 @@
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-revapi-config</artifactId>
     <name>Quarkus - Revapi Configuration</name>
-    <version>999-SNAPSHOT</version>    
+    <version>999-jakarta-SNAPSHOT</version>    
     <description>Contains the configuration of the Revapi API checker and the list of the API changes 
         in the Quarkus APIs.
     </description>

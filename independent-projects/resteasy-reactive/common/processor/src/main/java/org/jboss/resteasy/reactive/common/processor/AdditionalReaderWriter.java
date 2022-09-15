@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.common.processor;
 
+import jakarta.ws.rs.RuntimeType;
 import java.util.Objects;
-import javax.ws.rs.RuntimeType;
 
 public interface AdditionalReaderWriter {
 

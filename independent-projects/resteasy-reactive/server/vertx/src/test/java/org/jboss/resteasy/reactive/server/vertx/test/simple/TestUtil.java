@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
+import jakarta.ws.rs.core.Application;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -10,7 +11,6 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.ws.rs.core.Application;
 import org.jboss.logging.Logger;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ArchivePath;

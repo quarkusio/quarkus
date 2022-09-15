@@ -13,10 +13,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.Map;
 
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.inject.Inject;
-import javax.inject.Scope;
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.inject.Inject;
+import jakarta.inject.Scope;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

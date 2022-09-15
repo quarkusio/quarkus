@@ -17,7 +17,7 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 import org.hibernate.Hibernate;
 import org.jboss.jandex.AnnotationInstance;
@@ -51,7 +51,7 @@ public class HibernateOrmAnnotationsTest {
     @Test
     public void testNoMissingJpaAnnotation() {
         Set<DotName> jpaMappingAnnotations = findRuntimeAnnotations(jpaIndex);
-        jpaMappingAnnotations.removeIf(name -> name.toString().startsWith("javax.persistence.metamodel."));
+        jpaMappingAnnotations.removeIf(name -> name.toString().startsWith("jakarta.persistence.metamodel."));
 
         assertThat(HibernateOrmAnnotations.JPA_MAPPING_ANNOTATIONS)
                 .containsExactlyInAnyOrderElementsOf(jpaMappingAnnotations);

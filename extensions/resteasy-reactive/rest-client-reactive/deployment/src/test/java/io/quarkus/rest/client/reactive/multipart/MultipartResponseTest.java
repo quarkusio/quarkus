@@ -17,12 +17,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
@@ -139,7 +139,7 @@ public class MultipartResponseTest {
 
     @Test
     void shouldParseMultipartResponseWithClientBuilderApi() {
-        javax.ws.rs.client.Client client = ClientBuilder.newBuilder().build();
+        jakarta.ws.rs.client.Client client = ClientBuilder.newBuilder().build();
         MultipartDataForClientBuilder data = client.target(baseUri)
                 .path("/give-me-file")
                 .request(MediaType.MULTIPART_FORM_DATA)

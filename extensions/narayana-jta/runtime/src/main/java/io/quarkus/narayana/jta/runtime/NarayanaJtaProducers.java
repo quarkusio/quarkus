@@ -1,10 +1,10 @@
 package io.quarkus.narayana.jta.runtime;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
-import javax.transaction.TransactionSynchronizationRegistry;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
+import jakarta.transaction.TransactionSynchronizationRegistry;
 
 import org.jboss.tm.JBossXATerminator;
 import org.jboss.tm.XAResourceRecoveryRegistry;
@@ -28,7 +28,7 @@ public class NarayanaJtaProducers {
 
     @Produces
     @ApplicationScoped
-    public javax.transaction.UserTransaction userTransaction() {
+    public jakarta.transaction.UserTransaction userTransaction() {
         return UserTransaction.userTransaction();
     }
 

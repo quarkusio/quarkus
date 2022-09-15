@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.specialmappings;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 @Entity
 public class NormalPointEntity extends PointEntity {

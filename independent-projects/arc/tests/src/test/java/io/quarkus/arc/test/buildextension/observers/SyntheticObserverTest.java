@@ -9,13 +9,13 @@ import io.quarkus.arc.test.ArcTestContainer;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.literal.NamedLiteral;
+import jakarta.enterprise.inject.spi.EventContext;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.literal.NamedLiteral;
-import javax.enterprise.inject.spi.EventContext;
-import javax.inject.Named;
-import javax.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 

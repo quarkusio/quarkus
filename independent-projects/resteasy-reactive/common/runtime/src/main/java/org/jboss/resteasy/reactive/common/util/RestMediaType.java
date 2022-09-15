@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.common.util;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 /**
  * Extended media types in Resteasy Reactive.

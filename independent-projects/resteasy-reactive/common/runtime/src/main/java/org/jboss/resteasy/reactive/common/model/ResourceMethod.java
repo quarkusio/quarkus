@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.common.model;
 
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.Produces;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
 import org.jboss.resteasy.reactive.RestSseElementType;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 

@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.test.subresource;
 
-import javax.ws.rs.GET;
+import jakarta.ws.rs.GET;
 
 public class SuperPingResource extends PingResource {
 

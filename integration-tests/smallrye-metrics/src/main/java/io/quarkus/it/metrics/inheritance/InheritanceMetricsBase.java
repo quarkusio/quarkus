@@ -1,6 +1,6 @@
 package io.quarkus.it.metrics.inheritance;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.metrics.annotation.Counted;
 

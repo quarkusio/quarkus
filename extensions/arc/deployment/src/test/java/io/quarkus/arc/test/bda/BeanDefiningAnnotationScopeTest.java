@@ -12,13 +12,13 @@ import java.lang.annotation.Target;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.Stereotype;
-import javax.inject.Inject;
-import javax.inject.Qualifier;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Stereotype;
+import jakarta.inject.Inject;
+import jakarta.inject.Qualifier;
 
 import org.jboss.jandex.DotName;
 import org.junit.jupiter.api.Test;

@@ -18,6 +18,8 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import jakarta.enterprise.inject.spi.InterceptionType;
+import jakarta.interceptor.InvocationContext;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,8 +29,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import javax.enterprise.inject.spi.InterceptionType;
-import javax.interceptor.InvocationContext;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -177,7 +177,7 @@ public class InterceptorGenerator extends BeanGenerator {
     /**
      *
      * @return the method
-     * @see InjectableInterceptor#intercepts(javax.enterprise.inject.spi.InterceptionType)
+     * @see InjectableInterceptor#intercepts(jakarta.enterprise.inject.spi.InterceptionType)
      */
     protected void implementIntercepts(ClassCreator creator, InterceptorInfo interceptor) {
         MethodCreator intercepts = creator.getMethodCreator("intercepts", boolean.class, InterceptionType.class)
@@ -203,7 +203,7 @@ public class InterceptorGenerator extends BeanGenerator {
 
     /**
      *
-     * @see InjectableInterceptor#intercept(InterceptionType, Object, javax.interceptor.InvocationContext)
+     * @see InjectableInterceptor#intercept(InterceptionType, Object, jakarta.interceptor.InvocationContext)
      */
     protected void implementIntercept(ClassCreator creator, InterceptorInfo interceptor, ProviderType providerType,
             ReflectionRegistration reflectionRegistration, boolean isApplicationClass) {

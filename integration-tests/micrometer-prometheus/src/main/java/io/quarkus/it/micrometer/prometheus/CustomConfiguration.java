@@ -2,10 +2,10 @@ package io.quarkus.it.micrometer.prometheus;
 
 import java.util.Arrays;
 
-import javax.annotation.Priority;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
-import javax.interceptor.Interceptor;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
+import jakarta.interceptor.Interceptor;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 

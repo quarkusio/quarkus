@@ -1,9 +1,9 @@
 package org.acme
 
-import javax.enterprise.context.ApplicationScoped
-import javax.websocket.*
-import javax.websocket.server.PathParam
-import javax.websocket.server.ServerEndpoint
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.websocket.*
+import jakarta.websocket.server.PathParam
+import jakarta.websocket.server.ServerEndpoint
 
 @ApplicationScoped
 @ServerEndpoint("/start-websocket/{name}")

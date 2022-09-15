@@ -1,9 +1,9 @@
 package org.jboss.resteasy.reactive.server.mapping;
 
+import jakarta.ws.rs.core.MediaType;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;

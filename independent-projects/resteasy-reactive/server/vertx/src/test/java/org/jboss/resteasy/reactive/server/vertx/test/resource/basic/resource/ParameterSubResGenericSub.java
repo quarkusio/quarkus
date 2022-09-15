@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource;
 
+import jakarta.ws.rs.Path;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.List;
-import javax.ws.rs.Path;
 
 @Path("generic")
 public class ParameterSubResGenericSub {

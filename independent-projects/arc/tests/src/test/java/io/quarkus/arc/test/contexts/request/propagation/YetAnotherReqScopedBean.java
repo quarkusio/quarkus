@@ -1,7 +1,7 @@
 package io.quarkus.arc.test.contexts.request.propagation;
 
+import jakarta.enterprise.context.RequestScoped;
 import java.util.Random;
-import javax.enterprise.context.RequestScoped;
 
 @RequestScoped
 public class YetAnotherReqScopedBean {

@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.server.vertx.test.customexceptions;
 
 import io.vertx.ext.web.RoutingContext;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 

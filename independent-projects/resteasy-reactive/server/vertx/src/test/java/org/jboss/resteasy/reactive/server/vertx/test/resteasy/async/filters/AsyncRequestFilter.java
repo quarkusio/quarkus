@@ -1,9 +1,9 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resteasy.async.filters;
 
+import jakarta.ws.rs.core.Response;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import javax.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestFilter;

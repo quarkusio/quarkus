@@ -3,7 +3,7 @@ package io.quarkus.rest.client.reactive.runtime;
 import java.io.Closeable;
 import java.io.IOException;
 
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PreDestroy;
 
 import org.jboss.logging.Logger;
 

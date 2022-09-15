@@ -2,10 +2,10 @@ package io.quarkus.rest.client.reactive;
 
 import java.net.URI;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
 import org.assertj.core.api.Assertions;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;

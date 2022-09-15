@@ -1,7 +1,7 @@
 package io.quarkus.micrometer.runtime.binder.kafka;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import org.apache.kafka.streams.KafkaStreams;
 import org.jboss.logging.Logger;

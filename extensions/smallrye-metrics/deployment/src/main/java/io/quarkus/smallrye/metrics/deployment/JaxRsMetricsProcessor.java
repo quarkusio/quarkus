@@ -3,7 +3,7 @@ package io.quarkus.smallrye.metrics.deployment;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
-import javax.servlet.DispatcherType;
+import jakarta.servlet.DispatcherType;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 

@@ -1,7 +1,7 @@
 package org.acme.reactive.routes;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import io.quarkus.vertx.http.runtime.filters.Filters;
 

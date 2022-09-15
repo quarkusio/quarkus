@@ -5,7 +5,7 @@
     <parent>
         <artifactId>quarkus-infinispan-client-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>999-jakarta-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -71,7 +71,17 @@
                         jboss-transaction-api_1.2_spec
                     </artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.infinispan</groupId>
+                    <artifactId>infinispan-commons</artifactId>
+                </exclusion>
             </exclusions>
+            <classifier>jakarta</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-commons</artifactId>
+            <classifier>jakarta</classifier>
         </dependency>
         <dependency>
             <groupId>jakarta.transaction</groupId>

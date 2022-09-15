@@ -1,11 +1,25 @@
 package io.quarkus.arc.impl;
 
-import static javax.transaction.Status.STATUS_COMMITTED;
+import static jakarta.transaction.Status.STATUS_COMMITTED;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.AsyncObserverExceptionHandler;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.event.NotificationOptions;
+import jakarta.enterprise.event.ObserverException;
+import jakarta.enterprise.event.TransactionPhase;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.spi.EventContext;
+import jakarta.enterprise.inject.spi.EventMetadata;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.inject.spi.ObserverMethod;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.transaction.RollbackException;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.TransactionManager;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -23,20 +37,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import javax.enterprise.event.Event;
-import javax.enterprise.event.NotificationOptions;
-import javax.enterprise.event.ObserverException;
-import javax.enterprise.event.TransactionPhase;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.spi.EventContext;
-import javax.enterprise.inject.spi.EventMetadata;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.enterprise.inject.spi.ObserverMethod;
-import javax.enterprise.util.TypeLiteral;
-import javax.transaction.RollbackException;
-import javax.transaction.Synchronization;
-import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
 import org.jboss.logging.Logger;
 
 /**
@@ -255,7 +255,7 @@ class EventImpl<T> implements Event<T> {
 
                     try {
                         if (transactionManagerInstance.isAvailable() &&
-                                transactionManagerInstance.get().getStatus() == javax.transaction.Status.STATUS_ACTIVE) {
+                                transactionManagerInstance.get().getStatus() == jakarta.transaction.Status.STATUS_ACTIVE) {
                             // we have one or more transactional OM, and TransactionManager is available
                             // we attempt to register a JTA synchronization
                             List<DeferredEventNotification<?>> deferredEvents = new ArrayList<>();

@@ -2,9 +2,9 @@ package io.quarkus.security.jpa.runtime;
 
 import java.util.function.Supplier;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
 
 import org.hibernate.FlushMode;
 import org.jboss.logging.Logger;

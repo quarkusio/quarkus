@@ -8,10 +8,10 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import javax.annotation.PreDestroy;
-import javax.enterprise.event.Observes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.event.Observes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Router;

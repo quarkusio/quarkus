@@ -1,8 +1,8 @@
 package org.jboss.resteasy.reactive.server.core;
 
+import jakarta.ws.rs.core.MediaType;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-import javax.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.server.spi.ContentType;
 
 /**

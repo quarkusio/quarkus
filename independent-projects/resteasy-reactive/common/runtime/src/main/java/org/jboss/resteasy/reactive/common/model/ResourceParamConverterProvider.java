@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.common.model;
 
-import javax.ws.rs.Priorities;
-import javax.ws.rs.ext.ParamConverterProvider;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.ext.ParamConverterProvider;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class ResourceParamConverterProvider implements Comparable<ResourceParamConverterProvider> {

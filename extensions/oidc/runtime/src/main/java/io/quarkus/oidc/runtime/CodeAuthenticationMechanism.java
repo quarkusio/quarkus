@@ -250,7 +250,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             }
                                             if (!configContext.oidcConfig.token.refreshExpired) {
                                                 LOG.debug("Token has expired, token refresh is not allowed");
-                                                throw new AuthenticationCompletionException(t.getCause());
+                                                throw new AuthenticationFailedException(t.getCause());
                                             }
                                             LOG.debug("Token has expired, trying to refresh it");
                                             return refreshSecurityIdentity(configContext,
@@ -833,7 +833,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     @Override
                     public Uni<SecurityIdentity> apply(final AuthorizationCodeTokens tokens, final Throwable t) {
                         if (t != null) {
-                            LOG.debugf("ID token refresh has failed: %s", t.getMessage());
+                            LOG.errorf("ID token refresh has failed: %s", t.getMessage());
                             if (autoRefresh) {
                                 LOG.debug("Using the current SecurityIdentity since the ID token is still valid");
                                 return Uni.createFrom().item(((TokenAutoRefreshException) t).getSecurityIdentity());

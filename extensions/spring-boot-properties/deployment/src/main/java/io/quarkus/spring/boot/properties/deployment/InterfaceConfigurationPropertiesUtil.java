@@ -1,9 +1,5 @@
-package io.quarkus.arc.deployment.configproperties;
+package io.quarkus.spring.boot.properties.deployment;
 
-import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.createReadMandatoryValueAndConvertIfNeeded;
-import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.createReadOptionalValueAndConvertIfNeeded;
-import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.determineSingleGenericType;
-import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.registerImplicitConverter;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.lang.annotation.Annotation;
@@ -14,7 +10,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.DeploymentException;
 
@@ -32,7 +27,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.Unremovable;
-import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -47,8 +41,9 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.util.HashUtil;
+import io.smallrye.config.ConfigMapping;
 
-final class InterfaceConfigPropertiesUtil {
+final class InterfaceConfigurationPropertiesUtil {
 
     private final IndexView index;
     private final YamlListObjectHandler yamlListObjectHandler;
@@ -59,7 +54,7 @@ final class InterfaceConfigPropertiesUtil {
     private final BuildProducer<ConfigPropertyBuildItem> configProperties;
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClasses;
 
-    InterfaceConfigPropertiesUtil(IndexView index, YamlListObjectHandler yamlListObjectHandler, ClassOutput classOutput,
+    InterfaceConfigurationPropertiesUtil(IndexView index, YamlListObjectHandler yamlListObjectHandler, ClassOutput classOutput,
             ClassCreator classCreator,
             Capabilities capabilities, BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
             BuildProducer<ConfigPropertyBuildItem> configProperties,
@@ -84,23 +79,12 @@ final class InterfaceConfigPropertiesUtil {
      *  }
      * </pre>
      */
-    void addProducerMethodForInterfaceConfigProperties(DotName interfaceName, String prefix, boolean needsQualifier,
-            GeneratedClass generatedClass) {
+    void addProducerMethodForInterfaceConfigProperties(DotName interfaceName, String prefix, GeneratedClass generatedClass) {
         String methodName = "produce" + interfaceName.withoutPackagePrefix();
-        if (needsQualifier) {
-            // we need to differentiate the different producers of the same class
-            methodName = methodName + "WithPrefix" + HashUtil.sha1(prefix);
-        }
         try (MethodCreator method = classCreator.getMethodCreator(methodName, interfaceName.toString(),
                 Config.class.getName())) {
 
             method.addAnnotation(Produces.class);
-            if (needsQualifier) {
-                method.addAnnotation(AnnotationInstance.create(DotNames.CONFIG_PREFIX, null,
-                        new AnnotationValue[] { AnnotationValue.createStringValue("value", prefix) }));
-            } else {
-                method.addAnnotation(Default.class);
-            }
             if (generatedClass.isUnremovable()) {
                 method.addAnnotation(Unremovable.class);
             }
@@ -110,7 +94,7 @@ final class InterfaceConfigPropertiesUtil {
     }
 
     void generateImplementationForInterfaceConfigProperties(ClassInfo originalInterface,
-            String prefixStr, ConfigProperties.NamingStrategy namingStrategy,
+            String prefixStr, ConfigMapping.NamingStrategy namingStrategy,
             Map<DotName, GeneratedClass> interfaceToGeneratedClass) {
 
         generateImplementationForInterfaceConfigPropertiesRec(originalInterface, originalInterface,
@@ -119,7 +103,7 @@ final class InterfaceConfigPropertiesUtil {
 
     private String generateImplementationForInterfaceConfigPropertiesRec(ClassInfo originalInterface,
             ClassInfo currentInterface,
-            String prefixStr, ConfigProperties.NamingStrategy namingStrategy,
+            String prefixStr, ConfigMapping.NamingStrategy namingStrategy,
             Map<DotName, GeneratedClass> interfaceToGeneratedClass) {
 
         Set<DotName> allInterfaces = new HashSet<>();
@@ -217,11 +201,11 @@ final class InterfaceConfigPropertiesUtil {
 
                             // use config.getOptionalValue to obtain the result
 
-                            Type genericType = determineSingleGenericType(returnType,
+                            Type genericType = ConfigurationPropertiesUtil.determineSingleGenericType(returnType,
                                     method.declaringClass().name());
 
                             if (genericType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
-                                registerImplicitConverter(genericType, reflectiveClasses);
+                                ConfigurationPropertiesUtil.registerImplicitConverter(genericType, reflectiveClasses);
                                 ResultHandle result = methodCreator.invokeInterfaceMethod(
                                         MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class,
                                                 String.class,
@@ -231,9 +215,10 @@ final class InterfaceConfigPropertiesUtil {
                                 methodCreator.returnValue(result);
                             } else {
                                 // convert the String value and populate an Optional with it
-                                ConfigPropertiesUtil.ReadOptionalResponse readOptionalResponse = createReadOptionalValueAndConvertIfNeeded(
-                                        fullConfigName,
-                                        genericType, method.declaringClass().name(), methodCreator, config);
+                                ConfigurationPropertiesUtil.ReadOptionalResponse readOptionalResponse = ConfigurationPropertiesUtil
+                                        .createReadOptionalValueAndConvertIfNeeded(
+                                                fullConfigName,
+                                                genericType, method.declaringClass().name(), methodCreator, config);
 
                                 // return Optional.empty() if no config value was read
                                 readOptionalResponse.getIsPresentFalse()
@@ -246,7 +231,7 @@ final class InterfaceConfigPropertiesUtil {
                                                 MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
                                                 readOptionalResponse.getValue()));
                             }
-                        } else if (ConfigPropertiesUtil.isListOfObject(method.returnType())) {
+                        } else if (ConfigurationPropertiesUtil.isListOfObject(method.returnType())) {
                             if (!capabilities.isPresent(Capability.CONFIG_YAML)) {
                                 throw new DeploymentException(
                                         "Support for List of objects in classes annotated with '@ConfigProperties' is only possible via the 'quarkus-config-yaml' extension. Offending method is '"
@@ -268,8 +253,8 @@ final class InterfaceConfigPropertiesUtil {
                                         .produce(new RunTimeConfigurationDefaultBuildItem(fullConfigName, defaultValueStr));
                             }
                             // use config.getValue to obtain and return the result taking  converting it to collection if needed
-                            registerImplicitConverter(returnType, reflectiveClasses);
-                            ResultHandle value = createReadMandatoryValueAndConvertIfNeeded(
+                            ConfigurationPropertiesUtil.registerImplicitConverter(returnType, reflectiveClasses);
+                            ResultHandle value = ConfigurationPropertiesUtil.createReadMandatoryValueAndConvertIfNeeded(
                                     fullConfigName, returnType,
                                     method.declaringClass().name(), methodCreator, config);
                             methodCreator.returnValue(value);
@@ -308,7 +293,7 @@ final class InterfaceConfigPropertiesUtil {
      * annotated with @ConfigProperties
      */
     private static String createName(DotName ifaceName, String prefixStr) {
-        return ConfigPropertiesUtil.PACKAGE_TO_PLACE_GENERATED_CLASSES + "." + ifaceName.withoutPackagePrefix() + "_"
+        return ConfigurationPropertiesUtil.PACKAGE_TO_PLACE_GENERATED_CLASSES + "." + ifaceName.withoutPackagePrefix() + "_"
                 + HashUtil.sha1(ifaceName.toString()) + "_" + HashUtil.sha1(prefixStr);
     }
 
@@ -317,7 +302,7 @@ final class InterfaceConfigPropertiesUtil {
     }
 
     private static NameAndDefaultValue determinePropertyNameAndDefaultValue(MethodInfo method,
-            ConfigProperties.NamingStrategy namingStrategy) {
+            ConfigMapping.NamingStrategy namingStrategy) {
         AnnotationInstance configPropertyAnnotation = method.annotation(DotNames.CONFIG_PROPERTY);
         if (configPropertyAnnotation != null) {
             AnnotationValue nameValue = configPropertyAnnotation.value("name");
@@ -331,14 +316,14 @@ final class InterfaceConfigPropertiesUtil {
         return new NameAndDefaultValue(getPropertyName(method, namingStrategy));
     }
 
-    private static String getPropertyName(MethodInfo method, ConfigProperties.NamingStrategy namingStrategy) {
+    private static String getPropertyName(MethodInfo method, ConfigMapping.NamingStrategy namingStrategy) {
         String effectiveName = method.name();
         try {
             effectiveName = JavaBeanUtil.getPropertyNameFromGetter(method.name());
         } catch (IllegalArgumentException ignored) {
 
         }
-        return namingStrategy.getName(effectiveName);
+        return ClassConfigurationPropertiesUtil.getName(effectiveName, namingStrategy);
     }
 
     private static class NameAndDefaultValue {

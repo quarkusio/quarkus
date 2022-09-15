@@ -1,4 +1,4 @@
-package io.quarkus.arc.deployment.configproperties;
+package io.quarkus.spring.boot.properties.deployment;
 
 import org.jboss.jandex.Type;
 

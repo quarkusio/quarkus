@@ -1,6 +1,6 @@
 ---
 # The format of this file is documented here:
-# https://github.com/quarkusio/quarkus-bot#triage-issues
+# https://github.com/quarkusio/quarkus-github-bot#triage-issues
 features: [ALL]
 workflows:
   rules:
@@ -531,8 +531,8 @@ triage:
     - labels: [area/optaplanner]
       title: "optaplanner"
       notify: [ge0ffrey, rsynek, Christopher-Chianelli]
-    - labels: [kind/extension-proposal]
-      title: quarkiverse
+    - labels: [kind/extension-proposal,area/quarkiverse]
+      title: "Extension Proposal"
       notify: [gastaldi, gsmet, aloubyansky, maxandersen]
     - labels: [area/mailer]
       title: "\\bmail\\b"

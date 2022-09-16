@@ -49,7 +49,6 @@ import io.quarkus.panache.common.Sort;
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public abstract class MongoOperations<QueryType, UpdateType> {
     public static final String ID = "_id";
-    private static final String VERSION = "version";
     public static final Object SESSION_KEY = new Object();
 
     private static final Logger LOGGER = Logger.getLogger(MongoOperations.class);

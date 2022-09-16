@@ -7,15 +7,10 @@ import java.util.Properties;
 import org.jboss.logging.Logger;
 
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
-import com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean;
-import com.arjuna.ats.arjuna.common.RecoveryEnvironmentBean;
 import com.arjuna.ats.arjuna.common.arjPropertyManager;
 import com.arjuna.ats.arjuna.coordinator.TransactionReaper;
 import com.arjuna.ats.arjuna.coordinator.TxControl;
-import com.arjuna.ats.arjuna.recovery.RecoveryManager;
-import com.arjuna.ats.jta.common.JTAEnvironmentBean;
 import com.arjuna.ats.jta.common.jtaPropertyManager;
-import com.arjuna.common.internal.util.propertyservice.BeanPopulator;
 import com.arjuna.common.util.propertyservice.PropertiesFactory;
 
 import io.quarkus.runtime.ShutdownContext;
@@ -72,25 +67,13 @@ public class NarayanaJtaRecorder {
     }
 
     public void setConfig(final TransactionManagerConfiguration transactions) {
-        BeanPopulator.getDefaultInstance(ObjectStoreEnvironmentBean.class)
-                .setObjectStoreDir(transactions.objectStoreDirectory);
-        BeanPopulator.getNamedInstance(ObjectStoreEnvironmentBean.class, "communicationStore")
-                .setObjectStoreDir(transactions.objectStoreDirectory);
-        BeanPopulator.getNamedInstance(ObjectStoreEnvironmentBean.class, "stateStore")
-                .setObjectStoreDir(transactions.objectStoreDirectory);
-        BeanPopulator.getDefaultInstance(RecoveryEnvironmentBean.class)
-                .setRecoveryModuleClassNames(transactions.recoveryModules);
-        BeanPopulator.getDefaultInstance(RecoveryEnvironmentBean.class)
-                .setExpiryScannerClassNames(transactions.expiryScanners);
-        BeanPopulator.getDefaultInstance(JTAEnvironmentBean.class)
-                .setXaResourceOrphanFilterClassNames(transactions.xaResourceOrphanFilters);
+        arjPropertyManager.getObjectStoreEnvironmentBean().setObjectStoreDir(transactions.objectStoreDirectory);
     }
 
     public void handleShutdown(ShutdownContext context) {
         context.addLastShutdownTask(new Runnable() {
             @Override
             public void run() {
-                RecoveryManager.manager().terminate(true);
                 TransactionReaper.terminate(false);
             }
         });

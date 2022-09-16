@@ -10,20 +10,11 @@ import javax.transaction.TransactionManager;
 import javax.transaction.TransactionScoped;
 
 import com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean;
-import com.arjuna.ats.arjuna.recovery.TransactionStatusConnectionManager;
 import com.arjuna.ats.internal.arjuna.coordinator.CheckedActionFactoryImple;
 import com.arjuna.ats.internal.arjuna.objectstore.ShadowNoFileLockStore;
-import com.arjuna.ats.internal.arjuna.recovery.AtomicActionExpiryScanner;
-import com.arjuna.ats.internal.arjuna.recovery.AtomicActionRecoveryModule;
-import com.arjuna.ats.internal.arjuna.recovery.ExpiredTransactionStatusManagerScanner;
 import com.arjuna.ats.internal.arjuna.utils.SocketProcessId;
 import com.arjuna.ats.internal.jta.recovery.arjunacore.CommitMarkableResourceRecordRecoveryModule;
-import com.arjuna.ats.internal.jta.recovery.arjunacore.JTAActionStatusServiceXAResourceOrphanFilter;
-import com.arjuna.ats.internal.jta.recovery.arjunacore.JTANodeNameXAResourceOrphanFilter;
-import com.arjuna.ats.internal.jta.recovery.arjunacore.JTATransactionLogXAResourceOrphanFilter;
 import com.arjuna.ats.internal.jta.recovery.arjunacore.RecoverConnectableAtomicAction;
-import com.arjuna.ats.internal.jta.recovery.arjunacore.XARecoveryModule;
-import com.arjuna.ats.internal.jta.resources.arjunacore.XAResourceRecord;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.UserTransactionImple;
@@ -41,7 +32,6 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -74,7 +64,6 @@ class NarayanaJtaProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    @Produce(NarayanaInitBuildItem.class)
     public void build(NarayanaJtaRecorder recorder,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -92,9 +81,6 @@ class NarayanaJtaProcessor {
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(SocketProcessId.class.getName()));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(CommitMarkableResourceRecordRecoveryModule.class.getName()));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(RecoverConnectableAtomicAction.class.getName()));
-        runtimeInit.produce(new RuntimeInitializedClassBuildItem(TransactionStatusConnectionManager.class.getName()));
-        runtimeInit.produce(new RuntimeInitializedClassBuildItem(JTAActionStatusServiceXAResourceOrphanFilter.class.getName()));
-        runtimeInit.produce(new RuntimeInitializedClassBuildItem(AtomicActionExpiryScanner.class.getName()));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, JTAEnvironmentBean.class.getName(),
                 UserTransactionImple.class.getName(),
@@ -103,14 +89,7 @@ class NarayanaJtaProcessor {
                 TransactionSynchronizationRegistryImple.class.getName(),
                 ObjectStoreEnvironmentBean.class.getName(),
                 ShadowNoFileLockStore.class.getName(),
-                SocketProcessId.class.getName(),
-                AtomicActionRecoveryModule.class.getName(),
-                XARecoveryModule.class.getName(),
-                XAResourceRecord.class.getName(),
-                JTATransactionLogXAResourceOrphanFilter.class.getName(),
-                JTANodeNameXAResourceOrphanFilter.class.getName(),
-                JTAActionStatusServiceXAResourceOrphanFilter.class.getName(),
-                ExpiredTransactionStatusManagerScanner.class.getName()));
+                SocketProcessId.class.getName()));
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
         builder.addBeanClass(TransactionalInterceptorSupports.class);

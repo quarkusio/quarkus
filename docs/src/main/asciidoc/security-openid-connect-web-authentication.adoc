@@ -10,13 +10,12 @@ include::./attributes.adoc[]
 The Quarkus OpenID Connect (OIDC) extension can protect application HTTP endpoints by using the OIDC Authorization Code Flow mechanism supported by OIDC-compliant authorization servers, such as https://www.keycloak.org[Keycloak].
 
 The Authorization Code Flow mechanism authenticates users of your web application by redirecting them to an OIDC provider, such as Keycloak, to log in. 
-After authentication, the OIDC provider redirects the user back to the application with an authorization code that confirms that authentication was successful. Then, the application exchanges this code with the OIDC provider for an ID token (which represents the authenticated user), an access token, and a refresh token to authorize the user's access to the application.
+After authentication, the OIDC provider redirects the user back to the application with an authorization code that confirms that authentication was successful. Then, the application exchanges this code with the OIDC provider for an ID token (which represents the authenticated user), an access token, and a refresh token to authorize the user's access to the application. 
 
 The following diagram outlines the Authorization Code Flow mechanism in Quarkus.
 
 .Authorization code flow mechanism in Quarkus
-image::authorization_code_flow.png[alt=Authorization Code Flow, role="center"]
-
+image::authorization_code_flow.png[alt=Authorization Code Flow, width="60%", align=center]
 . The Quarkus user requests access to a Quarkus web-app application.
 . The Quarkus web-app redirects the user to the authorization endpoint, that is, the OIDC provider for authentication.
 . The OIDC provider redirects the user to a login and authentication prompt.

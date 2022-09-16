@@ -22,8 +22,8 @@ import javax.enterprise.util.AnnotationLiteral;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.deployment.util.IoUtil;
@@ -63,8 +63,7 @@ public class AnnotationProxyProvider {
             ClassInfo clazz = index.getClassByName(name);
             if (clazz == null) {
                 try (InputStream annotationStream = IoUtil.readClass(classLoader, name.toString())) {
-                    Indexer indexer = new Indexer();
-                    clazz = indexer.index(annotationStream);
+                    clazz = Index.singleClass(annotationStream);
                 } catch (Exception e) {
                     throw new IllegalStateException("Failed to index: " + name, e);
                 }

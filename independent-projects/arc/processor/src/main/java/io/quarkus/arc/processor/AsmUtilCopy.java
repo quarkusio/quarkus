@@ -9,6 +9,8 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
+import org.jboss.jandex.TypeVariableReference;
+import org.jboss.jandex.UnresolvedTypeVariable;
 
 /**
  * Copy of quarkus-core AsmUtil for some methods, with a tweak on the ARG_MAPPER (not name->String anymore) and
@@ -146,8 +148,14 @@ public class AsmUtilCopy {
                     sb.append("T").append(typeVariable.identifier()).append(";");
                 break;
             case UNRESOLVED_TYPE_VARIABLE:
-                // FIXME: ??
+                // TODO no mapping, no support for "erased"
+                UnresolvedTypeVariable unresolvedTypeVariable = type.asUnresolvedTypeVariable();
+                sb.append("T").append(unresolvedTypeVariable.identifier()).append(";");
                 break;
+            case TYPE_VARIABLE_REFERENCE:
+                // TODO no mapping, no support for "erased"
+                TypeVariableReference typeVariableReference = type.asTypeVariableReference();
+                sb.append("T").append(typeVariableReference.identifier()).append(";");
             case VOID:
                 sb.append("V");
                 break;
@@ -243,6 +251,7 @@ public class AsmUtilCopy {
             case PARAMETERIZED_TYPE:
             case TYPE_VARIABLE:
             case UNRESOLVED_TYPE_VARIABLE:
+            case TYPE_VARIABLE_REFERENCE:
             case WILDCARD_TYPE:
                 return true;
         }

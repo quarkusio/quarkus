@@ -230,8 +230,9 @@ sed -i 's@com.sun.xml.bind.v2.ContextFactory@org.glassfish.jaxb.runtime.v2.Conte
 sed -i '/com.sun.xml.internal.bind.v2.ContextFactory/d' extensions/jaxb/deployment/src/main/java/io/quarkus/jaxb/deployment/JaxbProcessor.java
 
 ## JSON-P implementation switch
-sed -i 's@<runnerParentFirstArtifact>org.glassfish:jakarta.json</runnerParentFirstArtifact>@<runnerParentFirstArtifact>org.eclipse.parsson:jakarta.json</runnerParentFirstArtifact>@g' extensions/logging-json/runtime/pom.xml
-sed -i 's@<parentFirstArtifact>org.glassfish:jakarta.json</parentFirstArtifact>@<parentFirstArtifact>org.eclipse.parsson:jakarta.json</parentFirstArtifact>@g' extensions/jsonp/runtime/pom.xml
+sed -i 's@<runnerParentFirstArtifact>org.glassfish:jakarta.json</runnerParentFirstArtifact>@<runnerParentFirstArtifact>org.eclipse.parsson:parsson</runnerParentFirstArtifact>\n                        <runnerParentFirstArtifact>jakarta.json:jakarta.json-api</runnerParentFirstArtifact>@g' extensions/logging-json/runtime/pom.xml
+sed -i 's@<parentFirstArtifact>org.glassfish:jakarta.json</parentFirstArtifact>@<parentFirstArtifact>org.eclipse.parsson:parsson</parentFirstArtifact>@g' extensions/jsonp/runtime/pom.xml
+sed -i 's@<excludedArtifact>org.glassfish:javax.json</excludedArtifact>@<excludedArtifact>org.glassfish:javax.json</excludedArtifact>\n                        <excludedArtifact>org.glassfish:jakarta.json</excludedArtifact>\n                        <excludedArtifact>org.eclipse.parsson:jakarta.json</excludedArtifact>@g' extensions/jsonp/runtime/pom.xml
 sed -i 's@import org.glassfish.json.JsonProviderImpl;@import org.eclipse.parsson.JsonProviderImpl;@g' extensions/jsonp/deployment/src/main/java/io/quarkus/jsonp/deployment/JsonpProcessor.java
 
 ## cleanup phase - needs to be done once everything has been rewritten
@@ -298,6 +299,9 @@ sed -i '/public SSLContext getSSLContext() {/i \ \ \ \ @Override' extensions/web
 sed -i 's@org.jboss.narayana.rts:narayana-lra@org.jboss.narayana.rts:narayana-lra-jakarta@g' extensions/narayana-lra/runtime/pom.xml
 sed -i 's@org.jboss.narayana.rts:lra-client@org.jboss.narayana.rts:lra-client-jakarta@g' extensions/narayana-lra/runtime/pom.xml
 sed -i 's@META-INF/services/javax.ws.rs.client.ClientBuilder@META-INF/services/jakarta.ws.rs.client.ClientBuilder@g' extensions/narayana-lra/runtime/pom.xml
+
+find integration-tests/gradle -name build.gradle | xargs sed -i 's/javax.enterprise.context.ApplicationScoped/jakarta.enterprise.context.ApplicationScoped/g'
+find integration-tests/gradle -name build.gradle | xargs sed -i 's/javax.ws.rs.Path/jakarta.ws.rs.Path/g'
 
 transform_documentation
 sed -i 's@javax/ws/rs@jakarta/ws/rs@g' docs/src/main/asciidoc/resteasy-reactive.adoc

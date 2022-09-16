@@ -480,7 +480,7 @@ public class SubclassGenerator extends AbstractGenerator {
         // The delegate type can declare type parameters
         // For example @Delegate Converter<String> should result in a T -> String mapping
         List<TypeVariable> typeParameters = delegateTypeClass.typeParameters();
-        Map<TypeVariable, Type> resolvedTypeParameters = Collections.emptyMap();
+        Map<String, Type> resolvedTypeParameters = Collections.emptyMap();
         if (!typeParameters.isEmpty()) {
             resolvedTypeParameters = new HashMap<>();
             // The delegate type can be used to infer the parameter types
@@ -488,7 +488,7 @@ public class SubclassGenerator extends AbstractGenerator {
             if (delegateType.kind() == Kind.PARAMETERIZED_TYPE) {
                 List<Type> typeArguments = delegateType.asParameterizedType().arguments();
                 for (int i = 0; i < typeParameters.size(); i++) {
-                    resolvedTypeParameters.put(typeParameters.get(i), typeArguments.get(i));
+                    resolvedTypeParameters.put(typeParameters.get(i).identifier(), typeArguments.get(i));
                 }
             }
         }

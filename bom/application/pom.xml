@@ -18,7 +18,7 @@
         <bouncycastle.fips.version>1.0.2.3</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.12.3</bouncycastle.tls.fips.version>
         <findbugs.version>3.0.2</findbugs.version>
-        <jandex.version>2.4.3.Final</jandex.version>
+        <jandex.version>3.0.0</jandex.version>
         <resteasy.version>4.7.7.Final</resteasy.version>
         <opentracing.version>0.33.0</opentracing.version>
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
@@ -43,8 +43,8 @@
         <smallrye-config.version>2.12.0</smallrye-config.version>
         <smallrye-health.version>3.3.0</smallrye-health.version>
         <smallrye-metrics.version>3.0.5</smallrye-metrics.version>
-        <smallrye-open-api.version>2.2.1</smallrye-open-api.version>
-        <smallrye-graphql.version>1.7.1</smallrye-graphql.version>
+        <smallrye-open-api.version>2.3.0</smallrye-open-api.version>
+        <smallrye-graphql.version>1.8.0</smallrye-graphql.version>
         <smallrye-opentracing.version>2.1.1</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>5.5.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>3.5.3</smallrye-jwt.version>
@@ -82,7 +82,7 @@
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
         <graal-sdk.version>22.2.0</graal-sdk.version>
         <graal-svm.version>${graal-sdk.version}</graal-svm.version>
-        <gizmo.version>1.1.0.Final</gizmo.version>
+        <gizmo.version>1.2.0.Final</gizmo.version>
         <jackson-bom.version>2.13.4</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
@@ -92,7 +92,7 @@
         <bytebuddy.version>1.12.9</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-reactive.version>1.1.7.Final</hibernate-reactive.version>
         <hibernate-validator.version>6.2.5.Final</hibernate-validator.version>
-        <hibernate-search.version>6.1.6.Final</hibernate-search.version>
+        <hibernate-search.version>6.1.7.Final</hibernate-search.version>
         <narayana.version>5.13.1.Alpha1</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>1.16</agroal.version>
@@ -177,7 +177,7 @@
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.9.2</antlr.version>
         <quarkus-security.version>1.1.4.Final</quarkus-security.version>
-        <keycloak.version>19.0.1</keycloak.version>
+        <keycloak.version>19.0.2</keycloak.version>
         <logstash-gelf.version>1.15.0</logstash-gelf.version>
         <checker-qual.version>3.25.0</checker-qual.version>
         <error-prone-annotations.version>2.15.0</error-prone-annotations.version>
@@ -4247,7 +4247,7 @@
                 <version>${graal-sdk.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.jboss</groupId>
+                <groupId>io.smallrye</groupId>
                 <artifactId>jandex</artifactId>
                 <version>${jandex.version}</version>
             </dependency>
@@ -4855,6 +4855,12 @@
                 <groupId>org.hibernate</groupId>
                 <artifactId>hibernate-core</artifactId>
                 <version>${hibernate-orm.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss</groupId>
+                        <artifactId>jandex</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.hibernate</groupId>
@@ -4901,6 +4907,10 @@
                 <artifactId>hibernate-search-mapper-orm</artifactId>
                 <version>${hibernate-search.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss</groupId>
+                        <artifactId>jandex</artifactId>
+                    </exclusion>
                     <!-- the right version will come with Hibernate ORM -->
                     <exclusion>
                         <groupId>org.hibernate.common</groupId>

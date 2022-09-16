@@ -93,8 +93,8 @@ updates:
       # Agroal
       - dependency-name: io.agroal:*
       # Jandex
-      - dependency-name: org.jboss:jandex
-      - dependency-name: org.jboss.jandex:jandex-maven-plugin
+      - dependency-name: io.smallrye:jandex
+      - dependency-name: io.smallrye:jandex-maven-plugin
       # WireMock
       - dependency-name: com.github.tomakehurst:wiremock-jre8-standalone
       - dependency-name: uk.co.automatictester:wiremock-maven-plugin

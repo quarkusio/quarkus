@@ -438,6 +438,7 @@ final class Methods {
                 return a.asParameterizedType().name();
             case TYPE_VARIABLE:
             case UNRESOLVED_TYPE_VARIABLE:
+            case TYPE_VARIABLE_REFERENCE:
             case WILDCARD_TYPE:
             default:
                 return DotNames.OBJECT;

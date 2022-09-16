@@ -994,6 +994,7 @@ public class ValueResolverGenerator {
             case ARRAY:
             case TYPE_VARIABLE:
             case UNRESOLVED_TYPE_VARIABLE:
+            case TYPE_VARIABLE_REFERENCE:
             case WILDCARD_TYPE:
                 return true;
             default:

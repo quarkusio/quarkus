@@ -278,13 +278,14 @@ public class LoopSectionHelper implements SectionHelper {
                 }
             }
             // Iteration metadata
+            final int count = index + 1;
             switch (key) {
                 case "count":
-                    return CompletedStage.of(index + 1);
+                    return CompletedStage.of(count);
                 case "index":
                     return CompletedStage.of(index);
                 case "indexParity":
-                    return index % 2 != 0 ? EVEN : ODD;
+                    return count % 2 == 0 ? EVEN : ODD;
                 case "hasNext":
                     return hasNext ? Results.TRUE : Results.FALSE;
                 case "isLast":
@@ -293,10 +294,10 @@ public class LoopSectionHelper implements SectionHelper {
                     return index == 0 ? Results.TRUE : Results.FALSE;
                 case "isOdd":
                 case "odd":
-                    return (index % 2 == 0) ? Results.TRUE : Results.FALSE;
+                    return count % 2 != 0 ? Results.TRUE : Results.FALSE;
                 case "isEven":
                 case "even":
-                    return (index % 2 != 0) ? Results.TRUE : Results.FALSE;
+                    return count % 2 == 0 ? Results.TRUE : Results.FALSE;
                 default:
                     return Results.notFound(key);
             }

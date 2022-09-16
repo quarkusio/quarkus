@@ -22,7 +22,6 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
-import org.jboss.jandex.TypeVariable;
 
 /**
  * Represents an injection point.
@@ -262,15 +261,15 @@ public class InjectionPointInfo {
         if (type.kind() == org.jboss.jandex.Type.Kind.CLASS) {
             return type;
         }
-        Map<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariables = Types.resolvedTypeVariables(beanClass, beanDeployment);
+        Map<ClassInfo, Map<String, Type>> resolvedTypeVariables = Types.resolvedTypeVariables(beanClass, beanDeployment);
         return resolveType(type, declaringClass, beanDeployment, resolvedTypeVariables);
     }
 
     private static Type resolveType(Type type, ClassInfo beanClass, BeanDeployment beanDeployment,
-            Map<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariables) {
+            Map<ClassInfo, Map<String, Type>> resolvedTypeVariables) {
         if (type.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE) {
             if (resolvedTypeVariables.containsKey(beanClass)) {
-                return resolvedTypeVariables.get(beanClass).getOrDefault(type.asTypeVariable(), type);
+                return resolvedTypeVariables.get(beanClass).getOrDefault(type.asTypeVariable().identifier(), type);
             }
         } else if (type.kind() == org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE) {
             ParameterizedType parameterizedType = type.asParameterizedType();

@@ -165,6 +165,7 @@ public class HibernateSearchOutboxPollingClassesTest {
             case PRIMITIVE:
             case VOID:
             case UNRESOLVED_TYPE_VARIABLE:
+            case TYPE_VARIABLE_REFERENCE:
                 // Ignore
                 break;
         }

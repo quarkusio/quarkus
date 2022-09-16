@@ -224,8 +224,8 @@ public final class Types {
                 default:
                     throw new IllegalArgumentException("Unsupported primitive type: " + type);
             }
-        } else if (Kind.UNRESOLVED_TYPE_VARIABLE.equals(type.kind())) {
-            String identifier = type.asUnresolvedTypeVariable().identifier();
+        } else if (Kind.TYPE_VARIABLE_REFERENCE.equals(type.kind())) {
+            String identifier = type.asTypeVariableReference().identifier();
             TypeVariableInfo recursive = TypeVariableInfo.find(identifier, typeVariableStack);
             if (recursive != null) {
                 ResultHandle typeVariableHandle = creator.newInstance(
@@ -384,7 +384,7 @@ public final class Types {
         return getResolvedParameters(classInfo, Collections.emptyMap(), method, index);
     }
 
-    static List<Type> getResolvedParameters(ClassInfo classInfo, Map<TypeVariable, Type> resolvedMap,
+    static List<Type> getResolvedParameters(ClassInfo classInfo, Map<String, Type> resolvedMap,
             MethodInfo method, IndexView index) {
         List<TypeVariable> typeParameters = classInfo.typeParameters();
         // E.g. Foo, T, List<String>
@@ -414,12 +414,13 @@ public final class Types {
     }
 
     static Set<Type> getTypeClosure(ClassInfo classInfo, AnnotationTarget producerFieldOrMethod,
-            Map<TypeVariable, Type> resolvedTypeParameters,
-            BeanDeployment beanDeployment, BiConsumer<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariablesConsumer) {
+            Map<String, Type> resolvedTypeParameters,
+            BeanDeployment beanDeployment, BiConsumer<ClassInfo, Map<String, Type>> resolvedTypeVariablesConsumer) {
         Set<Type> types = new HashSet<>();
         List<TypeVariable> typeParameters = classInfo.typeParameters();
 
-        if (typeParameters.isEmpty() || !typeParameters.stream().allMatch(resolvedTypeParameters::containsKey)) {
+        if (typeParameters.isEmpty()
+                || !typeParameters.stream().allMatch(it -> resolvedTypeParameters.containsKey(it.identifier()))) {
             // Not a parameterized type or a raw type
             types.add(Type.create(classInfo.name(), Kind.CLASS));
         } else {
@@ -427,7 +428,7 @@ public final class Types {
             Type[] typeParams = new Type[typeParameters.size()];
             boolean skipThisType = false;
             for (int i = 0; i < typeParameters.size(); i++) {
-                typeParams[i] = resolvedTypeParameters.get(typeParameters.get(i));
+                typeParams[i] = resolvedTypeParameters.get(typeParameters.get(i).identifier());
                 // this should only be the case for producers; wildcard is not a legal bean type
                 // see https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#legal_bean_types
                 if (typeParams[i].kind().equals(Kind.WILDCARD_TYPE) && producerFieldOrMethod != null) {
@@ -440,9 +441,9 @@ public final class Types {
                 }
             }
             if (resolvedTypeVariablesConsumer != null) {
-                Map<TypeVariable, Type> resolved = new HashMap<>();
+                Map<String, Type> resolved = new HashMap<>();
                 for (int i = 0; i < typeParameters.size(); i++) {
-                    resolved.put(typeParameters.get(i), typeParams[i]);
+                    resolved.put(typeParameters.get(i).identifier(), typeParams[i]);
                 }
                 resolvedTypeVariablesConsumer.accept(classInfo, resolved);
             }
@@ -457,7 +458,7 @@ public final class Types {
             }
             ClassInfo interfaceClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), interfaceType.name());
             if (interfaceClassInfo != null) {
-                Map<TypeVariable, Type> resolved = Collections.emptyMap();
+                Map<String, Type> resolved = Collections.emptyMap();
                 if (Kind.PARAMETERIZED_TYPE.equals(interfaceType.kind())) {
                     resolved = buildResolvedMap(interfaceType.asParameterizedType().arguments(),
                             interfaceClassInfo.typeParameters(), resolvedTypeParameters, beanDeployment.getBeanArchiveIndex());
@@ -470,7 +471,7 @@ public final class Types {
         if (classInfo.superClassType() != null) {
             ClassInfo superClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), classInfo.superName());
             if (superClassInfo != null) {
-                Map<TypeVariable, Type> resolved = Collections.emptyMap();
+                Map<String, Type> resolved = Collections.emptyMap();
                 if (Kind.PARAMETERIZED_TYPE.equals(classInfo.superClassType().kind())) {
                     resolved = buildResolvedMap(classInfo.superClassType().asParameterizedType().arguments(),
                             superClassInfo.typeParameters(),
@@ -509,9 +510,9 @@ public final class Types {
         return types;
     }
 
-    static Map<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariables(ClassInfo classInfo,
+    static Map<ClassInfo, Map<String, Type>> resolvedTypeVariables(ClassInfo classInfo,
             BeanDeployment beanDeployment) {
-        Map<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariables = new HashMap<>();
+        Map<ClassInfo, Map<String, Type>> resolvedTypeVariables = new HashMap<>();
         getTypeClosure(classInfo, null, Collections.emptyMap(), beanDeployment, resolvedTypeVariables::put);
         return resolvedTypeVariables;
     }
@@ -540,26 +541,27 @@ public final class Types {
         return types;
     }
 
-    static <T extends Type> Map<TypeVariable, Type> buildResolvedMap(List<T> resolvedArguments,
+    static <T extends Type> Map<String, Type> buildResolvedMap(List<T> resolvedArguments,
             List<TypeVariable> typeVariables,
-            Map<TypeVariable, Type> resolvedTypeParameters, IndexView index) {
-        Map<TypeVariable, Type> resolvedMap = new HashMap<>();
+            Map<String, Type> resolvedTypeParameters, IndexView index) {
+        Map<String, Type> resolvedMap = new HashMap<>();
         for (int i = 0; i < resolvedArguments.size(); i++) {
-            resolvedMap.put(typeVariables.get(i), resolveTypeParam(resolvedArguments.get(i), resolvedTypeParameters, index));
+            resolvedMap.put(typeVariables.get(i).identifier(),
+                    resolveTypeParam(resolvedArguments.get(i), resolvedTypeParameters, index));
         }
         return resolvedMap;
     }
 
-    static Type resolveTypeParam(Type typeParam, Map<TypeVariable, Type> resolvedTypeParameters, IndexView index) {
+    static Type resolveTypeParam(Type typeParam, Map<String, Type> resolvedTypeParameters, IndexView index) {
         if (typeParam.kind() == Kind.TYPE_VARIABLE) {
-            return resolvedTypeParameters.getOrDefault(typeParam, typeParam);
+            return resolvedTypeParameters.getOrDefault(typeParam.asTypeVariable().identifier(), typeParam);
         } else if (typeParam.kind() == Kind.PARAMETERIZED_TYPE) {
             ParameterizedType parameterizedType = typeParam.asParameterizedType();
             ClassInfo classInfo = getClassByName(index, parameterizedType.name());
             if (classInfo != null) {
                 List<TypeVariable> typeParameters = classInfo.typeParameters();
                 List<Type> arguments = parameterizedType.arguments();
-                Map<TypeVariable, Type> resolvedMap = buildResolvedMap(arguments, typeParameters,
+                Map<String, Type> resolvedMap = buildResolvedMap(arguments, typeParameters,
                         resolvedTypeParameters, index);
                 Type[] typeParams = new Type[typeParameters.size()];
                 for (int i = 0; i < typeParameters.size(); i++) {

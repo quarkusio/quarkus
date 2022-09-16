@@ -1610,6 +1610,7 @@ public class JaxrsClientReactiveProcessor {
                 case VOID:
                 case TYPE_VARIABLE:
                 case UNRESOLVED_TYPE_VARIABLE:
+                case TYPE_VARIABLE_REFERENCE:
                 case WILDCARD_TYPE:
                     throw new IllegalArgumentException("Unsupported multipart form field type: " + fieldType + " in " +
                             "field class " + formClassType.name());

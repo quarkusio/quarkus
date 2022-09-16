@@ -16,9 +16,9 @@ public class JibConfig {
     /**
      * The base image to be used when a container image is being produced for the jar build.
      *
-     * When the application is built against Java 17 or higher, {@code registry.access.redhat.com/ubi8/openjdk-17-runtime:1.11}
+     * When the application is built against Java 17 or higher, {@code registry.access.redhat.com/ubi8/openjdk-17-runtime:1.14}
      * is used as the default.
-     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-11-runtime:1.11} is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-11-runtime:1.14} is used as the default.
      */
     @ConfigItem
     public Optional<String> baseJvmImage;
@@ -29,7 +29,7 @@ public class JibConfig {
      * "registry.access.redhat.com/ubi8/ubi-minimal" which is a bigger base image, but provide more built-in utilities
      * such as the microdnf package manager.
      */
-    @ConfigItem(defaultValue = "quay.io/quarkus/quarkus-micro-image:1.0")
+    @ConfigItem(defaultValue = "quay.io/quarkus/quarkus-micro-image:2.0")
     public String baseNativeImage;
 
     /**

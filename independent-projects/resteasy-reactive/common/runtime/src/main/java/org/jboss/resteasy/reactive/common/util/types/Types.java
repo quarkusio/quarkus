@@ -216,7 +216,7 @@ public final class Types {
         }
         if (type instanceof GenericArrayType)
             return getRawType(((GenericArrayType) type).getGenericComponentType());
-        throw new IllegalArgumentException("Unknow type: " + type);
+        throw new IllegalArgumentException("Unknown type: " + type);
     }
 
 }

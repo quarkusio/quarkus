@@ -124,6 +124,9 @@
                         <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
                         <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
+                        <environmentVariables>
+                            <GITHUB_REPOSITORY>some/repo</GITHUB_REPOSITORY>
+                        </environmentVariables>
                     </configuration>
                 </plugin>
                 <plugin>

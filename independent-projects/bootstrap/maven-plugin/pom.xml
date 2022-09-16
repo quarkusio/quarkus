@@ -47,6 +47,15 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${version.surefire.plugin}</version>
+                <configuration>
+                    <environmentVariables>
+                        <GITHUB_REPOSITORY>some/repo</GITHUB_REPOSITORY>
+                    </environmentVariables>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

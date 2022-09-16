@@ -632,9 +632,9 @@ It's also possible to access the iteration metadata inside the loop via the foll
 * `hasNext` - `true` if the iteration has more elements
 * `isLast` - `true` if `hasNext == false`
 * `isFirst` - `true` if `count == 1`
-* `odd` - `true` if the zero-based index is odd
-* `even` - `true` if the zero-based index is even
-* `indexParity` - outputs `odd` or `even` based on the zero-based index value
+* `odd` - `true` if the element's count is odd
+* `even` - `true` if the element's count is even
+* `indexParity` - outputs `odd` or `even` based on the count value
 
 However, the keys cannot be used directly.
 Instead, a prefix is used to avoid possible collisions with variables from the outer scope.
@@ -679,7 +679,7 @@ The `for` statement also works with integers, starting from 1. In the example be
 [source]
 ----
 {#for i in total}
-  {i}:
+  {i}: ({i_count} {i_indexParity} {i_even})<br>
 {/for}
 ----
 
@@ -687,7 +687,9 @@ And the output will be:
 
 [source]
 ----
-1:2:3:
+1: (1 odd false)
+2: (2 even true)
+3: (3 odd false)
 ----
 
 A loop section may also define the `{#else}` block that is executed when there are no items to iterate:

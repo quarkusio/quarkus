@@ -143,6 +143,28 @@ public class SimpleGeneratorTest {
         assertEquals("10", engine.parse("{io_quarkus_qute_generator_MyService:getDummy(5)}").render());
     }
 
+    @Test
+    public void testArrays() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("1,2,3,4,5,6,7,8,9,10,", engine.parse("{#for i in 10}{i_count},{/for}").render());
+        assertEquals("0,1,2,3,4,5,6,7,8,9,", engine.parse("{#for i in 10}{i_index},{/for}").render());
+        assertEquals("odd,even,odd,even,odd,even,odd,even,odd,even,",
+                engine.parse("{#for i in 10}{i_indexParity},{/for}").render());
+        assertEquals("true,false,true,false,true,",
+                engine.parse("{#for i in 5}{i_odd},{/for}").render());
+        assertEquals("false,true,false,true,false,",
+                engine.parse("{#for i in 5}{i_even},{/for}").render());
+        { //these two are not documented in the guide (https://quarkus.io/guides/qute-reference)
+            assertEquals("true,false,true,false,true,",
+                    engine.parse("{#for i in 5}{i_isOdd},{/for}").render());
+            assertEquals("false,true,false,true,false,",
+                    engine.parse("{#for i in 5}{i_isEven},{/for}").render());
+        }
+        assertEquals("true,true,true,true,false,", engine.parse("{#for i in 5}{i_hasNext},{/for}").render());
+        assertEquals("false,false,false,false,true,", engine.parse("{#for i in 5}{i_isLast},{/for}").render());
+        assertEquals("true,false,false,false,false,", engine.parse("{#for i in 5}{i_isFirst},{/for}").render());
+    }
+
     private Resolver newResolver(String className)
             throws ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException,
             InvocationTargetException, NoSuchMethodException, SecurityException {

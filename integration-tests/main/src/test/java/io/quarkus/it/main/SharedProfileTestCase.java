@@ -22,8 +22,8 @@ import io.restassured.RestAssured;
  * Tests that QuarkusTestProfile works as expected
  */
 @QuarkusTest
-@TestProfile(GreetingProfileTestCase.MyProfile.class)
-public class GreetingProfileTestCase {
+@TestProfile(SharedProfileTestCase.MyProfile.class)
+public class SharedProfileTestCase {
 
     @Test
     public void included() {

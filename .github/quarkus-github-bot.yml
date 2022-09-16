@@ -10,9 +10,6 @@ workflows:
         files:
           - "**/*.md"
           - "**/*.adoc"
-      unless:
-        files:
-          - ".github/**"
 workflowRunAnalysis:
   workflows: ["Quarkus CI"]
 projectsClassic:

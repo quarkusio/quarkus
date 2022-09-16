@@ -163,7 +163,7 @@
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>4.7.1</mongo-client.version>
         <mongo-crypt.version>1.5.2</mongo-crypt.version>
-        <proton-j.version>0.33.10</proton-j.version>
+        <proton-j.version>0.34.0</proton-j.version>
         <javaparser.version>3.24.2</javaparser.version>
         <okhttp.version>3.14.9</okhttp.version><!-- keep in sync with okio -->
         <okio.version>1.17.2</okio.version><!-- keep in sync with okhttp -->
@@ -201,7 +201,7 @@
         <aesh.version>2.6</aesh.version>
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.10.0</strimzi-oauth.version>
-        <strimzi-oauth.nimbus.version>9.24.4</strimzi-oauth.nimbus.version>
+        <strimzi-oauth.nimbus.version>9.25</strimzi-oauth.nimbus.version>
         <java-buildpack-client.version>0.0.6</java-buildpack-client.version>
         <org-crac.version>0.1.1</org-crac.version>
     </properties>

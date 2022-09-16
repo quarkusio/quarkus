@@ -84,6 +84,8 @@ In some cases such a default logic of selecting the challenge is exactly what is
 
 [source,java]
 ----
+@Alternative <1>
+@Priority(1)
 @ApplicationScoped
 public class CustomAwareJWTAuthMechanism implements HttpAuthenticationMechanism {
 
@@ -102,18 +104,21 @@ public class CustomAwareJWTAuthMechanism implements HttpAuthenticationMechanism 
 
 	@Override
 	public Uni<ChallengeData> getChallenge(RoutingContext context) {
-		return selectBetweenJwtAndOidcChallenge(context).getChallenge(context);
+            return selectBetweenJwtAndOidcChallenge(context).getChallenge(context);
 	}
 
 	@Override
 	public Set<Class<? extends AuthenticationRequest>> getCredentialTypes() {
-		return selectBetweenJwtAndOidc(context).getCredentialTypes();
+            Set<Class<? extends AuthenticationRequest>> credentialTypes = new HashSet<>();
+            credentialTypes.addAll(jwt.getCredentialTypes());
+            credentialTypes.addAll(oidc.getCredentialTypes());
+            return credentialTypes;
 	}
 
-	@Override
-	public HttpCredentialTransport getCredentialTransport(RoutingContext context) {
-		return selectBetweenJwtAndOidc(context).getCredentialTransport();
-	}
+        @Override
+        public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
+            return selectBetweenJwtAndOidc(context).getCredentialTransport(context);
+        }
 
         private HttpAuthenticationMechanism selectBetweenJwtAndOidc(RoutingContext context) {
             ....
@@ -125,6 +130,7 @@ public class CustomAwareJWTAuthMechanism implements HttpAuthenticationMechanism 
 
 }
 ----
+<1> Declaring the mechanism an alternative bean ensures this mechanism is used rather than `OidcAuthenticationMechanism` and `JWTAuthMechanism`.
 
 [[security-identity-customization]]
 == Security Identity Customization

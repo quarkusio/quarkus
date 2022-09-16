@@ -325,7 +325,8 @@ These filters are registered by placing the `@io.quarkus.logging.LoggingFilter` 
 
 Finally, the filter is attached using the `filter` configuration property of the appropriate handler.
 
-Let's say for example that we wanted to filter out logging records that contained the word `test` from the console logs.
+Let's say for example that we wanted to filter out logging records that contained a part of text from the console logs.
+The text itself is part of the application configuration and is not hardcoded.
 We could write a filter like so:
 
 [source,java]
@@ -336,12 +337,27 @@ import java.util.logging.LogRecord;
 
 @LoggingFilter(name = "my-filter")
 public final class TestFilter implements Filter {
+
+    private final String part;
+
+    public TestFilter(@ConfigProperty(name = "my-filter.part") String part) {
+        this.part = part;
+    }
+
     @Override
     public boolean isLoggable(LogRecord record) {
-        return !record.getMessage().contains("test");
+        return !record.getMessage().contains(part);
     }
 }
 ----
+
+and configure it in the usual Quarkus way (for example using `application.properties`) like so:
+
+[source,properties]
+----
+my-filter.part=TEST
+----
+
 
 And we would register this filter to the console handler like so:
 

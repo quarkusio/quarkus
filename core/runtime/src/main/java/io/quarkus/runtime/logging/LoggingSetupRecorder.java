@@ -55,7 +55,6 @@ import io.quarkus.runtime.util.ColorSupport;
 public class LoggingSetupRecorder {
 
     private static final org.jboss.logging.Logger log = org.jboss.logging.Logger.getLogger(LoggingSetupRecorder.class);
-    public static final String SHUTDOWN_MESSAGE = " [Error Occurred After Shutdown]";
 
     final RuntimeValue<ConsoleRuntimeConfig> consoleRuntimeConfig;
 
@@ -254,13 +253,12 @@ public class LoggingSetupRecorder {
         }
 
         Map<String, Filter> nameToFilter = new HashMap<>();
+        LogFilterFactory logFilterFactory = LogFilterFactory.load();
         discoveredLogComponents.getNameToFilterClass().forEach(new BiConsumer<>() {
             @Override
             public void accept(String name, String className) {
                 try {
-                    nameToFilter.put(name,
-                            (Filter) Class.forName(className, true, Thread.currentThread().getContextClassLoader())
-                                    .getConstructor().newInstance());
+                    nameToFilter.put(name, logFilterFactory.create(className));
                 } catch (Exception e) {
                     throw new RuntimeException("Unable to create instance of Logging Filter '" + className + "'");
                 }

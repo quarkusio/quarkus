@@ -7,9 +7,11 @@ import java.io.InputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -219,6 +221,7 @@ public class ExtensionDescriptorTask extends DefaultTask {
 
         computeArtifactCoords(extObject);
         computeProjectName(extObject);
+        computeSourceLocation(extObject);
         computeQuarkusCoreVersion(extObject);
         computeQuarkusExtensions(extObject);
 
@@ -305,6 +308,33 @@ public class ExtensionDescriptorTask extends DefaultTask {
                     version == null ? getProject().getVersion().toString() : version);
             extObject.put("artifact", coords.toString());
         }
+    }
+
+    private void computeSourceLocation(ObjectNode extObject) {
+        Map<String, String> repo = getSourceRepo();
+        if (repo != null) {
+            ObjectNode scm = extObject.putObject("scm");
+            for (Map.Entry<String, String> e : repo.entrySet()) {
+                scm.put(e.getKey(), e.getValue());
+
+            }
+        }
+    }
+
+    static Map<String, String> getSourceRepo() {
+        // We could try and parse the .git/config file, but that will be fragile
+        // Let's assume we only care about the repo for official-ish builds produced via github actions
+        String repo = System.getenv("GITHUB_REPOSITORY");
+        if (repo != null) {
+            Map info = new HashMap();
+            String qualifiedRepo = "https://github.com/" + repo;
+            // Don't try and guess where slashes will be, just deal with any double slashes by brute force
+            qualifiedRepo = qualifiedRepo.replace("github.com//", "github.com/");
+
+            info.put("url", qualifiedRepo);
+            return info;
+        }
+        return null;
     }
 
     private void computeQuarkusCoreVersion(ObjectNode extObject) {

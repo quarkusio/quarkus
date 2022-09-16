@@ -29,7 +29,7 @@ public final class TransactionManagerConfiguration {
      * If the value is not absolute then the directory is relative
      * to the <em>user.dir</em> system property.
      */
-    @ConfigItem(defaultValue = "ObjectStore")
+    @ConfigItem(defaultValue = "target/ObjectStore")
     public String objectStoreDirectory;
 
     /**

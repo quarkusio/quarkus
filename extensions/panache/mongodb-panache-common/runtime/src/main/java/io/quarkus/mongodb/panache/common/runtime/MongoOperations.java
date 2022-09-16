@@ -18,7 +18,6 @@ import javax.transaction.TransactionSynchronizationRegistry;
 
 import org.bson.BsonDocument;
 import org.bson.BsonDocumentWriter;
-import org.bson.BsonNull;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.codecs.Codec;
@@ -180,19 +179,19 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     public void delete(Object entity) {
-        VersionHandler versionHandler = VersionHandler.of(entity);
         MongoCollection collection = mongoCollection(entity.getClass());
-        BsonDocument query = buildUpdateQuery(entity);
+        VersionHandler versionHandler = VersionHandler.of(entity, getBsonDocument(collection, entity))
+                .adjustVersionValue();
 
         ClientSession session = getSession(entity);
         DeleteResult deleteResult;
         if (session == null) {
-            deleteResult = collection.deleteOne(query);
+            deleteResult = collection.deleteOne(versionHandler.query);
         } else {
-            deleteResult = collection.deleteOne(session, query);
+            deleteResult = collection.deleteOne(session, versionHandler.query);
         }
 
-        if (versionHandler.containsVersionAnnotation() && deleteResult.getDeletedCount() == 0) {
+        if (versionHandler.hasNotAffectedResults(deleteResult.getDeletedCount())) {
             throwOptimisticLockException(entity);
         }
     }
@@ -217,10 +216,8 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     private void persist(MongoCollection collection, Object entity) {
         ClientSession session = getSession(entity);
 
-        VersionHandler versionUtil = VersionHandler.of(entity);
-        if (versionUtil.containsVersionAnnotation()) {
-            versionUtil.adjustVersionValue();
-        }
+        VersionHandler.of(entity, getBsonDocument(collection, entity))
+                .adjustVersionValue();
 
         if (session == null) {
             collection.insertOne(entity);
@@ -237,10 +234,8 @@ public abstract class MongoOperations<QueryType, UpdateType> {
             ClientSession session = getSession(firstEntity);
 
             for (Object entity : entities) {
-                VersionHandler versionUtil = VersionHandler.of(entity);
-                if (versionUtil.containsVersionAnnotation()) {
-                    versionUtil.adjustVersionValue();
-                }
+                VersionHandler.of(entity, getBsonDocument(collection, entity))
+                        .adjustVersionValue();
             }
 
             if (session == null) {
@@ -252,20 +247,18 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     private void update(MongoCollection collection, Object entity) {
-        VersionHandler versionHandler = VersionHandler.of(entity);
+        VersionHandler versionHandler = VersionHandler.of(entity, getBsonDocument(collection, entity))
+                .adjustVersionValue();
         ClientSession session = getSession(entity);
-
-        BsonDocument query = buildUpdateQuery(entity);
-        versionHandler.adjustVersionValue();
 
         UpdateResult updateResult;
         if (session == null) {
-            updateResult = collection.replaceOne(query, entity);
+            updateResult = collection.replaceOne(versionHandler.query, entity);
         } else {
-            updateResult = collection.replaceOne(session, query, entity);
+            updateResult = collection.replaceOne(session, versionHandler.query, entity);
         }
 
-        if (versionHandler.containsVersionAnnotation() && updateResult.getModifiedCount() == 0) {
+        if (versionHandler.hasNotAffectedResults(updateResult.getModifiedCount())) {
             throwOptimisticLockException(entity);
         }
     }
@@ -291,16 +284,14 @@ public abstract class MongoOperations<QueryType, UpdateType> {
                 collection.insertOne(session, entity);
             }
         } else {
-            VersionHandler versionUtil = VersionHandler.of(entity);
-            if (!versionUtil.containsVersionAnnotation()) {
-                BsonDocument query = buildUpdateQueryWithoutVersion(entity);
-                replaceOne(session, collection, query, entity);
-            } else if (versionUtil.containsVersionAnnotationAndValue()) {
+
+            VersionHandler versionHandler = VersionHandler.of(entity, document);
+            if (!versionHandler.containsVersionAnnotation || !versionHandler.containsVersionValue) {
+                versionHandler.adjustVersionValue();
+                replaceOne(session, collection, versionHandler.query, entity);
+            } else if (versionHandler.containsVersionAnnotationAndValue()) {
+                //when we have version value defined it cannot be considered as an upsert
                 update(entity);
-            } else if (!versionUtil.containsVersionValue()) {
-                BsonDocument query = buildUpdateQuery(entity);
-                versionUtil.adjustVersionValue();
-                replaceOne(session, collection, query, entity);
             }
         }
     }
@@ -338,17 +329,14 @@ public abstract class MongoOperations<QueryType, UpdateType> {
                 bulk.add(new InsertOneModel(entity));
             } else {
                 //insert/update with user provided ID or update
-                VersionHandler versionHandler = VersionHandler.of(entity);
+                VersionHandler versionHandler = VersionHandler.of(entity, document)
+                        .adjustVersionValue();
                 if (versionHandler.containsVersionAnnotationAndValue()) {
                     //it will ignore in silence not matching updates.
-                    BsonDocument query = buildUpdateQuery(entity);
-                    versionHandler.adjustVersionValue();
-                    bulk.add(new ReplaceOneModel(query, entity));
-                } else if (!versionHandler.containsVersionValue()) {
+                    bulk.add(new ReplaceOneModel(versionHandler.query, entity));
+                } else if (!versionHandler.containsVersionValue) {
                     //only try upsert when there is no version value
-                    BsonDocument query = buildUpdateQuery(entity);
-                    versionHandler.adjustVersionValue();
-                    bulk.add(new ReplaceOneModel(query, entity, new ReplaceOptions().upsert(true)));
+                    bulk.add(new ReplaceOneModel(versionHandler.query, entity, new ReplaceOptions().upsert(true)));
                 }
             }
         }
@@ -369,39 +357,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         throw new OptimisticLockException(errorMsg.toString());
     }
 
-    /**
-     * We build the query that will be used to update the document, can have id, or id/version.
-     */
-    private BsonDocument buildUpdateQuery(Object entity) {
-        MongoCollection collection = mongoCollection(entity.getClass());
-        //we transform the entity as a document first
-        BsonDocument document = getBsonDocument(collection, entity);
-
-        //then we get its id field and create a new Document with only this one that will be our replace query
-        BsonValue id = document.get(ID);
-
-        VersionHandler versionUtil = VersionHandler.of(entity);
-        if (versionUtil.containsVersionAnnotation()) {
-            BsonValue version = document.get(VERSION);
-            if (version == null) {
-                version = new BsonNull();
-            }
-            return new BsonDocument().append(ID, id).append(VERSION, version);
-        }
-        return new BsonDocument().append(ID, id);
-    }
-
-    private BsonDocument buildUpdateQueryWithoutVersion(Object entity) {
-        MongoCollection collection = mongoCollection(entity.getClass());
-        //we transform the entity as a document first
-        BsonDocument document = getBsonDocument(collection, entity);
-
-        //then we get its id field and create a new Document with only this one that will be our replace query
-        BsonValue id = document.get(ID);
-        return new BsonDocument().append(ID, id);
-    }
-
-    private BsonDocument getBsonDocument(MongoCollection collection, Object entity) {
+    public BsonDocument getBsonDocument(MongoCollection collection, Object entity) {
         BsonDocument document = new BsonDocument();
         Codec codec = collection.getCodecRegistry().get(entity.getClass());
         codec.encode(new BsonDocumentWriter(document), entity, EncoderContext.builder().build());

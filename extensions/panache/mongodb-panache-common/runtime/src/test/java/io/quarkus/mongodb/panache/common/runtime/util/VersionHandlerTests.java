@@ -1,36 +1,54 @@
 package io.quarkus.mongodb.panache.common.runtime.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.mongodb.panache.common.Version;
 
 public class VersionHandlerTests {
 
+    private static final String VERSION = "version";
+
     @Test
     public void extractVersion() {
-        assertTrue(VersionHandler.of(new EntityWithPublicVersion(null, 0L)).containsVersionValue());
+
+        BsonDocument bsonDocument = new BsonDocument("_id", new BsonString("abc"));
+
+        assertTrue(VersionHandler.of(new EntityWithPublicVersion(null, 0L), bsonDocument).containsVersionValue);
 
         EntityWithPublicVersion entityWithPublicVersionNullValues = new EntityWithPublicVersion(null, null);
-        assertTrue(VersionHandler.of(entityWithPublicVersionNullValues).containsVersionAnnotation());
-        assertFalse(VersionHandler.of(entityWithPublicVersionNullValues).containsVersionValue());
+        VersionHandler versionHandler = VersionHandler.of(entityWithPublicVersionNullValues, bsonDocument);
 
-        assertTrue(VersionHandler.of(new EntityWithProtectedVersion(null, 1L)).containsVersionValue());
+        assertEquals(VERSION, versionHandler.versionFieldName);
+        assertTrue(versionHandler.containsVersionAnnotation);
+        assertFalse(versionHandler.containsVersionValue);
+
+        assertTrue(VersionHandler.of(new EntityWithProtectedVersion(null, 1L), bsonDocument).containsVersionValue);
         EntityWithProtectedVersion entityWithProtectedVersionNullValues = new EntityWithProtectedVersion(null, null);
-        assertTrue(VersionHandler.of(entityWithProtectedVersionNullValues).containsVersionAnnotation());
-        assertFalse(VersionHandler.of(entityWithProtectedVersionNullValues).containsVersionValue());
 
-        assertTrue(VersionHandler.of(new EntityWithPrivateVersion(null, 1L)).containsVersionValue());
+        versionHandler = VersionHandler.of(entityWithProtectedVersionNullValues, bsonDocument);
+        assertEquals(VERSION, versionHandler.versionFieldName);
+        assertTrue(versionHandler.containsVersionAnnotation);
+        assertFalse(versionHandler.containsVersionValue);
+
+        assertTrue(VersionHandler.of(new EntityWithPrivateVersion(null, 1L), bsonDocument).containsVersionValue);
         EntityWithPrivateVersion entityWithPrivateVersionNullValues = new EntityWithPrivateVersion(null, null);
-        assertTrue(VersionHandler.of(entityWithPrivateVersionNullValues).containsVersionAnnotation());
-        assertFalse(VersionHandler.of(entityWithPrivateVersionNullValues).containsVersionValue());
+        versionHandler = VersionHandler.of(entityWithPrivateVersionNullValues, bsonDocument);
+        assertEquals("myVersion", versionHandler.versionFieldName);
+        assertTrue(versionHandler.containsVersionAnnotation);
+        assertFalse(versionHandler.containsVersionValue);
 
-        assertTrue(VersionHandler.of(new EntityWithInheritVersion(2L, null)).containsVersionValue());
+        assertTrue(VersionHandler.of(new EntityWithInheritVersion(2L, null), bsonDocument).containsVersionValue);
         EntityWithInheritVersion entityWithInheritVersionNullValues = new EntityWithInheritVersion(null, null);
-        assertTrue(VersionHandler.of(entityWithInheritVersionNullValues).containsVersionAnnotation());
-        assertFalse(VersionHandler.of(entityWithInheritVersionNullValues).containsVersionValue());
+        versionHandler = VersionHandler.of(entityWithInheritVersionNullValues, bsonDocument);
+        assertEquals(VERSION, versionHandler.versionFieldName);
+        assertTrue(versionHandler.containsVersionAnnotation);
+        assertFalse(versionHandler.containsVersionValue);
     }
 
     public static class EntityWithPrivateVersion {
@@ -38,11 +56,11 @@ public class VersionHandlerTests {
         private String id;
 
         @Version
-        private Long version;
+        private Long myVersion;
 
-        public EntityWithPrivateVersion(String id, Long version) {
+        public EntityWithPrivateVersion(String id, Long myVersion) {
             this.id = id;
-            this.version = version;
+            this.myVersion = myVersion;
         }
     }
 

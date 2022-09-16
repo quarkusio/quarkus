@@ -48,6 +48,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.narayana.jta.runtime.CDIDelegatingTransactionManager;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaProducers;
@@ -173,4 +174,8 @@ class NarayanaJtaProcessor {
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(TransactionManager.class));
     }
 
+    @BuildStep
+    void logCleanupFilters(BuildProducer<LogCleanupFilterBuildItem> logCleanupFilters) {
+        logCleanupFilters.produce(new LogCleanupFilterBuildItem("com.arjuna.ats.jbossatx", "ARJUNA032010:", "ARJUNA032013:"));
+    }
 }

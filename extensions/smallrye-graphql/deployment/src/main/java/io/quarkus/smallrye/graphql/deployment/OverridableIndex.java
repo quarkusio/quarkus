@@ -2,6 +2,7 @@ package io.quarkus.smallrye.graphql.deployment;
 
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -53,6 +54,18 @@ public class OverridableIndex implements IndexView {
     }
 
     @Override
+    public Collection<ClassInfo> getKnownDirectSubinterfaces(DotName dn) {
+        return overrideCollection(original.getKnownDirectSubinterfaces(dn), override.getKnownDirectSubinterfaces(dn),
+                classInfoComparator);
+    }
+
+    @Override
+    public Collection<ClassInfo> getAllKnownSubinterfaces(DotName dn) {
+        return overrideCollection(original.getAllKnownSubinterfaces(dn), override.getAllKnownSubinterfaces(dn),
+                classInfoComparator);
+    }
+
+    @Override
     public Collection<ClassInfo> getKnownDirectImplementors(DotName dn) {
         return overrideCollection(original.getKnownDirectImplementors(dn), override.getKnownDirectImplementors(dn),
                 classInfoComparator);
@@ -88,6 +101,17 @@ public class OverridableIndex implements IndexView {
     @Override
     public Collection<ClassInfo> getKnownUsers(DotName dn) {
         return overrideCollection(original.getKnownUsers(dn), override.getKnownUsers(dn), classInfoComparator);
+    }
+
+    @Override
+    public Collection<ClassInfo> getClassesInPackage(DotName pn) {
+        return overrideCollection(original.getClassesInPackage(pn), override.getClassesInPackage(pn), classInfoComparator);
+    }
+
+    @Override
+    public Set<DotName> getSubpackages(DotName pn) {
+        return new HashSet<>(overrideCollection(original.getSubpackages(pn), override.getSubpackages(pn),
+                Comparator.naturalOrder()));
     }
 
     private Comparator<ClassInfo> classInfoComparator = new Comparator<ClassInfo>() {

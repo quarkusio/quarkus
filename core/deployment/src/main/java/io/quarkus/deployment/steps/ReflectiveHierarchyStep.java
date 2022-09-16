@@ -22,6 +22,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
+import org.jboss.jandex.TypeVariableReference;
 import org.jboss.jandex.UnresolvedTypeVariable;
 import org.jboss.jandex.VoidType;
 import org.jboss.logging.Logger;
@@ -133,7 +134,8 @@ public class ReflectiveHierarchyStep {
             Deque<ReflectiveHierarchyVisitor> visits) {
         if (type instanceof VoidType ||
                 type instanceof PrimitiveType ||
-                type instanceof UnresolvedTypeVariable) {
+                type instanceof UnresolvedTypeVariable ||
+                type instanceof TypeVariableReference) {
             return;
         } else if (type instanceof ClassType) {
             if (reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(type.name())) {

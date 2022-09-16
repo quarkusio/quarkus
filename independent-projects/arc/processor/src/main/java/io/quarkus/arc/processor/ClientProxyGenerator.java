@@ -35,7 +35,6 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.jandex.TypeVariable;
 
 /**
  *
@@ -120,7 +119,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
         if (!providerClass.typeParameters().isEmpty()) {
             clientProxy.setSignature(AsmUtilCopy.getGeneratedSubClassSignature(providerClass, bean.getProviderType()));
         }
-        Map<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariables = Types.resolvedTypeVariables(providerClass,
+        Map<ClassInfo, Map<String, Type>> resolvedTypeVariables = Types.resolvedTypeVariables(providerClass,
                 bean.getDeployment());
         FieldCreator beanField = clientProxy.getFieldCreator(BEAN_FIELD, InjectableBean.class)
                 .setModifiers(ACC_PRIVATE | ACC_FINAL);
@@ -148,10 +147,10 @@ public class ClientProxyGenerator extends AbstractGenerator {
             MethodDescriptor originalMethodDescriptor = MethodDescriptor.of(method);
             MethodCreator forward = clientProxy.getMethodCreator(originalMethodDescriptor);
             if (AsmUtilCopy.needsSignature(method)) {
-                Map<TypeVariable, Type> methodClassVariables = resolvedTypeVariables.get(method.declaringClass());
+                Map<String, Type> methodClassVariables = resolvedTypeVariables.get(method.declaringClass());
                 String signature = AsmUtilCopy.getSignature(method, typeVariable -> {
                     if (methodClassVariables != null) {
-                        Type ret = methodClassVariables.get(typeVariable);
+                        Type ret = methodClassVariables.get(typeVariable.identifier());
                         // let's not map a TV to itself
                         if (ret != typeVariable)
                             return ret;

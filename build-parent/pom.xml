@@ -33,9 +33,9 @@
         <version.exec.plugin>3.0.0</version.exec.plugin>
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
-        <!-- jandex maven plugin version -->
-        <jandex-maven-plugin.version>1.2.3</jandex-maven-plugin.version>
-        <jandex-gradle-plugin.version>0.13.0</jandex-gradle-plugin.version>
+        <!-- Jandex versions -->
+        <jandex.version>3.0.0</jandex.version>
+        <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
@@ -599,9 +599,9 @@
                     </configuration>
                 </plugin>
                 <plugin>
-                    <groupId>org.jboss.jandex</groupId>
+                    <groupId>io.smallrye</groupId>
                     <artifactId>jandex-maven-plugin</artifactId>
-                    <version>${jandex-maven-plugin.version}</version>
+                    <version>${jandex.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
@@ -1034,7 +1034,7 @@
                                         <pluginExecution>
                                             <pluginExecutionFilter>
                                                 <groupId>
-                                                    org.jboss.jandex
+                                                    io.smallrye
                                                 </groupId>
                                                 <artifactId>
                                                     jandex-maven-plugin

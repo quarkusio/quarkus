@@ -170,6 +170,7 @@ public class DevMojo extends AbstractMojo {
     private static final String ORG_JETBRAINS_KOTLIN = "org.jetbrains.kotlin";
     private static final String KOTLIN_MAVEN_PLUGIN = "kotlin-maven-plugin";
 
+    private static final String IO_SMALLRYE = "io.smallrye";
     private static final String ORG_JBOSS_JANDEX = "org.jboss.jandex";
     private static final String JANDEX_MAVEN_PLUGIN = "jandex-maven-plugin";
 
@@ -513,8 +514,9 @@ public class DevMojo extends AbstractMojo {
         boolean prepareNeeded = true;
         boolean prepareTestsNeeded = true;
 
-        String jandexGoalPhase = getGoalPhaseOrNull(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, "jandex", "process-classes");
-        boolean indexClassNeeded = jandexGoalPhase != null;
+        String jandexGoalPhase = getGoalPhaseOrNull(IO_SMALLRYE, JANDEX_MAVEN_PLUGIN, "jandex", "process-classes");
+        String legacyJandexGoalPhase = getGoalPhaseOrNull(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, "jandex", "process-classes");
+        boolean indexClassNeeded = legacyJandexGoalPhase != null || jandexGoalPhase != null;
 
         List<String> goals = session.getGoals();
         // check for default goal(s) if none were specified explicitly,
@@ -538,6 +540,10 @@ public class DevMojo extends AbstractMojo {
                     && POST_COMPILE_PHASES.indexOf(goal) >= POST_COMPILE_PHASES.indexOf(jandexGoalPhase)) {
                 indexClassNeeded = false;
             }
+            if (jandexGoalPhase == null && legacyJandexGoalPhase != null
+                    && POST_COMPILE_PHASES.indexOf(goal) >= POST_COMPILE_PHASES.indexOf(legacyJandexGoalPhase)) {
+                indexClassNeeded = false;
+            }
 
             if (POST_TEST_COMPILE_PHASES.contains(goal)) {
                 testCompileNeeded = false;
@@ -552,7 +558,7 @@ public class DevMojo extends AbstractMojo {
             triggerCompile(false, prepareNeeded);
         }
         if (indexClassNeeded) {
-            initClassIndexes();
+            initClassIndexes(jandexGoalPhase == null);
         }
         if (testCompileNeeded) {
             try {
@@ -574,8 +580,12 @@ public class DevMojo extends AbstractMojo {
                 Map.of("mode", LaunchMode.DEVELOPMENT.name(), QuarkusBootstrapMojo.CLOSE_BOOTSTRAPPED_APP, "false"));
     }
 
-    private void initClassIndexes() throws MojoExecutionException {
-        executeIfConfigured(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, "jandex", Collections.emptyMap());
+    private void initClassIndexes(boolean legacyJandex) throws MojoExecutionException {
+        if (legacyJandex) {
+            executeIfConfigured(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, "jandex", Collections.emptyMap());
+        } else {
+            executeIfConfigured(IO_SMALLRYE, JANDEX_MAVEN_PLUGIN, "jandex", Collections.emptyMap());
+        }
     }
 
     private PluginDescriptor getPluginDescriptor() {

@@ -3,7 +3,6 @@ package io.quarkus.spring.di.deployment;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -26,8 +25,8 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -39,7 +38,6 @@ import org.springframework.stereotype.Service;
 
 import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.util.IoUtil;
 
 /**
  * @author <a href="mailto:brent.n.douglas@gmail.com">Brent Douglas</a>
@@ -205,17 +203,12 @@ class SpringDIProcessorTest {
     }
 
     private IndexView getIndex(final Class<?>... classes) {
-        final Indexer indexer = new Indexer();
-        for (final Class<?> clazz : classes) {
-            final String className = clazz.getName();
-            try (InputStream stream = IoUtil.readClass(getClass().getClassLoader(), className)) {
-                final ClassInfo beanInfo = indexer.index(stream);
-            } catch (IOException e) {
-                throw new IllegalStateException("Failed to index: " + className, e);
-            }
+        try {
+            Index index = Index.of(classes);
+            return BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(), new ConcurrentHashMap<>(), index);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to index classes", e);
         }
-        return BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(), new ConcurrentHashMap<>(),
-                indexer.complete());
     }
 
     @SafeVarargs

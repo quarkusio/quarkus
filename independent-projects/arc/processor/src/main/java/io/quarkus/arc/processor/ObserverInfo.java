@@ -27,7 +27,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
-import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 
 /**
@@ -54,7 +53,7 @@ public class ObserverInfo implements InjectionTargetInfo {
 
         Type observedType = observerMethod.parameterType(eventParameter.position());
         if (Types.containsTypeVariable(observedType)) {
-            Map<TypeVariable, Type> resolvedTypeVariables = Types
+            Map<String, Type> resolvedTypeVariables = Types
                     .resolvedTypeVariables(declaringBean.getImplClazz(), declaringBean.getDeployment())
                     .getOrDefault(observerMethod.declaringClass(), Collections.emptyMap());
             observedType = Types.resolveTypeParam(observedType, resolvedTypeVariables,

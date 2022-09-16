@@ -22,7 +22,7 @@ public abstract class AbstractPathCustomisationTest {
     void testGet(String path, String accept) {
         given().accept(accept)
                 .when().get(path)
-                .then().statusCode(200);
+                .then().log().all().statusCode(200);
     }
 
     @ParameterizedTest

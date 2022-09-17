@@ -40,6 +40,12 @@ public class ProfileManager {
     }
 
     //NOTE: changes made here must be replicated in BootstrapProfile
+
+    /**
+     * @deprecated This method is not suited to multiple profiles, because it returns a single string. Please use
+     *             {@link ConfigUtils#getProfiles()} instead, which returns a List of profiles.
+     */
+    @Deprecated
     public static String getActiveProfile() {
         if (launchMode == LaunchMode.TEST) {
             String profile = System.getProperty(QUARKUS_TEST_PROFILE_PROP);

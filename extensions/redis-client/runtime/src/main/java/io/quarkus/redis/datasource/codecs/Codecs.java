@@ -22,6 +22,9 @@ public class Codecs {
         if (clazz.equals(String.class)) {
             return (Codec<T>) StringCodec.INSTANCE;
         }
+        if (clazz.equals(byte[].class)) {
+            return (Codec<T>) ByteArrayCodec.INSTANCE;
+        }
         // JSON by default
         return new JsonCodec<>(clazz);
     }
@@ -111,6 +114,25 @@ public class Codecs {
                 return 0;
             }
             return Integer.parseInt(new String(item, StandardCharsets.UTF_8));
+        }
+    }
+
+    public static class ByteArrayCodec implements Codec<byte[]> {
+
+        public static ByteArrayCodec INSTANCE = new ByteArrayCodec();
+
+        private ByteArrayCodec() {
+            // Avoid direct instantiation;
+        }
+
+        @Override
+        public byte[] encode(byte[] item) {
+            return item;
+        }
+
+        @Override
+        public byte[] decode(byte[] item) {
+            return item;
         }
     }
 

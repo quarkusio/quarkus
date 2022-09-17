@@ -86,11 +86,13 @@ public class NarayanaJtaRecorder {
                 .setXaResourceOrphanFilterClassNames(transactions.xaResourceOrphanFilters);
     }
 
-    public void handleShutdown(ShutdownContext context) {
+    public void handleShutdown(ShutdownContext context, TransactionManagerConfiguration transactions) {
         context.addLastShutdownTask(new Runnable() {
             @Override
             public void run() {
-                RecoveryManager.manager().terminate(true);
+                if (transactions.enableRecovery) {
+                    RecoveryManager.manager().terminate(true);
+                }
                 TransactionReaper.terminate(false);
             }
         });

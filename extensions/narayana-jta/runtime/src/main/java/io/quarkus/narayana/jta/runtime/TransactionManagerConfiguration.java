@@ -33,6 +33,12 @@ public final class TransactionManagerConfiguration {
     public String objectStoreDirectory;
 
     /**
+     * Start the recovery service on startup.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean enableRecovery;
+
+    /**
      * The list of recovery modules
      */
     @ConfigItem(defaultValue = "com.arjuna.ats.internal.arjuna.recovery.AtomicActionRecoveryModule," +

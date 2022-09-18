@@ -74,6 +74,7 @@ public class OpenshiftProcessor {
     public static final String OPENSHIFT = "openshift";
     private static final String BUILD_CONFIG_NAME = "openshift.io/build-config.name";
     private static final String RUNNING = "Running";
+    private static final String JAVA_APP_JAR = "JAVA_APP_JAR";
 
     private static final int LOG_TAIL_SIZE = 10;
     private static final Logger LOG = Logger.getLogger(OpenshiftProcessor.class);
@@ -160,8 +161,10 @@ public class OpenshiftProcessor {
                 cmd.add("java");
                 cmd.addAll(config.getEffectiveJvmArguments());
                 cmd.addAll(Arrays.asList("-jar", pathToJar));
-                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar("JAVA_APP_JAR", pathToJar, null));
+                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(JAVA_APP_JAR, pathToJar, null));
                 commandProducer.produce(KubernetesCommandBuildItem.command(cmd));
+            } else if (baseImage.isEmpty()) {
+                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(JAVA_APP_JAR, pathToJar, null));
             }
         }
     }

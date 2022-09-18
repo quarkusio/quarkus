@@ -1,5 +1,29 @@
 package io.quarkus.mongodb.panache.common.runtime;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.transaction.Status;
+import javax.transaction.Synchronization;
+import javax.transaction.SystemException;
+import javax.transaction.TransactionManager;
+import javax.transaction.TransactionSynchronizationRegistry;
+
+import org.bson.BsonDocument;
+import org.bson.BsonDocumentWriter;
+import org.bson.BsonValue;
+import org.bson.Document;
+import org.bson.codecs.Codec;
+import org.bson.codecs.EncoderContext;
+import org.jboss.logging.Logger;
+
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
@@ -10,6 +34,7 @@ import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.mongodb.panache.common.MongoEntity;
@@ -20,28 +45,6 @@ import io.quarkus.mongodb.panache.common.runtime.util.VersionHandler;
 import io.quarkus.mongodb.panache.common.transaction.MongoTransactionException;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
-import org.bson.BsonDocument;
-import org.bson.BsonDocumentWriter;
-import org.bson.BsonValue;
-import org.bson.Document;
-import org.bson.codecs.Codec;
-import org.bson.codecs.EncoderContext;
-import org.jboss.logging.Logger;
-
-import javax.transaction.Status;
-import javax.transaction.Synchronization;
-import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
-import javax.transaction.TransactionSynchronizationRegistry;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public abstract class MongoOperations<QueryType, UpdateType> {
@@ -244,7 +247,8 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     private void update(MongoCollection collection, Object entity, Optional<VersionHandler> versionHandlerOptional) {
-        VersionHandler versionHandler = versionHandlerOptional.orElseGet(() -> VersionHandler.of(entity, getBsonDocument(collection, entity)));
+        VersionHandler versionHandler = versionHandlerOptional
+                .orElseGet(() -> VersionHandler.of(entity, getBsonDocument(collection, entity)));
         ClientSession session = getSession(entity);
 
         UpdateResult updateResult;
@@ -286,7 +290,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
                 replaceOne(session, collection, versionHandler.query, entity);
             } else if (versionHandler.containsVersionAnnotationAndValue()) {
                 //when we have version value defined it cannot be considered as an upsert
-                update(collection, entity);
+                update(collection, entity, Optional.of(versionHandler));
             }
         }
     }

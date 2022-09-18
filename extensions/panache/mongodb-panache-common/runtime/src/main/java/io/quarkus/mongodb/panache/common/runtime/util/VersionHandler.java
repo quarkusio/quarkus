@@ -18,22 +18,10 @@ public class VersionHandler {
 
     public final Object entity;
     public final Field versionField;
-    //    public final Long versionValue;
     public final BsonDocument query;
-
     public final Boolean containsVersionAnnotation;
     public final Boolean containsVersionValue;
     public final String versionFieldName;
-
-    //    private VersionHandler(final Object entity,
-    //                           Field versionField,
-    //                           Long versionValue,
-    //                           final BsonDocument query) {
-    //        this.entity = entity;
-    //        this.versionField = versionField;
-    //        this.versionValue = versionValue;
-    //        this.query = query;
-    //    }
 
     private VersionHandler(final Object entity,
             final BsonDocument query,
@@ -47,6 +35,10 @@ public class VersionHandler {
         this.containsVersionAnnotation = containsVersionAnnotation;
         this.containsVersionValue = containsVersionValue;
         this.versionFieldName = versionFieldName;
+
+        if (versionField != null) {
+            adjustVersionValue();
+        }
     }
 
     public static VersionHandler of(Object entity, BsonDocument document) {
@@ -97,7 +89,7 @@ public class VersionHandler {
         }
     }
 
-    public VersionHandler adjustVersionValue() {
+    private VersionHandler adjustVersionValue() {
         try {
             if (!containsVersionAnnotation) {
                 return this;

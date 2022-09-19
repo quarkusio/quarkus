@@ -67,7 +67,7 @@ So, go ahead and add the following options to that file:
 [source,properties,subs=attributes+]
 ----
 quarkus.native.container-build=true
-quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor}
+quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}
 quarkus.container-image.build=true
 quarkus.container-image.group=test
 ----
@@ -487,7 +487,7 @@ These are called expert options and you can learn more about them by running:
 
 [source,bash,subs=attributes+]
 ----
-docker run quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor} --expert-options-all
+docker run quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor} --expert-options-all
 ----
 
 [WARNING]
@@ -1603,7 +1603,7 @@ E.g.
 [source,bash,subs=attributes+]
 ----
 ./mvnw package -DskipTests -Dnative -Dquarkus.native.container-build=true \
-    -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor} \
+    -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor} \
     -Dquarkus.native.enable-vm-inspection=true
 ----
 

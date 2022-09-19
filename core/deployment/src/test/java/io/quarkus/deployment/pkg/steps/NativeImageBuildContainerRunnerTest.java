@@ -28,7 +28,7 @@ class NativeImageBuildContainerRunnerTest {
         command = localRunner.buildCommand("docker", Collections.emptyList(), Collections.emptyList());
         found = false;
         for (String part : command) {
-            if (part.contains("ubi-quarkus-native-image")) {
+            if (part.contains("ubi-quarkus-graalvmce-builder-image")) {
                 found = true;
             }
         }
@@ -39,7 +39,7 @@ class NativeImageBuildContainerRunnerTest {
         command = localRunner.buildCommand("docker", Collections.emptyList(), Collections.emptyList());
         found = false;
         for (String part : command) {
-            if (part.contains("ubi-quarkus-mandrel")) {
+            if (part.contains("ubi-quarkus-mandrel-builder-image")) {
                 found = true;
             }
         }

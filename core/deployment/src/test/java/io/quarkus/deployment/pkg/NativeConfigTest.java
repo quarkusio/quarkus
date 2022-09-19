@@ -8,18 +8,21 @@ class NativeConfigTest {
 
     @Test
     public void testBuilderImageProperlyDetected() {
-        assertThat(createConfig("graalvm").getEffectiveBuilderImage()).contains("ubi-quarkus-native-image")
+        assertThat(createConfig("graalvm").getEffectiveBuilderImage()).contains("ubi-quarkus-graalvmce-builder-image")
                 .contains("java17");
-        assertThat(createConfig("GraalVM").getEffectiveBuilderImage()).contains("ubi-quarkus-native-image")
+        assertThat(createConfig("GraalVM").getEffectiveBuilderImage()).contains("ubi-quarkus-graalvmce-builder-image")
                 .contains("java17");
-        assertThat(createConfig("GraalVM").getEffectiveBuilderImage()).contains("ubi-quarkus-native-image")
+        assertThat(createConfig("GraalVM").getEffectiveBuilderImage()).contains("ubi-quarkus-graalvmce-builder-image")
                 .contains("java17");
-        assertThat(createConfig("GRAALVM").getEffectiveBuilderImage()).contains("ubi-quarkus-native-image")
+        assertThat(createConfig("GRAALVM").getEffectiveBuilderImage()).contains("ubi-quarkus-graalvmce-builder-image")
                 .contains("java17");
 
-        assertThat(createConfig("mandrel").getEffectiveBuilderImage()).contains("ubi-quarkus-mandrel").contains("java17");
-        assertThat(createConfig("Mandrel").getEffectiveBuilderImage()).contains("ubi-quarkus-mandrel").contains("java17");
-        assertThat(createConfig("MANDREL").getEffectiveBuilderImage()).contains("ubi-quarkus-mandrel").contains("java17");
+        assertThat(createConfig("mandrel").getEffectiveBuilderImage()).contains("ubi-quarkus-mandrel-builder-image")
+                .contains("java17");
+        assertThat(createConfig("Mandrel").getEffectiveBuilderImage()).contains("ubi-quarkus-mandrel-builder-image")
+                .contains("java17");
+        assertThat(createConfig("MANDREL").getEffectiveBuilderImage()).contains("ubi-quarkus-mandrel-builder-image")
+                .contains("java17");
 
         assertThat(createConfig("aRandomString").getEffectiveBuilderImage()).isEqualTo("aRandomString");
     }

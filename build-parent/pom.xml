@@ -34,7 +34,7 @@
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
         <!-- Jandex versions -->
-        <jandex.version>3.0.0</jandex.version>
+        <jandex.version>3.0.1</jandex.version>
         <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
         <!-- These properties are needed in order for them to be resolvable by the documentation -->

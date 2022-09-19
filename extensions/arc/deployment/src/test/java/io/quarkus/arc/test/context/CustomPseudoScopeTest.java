@@ -5,12 +5,14 @@ import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.List;
 import java.util.Map;
 
 import javax.enterprise.context.spi.Contextual;
@@ -21,6 +23,7 @@ import javax.inject.Scope;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.ContextCreator;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem;
@@ -61,6 +64,14 @@ public class CustomPseudoScopeTest {
     @Test
     public void testBean() {
         assertEquals("PONG", bean.ping());
+    }
+
+    @Test
+    public void testContainer() {
+        InjectableContext pseudoContext = Arc.container().getActiveContext(MyPseudoScope.class);
+        assertNotNull(pseudoContext);
+        List<InjectableContext> pseudoContexts = Arc.container().getContexts(MyPseudoScope.class);
+        assertEquals(1, pseudoContexts.size());
     }
 
     @MyPseudoScope

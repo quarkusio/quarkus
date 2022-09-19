@@ -15,8 +15,8 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
-@Produces("application/json")
-@Consumes("application/json")
+@Produces({ "application/json", "text/plain" })
+@Consumes({ "application/json", "text/plain" })
 public class SharedProvider implements MessageBodyReader<Shared>, MessageBodyWriter<Shared> {
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {

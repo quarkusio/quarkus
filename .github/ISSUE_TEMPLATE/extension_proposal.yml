@@ -1,6 +1,7 @@
 name: Extension Proposal
 description: Propose a new extension in Quarkiverse
 labels: [area/quarkiverse,kind/extension-proposal]
+title: "[Extension Proposal] "
 body:
   - type: textarea
     validations:
@@ -41,7 +42,7 @@ body:
   - type: textarea
     attributes:
       label: Repository Topics
-      description: "To help other people find and contribute to your project, you can add topics to your repository related to your project's intended purpose, subject area, affinity groups, or other important qualities."
+      description: "To help other people find and contribute to your project, you can add topics to your repository related to your project's intended purpose, subject area, affinity groups, or other important qualities. They must include only lowercase alphanumeric characters or hyphens and cannot start with a hyphen and consist of 35 characters or less"
       value: |
         - quarkus-extension
         - 

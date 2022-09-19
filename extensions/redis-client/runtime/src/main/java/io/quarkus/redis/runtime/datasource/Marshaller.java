@@ -149,9 +149,7 @@ public class Marshaller {
         Map<F, V> map = new LinkedHashMap<>();
         for (F field : fields) {
             Response v = iterator.next();
-            if (v != null) { // Skip null entries
-                map.put(field, decode(typeOfValue, v));
-            }
+            map.put(field, decode(typeOfValue, v));
         }
         return map;
     }

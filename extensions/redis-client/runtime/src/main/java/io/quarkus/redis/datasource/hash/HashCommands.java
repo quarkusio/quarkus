@@ -125,6 +125,7 @@ public interface HashCommands<K, F, V> extends RedisCommands {
      * @param key the key
      * @param fields the fields
      * @return list of values associated with the given fields, in the same order as they are requested.
+     *         If a requested field does not exist, the returned map contains a {@code null} value for that field.
      **/
     Map<F, V> hmget(K key, F... fields);
 

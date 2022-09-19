@@ -63,7 +63,8 @@ public interface ReactiveValueCommands<K, V> extends ReactiveRedisCommands {
      * Requires Redis 1.0.0
      *
      * @param key the key
-     * @return the value of key, or {@code null} when key does not exist.
+     * @return the value of key, or {@code null} when key does not exist. If one of the passed key does not exist, the
+     *         returned map contains a {@code null} value associated with the missing key.
      **/
     Uni<V> get(K key);
 

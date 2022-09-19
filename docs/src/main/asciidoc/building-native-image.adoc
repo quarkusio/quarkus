@@ -399,7 +399,7 @@ The reason for this is that the local build driver invoked through `-Dquarkus.na
 ====
 Building with Mandrel requires a custom builder image parameter to be passed additionally:
 
-:build-additional-parameters: -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor}
+:build-additional-parameters: -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}
 include::{includes}/devtools/build-native-container-parameters.adoc[]
 :!build-additional-parameters:
 
@@ -407,7 +407,7 @@ Please note that the above command points to a floating tag.
 It is highly recommended to use the floating tag,
 so that your builder image remains up-to-date and secure.
 If you absolutely must, you may hard-code to a specific tag
-(see https://quay.io/repository/quarkus/ubi-quarkus-mandrel?tab=tags[here] for available tags),
+(see https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[here] for available tags),
 but be aware that you won't get security updates that way and it's unsupported.
 ====
 
@@ -454,7 +454,7 @@ The project generation has provided a `Dockerfile.native-micro` in the `src/main
 
 [source,dockerfile]
 ----
-FROM quay.io/quarkus/quarkus-micro-image:1.0
+FROM quay.io/quarkus/quarkus-micro-image:2.0
 WORKDIR /work/
 COPY target/*-runner /work/application
 RUN chmod 775 /work
@@ -499,7 +499,7 @@ The project generation has also provided a `Dockerfile.native` in the `src/main/
 
 [source,dockerfile]
 ----
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.5
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.6
 WORKDIR /work/
 COPY target/*-runner /work/application
 RUN chmod 775 /work
@@ -528,7 +528,7 @@ Sample Dockerfile for building with Maven:
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor} AS build
+FROM quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:{graalvm-flavor} AS build
 COPY --chown=quarkus:quarkus mvnw /code/mvnw
 COPY --chown=quarkus:quarkus .mvn /code/.mvn
 COPY --chown=quarkus:quarkus pom.xml /code/
@@ -539,7 +539,7 @@ COPY src /code/src
 RUN ./mvnw package -Pnative
 
 ## Stage 2 : create the docker final image
-FROM quay.io/quarkus/quarkus-micro-image:1.0
+FROM quay.io/quarkus/quarkus-micro-image:2.0
 WORKDIR /work/
 COPY --from=build /code/target/*-runner /work/application
 
@@ -566,7 +566,7 @@ Sample Dockerfile for building with Gradle:
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor} AS build
+FROM quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:{graalvm-flavor} AS build
 USER root
 RUN microdnf install findutils
 COPY --chown=quarkus:quarkus gradlew /code/gradlew
@@ -580,7 +580,7 @@ COPY src /code/src
 RUN ./gradlew build -Dquarkus.package.type=native
 
 ## Stage 2 : create the docker final image
-FROM quay.io/quarkus/quarkus-micro-image:1.0
+FROM quay.io/quarkus/quarkus-micro-image:2.0
 WORKDIR /work/
 COPY --from=build /code/build/*-runner /work/application
 RUN chmod 775 /work
@@ -614,8 +614,8 @@ If you need SSL support in your native executable, you can easily include the ne
 Please see xref:native-and-ssl.adoc#working-with-containers[our Using SSL With Native Executables guide] for more information.
 ====
 
-NOTE: To use Mandrel instead of GraalVM CE, update the `FROM` clause to: `FROM quay.io/quarkus/ubi-quarkus-mandrel:$TAG AS build`.
-`$TAG` can be found on the https://quay.io/repository/quarkus/ubi-quarkus-mandrel?tab=tags[Quarkus Mandrel Images Tags page].
+NOTE: To use Mandrel instead of GraalVM CE, update the `FROM` clause to: `FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:$TAG AS build`.
+`$TAG` can be found on the https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[Quarkus Mandrel Images Tags page].
 
 === Using a Distroless base image
 
@@ -629,7 +629,7 @@ You only need to copy your application, and you are done:
 
 [source, dockerfile]
 ----
-FROM quay.io/quarkus/quarkus-distroless-image:1.0
+FROM quay.io/quarkus/quarkus-distroless-image:2.0
 COPY target/*-runner /application
 
 EXPOSE 8080
@@ -638,7 +638,7 @@ USER nonroot
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 ----
 
-Quarkus provides the `quay.io/quarkus/quarkus-distroless-image:1.0` image.
+Quarkus provides the `quay.io/quarkus/quarkus-distroless-image:2.0` image.
 It contains the required packages to run a native executable and is only **9Mb**.
 Just add your application on top of this image, and you will get a tiny container image.
 
@@ -655,7 +655,7 @@ Sample multistage Dockerfile for building an image from `scratch`:
 [source, dockerfile]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/ubi-quarkus-native-image:22.0-java11 AS build
+FROM quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.2-java11 AS build
 USER root
 RUN microdnf install make gcc
 COPY --chown=quarkus:quarkus mvnw /code/mvnw
@@ -739,13 +739,13 @@ docker run \
   --v $(pwd):/work <1>
   -w /work <2>
   --entrypoint bin/sh \
-  quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor} \ <3>
+  quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:{graalvm-flavor} \ <3>
   -c "native-image $(cat native-image.args) -J-Xmx4g" <4>
 ----
 
 <1> Mount the host's directory `target/native-image` to the container's `/work`. Thus, the generated binary will also be written to this directory.
 <2> Switch the working directory to `/work`, which we have mounted in <1>.
-<3> Use the `quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor}` docker image introduced in <<#multistage-docker,Using a multi-stage Docker build>> to build the native image.
+<3> Use the `quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:{graalvm-flavor}` docker image introduced in <<#multistage-docker,Using a multi-stage Docker build>> to build the native image.
 <4> Call `native-image` with the content of file `native-image.args` as arguments. We also supply an additional argument to limit the process's maximum memory to 4 Gigabytes (this may vary depending on the project being built and the machine building it).
 
 [WARNING]

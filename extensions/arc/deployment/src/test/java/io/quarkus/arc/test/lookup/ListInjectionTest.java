@@ -143,6 +143,7 @@ public class ListInjectionTest {
 
     }
 
+    @MyQualifier
     @Singleton
     static class ServiceAlpha implements Service {
 

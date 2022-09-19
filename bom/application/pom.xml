@@ -143,7 +143,7 @@
         <snappy.version>1.1.8.4</snappy.version>
         <strimzi-test-container.version>0.100.0</strimzi-test-container.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
-        <scala.version>2.13.8</scala.version>
+        <scala.version>2.13.9</scala.version>
         <aws-lambda-java.version>1.2.1</aws-lambda-java.version>
         <aws-lambda-java-events.version>3.11.0</aws-lambda-java-events.version>
         <aws-xray.version>2.11.2</aws-xray.version>

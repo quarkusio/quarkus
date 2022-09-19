@@ -2,7 +2,9 @@ package io.quarkus.it.smallrye.config;
 
 import static io.restassured.RestAssured.given;
 import static javax.ws.rs.core.Response.Status.OK;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.startsWith;
 
 import org.junit.jupiter.api.Test;
 
@@ -16,6 +18,10 @@ public class AppConfigTest {
                 .get("/app-config/toString")
                 .then()
                 .statusCode(OK.getStatusCode())
-                .body(is("AppConfig{name=app, info=Info{count=10, alias=alias}}"));
+                .body(startsWith("AppConfig{"),
+                        containsString("name=app"),
+                        containsString("count=10"),
+                        containsString("alias=alias"),
+                        endsWith("}}"));
     }
 }

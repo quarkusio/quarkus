@@ -939,11 +939,6 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         Iterator<String> strPartsIterator = strParts.iterator();
         while (strPartsIterator.hasNext()) {
             Part part = createPart(idGenerator, namespace, first, strPartsIterator, scope, origin, value);
-            if (!isValidIdentifier(part.getName())) {
-                throw error(ParserError.INVALID_IDENTIFIER, "invalid identifier found [{value}]", origin)
-                        .argument("value", value)
-                        .build();
-            }
             if (first == null) {
                 first = part;
             }
@@ -977,6 +972,12 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 throw TemplateException.builder()
                         .message((literal == null ? "Null" : "Non-literal")
                                 + " value used in bracket notation [{value}] {origin}")
+                        .argument("value", value)
+                        .build();
+            }
+        } else {
+            if (!isValidIdentifier(value)) {
+                throw error(ParserError.INVALID_IDENTIFIER, "invalid identifier found [{value}]", origin)
                         .argument("value", value)
                         .build();
             }

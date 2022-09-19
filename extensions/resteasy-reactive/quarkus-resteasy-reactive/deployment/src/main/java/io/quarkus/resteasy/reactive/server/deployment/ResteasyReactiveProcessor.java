@@ -691,10 +691,15 @@ public class ResteasyReactiveProcessor {
     public void providersFromClasspath(BuildProducer<MessageBodyReaderBuildItem> messageBodyReaderProducer,
             BuildProducer<MessageBodyWriterBuildItem> messageBodyWriterProducer) {
         String fileName = "META-INF/services/" + Providers.class.getName();
+        // we never want to include the Classic RESTEasy providers - these can end up on the classpath by using the Keycloak client for example
+        Predicate<String> ignoredProviders = s -> s.startsWith("org.jboss.resteasy.plugins.providers");
         try {
             Set<String> detectedProviders = new HashSet<>(ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
                     fileName));
             for (String providerClassName : detectedProviders) {
+                if (ignoredProviders.test(providerClassName)) {
+                    continue;
+                }
                 try {
                     Class<?> providerClass = Class.forName(providerClassName, false,
                             Thread.currentThread().getContextClassLoader());
@@ -707,7 +712,7 @@ public class ResteasyReactiveProcessor {
                             continue;
                         }
                         MessageBodyReaderBuildItem.Builder builder = new MessageBodyReaderBuildItem.Builder(
-                                providerClassName, handledClassName);
+                                providerClassName, handledClassName).setBuiltin(true);
                         Consumes consumes = providerClass.getAnnotation(Consumes.class);
                         if (consumes != null) {
                             builder.setMediaTypeStrings(Arrays.asList(consumes.value()));
@@ -725,7 +730,7 @@ public class ResteasyReactiveProcessor {
                             continue;
                         }
                         MessageBodyWriterBuildItem.Builder builder = new MessageBodyWriterBuildItem.Builder(
-                                providerClassName, handledClassName);
+                                providerClassName, handledClassName).setBuiltin(true);
                         Produces produces = providerClass.getAnnotation(Produces.class);
                         if (produces != null) {
                             builder.setMediaTypeStrings(Arrays.asList(produces.value()));

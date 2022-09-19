@@ -9,8 +9,8 @@ import javax.ws.rs.Produces
 @Path("/shared")
 class SharedResource {
 
-    @Consumes("application/json")
-    @Produces("application/json")
+    @Consumes(value = ["application/json", "text/plain"])
+    @Produces(value = ["application/json", "text/plain"])
     @POST
     fun returnAsIs(shared: Shared) = shared
 }

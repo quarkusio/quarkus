@@ -707,7 +707,7 @@ public class ResteasyReactiveProcessor {
                             continue;
                         }
                         MessageBodyReaderBuildItem.Builder builder = new MessageBodyReaderBuildItem.Builder(
-                                providerClassName, handledClassName);
+                                providerClassName, handledClassName).setBuiltin(true);
                         Consumes consumes = providerClass.getAnnotation(Consumes.class);
                         if (consumes != null) {
                             builder.setMediaTypeStrings(Arrays.asList(consumes.value()));
@@ -725,7 +725,7 @@ public class ResteasyReactiveProcessor {
                             continue;
                         }
                         MessageBodyWriterBuildItem.Builder builder = new MessageBodyWriterBuildItem.Builder(
-                                providerClassName, handledClassName);
+                                providerClassName, handledClassName).setBuiltin(true);
                         Produces produces = providerClass.getAnnotation(Produces.class);
                         if (produces != null) {
                             builder.setMediaTypeStrings(Arrays.asList(produces.value()));

@@ -47,16 +47,17 @@ public class CreationalContextImpl<T> implements CreationalContext<T>, Function<
         return dependentInstances != null && !dependentInstances.isEmpty();
     }
 
-    boolean destroyDependentInstance(Object dependentInstance) {
-        synchronized (this) {
-            if (dependentInstances != null) {
-                for (Iterator<InstanceHandle<?>> iterator = dependentInstances.iterator(); iterator.hasNext();) {
-                    InstanceHandle<?> instanceHandle = iterator.next();
-                    if (instanceHandle.get() == dependentInstance) {
-                        instanceHandle.destroy();
-                        iterator.remove();
-                        return true;
+    public synchronized boolean removeDependentInstance(Object dependentInstance, boolean destroy) {
+        if (dependentInstances != null) {
+            for (Iterator<InstanceHandle<?>> it = dependentInstances.iterator(); it.hasNext();) {
+                InstanceHandle<?> handle = it.next();
+                // The reference equality is used on purpose!
+                if (handle.get() == dependentInstance) {
+                    if (destroy) {
+                        handle.destroy();
                     }
+                    it.remove();
+                    return true;
                 }
             }
         }

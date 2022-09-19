@@ -20,6 +20,8 @@ import io.quarkus.redis.datasource.value.GetExArgs;
 import io.quarkus.redis.datasource.value.SetArgs;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
+import io.vertx.core.json.DecodeException;
+import io.vertx.core.json.Json;
 
 public class ValueCommandsTest extends DatasourceTestBase {
 
@@ -274,5 +276,10 @@ public class ValueCommandsTest extends DatasourceTestBase {
         commands.set(key, content);
         byte[] bytes = commands.get(key);
         assertThat(bytes).isEqualTo(content);
+
+        // Verify that we do not get through the JSON codec (which would base64 encode the byte[])
+        ValueCommands<String, String> cmd = ds.value(String.class);
+        String str = cmd.get(key);
+        assertThatThrownBy(() -> Json.decodeValue(str, byte[].class)).isInstanceOf(DecodeException.class);
     }
 }

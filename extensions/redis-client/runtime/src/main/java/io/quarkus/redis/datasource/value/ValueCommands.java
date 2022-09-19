@@ -183,7 +183,8 @@ public interface ValueCommands<K, V> extends RedisCommands {
      * Requires Redis 1.0.0
      *
      * @param keys the keys
-     * @return list of values at the specified keys.
+     * @return list of values at the specified keys. If one of the passed key does not exist, the returned map contains
+     *         a {@code null} value associated with the missing key.
      **/
     Map<K, V> mget(K... keys);
 

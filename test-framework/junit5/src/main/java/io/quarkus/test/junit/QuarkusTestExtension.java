@@ -29,7 +29,6 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -207,6 +206,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     private ExtensionState doJavaStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile) throws Throwable {
         JBossVersion.disableVersionLogging();
 
+        final ShutdownTasks shutdownTasks = new ShutdownTasks();
+        getStoreFromContext(context).put(ShutdownTasks.class.getName(), shutdownTasks);
+
         TracingHandler.quarkusStarting();
         hangDetectionExecutor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
             @Override
@@ -223,12 +225,13 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
         hangTimeout = new DurationConverter().convert(time);
         hangTaskKey = hangDetectionExecutor.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
+        shutdownTasks.addTask(this::shutdownHangDetection);
+        shutdownTasks.addTask(GroovyCacheCleaner::clearGroovyCache);
 
         quarkusTestProfile = profile;
         Class<?> requiredTestClass = context.getRequiredTestClass();
         Closeable testResourceManager = null;
         try {
-            final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
             PrepareResult result = createAugmentor(context, profile, shutdownTasks);
             AugmentAction augmentAction = result.augmentAction;
             QuarkusTestProfile profileInstance = result.profileInstance;
@@ -286,6 +289,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             ConfigProviderResolver.setInstance(new RunningAppConfigResolver(runningQuarkusApplication));
             RestorableSystemProperties restorableSystemProperties = RestorableSystemProperties.setProperties(
                     Collections.singletonMap("test.url", TestHTTPResourceManager.getUri(runningQuarkusApplication)));
+            shutdownTasks.addTask(restorableSystemProperties::close);
 
             Closeable tm = testResourceManager;
             Closeable shutdownTask = new Closeable() {
@@ -298,19 +302,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                         throw new RuntimeException(e);
                     } finally {
                         TracingHandler.quarkusStopped();
-                        try {
-                            while (!shutdownTasks.isEmpty()) {
-                                shutdownTasks.pop().run();
-                            }
-                        } finally {
-                            try {
-                                tm.close();
-                            } finally {
-                                restorableSystemProperties.close();
-                                GroovyCacheCleaner.clearGroovyCache();
-                                shutdownHangDetection();
-                            }
-                        }
+                        tm.close();
                         try {
                             TestClassIndexer.removeIndex(requiredTestClass);
                         } catch (Exception ignored) {
@@ -1345,7 +1337,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
         @Override
         public void close() {
-            shutdownHangDetection();
             firstException = null;
             failedBoot = false;
             ConfigProviderResolver.setInstance(null);

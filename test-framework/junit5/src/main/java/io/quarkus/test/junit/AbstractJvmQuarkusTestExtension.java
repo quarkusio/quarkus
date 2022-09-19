@@ -8,10 +8,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.stream.Collectors;
 
 import javax.enterprise.inject.Alternative;
@@ -50,7 +52,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
     protected static Class<?> currentJUnitTestClass;
 
     protected PrepareResult createAugmentor(ExtensionContext context, Class<? extends QuarkusTestProfile> profile,
-            Collection<Runnable> shutdownTasks) throws Exception {
+            ShutdownTasks shutdownTasks) throws Exception {
 
         Class<?> requiredTestClass = context.getRequiredTestClass();
         currentJUnitTestClass = requiredTestClass;
@@ -100,7 +102,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             }
             //we just use system properties for now
             //its a lot simpler
-            shutdownTasks.add(RestorableSystemProperties.setProperties(additional)::close);
+            shutdownTasks.addTask(RestorableSystemProperties.setProperties(additional)::close);
         }
 
         final Path projectRoot = Paths.get("").normalize().toAbsolutePath();
@@ -159,7 +161,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
                     .setTest(true)
                     .build()
                     .bootstrap();
-            shutdownTasks.add(curatedApplication::close);
+            shutdownTasks.addTask(curatedApplication::close);
         }
 
         if (curatedApplication.getApplicationModel().getRuntimeDependencies().isEmpty()) {
@@ -236,4 +238,31 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             this.curatedApplication = curatedApplication;
         }
     }
+
+    protected static class ShutdownTasks implements ExtensionContext.Store.CloseableResource {
+
+        private final Deque<Runnable> tasks = new LinkedBlockingDeque<>();
+
+        public void addTask(Runnable task) {
+            this.tasks.add(task);
+        }
+
+        @Override
+        public void close() {
+            List<Exception> suppressed = new ArrayList<>();
+            while (!tasks.isEmpty()) {
+                try {
+                    tasks.pop().run();
+                } catch (Exception e) {
+                    suppressed.add(e);
+                }
+            }
+            if (!suppressed.isEmpty()) {
+                RuntimeException ex = new RuntimeException("Failed to shutdown Quarkus test resources");
+                suppressed.forEach(ex::addSuppressed);
+                throw ex;
+            }
+        }
+    }
+
 }

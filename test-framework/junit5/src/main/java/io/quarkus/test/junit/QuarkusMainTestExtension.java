@@ -7,7 +7,6 @@ import static io.quarkus.test.junit.QuarkusTestExtension.IO_QUARKUS_TESTING_TYPE
 import java.io.Closeable;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.logging.Handler;
 
 import org.jboss.logmanager.LogContext;
@@ -64,6 +63,9 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
             throws Exception {
         JBossVersion.disableVersionLogging();
 
+        final ShutdownTasks shutdownTasks = new ShutdownTasks();
+        getStoreFromContext(extensionContext).put(ShutdownTasks.class.getName(), shutdownTasks);
+
         ExtensionContext.Store store = extensionContext.getStore(ExtensionContext.Namespace.GLOBAL);
         Class<?> testType = store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
         if (testType != null) {
@@ -93,7 +95,6 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
             prepareResult = null;
         }
         if (prepareResult == null) {
-            final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
             PrepareResult result = createAugmentor(extensionContext, profile, shutdownTasks);
             prepareResult = result;
         }

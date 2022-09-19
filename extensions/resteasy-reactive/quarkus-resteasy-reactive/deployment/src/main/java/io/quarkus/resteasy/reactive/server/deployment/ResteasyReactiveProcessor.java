@@ -691,10 +691,15 @@ public class ResteasyReactiveProcessor {
     public void providersFromClasspath(BuildProducer<MessageBodyReaderBuildItem> messageBodyReaderProducer,
             BuildProducer<MessageBodyWriterBuildItem> messageBodyWriterProducer) {
         String fileName = "META-INF/services/" + Providers.class.getName();
+        // we never want to include the Classic RESTEasy providers - these can end up on the classpath by using the Keycloak client for example
+        Predicate<String> ignoredProviders = s -> s.startsWith("org.jboss.resteasy.plugins.providers");
         try {
             Set<String> detectedProviders = new HashSet<>(ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
                     fileName));
             for (String providerClassName : detectedProviders) {
+                if (ignoredProviders.test(providerClassName)) {
+                    continue;
+                }
                 try {
                     Class<?> providerClass = Class.forName(providerClassName, false,
                             Thread.currentThread().getContextClassLoader());

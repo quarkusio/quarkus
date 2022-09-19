@@ -24,7 +24,6 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -82,10 +81,7 @@ public class ArcContainerImpl implements ArcContainer {
     private final Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings;
     private final Map<String, Set<String>> qualifierNonbindingMembers;
 
-    private final Map<Class<? extends Annotation>, List<InjectableContext>> contexts;
-    private final ManagedContext requestContext;
-    private final InjectableContext applicationContext;
-    private final InjectableContext singletonContext;
+    private final Contexts contexts;
 
     private final ComputingCache<Resolvable, Set<InjectableBean<?>>> resolved;
     private final ComputingCache<String, InjectableBean<?>> beansById;
@@ -112,13 +108,9 @@ public class ArcContainerImpl implements ArcContainer {
         this.currentContextFactory = currentContextFactory == null ? new ThreadLocalCurrentContextFactory()
                 : currentContextFactory;
 
-        applicationContext = new ApplicationContext();
-        singletonContext = new SingletonContext();
-        requestContext = new RequestContext(this.currentContextFactory.create(RequestScoped.class));
-        Map<Class<? extends Annotation>, List<InjectableContext>> contexts = new HashMap<>();
-        putContext(requestContext, contexts);
-        putContext(applicationContext, contexts);
-        putContext(singletonContext, contexts);
+        Contexts.Builder contextsBuilder = new Contexts.Builder(
+                new RequestContext(this.currentContextFactory.create(RequestScoped.class)), new ApplicationContext(),
+                new SingletonContext());
 
         for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
             Components components = componentsProvider.getComponents();
@@ -143,13 +135,13 @@ public class ArcContainerImpl implements ArcContainer {
                     throw new IllegalStateException(
                             "Failed to register a context - built-in singleton context is always active: " + context);
                 }
-                putContext(context, contexts);
+                contextsBuilder.putContext(context);
             }
             transitiveInterceptorBindings.putAll(components.getTransitiveInterceptorBindings());
             qualifierNonbindingMembers.putAll(components.getQualifierNonbindingMembers());
         }
 
-        this.contexts = Map.copyOf(contexts);
+        this.contexts = contextsBuilder.build();
 
         // register built-in beans
         addBuiltInBeans(beans);
@@ -176,18 +168,6 @@ public class ArcContainerImpl implements ArcContainer {
         this.qualifierNonbindingMembers = Map.copyOf(qualifierNonbindingMembers);
     }
 
-    private void putContext(InjectableContext context, Map<Class<? extends Annotation>, List<InjectableContext>> contexts) {
-        Collection<InjectableContext> values = contexts.get(context.getScope());
-        if (values == null) {
-            contexts.put(context.getScope(), Collections.singletonList(context));
-        } else {
-            List<InjectableContext> multi = new ArrayList<>(values.size() + 1);
-            multi.addAll(values);
-            multi.add(context);
-            contexts.put(context.getScope(), List.copyOf(multi));
-        }
-    }
-
     private static void addBuiltInBeans(List<InjectableBean<?>> beans) {
         // BeanManager, Event<?>, Instance<?>, InjectionPoint
         beans.add(new BeanManagerBean());
@@ -208,36 +188,17 @@ public class ArcContainerImpl implements ArcContainer {
 
     @Override
     public InjectableContext getActiveContext(Class<? extends Annotation> scopeType) {
-        // Application/Singleton context is always active
-        if (ApplicationScoped.class.equals(scopeType)) {
-            return applicationContext;
-        } else if (Singleton.class.equals(scopeType)) {
-            return singletonContext;
-        }
-        Collection<InjectableContext> contextsForScope = contexts.get(scopeType);
-        InjectableContext selected = null;
-        if (contextsForScope != null) {
-            for (InjectableContext context : contextsForScope) {
-                if (context.isActive()) {
-                    if (selected != null) {
-                        throw new IllegalArgumentException(
-                                "More than one context object for the given scope: " + selected + " " + context);
-                    }
-                    selected = context;
-                }
-            }
-        }
-        return selected;
+        return contexts.getActiveContext(scopeType);
     }
 
     @Override
     public List<InjectableContext> getContexts(Class<? extends Annotation> scopeType) {
-        return contexts.getOrDefault(scopeType, Collections.emptyList());
+        return contexts.getContexts(scopeType);
     }
 
     @Override
     public Set<Class<? extends Annotation>> getScopes() {
-        return new HashSet<>(contexts.keySet());
+        return contexts.scopes;
     }
 
     @Override
@@ -346,7 +307,7 @@ public class ArcContainerImpl implements ArcContainer {
 
     @Override
     public ManagedContext requestContext() {
-        return requestContext;
+        return contexts.requestContext;
     }
 
     @Override
@@ -373,7 +334,7 @@ public class ArcContainerImpl implements ArcContainer {
     public String toString() {
         return "ArcContainerImpl [id=" + id + ", running=" + running + ", beans=" + beans.size() + ", observers="
                 + observers.size() + ", scopes="
-                + contexts.size() + "]";
+                + contexts.scopes.size() + "]";
     }
 
     public synchronized void shutdown() {
@@ -385,7 +346,7 @@ public class ArcContainerImpl implements ArcContainer {
                 arcCdi.destroy();
             }
             // Terminate request context if for any reason is still active
-            requestContext.terminate();
+            contexts.requestContext.terminate();
             // Fire an event with qualifier @BeforeDestroyed(ApplicationScoped.class)
             Set<Annotation> beforeDestroyQualifiers = new HashSet<>(4);
             beforeDestroyQualifiers.add(BeforeDestroyed.Literal.APPLICATION);
@@ -396,7 +357,7 @@ public class ArcContainerImpl implements ArcContainer {
                 LOGGER.warn("An error occurred during delivery of the @BeforeDestroyed(ApplicationScoped.class) event", e);
             }
             // Destroy contexts
-            applicationContext.destroy();
+            contexts.applicationContext.destroy();
             // Fire an event with qualifier @Destroyed(ApplicationScoped.class)
             Set<Annotation> destroyQualifiers = new HashSet<>(4);
             destroyQualifiers.add(Destroyed.Literal.APPLICATION);
@@ -406,7 +367,7 @@ public class ArcContainerImpl implements ArcContainer {
             } catch (Exception e) {
                 LOGGER.warn("An error occurred during delivery of the @Destroyed(ApplicationScoped.class) event", e);
             }
-            singletonContext.destroy();
+            contexts.singletonContext.destroy();
 
             // Clear caches
             Reflections.clearCaches();
@@ -522,7 +483,7 @@ public class ArcContainerImpl implements ArcContainer {
         if (annotationType.isAnnotationPresent(Scope.class) || annotationType.isAnnotationPresent(NormalScope.class)) {
             return true;
         }
-        for (Class<? extends Annotation> scopeType : contexts.keySet()) {
+        for (Class<? extends Annotation> scopeType : contexts.scopes) {
             if (scopeType.equals(annotationType)) {
                 return true;
             }
@@ -534,12 +495,10 @@ public class ArcContainerImpl implements ArcContainer {
         if (annotationType.isAnnotationPresent(NormalScope.class)) {
             return true;
         }
-        Collection<InjectableContext> injectableContexts = contexts.get(annotationType);
-        if (injectableContexts != null) {
-            for (InjectableContext context : injectableContexts) {
-                if (context.isNormal()) {
-                    return true;
-                }
+        List<InjectableContext> injectableContexts = contexts.getContexts(annotationType);
+        for (InjectableContext context : injectableContexts) {
+            if (context.isNormal()) {
+                return true;
             }
         }
         return false;

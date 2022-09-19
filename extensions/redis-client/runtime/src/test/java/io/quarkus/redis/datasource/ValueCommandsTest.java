@@ -101,15 +101,24 @@ public class ValueCommandsTest extends DatasourceTestBase {
 
     @Test
     void mget() {
-        assertThat(values.mget(key)).isEmpty();
+        assertThat(values.mget(key)).containsExactly(entry(key, null));
         values.set("one", "1");
         values.set("two", "2");
         assertThat(values.mget("one", "two")).containsExactly(entry("one", "1"), entry("two", "2"));
     }
 
     @Test
+    void mgetWithMissingKey() {
+        assertThat(values.mget(key)).containsExactly(entry(key, null));
+        values.set("one", "1");
+        values.set("two", "2");
+        assertThat(values.mget("one", "missing", "two")).containsExactly(entry("one", "1"),
+                entry("missing", null), entry("two", "2"));
+    }
+
+    @Test
     void mset() {
-        assertThat(values.mget("one", "two")).isEmpty();
+        assertThat(values.mget("one", "two")).containsExactly(entry("one", null), entry("two", null));
         Map<String, String> map = new LinkedHashMap<>();
         map.put("one", "1");
         map.put("two", "2");

@@ -150,6 +150,7 @@
                         <parentFirstArtifact>org.graalvm.regex:regex</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.truffle:truffle-api</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.nativeimage:svm</parentFirstArtifact>
+                        <parentFirstArtifact>com.ibm.icu:icu4j</parentFirstArtifact> <!-- dependency of org.graalvm.js:js -->
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-core</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-development-mode-spi</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-app-model</parentFirstArtifact>
@@ -218,6 +219,7 @@
                         <runnerParentFirstArtifact>org.graalvm.sdk:graal-sdk</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.graalvm.js:js</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.graalvm.truffle:truffle-api</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>com.ibm.icu:icu4j</runnerParentFirstArtifact> <!-- dependency of org.graalvm.js:js -->
                         <runnerParentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>io.quarkus:quarkus-development-mode-spi</runnerParentFirstArtifact>
                         <!-- logging dependencies always need to be loaded by the JDK ClassLoader -->

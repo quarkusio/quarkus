@@ -15,7 +15,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 
 public class EntityClassHelper {
 
-    private static final DotName JAVAX_PERSISTENCE_ID = DotName.createSimple(Id.class.getName());
+    private static final DotName JAKARTA_PERSISTENCE_ID = DotName.createSimple(Id.class.getName());
     private final IndexView index;
 
     public EntityClassHelper(IndexView index) {
@@ -30,7 +30,7 @@ public class EntityClassHelper {
         ClassInfo tmpClassInfo = classInfo;
         while (tmpClassInfo != null) {
             for (FieldInfo field : tmpClassInfo.fields()) {
-                if (field.hasAnnotation(JAVAX_PERSISTENCE_ID)) {
+                if (field.hasAnnotation(JAKARTA_PERSISTENCE_ID)) {
                     return field;
                 }
             }

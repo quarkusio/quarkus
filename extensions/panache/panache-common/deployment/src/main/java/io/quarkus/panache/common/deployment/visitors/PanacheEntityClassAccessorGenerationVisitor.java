@@ -1,7 +1,7 @@
 package io.quarkus.panache.common.deployment.visitors;
 
-import static io.quarkus.panache.common.deployment.PanacheConstants.JAXB_ANNOTATION_PREFIX;
-import static io.quarkus.panache.common.deployment.PanacheConstants.JAXB_TRANSIENT_SIGNATURE;
+import static io.quarkus.panache.common.deployment.PanacheConstants.JAKARTA_ANNOTATION_PREFIX;
+import static io.quarkus.panache.common.deployment.PanacheConstants.JAKARTA_TRANSIENT_SIGNATURE;
 import static io.quarkus.panache.common.deployment.PanacheConstants.JSON_IGNORE_DOT_NAME;
 import static io.quarkus.panache.common.deployment.PanacheConstants.JSON_PROPERTY_DOT_NAME;
 import static io.quarkus.panache.common.deployment.PanacheConstants.JSON_PROPERTY_SIGNATURE;
@@ -72,7 +72,7 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
         return new FieldVisitor(Gizmo.ASM_API_VERSION, superVisitor) {
             @Override
             public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-                if (!descriptor.startsWith(JAXB_ANNOTATION_PREFIX)) {
+                if (!descriptor.startsWith(JAKARTA_ANNOTATION_PREFIX)) {
                     return super.visitAnnotation(descriptor, visible);
                 } else {
                     // Save off JAX-B annotations on the field so they can be applied to the generated getter later
@@ -89,7 +89,7 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
                 // JSONB will already use the getter, so we're good
                 // Note: we don't need to check if we already have @XmlTransient in the descriptors because if we did, we moved it to the getter
                 // so we can't have any duplicate
-                super.visitAnnotation(JAXB_TRANSIENT_SIGNATURE, true);
+                super.visitAnnotation(JAKARTA_TRANSIENT_SIGNATURE, true);
                 super.visitEnd();
             }
         };
@@ -140,10 +140,7 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
                         AnnotationInstance jsonPropertyInstance = fieldInfo.annotation(JSON_PROPERTY_DOT_NAME);
                         // propagate the value of @JsonProperty field annotation to the newly added method annotation
                         if (jsonPropertyInstance != null) {
-                            AnnotationValue jsonPropertyValue = jsonPropertyInstance.value();
-                            if ((jsonPropertyValue != null) && !jsonPropertyValue.asString().isEmpty()) {
-                                visitor.visit("value", jsonPropertyValue.asString());
-                            }
+                            propagateJsonPropertyValues(jsonPropertyInstance, visitor);
                         }
                     }
                     visitor.visitEnd();
@@ -187,6 +184,38 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
                 mv.visitMaxs(0, 0);
                 mv.visitEnd();
             }
+        }
+    }
+
+    private void propagateJsonPropertyValues(AnnotationInstance from, AnnotationVisitor to) {
+        AnnotationValue jsonPropertyValue = from.value();
+        if ((jsonPropertyValue != null) && !jsonPropertyValue.asString().isEmpty()) {
+            to.visit("value", jsonPropertyValue.asString());
+        }
+
+        AnnotationValue jsonPropertyNamespace = from.value("namespace");
+        if ((jsonPropertyNamespace != null) && !jsonPropertyNamespace.asString().isEmpty()) {
+            to.visit("namespace", jsonPropertyValue.asString());
+        }
+
+        AnnotationValue jsonPropertyRequired = from.value("required");
+        if (jsonPropertyRequired != null) {
+            to.visit("required", jsonPropertyRequired.asBoolean());
+        }
+
+        AnnotationValue jsonPropertyIndex = from.value("index");
+        if (jsonPropertyIndex != null) {
+            to.visit("index", jsonPropertyIndex.asInt());
+        }
+
+        AnnotationValue jsonPropertyDefaultValue = from.value("defaultValue");
+        if (jsonPropertyDefaultValue != null && !jsonPropertyDefaultValue.asString().isEmpty()) {
+            to.visit("defaultValue", jsonPropertyDefaultValue.asString());
+        }
+
+        AnnotationValue jsonPropertyAccess = from.value("access");
+        if (jsonPropertyAccess != null) {
+            to.visitEnum("access", jsonPropertyAccess.asEnumType().toString(), jsonPropertyAccess.asString());
         }
     }
 

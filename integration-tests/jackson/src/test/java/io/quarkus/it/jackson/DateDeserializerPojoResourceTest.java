@@ -3,6 +3,7 @@ package io.quarkus.it.jackson;
 import static io.quarkus.it.jackson.TestUtil.getObjectMapperForTest;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.startsWith;
 
 import java.io.IOException;
 import java.sql.Date;
@@ -38,6 +39,6 @@ public class DateDeserializerPojoResourceTest {
                 .when().post("/datedeserializers/sql/date")
                 .then()
                 .statusCode(200)
-                .body("date", equalTo("1970-01-01"));
+                .body("date", startsWith("1970-"));
     }
 }

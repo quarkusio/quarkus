@@ -163,7 +163,7 @@ public class BeanManagerImpl implements BeanManager {
     @Override
     public boolean isQualifier(Class<? extends Annotation> annotationType) {
         return annotationType.isAnnotationPresent(Qualifier.class)
-                || ArcContainerImpl.instance().getCustomQualifiers().contains(annotationType.getName());
+                || ArcContainerImpl.instance().registeredQualifiers.isRegistered(annotationType);
     }
 
     @Override

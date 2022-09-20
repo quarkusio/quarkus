@@ -1,5 +1,8 @@
 package io.quarkus.cli;
 
+import static io.quarkus.cli.build.MavenRunner.MAVEN_SETTINGS;
+import static org.apache.maven.cli.MavenCli.LOCAL_REPO_PROPERTY;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
@@ -12,6 +15,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.BinaryOperator;
+import java.util.function.UnaryOperator;
 
 import org.junit.jupiter.api.Assertions;
 
@@ -20,6 +26,9 @@ import picocli.CommandLine;
 public class CliDriver {
     static final PrintStream stdout = System.out;
     static final PrintStream stderr = System.err;
+    private static final BinaryOperator<String> ARG_FORMATTER = (key, value) -> "-D" + key + "=" + value;
+    private static final UnaryOperator<String> REPO_ARG_FORMATTER = value -> ARG_FORMATTER.apply(LOCAL_REPO_PROPERTY, value);
+    private static final UnaryOperator<String> SETTINGS_ARG_FORMATTER = value -> ARG_FORMATTER.apply(MAVEN_SETTINGS, value);
 
     public static class CliDriverBuilder {
 
@@ -63,8 +72,10 @@ public class CliDriver {
                 newArgs.subList(index, newArgs.size()).clear();
             }
 
-            propagateProperty("maven.repo.local", mavenLocalRepo, newArgs);
-            propagateProperty("maven.settings", mavenSettings, newArgs);
+            Optional.ofNullable(mavenLocalRepo).or(CliDriver::getMavenLocalRepoProperty).map(REPO_ARG_FORMATTER)
+                    .ifPresent(newArgs::add);
+            Optional.ofNullable(mavenSettings).or(CliDriver::getMavenSettingsProperty).map(SETTINGS_ARG_FORMATTER)
+                    .ifPresent(newArgs::add);
 
             newArgs.add("--cli-test");
             newArgs.add("--cli-test-dir");
@@ -81,7 +92,7 @@ public class CliDriver {
             PrintStream errPs = new PrintStream(err);
             System.setErr(errPs);
 
-            final Map<String, String> originalProps = collectOverridenProps(newArgs);
+            final Map<String, String> originalProps = collectOverriddenProps(newArgs);
 
             Result result = new Result();
             QuarkusCli cli = new QuarkusCli();
@@ -109,7 +120,7 @@ public class CliDriver {
             }
         }
 
-        protected Map<String, String> collectOverridenProps(List<String> newArgs) {
+        protected Map<String, String> collectOverriddenProps(List<String> newArgs) {
             final Map<String, String> originalProps = new HashMap<>();
             for (String s : newArgs) {
                 if (s.startsWith("-D")) {
@@ -121,21 +132,13 @@ public class CliDriver {
                             originalProps.put(propName, origValue);
                         } else if (System.getProperties().contains(propName)) {
                             originalProps.put(propName, "true");
+                        } else {
+                            originalProps.put(propName, null);
                         }
                     }
                 }
             }
             return originalProps;
-        }
-
-        private static void propagateProperty(String propName, String testValue, List<String> args) {
-            if (testValue == null) {
-                testValue = System.getProperty(propName);
-                if (testValue == null) {
-                    return;
-                }
-            }
-            args.add("-D" + propName + "=" + testValue);
         }
     }
 
@@ -144,14 +147,8 @@ public class CliDriver {
     }
 
     public static void preserveLocalRepoSettings(Collection<String> args) {
-        String s = convertToProperty("maven.repo.local");
-        if (s != null) {
-            args.add(s);
-        }
-        s = convertToProperty("maven.settings");
-        if (s != null) {
-            args.add(s);
-        }
+        getMavenLocalRepoProperty().map(REPO_ARG_FORMATTER).ifPresent(args::add);
+        getMavenSettingsProperty().map(SETTINGS_ARG_FORMATTER).ifPresent(args::add);
     }
 
     public static Result executeArbitraryCommand(Path startingDir, String... args) throws Exception {
@@ -439,12 +436,12 @@ public class CliDriver {
                 "Properties file should contain " + conf + ". Found:\n" + propertiesFile));
     }
 
-    private static String convertToProperty(String name) {
-        String value = System.getProperty(name);
-        if (value != null) {
-            return "-D" + name + "=" + value;
-        }
-        return null;
+    private static Optional<String> getMavenLocalRepoProperty() {
+        return Optional.ofNullable(System.getProperty(LOCAL_REPO_PROPERTY));
+    }
+
+    private static Optional<String> getMavenSettingsProperty() {
+        return Optional.ofNullable(System.getProperty(MAVEN_SETTINGS)).filter(value -> Files.exists(Path.of(value)));
     }
 
     private static void retryDelete(File file) {

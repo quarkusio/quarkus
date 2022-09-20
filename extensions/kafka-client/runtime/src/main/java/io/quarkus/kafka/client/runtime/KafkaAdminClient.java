@@ -30,8 +30,13 @@ public class KafkaAdminClient {
 
     @PostConstruct
     void init() {
-        Map<String, Object> conf = new HashMap<>(config);
+        Map<String, Object> conf = new HashMap<>();
         conf.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, DEFAULT_ADMIN_CLIENT_TIMEOUT);
+        for (Map.Entry<String, Object> entry : config.entrySet()) {
+            if (AdminClientConfig.configNames().contains(entry.getKey())) {
+                conf.put(entry.getKey(), entry.getValue().toString());
+            }
+        }
         client = AdminClient.create(conf);
     }
 
@@ -80,5 +85,12 @@ public class KafkaAdminClient {
         AclBindingFilter filter = new AclBindingFilter(ResourcePatternFilter.ANY, AccessControlEntryFilter.ANY);
         var options = new DescribeAclsOptions().timeoutMs(1_000);
         return client.describeAcls(filter, options).values().get();
+    }
+
+    public Map<String, TopicDescription> describeTopics(Collection<String> topicNames)
+            throws InterruptedException, ExecutionException {
+        return client.describeTopics(topicNames)
+                .allTopicNames()
+                .get();
     }
 }

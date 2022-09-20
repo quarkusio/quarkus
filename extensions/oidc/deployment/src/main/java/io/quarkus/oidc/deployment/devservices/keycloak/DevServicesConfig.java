@@ -90,6 +90,20 @@ public class DevServicesConfig {
     public Optional<String> javaOpts;
 
     /**
+     * Show Keycloak log messages with a "Keycloak:" prefix.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean showLogs;
+
+    /**
+     * Keycloak start command.
+     * Use this property to experiment with Keycloak start options, see {@link https://www.keycloak.org/server/all-config}.
+     * Note it will be ignored when loading legacy Keycloak WildFly images.
+     */
+    @ConfigItem
+    public Optional<String> startCommand;
+
+    /**
      * The Keycloak realm name.
      * This property will be used to create the realm if the realm file pointed to by the 'realm-path' property does not exist,
      * default value is 'quarkus' in this case.

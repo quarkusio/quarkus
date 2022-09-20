@@ -1,13 +1,14 @@
 package io.quarkus.arc.test.unused;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.enterprise.inject.spi.CDI;
 
 import org.jboss.logmanager.formatters.PatternFormatter;
@@ -31,7 +32,7 @@ public class ArcLookupProblemDetectedTest {
                 Formatter fmt = new PatternFormatter("%m");
                 String message = fmt.format(warning);
                 assertTrue(message.contains(
-                        "Stack frame: io.quarkus.arc.test.unused.ArcLookupProblemDetectedTest.testWarning"),
+                        "Stack frame: io.quarkus.arc.test.unused.ArcLookupProblemDetectedTest"),
                         message);
                 assertTrue(message.contains(
                         "Required type: class io.quarkus.arc.test.unused.ArcLookupProblemDetectedTest$Alpha"),
@@ -41,7 +42,7 @@ public class ArcLookupProblemDetectedTest {
     @Test
     public void testWarning() {
         // Note that the warning is only displayed once, subsequent calls use a cached result
-        assertFalse(CDI.current().select(Alpha.class).isResolvable());
+        assertThrows(UnsatisfiedResolutionException.class, () -> CDI.current().select(Alpha.class).get());
     }
 
     // unused bean, will be removed

@@ -24,6 +24,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -74,7 +75,7 @@ public class ArcContainerImpl implements ArcContainer {
     private final AtomicBoolean running;
 
     private final List<InjectableBean<?>> beans;
-    private final List<RemovedBean> removedBeans;
+    private final LazyValue<List<RemovedBean>> removedBeans;
     private final List<InjectableInterceptor<?>> interceptors;
     private final List<InjectableDecorator<?>> decorators;
     private final List<InjectableObserverMethod<?>> observers;
@@ -97,7 +98,7 @@ public class ArcContainerImpl implements ArcContainer {
         id = String.valueOf(ID_GENERATOR.incrementAndGet());
         running = new AtomicBoolean(true);
         List<InjectableBean<?>> beans = new ArrayList<>();
-        List<RemovedBean> removedBeans = new ArrayList<>();
+        List<Supplier<Collection<RemovedBean>>> removedBeans = new ArrayList<>();
         List<InjectableInterceptor<?>> interceptors = new ArrayList<>();
         List<InjectableDecorator<?>> decorators = new ArrayList<>();
         List<InjectableObserverMethod<?>> observers = new ArrayList<>();
@@ -122,7 +123,7 @@ public class ArcContainerImpl implements ArcContainer {
                     beans.add(bean);
                 }
             }
-            removedBeans.addAll(components.getRemovedBeans());
+            removedBeans.add(components.getRemovedBeans());
             observers.addAll(components.getObservers());
             // Add custom contexts
             for (InjectableContext context : components.getContexts()) {
@@ -163,7 +164,17 @@ public class ArcContainerImpl implements ArcContainer {
         this.interceptors = List.copyOf(interceptors);
         this.decorators = List.copyOf(decorators);
         this.observers = List.copyOf(observers);
-        this.removedBeans = List.copyOf(removedBeans);
+        this.removedBeans = new LazyValue<>(new Supplier<List<RemovedBean>>() {
+            @Override
+            public List<RemovedBean> get() {
+                List<RemovedBean> removed = new ArrayList<>();
+                for (Supplier<Collection<RemovedBean>> supplier : removedBeans) {
+                    removed.addAll(supplier.get());
+                }
+                LOGGER.debugf("Loaded %s removed beans lazily", removed.size());
+                return List.copyOf(removed);
+            }
+        });
         this.transitiveInterceptorBindings = Map.copyOf(transitiveInterceptorBindings);
         this.registeredQualifiers = new Qualifiers(qualifiers, qualifierNonbindingMembers);
     }
@@ -384,7 +395,7 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     public List<RemovedBean> getRemovedBeans() {
-        return removedBeans;
+        return removedBeans.get();
     }
 
     public List<InjectableInterceptor<?>> getInterceptors() {
@@ -449,7 +460,11 @@ public class ArcContainerImpl implements ArcContainer {
         } else {
             registeredQualifiers.verify(qualifiers);
         }
-        Set<InjectableBean<?>> resolvedBeans = resolved.getValue(new Resolvable(requiredType, qualifiers));
+        Resolvable resolvable = new Resolvable(requiredType, qualifiers);
+        Set<InjectableBean<?>> resolvedBeans = resolved.getValue(resolvable);
+        if (resolvedBeans.isEmpty()) {
+            scanRemovedBeans(resolvable);
+        }
         return resolvedBeans.size() != 1 ? null : (InjectableBean<T>) resolvedBeans.iterator().next();
     }
 
@@ -610,41 +625,51 @@ public class ArcContainerImpl implements ArcContainer {
                 matching.add(bean);
             }
         }
-        if (matching.isEmpty() && !removedBeans.isEmpty()) {
-            List<RemovedBean> removedMatching = new ArrayList<>();
-            for (RemovedBean removedBean : removedBeans) {
-                if (matches(removedBean.getTypes(), removedBean.getQualifiers(), resolvable.requiredType,
-                        resolvable.qualifiers)) {
-                    removedMatching.add(removedBean);
-                }
-            }
-            if (!removedMatching.isEmpty()) {
-                String separator = "====================";
-                String msg = "\n%1$s%1$s%1$s%1$s\n"
-                        + "CDI: programmatic lookup problem detected\n"
-                        + "-----------------------------------------\n"
-                        + "At least one bean matched the required type and qualifiers but was marked as unused and removed during build\n\n"
-                        + "Stack frame: %5$s\n"
-                        + "Required type: %3$s\n"
-                        + "Required qualifiers: %4$s\n"
-                        + "Removed beans:\n\t- %2$s\n"
-                        + "Solutions:\n"
-                        + "\t- Application developers can eliminate false positives via the @Unremovable annotation\n"
-                        + "\t- Extensions can eliminate false positives via build items, e.g. using the UnremovableBeanBuildItem\n"
-                        + "\t- See also https://quarkus.io/guides/cdi-reference#remove_unused_beans\n"
-                        + "\t- Enable the DEBUG log level to see the full stack trace\n"
-                        + "%1$s%1$s%1$s%1$s\n";
-                StackWalker walker = StackWalker.getInstance();
-                StackFrame frame = walker.walk(this::findCaller);
-                LOGGER.warnf(msg, separator,
-                        removedMatching.stream().map(Object::toString).collect(Collectors.joining("\n\t- ")),
-                        resolvable.requiredType, Arrays.toString(resolvable.qualifiers), frame != null ? frame : "n/a");
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("\nCDI: programmatic lookup stack trace:\n" + walker.walk(this::collectStack));
-                }
+        return matching;
+    }
+
+    List<RemovedBean> getMatchingRemovedBeans(Resolvable resolvable) {
+        List<RemovedBean> matching = new ArrayList<>();
+        for (RemovedBean removedBean : removedBeans.get()) {
+            if (matches(removedBean.getTypes(), removedBean.getQualifiers(), resolvable.requiredType,
+                    resolvable.qualifiers)) {
+                matching.add(removedBean);
             }
         }
         return matching;
+    }
+
+    void scanRemovedBeans(Type requiredType, Annotation... qualifiers) {
+        scanRemovedBeans(new Resolvable(requiredType, qualifiers));
+    }
+
+    void scanRemovedBeans(Resolvable resolvable) {
+        List<RemovedBean> removedMatching = getMatchingRemovedBeans(resolvable);
+        if (!removedMatching.isEmpty()) {
+            String separator = "====================";
+            String msg = "\n%1$s%1$s%1$s%1$s\n"
+                    + "CDI: programmatic lookup problem detected\n"
+                    + "-----------------------------------------\n"
+                    + "At least one bean matched the required type and qualifiers but was marked as unused and removed during build\n\n"
+                    + "Stack frame: %5$s\n"
+                    + "Required type: %3$s\n"
+                    + "Required qualifiers: %4$s\n"
+                    + "Removed beans:\n\t- %2$s\n"
+                    + "Solutions:\n"
+                    + "\t- Application developers can eliminate false positives via the @Unremovable annotation\n"
+                    + "\t- Extensions can eliminate false positives via build items, e.g. using the UnremovableBeanBuildItem\n"
+                    + "\t- See also https://quarkus.io/guides/cdi-reference#remove_unused_beans\n"
+                    + "\t- Enable the DEBUG log level to see the full stack trace\n"
+                    + "%1$s%1$s%1$s%1$s\n";
+            StackWalker walker = StackWalker.getInstance();
+            StackFrame frame = walker.walk(this::findCaller);
+            LOGGER.warnf(msg, separator,
+                    removedMatching.stream().map(Object::toString).collect(Collectors.joining("\n\t- ")),
+                    resolvable.requiredType, Arrays.toString(resolvable.qualifiers), frame != null ? frame : "n/a");
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("\nCDI: programmatic lookup stack trace:\n" + walker.walk(this::collectStack));
+            }
+        }
     }
 
     private StackFrame findCaller(Stream<StackFrame> stream) {

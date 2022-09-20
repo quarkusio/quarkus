@@ -49,4 +49,26 @@ public interface InjectableInstance<T> extends Instance<T> {
     @Override
     Iterator<T> iterator();
 
+    /**
+     * If there is exactly one bean that matches the required type and qualifiers, returns the instance, otherwise returns
+     * {@code other}.
+     *
+     * @param other
+     * @return the bean instance or the other value
+     */
+    default T orElse(T other) {
+        return isResolvable() ? get() : other;
+    }
+
+    /**
+     * If there is exactly one bean that matches the required type and qualifiers, returns the instance, otherwise returns
+     * {@code null}.
+     *
+     * @param other
+     * @return the bean instance or {@code null}
+     */
+    default T orNull() {
+        return orElse(null);
+    }
+
 }

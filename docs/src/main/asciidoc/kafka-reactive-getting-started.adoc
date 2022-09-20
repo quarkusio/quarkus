@@ -377,14 +377,14 @@ In one terminal, run:
 
 [source,bash]
 ----
-mvn -f kafka-quickstart-producer quarkus:dev
+mvn -f producer quarkus:dev
 ----
 
 In another terminal, run:
 
 [source, bash]
 ----
-mvn -f kafka-quickstart-processor quarkus:dev
+mvn -f processor quarkus:dev
 ----
 
 Quarkus starts a Kafka broker automatically, configures the application and shares the Kafka broker instance between different applications.
@@ -469,8 +469,8 @@ Make sure you first build both applications in JVM mode with:
 
 [source, bash]
 ----
-mvn -f kafka-quickstart-producer package
-mvn -f kafka-quickstart-processor package
+mvn -f producer package
+mvn -f processor package
 ----
 
 Once packaged, run `docker-compose up`.
@@ -482,8 +482,8 @@ First, compile both applications as native:
 
 [source, bash]
 ----
-mvn -f kafka-quickstart-producer package -Dnative -Dquarkus.native.container-build=true
-mvn -f kafka-quickstart-processor package -Dnative -Dquarkus.native.container-build=true
+mvn -f producer package -Dnative -Dquarkus.native.container-build=true
+mvn -f processor package -Dnative -Dquarkus.native.container-build=true
 ----
 
 Run the system with:

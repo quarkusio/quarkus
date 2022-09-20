@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 
 This quickstart demonstrates how to use `OpenID Connect Client Reactive Filter` to acquire and propagate access tokens as `HTTP Authorization Bearer` access tokens, alongside `OpenID Token Propagation Reactive Filter` which propagates the incoming `HTTP Authorization Bearer` access tokens.
 
-Please check xref:security-openid-connect-client.adoc[OpenID Connect Client and Token Propagation Reference Guide] for all the information related to `Oidc Client` and `Token Propagation` support in Quarkus.
+Please check xref:security-openid-connect-client-reference.adoc[OpenID Connect Client and Token Propagation Reference Guide] for all the information related to `Oidc Client` and `Token Propagation` support in Quarkus.
 
 Please also read xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications] guide if you need to protect your applications using Bearer Token Authorization.
 

@@ -73,11 +73,11 @@ public class ParamConverterTest {
 
         @Path("list")
         @GET
-        public String list(@QueryParam("id") List<UUID> uuids) {
+        public String list(@QueryParam("id") List<? extends UUID> uuids) {
             return join(uuids.stream());
         }
 
-        private static String join(Stream<UUID> uuids) {
+        private static String join(Stream<? extends UUID> uuids) {
             return uuids.map(UUID::toString).collect(Collectors.joining(","));
         }
     }

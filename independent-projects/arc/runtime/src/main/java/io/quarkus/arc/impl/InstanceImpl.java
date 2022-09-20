@@ -138,7 +138,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
             context.destroy(proxy.arc_bean());
         } else {
             // First try to destroy a dependent instance
-            if (!creationalContext.destroyDependentInstance(instance)) {
+            if (!creationalContext.removeDependentInstance(instance, true)) {
                 // If not successful then try the singleton context
                 SingletonContext singletonContext = (SingletonContext) Arc.container().getActiveContext(Singleton.class);
                 singletonContext.destroyInstance(instance);

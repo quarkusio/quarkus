@@ -1,4 +1,4 @@
-package io.quarkus.arc.deployment.configproperties;
+package io.quarkus.spring.boot.properties.deployment;
 
 import static io.quarkus.runtime.util.StringUtil.camelHumpsIterator;
 import static io.quarkus.runtime.util.StringUtil.join;
@@ -10,41 +10,33 @@ import java.util.function.BiFunction;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
-import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
+import io.smallrye.config.ConfigMapping;
 
-public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
+final class ConfigurationPropertiesMetadataBuildItem extends MultiBuildItem {
 
     private final ClassInfo classInfo;
     private final String prefix;
-    private final ConfigProperties.NamingStrategy namingStrategy;
+    private final ConfigMapping.NamingStrategy namingStrategy;
     private final boolean failOnMismatchingMember;
-    private final boolean needsQualifier;
 
     // used when the instance of the object needs to be created with special logic
     private final InstanceFactory instanceFactory;
 
-    public ConfigPropertiesMetadataBuildItem(ClassInfo classInfo, String prefix,
-            ConfigProperties.NamingStrategy namingStrategy, boolean failOnMismatchingMember, boolean needsQualifier) {
-        this.classInfo = classInfo;
-        this.prefix = sanitisePrefix(prefix);
-        this.namingStrategy = namingStrategy;
-        this.failOnMismatchingMember = failOnMismatchingMember;
-        this.needsQualifier = needsQualifier;
-        this.instanceFactory = null;
+    public ConfigurationPropertiesMetadataBuildItem(ClassInfo classInfo, String prefix,
+            ConfigMapping.NamingStrategy namingStrategy, boolean failOnMismatchingMember) {
+        this(classInfo, prefix, namingStrategy, failOnMismatchingMember, null);
     }
 
-    public ConfigPropertiesMetadataBuildItem(ClassInfo classInfo, String prefix,
-            ConfigProperties.NamingStrategy namingStrategy,
-            boolean failOnMismatchingMember, boolean needsQualifier,
-            InstanceFactory instanceFactory) {
+    public ConfigurationPropertiesMetadataBuildItem(ClassInfo classInfo, String prefix,
+            ConfigMapping.NamingStrategy namingStrategy,
+            boolean failOnMismatchingMember, InstanceFactory instanceFactory) {
         this.classInfo = classInfo;
         this.prefix = sanitisePrefix(prefix);
         this.namingStrategy = namingStrategy;
         this.failOnMismatchingMember = failOnMismatchingMember;
-        this.needsQualifier = needsQualifier;
         this.instanceFactory = instanceFactory;
     }
 
@@ -56,7 +48,7 @@ public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
         return prefix;
     }
 
-    public ConfigProperties.NamingStrategy getNamingStrategy() {
+    public ConfigMapping.NamingStrategy getNamingStrategy() {
         return namingStrategy;
     }
 
@@ -64,25 +56,18 @@ public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
         return failOnMismatchingMember;
     }
 
-    public boolean isNeedsQualifier() {
-        return needsQualifier;
-    }
-
     public InstanceFactory getInstanceFactory() {
         return instanceFactory;
     }
 
     private String sanitisePrefix(String prefix) {
-        if (isPrefixUnset(prefix)) {
+        if (prefix == null) {
             return getPrefixFromClassName(classInfo.name());
         }
         return prefix;
     }
 
-    private boolean isPrefixUnset(String prefix) {
-        return prefix == null || prefix.trim().isEmpty() || ConfigProperties.UNSET_PREFIX.equals(prefix.trim());
-    }
-
+    @SuppressWarnings("deprecation")
     private String getPrefixFromClassName(DotName className) {
         String simpleName = className.isInner() ? className.local() : className.withoutPackagePrefix();
         return join("-",

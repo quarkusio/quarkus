@@ -15,6 +15,7 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.InjectionPoint;
+import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ public class ListAllTest {
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Service.class, ServiceAlpha.class, ServiceBravo.class);
 
+    @SuppressWarnings("serial")
     @Test
     public void testSelectAll() {
         // the behavior should be equivalent to @Inject @Any Instance<Service>
@@ -45,6 +47,9 @@ public class ListAllTest {
         assertEquals(true, ServiceBravo.DESTROYED.get());
         assertThatExceptionOfType(IllegalStateException.class)
                 .isThrownBy(() -> bravoHandle.get());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> Arc.container().listAll(Service.class, new AnnotationLiteral<Test>() {
+                }));
     }
 
     interface Service {

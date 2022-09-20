@@ -16,10 +16,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
-import io.quarkus.arc.deployment.ArcConfig;
-import io.quarkus.arc.deployment.configproperties.ConfigPropertiesMetadataBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -31,11 +28,12 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.spring.boot.properties.runtime.SpringBootConfigProperties;
+import io.smallrye.config.ConfigMapping;
 
 public class ConfigurationPropertiesProcessor {
 
-    private static final DotName CONFIGURATION_PROPERTIES = DotName.createSimple(ConfigurationProperties.class.getName());
-    private static final DotName SPRING_BOOT_CONFIG_PROPERTIES = DotName
+    static final DotName CONFIGURATION_PROPERTIES = DotName.createSimple(ConfigurationProperties.class.getName());
+    static final DotName SPRING_BOOT_CONFIG_PROPERTIES = DotName
             .createSimple(SpringBootConfigProperties.class.getName());
 
     @BuildStep
@@ -44,13 +42,13 @@ public class ConfigurationPropertiesProcessor {
     }
 
     @BuildStep
-    public void produceConfigPropertiesMetadata(CombinedIndexBuildItem combinedIndex, ArcConfig arcConfig,
-            BuildProducer<ConfigPropertiesMetadataBuildItem> configPropertiesMetadataProducer,
+    public void produceConfigPropertiesMetadata(CombinedIndexBuildItem combinedIndex, SpringBootPropertiesConfig config,
+            BuildProducer<ConfigurationPropertiesMetadataBuildItem> configPropertiesMetadataProducer,
             BuildProducer<AnnotationsTransformerBuildItem> transformerProducer) {
         IndexView index = combinedIndex.getIndex();
-        ConfigProperties.NamingStrategy namingStrategy = arcConfig.configPropertiesDefaultNamingStrategy;
+        ConfigMapping.NamingStrategy namingStrategy = config.configurationPropertiesNamingStrategy;
         List<MethodInfo> onMethodInstances = new ArrayList<>();
-        List<ConfigPropertiesMetadataBuildItem> metadata = new ArrayList<>();
+        List<ConfigurationPropertiesMetadataBuildItem> metadata = new ArrayList<>();
         for (AnnotationInstance annotation : combinedIndex.getIndex().getAnnotations(CONFIGURATION_PROPERTIES)) {
             boolean ignoreMismatching = true;
             AnnotationValue ignoreUnknownFieldsValue = annotation.value("ignoreUnknownFields");
@@ -60,14 +58,14 @@ public class ConfigurationPropertiesProcessor {
             switch (annotation.target().kind()) {
                 case CLASS:
                     metadata.add(
-                            new ConfigPropertiesMetadataBuildItem(annotation.target().asClass(), getPrefix(annotation),
-                                    namingStrategy, !ignoreMismatching, false));
+                            new ConfigurationPropertiesMetadataBuildItem(annotation.target().asClass(), getPrefix(annotation),
+                                    namingStrategy, !ignoreMismatching));
                     break;
                 case METHOD:
                     onMethodInstances.add(annotation.target().asMethod());
-                    metadata.add(new ConfigPropertiesMetadataBuildItem(
+                    metadata.add(new ConfigurationPropertiesMetadataBuildItem(
                             index.getClassByName(annotation.target().asMethod().returnType().name()), getPrefix(annotation),
-                            namingStrategy, !ignoreMismatching, false, ArcInstanceFactory.INSTANCE));
+                            namingStrategy, !ignoreMismatching, ArcInstanceFactory.INSTANCE));
                     break;
                 default:
                     throw new IllegalArgumentException(
@@ -110,16 +108,9 @@ public class ConfigurationPropertiesProcessor {
             }));
         }
 
-        for (ConfigPropertiesMetadataBuildItem bi : metadata) {
+        for (ConfigurationPropertiesMetadataBuildItem bi : metadata) {
             configPropertiesMetadataProducer.produce(bi);
         }
-    }
-
-    private ConfigPropertiesMetadataBuildItem createConfigPropertiesMetadataFromMethod(AnnotationInstance annotation,
-            IndexView index, ConfigProperties.NamingStrategy namingStrategy) {
-        return new ConfigPropertiesMetadataBuildItem(
-                index.getClassByName(annotation.target().asMethod().returnType().name()), getPrefix(annotation),
-                namingStrategy, true, false);
     }
 
     private String getPrefix(AnnotationInstance annotation) {
@@ -128,11 +119,10 @@ public class ConfigurationPropertiesProcessor {
         } else if (annotation.value("prefix") != null) {
             return annotation.value("prefix").asString();
         }
-
         return null;
     }
 
-    private static class ArcInstanceFactory implements ConfigPropertiesMetadataBuildItem.InstanceFactory {
+    private static class ArcInstanceFactory implements ConfigurationPropertiesMetadataBuildItem.InstanceFactory {
 
         static final ArcInstanceFactory INSTANCE = new ArcInstanceFactory();
 

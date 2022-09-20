@@ -1,4 +1,4 @@
-package io.quarkus.arc.deployment.configproperties;
+package io.quarkus.spring.boot.properties.deployment;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -22,11 +22,11 @@ import io.quarkus.runtime.configuration.ArrayListFactory;
 import io.quarkus.runtime.configuration.HashSetFactory;
 import io.smallrye.config.SmallRyeConfig;
 
-final class ConfigPropertiesUtil {
+final class ConfigurationPropertiesUtil {
 
-    static final String PACKAGE_TO_PLACE_GENERATED_CLASSES = "io.quarkus.arc.runtime.config";
+    static final String PACKAGE_TO_PLACE_GENERATED_CLASSES = "io.quarkus.spring.boot.properties.runtime.config";
 
-    private ConfigPropertiesUtil() {
+    private ConfigurationPropertiesUtil() {
     }
 
     /**

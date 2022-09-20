@@ -14,18 +14,19 @@ public class QualifiersTest {
 
     @Test
     public void testIsSubset() {
+        Qualifiers qualifiers = new Qualifiers(Collections.emptySet(), Collections.emptyMap());
         Set<Annotation> observed = Set.of(Initialized.Literal.REQUEST, Any.Literal.INSTANCE);
         Set<Annotation> event = Set.of(Initialized.Literal.APPLICATION, Any.Literal.INSTANCE);
-        assertFalse(Qualifiers.isSubset(observed, event, Collections.emptyMap()));
+        assertFalse(qualifiers.isSubset(observed, event));
 
         observed = Set.of(Initialized.Literal.APPLICATION, Any.Literal.INSTANCE);
-        assertTrue(Qualifiers.isSubset(observed, event, Collections.emptyMap()));
+        assertTrue(qualifiers.isSubset(observed, event));
 
         observed = Set.of(Any.Literal.INSTANCE);
-        assertTrue(Qualifiers.isSubset(observed, event, Collections.emptyMap()));
+        assertTrue(qualifiers.isSubset(observed, event));
 
         observed = Set.of(Initialized.Literal.APPLICATION);
-        assertTrue(Qualifiers.isSubset(observed, event, Collections.emptyMap()));
+        assertTrue(qualifiers.isSubset(observed, event));
     }
 
 }

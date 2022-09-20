@@ -1,4 +1,4 @@
-package io.quarkus.arc.deployment.configproperties;
+package io.quarkus.spring.boot.properties.deployment;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,7 +16,7 @@ import io.quarkus.gizmo.Gizmo;
 
 public class ConfigPropertyBuildItemCandidateUtil {
 
-    private static final Logger LOGGER = Logger.getLogger(ClassConfigPropertiesUtil.class);
+    private static final Logger LOGGER = Logger.getLogger(ConfigPropertyBuildItemCandidateUtil.class);
 
     /**
      * This method inspects the {@code configClass} bytecode to identify all fields that have a default value set in the class

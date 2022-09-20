@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import java.time.Duration;
 import java.util.function.Supplier;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -117,6 +118,25 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.setAuthServerUrl(authServerUri);
                     config.token.setAllowOpaqueTokenIntrospection(false);
                     config.setClientId("client");
+                    return config;
+                } else if ("tenant-web-app-refresh".equals(tenantId)) {
+                    OidcTenantConfig config = new OidcTenantConfig();
+                    config.setTenantId("tenant-web-app-refresh");
+                    config.setApplicationType(ApplicationType.WEB_APP);
+                    config.getToken().setRefreshExpired(true);
+                    config.setAuthServerUrl(getIssuerUrl() + "/realms/quarkus-webapp");
+                    config.setClientId("quarkus-app-webapp");
+                    config.getCredentials().setSecret("secret");
+
+                    // Let Keycloak issue a login challenge but use the test token endpoint
+                    String uri = context.request().absoluteURI();
+                    String tokenUri = uri.replace("/tenant-refresh/tenant-web-app-refresh/api/user", "/oidc/token");
+                    config.setTokenPath(tokenUri);
+                    String jwksUri = uri.replace("/tenant-refresh/tenant-web-app-refresh/api/user", "/oidc/jwks");
+                    config.setJwksPath(jwksUri);
+                    config.getToken().setIssuer("any");
+                    config.tokenStateManager.setSplitTokens(true);
+                    config.getAuthentication().setSessionAgeExtension(Duration.ofMinutes(1));
                     return config;
                 } else if ("tenant-web-app-dynamic".equals(tenantId)) {
                     OidcTenantConfig config = new OidcTenantConfig();

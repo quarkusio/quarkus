@@ -64,15 +64,15 @@ public class NativeImageFeatureStep {
 
     private static final MethodDescriptor IMAGE_SINGLETONS_LOOKUP = ofMethod(ImageSingletons.class, "lookup", Object.class,
             Class.class);
-    private static final MethodDescriptor BUILD_TIME_INITIALIZATION = ofMethod(
-            "org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport",
-            "initializeAtBuildTime", void.class, String.class, String.class);
+    private static final MethodDescriptor BUILD_TIME_INITIALIZATION = ofMethod(RuntimeClassInitialization.class,
+            "initializeAtBuildTime", void.class, String[].class);
     private static final MethodDescriptor INITIALIZE_CLASSES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
             "initializeAtRunTime", void.class, Class[].class);
     private static final MethodDescriptor INITIALIZE_PACKAGES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
             "initializeAtRunTime", void.class, String[].class);
+    public static final String RUNTIME_CLASS_INITIALIZATION_SUPPORT = "org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport";
     private static final MethodDescriptor RERUN_INITIALIZATION = ofMethod(
-            "org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport",
+            RUNTIME_CLASS_INITIALIZATION_SUPPORT,
             "rerunInitialization", void.class, Class.class, String.class);
 
     public static final String CONFIGURATION_CONDITION = "org.graalvm.nativeimage.impl.ConfigurationCondition";
@@ -205,12 +205,8 @@ public class NativeImageFeatureStep {
             cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
         }
 
-        ResultHandle imageSingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
-                overallCatch.loadClassFromTCCL("org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport"));
-        overallCatch.invokeInterfaceMethod(BUILD_TIME_INITIALIZATION,
-                imageSingleton,
-                overallCatch.load(""), // empty string means everything
-                overallCatch.load("Quarkus build time init default"));
+        overallCatch.invokeStaticMethod(BUILD_TIME_INITIALIZATION,
+                overallCatch.marshalAsArray(String.class, overallCatch.load(""))); // empty string means initialize everything
 
         if (!runtimeInitializedClassBuildItems.isEmpty()) {
             ResultHandle thisClass = overallCatch.loadClassFromTCCL(GRAAL_FEATURE);
@@ -249,6 +245,8 @@ public class NativeImageFeatureStep {
             ResultHandle cl = overallCatch.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class),
                     thisClass);
             ResultHandle quarkus = overallCatch.load("Quarkus");
+            ResultHandle imageSingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
+                    overallCatch.loadClassFromTCCL(RUNTIME_CLASS_INITIALIZATION_SUPPORT));
             for (RuntimeReinitializedClassBuildItem runtimeReinitializedClass : runtimeReinitializedClassBuildItems) {
                 TryBlock tc = overallCatch.tryBlock();
                 ResultHandle clazz = tc.invokeStaticMethod(

@@ -29,8 +29,8 @@ public class FilterGeneration {
             }
             MethodInfo methodInfo = instance.target().asMethod();
             GeneratedClassOutput output = new GeneratedClassOutput();
-            String generatedClassName = CustomFilterGenerator.generateContainerRequestFilter(methodInfo, output,
-                    unwrappableTypes, additionalBeanAnnotations);
+            String generatedClassName = new CustomFilterGenerator(index, unwrappableTypes, additionalBeanAnnotations).generateContainerRequestFilter(methodInfo, output
+            );
             Integer priority = null;
             boolean preMatching = false;
             boolean nonBlockingRequired = false;
@@ -87,8 +87,8 @@ public class FilterGeneration {
             Integer priority = null;
             Set<String> nameBindingNames = new HashSet<>();
             GeneratedClassOutput output = new GeneratedClassOutput();
-            String generatedClassName = CustomFilterGenerator.generateContainerResponseFilter(methodInfo, output,
-                    unwrappableTypes, additionalBeanAnnotations);
+            String generatedClassName = new CustomFilterGenerator(index, unwrappableTypes, additionalBeanAnnotations).generateContainerResponseFilter(methodInfo, output
+            );
 
             AnnotationValue priorityValue = instance.value("priority");
             if (priorityValue != null) {

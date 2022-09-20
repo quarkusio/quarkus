@@ -28,7 +28,7 @@ public class SqlClientInstrumenterVertxTracer implements
 
         this.sqlClientInstrumenter = serverBuilder
                 .addAttributesExtractor(SqlClientAttributesExtractor.create(sqlClientAttributesGetter))
-                .newClientInstrumenter((queryTrace, key, value) -> {
+                .buildClientInstrumenter((queryTrace, key, value) -> {
                 });
     }
 

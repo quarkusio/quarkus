@@ -117,7 +117,7 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
                 .addAttributesExtractor(HttpServerAttributesExtractor.create(serverAttributesExtractor))
                 .addAttributesExtractor(new AdditionalServerAttributesExtractor())
                 .addContextCustomizer(HttpRouteHolder.get())
-                .newServerInstrumenter(new HttpRequestTextMapGetter());
+                .buildServerInstrumenter(new HttpRequestTextMapGetter());
     }
 
     private static Instrumenter<HttpRequest, HttpResponse> getClientInstrumenter(final OpenTelemetry openTelemetry) {
@@ -132,7 +132,7 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
         return clientBuilder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(serverAttributesExtractor))
                 .addAttributesExtractor(HttpClientAttributesExtractor.create(clientAttributesExtractor))
-                .newClientInstrumenter(new HttpRequestTextMapSetter());
+                .buildClientInstrumenter(new HttpRequestTextMapSetter());
     }
 
     private static class RouteGetter implements HttpRouteBiGetter<HttpRequestSpan, HttpResponse> {
@@ -221,28 +221,8 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
         }
 
         @Override
-        public Long requestContentLength(final HttpRequest request, final HttpResponse response) {
-            return getContentLength(request.headers());
-        }
-
-        @Override
-        public Long requestContentLengthUncompressed(final HttpRequest request, final HttpResponse response) {
-            return null;
-        }
-
-        @Override
-        public Integer statusCode(final HttpRequest request, final HttpResponse response) {
-            return response != null ? response.statusCode() : null;
-        }
-
-        @Override
-        public Long responseContentLength(final HttpRequest request, final HttpResponse response) {
-            return response != null ? getContentLength(response.headers()) : null;
-        }
-
-        @Override
-        public Long responseContentLengthUncompressed(final HttpRequest request, final HttpResponse response) {
-            return null;
+        public Integer statusCode(HttpRequest httpRequest, HttpResponse httpResponse, Throwable error) {
+            return httpResponse != null ? httpResponse.statusCode() : null;
         }
 
         @Override
@@ -328,29 +308,8 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
         }
 
         @Override
-        public Long requestContentLength(final HttpRequest request, final HttpResponse response) {
-            return null;
-        }
-
-        @Override
-        public Long requestContentLengthUncompressed(final HttpRequest request, final HttpResponse response) {
-            return null;
-        }
-
-        @Override
-        public Integer statusCode(final HttpRequest request, final HttpResponse response) {
-            return response.statusCode();
-        }
-
-        @Override
-        public Long responseContentLength(final HttpRequest request, final HttpResponse response) {
-            return null;
-        }
-
-        @Override
-        public Long responseContentLengthUncompressed(
-                final HttpRequest request, final HttpResponse response) {
-            return null;
+        public Integer statusCode(HttpRequest httpRequest, HttpResponse httpResponse, Throwable error) {
+            return httpResponse.statusCode();
         }
 
         @Override

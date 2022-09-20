@@ -230,11 +230,14 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             }
         }
         //TODO: in theory resources could have been added in dev mode
-        //but I don't thing this really matters for this code path
+        //but I don't think this really matters for this code path
         ClassPathElement[] providers = state.loadableResources.get(name);
         if (providers != null) {
             for (ClassPathElement element : providers) {
                 ClassPathResource res = element.getResource(name);
+                if (res == null) {
+                    continue;
+                }
                 //if the requested name ends with a trailing / we make sure
                 //that the resource is a directory, and return a URL that ends with a /
                 //this matches the behaviour of URLClassLoader
@@ -351,7 +354,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         if (name.endsWith(".class") && !endsWithTrailingSlash) {
             ClassPathElement[] providers = state.loadableResources.get(name);
             if (providers != null) {
-                return providers[0].getResource(name).getUrl();
+                ClassPathResource resource = providers[0].getResource(name);
+                if (resource != null) {
+                    return resource.getUrl();
+                }
             }
         } else {
             for (ClassPathElement i : elements) {
@@ -391,7 +397,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         if (name.endsWith(".class")) {
             ClassPathElement[] providers = state.loadableResources.get(name);
             if (providers != null) {
-                return new ByteArrayInputStream(providers[0].getResource(name).getData());
+                ClassPathResource resource = providers[0].getResource(name);
+                if (resource != null) {
+                    return new ByteArrayInputStream(resource.getData());
+                }
             }
         } else {
             for (ClassPathElement i : elements) {

@@ -148,7 +148,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             DotName.createSimple("org.jboss.resteasy.reactive.server.SimpleResourceInfo"), //TODO: fixme
             RESOURCE_INFO)));
 
-    private static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(INSTANT, LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME,
+    protected static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(INSTANT, LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME,
             OFFSET_TIME,
             OFFSET_DATE_TIME, ZONED_DATE_TIME);
 
@@ -1283,8 +1283,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                                 currentClassInfo, actualEndpointInfo, index);
                     }
 
-                    handleOptionalParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
-                            genericElementType);
+                    handleOptionalParam(existingConverters, anns, errorLocation, hasRuntimeConverters, builder, elementType,
+                            genericElementType, currentMethodInfo);
                 }
                 builder.setOptional(true);
             } else if (convertible) {
@@ -1382,8 +1382,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             boolean hasRuntimeConverters, PARAM builder, String elementType) {
     }
 
-    protected void handleOptionalParam(Map<String, String> existingConverters, String errorLocation,
-            boolean hasRuntimeConverters, PARAM builder, String elementType, String genericElementType) {
+    protected void handleOptionalParam(Map<String, String> existingConverters,
+            Map<DotName, AnnotationInstance> parameterAnnotations,
+            String errorLocation,
+            boolean hasRuntimeConverters, PARAM builder, String elementType, String genericElementType,
+            MethodInfo currentMethodInfo) {
     }
 
     protected void handleSetParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,

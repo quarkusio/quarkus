@@ -8,8 +8,6 @@ import java.lang.annotation.Target;
 /**
  * Makes the filter class known to Quarkus by the specified name.
  * The filter can then be configured for a handler (like the logging handler using {@code quarkus.log.console.filter}).
- *
- * This class must ONLY be placed on implementations of {@link java.util.logging.Filter} that are marked as {@code final}.
  */
 
 @Retention(RetentionPolicy.RUNTIME)

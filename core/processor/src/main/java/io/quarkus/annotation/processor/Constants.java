@@ -28,6 +28,8 @@ final public class Constants {
     public static final String DASH = "-";
     public static final String ADOC_EXTENSION = ".adoc";
     public static final String DIGIT_OR_LOWERCASE = "^[a-z0-9]+$";
+    public static final String NEW_LINE = "\n";
+    public static final String SECTION_TITLE_L1 = "= ";
 
     public static final String PARENT = "<<parent>>";
     public static final String NO_DEFAULT = "<<no default>>";

@@ -445,7 +445,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                 for (MethodInfo method : methods) {
                     if (Modifier.isAbstract(method.flags())) {
                         MethodCreator methodCreator = classCreator.getMethodCreator(MethodDescriptor.of(method));
-                        methodCreator.returnValue(methodCreator.loadNull());
+                        methodCreator.throwException(IllegalStateException.class, "This should never be called");
                     }
                 }
             }

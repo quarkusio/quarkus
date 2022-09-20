@@ -107,8 +107,8 @@ public class HttpSecurityRecorder {
                     }
                 });
 
-                Uni<SecurityIdentity> potentialUser = authenticator.attemptAuthentication(event).memoize().indefinitely();
                 if (proactiveAuthentication) {
+                    Uni<SecurityIdentity> potentialUser = authenticator.attemptAuthentication(event).memoize().indefinitely();
                     potentialUser
                             .subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
                                 @Override
@@ -166,7 +166,13 @@ public class HttpSecurityRecorder {
                             });
                 } else {
 
-                    Uni<SecurityIdentity> lazyUser = potentialUser
+                    Uni<SecurityIdentity> lazyUser = Uni
+                            .createFrom()
+                            .nullItem()
+                            // Only attempt to authenticate if required
+                            .flatMap(n -> authenticator.attemptAuthentication(event))
+                            .memoize()
+                            .indefinitely()
                             .flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
                                 @Override
                                 public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {

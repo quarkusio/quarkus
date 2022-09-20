@@ -127,6 +127,7 @@ public class RolesResource {
                 .serverUrl("http://localhost:8081")
                 .realm("master")
                 .clientId("admin-cli")
+                .grantType("password")
                 .username("admin")
                 .password("admin")
                 .build();
@@ -145,6 +146,8 @@ public class RolesResource {
 
 }
 ----
+
+For more details consult https://www.keycloak.org/docs/latest/server_development/#admin-rest-api[Keycloak Admin REST API documentation].
 
 You can configure Keycloak Admin Client to administer other realms and clients. It can use either a `password` or `client_credentials` grant to acquire an access token to call the Admin REST API which requires authorization.
 

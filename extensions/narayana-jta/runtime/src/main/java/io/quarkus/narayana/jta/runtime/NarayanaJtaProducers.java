@@ -34,10 +34,12 @@ public class NarayanaJtaProducers {
 
     @Produces
     @Singleton
-    public XAResourceRecoveryRegistry xaResourceRecoveryRegistry() {
+    public XAResourceRecoveryRegistry xaResourceRecoveryRegistry(TransactionManagerConfiguration config) {
         RecoveryManagerService recoveryManagerService = new RecoveryManagerService();
-        recoveryManagerService.create();
-        recoveryManagerService.start();
+        if (config.enableRecovery) {
+            recoveryManagerService.create();
+            recoveryManagerService.start();
+        }
         return recoveryManagerService;
     }
 

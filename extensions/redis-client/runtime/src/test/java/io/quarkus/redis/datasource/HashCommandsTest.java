@@ -142,12 +142,12 @@ public class HashCommandsTest extends DatasourceTestBase {
     void hmget() {
         populateForHmget();
         Map<String, Person> values = hash.hmget(key, "one", "missing", "two");
-        assertThat(values).hasSize(2);
-        assertThat(values).containsExactly(entry("one", Person.person1), entry("two", Person.person2));
+        assertThat(values).hasSize(3);
+        assertThat(values).containsExactly(entry("one", Person.person1), entry("missing", null), entry("two", Person.person2));
     }
 
     private void populateForHmget() {
-        assertThat(hash.hmget(key, "one", "two").values()).isEmpty();
+        assertThat(hash.hmget(key, "one", "two")).allSatisfy((s, p) -> assertThat(p).isNull());
         hash.hset(key, "one", Person.person1);
         hash.hset(key, "two", Person.person2);
     }

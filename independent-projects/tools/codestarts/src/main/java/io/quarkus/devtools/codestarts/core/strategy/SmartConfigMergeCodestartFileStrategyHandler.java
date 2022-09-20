@@ -64,7 +64,8 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
         final HashMap<String, String> flat = new HashMap<>();
         flatten("", flat, config);
         for (Map.Entry<String, String> entry : flat.entrySet()) {
-            builder.append(entry.getKey()).append("=").append(entry.getValue()).append("\n");
+            final String key = entry.getKey().replaceAll("\\.~$", "");
+            builder.append(key).append("=").append(entry.getValue()).append("\n");
         }
         final Path propertiesTargetPath = targetPath.getParent()
                 .resolve(targetPath.getFileName().toString().replace(".yml", ".properties"));

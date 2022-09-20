@@ -11,6 +11,11 @@
     <artifactId>quarkus-integration-test-rest-client-reactive</artifactId>
     <name>Quarkus - Integration Tests - REST Client Reactive</name>
 
+    <properties>
+        <self-signed.trust-store>${project.build.directory}/self-signed.p12</self-signed.trust-store>
+        <self-signed.trust-store-password>changeit</self-signed.trust-store-password>
+    </properties>
+
     <!--todo add ssl tests-->
 
     <dependencies>
@@ -162,6 +167,31 @@
                         <goals>
                             <goal>build</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>uk.co.automatictester</groupId>
+                <artifactId>truststore-maven-plugin</artifactId>
+                <version>${truststore-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>self-signed-truststore</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>generate-truststore</goal>
+                        </goals>
+                        <configuration>
+                            <truststoreFormat>PKCS12</truststoreFormat>
+                            <truststoreFile>${self-signed.trust-store}</truststoreFile>
+                            <truststorePassword>${self-signed.trust-store-password}</truststorePassword>
+                            <servers>
+                                <server>self-signed.badssl.com:443</server>
+                            </servers>
+                            <trustAllCertificates>true</trustAllCertificates>
+                            <includeCertificates>LEAF</includeCertificates>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

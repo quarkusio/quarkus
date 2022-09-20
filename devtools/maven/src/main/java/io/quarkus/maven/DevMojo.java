@@ -1,5 +1,7 @@
 package io.quarkus.maven;
 
+import static io.smallrye.common.expression.Expression.Flag.LENIENT_SYNTAX;
+import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 import static java.util.function.Predicate.not;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.artifactId;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;
@@ -105,6 +107,7 @@ import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.common.expression.Expression;
 
 /**
  * The dev mojo, that runs a quarkus app in a forked process. A background compilation process is launched and any changes are
@@ -973,7 +976,31 @@ public class DevMojo extends AbstractMojo {
         }
 
         builder.projectDir(project.getFile().getParentFile());
-        builder.buildSystemProperties((Map) project.getProperties());
+
+        Properties projectProperties = project.getProperties();
+        Map<String, String> effectiveProperties = new HashMap<>();
+        for (String name : projectProperties.stringPropertyNames()) {
+            if (name.startsWith("quarkus.")) {
+                effectiveProperties.put(name, projectProperties.getProperty(name));
+            }
+        }
+
+        // Add other properties that may be required for expansion
+        for (String value : effectiveProperties.values()) {
+            for (String reference : Expression.compile(value, LENIENT_SYNTAX, NO_TRIM).getReferencedStrings()) {
+                String referenceValue = session.getUserProperties().getProperty(reference);
+                if (referenceValue != null) {
+                    effectiveProperties.put(reference, referenceValue);
+                    continue;
+                }
+
+                referenceValue = projectProperties.getProperty(reference);
+                if (referenceValue != null) {
+                    effectiveProperties.put(reference, referenceValue);
+                }
+            }
+        }
+        builder.buildSystemProperties(effectiveProperties);
 
         builder.applicationName(project.getArtifactId());
         builder.applicationVersion(project.getVersion());

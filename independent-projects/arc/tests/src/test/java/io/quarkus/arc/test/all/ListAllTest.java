@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.MyQualifier;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,6 +27,7 @@ public class ListAllTest {
 
     @Test
     public void testSelectAll() {
+        // the behavior should be equivalent to @Inject @Any Instance<Service>
         List<InstanceHandle<Service>> services = Arc.container().listAll(Service.class);
         assertEquals(2, services.size());
         assertThatExceptionOfType(UnsupportedOperationException.class)
@@ -63,6 +65,7 @@ public class ListAllTest {
         }
     }
 
+    @MyQualifier
     @Priority(5) // this impl should go first
     @Dependent
     static class ServiceBravo implements Service {

@@ -49,6 +49,7 @@ import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
+import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
 
 /**
  * This class is sort of a producer for {@link AgroalDataSource}.
@@ -72,6 +73,7 @@ public class DataSources {
     private final DataSourcesRuntimeConfig dataSourcesRuntimeConfig;
     private final DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig;
     private final DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig;
+    private final TransactionManagerConfiguration transactionRuntimeConfig;
     private final TransactionManager transactionManager;
     private final XAResourceRecoveryRegistry xaResourceRecoveryRegistry;
     private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;
@@ -83,6 +85,7 @@ public class DataSources {
     public DataSources(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig, DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
             DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig,
+            TransactionManagerConfiguration transactionRuntimeConfig,
             TransactionManager transactionManager,
             XAResourceRecoveryRegistry xaResourceRecoveryRegistry,
             TransactionSynchronizationRegistry transactionSynchronizationRegistry, DataSourceSupport dataSourceSupport,
@@ -91,6 +94,7 @@ public class DataSources {
         this.dataSourcesRuntimeConfig = dataSourcesRuntimeConfig;
         this.dataSourcesJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig;
         this.dataSourcesJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig;
+        this.transactionRuntimeConfig = transactionRuntimeConfig;
         this.transactionManager = transactionManager;
         this.xaResourceRecoveryRegistry = xaResourceRecoveryRegistry;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
@@ -215,8 +219,10 @@ public class DataSources {
                 .connectionFactoryConfiguration();
 
         boolean mpMetricsPresent = dataSourceSupport.mpMetricsPresent;
-        applyNewConfiguration(dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration, driver, jdbcUrl,
-                dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, mpMetricsPresent);
+        applyNewConfiguration(dataSourceName, dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration,
+                driver, jdbcUrl,
+                dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, transactionRuntimeConfig,
+                mpMetricsPresent);
 
         if (dataSourceSupport.disableSslSupport) {
             agroalConnectionConfigurer.disableSslSupport(resolvedDbKind, dataSourceConfiguration);
@@ -255,11 +261,12 @@ public class DataSources {
         return dataSource;
     }
 
-    private void applyNewConfiguration(AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+    private void applyNewConfiguration(String dataSourceName, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
             AgroalConnectionPoolConfigurationSupplier poolConfiguration,
             AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration, Class<?> driver, String jdbcUrl,
             DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig, DataSourceRuntimeConfig dataSourceRuntimeConfig,
-            DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig, boolean mpMetricsPresent) {
+            DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig, TransactionManagerConfiguration transactionRuntimeConfig,
+            boolean mpMetricsPresent) {
         connectionFactoryConfiguration.jdbcUrl(jdbcUrl);
         connectionFactoryConfiguration.connectionProviderClass(driver);
         connectionFactoryConfiguration.trackJdbcResources(dataSourceJdbcRuntimeConfig.detectStatementLeaks);
@@ -274,8 +281,15 @@ public class DataSources {
             TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
                     transactionSynchronizationRegistry, null, false,
                     dataSourceJdbcBuildTimeConfig.transactions == io.quarkus.agroal.runtime.TransactionIntegration.XA
-                            ? xaResourceRecoveryRegistry
-                            : null);
+                            && transactionRuntimeConfig.enableRecovery
+                                    ? xaResourceRecoveryRegistry
+                                    : null);
+            if (dataSourceJdbcBuildTimeConfig.transactions == io.quarkus.agroal.runtime.TransactionIntegration.XA
+                    && !transactionRuntimeConfig.enableRecovery) {
+                log.warnv(
+                        "Datasource {0} enables XA but transaction recovery is not enabled. Please enable transaction recovery by setting quarkus.transaction-manager.enable-recovery=true, otherwise data may be lost if the application is terminated abruptly",
+                        dataSourceName);
+            }
             poolConfiguration.transactionIntegration(txIntegration);
         }
 

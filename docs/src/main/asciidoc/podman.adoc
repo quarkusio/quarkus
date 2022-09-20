@@ -26,7 +26,8 @@ Once you have set up `brew`, you can use the `brew install` command to install P
 brew install podman
 brew install docker-compose
 podman machine init -v $HOME:$HOME
-sudo /opt/homebrew/Cellar/podman/4.0.3/bin/podman-mac-helper install
+PODMAN_VERSION=`podman -v | sed 's/[a-zA-Z ]*//'`
+sudo /opt/homebrew/Cellar/podman/$PODMAN_VERSION/bin/podman-mac-helper install
 podman machine set --rootful
 podman machine start
 alias docker='podman'

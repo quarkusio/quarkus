@@ -334,7 +334,9 @@ public class KeycloakDevServicesProcessor {
                     capturedDevServicesConfiguration.realmPath,
                     capturedDevServicesConfiguration.serviceName,
                     capturedDevServicesConfiguration.shared,
-                    capturedDevServicesConfiguration.javaOpts);
+                    capturedDevServicesConfiguration.javaOpts,
+                    capturedDevServicesConfiguration.startCommand,
+                    capturedDevServicesConfiguration.showLogs);
 
             timeout.ifPresent(oidcContainer::withStartupTimeout);
             oidcContainer.start();
@@ -383,10 +385,12 @@ public class KeycloakDevServicesProcessor {
         private String hostName;
         private final boolean keycloakX;
         private RealmRepresentation realmRep;
+        private final Optional<String> startCommand;
+        private final boolean showLogs;
 
         public QuarkusOidcContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
                 Optional<String> realmPath, String containerLabelValue,
-                boolean sharedContainer, Optional<String> javaOpts) {
+                boolean sharedContainer, Optional<String> javaOpts, Optional<String> startCommand, boolean showLogs) {
             super(dockerImageName);
 
             this.useSharedNetwork = useSharedNetwork;
@@ -404,6 +408,8 @@ public class KeycloakDevServicesProcessor {
             }
 
             this.fixedExposedPort = fixedExposedPort;
+            this.startCommand = startCommand;
+            this.showLogs = showLogs;
         }
 
         @Override
@@ -436,7 +442,7 @@ public class KeycloakDevServicesProcessor {
             if (keycloakX) {
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PROP, KEYCLOAK_ADMIN_USER);
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);
-                withCommand(KEYCLOAK_QUARKUS_START_CMD
+                withCommand(startCommand.orElse(KEYCLOAK_QUARKUS_START_CMD)
                         + (useSharedNetwork ? " --hostname-port=" + fixedExposedPort.getAsInt() : ""));
             } else {
                 addEnv(KEYCLOAK_WILDFLY_USER_PROP, KEYCLOAK_ADMIN_USER);
@@ -467,6 +473,12 @@ public class KeycloakDevServicesProcessor {
 
             if (realmRep != null && !keycloakX) {
                 addEnv(KEYCLOAK_WILDFLY_IMPORT_PROP, KEYCLOAK_DOCKER_REALM_PATH);
+            }
+
+            if (showLogs) {
+                super.withLogConsumer(t -> {
+                    LOG.info("Keycloak: " + t.getUtf8String());
+                });
             }
 
             LOG.infof("Using %s powered Keycloak distribution", keycloakX ? "Quarkus" : "WildFly");

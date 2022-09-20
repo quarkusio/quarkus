@@ -152,7 +152,7 @@ public class DevServicesKafkaProcessor {
             // get current partitions for topics asked to be created
             Set<String> currentTopics = adminClient.listTopics().names()
                     .get(adminClientTimeout, TimeUnit.MILLISECONDS);
-            Map<String, TopicDescription> partitions = adminClient.describeTopics(currentTopics).all()
+            Map<String, TopicDescription> partitions = adminClient.describeTopics(currentTopics).allTopicNames()
                     .get(adminClientTimeout, TimeUnit.MILLISECONDS);
             // find new topics to create
             List<NewTopic> newTopics = topicPartitions.entrySet().stream()

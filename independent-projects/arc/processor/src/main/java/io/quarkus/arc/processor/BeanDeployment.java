@@ -149,7 +149,7 @@ public class BeanDeployment {
                         nonbindingMembers = Collections.emptySet();
                     }
                     qualifierNonbindingMembers.put(dotName, nonbindingMembers);
-                    this.qualifiers.put(dotName, classInfo);
+                    qualifiers.put(dotName, classInfo);
                 }
             }
         }
@@ -558,7 +558,7 @@ public class BeanDeployment {
     }
 
     boolean isInheritedQualifier(DotName name) {
-        return (getQualifier(name).classAnnotation(DotNames.INHERITED) != null);
+        return (getQualifier(name).declaredAnnotation(DotNames.INHERITED) != null);
     }
 
     /**
@@ -682,7 +682,7 @@ public class BeanDeployment {
     private Map<DotName, ClassInfo> findContainerAnnotations(Map<DotName, ClassInfo> annotations, IndexView index) {
         Map<DotName, ClassInfo> containerAnnotations = new HashMap<>();
         for (ClassInfo annotation : annotations.values()) {
-            AnnotationInstance repeatableMetaAnnotation = annotation.classAnnotation(DotNames.REPEATABLE);
+            AnnotationInstance repeatableMetaAnnotation = annotation.declaredAnnotation(DotNames.REPEATABLE);
             if (repeatableMetaAnnotation != null) {
                 DotName containerAnnotationName = repeatableMetaAnnotation.value().asClass().name();
                 ClassInfo containerClass = getClassByName(index, containerAnnotationName);
@@ -799,7 +799,7 @@ public class BeanDeployment {
                 }
                 boolean isAdditionalStereotype = additionalStereotypes.contains(stereotypeName);
                 final ScopeInfo scope = getValidScope(scopes, stereotypeClass);
-                boolean isInherited = stereotypeClass.classAnnotation(DotNames.INHERITED) != null;
+                boolean isInherited = stereotypeClass.declaredAnnotation(DotNames.INHERITED) != null;
                 stereotypes.put(stereotypeName, new StereotypeInfo(scope, bindings, isAlternative, alternativePriority,
                         isNamed, isAdditionalStereotype, stereotypeClass, isInherited, parentStereotypes));
             }

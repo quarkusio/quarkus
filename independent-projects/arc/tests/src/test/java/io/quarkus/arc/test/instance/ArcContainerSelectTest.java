@@ -1,5 +1,6 @@
 package io.quarkus.arc.test.instance;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -19,6 +20,7 @@ import javax.annotation.PreDestroy;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.InjectionPoint;
+import javax.enterprise.util.AnnotationLiteral;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -46,6 +48,9 @@ public class ArcContainerSelectTest {
         assertTrue(strings.contains("washcloth"));
         assertTrue(Washcloth.INIT.get());
         assertTrue(Washcloth.DESTROYED.get());
+        assertThatThrownBy(() -> Arc.container().select(Alpha.class, new AnnotationLiteral<Test>() {
+        }))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Singleton

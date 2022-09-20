@@ -36,8 +36,8 @@ public class LocaleProcessor {
 
     @BuildStep(onlyIf = { NativeBuild.class, NonDefaultLocale.class })
     void nativeResources(BuildProducer<NativeImageResourceBundleBuildItem> resources) {
-        resources.produce(new NativeImageResourceBundleBuildItem("sun.util.resources.LocaleNames"));
-        resources.produce(new NativeImageResourceBundleBuildItem("sun.util.resources.CurrencyNames"));
+        resources.produce(new NativeImageResourceBundleBuildItem("sun.util.resources.LocaleNames", "java.base"));
+        resources.produce(new NativeImageResourceBundleBuildItem("sun.util.resources.CurrencyNames", "java.base"));
         //Adding sun.util.resources.TimeZoneNames is not necessary.
     }
 

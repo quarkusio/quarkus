@@ -51,7 +51,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
-import io.quarkus.runtime.ReflectionUtil;
+import io.quarkus.runtime.NativeImageFeatureUtils;
 import io.quarkus.runtime.ResourceHelper;
 import io.quarkus.runtime.graal.ResourcesFeature;
 import io.quarkus.runtime.graal.WeakReflection;
@@ -87,8 +87,12 @@ public class NativeImageFeatureStep {
             String.class);
 
     private static final MethodDescriptor LOOKUP_METHOD = ofMethod(
-            ReflectionUtil.class,
+            NativeImageFeatureUtils.class,
             "lookupMethod", Method.class, Class.class, String.class, Class[].class);
+
+    private static final MethodDescriptor FIND_MODULE_METHOD = ofMethod(
+            NativeImageFeatureUtils.class,
+            "findModule", Module.class, String.class);
     private static final MethodDescriptor INVOKE = ofMethod(
             Method.class, "invoke", Object.class, Object.class, Object[].class);
     static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
@@ -405,26 +409,22 @@ public class NativeImageFeatureStep {
             /* GraalVM >= 22.3 */
             try (BytecodeCreator greaterThan22_2 = graalVm22_3Test.trueBranch()) {
 
-                ResultHandle runtimeResourceSupportClass = greaterThan22_2.loadClassFromTCCL(RUNTIME_RESOURCE_SUPPORT);
-                ResultHandle addResourceBundlesParams = greaterThan22_2.marshalAsArray(Class.class,
-                        greaterThan22_2.loadClassFromTCCL(CONFIGURATION_CONDITION),
-                        greaterThan22_2.loadClassFromTCCL(String.class));
-                ResultHandle addResourceBundlesMethod = greaterThan22_2.invokeStaticMethod(
-                        LOOKUP_METHOD,
-                        runtimeResourceSupportClass, greaterThan22_2.load("addResourceBundles"), addResourceBundlesParams);
-                ResultHandle runtimeResourceSupport = greaterThan22_2.invokeStaticMethod(
-                        IMAGE_SINGLETONS_LOOKUP,
-                        runtimeResourceSupportClass);
-                ResultHandle configAlwaysTrue = greaterThan22_2.invokeStaticMethod(CONFIGURATION_ALWAYS_TRUE);
+                MethodDescriptor addResourceBundle = ofMethod("org.graalvm.nativeimage.hosted.RuntimeResourceAccess",
+                        "addResourceBundle", void.class, Module.class, String.class);
 
                 for (NativeImageResourceBundleBuildItem i : resourceBundles) {
-                    TryBlock et = greaterThan22_2.tryBlock();
+                    TryBlock tc = greaterThan22_2.tryBlock();
 
-                    et.invokeVirtualMethod(
-                            INVOKE,
-                            addResourceBundlesMethod, runtimeResourceSupport,
-                            et.marshalAsArray(Object.class, configAlwaysTrue, et.load(i.getBundleName())));
-                    CatchBlockCreator c = et.addCatch(Throwable.class);
+                    String moduleName = i.getModuleName();
+                    ResultHandle moduleNameHandle;
+                    if (moduleName == null) {
+                        moduleNameHandle = tc.loadNull();
+                    } else {
+                        moduleNameHandle = tc.load(moduleName);
+                    }
+                    ResultHandle module = tc.invokeStaticMethod(FIND_MODULE_METHOD, moduleNameHandle);
+                    tc.invokeStaticMethod(addResourceBundle, module, tc.load(i.getBundleName()));
+                    CatchBlockCreator c = tc.addCatch(Throwable.class);
                     //c.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), c.getCaughtException());
                 }
             }

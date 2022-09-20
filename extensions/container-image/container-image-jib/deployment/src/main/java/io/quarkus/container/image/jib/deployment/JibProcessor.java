@@ -562,6 +562,8 @@ public class JibProcessor {
                     .setEnvironment(getEnvironmentVariables(jibConfig))
                     .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
 
+            mayInheritEntrypoint(jibContainerBuilder, entrypoint, jibConfig.jvmArguments);
+
             if (jibConfig.useCurrentTimestamp) {
                 jibContainerBuilder.setCreationTime(now);
             }
@@ -594,6 +596,15 @@ public class JibProcessor {
         }
 
         return jibContainerBuilder.addFileEntriesLayer(layerConfigurationBuilder.build());
+    }
+
+    private void mayInheritEntrypoint(JibContainerBuilder jibContainerBuilder, List<String> entrypoint,
+            List<String> arguments) {
+        if (entrypoint.size() == 1 && "INHERIT".equals(entrypoint.get(0))) {
+            jibContainerBuilder
+                    .setEntrypoint((List<String>) null)
+                    .setProgramArguments(arguments);
+        }
     }
 
     private List<String> determineEffectiveJvmArguments(JibConfig jibConfig, Optional<AppCDSResultBuildItem> appCDSResult) {
@@ -666,6 +677,7 @@ public class JibProcessor {
 
             if (jibConfig.jvmEntrypoint.isPresent()) {
                 jibContainerBuilder.setEntrypoint(jibConfig.jvmEntrypoint.get());
+                mayInheritEntrypoint(jibContainerBuilder, jibConfig.jvmEntrypoint.get(), jibConfig.jvmArguments);
             }
 
             return jibContainerBuilder;
@@ -701,6 +713,8 @@ public class JibProcessor {
                     .setEntrypoint(entrypoint)
                     .setEnvironment(getEnvironmentVariables(jibConfig))
                     .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
+
+            mayInheritEntrypoint(jibContainerBuilder, entrypoint, jibConfig.nativeArguments.orElse(null));
 
             if (jibConfig.useCurrentTimestamp) {
                 jibContainerBuilder.setCreationTime(Instant.now());

@@ -31,6 +31,7 @@ class GreetingResourceTest {
             get("/greeting")
         } Then {
             statusCode(204)
+            header("random", CoreMatchers.notNullValue())
         }
     }
 

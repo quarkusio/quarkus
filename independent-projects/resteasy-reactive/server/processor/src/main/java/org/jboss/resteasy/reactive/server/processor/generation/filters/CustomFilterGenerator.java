@@ -23,17 +23,22 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.smallrye.mutiny.Uni;
 import java.lang.reflect.Modifier;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Response;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
@@ -65,12 +70,10 @@ final class CustomFilterGenerator {
     private static final String ABSTRACT_SUSPENDED_REQ_FILTER = "org.jboss.resteasy.reactive.server.runtime.kotlin.AbstractSuspendedRequestFilter";
     private static final String ABSTRACT_SUSPENDED_RES_FILTER = "org.jboss.resteasy.reactive.server.runtime.kotlin.AbstractSuspendedResponseFilter";
 
-    private final IndexView index;
     private final Set<DotName> unwrappableTypes;
     private final Set<String> additionalBeanAnnotations;
 
-    CustomFilterGenerator(IndexView index, Set<DotName> unwrappableTypes, Set<String> additionalBeanAnnotations) {
-        this.index = index;
+    CustomFilterGenerator(Set<DotName> unwrappableTypes, Set<String> additionalBeanAnnotations) {
         this.unwrappableTypes = unwrappableTypes;
         this.additionalBeanAnnotations = additionalBeanAnnotations;
     }
@@ -78,8 +81,7 @@ final class CustomFilterGenerator {
     String generateContainerRequestFilter(MethodInfo targetMethod, ClassOutput classOutput) {
         checkModifiers(targetMethod, ResteasyReactiveServerDotNames.SERVER_REQUEST_FILTER);
         if (KotlinUtils.isSuspendMethod(targetMethod)) {
-            return generateRequestFilterForSuspendedMethod(targetMethod, classOutput
-            );
+            return generateRequestFilterForSuspendedMethod(targetMethod, classOutput);
         }
         return generateStandardRequestFilter(targetMethod, classOutput);
     }
@@ -100,12 +102,13 @@ final class CustomFilterGenerator {
         }
 
         String generatedClassName = getGeneratedClassName(targetMethod, ResteasyReactiveServerDotNames.SERVER_REQUEST_FILTER);
-        DotName declaringClassName = targetMethod.declaringClass().name();
+        ClassInfo declaringClass = targetMethod.declaringClass();
+        DotName declaringClassName = declaringClass.name();
         try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput)
                 .className(generatedClassName)
                 .superClass(ABSTRACT_SUSPENDED_REQ_FILTER)
                 .build()) {
-            FieldDescriptor delegateField = generateConstructorAndDelegateField(cc, declaringClassName.toString(),
+            FieldDescriptor delegateField = generateConstructorAndDelegateField(cc, declaringClass,
                     ABSTRACT_SUSPENDED_REQ_FILTER, additionalBeanAnnotations);
 
             // generate the implementation of the 'doFilter' method
@@ -115,8 +118,7 @@ final class CustomFilterGenerator {
             ResultHandle resultHandle = doFilterMethod.invokeVirtualMethod(targetMethod,
                     doFilterMethod.readInstanceField(delegateField, doFilterMethod.getThis()),
                     getRequestFilterResultHandles(targetMethod, declaringClassName, doFilterMethod, 2,
-                            getRRReqCtxHandle(doFilterMethod, getRRContainerReqCtxHandle(doFilterMethod, 0))
-                    ));
+                            getRRReqCtxHandle(doFilterMethod, getRRContainerReqCtxHandle(doFilterMethod, 0))));
             doFilterMethod.returnValue(resultHandle);
 
             // generate the implementation of the 'handleResult' method which simply delegates the Uni handling
@@ -184,12 +186,13 @@ final class CustomFilterGenerator {
     private String generateStandardRequestFilter(MethodInfo targetMethod, ClassOutput classOutput) {
         ReturnType returnType = determineRequestFilterReturnType(targetMethod);
         String generatedClassName = getGeneratedClassName(targetMethod, ResteasyReactiveServerDotNames.SERVER_REQUEST_FILTER);
-        DotName declaringClassName = targetMethod.declaringClass().name();
+        ClassInfo declaringClass = targetMethod.declaringClass();
+        DotName declaringClassName = declaringClass.name();
         try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput)
                 .className(generatedClassName)
                 .interfaces(determineRequestInterfaceType(returnType))
                 .build()) {
-            FieldDescriptor delegateField = generateConstructorAndDelegateField(cc, declaringClassName.toString(),
+            FieldDescriptor delegateField = generateConstructorAndDelegateField(cc, declaringClass,
                     Object.class.getName(), additionalBeanAnnotations);
 
             if (returnType == ReturnType.VOID
@@ -326,8 +329,7 @@ final class CustomFilterGenerator {
     String generateContainerResponseFilter(MethodInfo targetMethod, ClassOutput classOutput) {
         checkModifiers(targetMethod, ResteasyReactiveServerDotNames.SERVER_RESPONSE_FILTER);
         if (KotlinUtils.isSuspendMethod(targetMethod)) {
-            return generateResponseFilterForSuspendedMethod(targetMethod, classOutput
-            );
+            return generateResponseFilterForSuspendedMethod(targetMethod, classOutput);
         }
         return generateStandardContainerResponseFilter(targetMethod, classOutput);
     }
@@ -340,12 +342,13 @@ final class CustomFilterGenerator {
                     + "' cannot be used as a request filter as it does not declare 'void' as its return type.");
         }
         String generatedClassName = getGeneratedClassName(targetMethod, ResteasyReactiveServerDotNames.SERVER_RESPONSE_FILTER);
-        DotName declaringClassName = targetMethod.declaringClass().name();
+        ClassInfo declaringClass = targetMethod.declaringClass();
+        DotName declaringClassName = declaringClass.name();
         try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput)
                 .className(generatedClassName)
                 .superClass(ABSTRACT_SUSPENDED_RES_FILTER)
                 .build()) {
-            FieldDescriptor delegateField = generateConstructorAndDelegateField(cc, declaringClassName.toString(),
+            FieldDescriptor delegateField = generateConstructorAndDelegateField(cc, declaringClass,
                     ABSTRACT_SUSPENDED_RES_FILTER, additionalBeanAnnotations);
 
             // generate the implementation of the filter method
@@ -398,12 +401,13 @@ final class CustomFilterGenerator {
     private String generateStandardContainerResponseFilter(MethodInfo targetMethod, ClassOutput classOutput) {
         ReturnType returnType = determineResponseFilterReturnType(targetMethod);
         String generatedClassName = getGeneratedClassName(targetMethod, ResteasyReactiveServerDotNames.SERVER_RESPONSE_FILTER);
-        DotName declaringClassName = targetMethod.declaringClass().name();
+        ClassInfo declaringClassInfo = targetMethod.declaringClass();
+        DotName declaringClassName = declaringClassInfo.name();
         try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput)
                 .className(generatedClassName)
                 .interfaces(determineResponseInterfaceType(returnType))
                 .build()) {
-            FieldDescriptor delegateField = generateConstructorAndDelegateField(cc, declaringClassName.toString(),
+            FieldDescriptor delegateField = generateConstructorAndDelegateField(cc, declaringClassInfo,
                     Object.class.getName(), additionalBeanAnnotations);
 
             if (returnType == ReturnType.VOID) {
@@ -446,9 +450,15 @@ final class CustomFilterGenerator {
         return generatedClassName;
     }
 
-    private FieldDescriptor generateConstructorAndDelegateField(ClassCreator cc, String declaringClassName,
+    private FieldDescriptor generateConstructorAndDelegateField(ClassCreator cc, ClassInfo declaringClass,
             String superClassName, Set<String> additionalBeanAnnotations) {
-        cc.addAnnotation(Singleton.class);
+
+        String declaringClassName = declaringClass.toString();
+        ScopeInspectionResult scopeInspectionResult = inspectScope(declaringClass);
+
+        if (scopeInspectionResult.scopeToAdd != null) {
+            cc.addAnnotation(scopeInspectionResult.scopeToAdd);
+        }
         for (String i : additionalBeanAnnotations) {
             cc.addAnnotation(i);
         }
@@ -466,7 +476,65 @@ final class CustomFilterGenerator {
         ResultHandle delegate = ctor.getMethodParam(0);
         ctor.writeInstanceField(delegateField, self, delegate);
         ctor.returnValue(null);
+
+        if (scopeInspectionResult.needsProxy) {
+            // generate no-args constructor needed for creating proxies
+            MethodCreator noArgsCtor = cc.getMethodCreator("<init>", void.class);
+            noArgsCtor.setModifiers(Modifier.PUBLIC);
+            noArgsCtor.invokeSpecialMethod(MethodDescriptor.ofConstructor(superClassName), noArgsCtor.getThis());
+            noArgsCtor.writeInstanceField(delegateField, noArgsCtor.getThis(), noArgsCtor.loadNull());
+            noArgsCtor.returnValue(null);
+        }
+
         return delegateField;
+    }
+
+    /**
+     * The generated class needs to be proxyable:
+     *
+     * <ul>
+     * <li>The class declaring the filter annotation is itself annotated with {@code @ApplicationScoped}</li>
+     * <li>The class contains instance fields that are not annotated with {@code Inject}. The reason for this rule
+     * is to ensure that fields will not be instantiated at static-init time, which can cause problems during
+     * native image build, see <a href="https://github.com/quarkusio/quarkus/issues/27752">this</a>
+     * for more details</li>
+     * </ul>
+     *
+     * If the class already has a scope declared, we use it. Otherwise, if it needs a proxy we make it
+     * {@code @ApplicationScoped},
+     * or {@code @Singleton} if no proxy is needed.
+     */
+    private ScopeInspectionResult inspectScope(ClassInfo classInfo) {
+        if (classInfo.hasDeclaredAnnotation(ApplicationScoped.class) || classInfo.hasDeclaredAnnotation(RequestScoped.class)) {
+            return new ScopeInspectionResult(null, true);
+        }
+        if (classInfo.hasDeclaredAnnotation(Singleton.class)) {
+            return new ScopeInspectionResult(null, false);
+        }
+        List<FieldInfo> fields = classInfo.fields();
+        if (fields.isEmpty()) {
+            return new ScopeInspectionResult(Singleton.class, false);
+        } else {
+            boolean hasFieldWithoutInject = false;
+            for (FieldInfo field : fields) {
+                if (!field.hasAnnotation(Inject.class)) {
+                    hasFieldWithoutInject = true;
+                    break;
+                }
+            }
+            return new ScopeInspectionResult(hasFieldWithoutInject ? ApplicationScoped.class : Singleton.class,
+                    hasFieldWithoutInject);
+        }
+    }
+
+    private static class ScopeInspectionResult {
+        private final Class<?> scopeToAdd;
+        private final boolean needsProxy;
+
+        public ScopeInspectionResult(Class<?> scopeToAdd, boolean needsProxy) {
+            this.scopeToAdd = scopeToAdd;
+            this.needsProxy = needsProxy;
+        }
     }
 
     private ResultHandle[] getResponseFilterResultHandles(MethodInfo targetMethod, DotName declaringClassName,

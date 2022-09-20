@@ -44,6 +44,8 @@ public class CsrfRequestResponseReactiveFilter {
      */
     private static final String CSRF_TOKEN_VERIFIED = "csrf_token_verified";
 
+    private final SecureRandom secureRandom = new SecureRandom();
+
     @Inject
     Instance<CsrfReactiveConfig> configInstance;
 
@@ -92,7 +94,7 @@ public class CsrfRequestResponseReactiveFilter {
             if (cookieToken == null && isCsrfTokenRequired(routing, config)) {
                 // Set the CSRF cookie with a randomly generated value
                 byte[] token = new byte[config.tokenSize];
-                new SecureRandom().nextBytes(token);
+                secureRandom.nextBytes(token);
                 routing.put(CSRF_TOKEN_KEY, Base64.getUrlEncoder().withoutPadding().encodeToString(token));
             }
         } else if (config.verifyToken) {

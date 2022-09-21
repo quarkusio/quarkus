@@ -11,7 +11,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.annotation.PreDestroy;
@@ -89,6 +92,7 @@ public class QuartzScheduler implements Scheduler {
     private final org.quartz.Scheduler scheduler;
     private final boolean enabled;
     private final boolean startHalted;
+    private final Duration shutdownWaitTime;
     private final Map<String, QuartzTrigger> scheduledTasks = new HashMap<>();
 
     public QuartzScheduler(SchedulerContext context, QuartzSupport quartzSupport, SchedulerRuntimeConfig schedulerRuntimeConfig,
@@ -97,6 +101,7 @@ public class QuartzScheduler implements Scheduler {
             Vertx vertx) {
         enabled = schedulerRuntimeConfig.enabled;
         final Duration defaultOverdueGracePeriod = schedulerRuntimeConfig.overdueGracePeriod;
+        shutdownWaitTime = quartzSupport.getRuntimeConfig().shutdownWaitTime;
         final QuartzRuntimeConfig runtimeConfig = quartzSupport.getRuntimeConfig();
 
         boolean forceStart;
@@ -478,9 +483,24 @@ public class QuartzScheduler implements Scheduler {
     void destroy(@Observes @BeforeDestroyed(ApplicationScoped.class) Object event) {
         if (scheduler != null) {
             try {
-                // Note that this method does not return until all currently executing jobs have completed
-                scheduler.shutdown(true);
-            } catch (SchedulerException e) {
+                if (shutdownWaitTime.isZero()) {
+                    scheduler.shutdown(false);
+                } else {
+                    CompletableFuture.supplyAsync(new Supplier<>() {
+                        @Override
+                        public Void get() {
+                            // Note that this method does not return until all currently executing jobs have completed
+                            try {
+                                scheduler.shutdown(true);
+                            } catch (SchedulerException e) {
+                                throw new RuntimeException(e);
+                            }
+                            return null;
+                        }
+                    }).get(shutdownWaitTime.toMillis(), TimeUnit.MILLISECONDS);
+                }
+
+            } catch (Exception e) {
                 LOGGER.warnf("Unable to gracefully shutdown the scheduler", e);
             }
         }

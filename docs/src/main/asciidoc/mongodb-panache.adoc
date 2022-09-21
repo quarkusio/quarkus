@@ -860,8 +860,6 @@ public class Person extends PanacheMongoEntityBase {
 }
 ----
 
-WARNING: This feature has no support yet for reactive mode.
-
 == Working with Kotlin Data classes
 
 Kotlin data classes are a very convenient way of defining data carrier classes, making them a great match to define an entity class.

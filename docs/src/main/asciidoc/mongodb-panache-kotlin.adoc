@@ -225,5 +225,3 @@ class Person {
     @Version lateinit var customVersion: Long?
 }
 ----
-
-WARNING: This feature has no support yet for reactive mode.

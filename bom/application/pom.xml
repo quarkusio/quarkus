@@ -97,7 +97,7 @@
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>1.16</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>8.4.1</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>8.4.2</elasticsearch-opensource-components.version>
         <!-- for the now proprietary components of Elasticsearch, we use the last Open Source version -->
         <elasticsearch-proprietary-components-keeping-old-opensource-version.version>7.10.2</elasticsearch-proprietary-components-keeping-old-opensource-version.version>
         <rxjava.version>2.2.21</rxjava.version>
@@ -133,8 +133,8 @@
         <infinispan.version>13.0.10.Final</infinispan.version>
         <infinispan.protostream.version>4.4.3.Final</infinispan.protostream.version>
         <caffeine.version>2.9.3</caffeine.version>
-        <netty.version>4.1.79.Final</netty.version>
-        <brotli4j.version>1.7.1</brotli4j.version>
+        <netty.version>4.1.82.Final</netty.version>
+        <brotli4j.version>1.8.0</brotli4j.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
         <mutiny.version>1.7.0</mutiny.version>

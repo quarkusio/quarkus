@@ -41,7 +41,8 @@ var port = {config:property('quarkus.http.port')};
             $('.implicitLoggedIn').show();
             var search = window.location.search;
             var code = search.match(/code=([^&]+)/)[1];
-            exchangeCodeForTokens(code);
+            var state = search.match(/state=([^&]+)/)[1];
+            exchangeCodeForTokens(code, state);
         }else if(errorInUrl()){
             loggedIn === false;
             $('.implicitLoggedOut').hide();
@@ -99,20 +100,30 @@ var port = {config:property('quarkus.http.port')};
     }
 
     function signInToOidcProviderAndGetTokens() {
+      var address;
+      var state;
+      var clientId = getClientId();
+      {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
+          address = '{info:keycloakAdminUrl??}' + "/realms/" + $('#keycloakRealm').val() + "/protocol/openid-connect/auth";
+          state = makeid() + "_" + $('#keycloakRealm').val() + "_" + clientId;
+      {#else}
+          address = '{info:authorizationUrl??}';
+          state = makeid();
+      {/if}
       {#if info:oidcGrantType is 'implicit'}
-        window.location.href = '{info:authorizationUrl??}'
-          + "?client_id=" + '{info:clientId}'
+        window.location.href = address
+          + "?client_id=" + clientId
           + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
           + "&scope=openid&response_type=token id_token&response_mode=query&prompt=login"
           + "&nonce=" + makeid()
-          + "&state=" + makeid();
+          + "&state=" + state;
       {#else}
-        window.location.href = '{info:authorizationUrl??}'
-          + "?client_id=" + '{info:clientId}'
+        window.location.href = address
+          + "?client_id=" + clientId
           + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
           + "&scope=openid&response_type=code&response_mode=query&prompt=login"
           + "&nonce=" + makeid()
-          + "&state=" + makeid();
+          + "&state=" + state;
       {/if}    
     }
 
@@ -188,16 +199,30 @@ var port = {config:property('quarkus.http.port')};
     function logout() {
         localStorage.removeItem('authorized');
     
-        window.location.assign('{info:logoutUrl??}'
+        var address;
+        {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
+            address = '{info:keycloakAdminUrl??}' + "/realms/" + $('#keycloakRealm').val() + "/protocol/openid-connect/logout";
+        {#else}
+            address = '{info:logoutUrl??}';
+        {/if}
+        window.location.assign(address
           + "?" + '{info:postLogoutUriParam??}' + "=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
           + "&" + "id_token_hint" + "=" + idToken);
     }
         
-    function exchangeCodeForTokens(code){
+    function exchangeCodeForTokens(code, state){
+        var address = '{info:tokenUrl??}';
+        var clientId = '{info:clientId??}';
+        if (state && state.includes("_")) {
+            var parts = state.substring(index + 1).split("_");
+            var index = address.indexOf("/realms/");
+            address = address.substring(0, index + 8) + parts[1] + "/protocol/openid-connect/token";
+            clientId = parts[2];
+        }
         $.post("exchangeCodeForTokens",
             {
-              tokenUrl: '{info:tokenUrl??}',
-              client: '{info:clientId}',
+              tokenUrl: address,
+              client: clientId,
               clientSecret: '{info:clientSecret}',
               authorizationCode: code,
               redirectUri: "http://localhost:" + port + devRoot + "/io.quarkus.quarkus-oidc/provider"
@@ -262,6 +287,7 @@ var port = {config:property('quarkus.http.port')};
     }
 
     {/if}
+    
 {/if}
 
 {#if info:oidcApplicationType is 'web-app'}
@@ -275,10 +301,10 @@ function signInToService(servicePath) {
     function testServiceWithPassword(userName, password, servicePath){
         $.post("testService",
             {
-              tokenUrl: '{info:tokenUrl??}',
+              tokenUrl: getTokenUrl(),
               serviceUrl: "http://localhost:" + port + servicePath,
-              client: '{info:clientId}',
-              clientSecret: '{info:clientSecret}',
+              client: getClientId(),
+              clientSecret: getClientSecret(),
               user: userName,
               password: password,
               grant: '{info:oidcGrantType}'
@@ -291,9 +317,9 @@ function signInToService(servicePath) {
     function testServiceWithPasswordInSwaggerUi(userName, password){
         $.post("testService",
             {
-              tokenUrl: '{info:tokenUrl??}',
-              client: '{info:clientId}',
-              clientSecret: '{info:clientSecret}',
+              tokenUrl: getTokenUrl(),
+              client: getClientId(),
+              clientSecret: getClientSecret(),
               user: userName,
               password: password,
               grant: '{info:oidcGrantType}'
@@ -306,9 +332,9 @@ function signInToService(servicePath) {
     function testServiceWithPasswordInGraphQLUi(userName){
         $.post("testService",
             {
-              tokenUrl: '{info:tokenUrl??}',
-              client: '{info:clientId}',
-              clientSecret: '{info:clientSecret}',
+              tokenUrl: getTokenUrl(),
+              client: getClientId(),
+              clientSecret: getClientSecret(),
               user: userName,
               grant: '{info:oidcGrantType}'
             },
@@ -322,10 +348,10 @@ function signInToService(servicePath) {
     function testServiceWithClientCredentials(servicePath) {
         $.post("testService",
             {
-              tokenUrl: '{info:tokenUrl??}',
+              tokenUrl: getTokenUrl(),
               serviceUrl: "http://localhost:" + port + servicePath,
-              client: '{info:clientId}',
-              clientSecret: '{info:clientSecret}',
+              client: getClientId(),
+              clientSecret: getClientSecret(),
               grant: '{info:oidcGrantType}'
             },
             function(data, status){
@@ -335,9 +361,9 @@ function signInToService(servicePath) {
     function testServiceWithClientCredentialsInSwaggerUi(){
         $.post("testService",
             {
-              tokenUrl: '{info:tokenUrl??}',
-              client: '{info:clientId}',
-              clientSecret: '{info:clientSecret}',
+              tokenUrl: getTokenUrl(),
+              client: getClientId(),
+              clientSecret: getClientSecret(),
               grant: '{info:oidcGrantType}'
             },
             function(data, status){
@@ -348,9 +374,9 @@ function signInToService(servicePath) {
     function testServiceWithClientCredentialsInGraphQLUi(){
         $.post("testService",
             {
-              tokenUrl: '{info:tokenUrl??}',
-              client: '{info:clientId}',
-              clientSecret: '{info:clientSecret}',
+              tokenUrl: getTokenUrl(),
+              client: getClientId(),
+              clientSecret: getClientSecret(),
               grant: '{info:oidcGrantType}'
             },
             function(data, status){
@@ -413,8 +439,32 @@ function getServicePath() {
     return servicePath.startsWith("/") ? servicePath : ("/" + servicePath);
 }
 
+function getTokenUrl() {
+    {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
+        return '{info:keycloakAdminUrl??}' + "/realms/" + $('#keycloakRealm').val() + "/protocol/openid-connect/token";
+    {#else}
+        return '{info:tokenUrl??}';
+    {/if}
+}
+
 function clearResults() {
     $('#results').text('');
+}
+
+function getClientId() {
+    {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
+        return $('#clientId').val();
+    {#else}
+        return '{info:clientId??}';
+    {/if}
+}
+
+function getClientSecret() {
+    {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
+        return $('#clientSecret').val();
+    {#else}
+        return '{info:clientSecret??}';
+    {/if}
 }
 
 {/script}
@@ -436,6 +486,33 @@ function clearResults() {
         
         <div class="card implicitLoggedOut">
             <div class="card-body">
+                {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
+                  {#let realms=info:keycloakRealms??}
+                    <div class="form-group">
+                      <div class="row">
+                        <div class="col-1">
+                          <label for="keycloakRealm">Realm</label>
+                        </div>
+                        <div class="col">
+                          <select class="form-control" id="keycloakRealm">
+                            {#for realm in realms}
+                              <option>{realm}</option>
+                            {/for}   
+                          </select>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-1">
+                          <label for="clientId">Client</label>
+                        </div>
+                        <div class="col">
+                          <input type="text" class="form-control" id="clientId"
+                                value="{#if realms.size() == 1}{info:clientId??}{/if}" title="Client ID">
+                        </div>
+                      </div> 
+                    </div> 
+                  {/let}
+                {/if}
                 <a class="btn btn-block btn-success" title="Log into Single Page Application to Get Access and ID Tokens" onclick="signInToOidcProviderAndGetTokens();">
                     <i class="fas fa-user"></i> Log into Single Page Application
                 </a>
@@ -589,6 +666,42 @@ function clearResults() {
                Get access token and test your service
             </div>
             <div class="card-body">
+                {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
+                  {#let realms=info:keycloakRealms??}
+                    <div class="form-group">
+                      <div class="row">
+                        <div class="col-2">
+                          <label for="keycloakRealm">Realm</label>
+                        </div>
+                        <div class="col-10">
+                          <select class="form-control" id="keycloakRealm">
+                            {#for realm in realms}
+                              <option>{realm}</option>
+                            {/for}   
+                          </select>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-2">
+                          <label for="clientId">Client</label>
+                        </div>
+                        <div class="col-10">
+                          <input type="text" class="form-control" id="clientId"
+                                value="{#if realms.size() == 1}{info:clientId??}{/if}" title="Client ID">
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-2">
+                          <label for="clientSecret">Secret</label>
+                        </div>
+                        <div class="col-10">
+                          <input type="password" class="form-control" id="clientSecret" 
+                                value="{#if realms.size() == 1}{info:clientSecret??}{/if}" title="Secret">
+                        </div>
+                      </div>
+                    </div>
+                  {/let}
+                {/if}
                 <div class="row">
                     <div class="col-2">
                         <label for="userName">User name</label>
@@ -643,9 +756,45 @@ function clearResults() {
     {#else if info:oidcGrantType is 'client_credentials'}
         <div class="card">
             <div class="card-header">
-                Get access token for the client {info:clientId} and test your service
+                Get access token for the client and test your service
             </div>
             <div class="card-body">
+                {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
+                  {#let realms=info:keycloakRealms??}
+                    <div class="form-group">
+                      <div class="row">
+                        <div class="col-2">
+                          <label for="keycloakRealm">Realm</label>
+                        </div>
+                        <div class="col-10">
+                          <select class="form-control" id="keycloakRealm">
+                            {#for realm in realms}
+                              <option>{realm}</option>
+                            {/for}   
+                          </select>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-2">
+                          <label for="clientId">Client</label>
+                        </div>
+                        <div class="col-10">
+                          <input type="text" class="form-control" id="clientId"
+                                value="{#if realms.size() == 1}{info:clientId??}{/if}" title="Client ID">
+                        </div>
+                       </div>
+                       <div class="row">
+                        <div class="col-2">
+                          <label for="clientSecret">Secret</label>
+                        </div>
+                        <div class="col-10">
+                          <input type="password" class="form-control" id="clientSecret" 
+                                value="{#if realms.size() == 1}{info:clientSecret??}{/if}" title="Secret"
+                        </div>
+                      </div>
+                    </div>
+                  {/let}
+                {/if}
                 <div class="row">
                     <div class="col-2">
                         <label for="servicePath">Service Path</label>

@@ -19,7 +19,6 @@ import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
-import org.graalvm.nativeimage.impl.ConfigurationCondition;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -76,14 +75,15 @@ public class NativeImageFeatureStep {
             "org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport",
             "rerunInitialization", void.class, Class.class, String.class);
 
+    public static final String CONFIGURATION_CONDITION = "org.graalvm.nativeimage.impl.ConfigurationCondition";
     private static final MethodDescriptor CONFIGURATION_ALWAYS_TRUE = ofMethod(
-            "org.graalvm.nativeimage.impl.ConfigurationCondition",
-            "alwaysTrue", "org.graalvm.nativeimage.impl.ConfigurationCondition");
+            CONFIGURATION_CONDITION,
+            "alwaysTrue", CONFIGURATION_CONDITION);
 
     private static final MethodDescriptor REGISTER_LAMBDA_CAPTURING_CLASS = ofMethod(
             "org.graalvm.nativeimage.impl.RuntimeSerializationSupport",
             "registerLambdaCapturingClass", void.class,
-            "org.graalvm.nativeimage.impl.ConfigurationCondition",
+            CONFIGURATION_CONDITION,
             String.class);
 
     private static final MethodDescriptor LOOKUP_METHOD = ofMethod(
@@ -311,7 +311,7 @@ public class NativeImageFeatureStep {
 
             TryBlock tc = overallCatch.tryBlock();
 
-            ResultHandle resourcesArgTypes = tc.marshalAsArray(Class.class, tc.loadClassFromTCCL(ConfigurationCondition.class),
+            ResultHandle resourcesArgTypes = tc.marshalAsArray(Class.class, tc.loadClassFromTCCL(CONFIGURATION_CONDITION),
                     tc.loadClassFromTCCL(String.class));
             AssignableResultHandle resourcesArgs = tc.createVariable(Object[].class);
             tc.assign(resourcesArgs,
@@ -387,7 +387,7 @@ public class NativeImageFeatureStep {
 
                 ResultHandle runtimeResourceSupportClass = greaterThan22_2.loadClassFromTCCL(RUNTIME_RESOURCE_SUPPORT);
                 ResultHandle addResourceBundlesParams = greaterThan22_2.marshalAsArray(Class.class,
-                        greaterThan22_2.loadClassFromTCCL(ConfigurationCondition.class),
+                        greaterThan22_2.loadClassFromTCCL(CONFIGURATION_CONDITION),
                         greaterThan22_2.loadClassFromTCCL(String.class));
                 ResultHandle addResourceBundlesMethod = greaterThan22_2.invokeStaticMethod(
                         LOOKUP_METHOD,

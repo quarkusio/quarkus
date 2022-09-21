@@ -197,8 +197,6 @@ public class CsrfRequestResponseReactiveFilter {
     }
 
     private boolean isCsrfTokenRequired(RoutingContext routing, CsrfReactiveConfig config) {
-        LOG.error("**************Request path: " + routing.request().path());
-        LOG.error("**************Token path: " + config.createTokenPath.get());
         return config.createTokenPath.isPresent() ? config.createTokenPath.get().equals(routing.request().path()) : true;
     }
 

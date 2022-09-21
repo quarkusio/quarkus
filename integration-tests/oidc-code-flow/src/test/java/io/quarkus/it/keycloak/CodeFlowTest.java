@@ -429,40 +429,41 @@ public class CodeFlowTest {
     @Test
     public void testTokenRefresh() throws IOException {
         try (final WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://localhost:8081/tenant-logout");
+            HtmlPage page = webClient.getPage("http://localhost:8081/tenant-refresh");
             assertEquals("Sign in to logout-realm", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertEquals("Tenant Logout, refreshed: false", page.asText());
+            assertEquals("Tenant Refresh, refreshed: false", page.asText());
 
-            Cookie sessionCookie = getSessionCookie(webClient, "tenant-logout");
+            Cookie sessionCookie = getSessionCookie(webClient, "tenant-refresh");
             assertNotNull(sessionCookie);
             String idToken = getIdToken(sessionCookie);
 
             //wait now so that we reach the ID token timeout
             await().atMost(10, TimeUnit.SECONDS)
-                    .pollInterval(Duration.ofSeconds(1))
+                    .pollInterval(Duration.ofSeconds(2))
                     .until(new Callable<Boolean>() {
                         @Override
                         public Boolean call() throws Exception {
                             webClient.getOptions().setRedirectEnabled(false);
                             WebResponse webResponse = webClient
-                                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/tenant-logout").toURL()));
+                                    .loadWebResponse(
+                                            new WebRequest(URI.create("http://localhost:8081/tenant-refresh").toURL()));
                             assertEquals(200, webResponse.getStatusCode());
                             // Should not redirect to OP but silently refresh token
-                            Cookie newSessionCookie = getSessionCookie(webClient, "tenant-logout");
+                            Cookie newSessionCookie = getSessionCookie(webClient, "tenant-refresh");
                             assertNotNull(newSessionCookie);
-                            return webResponse.getContentAsString().equals("Tenant Logout, refreshed: true")
+                            return webResponse.getContentAsString().equals("Tenant Refresh, refreshed: true")
                                     && !idToken.equals(getIdToken(newSessionCookie));
                         }
                     });
 
             // local session refreshed and still valid
-            page = webClient.getPage("http://localhost:8081/tenant-logout");
-            assertEquals("Tenant Logout, refreshed: false", page.asText());
-            assertNotNull(getSessionCookie(webClient, "tenant-logout"));
+            page = webClient.getPage("http://localhost:8081/tenant-refresh");
+            assertEquals("Tenant Refresh, refreshed: false", page.asText());
+            assertNotNull(getSessionCookie(webClient, "tenant-refresh"));
 
             //wait now so that we reach the refresh timeout
             await().atMost(20, TimeUnit.SECONDS)
@@ -472,12 +473,13 @@ public class CodeFlowTest {
                         public Boolean call() throws Exception {
                             webClient.getOptions().setRedirectEnabled(false);
                             WebResponse webResponse = webClient
-                                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/tenant-logout").toURL()));
+                                    .loadWebResponse(
+                                            new WebRequest(URI.create("http://localhost:8081/tenant-refresh").toURL()));
                             // Should redirect to login page given that session is now expired at the OP
                             int statusCode = webResponse.getStatusCode();
 
                             if (statusCode == 302) {
-                                assertNull(getSessionCookie(webClient, "tenant-logout"));
+                                assertNull(getSessionCookie(webClient, "tenant-refresh"));
                                 return true;
                             }
 
@@ -489,7 +491,7 @@ public class CodeFlowTest {
             webClient.getOptions().setRedirectEnabled(true);
             webClient.getCookieManager().clearCookies();
 
-            page = webClient.getPage("http://localhost:8081/tenant-logout");
+            page = webClient.getPage("http://localhost:8081/tenant-refresh");
             assertNull(getSessionCookie(webClient, "tenant-logout"));
             assertEquals("Sign in to logout-realm", page.getTitleText());
             webClient.getCookieManager().clearCookies();

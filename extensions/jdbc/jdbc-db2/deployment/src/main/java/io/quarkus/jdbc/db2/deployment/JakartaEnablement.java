@@ -2,7 +2,6 @@ package io.quarkus.jdbc.db2.deployment;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -57,16 +56,23 @@ public class JakartaEnablement {
 
         private final Logger logger;
         private final ActionContext ctx;
+        private static final Map<String, String> renames = Collections.singletonMap(forbiddenName(), "jakarta.transaction");
 
         JakartaTransformer() {
             logger = LoggerFactory.getLogger("JakartaTransformer");
-            Map<String, String> renames = new HashMap<>();
-            //N.B. we enable only this transformation, not the full set of capabilities of Eclipse Transformer;
+            //N.B. we enable only this single transformation of package renames, not the full set of capabilities of Eclipse Transformer;
             //this might need tailoring if the same idea gets applied to a different context.
-            renames.put("javax.transaction", "jakarta.transaction");
             ctx = new ActionContextImpl(logger,
                     new SelectionRuleImpl(logger, Collections.emptyMap(), Collections.emptyMap()),
                     new SignatureRuleImpl(logger, renames, null, null, null, null, null, Collections.emptyMap()));
+        }
+
+        //Need to prevent the Eclipse Transformer - which is run on this whole code base - to actually replace this name:
+        private static String forbiddenName() {
+            StringBuilder sb = new StringBuilder("java")
+                    .append("x.")
+                    .append("transaction");
+            return sb.toString();
         }
 
         byte[] transform(final String name, final byte[] bytes) {

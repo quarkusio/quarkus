@@ -179,7 +179,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     public void delete(Object entity) {
         MongoCollection collection = mongoCollection(entity.getClass());
-        VersionHandler versionHandler = VersionHandler.of(entity, getBsonDocument(collection, entity));
+        VersionHandler versionHandler = VersionHandler.handle(entity, getBsonDocument(collection, entity));
 
         ClientSession session = getSession(entity);
         DeleteResult deleteResult;
@@ -189,9 +189,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
             deleteResult = collection.deleteOne(session, versionHandler.query);
         }
 
-        if (versionHandler.hasNotAffectedResults(deleteResult.getDeletedCount())) {
-            throwOptimisticLockException(entity);
-        }
+        versionHandler.checkHasNotAffectedResults(deleteResult.getDeletedCount());
     }
 
     public MongoCollection mongoCollection(Class<?> entityClass) {
@@ -214,7 +212,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     private void persist(MongoCollection collection, Object entity) {
         ClientSession session = getSession(entity);
 
-        VersionHandler.of(entity, getBsonDocument(collection, entity));
+        VersionHandler.handle(entity, getBsonDocument(collection, entity));
 
         if (session == null) {
             collection.insertOne(entity);
@@ -231,7 +229,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
             ClientSession session = getSession(firstEntity);
 
             for (Object entity : entities) {
-                VersionHandler.of(entity, getBsonDocument(collection, entity));
+                VersionHandler.handle(entity, getBsonDocument(collection, entity));
             }
 
             if (session == null) {
@@ -248,7 +246,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     private void update(MongoCollection collection, Object entity, Optional<VersionHandler> versionHandlerOptional) {
         VersionHandler versionHandler = versionHandlerOptional
-                .orElseGet(() -> VersionHandler.of(entity, getBsonDocument(collection, entity)));
+                .orElseGet(() -> VersionHandler.handle(entity, getBsonDocument(collection, entity)));
         ClientSession session = getSession(entity);
 
         UpdateResult updateResult;
@@ -258,9 +256,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
             updateResult = collection.replaceOne(session, versionHandler.query, entity);
         }
 
-        if (versionHandler.hasNotAffectedResults(updateResult.getModifiedCount())) {
-            throwOptimisticLockException(entity);
-        }
+        versionHandler.checkHasNotAffectedResults(updateResult.getModifiedCount());
     }
 
     private void update(MongoCollection collection, List<Object> entities) {
@@ -285,7 +281,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
             }
         } else {
 
-            VersionHandler versionHandler = VersionHandler.of(entity, document);
+            VersionHandler versionHandler = VersionHandler.handle(entity, document);
             if (!versionHandler.containsVersionAnnotation || !versionHandler.containsVersionValue) {
                 replaceOne(session, collection, versionHandler.query, entity);
             } else if (versionHandler.containsVersionAnnotationAndValue()) {
@@ -328,7 +324,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
                 bulk.add(new InsertOneModel(entity));
             } else {
                 //insert/update with user provided ID or update
-                VersionHandler versionHandler = VersionHandler.of(entity, document);
+                VersionHandler versionHandler = VersionHandler.handle(entity, document);
                 if (versionHandler.containsVersionAnnotationAndValue()) {
                     //it will ignore in silence not matching updates.
                     bulk.add(new ReplaceOneModel(versionHandler.query, entity));

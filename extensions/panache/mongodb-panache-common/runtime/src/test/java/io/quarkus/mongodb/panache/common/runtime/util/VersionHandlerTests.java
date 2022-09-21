@@ -19,33 +19,33 @@ public class VersionHandlerTests {
 
         BsonDocument bsonDocument = new BsonDocument("_id", new BsonString("abc"));
 
-        assertTrue(VersionHandler.of(new EntityWithPublicVersion(null, 0L), bsonDocument).containsVersionValue);
+        assertTrue(VersionHandler.handle(new EntityWithPublicVersion(null, 0L), bsonDocument).containsVersionValue);
 
         EntityWithPublicVersion entityWithPublicVersionNullValues = new EntityWithPublicVersion(null, null);
-        VersionHandler versionHandler = VersionHandler.of(entityWithPublicVersionNullValues, bsonDocument);
+        VersionHandler versionHandler = VersionHandler.handle(entityWithPublicVersionNullValues, bsonDocument);
 
         assertEquals(VERSION, versionHandler.versionFieldName);
         assertTrue(versionHandler.containsVersionAnnotation);
         assertFalse(versionHandler.containsVersionValue);
 
-        assertTrue(VersionHandler.of(new EntityWithProtectedVersion(null, 1L), bsonDocument).containsVersionValue);
+        assertTrue(VersionHandler.handle(new EntityWithProtectedVersion(null, 1L), bsonDocument).containsVersionValue);
         EntityWithProtectedVersion entityWithProtectedVersionNullValues = new EntityWithProtectedVersion(null, null);
 
-        versionHandler = VersionHandler.of(entityWithProtectedVersionNullValues, bsonDocument);
+        versionHandler = VersionHandler.handle(entityWithProtectedVersionNullValues, bsonDocument);
         assertEquals(VERSION, versionHandler.versionFieldName);
         assertTrue(versionHandler.containsVersionAnnotation);
         assertFalse(versionHandler.containsVersionValue);
 
-        assertTrue(VersionHandler.of(new EntityWithPrivateVersion(null, 1L), bsonDocument).containsVersionValue);
+        assertTrue(VersionHandler.handle(new EntityWithPrivateVersion(null, 1L), bsonDocument).containsVersionValue);
         EntityWithPrivateVersion entityWithPrivateVersionNullValues = new EntityWithPrivateVersion(null, null);
-        versionHandler = VersionHandler.of(entityWithPrivateVersionNullValues, bsonDocument);
+        versionHandler = VersionHandler.handle(entityWithPrivateVersionNullValues, bsonDocument);
         assertEquals("myVersion", versionHandler.versionFieldName);
         assertTrue(versionHandler.containsVersionAnnotation);
         assertFalse(versionHandler.containsVersionValue);
 
-        assertTrue(VersionHandler.of(new EntityWithInheritVersion(2L, null), bsonDocument).containsVersionValue);
+        assertTrue(VersionHandler.handle(new EntityWithInheritVersion(2L, null), bsonDocument).containsVersionValue);
         EntityWithInheritVersion entityWithInheritVersionNullValues = new EntityWithInheritVersion(null, null);
-        versionHandler = VersionHandler.of(entityWithInheritVersionNullValues, bsonDocument);
+        versionHandler = VersionHandler.handle(entityWithInheritVersionNullValues, bsonDocument);
         assertEquals(VERSION, versionHandler.versionFieldName);
         assertTrue(versionHandler.containsVersionAnnotation);
         assertFalse(versionHandler.containsVersionValue);

@@ -9,6 +9,7 @@ import org.bson.BsonNull;
 import org.bson.BsonValue;
 
 import io.quarkus.mongodb.panache.common.Version;
+import io.quarkus.mongodb.panache.common.exception.OptimisticLockException;
 import io.quarkus.mongodb.panache.common.runtime.MongoOperations;
 
 /**
@@ -41,7 +42,7 @@ public class VersionHandler {
         }
     }
 
-    public static VersionHandler of(Object entity, BsonDocument document) {
+    public static VersionHandler handle(Object entity, BsonDocument document) {
         Optional<Field> versionFieldOptional = extractVersionField(entity);
 
         if (versionFieldOptional.isEmpty()) {
@@ -105,9 +106,12 @@ public class VersionHandler {
 
     /**
      * Utility method to check if the during an update there are documents not updated.
+     * Throws OptimisticLockException when found documents not updated.
      */
-    public boolean hasNotAffectedResults(Long quantityResultAffected) {
-        return containsVersionAnnotation && quantityResultAffected == 0;
+    public void checkHasNotAffectedResults(Long quantityResultAffected) {
+        if (containsVersionAnnotation && quantityResultAffected == 0) {
+            throwOptimisticLockException(entity);
+        }
     }
 
     /**
@@ -129,5 +133,14 @@ public class VersionHandler {
             return new BsonDocument().append(MongoOperations.ID, id).append(versionFieldName, version);
         }
         return new BsonDocument().append(MongoOperations.ID, id);
+    }
+
+    /**
+     * We check if is needed to throw a OptimisticLockException.
+     */
+    private void throwOptimisticLockException(Object entity) {
+        StringBuilder errorMsg = new StringBuilder("Was not possible to update entity: ")
+                .append(entity.toString());
+        throw new OptimisticLockException(errorMsg.toString());
     }
 }

@@ -40,7 +40,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.release>11</maven.compiler.release>
-        <version.junit>5.9.0</version.junit>
+        <version.junit>5.9.1</version.junit>
         <version.assertj>3.23.1</version.assertj>
         <version.jandex>2.4.3.Final</version.jandex>
         <version.gizmo>1.1.0.Final</version.gizmo>

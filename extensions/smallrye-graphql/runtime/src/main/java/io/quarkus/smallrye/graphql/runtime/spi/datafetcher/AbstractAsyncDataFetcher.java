@@ -10,6 +10,7 @@ import graphql.schema.DataFetchingEnvironment;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
 import io.smallrye.graphql.SmallRyeGraphQLServerMessages;
+import io.smallrye.graphql.api.Context;
 import io.smallrye.graphql.execution.context.SmallRyeContextManager;
 import io.smallrye.graphql.execution.datafetcher.AbstractDataFetcher;
 import io.smallrye.graphql.schema.model.Operation;
@@ -26,6 +27,7 @@ public abstract class AbstractAsyncDataFetcher<K, T> extends AbstractDataFetcher
     @Override
     @SuppressWarnings("unchecked")
     protected <O> O invokeAndTransform(
+            Context c,
             DataFetchingEnvironment dfe,
             DataFetcherResult.Builder<Object> resultBuilder,
             Object[] transformedArguments) throws Exception {
@@ -43,7 +45,7 @@ public abstract class AbstractAsyncDataFetcher<K, T> extends AbstractDataFetcher
                         });
 
                         if (throwable != null) {
-                            eventEmitter.fireOnDataFetchError(dfe.getExecutionId().toString(), throwable);
+                            eventEmitter.fireOnDataFetchError(c, throwable);
                             if (throwable instanceof GraphQLException) {
                                 GraphQLException graphQLException = (GraphQLException) throwable;
                                 errorResultHelper.appendPartialResult(resultBuilder, dfe, graphQLException);

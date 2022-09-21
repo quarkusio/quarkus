@@ -52,6 +52,10 @@ public class CustomTenantResolver implements TenantResolver {
             return "tenant-autorefresh";
         }
 
+        if (path.contains("tenant-refresh")) {
+            return "tenant-refresh";
+        }
+
         if (path.contains("tenant-https")) {
             if (context.getCookie("q_session_tenant-https_test") != null) {
                 context.put("reauthenticated", "true");

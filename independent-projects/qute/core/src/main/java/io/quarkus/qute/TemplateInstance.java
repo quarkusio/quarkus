@@ -121,6 +121,16 @@ public interface TemplateInstance {
     Template getTemplate();
 
     /**
+     *
+     * @param id
+     * @return the fragment or {@code null}
+     * @see Template#getFragment(String)
+     */
+    default Template getFragment(String id) {
+        return getTemplate().getFragment(id);
+    }
+
+    /**
      * Register an action that is performed after the rendering is finished.
      *
      * @param action

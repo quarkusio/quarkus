@@ -1101,6 +1101,117 @@ This is {#insert title}my title{/title}! <1>
 ----
 <1> The result would be something like `<p>This is my custom title!</p>`.
 
+
+[[fragments]]
+==== Fragments
+
+A fragment represents a part of the template that can be treated as a separate template, i.e. rendered separately.
+One of the main motivations to introduce this feature was to support use cases like https://htmx.org/essays/template-fragments/[htmx fragments].
+
+Fragments can be defined with the `{#fragment}` section.
+Each fragment has an identifier that can only consist of alphanumeric characters and underscores.
+
+NOTE: Note that a fragment identifier must be unique in a template.
+
+.Fragment Definition in `item.html`
+[source,html]
+----
+{@org.acme.Item item}
+{@java.util.List<String> aliases}
+
+<h1>Item - {item.name}</h1>
+
+<p>This document contains a detailed info about an item.</p>
+
+{#fragment id=item_aliases} <1>
+<h2>Aliases</h2>
+<ol>
+    {#for alias in aliases}
+    <li>{alias}</li>
+    {/for}
+</ol>
+{/fragment}
+----
+<1> Defines a fragment with identifier `item_aliases`. Note that only alphanumeric characters and underscores can be used in the identifier.
+
+You can obtain a fragment programatically via the `io.quarkus.qute.Template.getFragment(String)` method.
+
+.Obtaining a Fragment
+[source,java]
+----
+@Inject
+Template item;
+
+String useTheFragment() {
+   return item.getFragment("item_aliases") <1>
+            .data("aliases", List.of("Foo","Bar")) <2>
+            .render();
+}
+----
+<1> Obtains the template fragment with identifier `item_aliases`.
+<2> Make sure the data are set correctly.
+
+The snippet above should render something like:
+
+[source,html]
+----
+<h2>Aliases</h2>
+<ol>
+    <li>Foo</li>
+    <li>Bar</li>
+</ol>
+----
+
+You can also include a template with an `{#include}` section inside another template or the template that defines the fragment.
+
+.Including a Fragment in `user.html`
+[source,html]
+----
+<h1>User - {user.name}</h1>
+
+<p>This document contains a detailed info about a user.</p>
+
+{#include item[item_aliases] aliases=user.aliases /} <1><2>
+----
+<1> The `item[item_aliases]` parameter is translated as: _use the fragment `item_aliases` from the template `item`._
+<2> The `aliases` parameter is used to pass the relevant data. We need to make sure that the data are set correctly. In this particular case the fragment will use the expression `user.aliases` as the value of `aliases` in the `{#for alias in aliases}` section.
+
+===== Hidden Fragments
+
+By default, a fragment is normally rendered as a part of the original template.
+However, sometimes it might be useful to mark a fragment as _hidden_ with `rendered=false`.
+An interesting use case would be a fragment that can be used multiple-times inside the template that defines it.
+
+.Fragment Definition in `item.html`
+[source,html]
+----
+{#fragment id=strong rendered=false} <1>
+<strong>{val}</strong>
+{/fragment}
+
+<h1>My page</h1>
+<p>This document 
+{#include [strong] val='contains' /} <2>
+a lot of 
+{#include [strong] val='information' /} <3>
+!</p>
+----
+<1> Defines a hidden fragment with identifier `strong`. In this particular case, we use the `false` boolean literal as the value of the `rendered` parameter. However, it's possible to use any expression there.
+<2> Include the fragment `strong` and pass the value. Note the syntax `[strong]` which is translated to include the fragment `strong` from the current template.
+<3> Include the fragment `strong` and pass the value.
+
+The snippet above renders something like:
+
+[source,html]
+----
+<h1>My page</h1>
+<p>This document 
+<strong>contains</strong>
+a lot of 
+<strong>information</strong>
+!</p>
+----
+
 ==== Eval Section
 
 This section can be used to parse and evaluate a template dynamically.

@@ -3,6 +3,7 @@ package io.quarkus.qute;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 
@@ -11,11 +12,14 @@ final class SectionInitContextImpl implements SectionInitContext {
     private final EngineImpl engine;
     private final List<SectionBlock> blocks;
     private final ErrorInitializer errorInitializer;
+    private final Supplier<Template> currentTemplate;
 
-    public SectionInitContextImpl(EngineImpl engine, List<SectionBlock> blocks, ErrorInitializer errorInitializer) {
+    SectionInitContextImpl(EngineImpl engine, List<SectionBlock> blocks, ErrorInitializer errorInitializer,
+            Supplier<Template> currentTemplate) {
         this.engine = engine;
         this.blocks = blocks;
         this.errorInitializer = errorInitializer;
+        this.currentTemplate = currentTemplate;
     }
 
     /**
@@ -51,6 +55,11 @@ final class SectionInitContextImpl implements SectionInitContext {
     @Override
     public EngineImpl getEngine() {
         return engine;
+    }
+
+    @Override
+    public Supplier<Template> getCurrentTemplate() {
+        return currentTemplate;
     }
 
     @Override

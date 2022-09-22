@@ -49,6 +49,15 @@ public interface TemplateNode {
     }
 
     /**
+     *
+     * @return {@code true} if the node represents a section
+     * @see SectionNode
+     */
+    default boolean isSection() {
+        return false;
+    }
+
+    /**
      * Represents an origin of a template node.
      */
     public interface Origin {

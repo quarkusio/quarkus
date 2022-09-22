@@ -19,7 +19,7 @@ public interface SectionHelper {
     CompletionStage<ResultNode> resolve(SectionResolutionContext context);
 
     /**
-     *
+     * A new instance is created for every invocation of {@link SectionHelper#resolve(SectionResolutionContext)}.
      */
     public interface SectionResolutionContext {
 
@@ -64,6 +64,13 @@ public interface SectionHelper {
          * @return the result node
          */
         CompletionStage<ResultNode> execute(SectionBlock block, ResolutionContext context);
+
+        /**
+         * Parameters for a specific resolution.
+         *
+         * @return the immutable map of parameters, never {@code null}
+         */
+        Map<String, Object> getParameters();
 
     }
 

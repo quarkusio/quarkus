@@ -8,10 +8,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
+import java.util.stream.StreamSupport;
 
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.quartz.Job;
 import org.quartz.JobListener;
 import org.quartz.TriggerListener;
@@ -45,6 +49,7 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -58,6 +63,7 @@ import io.quarkus.quartz.runtime.QuartzRuntimeConfig;
 import io.quarkus.quartz.runtime.QuartzScheduler;
 import io.quarkus.quartz.runtime.QuartzSupport;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.scheduler.Scheduled;
 
 /**
  *
@@ -72,8 +78,26 @@ public class QuartzProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem beans() {
-        return new AdditionalBeanBuildItem(QuartzScheduler.class);
+    void beans(CombinedIndexBuildItem indexBuildItem, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        IndexView index = indexBuildItem.getIndex();
+
+        boolean required = index.getAnnotations(DotName.createSimple(Scheduled.class.getName()))
+                .stream()
+                .map(AnnotationInstance::target)
+                .findAny().isPresent()
+                ||
+                index.getAnnotations(DotName.createSimple(Scheduled.Schedules.class.getName()))
+                        .stream()
+                        .map(AnnotationInstance::target)
+                        .findAny().isPresent()
+                ||
+                StreamSupport.stream(ConfigProvider.getConfig().getPropertyNames().spliterator(), true)
+                        .filter(n -> n.startsWith("quarkus.quartz.") || n.startsWith("quarkus.scheduler."))
+                        .findAny().isPresent();
+
+        if (required) {
+            additionalBeans.produce(new AdditionalBeanBuildItem(QuartzScheduler.class));
+        }
     }
 
     @BuildStep

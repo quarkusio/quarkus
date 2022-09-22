@@ -281,7 +281,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             if (classLevelExceptionMappers != null) {
                 clazz.setClassLevelExceptionMappers(classLevelExceptionMappers);
             }
-            List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
+            List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(), new HashSet<>(),
                     clazz.getPathParameters(), clazz.getPath(), considerApplication);
             clazz.getMethods().addAll(methods);
 
@@ -349,7 +349,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             Map<String, Object> methodContext);
 
     protected List<ResourceMethod> createEndpoints(ClassInfo currentClassInfo,
-            ClassInfo actualEndpointInfo, Set<String> seenMethods,
+            ClassInfo actualEndpointInfo, Set<String> seenMethods, Set<String> existingClassNameBindings,
             Set<String> pathParameters, String resourceClassPath, boolean considerApplication) {
         if (considerApplication && applicationScanningResult != null
                 && !applicationScanningResult.keepClass(actualEndpointInfo.name().toString())) {
@@ -371,6 +371,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 classConsumes, pathParameters, classStreamElementType);
 
         Set<String> classNameBindings = NameBindingUtil.nameBindingNames(index, currentClassInfo);
+        if (classNameBindings.isEmpty()) {
+            classNameBindings = existingClassNameBindings;
+        }
 
         for (DotName httpMethod : httpAnnotationToMethod.keySet()) {
             List<MethodInfo> methods = currentClassInfo.methods();
@@ -436,7 +439,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         if (superClassName != null && !superClassName.equals(OBJECT)) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
-                ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
+                ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods, classNameBindings,
                         pathParameters, resourceClassPath, considerApplication));
             }
         }
@@ -444,7 +447,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         for (DotName i : interfaces) {
             ClassInfo superClass = index.getClassByName(i);
             if (superClass != null) {
-                ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
+                ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods, classNameBindings,
                         pathParameters, resourceClassPath, considerApplication));
             }
         }

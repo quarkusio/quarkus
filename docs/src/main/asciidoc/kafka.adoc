@@ -282,7 +282,7 @@ Thus, you can use both.
 The first one provides more fine-grained tuning such as the worker pool to use and whether it preserves the order.
 The second one, used also with other reactive features of Quarkus, uses the default worker pool and preserves the order.
 
-Detailed information on the usage of `@Blocking` annotation can be found in https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.1/advanced/blocking.html[SmallRye Reactive Messaging – Handling blocking execution].
+Detailed information on the usage of `@Blocking` annotation can be found in https://smallrye.io/smallrye-reactive-messaging/latest/concepts/blocking/[SmallRye Reactive Messaging – Handling blocking execution].
 ====
 
 [TIP]
@@ -364,6 +364,9 @@ If high throughput is important for you, and you are not limited by the downstre
 - or set `enable.auto.commit` to true and annotate the consuming method with `@Acknowledgment(Acknowledgment.Strategy.NONE)`.
 ====
 
+Smallrye Reactive Messaging enables implementing custom commit strategies.
+See https://smallrye.io/smallrye-reactive-messaging/latest/kafka/receiving-kafka-records/#acknowledgement[SmallRye Reactive Messaging documentation] for more information.
+
 [[error-handling]]
 === Error Handling Strategies
 
@@ -388,6 +391,9 @@ The record written on the dead letter queue contains a set of additional headers
 - *dead-letter-topic*: the original topic of the record
 - *dead-letter-partition*: the original partition of the record (integer mapped to String)
 - *dead-letter-offset*: the original offset of the record (long mapped to String)
+
+Smallrye Reactive Messaging enables implementing custom failure strategies.
+See https://smallrye.io/smallrye-reactive-messaging/latest/kafka/receiving-kafka-records/#acknowledgement[SmallRye Reactive Messaging documentation] for more information.
 
 ==== Retrying processing
 
@@ -926,7 +932,18 @@ The `io.smallrye.reactive.messaging.annotations.Emitter`, `io.smallrye.reactive.
 The new `Emitter.send` method returns a `CompletionStage` completed when the produced message is acknowledged.
 ====
 
-More information on how to use `Emitter` can be found in https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.1/emitter/emitter.html#_emitter_and_channel[SmallRye Reactive Messaging – Emitters and Channels]
+[NOTE]
+.Depreciation
+====
+`MutinyEmitter#send(Message msg)` method is deprecated in favor of following methods receiving `Message` for emitting:
+
+* `<M extends Message<? extends T>> Uni<Void> sendMessage(M msg)`
+* `<M extends Message<? extends T>> void sendMessageAndAwait(M msg)`
+* `<M extends Message<? extends T>> Cancellable sendMessageAndForget(M msg)`
+
+====
+
+More information on how to use `Emitter` can be found in https://smallrye.io/smallrye-reactive-messaging/latest/concepts/emitter/[SmallRye Reactive Messaging – Emitters and Channels]
 
 === Write Acknowledgement
 
@@ -1254,11 +1271,6 @@ The `KafkaTransactions#withTransactionAndAck` method acks and nacks the message 
 Nacked messages will be handled by the failure strategy of the incoming channel, (see <<error-handling>>).
 Configuring `failure-strategy=ignore` simply resets the Kafka consumer to the last committed offsets and resumes the consumption from there.
 
-[NOTE]
-====
-Redpanda does not yet support link:https://github.com/redpanda-data/redpanda/issues/3279[producer scalability for exactly-once processing].
-In order to use Kafka exactly-once processing with Quarkus you can configure Dev Services for Kafka to <<kafka-dev-services#configuring-the-image, use Strimzi images instead of Redpanda>>.
-====
 
 [[kafka-bare-clients]]
 == Accessing Kafka clients directly
@@ -1996,10 +2008,14 @@ As described in <<blocking-processing>>, you need to add the `@Blocking` annotat
 
 See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture documentation] for further details on this topic.
 
+== Channel Decorators
+
+SmallRye Reactive Messaging supports decorating incoming and outgoing channels for implementing cross-cutting concerns such as monitoring, tracing or message interception. For more information on implementing decorators and message interceptors see the http://smallrye.io/smallrye-reactive-messaging/3.19.1/concepts/decorators/[SmallRye Reactive Messaging documentation].
+
 [[kafka-configuration]]
 == Configuration Reference
 
-More details about the SmallRye Reactive Messaging configuration can be found in the https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.1/kafka/kafka.html[SmallRye Reactive Messaging - Kafka Connector Documentation].
+More details about the SmallRye Reactive Messaging configuration can be found in the https://smallrye.io/smallrye-reactive-messaging/latest/kafka/kafka/#using-the-kafka-connector[SmallRye Reactive Messaging - Kafka Connector Documentation].
 
 [TIP]
 ====
@@ -2336,7 +2352,7 @@ public class FruitStore {
     Mutiny.Session session;                    // <1>
 
     @Incoming("in")
-    public Uni<Void> consume(Fruit fruit) {
+    public Uni<Void> consume(Fruit entity) {
         return session.withTransaction(t -> {  // <2>
             return entity.persistAndFlush()    // <3>
                     .replaceWithVoid();        // <4>

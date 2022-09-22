@@ -1,5 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME;
+import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.QUARKUS_RUN_JAR;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.mergeList;
 
@@ -42,7 +44,9 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.kubernetes.spi.ConfigurationSupplierBuildItem;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
@@ -93,6 +97,8 @@ class KubernetesProcessor {
     @BuildStep(onlyIfNot = IsTest.class)
     public void build(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
+            List<UberJarRequiredBuildItem> uberJarRequired,
+            List<LegacyJarRequiredBuildItem> legacyJarRequired,
             PackageConfig packageConfig,
             KubernetesConfig kubernetesConfig,
             OpenshiftConfig openshiftConfig,
@@ -125,8 +131,7 @@ class KubernetesProcessor {
                 .map(DeploymentTargetEntry::getName)
                 .collect(Collectors.toSet());
 
-        Path artifactPath = outputTarget.getOutputDirectory()
-                .resolve(String.format(OUTPUT_ARTIFACT_FORMAT, outputTarget.getBaseName(), packageConfig.getRunnerSuffix()));
+        Path artifactPath = getRunner(outputTarget, packageConfig, uberJarRequired, legacyJarRequired);
 
         try {
             // by passing false to SimpleFileWriter, we ensure that no files are actually written during this phase
@@ -239,5 +244,34 @@ class KubernetesProcessor {
             log.warn("Failed to generate Kubernetes resources", e);
         }
 
+    }
+
+    /**
+     * This method is based on the logic in {@link io.quarkus.deployment.pkg.steps.JarResultBuildStep#buildRunnerJar}.
+     * Note that we cannot consume the {@link io.quarkus.deployment.pkg.builditem.JarBuildItem} because it causes build cycle
+     * exceptions since we need to support adding generated resources into the JAR file (see
+     * https://github.com/quarkusio/quarkus/pull/20113).
+     */
+    private Path getRunner(OutputTargetBuildItem outputTarget,
+            PackageConfig packageConfig,
+            List<UberJarRequiredBuildItem> uberJarRequired,
+            List<LegacyJarRequiredBuildItem> legacyJarRequired) {
+        if (!legacyJarRequired.isEmpty() || packageConfig.type.equalsIgnoreCase(PackageConfig.LEGACY)
+                || !uberJarRequired.isEmpty() || packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR)) {
+            // the jar is a legacy jar or uber jar, the next logic applies:
+            return outputTarget.getOutputDirectory()
+                    .resolve(outputTarget.getBaseName() + packageConfig.getRunnerSuffix() + ".jar");
+        }
+
+        // otherwise, it's a thin jar:
+        Path buildDir;
+
+        if (packageConfig.outputDirectory.isPresent()) {
+            buildDir = outputTarget.getOutputDirectory();
+        } else {
+            buildDir = outputTarget.getOutputDirectory().resolve(DEFAULT_FAST_JAR_DIRECTORY_NAME);
+        }
+
+        return buildDir.resolve(QUARKUS_RUN_JAR);
     }
 }

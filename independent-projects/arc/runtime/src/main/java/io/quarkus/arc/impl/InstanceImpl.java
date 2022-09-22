@@ -185,6 +185,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
     private InjectableBean<T> bean() {
         List<InjectableBean<?>> beans = beans();
         if (beans.isEmpty()) {
+            ArcContainerImpl.instance().scanRemovedBeans(requiredType, requiredQualifiers.toArray(new Annotation[] {}));
             throw new UnsatisfiedResolutionException(
                     "No bean found for required type [" + requiredType + "] and qualifiers [" + requiredQualifiers + "]");
         } else if (beans.size() > 1) {

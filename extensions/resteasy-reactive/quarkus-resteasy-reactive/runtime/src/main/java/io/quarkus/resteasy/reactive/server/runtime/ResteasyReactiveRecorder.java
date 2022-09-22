@@ -149,8 +149,8 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                 shutdownContext.addShutdownTask(new ShutdownContext.CloseRunnable(closeable));
             }
         };
-        CurrentIdentityAssociation currentIdentityAssociation = Arc.container().instance(CurrentIdentityAssociation.class)
-                .get();
+        CurrentIdentityAssociation currentIdentityAssociation = Arc.container().select(CurrentIdentityAssociation.class)
+                .orNull();
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         if (contextFactory == null) {
             contextFactory = new RequestContextFactory() {

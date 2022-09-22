@@ -916,7 +916,7 @@ public final class Beans {
                     mv.visitInsn(Opcodes.RETURN);
                     mv.visitMaxs(1, 1);
                     mv.visitEnd();
-                    LOGGER.debugf("Added a no-args constructor to bean class: ", className);
+                    LOGGER.debugf("Added a no-args constructor to bean class: %s", className);
                 }
             };
         }
@@ -935,7 +935,7 @@ public final class Beans {
                     if (name.equals(Methods.INIT)) {
                         access = access & (~Opcodes.ACC_PRIVATE);
                         LOGGER.debugf(
-                                "Changed visibility of a private no-args constructor to package-private: ",
+                                "Changed visibility of a private no-args constructor to package-private: %s",
                                 className);
                     }
                     return super.visitMethod(access, name, descriptor, signature, exceptions);

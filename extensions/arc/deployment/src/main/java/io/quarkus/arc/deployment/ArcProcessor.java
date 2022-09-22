@@ -149,7 +149,7 @@ public class ArcProcessor {
         List<String> quarkusApplications = new ArrayList<>();
         for (ClassInfo quarkusApplication : combinedIndex.getIndex()
                 .getAllKnownImplementors(DotName.createSimple(QuarkusApplication.class.getName()))) {
-            if (quarkusApplication.classAnnotation(DotNames.DECORATOR) == null) {
+            if (quarkusApplication.declaredAnnotation(DotNames.DECORATOR) == null) {
                 quarkusApplications.add(quarkusApplication.name().toString());
             }
         }
@@ -470,7 +470,7 @@ public class ArcProcessor {
                 } else {
                     declaringClass = injectionPoint.getTarget().asMethod().declaringClass();
                 }
-                if (declaringClass.classAnnotation(DotNames.KOTLIN_METADATA_ANNOTATION) != null) {
+                if (declaringClass.declaredAnnotation(DotNames.KOTLIN_METADATA_ANNOTATION) != null) {
                     validationErrors.produce(new ValidationErrorBuildItem(
                             new DefinitionException(
                                     "kotlin.collections.List cannot be used together with the @All qualifier, please use MutableList or java.util.List instead: "

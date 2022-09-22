@@ -502,7 +502,7 @@ public class CodeFlowTest {
     public void testTokenAutoRefresh() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenant-autorefresh");
-            assertEquals("Sign in to logout-realm", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");

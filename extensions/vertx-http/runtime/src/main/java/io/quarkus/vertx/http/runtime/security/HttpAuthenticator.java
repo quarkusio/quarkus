@@ -11,6 +11,8 @@ import java.util.function.Function;
 import javax.enterprise.inject.Instance;
 import javax.inject.Singleton;
 
+import org.jboss.logging.Logger;
+
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.IdentityProviderManager;
@@ -25,6 +27,8 @@ import io.vertx.ext.web.RoutingContext;
  */
 @Singleton
 public class HttpAuthenticator {
+    private static final Logger log = Logger.getLogger(HttpAuthenticator.class);
+
     private final IdentityProviderManager identityProviderManager;
     private final Instance<PathMatchingHttpSecurityPolicy> pathMatchingPolicy;
     private final HttpAuthenticationMechanism[] mechanisms;
@@ -164,6 +168,7 @@ public class HttpAuthenticator {
             @Override
             public Uni<? extends Boolean> apply(Boolean authDone) {
                 if (!authDone) {
+                    log.debug("Authentication has not been done, returning HTTP status 401");
                     routingContext.response().setStatusCode(401);
                     routingContext.response().end();
                 }

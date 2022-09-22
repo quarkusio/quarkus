@@ -70,7 +70,7 @@ public interface AnnotationsTransformer {
         AnnotationTarget getTarget();
 
         /**
-         * The initial set of annotations instances corresponds to {@link org.jboss.jandex.ClassInfo#classAnnotations()},
+         * The initial set of annotations instances corresponds to {@link org.jboss.jandex.ClassInfo#declaredAnnotations()},
          * {@link org.jboss.jandex.FieldInfo#annotations()} and {@link org.jboss.jandex.MethodInfo#annotations()} respectively.
          *
          * @return the annotation instances

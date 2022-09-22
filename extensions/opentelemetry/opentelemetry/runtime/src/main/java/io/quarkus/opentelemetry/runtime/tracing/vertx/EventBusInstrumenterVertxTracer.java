@@ -56,7 +56,7 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
 
         return serverBuilder
                 .addAttributesExtractor(MessagingAttributesExtractor.create(EventBusAttributesGetter.INSTANCE, RECEIVE))
-                .newConsumerInstrumenter(new TextMapGetter<>() {
+                .buildConsumerInstrumenter(new TextMapGetter<>() {
                     @Override
                     public Iterable<String> keys(final Message message) {
                         return message.headers().names();
@@ -79,7 +79,7 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
 
         return serverBuilder
                 .addAttributesExtractor(MessagingAttributesExtractor.create(EventBusAttributesGetter.INSTANCE, SEND))
-                .newProducerInstrumenter((message, key, value) -> {
+                .buildProducerInstrumenter((message, key, value) -> {
                     if (message != null) {
                         message.headers().set(key, value);
                     }

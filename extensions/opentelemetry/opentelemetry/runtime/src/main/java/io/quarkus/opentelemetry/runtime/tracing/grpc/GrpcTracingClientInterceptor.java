@@ -40,7 +40,7 @@ public class GrpcTracingClientInterceptor implements ClientInterceptor {
                 .addAttributesExtractor(new GrpcStatusCodeExtractor())
                 .setSpanStatusExtractor(new GrpcSpanStatusExtractor());
 
-        this.instrumenter = builder.newClientInstrumenter(GrpcTextMapSetter.INSTANCE);
+        this.instrumenter = builder.buildClientInstrumenter(GrpcTextMapSetter.INSTANCE);
     }
 
     @Override

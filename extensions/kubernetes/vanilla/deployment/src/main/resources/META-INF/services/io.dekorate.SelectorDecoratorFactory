@@ -1,0 +1,2 @@
+io.quarkus.kubernetes.deployment.CronJobSelectorDecoratorFactory
+io.quarkus.kubernetes.deployment.JobSelectorDecoratorFactory

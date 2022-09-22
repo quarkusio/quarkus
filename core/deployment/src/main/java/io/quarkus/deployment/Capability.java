@@ -128,4 +128,6 @@ public interface Capability {
 
     String CONFLUENT_REGISTRY = QUARKUS_PREFIX + "confluent.registry";
     String CONFLUENT_REGISTRY_AVRO = CONFLUENT_REGISTRY + ".avro";
+
+    String PICOCLI = QUARKUS_PREFIX + "picocli";
 }

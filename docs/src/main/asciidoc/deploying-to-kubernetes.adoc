@@ -147,13 +147,6 @@ The full source of the `kubernetes.json` file looks something like this:
 }
 ----
 
-Beside generating a `Deployment` resource, you can also choose to get a `StatefulSet` instead via `application.properties`:
-
-[source,properties]
-----
-quarkus.kubernetes.deployment-kind=StatefulSet
-----
-
 The generated manifest can be applied to the cluster from the project root using `kubectl`:
 
 [source,bash]
@@ -174,6 +167,47 @@ quarkus.container-image.tag=1.0       #optional, defaults to the application ver
 ----
 
 The image that will be used in the generated manifests will be `quarkus/demo-app:1.0`
+
+=== Changing the generated deployment resource
+
+Besides generating a `Deployment` resource, you can also choose to generate either a `StatefulSet`, or a `Job`, or a `CronJob` resource instead via `application.properties`:
+
+[source,properties]
+----
+quarkus.kubernetes.deployment-kind=StatefulSet
+----
+
+==== Generating Job resources
+
+If you want to generate a Job resource, you need to add the following property to the `application.properties`:
+
+[source,properties]
+----
+quarkus.kubernetes.deployment-kind=Job
+----
+
+IMPORTANT: If you are using the Picocli extension, by default a Job resource will be generated.
+
+You can provide the arguments that will be used by the Kubernetes Job via the property `quarkus.kubernetes.arguments`. For example, by adding the property `quarkus.kubernetes.arguments=A,B`.
+
+Finally, the Kubernetes job will be launched every time it is installed in Kubernetes. You can know more about how to run Kubernetes jobs in this https://kubernetes.io/docs/concepts/workloads/controllers/job/#running-an-example-job[link].
+
+You can configure the rest of the Kubernetes Job configuration using the properties under `quarkus.kubernetes.job.xxx` (see https://quarkus.io/guides/deploying-to-kubernetes#quarkus-kubernetes-kubernetes-config_quarkus.kubernetes.job.parallelism-parallelism[link]).
+
+==== Generating CronJob resources
+
+If you want to generate a CronJob resource, you need to add the following property via the `application.properties`:
+
+[source,properties]
+----
+quarkus.kubernetes.deployment-kind=CronJob
+# Cron expression to run the job every hour
+quarkus.kubernetes.cron-job.schedule=0 * * * *
+----
+
+IMPORTANT: CronJob resources require the https://en.wikipedia.org/wiki/Cron[Cron] expression to specify when to launch the job via the property `quarkus.kubernetes.cron-job.schedule`. If not provide, the build will fail.
+
+You can configure the rest of the Kubernetes CronJob configuration using the properties under `quarkus.kubernetes.cron-job.xxx` (see https://quarkus.io/guides/deploying-to-kubernetes#quarkus-kubernetes-kubernetes-config_quarkus.kubernetes.cron-job.parallelism-parallelism[link]).
 
 === Namespace
 
@@ -532,7 +566,7 @@ implementation("io.quarkus:quarkus-smallrye-health")
 The values of the generated probes will be determined by the configured health properties: `quarkus.smallrye-health.root-path`, `quarkus.smallrye-health.liveness-path` and `quarkus.smallrye-health.readiness-path`.
 More information about the health extension can be found in the relevant xref:microprofile-health.adoc[guide].
 
-=== Customizing the readiness probe:
+=== Customizing the readiness probe
 To set the initial delay of the probe to 20 seconds and the period to 45:
 
 [source,properties]

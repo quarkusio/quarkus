@@ -782,8 +782,7 @@ experience as frictionless as possible, Quarkus provides the `quarkus-kind` exte
 </dependency>
 ----
 
-The purpose of this extension is to generate Kubernetes manifests (`kind.yaml` and `kind.json`) that are tailored to Kind and also to automate the process of loading images to the cluster
-when performing container image builds. The tailor made manifests will be pretty similar (they share the same rules) with Minikube (see above).
+The purpose of this extension is to automate the process of loading images to the cluster when performing container image builds. This will only work if you set the image pull policy to either `if-not-present` or `never` (for example, using the property `quarkus.kubernetes.image-pull-policy=if-not-present`).
 
 == Tuning the generated resources using application.properties
 

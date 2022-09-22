@@ -265,7 +265,7 @@ If you plan to make your Quarkus application accessible to another application r
 
 == Cross-Site Request Forgery Prevention
 
-Quarkus Security provides a RESTEasy Reactive filter which can help protect against a https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery] attack. Please read the xref:csrf-prevention.adoc[Cross-Site Request Forgery Prevention] guide for more information.
+Quarkus Security provides a RESTEasy Reactive filter which can help protect against a https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery] attack. Please read the xref:security-csrf-prevention.adoc[Cross-Site Request Forgery Prevention] guide for more information.
 
 == SameSite cookies
 

@@ -1,12 +1,14 @@
 package io.quarkus.devtools.project.create;
 
-import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import io.quarkus.maven.dependency.ArtifactCoords;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 public class MavenProjectImportingMultipleBomsFromMultiplePlatformsTest extends MultiplePlatformBomsTestBase {
 

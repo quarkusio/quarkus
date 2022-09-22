@@ -2,7 +2,6 @@ package io.quarkus.registry.catalog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,9 +11,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 public class ExtensionCatalogSerializationTest {
     static Path baseDir = Paths.get(System.getProperty("user.dir")).toAbsolutePath()

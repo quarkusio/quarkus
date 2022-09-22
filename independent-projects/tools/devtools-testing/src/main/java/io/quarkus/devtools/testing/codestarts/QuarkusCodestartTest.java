@@ -11,16 +11,6 @@ import static io.quarkus.devtools.testing.SnapshotTesting.normalizePathAsName;
 import static io.quarkus.devtools.testing.codestarts.QuarkusCodestartTesting.getMockedTestInputData;
 import static io.quarkus.devtools.testing.codestarts.QuarkusCodestartTesting.getRealTestInputData;
 
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language;
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartProjectInput;
-import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.devtools.testing.SnapshotTesting;
-import io.quarkus.devtools.testing.WrapperRunner;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.assertj.core.api.AbstractPathAssert;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ListAssert;
@@ -44,6 +35,17 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartProjectInput;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.testing.SnapshotTesting;
+import io.quarkus.devtools.testing.WrapperRunner;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 /**
  * This extension helps test a Quarkus extension codestart. It provides a way to test:

@@ -1,11 +1,12 @@
 package io.quarkus.bootstrap.workspace;
 
-import io.quarkus.paths.EmptyPathTree;
-import io.quarkus.paths.MultiRootPathTree;
-import io.quarkus.paths.PathTree;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import io.quarkus.paths.EmptyPathTree;
+import io.quarkus.paths.MultiRootPathTree;
+import io.quarkus.paths.PathTree;
 
 public interface ArtifactSources {
 

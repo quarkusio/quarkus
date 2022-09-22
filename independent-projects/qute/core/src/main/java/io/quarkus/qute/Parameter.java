@@ -1,8 +1,9 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
 import java.util.Objects;
 import java.util.function.Predicate;
+
+import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
 
 /**
  * Definition of a section factory parameter.

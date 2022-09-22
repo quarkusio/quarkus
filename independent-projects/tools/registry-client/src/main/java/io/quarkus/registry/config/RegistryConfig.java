@@ -1,9 +1,10 @@
 package io.quarkus.registry.config;
 
-import io.quarkus.registry.json.JsonBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
+
+import io.quarkus.registry.json.JsonBuilder;
 
 /**
  * Client side registry configuration containing information how to

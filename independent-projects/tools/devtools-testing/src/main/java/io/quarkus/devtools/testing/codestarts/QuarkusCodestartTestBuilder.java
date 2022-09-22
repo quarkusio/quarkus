@@ -2,16 +2,6 @@ package io.quarkus.devtools.testing.codestarts;
 
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getBuiltWithQuarkusCore;
 
-import io.quarkus.devtools.codestarts.DataKey;
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language;
-import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.extensions.Extensions;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.platform.descriptor.loader.json.ResourceLoaders;
-import io.quarkus.registry.catalog.Extension;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
@@ -24,6 +14,17 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+import io.quarkus.devtools.codestarts.DataKey;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.extensions.Extensions;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoaders;
+import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 /**
  * Builder for {@link QuarkusCodestartTest}

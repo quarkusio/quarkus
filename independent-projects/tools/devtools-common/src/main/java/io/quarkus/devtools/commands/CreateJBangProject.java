@@ -3,16 +3,17 @@ package io.quarkus.devtools.commands;
 import static io.quarkus.devtools.commands.CreateProjectHelper.computeJavaVersion;
 import static java.util.Objects.requireNonNull;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.CreateJBangProjectCommandHandler;
 import io.quarkus.devtools.project.QuarkusProject;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 public class CreateJBangProject {
     public interface CreateJBangProjectKey {

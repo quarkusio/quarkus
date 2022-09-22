@@ -1,14 +1,17 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
-import io.restassured.RestAssured;
 import java.util.List;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
 
 public class RawListQueryParamTest {
 

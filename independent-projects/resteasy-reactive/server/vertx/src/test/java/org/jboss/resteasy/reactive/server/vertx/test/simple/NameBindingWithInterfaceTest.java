@@ -3,9 +3,9 @@ package org.jboss.resteasy.reactive.server.vertx.test.simple;
 import static io.restassured.RestAssured.*;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import io.smallrye.mutiny.Uni;
 import java.io.IOException;
 import java.lang.annotation.Retention;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.NameBinding;
 import javax.ws.rs.Path;
@@ -15,12 +15,15 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
+
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.smallrye.mutiny.Uni;
 
 public class NameBindingWithInterfaceTest {
 

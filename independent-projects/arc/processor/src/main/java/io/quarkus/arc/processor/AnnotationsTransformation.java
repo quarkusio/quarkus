@@ -3,6 +3,7 @@ package io.quarkus.arc.processor;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.function.Predicate;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;

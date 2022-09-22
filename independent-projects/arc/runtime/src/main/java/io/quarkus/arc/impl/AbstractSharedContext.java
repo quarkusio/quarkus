@@ -1,16 +1,18 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.ContextInstanceHandle;
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableContext;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
+
+import io.quarkus.arc.ContextInstanceHandle;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableContext;
 
 abstract class AbstractSharedContext implements InjectableContext, InjectableContext.ContextState {
 

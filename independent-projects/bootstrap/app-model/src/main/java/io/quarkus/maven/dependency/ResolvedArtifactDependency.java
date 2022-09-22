@@ -1,12 +1,13 @@
 package io.quarkus.maven.dependency;
 
+import java.io.Serializable;
+import java.nio.file.Path;
+import java.util.Objects;
+
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
 import io.quarkus.paths.PathTree;
-import java.io.Serializable;
-import java.nio.file.Path;
-import java.util.Objects;
 
 public class ResolvedArtifactDependency extends ArtifactDependency implements ResolvableDependency, Serializable {
 

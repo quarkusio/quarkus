@@ -1,11 +1,13 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource;
 
 import java.net.URI;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.vertx.test.simple.PortProviderUtil;
 import org.junit.jupiter.api.Assertions;

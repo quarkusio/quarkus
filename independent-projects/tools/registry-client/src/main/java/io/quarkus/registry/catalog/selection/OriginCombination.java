@@ -1,12 +1,13 @@
 package io.quarkus.registry.catalog.selection;
 
-import io.quarkus.maven.dependency.ArtifactKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+
+import io.quarkus.maven.dependency.ArtifactKey;
 
 public class OriginCombination {
 

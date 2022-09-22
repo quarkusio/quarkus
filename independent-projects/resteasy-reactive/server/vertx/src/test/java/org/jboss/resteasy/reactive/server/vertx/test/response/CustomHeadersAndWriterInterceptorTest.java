@@ -4,9 +4,9 @@ import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.*;
 import static org.hamcrest.Matchers.is;
 
-import io.restassured.http.Headers;
 import java.io.IOException;
 import java.util.Date;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -16,9 +16,12 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
 import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.ext.WriterInterceptorContext;
+
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.http.Headers;
 
 public class CustomHeadersAndWriterInterceptorTest {
 

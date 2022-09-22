@@ -4,16 +4,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Produces;
+import javax.inject.Singleton;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.test.ArcTestContainer;
 import io.quarkus.arc.test.clientproxy.constructor.some.Resource;
-import java.io.IOException;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 // This test aims to test the https://github.com/quarkusio/quarkus/issues/22815 in ArC standalone
 // There is a duplicate test for Quarkus integration: io.quarkus.arc.test.unproxyable.ProducerReturnTypePackagePrivateNoArgsConstructorTest

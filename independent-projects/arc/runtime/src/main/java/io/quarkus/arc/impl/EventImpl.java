@@ -2,10 +2,6 @@ package io.quarkus.arc.impl;
 
 import static javax.transaction.Status.STATUS_COMMITTED;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.AsyncObserverExceptionHandler;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.ManagedContext;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -23,6 +19,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
 import javax.enterprise.event.Event;
 import javax.enterprise.event.NotificationOptions;
 import javax.enterprise.event.ObserverException;
@@ -37,7 +34,13 @@ import javax.transaction.RollbackException;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.AsyncObserverExceptionHandler;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.ManagedContext;
 
 /**
  *

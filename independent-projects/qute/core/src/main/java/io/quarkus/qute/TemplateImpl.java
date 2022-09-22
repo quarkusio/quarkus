@@ -2,8 +2,6 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Namespaces.DATA_NAMESPACE;
 
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -14,7 +12,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+
 import org.jboss.logging.Logger;
+
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 class TemplateImpl implements Template {
 

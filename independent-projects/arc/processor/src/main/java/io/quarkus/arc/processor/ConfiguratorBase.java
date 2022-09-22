@@ -3,6 +3,7 @@ package io.quarkus.arc.processor;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 

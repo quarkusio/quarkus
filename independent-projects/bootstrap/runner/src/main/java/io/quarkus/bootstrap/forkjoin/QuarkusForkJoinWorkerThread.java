@@ -1,8 +1,9 @@
 package io.quarkus.bootstrap.forkjoin;
 
-import io.quarkus.bootstrap.runner.RunnerClassLoader;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
+
+import io.quarkus.bootstrap.runner.RunnerClassLoader;
 
 public class QuarkusForkJoinWorkerThread extends ForkJoinWorkerThread {
 

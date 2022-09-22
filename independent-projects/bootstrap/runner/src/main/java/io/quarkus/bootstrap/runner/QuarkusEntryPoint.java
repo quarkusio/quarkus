@@ -1,7 +1,5 @@
 package io.quarkus.bootstrap.runner;
 
-import io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThread;
-import io.quarkus.bootstrap.logging.InitialConfigurator;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +13,9 @@ import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+
+import io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThread;
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 
 public class QuarkusEntryPoint {
 

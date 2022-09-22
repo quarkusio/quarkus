@@ -1,12 +1,13 @@
 package org.jboss.resteasy.reactive.server.vertx.test.providers;
 
-import io.restassured.RestAssured;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
 import javax.ws.rs.core.HttpHeaders;
+
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.FilePart;
 import org.jboss.resteasy.reactive.PathPart;
@@ -14,6 +15,8 @@ import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveU
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
 
 public class FileTestCase {
 

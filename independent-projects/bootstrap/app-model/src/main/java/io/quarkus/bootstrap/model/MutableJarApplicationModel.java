@@ -1,10 +1,5 @@
 package io.quarkus.bootstrap.model;
 
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.GACTV;
-import io.quarkus.maven.dependency.ResolvedDependency;
-import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
-import io.quarkus.paths.PathList;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -16,6 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
+import io.quarkus.paths.PathList;
 
 /**
  * A representation of AppModel, that has been serialized to disk for an existing application.

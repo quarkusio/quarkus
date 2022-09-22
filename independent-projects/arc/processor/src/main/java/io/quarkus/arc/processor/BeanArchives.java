@@ -1,12 +1,5 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.All;
-import io.quarkus.arc.Lock;
-import io.quarkus.arc.impl.ActivateRequestContextInterceptor;
-import io.quarkus.arc.impl.DefaultAsyncObserverExceptionHandler;
-import io.quarkus.arc.impl.Identified;
-import io.quarkus.arc.impl.InjectableRequestContextController;
-import io.quarkus.arc.impl.LockInterceptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
@@ -22,6 +15,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Destroyed;
 import javax.enterprise.context.Initialized;
@@ -31,6 +25,7 @@ import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Intercepted;
 import javax.enterprise.inject.Model;
 import javax.inject.Named;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
@@ -41,6 +36,14 @@ import org.jboss.jandex.Indexer;
 import org.jboss.jandex.ModuleInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+
+import io.quarkus.arc.All;
+import io.quarkus.arc.Lock;
+import io.quarkus.arc.impl.ActivateRequestContextInterceptor;
+import io.quarkus.arc.impl.DefaultAsyncObserverExceptionHandler;
+import io.quarkus.arc.impl.Identified;
+import io.quarkus.arc.impl.InjectableRequestContextController;
+import io.quarkus.arc.impl.LockInterceptor;
 
 public final class BeanArchives {
 

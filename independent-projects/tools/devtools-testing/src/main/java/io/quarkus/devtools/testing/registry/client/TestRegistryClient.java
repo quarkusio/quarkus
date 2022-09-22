@@ -1,5 +1,11 @@
 package io.quarkus.devtools.testing.registry.client;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.eclipse.aether.artifact.DefaultArtifact;
+
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -12,10 +18,6 @@ import io.quarkus.registry.client.spi.RegistryClientEnvironment;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.registry.config.RegistryConfig;
 import io.quarkus.registry.util.PlatformArtifacts;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import org.eclipse.aether.artifact.DefaultArtifact;
 
 public class TestRegistryClient implements RegistryClient {
 

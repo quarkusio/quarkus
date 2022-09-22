@@ -2,12 +2,13 @@ package io.quarkus.arc.test.contexts.request;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.test.ArcTestContainer;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * Tests that lifecycle events for request scoped are fired even though no actual request scoped bean exists.

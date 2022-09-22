@@ -1,13 +1,14 @@
 package io.quarkus.arc.test.interceptors.postConstruct.inherited;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
 import io.quarkus.arc.test.interceptors.postConstruct.inherited.subpackage.AlternativeBean;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class PackagePrivatePostConstructInheritanceTest {
 

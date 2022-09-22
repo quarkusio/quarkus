@@ -1,9 +1,5 @@
 package io.quarkus.bootstrap.resolver;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.GACT;
-import io.quarkus.maven.dependency.GACTV;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -11,9 +7,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Supplier;
+
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Profile;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACT;
+import io.quarkus.maven.dependency.GACTV;
 
 /**
  *

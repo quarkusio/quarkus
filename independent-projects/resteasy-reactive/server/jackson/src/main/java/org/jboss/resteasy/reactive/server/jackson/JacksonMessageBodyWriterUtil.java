@@ -2,17 +2,20 @@ package org.jboss.resteasy.reactive.server.jackson;
 
 import static org.jboss.resteasy.reactive.common.providers.serialisers.JsonMessageBodyWriterUtil.setContentTypeIfNecessary;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.annotation.Annotation;
+import java.nio.charset.StandardCharsets;
+
+import javax.ws.rs.core.MultivaluedMap;
+
+import org.jboss.resteasy.reactive.server.StreamingOutputStream;
+
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.annotation.Annotation;
-import java.nio.charset.StandardCharsets;
-import javax.ws.rs.core.MultivaluedMap;
-import org.jboss.resteasy.reactive.server.StreamingOutputStream;
 
 public final class JacksonMessageBodyWriterUtil {
 

@@ -17,15 +17,6 @@ import static org.jboss.resteasy.reactive.server.processor.generation.multipart.
 import static org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames.QUARKUS_REST_CONTAINER_REQUEST_CONTEXT;
 import static org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames.SIMPLIFIED_RESOURCE_INFO;
 
-import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.smallrye.mutiny.Uni;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,10 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Response;
+
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -55,6 +48,16 @@ import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveAsyncExceptionMapp
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveExceptionMapper;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
+
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
+import io.smallrye.mutiny.Uni;
 
 public final class ServerExceptionMapperGenerator {
 

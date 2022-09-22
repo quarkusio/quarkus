@@ -1,9 +1,9 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.util.IoUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.metadata.Metadata;
@@ -16,6 +16,8 @@ import org.eclipse.aether.repository.LocalMetadataResult;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.LocalRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
+
+import io.quarkus.bootstrap.util.IoUtils;
 
 /**
  *

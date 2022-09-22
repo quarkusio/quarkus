@@ -2,10 +2,12 @@ package io.quarkus.platform.catalog.predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Arrays;
+
+import org.junit.jupiter.api.Test;
+
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.Extension;
-import java.util.Arrays;
-import org.junit.jupiter.api.Test;
 
 class ExtensionPredicateTest {
 

@@ -1,10 +1,12 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
 import java.nio.charset.StandardCharsets;
+
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.sse.SseEvent;
+
+import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
 
 public class SseParser implements Handler<Buffer> {
 

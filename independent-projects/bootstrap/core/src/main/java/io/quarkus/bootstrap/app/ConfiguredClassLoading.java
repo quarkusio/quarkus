@@ -1,11 +1,5 @@
 package io.quarkus.bootstrap.app;
 
-import io.quarkus.bootstrap.app.QuarkusBootstrap.Mode;
-import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.GACT;
-import io.quarkus.paths.PathCollection;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -19,6 +13,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+
+import io.quarkus.bootstrap.app.QuarkusBootstrap.Mode;
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACT;
+import io.quarkus.paths.PathCollection;
 
 public class ConfiguredClassLoading implements Serializable {
 

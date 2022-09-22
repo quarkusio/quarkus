@@ -6,20 +6,6 @@ import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.App
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getGuide;
 
-import io.quarkus.devtools.codestarts.Codestart;
-import io.quarkus.devtools.codestarts.CodestartCatalogLoader;
-import io.quarkus.devtools.codestarts.CodestartException;
-import io.quarkus.devtools.codestarts.CodestartStructureException;
-import io.quarkus.devtools.codestarts.CodestartType;
-import io.quarkus.devtools.codestarts.DataKey;
-import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
-import io.quarkus.devtools.project.extensions.Extensions;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.platform.catalog.processor.ExtensionProcessor;
-import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
-import io.quarkus.registry.catalog.Extension;
-import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.smallrye.common.version.VersionScheme;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -34,6 +20,21 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import io.quarkus.devtools.codestarts.Codestart;
+import io.quarkus.devtools.codestarts.CodestartCatalogLoader;
+import io.quarkus.devtools.codestarts.CodestartException;
+import io.quarkus.devtools.codestarts.CodestartStructureException;
+import io.quarkus.devtools.codestarts.CodestartType;
+import io.quarkus.devtools.codestarts.DataKey;
+import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
+import io.quarkus.devtools.project.extensions.Extensions;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.platform.catalog.processor.ExtensionProcessor;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
+import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.smallrye.common.version.VersionScheme;
 
 public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<QuarkusCodestartProjectInput> {
 

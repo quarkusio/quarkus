@@ -3,12 +3,14 @@ package org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
+
 import org.junit.jupiter.api.Assertions;
 
 @Path("UriInfoQueryParamsResource/queryParams")

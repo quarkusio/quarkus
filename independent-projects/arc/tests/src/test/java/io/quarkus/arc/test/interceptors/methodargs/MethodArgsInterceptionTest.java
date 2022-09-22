@@ -2,13 +2,15 @@ package io.quarkus.arc.test.interceptors.methodargs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.test.ArcTestContainer;
 import io.quarkus.arc.test.interceptors.Counter;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class MethodArgsInterceptionTest {
 

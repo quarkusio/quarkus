@@ -3,10 +3,6 @@ package org.jboss.resteasy.reactive.client.impl;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECT_TIMEOUT;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.READ_TIMEOUT;
 
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.net.JksOptions;
-import io.vertx.core.net.ProxyOptions;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.KeyStore;
@@ -19,11 +15,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Configuration;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
@@ -31,6 +29,11 @@ import org.jboss.resteasy.reactive.client.logging.DefaultClientLogger;
 import org.jboss.resteasy.reactive.client.spi.ClientContextResolver;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
+
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.net.JksOptions;
+import io.vertx.core.net.ProxyOptions;
 
 public class ClientBuilderImpl extends ClientBuilder {
 

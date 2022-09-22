@@ -2,18 +2,20 @@ package io.quarkus.arc.test.interceptors.bindings;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.ArcInvocationContext;
-import io.quarkus.arc.test.ArcTestContainer;
-import io.quarkus.arc.test.interceptors.Simple;
 import javax.annotation.Priority;
 import javax.inject.Singleton;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.ArcInvocationContext;
+import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.interceptors.Simple;
 
 public class InvocationContextBindingsTest {
 

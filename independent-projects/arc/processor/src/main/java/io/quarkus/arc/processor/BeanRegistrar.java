@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import java.util.Collection;
+
 import org.jboss.jandex.DotName;
 
 /**

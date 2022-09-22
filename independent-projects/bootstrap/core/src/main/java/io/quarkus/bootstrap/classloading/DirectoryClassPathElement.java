@@ -1,7 +1,5 @@
 package io.quarkus.bootstrap.classloading;
 
-import io.quarkus.paths.DirectoryPathTree;
-import io.quarkus.paths.OpenPathTree;
 import java.io.File;
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -20,6 +18,9 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
+
+import io.quarkus.paths.DirectoryPathTree;
+import io.quarkus.paths.OpenPathTree;
 
 /**
  * A class path element that represents a file on the file system

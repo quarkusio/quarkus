@@ -45,6 +45,7 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
                     ConfigUtil.argLineValue(config),
                     context.devServicesLaunchResult(),
                     System.getProperty("native.image.path"),
+                    config.getOptionalValue("quarkus.package.output-directory", String.class).orElse(null),
                     context.testClass()));
             return launcher;
         } else {
@@ -57,18 +58,25 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
 
         private final String nativeImagePath;
         private final Class<?> testClass;
+        private final String configuredOutputDirectory;
 
         public DefaultNativeImageInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
                 List<String> argLine, ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult,
-                String nativeImagePath, Class<?> testClass) {
+                String nativeImagePath, String configuredOutputDirectory, Class<?> testClass) {
             super(httpPort, httpsPort, waitTime, testProfile, argLine, devServicesLaunchResult);
             this.nativeImagePath = nativeImagePath;
+            this.configuredOutputDirectory = configuredOutputDirectory;
             this.testClass = testClass;
         }
 
         @Override
         public String nativeImagePath() {
             return nativeImagePath;
+        }
+
+        @Override
+        public String getConfiguredOutputDirectory() {
+            return configuredOutputDirectory;
         }
 
         @Override

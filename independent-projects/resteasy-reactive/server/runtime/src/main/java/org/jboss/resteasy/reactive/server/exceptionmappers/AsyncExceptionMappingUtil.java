@@ -1,13 +1,16 @@
 package org.jboss.resteasy.reactive.server.exceptionmappers;
 
-import io.smallrye.mutiny.Uni;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
 import javax.ws.rs.core.Response;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.resteasy.reactive.server.spi.AsyncExceptionMapperContext;
+
+import io.smallrye.mutiny.Uni;
 
 /**
  * This class is used by the exception mappers that are generated as a result of the use of {@link ServerExceptionMapper}

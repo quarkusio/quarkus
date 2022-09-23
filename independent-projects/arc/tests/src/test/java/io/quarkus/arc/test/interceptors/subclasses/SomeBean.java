@@ -1,6 +1,7 @@
 package io.quarkus.arc.test.interceptors.subclasses;
 
 import java.io.IOException;
+
 import javax.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped

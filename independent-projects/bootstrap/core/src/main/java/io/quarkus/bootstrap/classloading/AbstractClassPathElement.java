@@ -3,6 +3,7 @@ package io.quarkus.bootstrap.classloading;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.jar.Manifest;
+
 import org.jboss.logging.Logger;
 
 public abstract class AbstractClassPathElement implements ClassPathElement {

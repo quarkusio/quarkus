@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.common.jaxrs;
 
 import java.util.Objects;
+
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 import javax.ws.rs.core.Response.StatusType;

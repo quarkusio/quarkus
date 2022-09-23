@@ -1,9 +1,5 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.Expression.Part;
-import io.quarkus.qute.ExpressionImpl.PartImpl;
-import io.quarkus.qute.Results.NotFound;
-import io.smallrye.mutiny.Uni;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -13,7 +9,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletionStage;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.qute.Expression.Part;
+import io.quarkus.qute.ExpressionImpl.PartImpl;
+import io.quarkus.qute.Results.NotFound;
+import io.smallrye.mutiny.Uni;
 
 class EvaluatorImpl implements Evaluator {
 

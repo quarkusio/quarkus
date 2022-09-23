@@ -1,10 +1,5 @@
 package io.quarkus.bootstrap.classloader;
 
-import io.quarkus.bootstrap.classloading.DirectoryClassPathElement;
-import io.quarkus.bootstrap.classloading.JarClassPathElement;
-import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.util.IoUtils;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
@@ -13,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
@@ -23,6 +19,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import io.quarkus.bootstrap.classloading.DirectoryClassPathElement;
+import io.quarkus.bootstrap.classloading.JarClassPathElement;
+import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.util.IoUtils;
 
 //see https://github.com/quarkusio/quarkus/issues/10943
 public class ClassLoadingResourceUrlTestCase {

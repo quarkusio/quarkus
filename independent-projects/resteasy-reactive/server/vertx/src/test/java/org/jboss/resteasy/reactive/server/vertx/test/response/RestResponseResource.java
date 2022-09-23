@@ -1,12 +1,12 @@
 package org.jboss.resteasy.reactive.server.vertx.test.response;
 
-import io.smallrye.mutiny.Uni;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Optional;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -14,9 +14,12 @@ import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
+
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
+
+import io.smallrye.mutiny.Uni;
 
 @Path("")
 public class RestResponseResource {

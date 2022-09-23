@@ -2,10 +2,11 @@ package io.quarkus.bootstrap.model;
 
 import static java.util.Objects.requireNonNull;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.GACT;
 import java.io.Serializable;
 import java.util.Objects;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.GACT;
 
 /**
  * GroupId, artifactId, classifier, type, version

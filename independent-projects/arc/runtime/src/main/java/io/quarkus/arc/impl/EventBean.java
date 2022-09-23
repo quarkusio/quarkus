@@ -2,6 +2,7 @@ package io.quarkus.arc.impl;
 
 import java.lang.reflect.Type;
 import java.util.Set;
+
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.event.Event;
 import javax.enterprise.inject.spi.InjectionPoint;

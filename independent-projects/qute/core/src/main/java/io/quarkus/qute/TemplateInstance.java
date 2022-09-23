@@ -1,9 +1,10 @@
 package io.quarkus.qute;
 
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
+
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Represents an instance of {@link Template}.

@@ -1,11 +1,12 @@
 package io.quarkus.bootstrap.model;
 
+import java.io.Serializable;
+import java.nio.file.Path;
+
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
-import java.io.Serializable;
-import java.nio.file.Path;
 
 /**
  * Represents an application (or its dependency) artifact.

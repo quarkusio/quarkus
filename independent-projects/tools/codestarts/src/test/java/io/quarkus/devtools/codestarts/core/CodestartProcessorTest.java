@@ -2,13 +2,15 @@ package io.quarkus.devtools.codestarts.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.devtools.codestarts.core.strategy.CodestartFileStrategyHandler;
-import io.quarkus.devtools.messagewriter.MessageWriter;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.devtools.codestarts.core.strategy.CodestartFileStrategyHandler;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 
 class CodestartProcessorTest {
 

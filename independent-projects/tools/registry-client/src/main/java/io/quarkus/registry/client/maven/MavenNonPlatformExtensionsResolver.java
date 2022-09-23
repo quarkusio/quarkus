@@ -1,15 +1,17 @@
 package io.quarkus.registry.client.maven;
 
+import java.nio.file.Path;
+import java.util.Objects;
+
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
+
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.client.RegistryNonPlatformExtensionsResolver;
 import io.quarkus.registry.config.RegistryNonPlatformExtensionsConfig;
-import java.nio.file.Path;
-import java.util.Objects;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
 
 public class MavenNonPlatformExtensionsResolver
         implements RegistryNonPlatformExtensionsResolver {

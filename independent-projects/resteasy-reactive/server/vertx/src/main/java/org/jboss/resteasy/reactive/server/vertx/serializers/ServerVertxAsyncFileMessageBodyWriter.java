@@ -1,21 +1,24 @@
 package org.jboss.resteasy.reactive.server.vertx.serializers;
 
-import io.vertx.core.Handler;
-import io.vertx.core.file.AsyncFile;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
+
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
+
+import io.vertx.core.Handler;
+import io.vertx.core.file.AsyncFile;
 
 @Provider
 public class ServerVertxAsyncFileMessageBodyWriter implements ServerMessageBodyWriter<AsyncFile> {

@@ -2,7 +2,6 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Parameter.EMPTY;
 
-import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,6 +13,8 @@ import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 
 /**
  * Basic sequential {@code loop} statement.

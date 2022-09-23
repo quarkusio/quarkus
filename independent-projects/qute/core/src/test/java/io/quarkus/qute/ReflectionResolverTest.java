@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.IntStream;
+
 import org.junit.jupiter.api.Test;
 
 public class ReflectionResolverTest {

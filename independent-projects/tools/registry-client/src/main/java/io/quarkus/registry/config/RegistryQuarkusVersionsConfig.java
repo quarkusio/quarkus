@@ -1,7 +1,8 @@
 package io.quarkus.registry.config;
 
-import io.quarkus.registry.json.JsonBuilder;
 import java.util.Collection;
+
+import io.quarkus.registry.json.JsonBuilder;
 
 /**
  * A registry may be configured to accept requests only for the Quarkus versions

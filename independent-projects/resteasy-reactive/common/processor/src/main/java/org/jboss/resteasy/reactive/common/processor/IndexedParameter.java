@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.common.processor;
 
 import java.util.Map;
 import java.util.Set;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;

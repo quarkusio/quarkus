@@ -1,11 +1,12 @@
 package io.quarkus.bootstrap.model;
 
+import java.io.Serializable;
+import java.util.Objects;
+
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathCollection;
-import java.io.Serializable;
-import java.util.Objects;
 
 public class AppDependency implements ResolvedDependency, Serializable {
 

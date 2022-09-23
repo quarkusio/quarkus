@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource;
 
 import java.util.List;
+
 import org.junit.jupiter.api.Assertions;
 
 public class ResourceLocatorSubresource3 implements ResourceLocatorSubresource3Interface {

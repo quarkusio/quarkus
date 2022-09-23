@@ -1,14 +1,17 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import io.vertx.core.Vertx;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Supplier;
+
 import javax.ws.rs.RuntimeType;
+
 import org.jboss.resteasy.reactive.client.spi.ClientContext;
 import org.jboss.resteasy.reactive.client.spi.ClientContextResolver;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
+
+import io.vertx.core.Vertx;
 
 public class DefaultClientContext implements ClientContext {
 

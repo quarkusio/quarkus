@@ -1,15 +1,17 @@
 package io.quarkus.bootstrap.classloader;
 
-import io.quarkus.bootstrap.classloading.DirectoryClassPathElement;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.util.IoUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.classloading.DirectoryClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.util.IoUtils;
 
 public class ClassLoadingInterruptTestCase {
 

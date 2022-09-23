@@ -1,7 +1,5 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.IfSectionHelper.Operator;
-import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -16,6 +14,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import io.quarkus.qute.IfSectionHelper.Operator;
+import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 
 /**
  * Basic {@code when/switch} statement.

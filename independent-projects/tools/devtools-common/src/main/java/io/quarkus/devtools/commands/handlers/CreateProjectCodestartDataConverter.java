@@ -1,15 +1,16 @@
 package io.quarkus.devtools.commands.handlers;
 
-import io.quarkus.devtools.codestarts.DataKey;
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData;
-import io.quarkus.devtools.codestarts.utils.NestedMaps;
-import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import io.quarkus.devtools.codestarts.DataKey;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData;
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
+import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
 
 public enum CreateProjectCodestartDataConverter implements DataKey {
     PROJECT_GROUP_ID(CreateProjectKey.PROJECT_GROUP_ID),

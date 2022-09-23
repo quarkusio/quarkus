@@ -1,10 +1,5 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.Expression.Part;
-import io.quarkus.qute.SectionHelperFactory.BlockInfo;
-import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
-import io.quarkus.qute.SectionHelperFactory.ParserDelegate;
-import io.quarkus.qute.TemplateNode.Origin;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.CharBuffer;
@@ -28,7 +23,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.qute.Expression.Part;
+import io.quarkus.qute.SectionHelperFactory.BlockInfo;
+import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
+import io.quarkus.qute.SectionHelperFactory.ParserDelegate;
+import io.quarkus.qute.TemplateNode.Origin;
 
 /**
  * Simple non-reusable parser.

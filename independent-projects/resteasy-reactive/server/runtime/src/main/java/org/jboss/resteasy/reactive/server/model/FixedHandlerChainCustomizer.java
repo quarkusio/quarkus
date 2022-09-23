@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.server.model;
 
 import java.util.Collections;
 import java.util.List;
+
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 

@@ -1,7 +1,8 @@
 package io.quarkus.bootstrap.model.gradle.impl;
 
-import io.quarkus.bootstrap.model.gradle.ModelParameter;
 import java.io.Serializable;
+
+import io.quarkus.bootstrap.model.gradle.ModelParameter;
 
 public class ModelParameterImpl implements ModelParameter, Serializable {
 

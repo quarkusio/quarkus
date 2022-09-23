@@ -1,5 +1,14 @@
 package io.quarkus.devtools.codestarts.core.reader;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+
+import org.apache.commons.io.FilenameUtils;
+
 import io.quarkus.devtools.codestarts.CodestartException;
 import io.quarkus.devtools.codestarts.CodestartResource;
 import io.quarkus.devtools.codestarts.CodestartResource.Source;
@@ -14,13 +23,6 @@ import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.TemplateNode;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.Variant;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-import org.apache.commons.io.FilenameUtils;
 
 final class QuteCodestartFileReader implements CodestartFileReader {
 

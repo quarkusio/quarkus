@@ -1,8 +1,5 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.impl.CurrentInjectionPointProvider.InjectionPointImpl;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
 import java.lang.reflect.Type;
@@ -12,9 +9,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
+
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.spi.InjectionPoint;
+
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.impl.CurrentInjectionPointProvider.InjectionPointImpl;
 
 public final class Instances {
 

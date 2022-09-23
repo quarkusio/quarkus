@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.vertx.test.stress;
 
-import io.restassured.RestAssured;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -8,8 +7,10 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+
 import org.hamcrest.Matchers;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
@@ -23,6 +24,8 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
 
 /**
  * Tests lots of suspends/resumes per request

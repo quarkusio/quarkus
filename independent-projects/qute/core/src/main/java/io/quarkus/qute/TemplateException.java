@@ -1,10 +1,11 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.Qute.IndexedArgumentsParserHook;
-import io.quarkus.qute.TemplateNode.Origin;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
+import io.quarkus.qute.Qute.IndexedArgumentsParserHook;
+import io.quarkus.qute.TemplateNode.Origin;
 
 public class TemplateException extends RuntimeException {
 

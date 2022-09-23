@@ -2,8 +2,6 @@ package org.jboss.resteasy.reactive.server.vertx.test.customexceptions;
 
 import static org.jboss.resteasy.reactive.server.vertx.test.ExceptionUtil.removeStackTrace;
 
-import io.smallrye.mutiny.Uni;
-import io.vertx.core.http.HttpServerRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -12,9 +10,13 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpServerRequest;
 
 @Path("first")
 public class FirstResource {

@@ -3,9 +3,8 @@ package org.jboss.resteasy.reactive.server.vertx.test.simple;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.emptyString;
 
-import io.restassured.RestAssured;
-import io.restassured.http.Headers;
 import java.util.function.Supplier;
+
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -15,6 +14,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
+import io.restassured.http.Headers;
 
 public class SimpleQuarkusRestTestCase {
 

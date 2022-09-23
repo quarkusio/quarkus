@@ -1,5 +1,10 @@
 package io.quarkus.registry;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.regex.Pattern;
+
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -8,10 +13,6 @@ import io.quarkus.registry.catalog.PlatformCatalog;
 import io.quarkus.registry.client.RegistryClient;
 import io.quarkus.registry.config.RegistryConfig;
 import io.quarkus.util.GlobUtil;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.regex.Pattern;
 
 class RegistryExtensionResolver {
 

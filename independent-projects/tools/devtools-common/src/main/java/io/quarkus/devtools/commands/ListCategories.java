@@ -1,12 +1,13 @@
 package io.quarkus.devtools.commands;
 
+import java.util.HashMap;
+
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.ListCategoriesCommandHandler;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
-import java.util.HashMap;
 
 /**
  * Instances of this class are not thread-safe. They are created per single invocation.

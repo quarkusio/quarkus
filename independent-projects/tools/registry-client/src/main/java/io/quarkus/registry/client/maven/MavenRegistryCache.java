@@ -1,11 +1,5 @@
 package io.quarkus.registry.client.maven;
 
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
-import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.registry.RegistryResolutionException;
-import io.quarkus.registry.client.RegistryCache;
-import io.quarkus.registry.config.RegistryConfig;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,7 +8,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
+
 import org.eclipse.aether.artifact.DefaultArtifact;
+
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.RegistryResolutionException;
+import io.quarkus.registry.client.RegistryCache;
+import io.quarkus.registry.config.RegistryConfig;
 
 public class MavenRegistryCache implements RegistryCache {
 

@@ -1,13 +1,15 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
-import io.vertx.core.http.HttpServerRequest;
 import java.io.IOException;
+
 import javax.annotation.Priority;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.ext.Provider;
+
+import io.vertx.core.http.HttpServerRequest;
 
 @Provider
 @Foo

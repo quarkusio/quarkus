@@ -3,6 +3,7 @@ package io.quarkus.arc.processor;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Inherited;
 import java.util.Objects;
+
 import org.jboss.jandex.DotName;
 
 /**

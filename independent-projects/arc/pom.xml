@@ -264,6 +264,8 @@
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
                         <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>
+                        <groups>java.,javax.,jakarta.,org.,com.</groups>
+                        <staticGroups>*</staticGroups>
                         <removeUnused>true</removeUnused>
                         <skip>${format.skip}</skip>
                     </configuration>

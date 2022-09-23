@@ -4,6 +4,38 @@ import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.inject.spi.InterceptionType;
+import javax.interceptor.InvocationContext;
+
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
+import org.jboss.jandex.TypeVariable;
+
 import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.InjectableDecorator;
 import io.quarkus.arc.InjectableInterceptor;
@@ -27,35 +59,6 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.InterceptionType;
-import javax.interceptor.InvocationContext;
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type;
-import org.jboss.jandex.Type.Kind;
-import org.jboss.jandex.TypeVariable;
 
 /**
  * A subclass is generated for any intercepted/decorated bean.

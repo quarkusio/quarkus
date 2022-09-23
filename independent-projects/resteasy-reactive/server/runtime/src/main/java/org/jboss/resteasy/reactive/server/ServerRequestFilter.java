@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.server;
 
-import io.smallrye.common.annotation.Blocking;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -12,6 +12,8 @@ import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
+
+import io.smallrye.common.annotation.Blocking;
 
 /**
  * When used on a method, then an implementation of {@link javax.ws.rs.container.ContainerRequestFilter} is generated

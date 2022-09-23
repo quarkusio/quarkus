@@ -1,6 +1,7 @@
 package io.quarkus.arc.test.interceptors.bridge;
 
 import java.util.List;
+
 import javax.inject.Singleton;
 
 @Singleton

@@ -1,11 +1,5 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
-import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
-import io.quarkus.bootstrap.util.PropertyUtils;
-import io.quarkus.maven.dependency.ArtifactCoords;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.function.Supplier;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.cli.transfer.BatchModeMavenTransferListener;
 import org.apache.maven.cli.transfer.ConsoleMavenTransferListener;
@@ -80,6 +75,13 @@ import org.eclipse.aether.util.repository.DefaultAuthenticationSelector;
 import org.eclipse.aether.util.repository.DefaultMirrorSelector;
 import org.eclipse.aether.util.repository.DefaultProxySelector;
 import org.jboss.logging.Logger;
+
+import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.bootstrap.util.PropertyUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 public class BootstrapMavenContext {
 

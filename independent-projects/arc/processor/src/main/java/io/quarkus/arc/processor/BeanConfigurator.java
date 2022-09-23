@@ -5,6 +5,7 @@ import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 

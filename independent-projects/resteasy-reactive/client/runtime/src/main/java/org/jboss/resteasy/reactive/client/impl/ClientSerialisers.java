@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import io.vertx.core.buffer.Buffer;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,6 +9,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.Map;
+
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
@@ -23,6 +23,7 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.providers.serialisers.ClientDefaultTextPlainBodyHandler;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
@@ -45,6 +46,8 @@ import org.jboss.resteasy.reactive.common.providers.serialisers.StringMessageBod
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonArrayHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonObjectHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonValueHandler;
+
+import io.vertx.core.buffer.Buffer;
 
 public class ClientSerialisers extends Serialisers {
 

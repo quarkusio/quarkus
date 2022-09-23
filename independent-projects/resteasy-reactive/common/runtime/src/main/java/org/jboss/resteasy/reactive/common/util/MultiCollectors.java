@@ -1,8 +1,9 @@
 package org.jboss.resteasy.reactive.common.util;
 
+import java.util.stream.Collectors;
+
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import java.util.stream.Collectors;
 
 /**
  * Set of convenient collectors for dealing with {@link Multi} return types.

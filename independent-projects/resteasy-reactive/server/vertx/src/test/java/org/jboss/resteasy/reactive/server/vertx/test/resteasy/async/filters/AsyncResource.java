@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.server.vertx.test.resteasy.async.filters;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.concurrent.TimeUnit;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -10,6 +11,7 @@ import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
 import org.jboss.logging.Logger;
 
 /**

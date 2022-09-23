@@ -2,15 +2,17 @@ package io.quarkus.arc.test.contexts.application;
 
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Singleton;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.test.ArcTestContainer;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Singleton;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class ApplicationContextGetTest {
 

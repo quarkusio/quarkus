@@ -5,9 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.bootstrap.util.IoUtils;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.GACTV;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -19,8 +16,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.GACTV;
 
 public class PlatformImportsTest {
 

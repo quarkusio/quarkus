@@ -1,5 +1,17 @@
 package org.jboss.resteasy.reactive.server.vertx;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.io.OutputStream;
+
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MultivaluedMap;
+
+import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.server.core.LazyResponse;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -8,15 +20,6 @@ import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.io.OutputStream;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MultivaluedMap;
-import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.server.core.LazyResponse;
-import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 public class ResteasyReactiveOutputStream extends OutputStream {
 

@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
-import io.restassured.RestAssured;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -12,10 +12,13 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
 import javax.ws.rs.ext.Provider;
+
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
 
 public class LocalDateCustomParamConverterProviderTest {
 

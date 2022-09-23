@@ -1,8 +1,9 @@
 package io.quarkus.bootstrap.model;
 
+import java.io.Serializable;
+
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
-import java.io.Serializable;
 
 /**
  * GroupId, artifactId and classifier

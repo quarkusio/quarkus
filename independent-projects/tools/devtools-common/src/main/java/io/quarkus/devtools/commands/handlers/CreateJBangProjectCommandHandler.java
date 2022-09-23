@@ -4,6 +4,13 @@ import static io.quarkus.devtools.commands.CreateJBangProject.CreateJBangProject
 import static io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataConverter.toCodestartData;
 import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.computeCoordsFromQuery;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import io.quarkus.devtools.codestarts.jbang.QuarkusJBangCodestartCatalog;
 import io.quarkus.devtools.codestarts.jbang.QuarkusJBangCodestartProjectInput;
 import io.quarkus.devtools.codestarts.jbang.QuarkusJBangCodestartProjectInputBuilder;
@@ -16,12 +23,6 @@ import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class CreateJBangProjectCommandHandler implements QuarkusCommandHandler {
     @Override

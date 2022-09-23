@@ -1,7 +1,5 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.SectionHelperFactory.BlockInfo;
-import io.quarkus.qute.TemplateNode.Origin;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -9,6 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+
+import io.quarkus.qute.SectionHelperFactory.BlockInfo;
+import io.quarkus.qute.TemplateNode.Origin;
 
 /**
  * Each section consists of one or more blocks. The main block is always present. Additional blocks start with a label

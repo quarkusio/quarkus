@@ -6,20 +6,23 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.ManagedContext;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Singleton;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.ManagedContext;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class RequestInObserverNotificationTest {
 

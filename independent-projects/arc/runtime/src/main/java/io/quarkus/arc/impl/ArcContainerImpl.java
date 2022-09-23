@@ -2,22 +2,6 @@ package io.quarkus.arc.impl;
 
 import static java.util.function.Predicate.not;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.Components;
-import io.quarkus.arc.ComponentsProvider;
-import io.quarkus.arc.CurrentContextFactory;
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableContext;
-import io.quarkus.arc.InjectableDecorator;
-import io.quarkus.arc.InjectableInstance;
-import io.quarkus.arc.InjectableInterceptor;
-import io.quarkus.arc.InjectableObserverMethod;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.ManagedContext;
-import io.quarkus.arc.RemovedBean;
-import io.quarkus.arc.ResourceReferenceProvider;
-import io.quarkus.arc.impl.ArcCDIProvider.ArcCDI;
 import java.lang.StackWalker.StackFrame;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -41,6 +25,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Dependent;
@@ -63,7 +48,25 @@ import javax.enterprise.inject.spi.Interceptor;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Scope;
 import javax.inject.Singleton;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.Components;
+import io.quarkus.arc.ComponentsProvider;
+import io.quarkus.arc.CurrentContextFactory;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.InjectableDecorator;
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.InjectableInterceptor;
+import io.quarkus.arc.InjectableObserverMethod;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.ManagedContext;
+import io.quarkus.arc.RemovedBean;
+import io.quarkus.arc.ResourceReferenceProvider;
+import io.quarkus.arc.impl.ArcCDIProvider.ArcCDI;
 
 public class ArcContainerImpl implements ArcContainer {
 

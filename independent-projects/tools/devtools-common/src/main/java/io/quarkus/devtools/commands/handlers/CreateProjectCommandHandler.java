@@ -14,6 +14,17 @@ import static io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataCo
 import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.computeExtensionsFromQuery;
 import static io.quarkus.devtools.messagewriter.MessageIcons.ERROR_ICON;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
@@ -35,16 +46,6 @@ import io.quarkus.registry.catalog.selection.ExtensionOrigins;
 import io.quarkus.registry.catalog.selection.OriginCombination;
 import io.quarkus.registry.catalog.selection.OriginPreference;
 import io.quarkus.registry.catalog.selection.OriginSelector;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Instances of this class are thread-safe. They create a new project extracting all the necessary properties from an instance

@@ -1,17 +1,19 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
-import io.restassured.RestAssured;
-import io.smallrye.common.annotation.Blocking;
-import io.smallrye.common.annotation.NonBlocking;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
 
 public class InterfaceWithImplTest {
 

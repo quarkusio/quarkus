@@ -1,5 +1,17 @@
 package io.quarkus.devtools.commands.handlers;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.maven.model.Model;
+
 import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog;
 import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartProjectInput;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
@@ -9,16 +21,6 @@ import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.PomTransformer;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import org.apache.commons.io.FileUtils;
-import org.apache.maven.model.Model;
 
 /**
  * Instances of this class are thread-safe. They create a new project extracting all the necessary properties from an instance

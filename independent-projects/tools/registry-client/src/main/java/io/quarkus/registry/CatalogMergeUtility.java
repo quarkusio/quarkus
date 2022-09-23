@@ -1,5 +1,13 @@
 package io.quarkus.registry;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.registry.catalog.Category;
 import io.quarkus.registry.catalog.Extension;
@@ -10,13 +18,6 @@ import io.quarkus.registry.catalog.PlatformCatalog;
 import io.quarkus.registry.catalog.PlatformRelease;
 import io.quarkus.registry.catalog.PlatformStream;
 import io.quarkus.registry.json.JsonBuilder;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Utility for merging catalog data.

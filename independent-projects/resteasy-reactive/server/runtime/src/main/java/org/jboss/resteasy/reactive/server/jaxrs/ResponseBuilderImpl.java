@@ -2,8 +2,10 @@ package org.jboss.resteasy.reactive.server.jaxrs;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.common.jaxrs.AbstractResponseBuilder;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.Deployment;

@@ -3,17 +3,19 @@ package io.quarkus.arc.processor;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 
+import java.lang.annotation.Annotation;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.IndexView;
+
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import java.lang.annotation.Annotation;
-import java.util.HashMap;
-import java.util.Map;
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.IndexView;
 
 final class SyntheticComponentsUtil {
     private static final String FIELD_NAME_PARAMS = "params";

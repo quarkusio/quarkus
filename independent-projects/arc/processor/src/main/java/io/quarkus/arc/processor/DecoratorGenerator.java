@@ -4,6 +4,26 @@ import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
+import java.lang.reflect.Type;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type.Kind;
+import org.jboss.jandex.TypeVariable;
+
 import io.quarkus.arc.InjectableDecorator;
 import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
@@ -16,24 +36,6 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import java.lang.reflect.Type;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type.Kind;
-import org.jboss.jandex.TypeVariable;
 
 public class DecoratorGenerator extends BeanGenerator {
 

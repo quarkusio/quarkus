@@ -9,14 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
-import io.quarkus.bootstrap.util.IoUtils;
-import io.quarkus.bootstrap.workspace.SourceDir;
-import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.paths.PathTree;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
@@ -25,6 +17,7 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
+
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Parent;
 import org.assertj.core.api.Assertions;
@@ -33,6 +26,15 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
+import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.bootstrap.workspace.SourceDir;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.paths.PathTree;
 
 public class LocalWorkspaceDiscoveryTest {
 

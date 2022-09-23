@@ -1,9 +1,10 @@
 package io.quarkus.maven.dependency;
 
+import java.nio.file.Path;
+
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
-import java.nio.file.Path;
 
 public class ResolvedDependencyBuilder extends AbstractDependencyBuilder<ResolvedDependencyBuilder, ResolvedDependency> {
 

@@ -3,7 +3,9 @@ package org.jboss.resteasy.reactive.server.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+
 import javax.ws.rs.container.DynamicFeature;
+
 import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 

@@ -2,21 +2,24 @@ package org.jboss.resteasy.reactive.server.vertx.test.headers;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import io.restassured.RestAssured;
-import io.restassured.http.Headers;
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+
 import org.jboss.resteasy.reactive.ResponseHeader;
 import org.jboss.resteasy.reactive.ResponseStatus;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
+import io.restassured.http.Headers;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 public class ResponseHeaderTest {
 

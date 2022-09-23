@@ -1,9 +1,10 @@
 package io.quarkus.devtools.commands.data;
 
-import io.quarkus.registry.catalog.Extension;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+
+import io.quarkus.registry.catalog.Extension;
 
 public class SelectionResult implements Iterable<Extension> {
 

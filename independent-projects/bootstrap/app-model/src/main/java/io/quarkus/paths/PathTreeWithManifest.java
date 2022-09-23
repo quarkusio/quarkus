@@ -17,6 +17,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
+
 import org.jboss.logging.Logger;
 
 public abstract class PathTreeWithManifest implements PathTree {

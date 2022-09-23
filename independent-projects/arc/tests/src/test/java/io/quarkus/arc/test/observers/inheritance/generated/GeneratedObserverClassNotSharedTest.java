@@ -3,17 +3,20 @@ package io.quarkus.arc.test.observers.inheritance.generated;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ClientProxy;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
 import javax.inject.Singleton;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ClientProxy;
+import io.quarkus.arc.test.ArcTestContainer;
 
 // see https://github.com/quarkusio/quarkus/issues/23888
 public class GeneratedObserverClassNotSharedTest {

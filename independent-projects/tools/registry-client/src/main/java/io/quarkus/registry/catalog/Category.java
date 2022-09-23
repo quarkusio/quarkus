@@ -1,7 +1,8 @@
 package io.quarkus.registry.catalog;
 
-import io.quarkus.registry.json.JsonBuilder;
 import java.util.Map;
+
+import io.quarkus.registry.json.JsonBuilder;
 
 public interface Category {
 

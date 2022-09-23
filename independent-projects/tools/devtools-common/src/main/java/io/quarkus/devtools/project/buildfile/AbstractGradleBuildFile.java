@@ -1,8 +1,5 @@
 package io.quarkus.devtools.project.buildfile;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -15,6 +12,10 @@ import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 // We keep it here to take advantage of the abstract tests
 abstract class AbstractGradleBuildFile extends BuildFile {

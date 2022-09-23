@@ -1,7 +1,8 @@
 package io.quarkus.bootstrap.resolver;
 
-import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 
 public abstract class BootstrapTestBase extends ResolverSetupCleanup {
 

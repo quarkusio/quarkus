@@ -1,8 +1,9 @@
 package io.quarkus.maven.dependency;
 
-import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import java.io.Serializable;
 import java.util.Objects;
+
+import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 
 public class GAV implements WorkspaceModuleId, Serializable {
 

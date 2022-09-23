@@ -1,6 +1,7 @@
 package io.quarkus.qute;
 
 import java.util.regex.Pattern;
+
 import org.jboss.logging.Logger;
 
 class LiteralSupport {

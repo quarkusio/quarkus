@@ -3,8 +3,6 @@ package io.quarkus.platform.catalog.processor;
 import static io.quarkus.registry.catalog.Extension.*;
 import static java.util.stream.Collectors.toMap;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.registry.catalog.Extension;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,6 +12,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.catalog.Extension;
 
 public final class ExtensionProcessor {
 

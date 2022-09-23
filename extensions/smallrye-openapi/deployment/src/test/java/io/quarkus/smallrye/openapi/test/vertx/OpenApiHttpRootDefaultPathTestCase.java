@@ -15,7 +15,8 @@ public class OpenApiHttpRootDefaultPathTestCase {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiRoute.class)
-                    .addAsResource(new StringAsset("quarkus.http.root-path=/foo"), "application.properties"));
+                    .addAsResource(new StringAsset("quarkus.http.root-path=/foo\n" +
+                            "quarkus.http.cors=true"), "application.properties"));
 
     @Test
     public void testOpenApiPathAccessResource() {
@@ -35,5 +36,18 @@ public class OpenApiHttpRootDefaultPathTestCase {
                 .body("openapi", Matchers.startsWith("3.0"))
                 .body("info.title", Matchers.equalTo("quarkus-smallrye-openapi-deployment API"))
                 .body("paths", Matchers.hasKey("/foo/resource"));
+    }
+
+    @Test
+    public void testCorsFilterProperties() {
+        // make sure CORS are present when path is not attached to main router and CORS are enabled
+        RestAssured
+                .given()
+                .header("Origin", "https://quarkus.io")
+                .get(OPEN_API_PATH)
+                .then()
+                .statusCode(200)
+                .header("access-control-allow-origin", "https://quarkus.io")
+                .header("access-control-allow-credentials", "false");
     }
 }

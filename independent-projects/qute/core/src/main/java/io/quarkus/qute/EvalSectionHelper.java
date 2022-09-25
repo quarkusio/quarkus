@@ -48,8 +48,8 @@ public class EvalSectionHelper implements SectionHelper {
                                 .argument("originalMessage", e.getMessage())
                                 .build();
                     }
-                    template.root
-                            .resolve(context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null))
+                    Results.resolve(template.root,
+                            context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null), engine)
                             .whenComplete((resultNode, t2) -> {
                                 if (t2 != null) {
                                     result.completeExceptionally(t2);

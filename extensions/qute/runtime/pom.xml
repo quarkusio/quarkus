@@ -26,6 +26,11 @@
             <groupId>io.quarkus.qute</groupId>
             <artifactId>qute-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus.qute</groupId>
+            <artifactId>qute-debug</artifactId>
+            <version>999-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>

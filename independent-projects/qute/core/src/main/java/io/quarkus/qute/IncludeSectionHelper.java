@@ -34,13 +34,14 @@ public class IncludeSectionHelper implements SectionHelper {
         if (parameters.isEmpty() && optimizeIfNoParams()) {
             // No params
             SectionNode root = ((TemplateImpl) template.get()).root;
+            Engine engine = ((TemplateImpl) template.get()).getEngine();
             if (isIsolated) {
-                return root.resolve(context.newResolutionContext(null, extendingBlocks));
+                return Results.resolve(root, context.newResolutionContext(null, extendingBlocks), engine);
             } else if (extendingBlocks.isEmpty()) {
                 // No params and no extending blocks: {#include foo /}
-                return root.resolve(context.resolutionContext());
+                return Results.resolve(root, context.resolutionContext(), engine);
             } else {
-                return root.resolve(context.resolutionContext().createChild(null, extendingBlocks));
+                return Results.resolve(root, context.resolutionContext().createChild(null, extendingBlocks), engine);
             }
         } else {
             CompletableFuture<ResultNode> result = new CompletableFuture<>();
@@ -59,8 +60,10 @@ public class IncludeSectionHelper implements SectionHelper {
                             resolutionContext = context.resolutionContext().createChild(data, extendingBlocks);
                         }
                         SectionNode root = ((TemplateImpl) template.get()).root;
+                        Engine engine = ((TemplateImpl) template.get()).getEngine();
                         // Execute the template with the params as the root context object
-                        root.resolve(resolutionContext)
+                        Results.resolve(root,
+                                resolutionContext, engine)
                                 .whenComplete((resultNode, t2) -> {
                                     if (t2 != null) {
                                         result.completeExceptionally(t2);

@@ -1,7 +1,7 @@
 package io.quarkus.qute;
 
 import static io.quarkus.qute.Namespaces.DATA_NAMESPACE;
-
+import io.quarkus.qute.trace.TemplateEvent;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import java.time.Duration;
@@ -76,6 +76,10 @@ class TemplateImpl implements Template {
     @Override
     public Optional<Variant> getVariant() {
         return variant;
+    }
+
+    public Engine getEngine() {
+        return engine;
     }
 
     @Override
@@ -172,8 +176,12 @@ class TemplateImpl implements Template {
             ResolutionContext rootContext = new ResolutionContextImpl(data,
                     engine.getEvaluator(), null, this::getAttribute);
             setAttribute(DataNamespaceResolver.ROOT_CONTEXT, rootContext);
+            if (engine.hasTraceListeners()) {
+                TraceManager traceManager = engine.getTraceManager();
+                traceManager.fireStartTemplate(new TemplateEvent(this));
+            }
             // Async resolution
-            root.resolve(rootContext).whenComplete((r, t) -> {
+            Results.resolve(root, rootContext, engine).whenComplete((r, t) -> {
                 if (t != null) {
                     result.completeExceptionally(t);
                 } else {
@@ -193,8 +201,11 @@ class TemplateImpl implements Template {
                                 }
                             }
                         }
-
                     }
+                }
+                if (engine.hasTraceListeners()) {
+                    TraceManager traceManager = engine.getTraceManager();
+                    traceManager.fireEndTemplate(new TemplateEvent(this));
                 }
             });
             return result;

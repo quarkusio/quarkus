@@ -28,26 +28,30 @@ class SectionNode implements TemplateNode {
     private final Origin origin;
     private final boolean traceLevel;
 
-    SectionNode(String name, List<SectionBlock> blocks, SectionHelper helper, Origin origin) {
+    private final Engine engine;
+
+    SectionNode(String name, List<SectionBlock> blocks, SectionHelper helper, Origin origin, Engine engine) {
         this.name = name;
         this.blocks = blocks;
         this.helper = helper;
         this.origin = origin;
         this.traceLevel = LOG.isTraceEnabled();
+        this.engine = engine;
     }
 
     @Override
     public CompletionStage<ResultNode> resolve(ResolutionContext context) {
         if (traceLevel && !Parser.ROOT_HELPER_NAME.equals(name)) {
             LOG.tracef("Resolve {#%s} started:%s", name, origin);
-            return helper.resolve(new SectionResolutionContextImpl(context)).thenApply(r -> {
+            return helper.resolve(new SectionResolutionContextImpl(context, engine)).thenApply(r -> {
                 LOG.tracef("Resolve {#%s} completed:%s", name, origin);
                 return r;
             });
         }
-        return helper.resolve(new SectionResolutionContextImpl(context));
+        return helper.resolve(new SectionResolutionContextImpl(context, engine));
     }
 
+    @Override
     public Origin getOrigin() {
         return origin;
     }
@@ -153,7 +157,7 @@ class SectionNode implements TemplateNode {
             }
             List<SectionBlock> blocks = builder.build();
             return new SectionNode(helperName, blocks,
-                    factory.initialize(new SectionInitContextImpl(engine, blocks, errorInitializer)), origin);
+                    factory.initialize(new SectionInitContextImpl(engine, blocks, errorInitializer)), origin, engine);
         }
 
     }
@@ -162,8 +166,11 @@ class SectionNode implements TemplateNode {
 
         private final ResolutionContext resolutionContext;
 
-        public SectionResolutionContextImpl(ResolutionContext resolutionContext) {
+        private final Engine engine;
+
+        public SectionResolutionContextImpl(ResolutionContext resolutionContext, Engine engine) {
             this.resolutionContext = resolutionContext;
+            this.engine = engine;
         }
 
         @Override
@@ -175,11 +182,11 @@ class SectionNode implements TemplateNode {
             int size = block.nodes.size();
             if (size == 1) {
                 // Single node in the block
-                return block.nodes.get(0).resolve(context);
+                return Results.resolve(block.nodes.get(0), context, engine);
             }
             List<CompletionStage<ResultNode>> results = new ArrayList<>(size);
             for (TemplateNode node : block.nodes) {
-                results.add(node.resolve(context));
+                results.add(Results.resolve(node, context, engine));
             }
             return Results.process(results);
         }

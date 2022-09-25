@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import io.quarkus.qute.trace.ResolveEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -181,4 +182,17 @@ public final class Results {
         }
     }
 
+    public static CompletionStage<ResultNode> resolve(TemplateNode node, ResolutionContext context, Engine engine) {
+        if (!engine.hasTraceListeners()) {
+            return node.resolve(context);
+        }
+        TraceManager traceManager = engine.getTraceManager();
+        final ResolveEvent event = new ResolveEvent(node, context, engine);
+        traceManager.fireBeforeResolveEvent(event);
+        return node.resolve(context).thenApply(result -> {
+            event.setResultNode(result);
+            traceManager.fireAfterResolveEvent(event);
+            return result;
+        });
+    }
 }

@@ -2,6 +2,7 @@ package io.quarkus.arc;
 
 import java.util.Map;
 import java.util.function.Function;
+
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.NormalScope;
 import javax.enterprise.context.spi.AlterableContext;

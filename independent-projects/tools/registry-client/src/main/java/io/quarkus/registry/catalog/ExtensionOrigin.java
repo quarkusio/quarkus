@@ -1,8 +1,9 @@
 package io.quarkus.registry.catalog;
 
+import java.util.Map;
+
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.json.JsonBuilder;
-import java.util.Map;
 
 public interface ExtensionOrigin {
 

@@ -68,6 +68,8 @@
         <gradle-tooling.version>7.5.1</gradle-tooling.version>
         <quarkus-fs-util.version>0.0.9</quarkus-fs-util.version>
         <org-crac.version>0.1.1</org-crac.version>
+        <formatter-maven-plugin.version>2.20.0</formatter-maven-plugin.version>
+        <impsort-maven-plugin.version>1.7.0</impsort-maven-plugin.version>
     </properties>
     <modules>
         <module>bom</module>
@@ -152,10 +154,11 @@
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                     </configuration>
                 </plugin>
+                <!-- Replicate what's in parent, since this pom doesn't inherit parent but IDE settings will be common -->
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.20.0</version>
+                    <version>${formatter-maven-plugin.version}</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -174,12 +177,14 @@
                 <plugin>
                     <groupId>net.revelc.code</groupId>
                     <artifactId>impsort-maven-plugin</artifactId>
-                    <version>1.7.0</version>
+                    <version>${impsort-maven-plugin.version}</version>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
                         <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>
-                        <removeUnused>true</removeUnused>
+                        <groups>java.,javax.,jakarta.,org.,com.</groups>
+                        <staticGroups>*</staticGroups>
                         <skip>${format.skip}</skip>
+                        <removeUnused>true</removeUnused>
                     </configuration>
                 </plugin>
             </plugins>

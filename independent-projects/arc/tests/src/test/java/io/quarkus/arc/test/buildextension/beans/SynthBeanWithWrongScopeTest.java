@@ -8,15 +8,18 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.BeanCreator;
-import io.quarkus.arc.processor.BeanRegistrar;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.Map;
+
 import javax.enterprise.context.spi.CreationalContext;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.BeanCreator;
+import io.quarkus.arc.processor.BeanRegistrar;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class SynthBeanWithWrongScopeTest {
 

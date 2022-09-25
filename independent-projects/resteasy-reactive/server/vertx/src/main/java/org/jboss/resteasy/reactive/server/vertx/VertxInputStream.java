@@ -1,5 +1,14 @@
 package org.jboss.resteasy.reactive.server.vertx;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.nio.channels.ClosedChannelException;
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -11,13 +20,6 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InterruptedIOException;
-import java.nio.channels.ClosedChannelException;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
 
 public class VertxInputStream extends InputStream {
 

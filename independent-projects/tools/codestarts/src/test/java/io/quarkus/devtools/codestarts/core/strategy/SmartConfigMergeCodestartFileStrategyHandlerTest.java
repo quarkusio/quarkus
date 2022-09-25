@@ -3,6 +3,7 @@ package io.quarkus.devtools.codestarts.core.strategy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
+
 import org.junit.jupiter.api.Test;
 
 class SmartConfigMergeCodestartFileStrategyHandlerTest {

@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.common.core;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class SingletonBeanFactory<T> implements BeanFactory<T> {

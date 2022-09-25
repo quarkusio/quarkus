@@ -1,6 +1,5 @@
 package io.quarkus.bootstrap.model;
 
-import io.quarkus.paths.PathCollection;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Files;
@@ -12,6 +11,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+
+import io.quarkus.paths.PathCollection;
 
 public class PathsCollection implements PathCollection, Serializable {
 

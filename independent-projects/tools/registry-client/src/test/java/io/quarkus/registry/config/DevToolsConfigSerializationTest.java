@@ -2,7 +2,6 @@ package io.quarkus.registry.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -15,7 +14,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 /**
  * TODO: compare set *.json.DevToolsConfigSerializationTest

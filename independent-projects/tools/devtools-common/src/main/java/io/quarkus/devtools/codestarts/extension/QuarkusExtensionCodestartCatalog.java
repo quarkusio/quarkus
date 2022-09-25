@@ -3,14 +3,15 @@ package io.quarkus.devtools.codestarts.extension;
 import static io.quarkus.devtools.codestarts.CodestartResourceLoader.loadCodestartsFromResources;
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
 
-import io.quarkus.devtools.codestarts.Codestart;
-import io.quarkus.devtools.codestarts.DataKey;
-import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
+import io.quarkus.devtools.codestarts.Codestart;
+import io.quarkus.devtools.codestarts.DataKey;
+import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
 
 public final class QuarkusExtensionCodestartCatalog extends GenericCodestartCatalog<QuarkusExtensionCodestartProjectInput> {
 

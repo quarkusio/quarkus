@@ -5,12 +5,6 @@ import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getCodest
 import static io.quarkus.platform.descriptor.loader.json.ResourceLoaders.resolveFileResourceLoader;
 import static java.util.Objects.requireNonNull;
 
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.util.DependencyUtils;
-import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
-import io.quarkus.registry.catalog.Extension;
-import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.config.PropertiesUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,7 +14,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
 import org.eclipse.aether.artifact.Artifact;
+
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.util.DependencyUtils;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
+import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.config.PropertiesUtil;
 
 public final class CodestartResourceLoadersBuilder {
     private static final String BASE_CODESTARTS_ARTIFACT_PROPERTY = "quarkus-base-codestart-artifact";

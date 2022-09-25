@@ -5,15 +5,6 @@ import static io.quarkus.devtools.commands.handlers.CreateExtensionCommandHandle
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
-import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog;
-import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData;
-import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartProjectInput;
-import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartProjectInputBuilder;
-import io.quarkus.devtools.commands.data.QuarkusCommandException;
-import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
-import io.quarkus.devtools.commands.handlers.CreateExtensionCommandHandler;
-import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.maven.utilities.MojoUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,10 +14,22 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 import javax.lang.model.SourceVersion;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.model.Model;
+
+import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog;
+import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData;
+import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartProjectInput;
+import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartProjectInputBuilder;
+import io.quarkus.devtools.commands.data.QuarkusCommandException;
+import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.commands.handlers.CreateExtensionCommandHandler;
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.maven.utilities.MojoUtils;
 
 /**
  * Instances of this class are not thread-safe. They are created per invocation.

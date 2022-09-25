@@ -1,9 +1,10 @@
 package org.jboss.resteasy.reactive.client.spi;
 
-import io.smallrye.stork.api.ServiceInstance;
-import io.vertx.core.Context;
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.core.GenericType;
+
+import io.smallrye.stork.api.ServiceInstance;
+import io.vertx.core.Context;
 
 public interface ResteasyReactiveClientRequestContext extends ClientRequestContext {
 

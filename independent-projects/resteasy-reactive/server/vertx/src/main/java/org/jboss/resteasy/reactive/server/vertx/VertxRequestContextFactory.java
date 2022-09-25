@@ -1,12 +1,13 @@
 package org.jboss.resteasy.reactive.server.vertx;
 
-import io.vertx.ext.web.RoutingContext;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
+
+import io.vertx.ext.web.RoutingContext;
 
 public class VertxRequestContextFactory implements RequestContextFactory {
     @Override

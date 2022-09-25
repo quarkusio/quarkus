@@ -1,10 +1,12 @@
 package io.quarkus.registry.config;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.json.JsonBuilder;
-import java.util.Objects;
 
 /**
  * Asymmetric data manipulation:

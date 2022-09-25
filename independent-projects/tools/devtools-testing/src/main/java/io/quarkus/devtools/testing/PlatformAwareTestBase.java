@@ -2,13 +2,15 @@ package io.quarkus.devtools.testing;
 
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
 
+import java.util.List;
+import java.util.Properties;
+
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import java.util.List;
-import java.util.Properties;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class PlatformAwareTestBase {
 

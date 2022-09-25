@@ -1,14 +1,17 @@
 package org.jboss.resteasy.reactive.server.processor.generation.multipart;
 
-import io.quarkus.gizmo.ClassOutput;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.ws.rs.core.MediaType;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.server.core.multipart.MultipartMessageBodyWriter;
+
+import io.quarkus.gizmo.ClassOutput;
 
 public class GeneratedHandlerMultipartReturnTypeIndexerExtension
         implements EndpointIndexer.MultipartReturnTypeIndexerExtension {

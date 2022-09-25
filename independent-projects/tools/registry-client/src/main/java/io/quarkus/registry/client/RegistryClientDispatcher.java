@@ -1,11 +1,12 @@
 package io.quarkus.registry.client;
 
+import java.util.Objects;
+
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.PlatformCatalog;
 import io.quarkus.registry.config.RegistryConfig;
-import java.util.Objects;
 
 public class RegistryClientDispatcher implements RegistryClient {
 

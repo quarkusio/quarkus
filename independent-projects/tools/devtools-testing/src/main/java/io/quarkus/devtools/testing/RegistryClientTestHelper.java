@@ -1,13 +1,14 @@
 package io.quarkus.devtools.testing;
 
-import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.registry.config.RegistriesConfigLocator;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
+
+import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.config.RegistriesConfigLocator;
 
 public class RegistryClientTestHelper {
 

@@ -2,11 +2,13 @@ package org.jboss.resteasy.reactive.server.providers.serialisers.jsonp;
 
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Type;
+
 import javax.json.JsonObject;
 import javax.json.JsonStructure;
 import javax.json.JsonWriter;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
+
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonStructureHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonpUtil;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;

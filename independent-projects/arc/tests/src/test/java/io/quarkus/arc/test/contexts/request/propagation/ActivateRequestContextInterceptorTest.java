@@ -4,18 +4,12 @@ import static io.quarkus.arc.test.contexts.request.propagation.ActivateRequestCo
 import static io.quarkus.arc.test.contexts.request.propagation.ActivateRequestContextInterceptorTest.FakeSession.State.INIT;
 import static io.quarkus.arc.test.contexts.request.propagation.ActivateRequestContextInterceptorTest.FakeSession.State.OPENED;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.impl.ActivateRequestContextInterceptor;
-import io.quarkus.arc.test.ArcTestContainer;
-import io.quarkus.arc.test.contexts.request.propagation.ActivateRequestContextInterceptorTest.FakeSession.State;
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.control.ActivateRequestContext;
@@ -23,12 +17,21 @@ import javax.enterprise.inject.Disposes;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.impl.ActivateRequestContextInterceptor;
+import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.contexts.request.propagation.ActivateRequestContextInterceptorTest.FakeSession.State;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Test the {@link ActivateRequestContextInterceptor} when {@link ActivateRequestContext} is applied to a method.

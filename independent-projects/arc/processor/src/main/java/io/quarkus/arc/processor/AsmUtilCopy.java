@@ -2,6 +2,7 @@ package io.quarkus.arc.processor;
 
 import java.util.List;
 import java.util.function.Function;
+
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;

@@ -2,18 +2,21 @@ package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.vertx.core.Vertx;
-import io.vertx.ext.web.client.WebClient;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.vertx.core.Vertx;
+import io.vertx.ext.web.client.WebClient;
 
 public class MultipleAcceptHeadersTest {
 

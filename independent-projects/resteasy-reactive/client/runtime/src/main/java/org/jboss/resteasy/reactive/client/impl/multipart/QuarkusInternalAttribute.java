@@ -15,14 +15,15 @@
  */
 package org.jboss.resteasy.reactive.client.impl.multipart;
 
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.netty.util.AbstractReferenceCounted;
 import io.netty.util.internal.ObjectUtil;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A copy of Netty's InternalAttribute which is not public

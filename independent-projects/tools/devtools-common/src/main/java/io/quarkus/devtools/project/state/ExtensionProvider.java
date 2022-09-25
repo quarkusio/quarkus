@@ -1,12 +1,13 @@
 package io.quarkus.devtools.project.state;
 
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.registry.catalog.ExtensionOrigin;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 public class ExtensionProvider {
 

@@ -1,12 +1,14 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource;
 
 import java.util.List;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.UriInfo;
+
 import org.junit.jupiter.api.Assertions;
 
 @Path("UriInfoEncodedTemplateResource/{a}/{b}")

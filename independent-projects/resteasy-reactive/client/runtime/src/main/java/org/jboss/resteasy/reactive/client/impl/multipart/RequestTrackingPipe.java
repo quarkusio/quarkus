@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.client.impl.multipart;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -8,7 +10,6 @@ import io.vertx.core.VertxException;
 import io.vertx.core.streams.Pipe;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.WriteStream;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Based on {@link io.vertx.core.streams.impl.PipeImpl}.

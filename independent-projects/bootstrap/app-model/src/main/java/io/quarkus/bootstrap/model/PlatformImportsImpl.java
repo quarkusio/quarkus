@@ -1,8 +1,5 @@
 package io.quarkus.bootstrap.model;
 
-import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.maven.dependency.ArtifactCoords;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,6 +13,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 public class PlatformImportsImpl implements PlatformImports, Serializable {
 

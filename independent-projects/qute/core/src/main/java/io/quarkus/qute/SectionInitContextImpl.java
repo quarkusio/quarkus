@@ -1,9 +1,10 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 
 final class SectionInitContextImpl implements SectionInitContext {
 

@@ -1,13 +1,15 @@
 package org.jboss.resteasy.reactive.server.processor.generation.multipart;
 
-import io.quarkus.gizmo.Gizmo;
 import java.util.function.BiFunction;
+
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionContext;
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionTarget;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+
+import io.quarkus.gizmo.Gizmo;
 
 public class MultipartTransformer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 

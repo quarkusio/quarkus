@@ -1,8 +1,9 @@
 package io.quarkus.devtools.commands.handlers;
 
-import io.quarkus.registry.catalog.Extension;
 import java.util.Collection;
 import java.util.Objects;
+
+import io.quarkus.registry.catalog.Extension;
 
 /**
  * Thrown when multiple extensions are found for a given installation plan

@@ -4,6 +4,7 @@ import io.quarkus.redis.datasource.bitmap.TransactionalBitMapCommands;
 import io.quarkus.redis.datasource.geo.TransactionalGeoCommands;
 import io.quarkus.redis.datasource.hash.TransactionalHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.TransactionalHyperLogLogCommands;
+import io.quarkus.redis.datasource.json.TransactionalJsonCommands;
 import io.quarkus.redis.datasource.keys.TransactionalKeyCommands;
 import io.quarkus.redis.datasource.list.TransactionalListCommands;
 import io.quarkus.redis.datasource.set.TransactionalSetCommands;
@@ -266,6 +267,25 @@ public interface TransactionalRedisDataSource {
     default TransactionalBitMapCommands<String> bitmap() {
         return bitmap(String.class);
     }
+
+    /**
+     * Gets the object to manipulate JSON values.
+     * This group requires the <a href="https://redis.io/docs/stack/json/">RedisJSON module</a>.
+     *
+     * @return the object to manipulate JSON values.
+     */
+    default TransactionalJsonCommands<String> json() {
+        return json(String.class);
+    }
+
+    /**
+     * Gets the object to manipulate JSON values.
+     * This group requires the <a href="https://redis.io/docs/stack/json/">RedisJSON module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to manipulate JSON values.
+     */
+    <K> TransactionalJsonCommands<K> json(Class<K> redisKeyType);
 
     /**
      * Executes a command.

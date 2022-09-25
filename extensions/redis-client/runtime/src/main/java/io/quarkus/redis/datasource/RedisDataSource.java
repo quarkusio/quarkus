@@ -8,6 +8,7 @@ import io.quarkus.redis.datasource.bitmap.BitMapCommands;
 import io.quarkus.redis.datasource.geo.GeoCommands;
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.datasource.hyperloglog.HyperLogLogCommands;
+import io.quarkus.redis.datasource.json.JsonCommands;
 import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.pubsub.PubSubCommands;
@@ -368,6 +369,25 @@ public interface RedisDataSource {
     default BitMapCommands<String> bitmap() {
         return bitmap(String.class);
     }
+
+    /**
+     * Gets the object to manipulate JSON values.
+     * This group requires the <a href="https://redis.io/docs/stack/json/">RedisJSON module</a>.
+     *
+     * @return the object to manipulate JSON values.
+     */
+    default JsonCommands<String> json() {
+        return json(String.class);
+    }
+
+    /**
+     * Gets the object to manipulate JSON values.
+     * This group requires the <a href="https://redis.io/docs/stack/json/">RedisJSON module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to manipulate JSON values.
+     */
+    <K> JsonCommands<K> json(Class<K> redisKeyType);
 
     /**
      * Gets the objects to publish and receive messages.

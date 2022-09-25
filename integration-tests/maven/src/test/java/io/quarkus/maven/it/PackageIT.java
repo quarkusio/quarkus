@@ -52,6 +52,14 @@ public class PackageIT extends MojoTestBase {
     }
 
     @Test
+    public void testExtensionTestWithNoMain() throws Exception {
+        testDir = initProject("projects/extension-test-with-no-main");
+        running = new RunningInvoker(testDir, false);
+        final MavenProcessInvocationResult result = running.execute(List.of("verify"), Map.of());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+    }
+
+    @Test
     public void testUberJarMavenPluginConfiguration()
             throws MavenInvocationException, IOException, InterruptedException {
         testDir = initProject("projects/uberjar-maven-plugin-config");

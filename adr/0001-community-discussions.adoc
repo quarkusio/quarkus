@@ -41,7 +41,7 @@ User looking for a job involving Quarkus - where do he go look ?
 Not proposed since it is just another waterhose of info with no good ability to ignore/consume as needed/wanted.
 
 === enable discussions on github.com/quarkusio/quarkus-insights
-Considered as quarkus insights is an existing "community" and let us have separate permissons for moderators/triage but some suggested it might be hard to find.
+Considered as quarkus insights is an existing "community" and let us have separate permissions for moderators/triage but some suggested it might be hard to find.
 
 === enable discussions on github.com/quarkusio/community
 Downside is that labels etc. would need to be kept in sync and that searches in github.com/quarkusio would not show up community/discussions.

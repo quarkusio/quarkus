@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import javax.enterprise.inject.Alternative;
@@ -59,20 +60,21 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
         final PathList.Builder rootBuilder = PathList.builder();
 
+        Consumer<Path> addToBuilderIfConditionMet = path -> {
+            if (path != null && Files.exists(path) && !rootBuilder.contains(path)) {
+                rootBuilder.add(path);
+            }
+        };
+
         if (!appClassLocation.equals(testClassLocation)) {
-            rootBuilder.add(testClassLocation);
+            addToBuilderIfConditionMet.accept(testClassLocation);
             // if test classes is a dir, we should also check whether test resources dir exists as a separate dir (gradle)
             // TODO: this whole app/test path resolution logic is pretty dumb, it needs be re-worked using proper workspace discovery
             final Path testResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(testClassLocation, "test");
-            if (testResourcesLocation != null) {
-                rootBuilder.add(testResourcesLocation);
-            }
+            addToBuilderIfConditionMet.accept(testResourcesLocation);
         }
 
         originalCl = Thread.currentThread().getContextClassLoader();
-        Map<String, String> sysPropRestore = new HashMap<>();
-        sysPropRestore.put(ProfileManager.QUARKUS_TEST_PROFILE_PROP,
-                System.getProperty(ProfileManager.QUARKUS_TEST_PROFILE_PROP));
 
         // clear the test.url system property as the value leaks into the run when using different profiles
         System.clearProperty("test.url");
@@ -99,17 +101,15 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
                 additional.put(ProfileManager.QUARKUS_TEST_PROFILE_PROP, profileInstance.getConfigProfile());
             }
             //we just use system properties for now
-            //its a lot simpler
+            //it's a lot simpler
             shutdownTasks.add(RestorableSystemProperties.setProperties(additional)::close);
         }
 
         final Path projectRoot = Paths.get("").normalize().toAbsolutePath();
 
-        rootBuilder.add(appClassLocation);
+        addToBuilderIfConditionMet.accept(appClassLocation);
         final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");
-        if (appResourcesLocation != null) {
-            rootBuilder.add(appResourcesLocation);
-        }
+        addToBuilderIfConditionMet.accept(appResourcesLocation);
 
         // If gradle project running directly with IDE
         if (System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL) == null) {
@@ -120,18 +120,14 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
                     for (SourceDir src : artifactSrc.getSourceDirs()) {
                         if (Files.exists(src.getOutputDir())) {
                             final Path classesDir = src.getOutputDir();
-                            if (!rootBuilder.contains(classesDir)) {
-                                rootBuilder.add(classesDir);
-                            }
+                            addToBuilderIfConditionMet.accept(classesDir);
                         }
                     }
                 }
                 for (SourceDir src : model.getApplicationModule().getMainSources().getSourceDirs()) {
                     if (Files.exists(src.getOutputDir())) {
                         final Path classesDir = src.getOutputDir();
-                        if (!rootBuilder.contains(classesDir)) {
-                            rootBuilder.add(classesDir);
-                        }
+                        addToBuilderIfConditionMet.accept(classesDir);
                     }
                 }
             }
@@ -139,9 +135,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             final String[] sourceDirectories = System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR).split(",");
             for (String sourceDirectory : sourceDirectories) {
                 final Path directory = Paths.get(sourceDirectory);
-                if (Files.exists(directory) && !rootBuilder.contains(directory)) {
-                    rootBuilder.add(directory);
-                }
+                addToBuilderIfConditionMet.accept(directory);
             }
         }
         CuratedApplication curatedApplication;

@@ -201,7 +201,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     @Parameter(required = false, defaultValue = "${skipExtensionValidation}")
     private boolean skipExtensionValidation;
 
-    @Parameter(required = false, defaultValue = "${ignoreNotDetectedQuarkusCoreVersion")
+    @Parameter(required = false, defaultValue = "${ignoreNotDetectedQuarkusCoreVersion}")
     boolean ignoreNotDetectedQuarkusCoreVersion;
 
     @Parameter

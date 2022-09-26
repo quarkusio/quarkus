@@ -58,6 +58,10 @@ import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.infinispan.client.runtime.InfinispanClientBuildTimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanClientProducer;
 import io.quarkus.infinispan.client.runtime.InfinispanRecorder;
+import io.quarkus.infinispan.client.runtime.cache.CacheInvalidateAllInterceptor;
+import io.quarkus.infinispan.client.runtime.cache.CacheInvalidateInterceptor;
+import io.quarkus.infinispan.client.runtime.cache.CacheResultInterceptor;
+import io.quarkus.infinispan.client.runtime.cache.SynchronousInfinispanGet;
 import io.quarkus.infinispan.client.runtime.graal.DisableLoggingFeature;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
@@ -93,6 +97,10 @@ class InfinispanClientProcessor {
 
         feature.produce(new FeatureBuildItem(Feature.INFINISPAN_CLIENT));
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(InfinispanClientProducer.class));
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(CacheInvalidateAllInterceptor.class));
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(CacheResultInterceptor.class));
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(CacheInvalidateInterceptor.class));
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(SynchronousInfinispanGet.class));
         systemProperties.produce(new SystemPropertyBuildItem("io.netty.noUnsafe", "true"));
         hotDeployment.produce(new HotDeploymentWatchedFileBuildItem(META_INF + File.separator + HOTROD_CLIENT_PROPERTIES));
 

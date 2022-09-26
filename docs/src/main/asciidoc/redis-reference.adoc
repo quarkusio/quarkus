@@ -714,7 +714,7 @@ public static class MyExampleCustomizer implements RedisOptionsCustomizer {
 
 === Dev Services
 
-See link:redis-dev-services.adoc[Redis Dev Service].
+See xref:redis-dev-services.adoc[Redis Dev Service].
 
 [[redis-configuration-reference]]
 == Configuration Reference

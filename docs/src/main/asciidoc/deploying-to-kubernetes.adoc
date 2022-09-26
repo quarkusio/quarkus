@@ -1052,7 +1052,7 @@ kubectl port-forward svc/<application name> 5005:5005
 
 Using this command, you'll forward the traffic from the "localhost:5005" to the kubernetes service running the java agent using the port "5005" which is the one that the java agent uses by default for remote debugging. You can also configure another java agent port using the property `quarkus.kubernetes.remote-debug.address-port`.
 
-Finally, all you need to do is to configure your favorite IDE to attach the java agent process that is forwarded to `localhost:5005` and start to debug your application. For example, in IntelliJ IDEA, you can follow https://www.jetbrains.com/help/idea/tutorial-remote-debug.html:[this tutorial] to debug remote applications.
+Finally, all you need to do is to configure your favorite IDE to attach the java agent process that is forwarded to `localhost:5005` and start to debug your application. For example, in IntelliJ IDEA, you can follow https://www.jetbrains.com/help/idea/tutorial-remote-debug.html[this tutorial] to debug remote applications.
 
 == Using existing resources
 

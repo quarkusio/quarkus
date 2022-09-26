@@ -65,11 +65,6 @@ public abstract class ResteasyReactiveRequestContext
     private RuntimeResource target;
 
     /**
-     * info about path params and other data about previously matched sub resource locators
-     */
-    private PreviousResource previousResource;
-
-    /**
      * The parameter values extracted from the path.
      * <p>
      * This is not a map, for two reasons. One is raw performance, as an array causes
@@ -179,7 +174,8 @@ public abstract class ResteasyReactiveRequestContext
         position = 0;
         parameters = target.getParameterTypes().length == 0 ? EMPTY_ARRAY : new Object[target.getParameterTypes().length];
         if (setLocatorTarget) {
-            previousResource = new PreviousResource(this.target, pathParamValues, previousResource);
+            setProperty(PreviousResource.PROPERTY_KEY, new PreviousResource(this.target, pathParamValues,
+                    (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY)));
         }
         this.target = target;
     }
@@ -969,7 +965,7 @@ public abstract class ResteasyReactiveRequestContext
     public abstract Runnable registerTimer(long millis, Runnable task);
 
     public String getResourceLocatorPathParam(String name) {
-        return getResourceLocatorPathParam(name, previousResource);
+        return getResourceLocatorPathParam(name, (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY));
     }
 
     public FormData getFormData() {
@@ -1026,6 +1022,9 @@ public abstract class ResteasyReactiveRequestContext
     public abstract boolean resumeExternalProcessing();
 
     static class PreviousResource {
+
+        private static final String PROPERTY_KEY = AbstractResteasyReactiveContext.CUSTOM_RR_PROPERTIES_PREFIX
+                + "PreviousResource";
 
         public PreviousResource(RuntimeResource locatorTarget, Object locatorPathParamValues, PreviousResource prev) {
             this.locatorTarget = locatorTarget;

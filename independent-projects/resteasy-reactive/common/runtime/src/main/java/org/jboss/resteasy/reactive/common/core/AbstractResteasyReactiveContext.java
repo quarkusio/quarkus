@@ -4,9 +4,11 @@ import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 import javax.ws.rs.container.CompletionCallback;
@@ -29,6 +31,8 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     private boolean running = false;
     private volatile Executor executor; // ephemerally set by handlers to signal that we resume, it needs to be on this executor
     private volatile Executor lastExecutor; // contains the last executor which was provided during resume - needed to submit there if suspended again
+    // This is used to store properties used in the various JAX-RS context objects, but it also stores some of the properties of this
+    // object that are very infrequently accessed. This is done in order to cut down the size of this object in order to take advantage of better caching
     private Map<String, Object> properties;
     private final ThreadSetupAction requestContext;
     private ThreadSetupAction.ThreadState currentRequestScope;
@@ -335,6 +339,8 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
 
     protected abstract void handleUnrecoverableError(Throwable throwable);
 
+    protected static final String CUSTOM_RR_PROPERTIES_PREFIX = "$RR$";
+
     public Object getProperty(String name) {
         if (properties == null) {
             return null;
@@ -346,7 +352,14 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         if (properties == null) {
             return Collections.emptyList();
         }
-        return Collections.unmodifiableSet(properties.keySet());
+        Set<String> result = new HashSet<>();
+        for (String key : properties.keySet()) {
+            if (key.startsWith(CUSTOM_RR_PROPERTIES_PREFIX)) {
+                continue;
+            }
+            result.add(key);
+        }
+        return Collections.unmodifiableSet(result);
     }
 
     public void setProperty(String name, Object object) {
@@ -355,7 +368,11 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
             return;
         }
         if (properties == null) {
-            properties = new HashMap<>();
+            synchronized (this) {
+                if (properties == null) {
+                    properties = new ConcurrentHashMap<>();
+                }
+            }
         }
         properties.put(name, object);
     }

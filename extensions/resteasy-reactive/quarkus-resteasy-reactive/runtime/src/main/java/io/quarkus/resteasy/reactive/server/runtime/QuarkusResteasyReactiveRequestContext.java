@@ -3,7 +3,6 @@ package io.quarkus.resteasy.reactive.server.runtime;
 import javax.ws.rs.core.SecurityContext;
 
 import org.jboss.resteasy.reactive.server.core.Deployment;
-import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.vertx.VertxResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
@@ -20,11 +19,11 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
     final CurrentIdentityAssociation association;
     boolean userSetup = false;
 
-    public QuarkusResteasyReactiveRequestContext(Deployment deployment, ProvidersImpl providers,
+    public QuarkusResteasyReactiveRequestContext(Deployment deployment,
             RoutingContext context, ThreadSetupAction requestContext, ServerRestHandler[] handlerChain,
             ServerRestHandler[] abortHandlerChain, ClassLoader devModeTccl,
             CurrentIdentityAssociation currentIdentityAssociation) {
-        super(deployment, providers, context, requestContext, handlerChain, abortHandlerChain, devModeTccl);
+        super(deployment, context, requestContext, handlerChain, abortHandlerChain, devModeTccl);
         this.association = currentIdentityAssociation;
         if (VertxContext.isOnDuplicatedContext()) {
             VertxContextSafetyToggle.setCurrentContextSafe(true);

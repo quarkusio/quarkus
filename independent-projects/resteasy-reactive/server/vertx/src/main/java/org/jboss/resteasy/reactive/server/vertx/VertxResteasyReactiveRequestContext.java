@@ -20,7 +20,6 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.multipart.FormData;
-import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
@@ -53,11 +52,11 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     protected Consumer<ResteasyReactiveRequestContext> preCommitTask;
     ContinueState continueState = ContinueState.NONE;
 
-    public VertxResteasyReactiveRequestContext(Deployment deployment, ProvidersImpl providers,
+    public VertxResteasyReactiveRequestContext(Deployment deployment,
             RoutingContext context,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain,
             ClassLoader devModeTccl) {
-        super(deployment, providers, requestContext, handlerChain, abortHandlerChain);
+        super(deployment, requestContext, handlerChain, abortHandlerChain);
         this.context = context;
         this.request = context.request();
         this.response = context.response();

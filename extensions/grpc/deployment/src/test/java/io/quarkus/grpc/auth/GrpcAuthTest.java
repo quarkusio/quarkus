@@ -68,7 +68,7 @@ public class GrpcAuthTest {
         client.unaryCall(Security.Container.newBuilder().setText("woo-hoo").build())
                 .subscribe().with(e -> resultCount.incrementAndGet());
 
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(10, TimeUnit.SECONDS)
                 .until(() -> resultCount.get() == 1);
     }
 
@@ -82,7 +82,7 @@ public class GrpcAuthTest {
                 .supplier(() -> (Security.Container.newBuilder().setText("woo-hoo").build())).atMost(4))
                 .subscribe().with(e -> results.add(e.getIsOnEventLoop()));
 
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(10, TimeUnit.SECONDS)
                 .until(() -> results.size() == 5);
 
         assertThat(results.stream().filter(e -> !e)).isEmpty();
@@ -101,7 +101,7 @@ public class GrpcAuthTest {
                 .onFailure().invoke(error::set)
                 .subscribe().with(e -> resultCount.incrementAndGet());
 
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(10, TimeUnit.SECONDS)
                 .until(() -> error.get() != null);
     }
 
@@ -118,7 +118,7 @@ public class GrpcAuthTest {
                 .onFailure().invoke(error::set)
                 .subscribe().with(e -> resultCount.incrementAndGet());
 
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(10, TimeUnit.SECONDS)
                 .until(() -> error.get() != null);
     }
 

@@ -190,7 +190,7 @@ public class VertxInputStream extends InputStream {
                             synchronized (connection) {
                                 eof = true;
                                 if (waiting) {
-                                    connection.notify();
+                                    connection.notifyAll();
                                 }
                             }
                         }
@@ -212,7 +212,7 @@ public class VertxInputStream extends InputStream {
                                     }
                                 }
                                 if (waiting) {
-                                    connection.notify();
+                                    connection.notifyAll();
                                 }
                             }
                         }

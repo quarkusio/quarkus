@@ -1209,9 +1209,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         } else if (multiPartFormParam != null) {
             builder.setType(ParameterType.MULTI_PART_FORM);
         } else if (suspendedAnnotation != null) {
-            // no name required
-            builder.setType(ParameterType.ASYNC_RESPONSE);
-            builder.setSuspended(true);
+            throw new RuntimeException(
+                    "@Suspend is not supported. Please use Mutiny return types in order to implement async functionality."
+                            + errorLocation);
         } else {
             // auto context parameters
             if (!field
@@ -1331,15 +1331,16 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             addReaderForType(additionalReaders, paramType);
 
             if (type != ParameterType.CONTEXT && type != ParameterType.BEAN && type != ParameterType.BODY
-                    && type != ParameterType.ASYNC_RESPONSE && type != ParameterType.MULTI_PART_FORM) {
+                    && type != ParameterType.MULTI_PART_FORM) {
                 handleOtherParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
             }
             if (type == ParameterType.CONTEXT && elementType.equals(SseEventSink.class.getName())) {
                 builder.setSse(true);
             }
         }
-        if (suspendedAnnotation != null && !elementType.equals(AsyncResponse.class.getName())) {
-            throw new RuntimeException("Can only inject AsyncResponse on methods marked @Suspended");
+        if (elementType.equals(AsyncResponse.class.getName())) {
+            throw new RuntimeException(
+                    "AsyncResponse is not supported. Please use Mutiny return types in order to implement async functionality.");
         }
         builder.setElementType(elementType);
         return builder;

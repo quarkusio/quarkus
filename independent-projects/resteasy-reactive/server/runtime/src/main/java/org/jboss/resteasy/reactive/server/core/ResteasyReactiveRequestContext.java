@@ -34,7 +34,6 @@ import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
 import org.jboss.resteasy.reactive.server.core.multipart.FormData;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionContext;
-import org.jboss.resteasy.reactive.server.jaxrs.AsyncResponseImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.ContainerRequestContextImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.ContainerResponseContextImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.HttpHeadersImpl;
@@ -134,7 +133,6 @@ public abstract class ResteasyReactiveRequestContext
      */
     private List<UriMatch> matchedURIs;
 
-    private AsyncResponseImpl asyncResponse;
     private SseEventSinkImpl sseEventSink;
     private List<PathSegment> pathSegments;
     private ReaderInterceptor[] readerInterceptors;
@@ -594,18 +592,6 @@ public abstract class ResteasyReactiveRequestContext
 
     public ResteasyReactiveRequestContext setGenericReturnType(Type genericReturnType) {
         this.genericReturnType = genericReturnType;
-        return this;
-    }
-
-    public AsyncResponseImpl getAsyncResponse() {
-        return asyncResponse;
-    }
-
-    public ResteasyReactiveRequestContext setAsyncResponse(AsyncResponseImpl asyncResponse) {
-        if (this.asyncResponse != null) {
-            throw new RuntimeException("Async can only be started once");
-        }
-        this.asyncResponse = asyncResponse;
         return this;
     }
 

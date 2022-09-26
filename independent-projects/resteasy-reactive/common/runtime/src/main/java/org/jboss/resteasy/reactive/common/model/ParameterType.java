@@ -10,7 +10,6 @@ public enum ParameterType {
     BODY,
     MATRIX,
     CONTEXT,
-    ASYNC_RESPONSE,
     COOKIE,
     BEAN,
     CUSTOM

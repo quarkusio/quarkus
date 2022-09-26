@@ -2,7 +2,6 @@ package org.jboss.resteasy.reactive.server.core.parameters;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
-import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.ResourceContext;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Application;
@@ -17,7 +16,6 @@ import javax.ws.rs.sse.SseEventSink;
 
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.jaxrs.AsyncResponseImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.ResourceContextImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.SseEventSinkImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.SseImpl;
@@ -54,11 +52,6 @@ public class ContextParamExtractor implements ParameterExtractor {
         }
         if (type.equals(Configuration.class)) {
             return context.getDeployment().getConfiguration();
-        }
-        if (type.equals(AsyncResponse.class)) {
-            AsyncResponseImpl response = new AsyncResponseImpl(context);
-            context.setAsyncResponse(response);
-            return response;
         }
         if (type.equals(SseEventSink.class)) {
             SseEventSinkImpl sink = new SseEventSinkImpl(context);

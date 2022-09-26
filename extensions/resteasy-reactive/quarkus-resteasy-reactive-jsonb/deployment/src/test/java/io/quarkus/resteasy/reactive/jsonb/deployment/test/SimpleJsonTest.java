@@ -171,12 +171,6 @@ public class SimpleJsonTest {
     }
 
     @Test
-    public void testAsyncJson() {
-        RestAssured.get("/simple/async-person")
-                .then().body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));
-    }
-
-    @Test
     public void testJsonMulti() {
         RestAssured
                 .with()

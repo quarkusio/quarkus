@@ -13,15 +13,12 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
 import javax.xml.bind.JAXB;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -117,14 +114,6 @@ public class SimpleXmlTest {
                 .then()
                 .statusCode(400)
                 .contentType("application/xml");
-    }
-
-    @Test
-    public void testAsyncXml() {
-        RestAssured.get("/simple/async-person")
-                .then()
-                .body("person.first", Matchers.equalTo("Bob"))
-                .body("person.last", Matchers.equalTo("Builder"));
     }
 
     @Test
@@ -259,21 +248,6 @@ public class SimpleXmlTest {
         public Person getInvalidPersonResult(@Valid Person person) {
             person.setLast(null);
             return person;
-        }
-
-        @GET
-        @Path("/async-person")
-        @Produces(MediaType.APPLICATION_XML)
-        public void getPerson(@Suspended AsyncResponse response) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    Person person = new Person();
-                    person.setFirst("Bob");
-                    person.setLast("Builder");
-                    response.resume(person);
-                }
-            }).start();
         }
 
         @GET

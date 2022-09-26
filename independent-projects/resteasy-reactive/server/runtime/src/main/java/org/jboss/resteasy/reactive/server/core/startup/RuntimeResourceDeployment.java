@@ -41,7 +41,6 @@ import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.common.util.types.TypeSignatureParser;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
-import org.jboss.resteasy.reactive.server.core.parameters.AsyncResponseExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.BodyParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.ContextParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.CookieParamExtractor;
@@ -643,8 +642,6 @@ public class RuntimeResourceDeployment {
                 return extractor;
             case CONTEXT:
                 return new ContextParamExtractor(javaType);
-            case ASYNC_RESPONSE:
-                return new AsyncResponseExtractor();
             case QUERY:
                 extractor = new QueryParamExtractor(name, single, encoded);
                 return extractor;

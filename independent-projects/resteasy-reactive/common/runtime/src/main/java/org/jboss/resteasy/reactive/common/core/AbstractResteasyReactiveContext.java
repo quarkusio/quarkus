@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 import javax.ws.rs.container.CompletionCallback;
-import javax.ws.rs.container.ConnectionCallback;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.PreserveTargetException;
@@ -33,7 +32,6 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     private final ThreadSetupAction requestContext;
     private ThreadSetupAction.ThreadState currentRequestScope;
     private List<CompletionCallback> completionCallbacks;
-    private List<ConnectionCallback> connectionCallbacks;
     private boolean abortHandlerChainStarted;
 
     private boolean closed = false;
@@ -380,13 +378,6 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         if (completionCallbacks == null)
             completionCallbacks = new ArrayList<>();
         completionCallbacks.add(callback);
-    }
-
-    @Override
-    public synchronized void registerConnectionCallback(ConnectionCallback callback) {
-        if (connectionCallbacks == null)
-            connectionCallbacks = new ArrayList<>();
-        connectionCallbacks.add(callback);
     }
 
     public void setAbortHandlerChainStarted(boolean value) {

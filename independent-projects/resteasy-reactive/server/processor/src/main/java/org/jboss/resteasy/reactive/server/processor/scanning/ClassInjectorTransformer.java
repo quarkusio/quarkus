@@ -159,7 +159,6 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                                 INJECT_METHOD_NAME,
                                 INJECT_METHOD_DESCRIPTOR, true);
                         break;
-                    case ASYNC_RESPONSE:
                     case BODY:
                         // spec says not supported
                         break;

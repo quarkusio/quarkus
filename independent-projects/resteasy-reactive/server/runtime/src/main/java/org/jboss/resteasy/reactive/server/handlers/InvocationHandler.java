@@ -18,24 +18,13 @@ public class InvocationHandler implements ServerRestHandler {
             //but we still follow through with the handler chain
             return;
         }
-        //suspend processing
-        //need to do it here to avoid a race
-        boolean async = requestContext.getAsyncResponse() != null;
-        if (async) {
-            requestContext.suspend();
-        }
         requestContext.requireCDIRequestScope();
         try {
             Object result = invoker.invoke(requestContext.getEndpointInstance(), requestContext.getParameters());
-            if (!async) {
-                requestContext.setResult(result);
-            }
+            requestContext.setResult(result);
         } catch (Throwable t) {
             // passing true since the target doesn't change and we want response filters to be able to know what the resource method was
             requestContext.handleException(t, true);
-            if (async) {
-                requestContext.resume();
-            }
         }
     }
 }

@@ -179,12 +179,6 @@ public class SimpleJsonTest {
                 .contentType("application/json");
     }
 
-    @Test
-    public void testAsyncJson() {
-        RestAssured.get("/simple/async-person")
-                .then().body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));
-    }
-
     // when there is no view defined, Jackson will serialize all fields
     @Test
     public void testUserWithoutView() {

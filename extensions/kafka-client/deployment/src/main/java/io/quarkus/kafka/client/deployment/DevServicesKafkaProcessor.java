@@ -246,7 +246,7 @@ public class DevServicesKafkaProcessor {
                         KAFKA_BOOTSTRAP_SERVERS, container.getBootstrapServers());
             } else {
                 RedPandaKafkaContainer container = new RedPandaKafkaContainer(
-                        DockerImageName.parse(config.imageName),
+                        DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("vectorized/redpanda"),
                         config.fixedExposedPort,
                         launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
                         useSharedNetwork, config.redpanda);

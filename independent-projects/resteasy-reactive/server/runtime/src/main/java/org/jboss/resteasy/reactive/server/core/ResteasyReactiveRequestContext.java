@@ -57,7 +57,6 @@ public abstract class ResteasyReactiveRequestContext
 
     public static final Object[] EMPTY_ARRAY = new Object[0];
     protected final Deployment deployment;
-    protected final ProvidersImpl providers;
     /**
      * The parameters array, populated by handlers
      */
@@ -145,11 +144,10 @@ public abstract class ResteasyReactiveRequestContext
     private OutputStream underlyingOutputStream;
     private FormData formData;
 
-    public ResteasyReactiveRequestContext(Deployment deployment, ProvidersImpl providers,
+    public ResteasyReactiveRequestContext(Deployment deployment,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
         super(handlerChain, abortHandlerChain, requestContext);
         this.deployment = deployment;
-        this.providers = providers;
         this.parameters = EMPTY_ARRAY;
     }
 
@@ -162,7 +160,9 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     public ProvidersImpl getProviders() {
-        return providers;
+        // this is rarely called (basically only of '@Context Providers' is used),
+        // so let's avoid creating an extra field
+        return new ProvidersImpl(deployment);
     }
 
     /**

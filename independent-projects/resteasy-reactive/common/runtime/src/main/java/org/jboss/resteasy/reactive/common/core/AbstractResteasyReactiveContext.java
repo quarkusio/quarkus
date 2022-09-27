@@ -37,7 +37,6 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     private final ThreadSetupAction requestContext;
     private ThreadSetupAction.ThreadState currentRequestScope;
     private List<CompletionCallback> completionCallbacks;
-    private List<ConnectionCallback> connectionCallbacks;
     private boolean abortHandlerChainStarted;
 
     private boolean closed = false;
@@ -399,10 +398,15 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         completionCallbacks.add(callback);
     }
 
+    private static final String CONNECTION_CALLBACK_PROPERTY_KEY = CUSTOM_RR_PROPERTIES_PREFIX + "CONNECTION_CALLBACK";
+
     @Override
     public synchronized void registerConnectionCallback(ConnectionCallback callback) {
-        if (connectionCallbacks == null)
+        List<ConnectionCallback> connectionCallbacks = (List<ConnectionCallback>) getProperty(CONNECTION_CALLBACK_PROPERTY_KEY);
+        if (connectionCallbacks == null) {
             connectionCallbacks = new ArrayList<>();
+            setProperty(CONNECTION_CALLBACK_PROPERTY_KEY, connectionCallbacks);
+        }
         connectionCallbacks.add(callback);
     }
 

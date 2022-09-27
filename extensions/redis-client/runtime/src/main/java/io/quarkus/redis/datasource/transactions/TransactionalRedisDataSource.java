@@ -1,6 +1,7 @@
 package io.quarkus.redis.datasource.transactions;
 
 import io.quarkus.redis.datasource.bitmap.TransactionalBitMapCommands;
+import io.quarkus.redis.datasource.bloom.TransactionalBloomCommands;
 import io.quarkus.redis.datasource.geo.TransactionalGeoCommands;
 import io.quarkus.redis.datasource.hash.TransactionalHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.TransactionalHyperLogLogCommands;
@@ -286,6 +287,30 @@ public interface TransactionalRedisDataSource {
      * @return the object to manipulate JSON values.
      */
     <K> TransactionalJsonCommands<K> json(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to manipulate Bloom filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a>.
+     *
+     * @param valueType the type of value to store in the filters
+     * @param <V> the type of value
+     * @return the object to manipulate Bloom filters
+     */
+    default <V> TransactionalBloomCommands<String, V> bloom(Class<V> valueType) {
+        return bloom(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to manipulate Bloom filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a>.
+     *
+     * @param redisKeyType the type of the key
+     * @param valueType the type of value to store in the filters
+     * @param <K> the type of key
+     * @param <V> the type of value
+     * @return the object to manipulate Bloom filters
+     */
+    <K, V> TransactionalBloomCommands<K, V> bloom(Class<K> redisKeyType, Class<V> valueType);
 
     /**
      * Executes a command.

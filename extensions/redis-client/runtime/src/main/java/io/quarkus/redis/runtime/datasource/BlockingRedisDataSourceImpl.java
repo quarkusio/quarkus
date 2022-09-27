@@ -10,6 +10,7 @@ import java.util.function.Function;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.bitmap.BitMapCommands;
+import io.quarkus.redis.datasource.bloom.BloomCommands;
 import io.quarkus.redis.datasource.geo.GeoCommands;
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.datasource.hyperloglog.HyperLogLogCommands;
@@ -225,6 +226,11 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     @Override
     public <K> JsonCommands<K> json(Class<K> redisKeyType) {
         return new BlockingJsonCommandsImpl<>(this, reactive.json(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K, V> BloomCommands<K, V> bloom(Class<K> redisKeyType, Class<V> valueType) {
+        return new BlockingBloomCommandsImpl<>(this, reactive.bloom(redisKeyType, valueType), timeout);
     }
 
     @Override

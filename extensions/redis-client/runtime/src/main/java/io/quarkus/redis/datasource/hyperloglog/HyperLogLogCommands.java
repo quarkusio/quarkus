@@ -21,7 +21,7 @@ public interface HyperLogLogCommands<K, V> extends RedisCommands {
      *
      * @param key the key
      * @param values the values
-     * @return {@code true} at least 1 HyperLogLog internal register was altered. 0 otherwise.
+     * @return {@code true} at least 1 HyperLogLog internal register was altered. {@code false} otherwise.
      **/
     boolean pfadd(K key, V... values);
 

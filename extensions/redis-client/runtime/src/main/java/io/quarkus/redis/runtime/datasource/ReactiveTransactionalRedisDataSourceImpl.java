@@ -6,6 +6,7 @@ import java.util.Arrays;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.bitmap.ReactiveTransactionalBitMapCommands;
+import io.quarkus.redis.datasource.bloom.ReactiveTransactionalBloomCommands;
 import io.quarkus.redis.datasource.geo.ReactiveTransactionalGeoCommands;
 import io.quarkus.redis.datasource.hash.ReactiveTransactionalHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveTransactionalHyperLogLogCommands;
@@ -102,6 +103,12 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
     public <K> ReactiveTransactionalJsonCommands<K> json(Class<K> redisKeyType) {
         return new ReactiveTransactionalJsonCommandsImpl<>(this,
                 (ReactiveJsonCommandsImpl<K>) this.reactive.json(redisKeyType), tx);
+    }
+
+    @Override
+    public <K, V> ReactiveTransactionalBloomCommands<K, V> bloom(Class<K> redisKeyType, Class<V> valueType) {
+        return new ReactiveTransactionalBloomCommandsImpl<>(this,
+                (ReactiveBloomCommandsImpl<K, V>) this.reactive.bloom(redisKeyType), tx);
     }
 
     @Override

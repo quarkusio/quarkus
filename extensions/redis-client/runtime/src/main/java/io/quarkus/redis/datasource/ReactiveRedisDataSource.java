@@ -4,6 +4,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
+import io.quarkus.redis.datasource.bloom.ReactiveBloomCommands;
 import io.quarkus.redis.datasource.geo.ReactiveGeoCommands;
 import io.quarkus.redis.datasource.hash.ReactiveHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveHyperLogLogCommands;
@@ -399,6 +400,27 @@ public interface ReactiveRedisDataSource {
      * @return the object to manipulate JSON values.
      */
     <K> ReactiveJsonCommands<K> json(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to manipulate Bloom filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a>.
+     *
+     * @param <V> the type of the values added into the Bloom filter
+     * @return the object to manipulate bloom values.
+     */
+    default <V> ReactiveBloomCommands<String, V> bloom(Class<V> valueType) {
+        return bloom(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to manipulate Bloom filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a>.
+     *
+     * @param <K> the type of keys
+     * @param <V> the type of the values added into the Bloom filter
+     * @return the object to manipulate bloom values.
+     */
+    <K, V> ReactiveBloomCommands<K, V> bloom(Class<K> redisKeyType, Class<V> valueType);
 
     /**
      * Executes a command.

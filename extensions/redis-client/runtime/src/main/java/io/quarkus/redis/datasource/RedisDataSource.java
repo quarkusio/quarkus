@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import io.quarkus.redis.datasource.bitmap.BitMapCommands;
+import io.quarkus.redis.datasource.bloom.BloomCommands;
 import io.quarkus.redis.datasource.geo.GeoCommands;
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.datasource.hyperloglog.HyperLogLogCommands;
@@ -388,6 +389,27 @@ public interface RedisDataSource {
      * @return the object to manipulate JSON values.
      */
     <K> JsonCommands<K> json(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to manipulate Bloom filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a>.
+     *
+     * @param <V> the type of the values added into the Bloom filter
+     * @return the object to manipulate bloom values.
+     */
+    default <V> BloomCommands<String, V> bloom(Class<V> valueType) {
+        return bloom(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to manipulate Bloom filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a>.
+     *
+     * @param <K> the type of keys
+     * @param <V> the type of the values added into the Bloom filter
+     * @return the object to manipulate bloom values.
+     */
+    <K, V> BloomCommands<K, V> bloom(Class<K> redisKeyType, Class<V> valueType);
 
     /**
      * Gets the objects to publish and receive messages.

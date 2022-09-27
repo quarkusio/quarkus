@@ -3,6 +3,7 @@ package io.quarkus.redis.runtime.datasource;
 import java.time.Duration;
 
 import io.quarkus.redis.datasource.bitmap.TransactionalBitMapCommands;
+import io.quarkus.redis.datasource.bloom.TransactionalBloomCommands;
 import io.quarkus.redis.datasource.geo.TransactionalGeoCommands;
 import io.quarkus.redis.datasource.hash.TransactionalHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.TransactionalHyperLogLogCommands;
@@ -93,6 +94,11 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
     @Override
     public <K> TransactionalJsonCommands<K> json(Class<K> redisKeyType) {
         return new BlockingTransactionalJsonCommandsImpl<>(this, reactive.json(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K, V> TransactionalBloomCommands<K, V> bloom(Class<K> redisKeyType, Class<V> valueType) {
+        return new BlockingTransactionalBloomCommandsImpl<>(this, reactive.bloom(redisKeyType, valueType), timeout);
     }
 
     @Override

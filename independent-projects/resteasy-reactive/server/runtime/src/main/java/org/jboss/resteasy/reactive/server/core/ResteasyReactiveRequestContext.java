@@ -128,7 +128,6 @@ public abstract class ResteasyReactiveRequestContext
      */
     private List<UriMatch> matchedURIs;
 
-    private SseEventSinkImpl sseEventSink;
     private List<PathSegment> pathSegments;
     private ReaderInterceptor[] readerInterceptors;
     private WriterInterceptor[] writerInterceptors;
@@ -722,12 +721,15 @@ public abstract class ResteasyReactiveRequestContext
         return this;
     }
 
+    private static final String SSE_EVENT_SINK_PROPERTY_KEY = AbstractResteasyReactiveContext.CUSTOM_RR_PROPERTIES_PREFIX
+            + "SSEEventSink";
+
     public SseEventSinkImpl getSseEventSink() {
-        return sseEventSink;
+        return (SseEventSinkImpl) getProperty(SSE_EVENT_SINK_PROPERTY_KEY);
     }
 
     public void setSseEventSink(SseEventSinkImpl sseEventSink) {
-        this.sseEventSink = sseEventSink;
+        setProperty(SSE_EVENT_SINK_PROPERTY_KEY, sseEventSink);
     }
 
     /**

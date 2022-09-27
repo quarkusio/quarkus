@@ -103,7 +103,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
      * @component
      */
     @Component
-    private RepositorySystem repoSystem;
+    RepositorySystem repoSystem;
 
     @Component
     RemoteRepositoryManager remoteRepoManager;
@@ -121,7 +121,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
      * @readonly
      */
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
-    private RepositorySystemSession repoSession;
+    RepositorySystemSession repoSession;
 
     /**
      * The project's remote repositories to use for the resolution of artifacts and
@@ -213,7 +213,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
      * Whether to ignore failure detecting the Quarkus core version used to build the extension,
      * which would be recorded in the extension's metadata.
      */
-    @Parameter(required = false, defaultValue = "${ignoreNotDetectedQuarkusCoreVersion")
+    @Parameter(required = false, defaultValue = "${ignoreNotDetectedQuarkusCoreVersion}")
     boolean ignoreNotDetectedQuarkusCoreVersion;
 
     /**

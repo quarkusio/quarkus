@@ -39,6 +39,12 @@
         <junit.jupiter.version>5.9.0</junit.jupiter.version>
     </properties>
     <build>
+        <testResources>
+                <testResource>
+                    <directory>src/test/resources</directory>
+                    <filtering>true</filtering>
+                </testResource>
+        </testResources>
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -46,6 +52,20 @@
                     <configuration>
                         <quiet>true</quiet>
                         <doclint>none</doclint>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <!-- The tests cause generated files to appear in the test-data projects, so clean them up when we clean -->
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <configuration>
+                        <filesets>
+                            <fileset>
+                                <directory>src/test/resources</directory>
+                                <includes>
+                                    <include>**/target/**</include>
+                                </includes>
+                            </fileset>
+                        </filesets>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -188,6 +208,13 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-bom-test</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <!-- Jackson dependencies, imported as a BOM -->
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
@@ -196,6 +223,7 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -237,6 +265,29 @@
             <artifactId>junit-jupiter</artifactId>
             <version>${junit.jupiter.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.plugin-testing</groupId>
+            <artifactId>maven-plugin-testing-harness</artifactId>
+            <scope>test</scope>
+        </dependency>
+       <!-- maven compat is needed because the maven testing harness still uses maven 2 APIs -->
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-compat</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.shared</groupId>
+            <artifactId>maven-invoker</artifactId>
+            <version>3.2.0</version>
+            <scope>test</scope>
+            <exclusions>
+              <exclusion>
+                <groupId>javax.inject</groupId>
+                <artifactId>javax.inject</artifactId>
+              </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

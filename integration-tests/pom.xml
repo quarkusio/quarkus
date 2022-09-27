@@ -310,6 +310,7 @@
                 <module>opentelemetry-vertx</module>
                 <module>opentelemetry-reactive</module>
                 <module>opentelemetry-grpc</module>
+                <module>opentelemetry-reactive-messaging</module>
                 <module>logging-json</module>
                 <module>jaxb</module>
                 <module>jaxp</module>

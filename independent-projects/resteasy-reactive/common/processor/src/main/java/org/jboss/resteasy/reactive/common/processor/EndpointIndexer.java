@@ -226,7 +226,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Function<String, BeanFactory<Object>> factoryCreator;
     private final Consumer<ResourceMethodCallbackData> resourceMethodCallback;
     private final AnnotationStore annotationStore;
-    private final ApplicationScanningResult applicationScanningResult;
+    protected final ApplicationScanningResult applicationScanningResult;
     private final Set<DotName> contextTypes;
     private final MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension;
     private final MultipartParameterIndexerExtension multipartParameterIndexerExtension;

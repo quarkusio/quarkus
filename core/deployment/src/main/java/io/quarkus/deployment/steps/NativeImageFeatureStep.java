@@ -89,8 +89,6 @@ public class NativeImageFeatureStep {
     private static final MethodDescriptor LOOKUP_METHOD = ofMethod(
             ReflectionUtil.class,
             "lookupMethod", Method.class, Class.class, String.class, Class[].class);
-    private static final MethodDescriptor FOR_NAME = ofMethod(
-            Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class);
     private static final MethodDescriptor INVOKE = ofMethod(
             Method.class, "invoke", Object.class, Object.class, Object[].class);
     static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
@@ -468,14 +466,7 @@ public class NativeImageFeatureStep {
 
             TryBlock tc = mv.tryBlock();
 
-            ResultHandle currentThread = tc
-                    .invokeStaticMethod(ofMethod(Thread.class, "currentThread", Thread.class));
-            ResultHandle tccl = tc.invokeVirtualMethod(
-                    ofMethod(Thread.class, "getContextClassLoader", ClassLoader.class),
-                    currentThread);
-            ResultHandle clazz = tc.invokeStaticMethod(
-                    ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
-                    tc.load(entry.getKey()), tc.load(false), tccl);
+            ResultHandle clazz = tc.loadClassFromTCCL(entry.getKey());
             //we call these methods first, so if they are going to throw an exception it happens before anything has been registered
             ResultHandle constructors = tc
                     .invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructors", Constructor[].class), clazz);
@@ -575,14 +566,7 @@ public class NativeImageFeatureStep {
 
                 TryBlock tc = mv.tryBlock();
 
-                ResultHandle currentThread = tc
-                        .invokeStaticMethod(ofMethod(Thread.class, "currentThread", Thread.class));
-                ResultHandle tccl = tc.invokeVirtualMethod(
-                        ofMethod(Thread.class, "getContextClassLoader", ClassLoader.class),
-                        currentThread);
-                ResultHandle clazz = tc.invokeStaticMethod(
-                        ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
-                        tc.load(className), tc.load(false), tccl);
+                ResultHandle clazz = tc.loadClassFromTCCL(className);
                 //we call these methods first, so if they are going to throw an exception it happens before anything has been registered
                 ResultHandle constructors = tc
                         .invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructors", Constructor[].class), clazz);
@@ -666,15 +650,7 @@ public class NativeImageFeatureStep {
 
         TryBlock tc = addSerializationForClass.tryBlock();
 
-        ResultHandle currentThread = tc
-                .invokeStaticMethod(ofMethod(Thread.class, "currentThread", Thread.class));
-        ResultHandle tccl = tc.invokeVirtualMethod(
-                ofMethod(Thread.class, "getContextClassLoader", ClassLoader.class),
-                currentThread);
-
-        ResultHandle runtimeSerializationClass = tc.invokeStaticMethod(FOR_NAME,
-                tc.load("org.graalvm.nativeimage.hosted.RuntimeSerialization"),
-                tc.load(false), tccl);
+        ResultHandle runtimeSerializationClass = tc.loadClassFromTCCL("org.graalvm.nativeimage.hosted.RuntimeSerialization");
         ResultHandle registerArgTypes = tc.newArray(Class.class, tc.load(1));
         tc.writeArrayValue(registerArgTypes, 0, tc.loadClassFromTCCL(Class[].class));
         ResultHandle registerLookupMethod = tc.invokeStaticMethod(LOOKUP_METHOD, runtimeSerializationClass,

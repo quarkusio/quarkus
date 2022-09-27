@@ -128,8 +128,6 @@ public abstract class ResteasyReactiveRequestContext
      */
     private List<UriMatch> matchedURIs;
 
-    private AsyncResponseImpl asyncResponse;
-    private SseEventSinkImpl sseEventSink;
     private List<PathSegment> pathSegments;
     private ReaderInterceptor[] readerInterceptors;
     private WriterInterceptor[] writerInterceptors;
@@ -593,15 +591,18 @@ public abstract class ResteasyReactiveRequestContext
         return this;
     }
 
+    private static final String ASYNC_RESPONSE_PROPERTY_KEY = AbstractResteasyReactiveContext.CUSTOM_RR_PROPERTIES_PREFIX
+            + "AsyncResponse";
+
     public AsyncResponseImpl getAsyncResponse() {
-        return asyncResponse;
+        return (AsyncResponseImpl) getProperty(ASYNC_RESPONSE_PROPERTY_KEY);
     }
 
     public ResteasyReactiveRequestContext setAsyncResponse(AsyncResponseImpl asyncResponse) {
-        if (this.asyncResponse != null) {
+        if (getAsyncResponse() != null) {
             throw new RuntimeException("Async can only be started once");
         }
-        this.asyncResponse = asyncResponse;
+        setProperty(ASYNC_RESPONSE_PROPERTY_KEY, asyncResponse);
         return this;
     }
 
@@ -720,12 +721,15 @@ public abstract class ResteasyReactiveRequestContext
         return this;
     }
 
+    private static final String SSE_EVENT_SINK_PROPERTY_KEY = AbstractResteasyReactiveContext.CUSTOM_RR_PROPERTIES_PREFIX
+            + "SSEEventSink";
+
     public SseEventSinkImpl getSseEventSink() {
-        return sseEventSink;
+        return (SseEventSinkImpl) getProperty(SSE_EVENT_SINK_PROPERTY_KEY);
     }
 
     public void setSseEventSink(SseEventSinkImpl sseEventSink) {
-        this.sseEventSink = sseEventSink;
+        setProperty(SSE_EVENT_SINK_PROPERTY_KEY, sseEventSink);
     }
 
     /**

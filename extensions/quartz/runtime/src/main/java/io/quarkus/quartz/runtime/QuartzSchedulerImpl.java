@@ -26,6 +26,7 @@ import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.Typed;
 import javax.inject.Singleton;
 import javax.interceptor.Interceptor;
 import javax.transaction.SystemException;
@@ -60,6 +61,7 @@ import com.cronutils.parser.CronParser;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.Subclass;
+import io.quarkus.quartz.QuartzScheduler;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.FailedExecution;
 import io.quarkus.scheduler.Scheduled;
@@ -83,10 +85,11 @@ import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
+@Typed({ QuartzScheduler.class, Scheduler.class })
 @Singleton
-public class QuartzScheduler implements Scheduler {
+public class QuartzSchedulerImpl implements QuartzScheduler {
 
-    private static final Logger LOGGER = Logger.getLogger(QuartzScheduler.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(QuartzSchedulerImpl.class.getName());
     private static final String INVOKER_KEY = "invoker";
 
     private final org.quartz.Scheduler scheduler;
@@ -95,7 +98,8 @@ public class QuartzScheduler implements Scheduler {
     private final Duration shutdownWaitTime;
     private final Map<String, QuartzTrigger> scheduledTasks = new HashMap<>();
 
-    public QuartzScheduler(SchedulerContext context, QuartzSupport quartzSupport, SchedulerRuntimeConfig schedulerRuntimeConfig,
+    public QuartzSchedulerImpl(SchedulerContext context, QuartzSupport quartzSupport,
+            SchedulerRuntimeConfig schedulerRuntimeConfig,
             Event<SkippedExecution> skippedExecutionEvent, Event<SuccessfulExecution> successfulExecutionEvent,
             Event<FailedExecution> failedExecutionEvent, Instance<Job> jobs, Instance<UserTransaction> userTransaction,
             Vertx vertx) {
@@ -345,6 +349,11 @@ public class QuartzScheduler implements Scheduler {
             throw new IllegalStateException(
                     "Quartz scheduler is either explicitly disabled through quarkus.scheduler.enabled=false or no @Scheduled methods were found. If you only need to schedule a job programmatically you can force the start of the scheduler by setting 'quarkus.quartz.start-mode=forced'.");
         }
+        return scheduler;
+    }
+
+    @Override
+    public org.quartz.Scheduler getScheduler() {
         return scheduler;
     }
 

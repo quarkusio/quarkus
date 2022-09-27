@@ -37,6 +37,7 @@ import io.quarkus.opentelemetry.runtime.OpenTelemetryProducer;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
+import io.quarkus.opentelemetry.runtime.tracing.reactivemessaging.ReactiveMessagingTracingDecorator;
 import io.quarkus.opentelemetry.runtime.tracing.restclient.OpenTelemetryClientFilter;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
@@ -138,6 +139,15 @@ public class OpenTelemetryProcessor {
         if (capabilities.isPresent(Capability.REST_CLIENT) && capabilities.isMissing(Capability.REST_CLIENT_REACTIVE)) {
             additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(OpenTelemetryClientFilter.class.getName()));
             additionalBeans.produce(new AdditionalBeanBuildItem(OpenTelemetryClientFilter.class));
+        }
+    }
+
+    @BuildStep
+    void registerReactiveMessagingMessageDecorator(
+            Capabilities capabilities,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        if (capabilities.isPresent(Capability.SMALLRYE_REACTIVE_MESSAGING)) {
+            additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingDecorator.class));
         }
     }
 

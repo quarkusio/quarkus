@@ -56,9 +56,18 @@ public class PackageIT extends MojoTestBase {
             throws MavenInvocationException, IOException, InterruptedException {
         testDir = initProject("projects/uberjar-maven-plugin-config");
         running = new RunningInvoker(testDir, false);
-        final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
-                Collections.emptyMap());
+        final MavenProcessInvocationResult result = running.execute(List.of("install", "-DskipTests"), Map.of());
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        final Path localRunner = getTargetDir().toPath().resolve("acme-quarkus-runner.jar");
+        assertThat(localRunner).exists();
+
+        // make sure the runner jar was attached, there was a bug of the runner jar not being attached when the
+        // finalName option in the Quarkus plugin didn't match the finalName ocnfigured in the POM's build section
+        final Path installedRunner = running.getLocalRepositoryDirectory().toPath().resolve("org").resolve("acme")
+                .resolve("acme")
+                .resolve("1.0-SNAPSHOT").resolve("acme-1.0-SNAPSHOT-runner.jar");
+        assertThat(installedRunner).exists();
 
         verifyUberJar();
     }

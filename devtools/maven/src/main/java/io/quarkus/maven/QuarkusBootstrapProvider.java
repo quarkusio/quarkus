@@ -37,8 +37,6 @@ import io.quarkus.maven.components.ManifestSection;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.maven.dependency.GACT;
-import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedArtifactDependency;
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.common.expression.Expression;
@@ -59,7 +57,7 @@ public class QuarkusBootstrapProvider implements Closeable {
             .concurrencyLevel(4).softValues().initialCapacity(10).build();
 
     static ArtifactKey getProjectId(MavenProject project) {
-        return new GACT(project.getGroupId(), project.getArtifactId());
+        return ArtifactKey.ga(project.getGroupId(), project.getArtifactId());
     }
 
     public RepositorySystem repositorySystem() {
@@ -209,12 +207,13 @@ public class QuarkusBootstrapProvider implements Closeable {
                 final List<MavenProject> localProjects = mojo.mavenProject().getCollectedProjects();
                 final Set<ArtifactKey> localProjectKeys = new HashSet<>(localProjects.size());
                 for (MavenProject p : localProjects) {
-                    localProjectKeys.add(new GACT(p.getGroupId(), p.getArtifactId()));
+                    localProjectKeys.add(ArtifactKey.ga(p.getGroupId(), p.getArtifactId()));
                 }
                 reloadableModules = new HashSet<>(localProjects.size() + 1);
                 for (Artifact a : mojo.mavenProject().getArtifacts()) {
-                    if (localProjectKeys.contains(new GACT(a.getGroupId(), a.getArtifactId()))) {
-                        reloadableModules.add(new GACT(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getType()));
+                    if (localProjectKeys.contains(ArtifactKey.ga(a.getGroupId(), a.getArtifactId()))) {
+                        reloadableModules
+                                .add(ArtifactKey.of(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getType()));
                     }
                 }
                 reloadableModules.add(appArtifact.getKey());
@@ -228,7 +227,6 @@ public class QuarkusBootstrapProvider implements Closeable {
             } catch (AppModelResolverException e) {
                 throw new MojoExecutionException("Failed to bootstrap application in " + mode + " mode", e);
             }
-
             QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
                     .setAppArtifact(appModel.getAppArtifact())
                     .setExistingModel(appModel)
@@ -237,6 +235,7 @@ public class QuarkusBootstrapProvider implements Closeable {
                     .setBuildSystemProperties(effectiveProperties)
                     .setProjectRoot(mojo.baseDir().toPath())
                     .setBaseName(mojo.finalName())
+                    .setOriginalBaseName(mojo.mavenProject().getBuild().getFinalName())
                     .setTargetDirectory(mojo.buildDir().toPath())
                     .setForcedDependencies(forcedDependencies);
 
@@ -277,12 +276,12 @@ public class QuarkusBootstrapProvider implements Closeable {
             return prodApp == null ? prodApp = doBootstrap(mojo, mode) : prodApp;
         }
 
-        protected GACTV managingProject(QuarkusBootstrapMojo mojo) {
+        protected ArtifactCoords managingProject(QuarkusBootstrapMojo mojo) {
             if (mojo.appArtifactCoords() == null) {
                 return null;
             }
             final Artifact artifact = mojo.mavenProject().getArtifact();
-            return new GACTV(artifact.getGroupId(), artifact.getArtifactId(),
+            return ArtifactCoords.of(artifact.getGroupId(), artifact.getArtifactId(),
                     artifact.getClassifier(), artifact.getArtifactHandler().getExtension(),
                     artifact.getVersion());
         }
@@ -321,7 +320,7 @@ public class QuarkusBootstrapProvider implements Closeable {
             }
             final String groupId = coordsArr[0];
             final String artifactId = coordsArr[1];
-            String classifier = "";
+            String classifier = ArtifactCoords.DEFAULT_CLASSIFIER;
             String type = ArtifactCoords.TYPE_JAR;
             String version = null;
             if (coordsArr.length == 3) {
@@ -349,7 +348,7 @@ public class QuarkusBootstrapProvider implements Closeable {
                 }
             }
 
-            return new GACTV(groupId, artifactId, classifier, type, version);
+            return ArtifactCoords.of(groupId, artifactId, classifier, type, version);
         }
 
         @Override

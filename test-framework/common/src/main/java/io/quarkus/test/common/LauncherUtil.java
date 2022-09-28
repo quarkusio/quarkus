@@ -110,7 +110,7 @@ public final class LauncherUtil {
      * Try to destroy the process normally a few times
      * and resort to forceful destruction if necessary
      */
-    private static void destroyProcess(Process quarkusProcess) {
+    static void destroyProcess(Process quarkusProcess) {
         quarkusProcess.destroy();
         int i = 0;
         while (i++ < 10) {

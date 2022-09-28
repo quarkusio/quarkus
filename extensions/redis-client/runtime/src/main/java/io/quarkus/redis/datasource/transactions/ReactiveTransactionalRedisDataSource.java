@@ -2,6 +2,7 @@ package io.quarkus.redis.datasource.transactions;
 
 import io.quarkus.redis.datasource.bitmap.ReactiveTransactionalBitMapCommands;
 import io.quarkus.redis.datasource.bloom.ReactiveTransactionalBloomCommands;
+import io.quarkus.redis.datasource.cuckoo.ReactiveTransactionalCuckooCommands;
 import io.quarkus.redis.datasource.geo.ReactiveTransactionalGeoCommands;
 import io.quarkus.redis.datasource.hash.ReactiveTransactionalHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveTransactionalHyperLogLogCommands;
@@ -313,6 +314,29 @@ public interface ReactiveTransactionalRedisDataSource {
      * @return the object to manipulate Bloom filters
      */
     <K, V> ReactiveTransactionalBloomCommands<K, V> bloom(Class<K> redisKeyType, Class<V> valueType);
+
+    /**
+     * Gets the object to manipulate Cuckoo filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the Cuckoo
+     * filter support).
+     *
+     * @param <V> the type of the values added into the Cuckoo filter
+     * @return the object to manipulate Cuckoo values.
+     */
+    default <V> ReactiveTransactionalCuckooCommands<String, V> cuckoo(Class<V> valueType) {
+        return cuckoo(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to manipulate Cuckoo filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the Cuckoo
+     * filter support).
+     *
+     * @param <K> the type of keys
+     * @param <V> the type of the values added into the Cuckoo filter
+     * @return the object to manipulate Cuckoo values.
+     */
+    <K, V> ReactiveTransactionalCuckooCommands<K, V> cuckoo(Class<K> redisKeyType, Class<V> valueType);
 
     /**
      * Executes a command.

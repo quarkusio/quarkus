@@ -1,12 +1,20 @@
 package io.quarkus.mongodb.panache.common.runtime.util;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonValue;
+
+import com.mongodb.MongoBulkWriteException;
+import com.mongodb.bulk.BulkWriteInsert;
+import com.mongodb.bulk.BulkWriteResult;
+import com.mongodb.bulk.BulkWriteUpsert;
 
 import io.quarkus.mongodb.panache.common.Version;
 import io.quarkus.mongodb.panache.common.exception.OptimisticLockException;
@@ -17,63 +25,78 @@ import io.quarkus.mongodb.panache.common.runtime.MongoOperations;
  **/
 public class VersionHandler {
 
-    public final Object entity;
-    public final Field versionField;
-    public final BsonDocument query;
-    public final Boolean containsVersionAnnotation;
-    public final Boolean containsVersionValue;
-    public final String versionFieldName;
-
-    private VersionHandler(final Object entity,
-            final BsonDocument query,
-            Field versionField,
-            Boolean containsVersionAnnotation,
-            Boolean containsVersionValue,
-            String versionFieldName) {
-        this.entity = entity;
-        this.query = query;
-        this.versionField = versionField;
-        this.containsVersionAnnotation = containsVersionAnnotation;
-        this.containsVersionValue = containsVersionValue;
-        this.versionFieldName = versionFieldName;
-
-        if (versionField != null) {
-            adjustVersionValue();
-        }
+    /**
+     * Factory method that build the query for updates and also adjust the versionValue when applicable.
+     * Otherwise it does nothing
+     */
+    public static EntityVersionInfo buildAndAdjustEntityVersionInfo(Object entity, BsonDocument document) {
+        EntityVersionInfo entityVersionInfo = buildEntityVersionInfo(entity, document);
+        incrementVersionValue(entityVersionInfo);
+        return entityVersionInfo;
     }
 
-    public static VersionHandler handle(Object entity, BsonDocument document) {
+    /**
+     * Factory method that build the query for updates and also adjust the versionValue when applicable.
+     * Otherwise it does nothing
+     */
+    public static EntityVersionInfo buildEntityVersionInfo(Object entity, BsonDocument document) {
         Optional<Field> versionFieldOptional = extractVersionField(entity);
 
+        BsonValue entityId = getEntityId(document);
+
         if (versionFieldOptional.isEmpty()) {
-            return new VersionHandler(
+            return EntityVersionInfo.of(
                     entity,
-                    buildUpdateQuery(null, document),
-                    null,
-                    false,
-                    false,
-                    null);
+                    entityId,
+                    buildUpdateQuery(entityId, null, document));
         }
 
         Field versionField = versionFieldOptional.get();
-        Long versionValue = extractVersionValue(versionField, entity);
+        Long versionValueBeforeAdjust = extractVersionValue(versionField, entity);
         String versionFieldName = versionField.getName();
-        BsonDocument query = buildUpdateQuery(versionFieldName, document);
+        BsonDocument updateQuery = buildUpdateQuery(entityId, versionFieldName, document);
 
-        return new VersionHandler(entity, query, versionField, true, versionValue != null, versionFieldName);
-    }
-
-    public boolean containsVersionAnnotationAndValue() {
-        return containsVersionAnnotation && containsVersionValue;
+        return EntityVersionInfo.of(
+                entity,
+                entityId,
+                updateQuery,
+                versionField,
+                versionValueBeforeAdjust,
+                versionFieldName);
     }
 
     private static Optional<Field> extractVersionField(Object entity) {
-        Field[] fields = entity.getClass().getFields();
-        Field[] declaredFields = entity.getClass().getDeclaredFields();
-        return Stream.of(fields, declaredFields)
+        List<Field> versionList = getAllVersionFields(entity.getClass());
+
+        if (versionList.isEmpty()) {
+            return Optional.empty();
+        }
+
+        if (versionList.size() > 1) {
+            throw new IllegalArgumentException("Wrong mapped version, found more than 1 field annotated with @Version");
+        }
+
+        return Optional.of(versionList.get(0));
+    }
+
+    private static List<Field> getAllVersionFields(Class<?> clazz) {
+        List<Field> fieldList = new ArrayList<>();
+
+        Field[] fields = clazz.getFields();
+        Field[] declaredFields = clazz.getDeclaredFields();
+        Stream.of(fields, declaredFields)
                 .flatMap(Stream::of)
                 .filter(field -> field.isAnnotationPresent(Version.class))
-                .findFirst();
+                .distinct()
+                .collect(Collectors.toCollection(() -> fieldList));
+
+        if (clazz.getSuperclass() != null) {
+            fieldList.addAll(getAllVersionFields(clazz.getSuperclass()));
+        }
+
+        return fieldList.stream()
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     private static Long extractVersionValue(Field versionField, Object entity) {
@@ -82,25 +105,94 @@ public class VersionHandler {
                 return null;
             }
 
+            boolean canAccess = versionField.canAccess(entity);
             versionField.setAccessible(true);
             Long versionValue = (Long) versionField.get(entity);
+            versionField.setAccessible(canAccess);
             return versionValue;
         } catch (IllegalAccessException e) {
             throw new RuntimeException("Error on set the version value");
         }
     }
 
-    private VersionHandler adjustVersionValue() {
+    public static void incrementVersionValue(EntityVersionInfo entityVersionedSnapshot) {
         try {
-            if (!containsVersionAnnotation) {
-                return this;
+            if (!entityVersionedSnapshot.hasVersionAnnotation) {
+                return;
             }
+
+            Field versionField = entityVersionedSnapshot.versionField;
+            Object entity = entityVersionedSnapshot.entity;
+
+            boolean canAccess = versionField.canAccess(entity);
+            versionField.setAccessible(true);
 
             Long versionValue = (Long) versionField.get(entity);
             versionField.set(entity, versionValue == null ? 0L : versionValue + 1);
-            return this;
+
+            versionField.setAccessible(canAccess);
         } catch (IllegalAccessException e) {
             throw new RuntimeException("Error on set the version value");
+        }
+    }
+
+    /**
+     * Restore previous version value in the entity.
+     */
+    public static void resetVersionValue(EntityVersionInfo entityVersionInfo) {
+        try {
+            Field versionField = entityVersionInfo.versionField;
+            Object entity = entityVersionInfo.entity;
+            boolean canAccess = versionField.canAccess(entity);
+            versionField.setAccessible(true);
+
+            versionField.set(entity, entityVersionInfo.versionValue);
+            versionField.setAccessible(canAccess);
+        } catch (IllegalAccessException ex) {
+            throw new IllegalArgumentException("Error on set the version value: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Restore previous version value in the entity.
+     */
+    public static void resetVersionValueAndThrowOptimistic(EntityVersionInfo entityVersionInfo) {
+        resetVersionValue(entityVersionInfo);
+        throwOptimisticLockException(entityVersionInfo);
+    }
+
+    /**
+     * //TODO implement
+     * Restore previous version of all entities that failed to persist or update.
+     */
+    public static void resetVersionValue(MongoBulkWriteException mongoBulkWriteException,
+            List<EntityVersionInfo> entityVersionedSnapshots) {
+
+        BulkWriteResult writeResult = mongoBulkWriteException.getWriteResult();
+        //all operation failed, so we restore version for all
+        if (writeResult.getInsertedCount() == 0
+                && writeResult.getModifiedCount() == 0
+                && writeResult.getMatchedCount() == 0) {
+            entityVersionedSnapshots.forEach(VersionHandler::resetVersionValue);
+        } else {
+            //we get all the ids that operation finished succesfully
+            List<BsonValue> matchedIds = new ArrayList<>();
+            writeResult.getInserts().stream()
+                    .map(BulkWriteInsert::getId)
+                    .collect(Collectors.toCollection(() -> matchedIds));
+            writeResult.getUpserts().stream()
+                    .map(BulkWriteUpsert::getId)
+                    .collect(Collectors.toCollection(() -> matchedIds));
+
+            //here we filter the operations that failed and restore the version
+            List<EntityVersionInfo> snapshotsToResetVersion = entityVersionedSnapshots.stream()
+                    .filter(entityVersionedSnapshot -> entityVersionedSnapshot.entityId != null)
+                    .filter(entityVersionedSnapshot -> {
+                        return matchedIds.stream()
+                                .noneMatch(bsonValue -> bsonValue.equals(entityVersionedSnapshot.entityId));
+                    }).collect(Collectors.toList());
+
+            snapshotsToResetVersion.forEach(VersionHandler::resetVersionValue);
         }
     }
 
@@ -108,19 +200,30 @@ public class VersionHandler {
      * Utility method to check if the during an update there are documents not updated.
      * Throws OptimisticLockException when found documents not updated.
      */
-    public void checkHasNotAffectedResults(Long quantityResultAffected) {
-        if (containsVersionAnnotation && quantityResultAffected == 0) {
-            throwOptimisticLockException(entity);
+    public static void validateChanges(final EntityVersionInfo entityVersionInfo,
+            Long quantityResultAffected) {
+        if (entityVersionInfo.hasVersionAnnotation && quantityResultAffected == 0) {
+            resetVersionValue(entityVersionInfo);
+            throwOptimisticLockException(entityVersionInfo);
         }
+    }
+
+    /**
+     * Build a message and throw a OptimisticLockException.
+     */
+    private static void throwOptimisticLockException(Object entity) {
+        StringBuilder errorMsg = new StringBuilder("Was not possible to update entity: ")
+                .append(entity.toString());
+        throw new OptimisticLockException(errorMsg.toString());
     }
 
     /**
      * We build the query that will be used to update the document, can have id, or id/version.
      */
-    private static BsonDocument buildUpdateQuery(String versionFieldName, BsonDocument document) {
+    private static BsonDocument buildUpdateQuery(BsonValue id,
+            String versionFieldName,
+            BsonDocument document) {
         //then we get its id field and create a new Document with only this one that will be our replace query
-        BsonValue id = document.get(MongoOperations.ID);
-
         if (id == null) {
             return null;
         }
@@ -135,12 +238,7 @@ public class VersionHandler {
         return new BsonDocument().append(MongoOperations.ID, id);
     }
 
-    /**
-     * We check if is needed to throw a OptimisticLockException.
-     */
-    private void throwOptimisticLockException(Object entity) {
-        StringBuilder errorMsg = new StringBuilder("Was not possible to update entity: ")
-                .append(entity.toString());
-        throw new OptimisticLockException(errorMsg.toString());
+    private static BsonValue getEntityId(final BsonDocument document) {
+        return document.get(MongoOperations.ID);
     }
 }

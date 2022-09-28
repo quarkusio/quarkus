@@ -201,7 +201,7 @@ both Java and Kotlin code, you can safely include both artifacts.
 
 == Optimistic Lock Control
 
-Like we have in JPA/Hibernate, optimistic lock control is now supported, for this you just need to use the `@Version`, and panache does the rest.
+Aiming to guarantee concurrency control, panache now supports Optimistic lock control, for this you just need to use the `@Version`, and panache does the rest.
 
 [source,kotlin]
 ----

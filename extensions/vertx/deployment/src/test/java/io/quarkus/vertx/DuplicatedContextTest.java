@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -68,7 +67,6 @@ public class DuplicatedContextTest {
 
     @Test
     public void testThatMessageSentToTheEventBusAreProcessedOnUnsharedDuplicatedContext() {
-        AtomicInteger expected = new AtomicInteger();
         String id1 = UUID.randomUUID().toString();
         bus.send("context-send", id1);
         await().until(() -> consumers.probes().contains(id1));
@@ -112,7 +110,7 @@ public class DuplicatedContextTest {
 
         Uni.join().all(unis).andFailFast()
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                .await().atMost(Duration.ofSeconds(10));
+                .await().atMost(Duration.ofSeconds(30));
     }
 
     @Test
@@ -133,7 +131,7 @@ public class DuplicatedContextTest {
 
         Uni.join().all(unis).andFailFast()
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                .await().atMost(Duration.ofSeconds(10));
+                .await().atMost(Duration.ofSeconds(30));
 
     }
 

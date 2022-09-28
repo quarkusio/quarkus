@@ -136,6 +136,10 @@ public class VersionHandler {
      */
     public static void resetVersionValue(EntityVersionInfo entityVersionInfo) {
         try {
+            if (!entityVersionInfo.hasVersionAnnotation) {
+                return;
+            }
+
             Field versionField = entityVersionInfo.versionField;
             Object entity = entityVersionInfo.entity;
             boolean canAccess = versionField.canAccess(entity);

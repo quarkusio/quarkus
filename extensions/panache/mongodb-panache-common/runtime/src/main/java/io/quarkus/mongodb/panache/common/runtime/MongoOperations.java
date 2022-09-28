@@ -328,7 +328,8 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     /**
      * When contains {@link io.quarkus.mongodb.panache.common.Version @Version},
-     * we first perform `bulkWrite` for the others, and then call `persistOrUpdate` one by one to guarantee the state of the Entity.
+     * we first perform `bulkWrite` for the others, and then call `persistOrUpdate` one by one to guarantee the state of the
+     * Entity.
      */
     private void persistOrUpdate(List<Object> entities) {
         if (entities.isEmpty()) {

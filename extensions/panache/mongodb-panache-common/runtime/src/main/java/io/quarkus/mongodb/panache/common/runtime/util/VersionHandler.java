@@ -11,11 +11,6 @@ import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonValue;
 
-import com.mongodb.MongoBulkWriteException;
-import com.mongodb.bulk.BulkWriteInsert;
-import com.mongodb.bulk.BulkWriteResult;
-import com.mongodb.bulk.BulkWriteUpsert;
-
 import io.quarkus.mongodb.panache.common.Version;
 import io.quarkus.mongodb.panache.common.exception.OptimisticLockException;
 import io.quarkus.mongodb.panache.common.runtime.MongoOperations;

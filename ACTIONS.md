@@ -88,11 +88,6 @@ If you forget the label, it will need to be added [through the UI](https://docs.
 #### Cleanup and setup logic
 
 Self-hosted runners do not run on ephemeral hardware, and so workflow runs may need to clean up. 
-In this case, the main cleanup is a fresh workspace checkout, to ensure `git remote add` in the workflow step does not fail with `error: remote quarkusio already exists`.:
-
-(If the machine crashes, cleanup will not run, and the next run may fail. 
-If this becomes a common issue, we can update the workflow to run `git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git`.)
-
 We also need to start a podman machine before the job if one is not already running. 
 
 To create cleanup and setup scripts and hooks, run:

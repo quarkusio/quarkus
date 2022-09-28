@@ -128,7 +128,6 @@ public abstract class ResteasyReactiveRequestContext
      */
     private List<UriMatch> matchedURIs;
 
-    private List<PathSegment> pathSegments;
     private ReaderInterceptor[] readerInterceptors;
     private WriterInterceptor[] writerInterceptors;
 
@@ -738,25 +737,33 @@ public abstract class ResteasyReactiveRequestContext
      * This is lazily initialized
      */
     public List<PathSegment> getPathSegments() {
-        if (pathSegments == null) {
+        if (getPathSegments0() == null) {
             initPathSegments();
         }
-        return pathSegments;
+        return getPathSegments0();
+    }
+
+    private static final String PATH_SEGMENTS__PROPERTY_KEY = AbstractResteasyReactiveContext.CUSTOM_RR_PROPERTIES_PREFIX
+            + "PathSegments";
+
+    private List<PathSegment> getPathSegments0() {
+        return (List<PathSegment>) getProperty(PATH_SEGMENTS__PROPERTY_KEY);
     }
 
     /**
-     * initializes the path seegments and removes any matrix params for the path
+     * initializes the path segments and removes any matrix params for the path
      * used for matching.
      */
     public void initPathSegments() {
-        if (pathSegments != null) {
+        if (getPathSegments0() != null) {
             return;
         }
         //this is not super optimised
         //I don't think we care about it that much though
         String path = getPath();
         String[] parts = path.split("/");
-        pathSegments = new ArrayList<>();
+        List<PathSegment> pathSegments = new ArrayList<>();
+        setProperty(PATH_SEGMENTS__PROPERTY_KEY, pathSegments);
         boolean hasMatrix = false;
         for (String i : parts) {
             if (i.isEmpty()) {

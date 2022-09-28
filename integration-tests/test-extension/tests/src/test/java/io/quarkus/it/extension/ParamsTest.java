@@ -121,6 +121,15 @@ public class ParamsTest {
     }
 
     @ParameterizedTest
+    @MethodSource("testDataUnmodifiableListArguments")
+    public void methodUnmodifiableListArguments(Object list) {
+    }
+
+    static Stream<Arguments> testDataUnmodifiableListArguments() {
+        return Stream.of(Arguments.of(Collections.unmodifiableList(List.of(new TestObject3()))));
+    }
+
+    @ParameterizedTest
     @MethodSource("testStreamOfMapEntryArguments")
     public void methodList(Map.Entry<String, String> ignore) {
     }
@@ -163,6 +172,12 @@ public class ParamsTest {
         Map<String, String> getMap() {
             return map;
         }
+
+    }
+
+    static class TestObject3 {
+
+        static final String value = "one";
 
     }
 }

@@ -25,6 +25,7 @@ public class CustomListConverter extends CollectionConverter {
             List.of().getClass().getName(),
             List.of(Integer.MAX_VALUE).getClass().getName(),
             Arrays.asList(Integer.MAX_VALUE).getClass().getName(),
+            Collections.unmodifiableList(List.of()).getClass().getName(),
             Collections.emptyList().getClass().getName());
 
     public CustomListConverter(Mapper mapper) {

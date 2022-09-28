@@ -57,6 +57,7 @@ public class QuarkusAugmentor {
     private final Path targetDir;
     private final ApplicationModel effectiveModel;
     private final String baseName;
+    private final String originalBaseName;
     private final boolean rebuild;
     private final boolean auxiliaryApplication;
     private final Optional<DevModeType> auxiliaryDevModeType;
@@ -75,6 +76,7 @@ public class QuarkusAugmentor {
         this.targetDir = builder.targetDir;
         this.effectiveModel = builder.effectiveModel;
         this.baseName = builder.baseName;
+        this.originalBaseName = builder.originalBaseName;
         this.deploymentClassLoader = builder.deploymentClassLoader;
         this.rebuild = builder.rebuild;
         this.devModeType = builder.devModeType;
@@ -149,7 +151,7 @@ public class QuarkusAugmentor {
                     .produce(new LaunchModeBuildItem(launchMode,
                             devModeType == null ? Optional.empty() : Optional.of(devModeType), auxiliaryApplication,
                             auxiliaryDevModeType, test))
-                    .produce(new BuildSystemTargetBuildItem(targetDir, baseName, rebuild,
+                    .produce(new BuildSystemTargetBuildItem(targetDir, baseName, originalBaseName, rebuild,
                             buildSystemProperties == null ? new Properties() : buildSystemProperties))
                     .produce(new AppModelProviderBuildItem(effectiveModel));
             for (PathCollection i : additionalApplicationArchives) {
@@ -194,6 +196,8 @@ public class QuarkusAugmentor {
 
     public static final class Builder {
 
+        private static final String QUARKUS_APPLICATION = "quarkus-application";
+
         public DevModeType auxiliaryDevModeType;
         boolean rebuild;
         List<PathCollection> additionalApplicationArchives = new ArrayList<>();
@@ -208,7 +212,8 @@ public class QuarkusAugmentor {
         Properties buildSystemProperties;
 
         ApplicationModel effectiveModel;
-        String baseName = "quarkus-application";
+        String baseName = QUARKUS_APPLICATION;
+        String originalBaseName = QUARKUS_APPLICATION;
         ClassLoader deploymentClassLoader;
         DevModeType devModeType;
         boolean test;
@@ -299,6 +304,11 @@ public class QuarkusAugmentor {
 
         public Builder setBaseName(String baseName) {
             this.baseName = baseName;
+            return this;
+        }
+
+        public Builder setOriginalBaseName(String originalBaseName) {
+            this.originalBaseName = originalBaseName;
             return this;
         }
 

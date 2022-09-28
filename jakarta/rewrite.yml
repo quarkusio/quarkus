@@ -179,7 +179,7 @@ recipeList:
       newValue: 4.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jaxb-runtime.version
-      newValue: 4.0.0
+      newValue: 4.0.1
   # WildFly Security
   - org.openrewrite.maven.ChangePropertyValue:
       key: wildfly-elytron.version

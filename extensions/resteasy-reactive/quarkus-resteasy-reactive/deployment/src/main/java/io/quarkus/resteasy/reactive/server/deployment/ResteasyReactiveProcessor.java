@@ -444,8 +444,6 @@ public class ResteasyReactiveProcessor {
                     .setEndpointInvokerFactory(
                             new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
                     .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
-                    .setBytecodeTransformerBuildProducer(bytecodeTransformerBuildItemBuildProducer)
-                    .setReflectiveClassProducer(reflectiveClassBuildItemBuildProducer)
                     .setExistingConverters(existingConverters)
                     .setScannedResourcePaths(scannedResourcePaths)
                     .setConfig(createRestReactiveConfig(config))

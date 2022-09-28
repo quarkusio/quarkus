@@ -26,9 +26,7 @@ import org.jboss.resteasy.reactive.server.spi.EndpointInvokerFactory;
 
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.JsonDefaultProducersHandler;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 
@@ -39,23 +37,17 @@ public class QuarkusServerEndpointIndexer
 
     private final Capabilities capabilities;
     private final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
-    private final BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer;
-    private final BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer;
     private final DefaultProducesHandler defaultProducesHandler;
     private final JsonDefaultProducersHandler jsonDefaultProducersHandler;
     private final ResteasyReactiveRecorder resteasyReactiveRecorder;
 
-    private final Predicate<String> applicationClassPredicate;
     private SerializerScanningResult serializerScanningResult;
 
     QuarkusServerEndpointIndexer(Builder builder) {
         super(builder);
         this.capabilities = builder.capabilities;
         this.generatedClassBuildItemBuildProducer = builder.generatedClassBuildItemBuildProducer;
-        this.bytecodeTransformerBuildProducer = builder.bytecodeTransformerBuildProducer;
-        this.reflectiveClassProducer = builder.reflectiveClassProducer;
         this.defaultProducesHandler = builder.defaultProducesHandler;
-        this.applicationClassPredicate = builder.applicationClassPredicate;
         this.resteasyReactiveRecorder = builder.resteasyReactiveRecorder;
         this.jsonDefaultProducersHandler = new JsonDefaultProducersHandler();
     }
@@ -113,8 +105,6 @@ public class QuarkusServerEndpointIndexer
         private final Capabilities capabilities;
 
         private BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
-        private BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer;
-        private BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer;
         private ResteasyReactiveRecorder resteasyReactiveRecorder;
         private DefaultProducesHandler defaultProducesHandler = DefaultProducesHandler.Noop.INSTANCE;
         public Predicate<String> applicationClassPredicate;
@@ -128,21 +118,9 @@ public class QuarkusServerEndpointIndexer
             return new QuarkusServerEndpointIndexer(this);
         }
 
-        public Builder setBytecodeTransformerBuildProducer(
-                BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer) {
-            this.bytecodeTransformerBuildProducer = bytecodeTransformerBuildProducer;
-            return this;
-        }
-
         public Builder setGeneratedClassBuildItemBuildProducer(
                 BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
             this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
-            return this;
-        }
-
-        public Builder setReflectiveClassProducer(
-                BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
-            this.reflectiveClassProducer = reflectiveClassProducer;
             return this;
         }
 

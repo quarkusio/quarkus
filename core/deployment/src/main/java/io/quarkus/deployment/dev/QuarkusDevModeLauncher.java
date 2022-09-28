@@ -378,11 +378,23 @@ public abstract class QuarkusDevModeLauncher {
             // make sure the debug port is not used, we don't want to just fail if something else is using it
             // we don't check this on restarts, as the previous process is still running
             if (debugPortOk == null) {
-                try (Socket socket = new Socket(getInetAddress(debugHost), port)) {
+                // Wait for up to 2 seconds to make sure the debug port can be used
+                for (int i = 0; i < 2000; i += 100) {
+                    try (Socket socket = new Socket(getInetAddress(debugHost), port)) {
+                        try {
+                            // Wait for 100 milliseconds and try to open a socket again
+                            Thread.sleep(100);
+                        } catch (InterruptedException ex) {
+                            continue;
+                        }
+                    } catch (IOException e) {
+                        debugPortOk = true;
+                        break;
+                    }
+                }
+                if (debugPortOk == null) {
                     error("Port " + port + " in use, not starting in debug mode");
                     debugPortOk = false;
-                } catch (IOException e) {
-                    debugPortOk = true;
                 }
             }
             if (debugPortOk) {

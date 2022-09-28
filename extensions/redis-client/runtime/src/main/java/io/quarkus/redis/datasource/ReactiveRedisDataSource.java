@@ -5,6 +5,7 @@ import java.util.function.Function;
 
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
 import io.quarkus.redis.datasource.bloom.ReactiveBloomCommands;
+import io.quarkus.redis.datasource.cuckoo.ReactiveCuckooCommands;
 import io.quarkus.redis.datasource.geo.ReactiveGeoCommands;
 import io.quarkus.redis.datasource.hash.ReactiveHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveHyperLogLogCommands;
@@ -421,6 +422,29 @@ public interface ReactiveRedisDataSource {
      * @return the object to manipulate bloom values.
      */
     <K, V> ReactiveBloomCommands<K, V> bloom(Class<K> redisKeyType, Class<V> valueType);
+
+    /**
+     * Gets the object to manipulate Cuckoo filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the Cuckoo
+     * filter support).
+     *
+     * @param <V> the type of the values added into the Cuckoo filter
+     * @return the object to manipulate Cuckoo values.
+     */
+    default <V> ReactiveCuckooCommands<String, V> cuckoo(Class<V> valueType) {
+        return cuckoo(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to manipulate Cuckoo filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the Cuckoo
+     * filter support).
+     *
+     * @param <K> the type of keys
+     * @param <V> the type of the values added into the Cuckoo filter
+     * @return the object to manipulate Cuckoo values.
+     */
+    <K, V> ReactiveCuckooCommands<K, V> cuckoo(Class<K> redisKeyType, Class<V> valueType);
 
     /**
      * Executes a command.

@@ -12,6 +12,7 @@ import java.util.function.Function;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
 import io.quarkus.redis.datasource.bloom.ReactiveBloomCommands;
+import io.quarkus.redis.datasource.cuckoo.ReactiveCuckooCommands;
 import io.quarkus.redis.datasource.geo.ReactiveGeoCommands;
 import io.quarkus.redis.datasource.hash.ReactiveHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveHyperLogLogCommands;
@@ -287,6 +288,11 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     @Override
     public <K, V> ReactiveBloomCommands<K, V> bloom(Class<K> redisKeyType, Class<V> valueType) {
         return new ReactiveBloomCommandsImpl<>(this, redisKeyType, valueType);
+    }
+
+    @Override
+    public <K, V> ReactiveCuckooCommands<K, V> cuckoo(Class<K> redisKeyType, Class<V> valueType) {
+        return new ReactiveCuckooCommandsImpl<>(this, redisKeyType, valueType);
     }
 
     @Override

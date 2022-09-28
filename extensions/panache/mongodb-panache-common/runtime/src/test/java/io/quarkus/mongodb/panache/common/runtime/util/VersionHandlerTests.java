@@ -19,125 +19,125 @@ public class VersionHandlerTests {
     private static final BsonDocument bsonDocument = new BsonDocument("_id", new BsonString("abc"));
     private static final BsonDocument emptyBsonDocument = new BsonDocument();
 
-    @DisplayName("build EntityVersionedSnapshot with public version field, and reset version value")
+    @DisplayName("build EntityVersion with public version field, and reset version value")
     @Test
     public void handleEntityWithPublicVersion() {
         //test entity with public version and versionValue=0
 
         EntityWithPublicVersion entityWithPublicVersion = new EntityWithPublicVersion("abc", 0L);
-        EntityVersionInfo entityVersionedSnapshot = VersionHandler.buildAndAdjustEntityVersionInfo(entityWithPublicVersion,
+        EntityVersionInfo entityVersionInfo = VersionHandler.buildAndAdjustEntityVersionInfo(entityWithPublicVersion,
                 bsonDocument);
-        assertEquals(new BsonString(entityWithPublicVersion.id), entityVersionedSnapshot.entityId);
-        assertEquals(VERSION, entityVersionedSnapshot.versionFieldName);
-        assertTrue(entityVersionedSnapshot.hasVersionAnnotation);
-        assertTrue(entityVersionedSnapshot.hasVersionValue);
-        assertEquals(0L, entityVersionedSnapshot.versionValue);
+        assertEquals(new BsonString(entityWithPublicVersion.id), entityVersionInfo.entityId);
+        assertEquals(VERSION, entityVersionInfo.versionFieldName);
+        assertTrue(entityVersionInfo.hasVersionAnnotation);
+        assertTrue(entityVersionInfo.hasVersionValue);
+        assertEquals(0L, entityVersionInfo.versionValue);
         assertEquals(1L, entityWithPublicVersion.version);
 
-        VersionHandler.resetVersionValue(entityVersionedSnapshot);
+        VersionHandler.resetVersionValue(entityVersionInfo);
         assertEquals(0L, entityWithPublicVersion.version);
 
         //test entity with public version and versionValue=null
         entityWithPublicVersion = new EntityWithPublicVersion(null, null);
-        entityVersionedSnapshot = VersionHandler.buildAndAdjustEntityVersionInfo(entityWithPublicVersion, emptyBsonDocument);
-        assertNull(entityVersionedSnapshot.versionValue);
-        assertTrue(entityVersionedSnapshot.hasVersionAnnotation);
-        assertFalse(entityVersionedSnapshot.hasVersionValue);
-        assertNull(entityVersionedSnapshot.versionValue);
+        entityVersionInfo = VersionHandler.buildAndAdjustEntityVersionInfo(entityWithPublicVersion, emptyBsonDocument);
+        assertNull(entityVersionInfo.versionValue);
+        assertTrue(entityVersionInfo.hasVersionAnnotation);
+        assertFalse(entityVersionInfo.hasVersionValue);
+        assertNull(entityVersionInfo.versionValue);
         assertEquals(0L, entityWithPublicVersion.version);
 
-        VersionHandler.resetVersionValue(entityVersionedSnapshot);
+        VersionHandler.resetVersionValue(entityVersionInfo);
         assertNull(entityWithPublicVersion.version);
     }
 
-    @DisplayName("build EntityVersionedSnapshot with protected version field, and reset version value")
+    @DisplayName("build EntityVersion with protected version field, and reset version value")
     @Test
     public void handleEntityWithProtectedVersion() {
         //test entity with public version and versionValue=0
         EntityWithProtectedVersion entityWithProtectedVersion = new EntityWithProtectedVersion(null, 0L);
-        EntityVersionInfo entityVersionedSnapshot = VersionHandler.buildAndAdjustEntityVersionInfo(entityWithProtectedVersion,
+        EntityVersionInfo entityVersionInfo = VersionHandler.buildAndAdjustEntityVersionInfo(entityWithProtectedVersion,
                 bsonDocument);
 
-        assertEquals(VERSION, entityVersionedSnapshot.versionFieldName);
-        assertTrue(entityVersionedSnapshot.hasVersionAnnotation);
-        assertTrue(entityVersionedSnapshot.hasVersionValue);
-        assertEquals(0L, entityVersionedSnapshot.versionValue);
+        assertEquals(VERSION, entityVersionInfo.versionFieldName);
+        assertTrue(entityVersionInfo.hasVersionAnnotation);
+        assertTrue(entityVersionInfo.hasVersionValue);
+        assertEquals(0L, entityVersionInfo.versionValue);
         assertEquals(1L, entityWithProtectedVersion.version);
 
-        VersionHandler.resetVersionValue(entityVersionedSnapshot);
+        VersionHandler.resetVersionValue(entityVersionInfo);
         assertEquals(0L, entityWithProtectedVersion.version);
 
         //test entity with public version and versionValue=null
         entityWithProtectedVersion = new EntityWithProtectedVersion(null, null);
-        entityVersionedSnapshot = VersionHandler.buildAndAdjustEntityVersionInfo(entityWithProtectedVersion, bsonDocument);
-        assertTrue(entityVersionedSnapshot.hasVersionAnnotation);
-        assertFalse(entityVersionedSnapshot.hasVersionValue);
-        assertNull(entityVersionedSnapshot.versionValue);
+        entityVersionInfo = VersionHandler.buildAndAdjustEntityVersionInfo(entityWithProtectedVersion, bsonDocument);
+        assertTrue(entityVersionInfo.hasVersionAnnotation);
+        assertFalse(entityVersionInfo.hasVersionValue);
+        assertNull(entityVersionInfo.versionValue);
         assertEquals(0L, entityWithProtectedVersion.version);
 
-        VersionHandler.resetVersionValue(entityVersionedSnapshot);
+        VersionHandler.resetVersionValue(entityVersionInfo);
         assertNull(entityWithProtectedVersion.version);
     }
 
-    @DisplayName("build EntityVersionedSnapshot with private version field, and reset version value")
+    @DisplayName("build EntityVersion with private version field, and reset version value")
     @Test
     public void handleEntityWithPrivateVersion() {
         //test entity with public version and versionValue=0
         EntityWithPrivateVersion entityWithPrivateVersion = new EntityWithPrivateVersion(null, 2L);
-        EntityVersionInfo entityVersionedSnapshot = VersionHandler.buildAndAdjustEntityVersionInfo(entityWithPrivateVersion,
+        EntityVersionInfo entityVersionInfo = VersionHandler.buildAndAdjustEntityVersionInfo(entityWithPrivateVersion,
                 bsonDocument);
 
-        assertEquals("myVersion", entityVersionedSnapshot.versionFieldName);
-        assertTrue(entityVersionedSnapshot.hasVersionAnnotation);
-        assertTrue(entityVersionedSnapshot.hasVersionValue);
-        assertEquals(2L, entityVersionedSnapshot.versionValue);
+        assertEquals("myVersion", entityVersionInfo.versionFieldName);
+        assertTrue(entityVersionInfo.hasVersionAnnotation);
+        assertTrue(entityVersionInfo.hasVersionValue);
+        assertEquals(2L, entityVersionInfo.versionValue);
         assertEquals(3L, entityWithPrivateVersion.myVersion);
 
-        VersionHandler.resetVersionValue(entityVersionedSnapshot);
+        VersionHandler.resetVersionValue(entityVersionInfo);
         assertEquals(2L, entityWithPrivateVersion.myVersion);
 
         //test entity with public version and versionValue=null
         entityWithPrivateVersion = new EntityWithPrivateVersion(null, null);
-        entityVersionedSnapshot = VersionHandler.buildAndAdjustEntityVersionInfo(entityWithPrivateVersion, bsonDocument);
-        assertTrue(entityVersionedSnapshot.hasVersionAnnotation);
-        assertFalse(entityVersionedSnapshot.hasVersionValue);
-        assertNull(entityVersionedSnapshot.versionValue);
+        entityVersionInfo = VersionHandler.buildAndAdjustEntityVersionInfo(entityWithPrivateVersion, bsonDocument);
+        assertTrue(entityVersionInfo.hasVersionAnnotation);
+        assertFalse(entityVersionInfo.hasVersionValue);
+        assertNull(entityVersionInfo.versionValue);
         assertEquals(0L, entityWithPrivateVersion.myVersion);
 
-        VersionHandler.resetVersionValue(entityVersionedSnapshot);
+        VersionHandler.resetVersionValue(entityVersionInfo);
         assertNull(entityWithPrivateVersion.myVersion);
     }
 
-    @DisplayName("build EntityVersionedSnapshot with inherit public version field, and reset version value")
+    @DisplayName("build EntityVersion with inherit public version field, and reset version value")
     @Test
     public void handleEntityWithInheritVersion() {
         //test entity with public version and versionValue=0
         EntityWithInheritVersion entityWithInheritVersion = new EntityWithInheritVersion(0L, null);
-        EntityVersionInfo entityVersionedSnapshot = VersionHandler.buildAndAdjustEntityVersionInfo(entityWithInheritVersion,
+        EntityVersionInfo entityVersionInfo = VersionHandler.buildAndAdjustEntityVersionInfo(entityWithInheritVersion,
                 bsonDocument);
 
-        assertEquals(VERSION, entityVersionedSnapshot.versionFieldName);
-        assertTrue(entityVersionedSnapshot.hasVersionAnnotation);
-        assertTrue(entityVersionedSnapshot.hasVersionValue);
-        assertEquals(0L, entityVersionedSnapshot.versionValue);
+        assertEquals(VERSION, entityVersionInfo.versionFieldName);
+        assertTrue(entityVersionInfo.hasVersionAnnotation);
+        assertTrue(entityVersionInfo.hasVersionValue);
+        assertEquals(0L, entityVersionInfo.versionValue);
         assertEquals(1L, entityWithInheritVersion.version);
 
-        VersionHandler.resetVersionValue(entityVersionedSnapshot);
+        VersionHandler.resetVersionValue(entityVersionInfo);
         assertEquals(0L, entityWithInheritVersion.version);
 
         //test entity with public version and versionValue=null
         entityWithInheritVersion = new EntityWithInheritVersion(null, null);
-        entityVersionedSnapshot = VersionHandler.buildAndAdjustEntityVersionInfo(entityWithInheritVersion, bsonDocument);
-        assertTrue(entityVersionedSnapshot.hasVersionAnnotation);
-        assertFalse(entityVersionedSnapshot.hasVersionValue);
-        assertNull(entityVersionedSnapshot.versionValue);
+        entityVersionInfo = VersionHandler.buildAndAdjustEntityVersionInfo(entityWithInheritVersion, bsonDocument);
+        assertTrue(entityVersionInfo.hasVersionAnnotation);
+        assertFalse(entityVersionInfo.hasVersionValue);
+        assertNull(entityVersionInfo.versionValue);
         assertEquals(0L, entityWithInheritVersion.version);
 
-        VersionHandler.resetVersionValue(entityVersionedSnapshot);
+        VersionHandler.resetVersionValue(entityVersionInfo);
         assertNull(entityWithInheritVersion.version);
     }
 
-    @DisplayName("fail building EntityVersionedSnapshot with duplicated version fields")
+    @DisplayName("fail building EntityVersion with duplicated version fields")
     @Test
     public void handleEntityWithDuplicatedVersion() {
         EntityWithInheritDuplicatedVersion entity = new EntityWithInheritDuplicatedVersion(null, null, null);
@@ -145,7 +145,7 @@ public class VersionHandlerTests {
                 () -> VersionHandler.buildAndAdjustEntityVersionInfo(entity, bsonDocument));
     }
 
-    @DisplayName("fail building EntityVersionedSnapshot with duplicated version fields in a deep inheritance")
+    @DisplayName("fail building EntityVersion with duplicated version fields in a deep inheritance")
     @Test
     public void handleEntityWithDeepInheritanceDuplicatedVersion() {
         EntityWithDeepInheritance entityWithDeepInheritance = new EntityWithDeepInheritance(null, null, null);

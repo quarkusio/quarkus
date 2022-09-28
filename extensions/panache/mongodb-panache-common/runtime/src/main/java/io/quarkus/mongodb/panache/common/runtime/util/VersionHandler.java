@@ -115,14 +115,14 @@ public class VersionHandler {
         }
     }
 
-    public static void incrementVersionValue(EntityVersionInfo entityVersionedSnapshot) {
+    public static void incrementVersionValue(EntityVersionInfo entityVersionInfo) {
         try {
-            if (!entityVersionedSnapshot.hasVersionAnnotation) {
+            if (!entityVersionInfo.hasVersionAnnotation) {
                 return;
             }
 
-            Field versionField = entityVersionedSnapshot.versionField;
-            Object entity = entityVersionedSnapshot.entity;
+            Field versionField = entityVersionInfo.versionField;
+            Object entity = entityVersionInfo.entity;
 
             boolean canAccess = versionField.canAccess(entity);
             versionField.setAccessible(true);
@@ -159,41 +159,6 @@ public class VersionHandler {
     public static void resetVersionValueAndThrowOptimistic(EntityVersionInfo entityVersionInfo) {
         resetVersionValue(entityVersionInfo);
         throwOptimisticLockException(entityVersionInfo);
-    }
-
-    /**
-     * //TODO implement
-     * Restore previous version of all entities that failed to persist or update.
-     */
-    public static void resetVersionValue(MongoBulkWriteException mongoBulkWriteException,
-            List<EntityVersionInfo> entityVersionedSnapshots) {
-
-        BulkWriteResult writeResult = mongoBulkWriteException.getWriteResult();
-        //all operation failed, so we restore version for all
-        if (writeResult.getInsertedCount() == 0
-                && writeResult.getModifiedCount() == 0
-                && writeResult.getMatchedCount() == 0) {
-            entityVersionedSnapshots.forEach(VersionHandler::resetVersionValue);
-        } else {
-            //we get all the ids that operation finished succesfully
-            List<BsonValue> matchedIds = new ArrayList<>();
-            writeResult.getInserts().stream()
-                    .map(BulkWriteInsert::getId)
-                    .collect(Collectors.toCollection(() -> matchedIds));
-            writeResult.getUpserts().stream()
-                    .map(BulkWriteUpsert::getId)
-                    .collect(Collectors.toCollection(() -> matchedIds));
-
-            //here we filter the operations that failed and restore the version
-            List<EntityVersionInfo> snapshotsToResetVersion = entityVersionedSnapshots.stream()
-                    .filter(entityVersionedSnapshot -> entityVersionedSnapshot.entityId != null)
-                    .filter(entityVersionedSnapshot -> {
-                        return matchedIds.stream()
-                                .noneMatch(bsonValue -> bsonValue.equals(entityVersionedSnapshot.entityId));
-                    }).collect(Collectors.toList());
-
-            snapshotsToResetVersion.forEach(VersionHandler::resetVersionValue);
-        }
     }
 
     /**

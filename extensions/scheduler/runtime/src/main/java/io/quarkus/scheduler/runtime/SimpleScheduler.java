@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -55,6 +53,7 @@ import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 
 @Typed(Scheduler.class)
@@ -67,7 +66,6 @@ public class SimpleScheduler implements Scheduler {
     private static final long CHECK_PERIOD = 1000L;
 
     private final ScheduledExecutorService scheduledExecutor;
-    private final ExecutorService executor;
     private final Vertx vertx;
     private volatile boolean running;
     private final List<ScheduledTask> scheduledTasks;
@@ -79,7 +77,6 @@ public class SimpleScheduler implements Scheduler {
         this.running = true;
         this.enabled = schedulerRuntimeConfig.enabled;
         this.scheduledTasks = new ArrayList<>();
-        this.executor = context.getExecutor();
         this.vertx = vertx;
 
         if (!schedulerRuntimeConfig.enabled) {
@@ -155,7 +152,7 @@ public class SimpleScheduler implements Scheduler {
         ZonedDateTime now = ZonedDateTime.now();
         LOG.tracef("Check triggers at %s", now);
         for (ScheduledTask task : scheduledTasks) {
-            task.execute(now, executor, vertx);
+            task.execute(now, vertx);
         }
     }
 
@@ -301,26 +298,26 @@ public class SimpleScheduler implements Scheduler {
             this.invoker = invoker;
         }
 
-        void execute(ZonedDateTime now, ExecutorService executor, Vertx vertx) {
+        void execute(ZonedDateTime now, Vertx vertx) {
             if (!trigger.isRunning()) {
                 return;
             }
             ZonedDateTime scheduledFireTime = trigger.evaluate(now);
             if (scheduledFireTime != null) {
+                Context context = VertxContext.getOrCreateDuplicatedContext(vertx);
+                VertxContextSafetyToggle.setContextSafe(context, true);
                 if (invoker.isBlocking()) {
-                    try {
-                        executor.execute(new Runnable() {
-                            @Override
-                            public void run() {
+                    context.executeBlocking(new Handler<Promise<Object>>() {
+                        @Override
+                        public void handle(Promise<Object> p) {
+                            try {
                                 doInvoke(now, scheduledFireTime);
+                            } finally {
+                                p.complete();
                             }
-                        });
-                    } catch (RejectedExecutionException e) {
-                        LOG.warnf("Rejected execution of a scheduled task for trigger %s", trigger);
-                    }
+                        }
+                    }, false);
                 } else {
-                    Context context = VertxContext.getOrCreateDuplicatedContext(vertx);
-                    VertxContextSafetyToggle.setContextSafe(context, true);
                     context.runOnContext(new Handler<Void>() {
                         @Override
                         public void handle(Void event) {

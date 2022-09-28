@@ -2,13 +2,10 @@ package io.quarkus.scheduler.common.runtime;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 
 import com.cronutils.model.CronType;
 
 public interface SchedulerContext {
-
-    ExecutorService getExecutor();
 
     CronType getCronType();
 

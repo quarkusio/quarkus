@@ -233,4 +233,9 @@ public class PanacheFunctionalityTest {
     Person getBug7102(Long id) {
         return Person.findById(id);
     }
+
+    @Test
+    public void testEnhancement27184DeleteDetached() {
+        RestAssured.when().get("/test/testEnhancement27184DeleteDetached").then().body(is("OK"));
+    }
 }

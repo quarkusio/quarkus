@@ -15,6 +15,8 @@ import javax.persistence.Query;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import org.hibernate.Session;
+
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.arc.Arc;
@@ -119,7 +121,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
     public void delete(Object entity) {
         EntityManager em = getEntityManager(entity.getClass());
-        em.remove(entity);
+        em.remove(em.contains(entity) ? entity : em.unwrap(Session.class).getReference(entity));
     }
 
     public boolean isPersistent(Object entity) {

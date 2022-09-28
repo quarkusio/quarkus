@@ -9,6 +9,7 @@ import io.quarkus.redis.datasource.bitmap.ReactiveTransactionalBitMapCommands;
 import io.quarkus.redis.datasource.geo.ReactiveTransactionalGeoCommands;
 import io.quarkus.redis.datasource.hash.ReactiveTransactionalHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveTransactionalHyperLogLogCommands;
+import io.quarkus.redis.datasource.json.ReactiveTransactionalJsonCommands;
 import io.quarkus.redis.datasource.keys.ReactiveTransactionalKeyCommands;
 import io.quarkus.redis.datasource.list.ReactiveTransactionalListCommands;
 import io.quarkus.redis.datasource.set.ReactiveTransactionalSetCommands;
@@ -95,6 +96,12 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
     public <K> ReactiveTransactionalBitMapCommands<K> bitmap(Class<K> redisKeyType) {
         return new ReactiveTransactionalBitMapCommandsImpl<>(this,
                 (ReactiveBitMapCommandsImpl<K>) this.reactive.bitmap(redisKeyType), tx);
+    }
+
+    @Override
+    public <K> ReactiveTransactionalJsonCommands<K> json(Class<K> redisKeyType) {
+        return new ReactiveTransactionalJsonCommandsImpl<>(this,
+                (ReactiveJsonCommandsImpl<K>) this.reactive.json(redisKeyType), tx);
     }
 
     @Override

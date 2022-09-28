@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -103,7 +104,7 @@ public final class AnnotationStore {
     private Collection<AnnotationInstance> getOriginalAnnotations(AnnotationTarget target) {
         switch (target.kind()) {
             case CLASS:
-                return target.asClass().classAnnotations();
+                return target.asClass().declaredAnnotations();
             case METHOD:
                 // Note that the returning collection also contains method params annotations
                 return target.asMethod().annotations();

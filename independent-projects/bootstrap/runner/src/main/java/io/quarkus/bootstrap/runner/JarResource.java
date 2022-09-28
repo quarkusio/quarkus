@@ -1,7 +1,5 @@
 package io.quarkus.bootstrap.runner;
 
-import io.smallrye.common.io.jar.JarEntries;
-import io.smallrye.common.io.jar.JarFiles;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -20,6 +18,9 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import io.smallrye.common.io.jar.JarEntries;
+import io.smallrye.common.io.jar.JarFiles;
 
 /**
  * A jar resource

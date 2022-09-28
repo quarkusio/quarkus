@@ -1,10 +1,12 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic;
 
 import java.util.function.Supplier;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.client.ClientBuilder;
+
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;

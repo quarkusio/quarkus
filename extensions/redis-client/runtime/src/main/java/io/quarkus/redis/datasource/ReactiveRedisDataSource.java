@@ -7,6 +7,7 @@ import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
 import io.quarkus.redis.datasource.geo.ReactiveGeoCommands;
 import io.quarkus.redis.datasource.hash.ReactiveHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveHyperLogLogCommands;
+import io.quarkus.redis.datasource.json.ReactiveJsonCommands;
 import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
 import io.quarkus.redis.datasource.list.ReactiveListCommands;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
@@ -372,13 +373,32 @@ public interface ReactiveRedisDataSource {
     }
 
     /**
-     * Gets the objects to publish and receive messages.
+     * Gets the object to publish and receive messages.
      *
      * @param messageType the type of message
      * @param <V> the type of message
      * @return the object to publish and subscribe to Redis channels
      */
     <V> ReactivePubSubCommands<V> pubsub(Class<V> messageType);
+
+    /**
+     * Gets the object to manipulate JSON values.
+     * This group requires the <a href="https://redis.io/docs/stack/json/">RedisJSON module</a>.
+     *
+     * @return the object to manipulate JSON values.
+     */
+    default ReactiveJsonCommands<String> json() {
+        return json(String.class);
+    }
+
+    /**
+     * Gets the object to manipulate JSON values.
+     * This group requires the <a href="https://redis.io/docs/stack/json/">RedisJSON module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to manipulate JSON values.
+     */
+    <K> ReactiveJsonCommands<K> json(Class<K> redisKeyType);
 
     /**
      * Executes a command.

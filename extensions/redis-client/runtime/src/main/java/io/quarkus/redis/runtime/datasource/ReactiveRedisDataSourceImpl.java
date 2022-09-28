@@ -14,6 +14,7 @@ import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
 import io.quarkus.redis.datasource.geo.ReactiveGeoCommands;
 import io.quarkus.redis.datasource.hash.ReactiveHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveHyperLogLogCommands;
+import io.quarkus.redis.datasource.json.ReactiveJsonCommands;
 import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
 import io.quarkus.redis.datasource.list.ReactiveListCommands;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
@@ -275,6 +276,11 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     @Override
     public <K> ReactiveBitMapCommands<K> bitmap(Class<K> redisKeyType) {
         return new ReactiveBitMapCommandsImpl<>(this, redisKeyType);
+    }
+
+    @Override
+    public <K> ReactiveJsonCommands<K> json(Class<K> redisKeyType) {
+        return new ReactiveJsonCommandsImpl<>(this, redisKeyType);
     }
 
     @Override

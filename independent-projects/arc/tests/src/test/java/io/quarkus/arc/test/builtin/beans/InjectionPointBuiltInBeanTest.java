@@ -2,10 +2,9 @@ package io.quarkus.arc.test.builtin.beans;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
+
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
@@ -14,8 +13,12 @@ import javax.enterprise.inject.spi.AnnotatedParameter;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class InjectionPointBuiltInBeanTest {
     @RegisterExtension

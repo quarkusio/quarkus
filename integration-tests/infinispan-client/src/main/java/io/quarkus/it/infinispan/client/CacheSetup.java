@@ -41,6 +41,7 @@ public class CacheSetup {
 
     public static final String DEFAULT_CACHE = "default";
     public static final String MAGAZINE_CACHE = "magazine";
+    public static final String BOOKS_CACHE = "books";
     public static final String AUTHORS_CACHE = "authors";
 
     @Inject
@@ -57,6 +58,7 @@ public class CacheSetup {
     void onStart(@Observes StartupEvent ev) {
         RemoteCache<String, Book> defaultCache = cacheManager.getCache(DEFAULT_CACHE);
         RemoteCache<String, Magazine> magazineCache = cacheManager.getCache(MAGAZINE_CACHE);
+        RemoteCache<String, Book> booksCache = cacheManager.getCache(BOOKS_CACHE);
 
         defaultCache.addClientListener(new EventPrintListener());
 
@@ -104,6 +106,13 @@ public class CacheSetup {
                 Arrays.asList("Yep, I'm gay", "Backlash against HMOS", "False Hope on Breast Cancer?")));
 
         authors.put("aut-1", gMartin);
+
+        booksCache.put("hp-1", new Book("Philosopher's Stone", "Harry Potter and the Philosopher's Stone", 1997,
+                Collections.singleton(new Author("J. K. Rowling", "Rowling")), Type.FANTASY, new BigDecimal("50.99")));
+        booksCache.put("hp-2", new Book("Chamber of Secrets", "Harry Potter and the Chamber of Secrets", 1998,
+                Collections.singleton(new Author("J. K. Rowling", "Rowling")), Type.FANTASY, new BigDecimal("50.99")));
+        booksCache.put("hp-3", new Book("Prisoner of Azkaban", "Harry Potter and the Prisoner of Azkaban", 1999,
+                Collections.singleton(new Author("J. K. Rowling", "Rowling")), Type.FANTASY, new BigDecimal("50.99")));
 
         waitUntilStarted.countDown();
     }

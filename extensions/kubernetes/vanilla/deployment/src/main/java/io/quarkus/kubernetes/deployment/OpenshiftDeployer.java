@@ -24,11 +24,16 @@ public class OpenshiftDeployer {
                 return;
             }
             if (target.getEntry().getName().equals(OPENSHIFT)) {
-                if (client.getClient().isAdaptable(OpenShiftClient.class)) {
-                    deploymentCluster.produce(new KubernetesDeploymentClusterBuildItem(OPENSHIFT));
-                } else {
-                    throw new IllegalStateException(
-                            "Openshift was requested as a deployment, but the target cluster is not an Openshift cluster!");
+                try (var openShiftClient = client.getClient().adapt(OpenShiftClient.class)) {
+                    if (openShiftClient.isSupported()) {
+                        deploymentCluster.produce(new KubernetesDeploymentClusterBuildItem(OPENSHIFT));
+                    } else {
+                        throw new IllegalStateException(
+                                "Openshift was requested as a deployment, but the target cluster is not an Openshift cluster!");
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(
+                            "Failed to configure OpenShift. Make sure you have the Quarkus OpenShift extension.", e);
                 }
             }
         });

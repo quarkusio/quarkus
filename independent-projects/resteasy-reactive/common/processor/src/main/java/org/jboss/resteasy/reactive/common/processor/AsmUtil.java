@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.common.processor;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.Function;
+
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.MethodInfo;

@@ -1,11 +1,13 @@
 package io.quarkus.bootstrap.logging;
 
-import io.quarkus.bootstrap.graal.ImageInfo;
 import java.util.logging.Handler;
 import java.util.logging.Level;
+
 import org.jboss.logmanager.EmbeddedConfigurator;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
+
+import io.quarkus.bootstrap.graal.ImageInfo;
 
 /**
  *

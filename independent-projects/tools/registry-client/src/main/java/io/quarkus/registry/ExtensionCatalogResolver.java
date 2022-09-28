@@ -1,5 +1,25 @@
 package io.quarkus.registry;
 
+import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.Set;
+import java.util.function.Function;
+
+import org.eclipse.aether.artifact.DefaultArtifact;
+
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -20,24 +40,6 @@ import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.registry.config.RegistryConfig;
 import io.quarkus.registry.util.PlatformArtifacts;
-import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.Set;
-import java.util.function.Function;
-import org.eclipse.aether.artifact.DefaultArtifact;
 
 public class ExtensionCatalogResolver {
 

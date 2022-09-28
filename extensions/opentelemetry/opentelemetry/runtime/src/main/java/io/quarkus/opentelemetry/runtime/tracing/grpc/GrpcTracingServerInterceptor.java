@@ -44,7 +44,7 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
                 .addAttributesExtractor(new GrpcStatusCodeExtractor())
                 .setSpanStatusExtractor(new GrpcSpanStatusExtractor());
 
-        this.instrumenter = builder.newServerInstrumenter(new GrpcTextMapGetter());
+        this.instrumenter = builder.buildServerInstrumenter(new GrpcTextMapGetter());
     }
 
     @Override
@@ -66,7 +66,22 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
 
     private static class GrpcServerNetServerAttributesGetter extends InetSocketAddressNetServerAttributesGetter<GrpcRequest> {
         @Override
-        public InetSocketAddress getAddress(final GrpcRequest grpcRequest) {
+        public String transport(final GrpcRequest grpcRequest) {
+            return SemanticAttributes.NetTransportValues.IP_TCP;
+        }
+
+        @Override
+        public String hostName(GrpcRequest grpcRequest) {
+            return null;
+        }
+
+        @Override
+        public Integer hostPort(GrpcRequest grpcRequest) {
+            return null;
+        }
+
+        @Override
+        protected InetSocketAddress getPeerSocketAddress(GrpcRequest grpcRequest) {
             SocketAddress socketAddress = grpcRequest.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR);
             if (socketAddress instanceof InetSocketAddress) {
                 return (InetSocketAddress) socketAddress;
@@ -75,8 +90,12 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
         }
 
         @Override
-        public String transport(final GrpcRequest grpcRequest) {
-            return SemanticAttributes.NetTransportValues.IP_TCP;
+        protected InetSocketAddress getHostSocketAddress(GrpcRequest grpcRequest) {
+            SocketAddress socketAddress = grpcRequest.getAttributes().get(Grpc.TRANSPORT_ATTR_LOCAL_ADDR);
+            if (socketAddress instanceof InetSocketAddress) {
+                return (InetSocketAddress) socketAddress;
+            }
+            return null;
         }
     }
 

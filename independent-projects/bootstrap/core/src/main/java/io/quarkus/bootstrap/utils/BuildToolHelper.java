@@ -1,15 +1,17 @@
 package io.quarkus.bootstrap.utils;
 
-import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
-import io.quarkus.bootstrap.util.BootstrapUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
+import io.quarkus.bootstrap.util.BootstrapUtils;
 
 /**
  * Helper class used to expose build tool used by the project

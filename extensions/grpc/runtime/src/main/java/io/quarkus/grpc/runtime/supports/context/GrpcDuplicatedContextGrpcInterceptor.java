@@ -2,6 +2,8 @@ package io.quarkus.grpc.runtime.supports.context;
 
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -13,9 +15,11 @@ import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
+import io.grpc.Status;
 import io.quarkus.grpc.GlobalInterceptor;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
 @ApplicationScoped
@@ -44,7 +48,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
             setContextSafe(local, true);
 
             // Must be sure to call next.startCall on the right context
-            return new ListenedOnDuplicatedContext<>(() -> next.startCall(call, headers), local);
+            return new ListenedOnDuplicatedContext<>(call, () -> next.startCall(call, headers), local);
         } else {
             log.warn("Unable to run on a duplicated context - interceptor not called on the Vert.x event loop");
             return next.startCall(call, headers);
@@ -56,67 +60,99 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
         return Integer.MAX_VALUE;
     }
 
-    static class ListenedOnDuplicatedContext<ReqT> extends ServerCall.Listener<ReqT> {
+    static class ListenedOnDuplicatedContext<ReqT, RespT> extends ServerCall.Listener<ReqT> {
 
         private final Context context;
         private final Supplier<ServerCall.Listener<ReqT>> supplier;
+        private final ServerCall<ReqT, RespT> call;
         private ServerCall.Listener<ReqT> delegate;
 
-        public ListenedOnDuplicatedContext(Supplier<ServerCall.Listener<ReqT>> supplier, Context context) {
+        private final AtomicBoolean closed = new AtomicBoolean();
+
+        public ListenedOnDuplicatedContext(ServerCall<ReqT, RespT> call, Supplier<ServerCall.Listener<ReqT>> supplier,
+                Context context) {
             this.context = context;
             this.supplier = supplier;
+            this.call = call;
         }
 
         private synchronized ServerCall.Listener<ReqT> getDelegate() {
             if (delegate == null) {
-                delegate = supplier.get();
+                try {
+                    delegate = supplier.get();
+                } catch (Throwable t) {
+                    // If the interceptor supplier throws an exception, catch it, and close the call.
+                    log.warn("Unable to retrieve gRPC Server call listener", t);
+                    close(t);
+                    return null;
+                }
             }
             return delegate;
         }
 
+        private void close(Throwable t) {
+            if (closed.compareAndSet(false, true)) {
+                call.close(Status.fromThrowable(t), new Metadata());
+            }
+        }
+
+        private void invoke(Consumer<ServerCall.Listener<ReqT>> invocation) {
+            if (Vertx.currentContext() == context) {
+                ServerCall.Listener<ReqT> listener = getDelegate();
+                if (listener == null) {
+                    return;
+                }
+                try {
+                    invocation.accept(listener);
+                } catch (Throwable t) {
+                    close(t);
+                }
+            } else {
+                context.runOnContext(new Handler<Void>() {
+                    @Override
+                    public void handle(Void x) {
+                        ServerCall.Listener<ReqT> listener = ListenedOnDuplicatedContext.this.getDelegate();
+                        if (listener == null) {
+                            return;
+                        }
+                        try {
+                            invocation.accept(listener);
+                        } catch (Throwable t) {
+                            close(t);
+                        }
+                    }
+                });
+            }
+        }
+
         @Override
         public void onMessage(ReqT message) {
-            if (Vertx.currentContext() == context) {
-                getDelegate().onMessage(message);
-            } else {
-                context.runOnContext(x -> getDelegate().onMessage(message));
-            }
+            invoke(new Consumer<ServerCall.Listener<ReqT>>() {
+                @Override
+                public void accept(ServerCall.Listener<ReqT> listener) {
+                    listener.onMessage(message);
+                }
+            });
         }
 
         @Override
         public void onReady() {
-            if (Vertx.currentContext() == context) {
-                getDelegate().onReady();
-            } else {
-                context.runOnContext(x -> getDelegate().onReady());
-            }
+            invoke(ServerCall.Listener::onReady);
         }
 
         @Override
         public void onHalfClose() {
-            if (Vertx.currentContext() == context) {
-                getDelegate().onHalfClose();
-            } else {
-                context.runOnContext(x -> getDelegate().onHalfClose());
-            }
+            invoke(ServerCall.Listener::onHalfClose);
         }
 
         @Override
         public void onCancel() {
-            if (Vertx.currentContext() == context) {
-                getDelegate().onCancel();
-            } else {
-                context.runOnContext(x -> getDelegate().onCancel());
-            }
+            invoke(ServerCall.Listener::onCancel);
         }
 
         @Override
         public void onComplete() {
-            if (Vertx.currentContext() == context) {
-                getDelegate().onComplete();
-            } else {
-                context.runOnContext(x -> getDelegate().onComplete());
-            }
+            invoke(ServerCall.Listener::onComplete);
         }
     }
 }

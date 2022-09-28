@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
 import java.io.Serializable;
+
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 

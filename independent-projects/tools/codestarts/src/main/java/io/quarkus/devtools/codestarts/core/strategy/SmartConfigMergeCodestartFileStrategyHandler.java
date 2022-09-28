@@ -1,13 +1,5 @@
 package io.quarkus.devtools.codestarts.core.strategy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-import io.quarkus.devtools.codestarts.CodestartException;
-import io.quarkus.devtools.codestarts.CodestartType;
-import io.quarkus.devtools.codestarts.core.CodestartData;
-import io.quarkus.devtools.codestarts.core.reader.TargetFile;
-import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -15,6 +7,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+
+import io.quarkus.devtools.codestarts.CodestartException;
+import io.quarkus.devtools.codestarts.CodestartType;
+import io.quarkus.devtools.codestarts.core.CodestartData;
+import io.quarkus.devtools.codestarts.core.reader.TargetFile;
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
 
 final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFileStrategyHandler {
 

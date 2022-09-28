@@ -3,9 +3,6 @@ package io.quarkus.devtools.testing;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.paths.MultiRootPathTree;
-import io.quarkus.paths.OpenPathTree;
-import io.quarkus.paths.PathTree;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -20,11 +17,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.AbstractPathAssert;
 import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.TestInfo;
+
+import io.quarkus.paths.MultiRootPathTree;
+import io.quarkus.paths.OpenPathTree;
+import io.quarkus.paths.PathTree;
 
 /**
  * Test file content and directory tree to make sure they are valid by comparing them to their snapshots.

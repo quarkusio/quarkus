@@ -1,7 +1,5 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.processor.AnnotationsTransformer.TransformationContext;
-import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -10,12 +8,16 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
+
+import io.quarkus.arc.processor.AnnotationsTransformer.TransformationContext;
+import io.quarkus.arc.processor.BuildExtension.BuildContext;
 
 /**
  * Applies {@link AnnotationsTransformer}s and caches the results of transformations.

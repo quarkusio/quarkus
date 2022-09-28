@@ -9,6 +9,7 @@ import javax.ws.rs.core.Response;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -75,6 +76,7 @@ public class SimpleContextPropagationTest {
     }
 
     @Test()
+    @Disabled("flaky")
     public void testArcMEContextPropagationDisabled() throws InterruptedException {
         // reset state
         RequestBean.initState();

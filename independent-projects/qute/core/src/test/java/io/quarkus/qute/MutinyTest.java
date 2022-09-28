@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,7 +11,11 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.Test;
+
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 public class MutinyTest {
 

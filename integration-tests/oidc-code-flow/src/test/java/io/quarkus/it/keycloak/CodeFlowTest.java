@@ -17,6 +17,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
@@ -499,10 +500,12 @@ public class CodeFlowTest {
     }
 
     @Test
+    // See https://github.com/quarkusio/quarkus/issues/27900
+    @Disabled("flaky")
     public void testTokenAutoRefresh() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenant-autorefresh");
-            assertEquals("Sign in to logout-realm", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");

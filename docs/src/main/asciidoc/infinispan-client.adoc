@@ -467,6 +467,43 @@ for Kubernetes deployments, Infinispan Console,
 https://infinispan.org/docs/stable/titles/rest/rest.html#rest_v2_protobuf_schemas[REST API] or the
 https://infinispan.org/docs/stable/titles/encoding/encoding.html#registering-sci-remote-caches_marshalling[Hot Rod Java Client].
 
+[#infinispan-annotations-api]
+== Caching using annotations
+
+The Infinispan Client extension offers a set of annotations that can be used in a CDI managed bean to enable caching abilities with Infinispan.
+
+[WARNING]
+====
+Caching annotations are not allowed on private methods.
+They will work fine with any other access modifier including package-private (no explicit modifier).
+====
+
+=== @CacheResult
+
+Loads a method result from the cache without executing the method body whenever possible.
+
+When a method annotated with `@CacheResult` is invoked, Quarkus will use the method argument as the cache key and check in the cache whether the method has been already invoked.
+Methods with multiple parameters are not allowed. For composite keys, define a Protobuf schema that will hold multiple values.
+If a value is found in the cache, it is returned and the annotated method is never actually executed.
+If no value is found, the annotated method is invoked and the returned value is stored in the cache using the computed key.
+This annotation cannot be used on a method returning `void`.
+
+[NOTE]
+====
+Infinispan Client extension is not able yet to cache `null` values unlike the Quarkus-Cache extension.
+====
+
+=== @CacheInvalidate
+
+Removes an entry from the cache.
+
+When a method annotated with `@CacheInvalidate` is invoked, Infinispan will use the method argument as a cache key to try to remove an existing entry from the cache.
+If the key does not identify any cache entry, nothing will happen.
+
+=== @CacheInvalidateAll
+
+When a method annotated with `@CacheInvalidateAll` is invoked, Infinispan will remove all entries from the cache.
+
 
 == Querying
 

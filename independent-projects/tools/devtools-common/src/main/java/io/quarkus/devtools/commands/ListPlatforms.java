@@ -1,12 +1,13 @@
 package io.quarkus.devtools.commands;
 
+import java.util.HashMap;
+
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.ListPlatformsCommandHandler;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
-import java.util.HashMap;
 
 public class ListPlatforms {
 

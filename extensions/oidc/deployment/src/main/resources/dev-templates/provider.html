@@ -405,6 +405,10 @@ function signInToService(servicePath) {
     window.open("http://localhost:" + port + servicePath);
 }
 
+function clearResults() {
+    $('#results').text('');
+}
+
 {/script}
 
 {#body}
@@ -562,9 +566,12 @@ function signInToService(servicePath) {
                 </div>    
 
                 <br/>
-                <div class="bg-light" id="results">
 
+                <div class="bg-light" id="results">
                 </div>
+                <a class="btn btn-link float-right" title="Clear results" onclick="clearResults();">
+                    <i class="fa fa-eraser" aria-hidden="true"></i>
+                </a>
 
             </div>
         </div>
@@ -620,6 +627,9 @@ function signInToService(servicePath) {
                 <div class="bg-light" id="results">
 
                 </div>
+                <a class="btn btn-link float-right" title="Clear results" onclick="clearResults();">
+                    <i class="fa fa-eraser" aria-hidden="true"></i>
+                </a>
             </div>
         </div>    
     {#else if info:oidcGrantType is 'client_credentials'}
@@ -658,6 +668,9 @@ function signInToService(servicePath) {
                 <div class="bg-light" id="results">
 
                 </div>
+                <a class="btn btn-link float-right" title="Clear results" onclick="clearResults();">
+                    <i class="fa fa-eraser" aria-hidden="true"></i>
+                </a>
             </div>
         </div>    
     {/if}    

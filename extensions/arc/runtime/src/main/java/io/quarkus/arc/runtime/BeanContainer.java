@@ -20,6 +20,9 @@ public interface BeanContainer {
     }
 
     /**
+     * Note that if there are multiple sub classes of the given type this will return the exact match. This means
+     * that this can be used to directly instantiate superclasses of other beans without causing problems. This behavior differs
+     * to standard CDI rules where an ambiguous dependency would exist.
      *
      * @param type
      * @param qualifiers

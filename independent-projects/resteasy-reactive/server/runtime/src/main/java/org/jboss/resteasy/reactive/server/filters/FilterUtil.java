@@ -1,14 +1,17 @@
 package org.jboss.resteasy.reactive.server.filters;
 
-import io.smallrye.mutiny.Uni;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
 import javax.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
+
+import io.smallrye.mutiny.Uni;
 
 /**
  * This class is used by the filters that are generated as a result of the use of {@link ServerRequestFilter} or

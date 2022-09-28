@@ -2,8 +2,9 @@ package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.quarkus.qute.TemplateNode.Origin;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.TemplateNode.Origin;
 
 public class EngineTest {
 

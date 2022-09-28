@@ -1,22 +1,25 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import io.vertx.core.http.HttpClient;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.ext.ParamConverterProvider;
+
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
+
+import io.vertx.core.http.HttpClient;
 
 public class WebTargetImpl implements WebTarget {
 

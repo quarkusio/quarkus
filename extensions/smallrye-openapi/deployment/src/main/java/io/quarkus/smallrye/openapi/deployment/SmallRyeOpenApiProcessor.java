@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -96,6 +97,7 @@ import io.quarkus.smallrye.openapi.runtime.filter.AutoBasicSecurityFilter;
 import io.quarkus.smallrye.openapi.runtime.filter.AutoBearerTokenSecurityFilter;
 import io.quarkus.smallrye.openapi.runtime.filter.AutoUrl;
 import io.quarkus.smallrye.openapi.runtime.filter.OpenIDConnectSecurityFilter;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -119,6 +121,7 @@ import io.smallrye.openapi.runtime.util.JandexUtil;
 import io.smallrye.openapi.spring.SpringConstants;
 import io.smallrye.openapi.vertx.VertxConstants;
 import io.vertx.core.Handler;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -202,17 +205,36 @@ public class SmallRyeOpenApiProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
+    void registerAutoSecurityFilter(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            SmallRyeOpenApiConfig openApiConfig,
+            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
+            List<SecurityInformationBuildItem> securityInformationBuildItems,
+            OpenApiRecorder recorder) {
+        OASFilter autoSecurityFilter = null;
+        if (openApiConfig.autoAddSecurity) {
+            // Only add the security if there are secured endpoints
+            OASFilter autoRolesAllowedFilter = getAutoRolesAllowedFilter(openApiConfig.securitySchemeName,
+                    apiFilteredIndexViewBuildItem, openApiConfig);
+            if (autoRolesAllowedFilter != null) {
+                autoSecurityFilter = getAutoSecurityFilter(securityInformationBuildItems, openApiConfig);
+            }
+        }
+
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(OASFilter.class).setRuntimeInit()
+                .supplier(recorder.autoSecurityFilterSupplier(autoSecurityFilter)).done());
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
     void handler(LaunchModeBuildItem launch,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<RouteBuildItem> routes,
             OpenApiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            List<SecurityInformationBuildItem> securityInformationBuildItems,
             OpenApiRuntimeConfig openApiRuntimeConfig,
             ShutdownContextBuildItem shutdownContext,
             SmallRyeOpenApiConfig openApiConfig,
-            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem) {
+            List<FilterBuildItem> filterBuildItems) {
         /*
          * <em>Ugly Hack</em>
          * In dev mode, we pass a classloader to load the up to date OpenAPI document.
@@ -228,23 +250,22 @@ public class SmallRyeOpenApiProcessor {
             recorder.setupClDevMode(shutdownContext);
         }
 
-        OASFilter autoSecurityFilter = null;
-        if (openApiConfig.autoAddSecurity) {
-            // Only add the security if there are secured endpoints
-            OASFilter autoRolesAllowedFilter = getAutoRolesAllowedFilter(openApiConfig.securitySchemeName,
-                    apiFilteredIndexViewBuildItem, openApiConfig);
-            if (autoRolesAllowedFilter != null) {
-                autoSecurityFilter = getAutoSecurityFilter(securityInformationBuildItems, openApiConfig);
+        Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig);
+
+        Consumer<Route> corsFilter = null;
+        // Add CORS filter if the path is not attached to main root
+        // as 'http-vertx' only adds CORS filter to http route path
+        if (!nonApplicationRootPathBuildItem.isAttachedToMainRouter()) {
+            for (FilterBuildItem filterBuildItem : filterBuildItems) {
+                if (filterBuildItem.getPriority() == FilterBuildItem.CORS) {
+                    corsFilter = recorder.corsFilter(filterBuildItem.toFilter());
+                    break;
+                }
             }
         }
 
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(OASFilter.class).setRuntimeInit()
-                .supplier(recorder.autoSecurityFilterSupplier(autoSecurityFilter)).done());
-
-        Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig);
-
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route(openApiConfig.path)
+                .routeFunction(openApiConfig.path, corsFilter)
                 .routeConfigKey("quarkus.smallrye-openapi.path")
                 .handler(handler)
                 .displayOnNotFoundPage("Open API Schema document")
@@ -252,17 +273,17 @@ public class SmallRyeOpenApiProcessor {
                 .build());
 
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route(openApiConfig.path + ".json")
+                .routeFunction(openApiConfig.path + ".json", corsFilter)
                 .handler(handler)
                 .build());
 
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route(openApiConfig.path + ".yaml")
+                .routeFunction(openApiConfig.path + ".yaml", corsFilter)
                 .handler(handler)
                 .build());
 
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route(openApiConfig.path + ".yml")
+                .routeFunction(openApiConfig.path + ".yml", corsFilter)
                 .handler(handler)
                 .build());
     }

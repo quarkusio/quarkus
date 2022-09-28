@@ -1,7 +1,5 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.InjectableContext;
-import io.quarkus.arc.ManagedContext;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,9 +8,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Singleton;
+
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.ManagedContext;
 
 /**
  * Encapsulates all contexts used in the container.

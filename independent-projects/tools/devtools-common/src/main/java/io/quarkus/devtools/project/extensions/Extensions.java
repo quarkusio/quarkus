@@ -1,12 +1,14 @@
 package io.quarkus.devtools.project.extensions;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.registry.catalog.Extension;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
+
 import org.apache.maven.model.Dependency;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.registry.catalog.Extension;
 
 public final class Extensions {
     private Extensions() {

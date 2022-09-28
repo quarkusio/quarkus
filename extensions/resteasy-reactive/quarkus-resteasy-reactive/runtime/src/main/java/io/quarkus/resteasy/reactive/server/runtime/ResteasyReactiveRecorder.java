@@ -28,7 +28,6 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.core.startup.RuntimeDeploymentManager;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
-import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvokerFactory;
@@ -149,16 +148,16 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                 shutdownContext.addShutdownTask(new ShutdownContext.CloseRunnable(closeable));
             }
         };
-        CurrentIdentityAssociation currentIdentityAssociation = Arc.container().instance(CurrentIdentityAssociation.class)
-                .get();
+        CurrentIdentityAssociation currentIdentityAssociation = Arc.container().select(CurrentIdentityAssociation.class)
+                .orNull();
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         if (contextFactory == null) {
             contextFactory = new RequestContextFactory() {
                 @Override
                 public ResteasyReactiveRequestContext createContext(Deployment deployment,
-                        ProvidersImpl providers, Object context, ThreadSetupAction requestContext,
+                        Object context, ThreadSetupAction requestContext,
                         ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
-                    return new QuarkusResteasyReactiveRequestContext(deployment, providers, (RoutingContext) context,
+                    return new QuarkusResteasyReactiveRequestContext(deployment, (RoutingContext) context,
                             requestContext,
                             handlerChain,
                             abortHandlerChain, launchMode == LaunchMode.DEVELOPMENT ? tccl : null, currentIdentityAssociation);

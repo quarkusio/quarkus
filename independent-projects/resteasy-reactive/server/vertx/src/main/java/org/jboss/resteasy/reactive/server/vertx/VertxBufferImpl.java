@@ -1,5 +1,10 @@
 package org.jboss.resteasy.reactive.server.vertx;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
@@ -7,10 +12,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.impl.Arguments;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.Objects;
 
 public class VertxBufferImpl implements Buffer {
 

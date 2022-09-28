@@ -92,6 +92,7 @@ public class HttpSecurityRecorder {
                                 }
                             });
                         } else if (throwable instanceof AuthenticationCompletionException) {
+                            log.debug("Authentication has failed, returning HTTP status 401");
                             event.response().setStatusCode(401);
                             event.response().end();
                         } else if (throwable instanceof AuthenticationRedirectException) {

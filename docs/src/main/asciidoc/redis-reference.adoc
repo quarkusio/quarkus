@@ -277,6 +277,7 @@ As mentioned above, the API is divided into groups:
 - stream (not available yet)
 - string - `.value(valueType)`
 - transactions - `withTransaction`
+- json - `.json()` (requires the https://redis.com/modules/redis-json/[redis-json] module on the server side)
 
 Each of these methods returns an object that lets you execute the commands related to the group.
 The following snippet demonstrates how to use the _hash_ group:
@@ -713,7 +714,7 @@ public static class MyExampleCustomizer implements RedisOptionsCustomizer {
 
 === Dev Services
 
-See link:redis-dev-services.adoc[Redis Dev Service].
+See xref:redis-dev-services.adoc[Redis Dev Service].
 
 [[redis-configuration-reference]]
 == Configuration Reference

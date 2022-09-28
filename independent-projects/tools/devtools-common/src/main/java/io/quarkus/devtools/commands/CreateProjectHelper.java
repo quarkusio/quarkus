@@ -2,14 +2,6 @@ package io.quarkus.devtools.commands;
 
 import static java.util.Objects.requireNonNull;
 
-import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.paths.PathTree;
-import io.quarkus.registry.catalog.Extension;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,8 +16,19 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import javax.lang.model.SourceVersion;
+
 import org.eclipse.aether.artifact.DefaultArtifact;
+
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.paths.PathTree;
+import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public class CreateProjectHelper {
 

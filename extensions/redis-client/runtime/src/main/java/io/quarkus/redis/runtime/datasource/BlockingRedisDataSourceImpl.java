@@ -13,6 +13,7 @@ import io.quarkus.redis.datasource.bitmap.BitMapCommands;
 import io.quarkus.redis.datasource.geo.GeoCommands;
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.datasource.hyperloglog.HyperLogLogCommands;
+import io.quarkus.redis.datasource.json.JsonCommands;
 import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.pubsub.PubSubCommands;
@@ -219,6 +220,11 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     @Override
     public <K> BitMapCommands<K> bitmap(Class<K> redisKeyType) {
         return new BlockingBitmapCommandsImpl<>(this, reactive.bitmap(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K> JsonCommands<K> json(Class<K> redisKeyType) {
+        return new BlockingJsonCommandsImpl<>(this, reactive.json(redisKeyType), timeout);
     }
 
     @Override

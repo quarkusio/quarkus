@@ -1,7 +1,8 @@
 package io.quarkus.arc;
 
-import io.quarkus.arc.InjectableContext.ContextState;
 import java.lang.annotation.Annotation;
+
+import io.quarkus.arc.InjectableContext.ContextState;
 
 /**
  * This factory can be used to create a new {@link CurrentContext} for a normal scope, e.g. for

@@ -3,13 +3,13 @@ package org.jboss.resteasy.reactive.server.vertx.test.customproviders;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.ext.web.RoutingContext;
 import java.util.List;
+
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Request;
+
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
@@ -18,6 +18,9 @@ import org.jboss.resteasy.reactive.server.filters.PreventAbortResteasyReactiveCo
 import org.jboss.resteasy.reactive.server.jaxrs.RequestImpl;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * Used only to ensure that the proper types are passed to the method and that CDI integrations work properly

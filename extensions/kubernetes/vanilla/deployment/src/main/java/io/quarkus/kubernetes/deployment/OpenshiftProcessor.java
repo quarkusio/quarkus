@@ -73,13 +73,13 @@ public class OpenshiftProcessor {
     private static final String OPENSHIFT_V3_APP = "app";
 
     @BuildStep
-    public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, OpenshiftConfig config,
+    public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities, OpenshiftConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
         List<String> targets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
         boolean openshiftEnabled = targets.contains(OPENSHIFT);
 
-        DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind();
+        DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind(capabilities);
         deploymentTargets.produce(
                 new KubernetesDeploymentTargetBuildItem(OPENSHIFT, deploymentResourceKind.kind, deploymentResourceKind.apiGroup,
                         deploymentResourceKind.apiVersion, OPENSHIFT_PRIORITY, openshiftEnabled));
@@ -96,7 +96,7 @@ public class OpenshiftProcessor {
             BuildProducer<FallbackContainerImageRegistryBuildItem> containerImageRegistry) {
 
         if (!containerImageConfig.registry.isPresent()) {
-            DeploymentResourceKind deploymentResourceKind = openshiftConfig.getDeploymentResourceKind();
+            DeploymentResourceKind deploymentResourceKind = openshiftConfig.getDeploymentResourceKind(capabilities);
             if (deploymentResourceKind != DeploymentResourceKind.DeploymentConfig) {
                 if (openshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
                     // Images stored in internal openshift registry use the following pattern:
@@ -215,8 +215,8 @@ public class OpenshiftProcessor {
             result.add(new DecoratorBuildItem(new RemoveOptionalFromConfigMapKeySelectorDecorator()));
         }
 
-        DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind();
-        switch (deploymentResourceKind) {
+        DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
+        switch (deploymentKind) {
             case Deployment:
                 result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentConfigResourceDecorator(name)));
                 result.add(new DecoratorBuildItem(OPENSHIFT, new AddDeploymentResourceDecorator(name, config)));
@@ -224,6 +224,14 @@ public class OpenshiftProcessor {
             case StatefulSet:
                 result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentConfigResourceDecorator(name)));
                 result.add(new DecoratorBuildItem(OPENSHIFT, new AddStatefulSetResourceDecorator(name, config)));
+                break;
+            case Job:
+                result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentConfigResourceDecorator(name)));
+                result.add(new DecoratorBuildItem(OPENSHIFT, new AddJobResourceDecorator(name, config.job)));
+                break;
+            case CronJob:
+                result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentConfigResourceDecorator(name)));
+                result.add(new DecoratorBuildItem(OPENSHIFT, new AddCronJobResourceDecorator(name, config.cronJob)));
                 break;
         }
 
@@ -306,7 +314,7 @@ public class OpenshiftProcessor {
         result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyHttpGetActionPortDecorator(name, name, port)));
 
         // Handle non-openshift builds
-        if (deploymentResourceKind == DeploymentResourceKind.DeploymentConfig
+        if (deploymentKind == DeploymentResourceKind.DeploymentConfig
                 && !OpenshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
             image.ifPresent(i -> {
                 String registry = containerImageConfig.registry

@@ -1,5 +1,16 @@
 package io.quarkus.bootstrap.app;
 
+import java.io.Serializable;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
+
 import io.quarkus.bootstrap.BootstrapAppModelFactory;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
@@ -12,16 +23,6 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
-import java.io.Serializable;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.Set;
 
 /**
  * The entry point for starting/building a Quarkus application. This class sets up the base class loading

@@ -54,6 +54,13 @@ public class RedisCommand {
         return this;
     }
 
+    public RedisCommand putAll(String[] args) {
+        for (Object arg : args) {
+            put(arg);
+        }
+        return this;
+    }
+
     public RedisCommand putArgs(RedisCommandExtraArguments arguments) {
         putAll(arguments.toArgs());
         return this;
@@ -81,6 +88,6 @@ public class RedisCommand {
         } else {
             this.request.arg(encoded);
         }
-
     }
+
 }

@@ -11,6 +11,7 @@ import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.bitmap.BitMapCommands;
 import io.quarkus.redis.datasource.bloom.BloomCommands;
+import io.quarkus.redis.datasource.countmin.CountMinCommands;
 import io.quarkus.redis.datasource.cuckoo.CuckooCommands;
 import io.quarkus.redis.datasource.geo.GeoCommands;
 import io.quarkus.redis.datasource.hash.HashCommands;
@@ -237,6 +238,11 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     @Override
     public <K, V> CuckooCommands<K, V> cuckoo(Class<K> redisKeyType, Class<V> valueType) {
         return new BlockingCuckooCommandsImpl<>(this, reactive.cuckoo(redisKeyType, valueType), timeout);
+    }
+
+    @Override
+    public <K, V> CountMinCommands<K, V> countmin(Class<K> redisKeyType, Class<V> valueType) {
+        return new BlockingCountMinCommandsImpl<>(this, reactive.countmin(redisKeyType, valueType), timeout);
     }
 
     @Override

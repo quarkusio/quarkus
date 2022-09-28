@@ -7,6 +7,7 @@ import java.util.Arrays;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.bitmap.ReactiveTransactionalBitMapCommands;
 import io.quarkus.redis.datasource.bloom.ReactiveTransactionalBloomCommands;
+import io.quarkus.redis.datasource.countmin.ReactiveTransactionalCountMinCommands;
 import io.quarkus.redis.datasource.cuckoo.ReactiveTransactionalCuckooCommands;
 import io.quarkus.redis.datasource.geo.ReactiveTransactionalGeoCommands;
 import io.quarkus.redis.datasource.hash.ReactiveTransactionalHashCommands;
@@ -116,6 +117,12 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
     public <K, V> ReactiveTransactionalCuckooCommands<K, V> cuckoo(Class<K> redisKeyType, Class<V> valueType) {
         return new ReactiveTransactionalCuckooCommandsImpl<>(this,
                 (ReactiveCuckooCommandsImpl<K, V>) this.reactive.cuckoo(redisKeyType, valueType), tx);
+    }
+
+    @Override
+    public <K, V> ReactiveTransactionalCountMinCommands<K, V> countmin(Class<K> redisKeyType, Class<V> valueType) {
+        return new ReactiveTransactionalCountMinCommandsImpl<>(this,
+                (ReactiveCountMinCommandsImpl<K, V>) this.reactive.countmin(redisKeyType, valueType), tx);
     }
 
     @Override

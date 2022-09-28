@@ -2,6 +2,7 @@ package io.quarkus.redis.datasource.transactions;
 
 import io.quarkus.redis.datasource.bitmap.ReactiveTransactionalBitMapCommands;
 import io.quarkus.redis.datasource.bloom.ReactiveTransactionalBloomCommands;
+import io.quarkus.redis.datasource.countmin.ReactiveTransactionalCountMinCommands;
 import io.quarkus.redis.datasource.cuckoo.ReactiveTransactionalCuckooCommands;
 import io.quarkus.redis.datasource.geo.ReactiveTransactionalGeoCommands;
 import io.quarkus.redis.datasource.hash.ReactiveTransactionalHashCommands;
@@ -326,6 +327,29 @@ public interface ReactiveTransactionalRedisDataSource {
     default <V> ReactiveTransactionalCuckooCommands<String, V> cuckoo(Class<V> valueType) {
         return cuckoo(String.class, valueType);
     }
+
+    /**
+     * Gets the object to manipulate Count-Min sketches.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the count-min
+     * filter support).
+     *
+     * @param <V> the type of the values added into the count-min filter
+     * @return the object to manipulate count-min sketches.
+     */
+    default <V> ReactiveTransactionalCountMinCommands<String, V> countmin(Class<V> valueType) {
+        return countmin(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to manipulate Count-Min sketches.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the count-min
+     * filter support).
+     *
+     * @param <K> the type of keys
+     * @param <V> the type of the values added into the count-min filter
+     * @return the object to manipulate count-min sketches.
+     */
+    <K, V> ReactiveTransactionalCountMinCommands<K, V> countmin(Class<K> redisKeyType, Class<V> valueType);
 
     /**
      * Gets the object to manipulate Cuckoo filters.

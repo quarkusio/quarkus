@@ -33,7 +33,8 @@ public class TenantHttps {
 
     @GET
     @Path("error")
-    public String getError(@QueryParam("error") String error, @QueryParam("error_description") String errorDescription) {
-        return "error: " + error + ", error_description: " + errorDescription;
+    public String getError(@QueryParam("error") String error, @QueryParam("error_description") String errorDescription,
+            @QueryParam("code") String value) {
+        return "code: " + value + ", error: " + error + ", error_description: " + errorDescription;
     }
 }

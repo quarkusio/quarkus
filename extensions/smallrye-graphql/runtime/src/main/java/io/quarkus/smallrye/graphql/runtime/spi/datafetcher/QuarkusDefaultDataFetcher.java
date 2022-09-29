@@ -3,6 +3,7 @@ package io.quarkus.smallrye.graphql.runtime.spi.datafetcher;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 
 import org.eclipse.microprofile.graphql.GraphQLException;
 
@@ -110,10 +111,20 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
             return (List<T>) operationInvoker.invokePrivileged(arguments);
         });
 
+        // this gets called on a batch error, so that error callbacks can run with the proper context too
+        Consumer<Throwable> onErrorConsumer = threadContext.contextualConsumer((Throwable exception) -> {
+            io.smallrye.graphql.api.Context context = dfe.getGraphQlContext().get("context");
+            eventEmitter.fireOnDataFetchError(context, exception);
+        });
+
         // Here call blocking with context
         BlockingHelper.runBlocking(vc, contextualCallable, result);
-        return result.future().toCompletionStage();
-
+        return result.future().toCompletionStage()
+                .whenComplete((resultList, error) -> {
+                    if (error != null) {
+                        onErrorConsumer.accept(error);
+                    }
+                });
     }
 
     private boolean runBlocking(DataFetchingEnvironment dfe) {

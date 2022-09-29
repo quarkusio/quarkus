@@ -20,6 +20,7 @@ import javax.ws.rs.POST;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.trace.SpanKind;
@@ -75,6 +76,7 @@ public class OpenTelemetryReactiveClientTest {
     }
 
     @Test
+    @Disabled("flaky")
     void post() {
         Uni<String> result = client.helloPost("Naruto");
         assertEquals("Hello Naruto", result.await().indefinitely());

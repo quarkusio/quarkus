@@ -410,6 +410,8 @@ public class KeycloakDevServicesProcessor {
             this.fixedExposedPort = fixedExposedPort;
             this.startCommand = startCommand;
             this.showLogs = showLogs;
+
+            super.setWaitStrategy(Wait.forLogMessage(".*Keycloak.*started.*", 1));
         }
 
         @Override
@@ -482,7 +484,6 @@ public class KeycloakDevServicesProcessor {
             }
 
             LOG.infof("Using %s powered Keycloak distribution", keycloakX ? "Quarkus" : "WildFly");
-            super.setWaitStrategy(Wait.forLogMessage(".*Keycloak.*started.*", 1));
         }
 
         private Integer findRandomPort() {

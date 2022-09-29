@@ -4,6 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.URI;
+import java.net.URISyntaxException;
+
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.UriBuilder;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -32,6 +36,19 @@ public class StorkIntegrationTest {
                 .build(HelloClient2.class)
                 .echo("black and white bird");
         assertThat(greeting).isEqualTo("hello, black and white bird");
+    }
+
+    @Test
+    void shouldDetermineUrlViaStorkWhenUsingTarget() throws URISyntaxException {
+        String greeting = ClientBuilder.newClient().target("stork://hello-service/hello").request().get(String.class);
+        assertThat(greeting).isEqualTo("Hello");
+
+        greeting = ClientBuilder.newClient().target(new URI("stork://hello-service/hello")).request().get(String.class);
+        assertThat(greeting).isEqualTo("Hello");
+
+        greeting = ClientBuilder.newClient().target(UriBuilder.fromUri("stork://hello-service/hello")).request()
+                .get(String.class);
+        assertThat(greeting).isEqualTo("Hello");
     }
 
     @Test

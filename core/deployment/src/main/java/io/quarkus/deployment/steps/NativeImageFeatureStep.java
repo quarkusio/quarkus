@@ -292,6 +292,10 @@ public class NativeImageFeatureStep {
             exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk.proxy",
                     GraalVM.Version.VERSION_22_1_0, GraalVM.Version.VERSION_22_3_0));
 
+            ResultHandle versionCompareto22_3Result = overallCatch.invokeVirtualMethod(VERSION_COMPARE_TO,
+                    overallCatch.invokeStaticMethod(VERSION_CURRENT),
+                    overallCatch.marshalAsArray(int.class, overallCatch.load(22), overallCatch.load(3)));
+
             for (NativeImageProxyDefinitionBuildItem proxy : proxies) {
                 ResultHandle array = overallCatch.newArray(Class.class, overallCatch.load(proxy.getClasses().size()));
                 int i = 0;
@@ -302,10 +306,7 @@ public class NativeImageFeatureStep {
 
                 }
 
-                BranchResult graalVm22_3Test = overallCatch
-                        .ifGreaterEqualZero(overallCatch.invokeVirtualMethod(VERSION_COMPARE_TO,
-                                overallCatch.invokeStaticMethod(VERSION_CURRENT),
-                                overallCatch.marshalAsArray(int.class, overallCatch.load(22), overallCatch.load(3))));
+                BranchResult graalVm22_3Test = overallCatch.ifGreaterEqualZero(versionCompareto22_3Result);
                 /* GraalVM >= 22.3 */
                 try (BytecodeCreator greaterThan22_2 = graalVm22_3Test.trueBranch()) {
                     MethodDescriptor registerMethod = ofMethod("org.graalvm.nativeimage.hosted.RuntimeProxyCreation",

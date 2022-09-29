@@ -547,7 +547,7 @@ public class KeycloakDevServicesProcessor {
 
     private void createDefaultRealm(String keycloakUrl, Map<String, String> users, String oidcClientId,
             String oidcClientSecret) {
-        RealmRepresentation realm = createRealmRep();
+        RealmRepresentation realm = createDefaultRealmRep();
 
         realm.getClients().add(createClient(oidcClientId, oidcClientSecret));
         for (Map.Entry<String, String> entry : users.entrySet()) {
@@ -638,7 +638,7 @@ public class KeycloakDevServicesProcessor {
                 : roles;
     }
 
-    private RealmRepresentation createRealmRep() {
+    private RealmRepresentation createDefaultRealmRep() {
         RealmRepresentation realm = new RealmRepresentation();
 
         realm.setRealm(getDefaultRealmName());

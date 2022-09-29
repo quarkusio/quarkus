@@ -185,7 +185,7 @@ public class NativeImageFeatureStep {
                     TryBlock tryBlock = greaterThan22_2.tryBlock();
 
                     tryBlock.invokeStaticMethod(registerLambdaCapturingClass,
-                            tryBlock.load(i.getClassName()));
+                            tryBlock.loadClassFromTCCL(i.getClassName()));
 
                     CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
                     catchBlock.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class),

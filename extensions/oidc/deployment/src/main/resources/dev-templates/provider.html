@@ -117,7 +117,7 @@ var port = {config:property('quarkus.http.port')};
     }
 
     function testServiceWithAccessToken(){
-        var servicePath = $('#servicePath').val();
+        var servicePath = getServicePath();
         $.post("testServiceWithToken",
             {
               serviceUrl: "http://localhost:" + port + servicePath,
@@ -129,7 +129,7 @@ var port = {config:property('quarkus.http.port')};
     }
 
     function testServiceWithIdToken(){
-        var servicePath = $('#servicePath').val();
+        var servicePath = getServicePath();
         $.post("testServiceWithToken",
             {
               serviceUrl: "http://localhost:" + port + servicePath,
@@ -253,7 +253,21 @@ var port = {config:property('quarkus.http.port')};
           return token;
         }
     }
+
+    function printLoginError(){
+        var search = window.location.search;
+        var errorDescription = search.match(/error_description=([^&]+)/)[1];
+        $('#errorDescription').append("<i class='far fa-times-circle text-danger px-2'></i>");
+        $('#errorDescription').append("<span class='text-primary px-1'>" + "Login error: " + decodeURI(errorDescription).replaceAll("+", " ") + "</span>");
+    }
+
     {/if}
+{/if}
+
+{#if info:oidcApplicationType is 'web-app'}
+function signInToService(servicePath) {
+    window.open("http://localhost:" + port + servicePath);
+}
 {/if}
 
 {#if info:oidcGrantType is 'password'}
@@ -394,15 +408,9 @@ function printResponseData(data, message){
     $('#results').append("<br/>");
 }
 
-function printLoginError(){
-    var search = window.location.search;
-    var errorDescription = search.match(/error_description=([^&]+)/)[1];
-    $('#errorDescription').append("<i class='far fa-times-circle text-danger px-2'></i>");
-    $('#errorDescription').append("<span class='text-primary px-1'>" + "Login error: " + decodeURI(errorDescription).replaceAll("+", " ") + "</span>");
-}
-
-function signInToService(servicePath) {
-    window.open("http://localhost:" + port + servicePath);
+function getServicePath() {
+    var servicePath = $('#servicePath').val();
+    return servicePath.startsWith("/") ? servicePath : ("/" + servicePath);
 }
 
 function clearResults() {
@@ -607,7 +615,7 @@ function clearResults() {
                 </div>
                 <div class="row my-2">
                     <div class="col offset-md-2">
-                        <button onclick="testServiceWithPassword($('#userName').val(), $('#password').val(), $('#servicePath').val());" class="btn btn-primary btn-block" title="Test service">Test service</button>
+                        <button onclick="testServiceWithPassword($('#userName').val(), $('#password').val(), getServicePath());" class="btn btn-primary btn-block" title="Test service">Test service</button>
                     </div>
                     <div class="float-right">
 	                    {#if info:swaggerIsAvailable??}
@@ -648,7 +656,7 @@ function clearResults() {
                 </div>
                 <div class="row my-2">
                     <div class="col offset-md-2">
-                        <button onclick="testServiceWithClientCredentials($('#servicePath').val());" class="btn btn-primary btn-block" title="Test service">Test service</button>
+                        <button onclick="testServiceWithClientCredentials(getServicePath());" class="btn btn-primary btn-block" title="Test service">Test service</button>
                     </div>
                     <div class="float-right">
 	                    {#if info:swaggerIsAvailable??}
@@ -687,7 +695,7 @@ function clearResults() {
             </div>
             <div class="row my-2">
                 <div class="col offset-md-2">
-                    <button onclick="signInToService($('#servicePath').val());" class="btn btn-success btn-block" title="Log into your Web Application">Log into your Web Application</button>
+                    <button onclick="signInToService(getServicePath());" class="btn btn-success btn-block" title="Log into your Web Application">Log into your Web Application</button>
                 </div>
             </div>
         </div>

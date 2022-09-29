@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
@@ -289,25 +290,32 @@ public final class JandexUtil {
     }
 
     /**
-     * Returns the enclosing class of the given annotation instance. For field or method annotations this
-     * will return the enclosing class. For parameters, this will return the enclosing class of the enclosing
-     * method. For classes, it will return the class itself.
+     * Returns the enclosing class of the given annotation instance. For field, method or record component annotations,
+     * this will return the enclosing class. For parameters, this will return the enclosing class of the enclosing
+     * method. For classes, it will return the class itself. For type annotations, it will return the class enclosing
+     * the annotated type usage.
      *
-     * @param annotationInstance the annotation whose enclosing class to look up.
-     * @return the enclosing class.
+     * @param annotationInstance the annotation whose enclosing class to look up
+     * @return the enclosing class
      */
     public static ClassInfo getEnclosingClass(AnnotationInstance annotationInstance) {
-        switch (annotationInstance.target().kind()) {
+        return getEnclosingClass(annotationInstance.target());
+    }
+
+    private static ClassInfo getEnclosingClass(AnnotationTarget annotationTarget) {
+        switch (annotationTarget.kind()) {
             case FIELD:
-                return annotationInstance.target().asField().declaringClass();
+                return annotationTarget.asField().declaringClass();
             case METHOD:
-                return annotationInstance.target().asMethod().declaringClass();
+                return annotationTarget.asMethod().declaringClass();
             case METHOD_PARAMETER:
-                return annotationInstance.target().asMethodParameter().method().declaringClass();
+                return annotationTarget.asMethodParameter().method().declaringClass();
+            case RECORD_COMPONENT:
+                return annotationTarget.asRecordComponent().declaringClass();
             case CLASS:
-                return annotationInstance.target().asClass();
+                return annotationTarget.asClass();
             case TYPE:
-                return annotationInstance.target().asType().asClass(); // TODO is it legal here or should I throw ?
+                return getEnclosingClass(annotationTarget.asType().enclosingTarget());
             default:
                 throw new RuntimeException(); // this should not occur
         }

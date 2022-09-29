@@ -320,8 +320,43 @@ public class WebTargetImpl implements WebTarget {
 
     protected InvocationBuilderImpl createQuarkusRestInvocationBuilder(HttpClient client, UriBuilder uri,
             ConfigurationImpl configuration) {
-        return new InvocationBuilderImpl(uri.build(), restClient, client, this, configuration,
+        URI actualUri = uri.build();
+        registerStorkFilterIfNeeded(configuration, actualUri);
+        return new InvocationBuilderImpl(actualUri, restClient, client, this, configuration,
                 handlerChain.setPreClientSendHandler(preClientSendHandler), requestContext);
+    }
+
+    /**
+     * If the URI starts with stork:// or storks://, then register the StorkClientRequestFilter automatically.
+     *
+     * @param configuration the configuration
+     * @param actualUri the uri
+     */
+    private static void registerStorkFilterIfNeeded(ConfigurationImpl configuration, URI actualUri) {
+        if (actualUri.getScheme() != null && actualUri.getScheme().startsWith("stork")
+                && !isStorkAlreadyRegistered(configuration)) {
+            configuration.register(StorkClientRequestFilter.class);
+        }
+    }
+
+    /**
+     * Checks if the Stork request filter is already registered.
+     * We cannot use configuration.isRegistered, as the user registration uses a subclass, and so fail the equality
+     * expectation.
+     * <p>
+     * This method prevents having the stork filter registered twice: once because the uri starts with stork:// and,
+     * once from the user.
+     *
+     * @param configuration the configuration
+     * @return {@code true} if stork is already registered.
+     */
+    private static boolean isStorkAlreadyRegistered(ConfigurationImpl configuration) {
+        for (Class<?> clazz : configuration.getClasses()) {
+            if (clazz.getName().startsWith(StorkClientRequestFilter.class.getName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

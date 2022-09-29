@@ -72,7 +72,7 @@ recipeList:
   # JAX-RS - See below for the specs
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy.version
-      newValue: 6.2.0.Beta1
+      newValue: 6.2.0.Final
   # JAXB - See below
   # JSON - See below
   # JSON Bind
@@ -179,7 +179,7 @@ recipeList:
       newValue: 4.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jaxb-runtime.version
-      newValue: 4.0.0
+      newValue: 4.0.1
   # WildFly Security
   - org.openrewrite.maven.ChangePropertyValue:
       key: wildfly-elytron.version
@@ -619,7 +619,7 @@ recipeList:
       newValue: 3.0.0-RC1
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-reactive-messaging.version
-      newValue: 4.0.0.RC1
+      newValue: 4.0.0.RC3
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-rest-client.version
       newValue: 3.0

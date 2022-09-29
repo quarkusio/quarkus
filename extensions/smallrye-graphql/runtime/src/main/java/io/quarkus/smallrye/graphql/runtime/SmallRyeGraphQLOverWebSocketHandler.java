@@ -34,7 +34,12 @@ public class SmallRyeGraphQLOverWebSocketHandler extends SmallRyeGraphQLAbstract
                 if (event.succeeded()) {
                     ServerWebSocket serverWebSocket = event.result();
                     String subprotocol = serverWebSocket.subProtocol();
-                    GraphQLWebsocketHandler handler = null;
+                    if (subprotocol == null) {
+                        log.warn("Websocket subprotocol is null");
+                        serverWebSocket.close();
+                        return;
+                    }
+                    GraphQLWebsocketHandler handler;
                     switch (subprotocol) {
                         case "graphql-transport-ws":
                             handler = new GraphQLTransportWSSubprotocolHandler(
@@ -49,14 +54,14 @@ public class SmallRyeGraphQLOverWebSocketHandler extends SmallRyeGraphQLAbstract
                             serverWebSocket.close();
                             return;
                     }
-                    log.debug("Starting websocket with subprotocol = " + subprotocol);
+                    log.debugf("Starting websocket with subprotocol = %s", subprotocol);
                     GraphQLWebsocketHandler finalHandler = handler;
                     serverWebSocket.closeHandler(v -> finalHandler.onClose());
                     serverWebSocket.endHandler(v -> finalHandler.onEnd());
-                    serverWebSocket.exceptionHandler(t -> finalHandler.onThrowable(t));
-                    serverWebSocket.textMessageHandler(m -> finalHandler.onMessage(m));
+                    serverWebSocket.exceptionHandler(finalHandler::onThrowable);
+                    serverWebSocket.textMessageHandler(finalHandler::onMessage);
                 } else {
-                    log.warn("WebSocket failed", event.cause());
+                    log.warn("Websocket failed", event.cause());
                 }
             });
         } else {

@@ -158,12 +158,13 @@ public class JarResultBuildStep {
         Optional<Set<ArtifactKey>> includedOptionalDependencies;
         if (packageConfig.filterOptionalDependencies) {
             includedOptionalDependencies = Optional.of(packageConfig.includedOptionalDependencies
-                    .map(set -> set.stream().map(s -> (ArtifactKey) GACT.fromString(s)).collect(Collectors.toSet()))
+                    .map(set -> set.stream().map(s -> ArtifactKey.fromString(s)).collect(Collectors.toSet()))
                     .orElse(Collections.emptySet()));
         } else {
             includedOptionalDependencies = Optional.empty();
         }
-        return new OutputTargetBuildItem(path, name, bst.isRebuild(), bst.getBuildSystemProps(), includedOptionalDependencies);
+        return new OutputTargetBuildItem(path, name, bst.getOriginalBaseName(), bst.isRebuild(), bst.getBuildSystemProps(),
+                includedOptionalDependencies);
     }
 
     @BuildStep(onlyIf = JarRequired.class)
@@ -283,7 +284,7 @@ public class JarResultBuildStep {
 
         //for uberjars we move the original jar, so there is only a single jar in the output directory
         final Path standardJar = outputTargetBuildItem.getOutputDirectory()
-                .resolve(outputTargetBuildItem.getBaseName() + ".jar");
+                .resolve(outputTargetBuildItem.getOriginalBaseName() + ".jar");
 
         final Path originalJar = Files.exists(standardJar) ? standardJar : null;
 

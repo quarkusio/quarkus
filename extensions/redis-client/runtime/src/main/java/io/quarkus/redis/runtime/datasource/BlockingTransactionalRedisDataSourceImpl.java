@@ -15,6 +15,7 @@ import io.quarkus.redis.datasource.list.TransactionalListCommands;
 import io.quarkus.redis.datasource.set.TransactionalSetCommands;
 import io.quarkus.redis.datasource.sortedset.TransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.string.TransactionalStringCommands;
+import io.quarkus.redis.datasource.topk.TransactionalTopKCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.TransactionalValueCommands;
@@ -111,6 +112,11 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
     @Override
     public <K, V> TransactionalCountMinCommands<K, V> countmin(Class<K> redisKeyType, Class<V> valueType) {
         return new BlockingTransactionalCountMinCommandsImpl<>(this, reactive.countmin(redisKeyType, valueType), timeout);
+    }
+
+    @Override
+    public <K, V> TransactionalTopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType) {
+        return new BlockingTransactionalTopKCommandsImpl<>(this, reactive.topk(redisKeyType, valueType), timeout);
     }
 
     @Override

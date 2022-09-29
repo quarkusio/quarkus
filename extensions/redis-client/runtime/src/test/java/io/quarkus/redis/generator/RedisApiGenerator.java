@@ -39,6 +39,7 @@ import io.quarkus.redis.datasource.ReactiveTransactionalRedisCommands;
 import io.quarkus.redis.datasource.RedisCommands;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.TransactionalRedisCommands;
+import io.quarkus.redis.datasource.topk.ReactiveTopKCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 import io.quarkus.redis.runtime.datasource.AbstractRedisCommandGroup;
@@ -62,8 +63,8 @@ public class RedisApiGenerator {
 
     public static void main(String[] args) throws FileNotFoundException {
         // PARAMETERS
-        String reactiveApi = "io.quarkus.redis.datasource.countmin.ReactiveCountMinCommands";
-        String prefix = "cms";
+        String reactiveApi = ReactiveTopKCommands.class.getName();
+        String prefix = "topk";
         // ---------
 
         File out = new File("extensions/redis-client/runtime/target/generation");

@@ -3,7 +3,7 @@ package io.quarkus.redis.runtime.datasource;
 import java.util.List;
 import java.util.Map;
 
-import io.quarkus.redis.datasource.countmin.*;
+import io.quarkus.redis.datasource.countmin.ReactiveTransactionalCountMinCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
 

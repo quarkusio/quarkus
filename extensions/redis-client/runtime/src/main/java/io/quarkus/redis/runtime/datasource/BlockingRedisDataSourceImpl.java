@@ -23,6 +23,7 @@ import io.quarkus.redis.datasource.pubsub.PubSubCommands;
 import io.quarkus.redis.datasource.set.SetCommands;
 import io.quarkus.redis.datasource.sortedset.SortedSetCommands;
 import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.datasource.topk.TopKCommands;
 import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
@@ -243,6 +244,11 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     @Override
     public <K, V> CountMinCommands<K, V> countmin(Class<K> redisKeyType, Class<V> valueType) {
         return new BlockingCountMinCommandsImpl<>(this, reactive.countmin(redisKeyType, valueType), timeout);
+    }
+
+    @Override
+    public <K, V> TopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType) {
+        return new BlockingTopKCommandsImpl<>(this, reactive.topk(redisKeyType, valueType), timeout);
     }
 
     @Override

@@ -18,6 +18,7 @@ import io.quarkus.redis.datasource.list.ReactiveTransactionalListCommands;
 import io.quarkus.redis.datasource.set.ReactiveTransactionalSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveTransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.string.ReactiveTransactionalStringCommands;
+import io.quarkus.redis.datasource.topk.ReactiveTransactionalTopKCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.ReactiveTransactionalValueCommands;
 import io.smallrye.mutiny.Uni;
@@ -123,6 +124,12 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
     public <K, V> ReactiveTransactionalCountMinCommands<K, V> countmin(Class<K> redisKeyType, Class<V> valueType) {
         return new ReactiveTransactionalCountMinCommandsImpl<>(this,
                 (ReactiveCountMinCommandsImpl<K, V>) this.reactive.countmin(redisKeyType, valueType), tx);
+    }
+
+    @Override
+    public <K, V> ReactiveTransactionalTopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType) {
+        return new ReactiveTransactionalTopKCommandsImpl<>(this,
+                (ReactiveTopKCommandsImpl<K, V>) this.reactive.topk(redisKeyType, valueType), tx);
     }
 
     @Override

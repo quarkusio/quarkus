@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.Map;
 
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
@@ -33,7 +34,7 @@ public final class OidcDevServicesUtils {
             String userName,
             String userPassword,
             Map<String, String> passwordGrantOptions,
-            Duration timeout) throws Exception {
+            Duration webClientTimeout) throws Exception {
         HttpRequest<Buffer> request = client.postAbs(tokenUrl);
         request.putHeader(HttpHeaders.CONTENT_TYPE.toString(), HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
 
@@ -50,8 +51,14 @@ public final class OidcDevServicesUtils {
             props.addAll(passwordGrantOptions);
         }
 
-        return request.sendBuffer(OidcCommonUtils.encodeForm(props)).onItem()
-                .transform(resp -> getAccessTokenFromJson(resp)).await().atMost(timeout);
+        Uni<String> tokenUni = request.sendBuffer(OidcCommonUtils.encodeForm(props)).onItem()
+                .transform(resp -> getAccessTokenFromJson(resp))
+                .onFailure()
+                .retry()
+                .withBackOff(Duration.ofSeconds(2), Duration.ofSeconds(2))
+                .expireIn(10 * 1000);
+
+        return tokenUni.await().atMost(webClientTimeout);
     }
 
     public static String getClientCredAccessToken(WebClient client,

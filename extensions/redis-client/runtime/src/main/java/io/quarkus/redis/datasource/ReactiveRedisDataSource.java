@@ -17,6 +17,7 @@ import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveSortedSetCommands;
 import io.quarkus.redis.datasource.string.ReactiveStringCommands;
+import io.quarkus.redis.datasource.topk.ReactiveTopKCommands;
 import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
@@ -450,9 +451,9 @@ public interface ReactiveRedisDataSource {
     /**
      * Gets the object to manipulate Count-Min sketches.
      * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the count-min
-     * filter support).
+     * sketches support).
      *
-     * @param <V> the type of the values added into the count-min filter
+     * @param <V> the type of the values added into the count-min sketches
      * @return the object to manipulate count-min sketches.
      */
     default <V> ReactiveCountMinCommands<String, V> countmin(Class<V> valueType) {
@@ -462,13 +463,36 @@ public interface ReactiveRedisDataSource {
     /**
      * Gets the object to manipulate Count-Min sketches.
      * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the count-min
-     * filter support).
+     * sketches support).
      *
      * @param <K> the type of keys
-     * @param <V> the type of the values added into the count-min filter
+     * @param <V> the type of the values added into the count-min sketches
      * @return the object to manipulate count-min sketches.
      */
     <K, V> ReactiveCountMinCommands<K, V> countmin(Class<K> redisKeyType, Class<V> valueType);
+
+    /**
+     * Gets the object to manipulate Top-K list.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the top-k
+     * list support).
+     *
+     * @param <V> the type of the values added into the top-k lists
+     * @return the object to manipulate top-k lists.
+     */
+    default <V> ReactiveTopKCommands<String, V> topk(Class<V> valueType) {
+        return topk(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to manipulate Top-K list.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the top-k
+     * list support).
+     *
+     * @param <K> the type of keys
+     * @param <V> the type of the values added into the top-k lists
+     * @return the object to manipulate top-k lists.
+     */
+    <K, V> ReactiveTopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType);
 
     /**
      * Executes a command.

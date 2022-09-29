@@ -7,7 +7,6 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import java.util.List;
 import java.util.Map;
 
-import io.quarkus.redis.datasource.countmin.*;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Response;

@@ -207,6 +207,14 @@ public class TransactionScopedSession implements Session {
     }
 
     @Override
+    public Object getReference(String entityName, Object id) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.getReference(entityName, id);
+        }
+    }
+
+    @Override
     public <T> T getReference(T object) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
@@ -1303,22 +1311,6 @@ public class TransactionScopedSession implements Session {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.session.getNamedNativeQuery(name, resultSetMapping);
-        }
-    }
-
-    @Override
-    public Object getReference(String entityName, Object id) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.session.getReference(entityName, id);
-        }
-    }
-
-    @Override
-    public <T> T getReference(T object) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.session.getReference(object);
         }
     }
 

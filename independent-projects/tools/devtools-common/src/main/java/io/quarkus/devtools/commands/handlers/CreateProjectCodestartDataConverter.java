@@ -16,6 +16,8 @@ public enum CreateProjectCodestartDataConverter implements DataKey {
     PROJECT_GROUP_ID(CreateProjectKey.PROJECT_GROUP_ID),
     PROJECT_ARTIFACT_ID(CreateProjectKey.PROJECT_ARTIFACT_ID),
     PROJECT_VERSION(CreateProjectKey.PROJECT_VERSION),
+    PROJECT_NAME(CreateProjectKey.PROJECT_NAME),
+    PROJECT_DESCRIPTION(CreateProjectKey.PROJECT_DESCRIPTION),
     PROJECT_PACKAGE_NAME(CreateProjectKey.PACKAGE_NAME),
     QUARKUS_VERSION(CreateProjectKey.QUARKUS_VERSION),
     JAVA_VERSION(CreateProjectKey.JAVA_VERSION),

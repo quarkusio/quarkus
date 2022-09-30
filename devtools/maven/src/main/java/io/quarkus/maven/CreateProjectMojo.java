@@ -73,6 +73,12 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "projectVersion")
     private String projectVersion;
 
+    @Parameter(property = "projectName")
+    private String projectName;
+
+    @Parameter(property = "projectDescription")
+    private String projectDescription;
+
     /**
      * When true, do not include any code in the generated Quarkus project.
      */
@@ -279,6 +285,8 @@ public class CreateProjectMojo extends AbstractMojo {
                     .groupId(projectGroupId)
                     .artifactId(projectArtifactId)
                     .version(projectVersion)
+                    .name(projectName)
+                    .description(projectDescription)
                     .javaVersion(javaVersion)
                     .resourceClassName(className)
                     .packageName(packageName)

@@ -54,6 +54,10 @@ public class CliProjectMavenTest {
         Assertions.assertTrue(pomContent.contains("<artifactId>quarkus-resteasy-reactive</artifactId>"),
                 "pom.xml should contain quarkus-resteasy-reactive:\n" + pomContent);
 
+        // check that the project doesn't have a <description> (a <name> is defined in the profile, it's harder to test)
+        Assertions.assertFalse(pomContent.contains("<description>"),
+                "pom.xml should not contain a description:\n" + pomContent);
+
         CliDriver.valdiateGeneratedSourcePackage(project, "org/acme");
 
         result = CliDriver.invokeValidateDryRunBuild(project);
@@ -339,6 +343,27 @@ public class CliProjectMavenTest {
 
         Assertions.assertTrue(pomContent.contains("maven.compiler.release>17<"),
                 "Java 17 should be used when specified. Found:\n" + pomContent);
+    }
+
+    @Test
+    public void testCreateNameDescription() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--name", "My name", "--description",
+                "My description");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertTrue(result.stdout.contains("SUCCESS"),
+                "Expected confirmation that the project has been created." + result);
+
+        String pomContent = validateBasicIdentifiers(CreateProjectHelper.DEFAULT_GROUP_ID,
+                CreateProjectHelper.DEFAULT_ARTIFACT_ID,
+                CreateProjectHelper.DEFAULT_VERSION);
+        Assertions.assertTrue(pomContent.contains("<name>My name</name>"),
+                "pom.xml should contain a name:\n" + pomContent);
+        Assertions.assertTrue(pomContent.contains("<description>My description</description>"),
+                "pom.xml should contain a description:\n" + pomContent);
+
+        result = CliDriver.invokeValidateDryRunBuild(project);
+
+        CliDriver.invokeValidateBuild(project);
     }
 
     String validateBasicIdentifiers(String group, String artifact, String version) throws Exception {

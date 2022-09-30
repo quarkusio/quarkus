@@ -10,6 +10,7 @@ import io.quarkus.cli.create.CodeGenerationGroup;
 import io.quarkus.cli.create.TargetBuildToolGroup;
 import io.quarkus.cli.create.TargetGAVGroup;
 import io.quarkus.cli.create.TargetLanguageGroup;
+import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
 import io.quarkus.devtools.commands.SourceType;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.handlers.CreateJBangProjectCommandHandler;
@@ -29,6 +30,13 @@ public class CreateApp extends BaseCreateCommand {
     @CommandLine.Option(order = 1, paramLabel = "EXTENSION", names = { "-x",
             "--extension", "--extensions" }, description = "Extension(s) to add to the project.", split = ",")
     Set<String> extensions = new HashSet<>();
+
+    @CommandLine.Option(paramLabel = "NAME", names = { "--name" }, description = "Name of the project.")
+    String name;
+
+    @CommandLine.Option(paramLabel = "DESCRIPTION", names = {
+            "--description" }, description = "Description of the project.")
+    String description;
 
     @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version:%n")
     TargetQuarkusVersionGroup targetQuarkusVersion = new TargetQuarkusVersionGroup();
@@ -62,6 +70,8 @@ public class CreateApp extends BaseCreateCommand {
             setJavaVersion(sourceType, targetLanguage.getJavaVersion());
             setSourceTypeExtensions(extensions, sourceType);
             setCodegenOptions(codeGeneration);
+            setValue(CreateProjectKey.PROJECT_NAME, name);
+            setValue(CreateProjectKey.PROJECT_DESCRIPTION, description);
 
             QuarkusCommandInvocation invocation = build(buildTool, targetQuarkusVersion,
                     propertiesOptions.properties, extensions);
@@ -99,6 +109,8 @@ public class CreateApp extends BaseCreateCommand {
                 + ", targetLanguage=" + targetLanguage
                 + ", codeGeneration=" + codeGeneration
                 + ", extensions=" + extensions
+                + ", name=" + name
+                + ", description=" + description
                 + ", project=" + super.toString()
                 + ", properties=" + propertiesOptions.properties
                 + '}';

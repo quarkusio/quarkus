@@ -35,6 +35,7 @@ import org.jboss.jandex.TypeVariable;
 public final class JandexUtil {
 
     public final static DotName DOTNAME_OBJECT = DotName.createSimple(Object.class.getName());
+    public final static DotName DOTNAME_RECORD = DotName.createSimple("java.lang.Record");
 
     private JandexUtil() {
     }
@@ -143,7 +144,7 @@ public final class JandexUtil {
         }
 
         // always end at Object
-        if (DOTNAME_OBJECT.equals(name)) {
+        if (DOTNAME_OBJECT.equals(name) || DOTNAME_RECORD.equals(name)) {
             return null;
         }
 
@@ -338,7 +339,7 @@ public final class JandexUtil {
      * @throws RuntimeException if one of the superclasses is not indexed.
      */
     public static boolean isSubclassOf(IndexView index, ClassInfo info, DotName parentName) {
-        if (info.superName().equals(DOTNAME_OBJECT)) {
+        if (info.superName().equals(DOTNAME_OBJECT) || info.superName().equals(DOTNAME_RECORD)) {
             return false;
         }
         if (info.superName().equals(parentName)) {

@@ -34,7 +34,7 @@ public class VersionHandlerTests {
         assertEquals(0L, entityVersionInfo.versionValue);
         assertEquals(1L, entityWithPublicVersion.version);
 
-        VersionHandler.resetVersionValue(entityVersionInfo);
+        VersionHandler.rollbackVersion(entityVersionInfo);
         assertEquals(0L, entityWithPublicVersion.version);
 
         //test entity with public version and versionValue=null
@@ -46,7 +46,7 @@ public class VersionHandlerTests {
         assertNull(entityVersionInfo.versionValue);
         assertEquals(0L, entityWithPublicVersion.version);
 
-        VersionHandler.resetVersionValue(entityVersionInfo);
+        VersionHandler.rollbackVersion(entityVersionInfo);
         assertNull(entityWithPublicVersion.version);
     }
 
@@ -64,7 +64,7 @@ public class VersionHandlerTests {
         assertEquals(0L, entityVersionInfo.versionValue);
         assertEquals(1L, entityWithProtectedVersion.version);
 
-        VersionHandler.resetVersionValue(entityVersionInfo);
+        VersionHandler.rollbackVersion(entityVersionInfo);
         assertEquals(0L, entityWithProtectedVersion.version);
 
         //test entity with public version and versionValue=null
@@ -75,7 +75,7 @@ public class VersionHandlerTests {
         assertNull(entityVersionInfo.versionValue);
         assertEquals(0L, entityWithProtectedVersion.version);
 
-        VersionHandler.resetVersionValue(entityVersionInfo);
+        VersionHandler.rollbackVersion(entityVersionInfo);
         assertNull(entityWithProtectedVersion.version);
     }
 
@@ -93,7 +93,7 @@ public class VersionHandlerTests {
         assertEquals(2L, entityVersionInfo.versionValue);
         assertEquals(3L, entityWithPrivateVersion.myVersion);
 
-        VersionHandler.resetVersionValue(entityVersionInfo);
+        VersionHandler.rollbackVersion(entityVersionInfo);
         assertEquals(2L, entityWithPrivateVersion.myVersion);
 
         //test entity with public version and versionValue=null
@@ -104,7 +104,7 @@ public class VersionHandlerTests {
         assertNull(entityVersionInfo.versionValue);
         assertEquals(0L, entityWithPrivateVersion.myVersion);
 
-        VersionHandler.resetVersionValue(entityVersionInfo);
+        VersionHandler.rollbackVersion(entityVersionInfo);
         assertNull(entityWithPrivateVersion.myVersion);
     }
 
@@ -122,7 +122,7 @@ public class VersionHandlerTests {
         assertEquals(0L, entityVersionInfo.versionValue);
         assertEquals(1L, entityWithInheritVersion.version);
 
-        VersionHandler.resetVersionValue(entityVersionInfo);
+        VersionHandler.rollbackVersion(entityVersionInfo);
         assertEquals(0L, entityWithInheritVersion.version);
 
         //test entity with public version and versionValue=null
@@ -133,7 +133,7 @@ public class VersionHandlerTests {
         assertNull(entityVersionInfo.versionValue);
         assertEquals(0L, entityWithInheritVersion.version);
 
-        VersionHandler.resetVersionValue(entityVersionInfo);
+        VersionHandler.rollbackVersion(entityVersionInfo);
         assertNull(entityWithInheritVersion.version);
     }
 

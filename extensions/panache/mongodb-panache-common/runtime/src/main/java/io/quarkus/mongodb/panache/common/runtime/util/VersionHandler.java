@@ -134,7 +134,7 @@ public class VersionHandler {
     /**
      * Restore previous version value in the entity.
      */
-    public static void resetVersionValue(EntityVersionInfo entityVersionInfo) {
+    public static void rollbackVersion(EntityVersionInfo entityVersionInfo) {
         try {
             if (!entityVersionInfo.hasVersionAnnotation) {
                 return;
@@ -156,7 +156,7 @@ public class VersionHandler {
      * Restore previous version value in the entity.
      */
     public static void resetVersionValueAndThrowOptimistic(EntityVersionInfo entityVersionInfo) {
-        resetVersionValue(entityVersionInfo);
+        rollbackVersion(entityVersionInfo);
         throwOptimisticLockException(entityVersionInfo);
     }
 
@@ -167,7 +167,7 @@ public class VersionHandler {
     public static void validateChanges(final EntityVersionInfo entityVersionInfo,
             Long quantityResultAffected) {
         if (entityVersionInfo.hasVersionAnnotation && quantityResultAffected == 0) {
-            resetVersionValue(entityVersionInfo);
+            rollbackVersion(entityVersionInfo);
             throwOptimisticLockException(entityVersionInfo);
         }
     }

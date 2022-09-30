@@ -251,17 +251,13 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         return collection.insertOne(entityVersionInfo.entity)
                 .onItem()
                 .invoke(insertOneResult -> {
-                    System.out.println("inserted no " + entityVersionInfo.entity);
                     if (((InsertOneResult) insertOneResult).getInsertedId() == null) {
-                        System.out.println("falhou0 no " + entityVersionInfo.entity);
-                        VersionHandler.resetVersionValue(entityVersionInfo);
+                        VersionHandler.rollbackVersion(entityVersionInfo);
                     }
                 })
                 .onFailure()
                 .invoke(() -> {
-                    System.out.println("falhou no " + entityVersionInfo.entity);
-                    VersionHandler.resetVersionValue(entityVersionInfo);
-                    System.out.println("falhouu no " + entityVersionInfo.entity);
+                    VersionHandler.rollbackVersion(entityVersionInfo);
                 })
                 .onItem()
                 .ignore()
@@ -312,6 +308,10 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
                 .onItem()
                 .invoke(updateResult -> VersionHandler.validateChanges(entityVersionInfo,
                         ((UpdateResult) updateResult).getModifiedCount()))
+                .onFailure()
+                .invoke(() -> {
+                    VersionHandler.rollbackVersion(entityVersionInfo);
+                })
                 .onItem().ignore().andContinueWithNull();
     }
 
@@ -336,6 +336,10 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
                 VersionHandler.incrementVersionValue(entityVersionInfo);
                 return collection
                         .replaceOne(entityVersionInfo.updateQuery, entityVersionInfo.entity, new ReplaceOptions().upsert(true))
+                        .onFailure()
+                        .invoke(() -> {
+                            VersionHandler.rollbackVersion(entityVersionInfo);
+                        })
                         .onItem().ignore().andContinueWithNull();
             }
         }

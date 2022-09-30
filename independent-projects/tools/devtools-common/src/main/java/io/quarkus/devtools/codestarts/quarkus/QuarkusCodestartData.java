@@ -14,6 +14,8 @@ public final class QuarkusCodestartData {
         PROJECT_GROUP_ID("project.group-id"),
         PROJECT_ARTIFACT_ID("project.artifact-id"),
         PROJECT_VERSION("project.version"),
+        PROJECT_NAME("project.name"),
+        PROJECT_DESCRIPTION("project.description"),
         PROJECT_PACKAGE_NAME("project.package-name"),
         QUARKUS_MAVEN_PLUGIN_GROUP_ID("quarkus.maven-plugin.group-id"),
         QUARKUS_MAVEN_PLUGIN_ARTIFACT_ID("quarkus.maven-plugin.artifact-id"),

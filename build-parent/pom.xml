@@ -701,6 +701,11 @@
                     <artifactId>asciidoctor-maven-plugin</artifactId>
                     <version>${asciidoctor-maven-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>de.thetaphi</groupId>
+                    <artifactId>forbiddenapis</artifactId>
+                    <version>${forbiddenapis-maven-plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>

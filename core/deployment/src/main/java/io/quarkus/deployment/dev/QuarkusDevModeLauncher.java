@@ -28,11 +28,11 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.apache.maven.shared.utils.cli.CommandLineUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
+import io.quarkus.deployment.util.CommandLineUtil;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.util.JavaVersionUtil;
@@ -476,7 +476,7 @@ public abstract class QuarkusDevModeLauncher {
         args.add("-jar");
         args.add(tempFile.getAbsolutePath());
         if (applicationArgs != null) {
-            args.addAll(Arrays.asList(CommandLineUtils.translateCommandline(applicationArgs)));
+            args.addAll(Arrays.asList(CommandLineUtil.translateCommandline(applicationArgs)));
         }
     }
 

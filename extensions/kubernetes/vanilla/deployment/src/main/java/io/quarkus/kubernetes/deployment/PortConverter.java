@@ -17,6 +17,7 @@ public class PortConverter {
         port.path.ifPresent(v -> b.withPath(v));
         port.hostPort.ifPresent(v -> b.withHostPort(v));
         port.containerPort.ifPresent(v -> b.withContainerPort(v));
+        b.withProtocol(port.protocol);
         return b;
     }
 }

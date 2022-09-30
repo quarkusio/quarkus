@@ -12,7 +12,7 @@ metadata:
   guide: "https://quarkus.io/guides/microprofile-metrics"
   categories:
   - "observability"
-  status: "stable"
+  status: "deprecated"
   config:
   - "quarkus.smallrye-metrics."
   - "mp.metrics."

@@ -46,11 +46,13 @@ public class InterceptorGenerator extends BeanGenerator {
 
     protected static final String FIELD_NAME_BINDINGS = "bindings";
 
-    public InterceptorGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
+    public InterceptorGenerator(AnnotationLiteralProcessor annotationLiterals, MethodMetadataProcessor methodsMetadata,
+            Predicate<DotName> applicationClassPredicate,
             PrivateMembersCollector privateMembers, boolean generateSources, ReflectionRegistration reflectionRegistration,
             Set<String> existingClasses, Map<BeanInfo, String> beanToGeneratedName,
             Predicate<DotName> injectionPointAnnotationsPredicate) {
-        super(annotationLiterals, applicationClassPredicate, privateMembers, generateSources, reflectionRegistration,
+        super(annotationLiterals, methodsMetadata, applicationClassPredicate, privateMembers, generateSources,
+                reflectionRegistration,
                 existingClasses, beanToGeneratedName, injectionPointAnnotationsPredicate, Collections.emptyList());
     }
 

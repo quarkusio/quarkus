@@ -263,6 +263,14 @@ public class InterceptedStaticMethodsProcessor {
         List<InterceptorInfo> interceptors = interceptedStaticMethod.getInterceptors();
         Set<AnnotationInstance> bindings = interceptedStaticMethod.getBindings();
 
+        boolean reflectionless = true;
+        for (InterceptorInfo interceptor : interceptors) {
+            if (!interceptor.isReflectionless()) {
+                reflectionless = false;
+                break;
+            }
+        }
+
         // init_interceptMe_hash()
         String name = new StringBuilder("init")
                 .append("_")
@@ -292,23 +300,31 @@ public class InterceptedStaticMethodsProcessor {
         }
 
         // 2. Method method = Reflections.findMethod(...)
-        ResultHandle[] paramsHandles = new ResultHandle[3];
-        paramsHandles[0] = init.loadClassFromTCCL(method.declaringClass().name().toString());
-        paramsHandles[1] = init.load(method.name());
-        if (!method.parameterTypes().isEmpty()) {
-            ResultHandle paramsArray = init.newArray(Class.class, init.load(method.parametersCount()));
-            for (ListIterator<Type> iterator = method.parameterTypes().listIterator(); iterator.hasNext();) {
-                init.writeArrayValue(paramsArray, iterator.nextIndex(),
-                        init.loadClassFromTCCL(iterator.next().name().toString()));
-            }
-            paramsHandles[2] = paramsArray;
+        ResultHandle methodHandle;
+        if (reflectionless) {
+            methodHandle = init.loadNull();
         } else {
-            paramsHandles[2] = init.newArray(Class.class, init.load(0));
+            ResultHandle[] paramsHandles = new ResultHandle[3];
+            paramsHandles[0] = init.loadClassFromTCCL(method.declaringClass().name().toString());
+            paramsHandles[1] = init.load(method.name());
+            if (!method.parameterTypes().isEmpty()) {
+                ResultHandle paramsArray = init.newArray(Class.class, init.load(method.parametersCount()));
+                for (ListIterator<Type> iterator = method.parameterTypes().listIterator(); iterator.hasNext();) {
+                    init.writeArrayValue(paramsArray, iterator.nextIndex(),
+                            init.loadClassFromTCCL(iterator.next().name().toString()));
+                }
+                paramsHandles[2] = paramsArray;
+            } else {
+                paramsHandles[2] = init.newArray(Class.class, init.load(0));
+            }
+            methodHandle = init.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_METHOD,
+                    paramsHandles);
         }
-        ResultHandle methodHandle = init.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_METHOD,
-                paramsHandles);
 
-        // 3. Interceptor bindings
+        // 3. MethodMetadata (cheaper alternative to reflective `Method`)
+        ResultHandle methodMetadataHandle = beanProcessor.getMethodMetadataProcessor().createMethodMetadata(init, method);
+
+        // 4. Interceptor bindings
         ResultHandle bindingsHandle;
         if (bindings.size() == 1) {
             bindingsHandle = init.invokeStaticMethod(MethodDescriptors.COLLECTIONS_SINGLETON,
@@ -324,10 +340,12 @@ public class InterceptedStaticMethodsProcessor {
 
         // Now create metadata for the given intercepted method
         ResultHandle metadataHandle = init.newInstance(MethodDescriptors.INTERCEPTED_METHOD_METADATA_CONSTRUCTOR,
-                chainHandle, methodHandle, bindingsHandle);
+                chainHandle, methodHandle, methodMetadataHandle, bindingsHandle);
 
-        // Needed when running on native image
-        reflectiveMethods.produce(new ReflectiveMethodBuildItem(method));
+        if (!reflectionless) {
+            // Needed when running on native image
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(method));
+        }
 
         // Create forwarding function
         ResultHandle forwardingFunc = createForwardingFunction(init, interceptedStaticMethod.getTarget(), method);

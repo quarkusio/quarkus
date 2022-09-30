@@ -835,6 +835,14 @@ public class BeanInfo implements InjectionTargetInfo {
             return interceptors.isEmpty();
         }
 
+        boolean isReflectionless() {
+            for (InterceptorInfo interceptor : interceptors) {
+                if (!interceptor.isReflectionless()) {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 
     static class DecorationInfo {

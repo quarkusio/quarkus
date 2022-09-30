@@ -9,6 +9,8 @@ import java.util.function.Function;
 
 import javax.interceptor.InvocationContext;
 
+import io.quarkus.arc.MethodMetadata;
+
 /**
  * Special type of InvocationContext for AroundInvoke interceptors.
  * <p>
@@ -25,20 +27,20 @@ class AroundInvokeInvocationContext extends AbstractInvocationContext {
     private final int position;
     private final Function<InvocationContext, Object> aroundInvokeForward;
 
-    AroundInvokeInvocationContext(Object target, Method method, Object[] parameters,
+    AroundInvokeInvocationContext(Object target, Method method, MethodMetadata methodMetadata, Object[] parameters,
             ContextDataMap contextData, Set<Annotation> interceptorBindings, int position,
             List<InterceptorInvocation> chain, Function<InvocationContext, Object> aroundInvokeForward) {
-        super(target, method, null, parameters, contextData, interceptorBindings, chain);
+        super(target, method, null, methodMetadata, parameters, contextData, interceptorBindings, chain);
         this.position = position;
         this.aroundInvokeForward = aroundInvokeForward;
     }
 
-    static Object perform(Object target, Method method,
+    static Object perform(Object target, Method method, MethodMetadata methodMetadata,
             Function<InvocationContext, Object> aroundInvokeForward, Object[] parameters,
             List<InterceptorInvocation> chain,
             Set<Annotation> interceptorBindings) throws Exception {
 
-        return chain.get(0).invoke(new AroundInvokeInvocationContext(target, method,
+        return chain.get(0).invoke(new AroundInvokeInvocationContext(target, method, methodMetadata,
                 parameters, null, interceptorBindings, 1, chain, aroundInvokeForward));
     }
 
@@ -48,7 +50,8 @@ class AroundInvokeInvocationContext extends AbstractInvocationContext {
             if (position < chain.size()) {
                 // Invoke the next interceptor in the chain
                 return chain.get(position).invoke(new AroundInvokeInvocationContext(target, method,
-                        parameters, contextData, interceptorBindings, position + 1, chain, aroundInvokeForward));
+                        methodMetadata, parameters, contextData, interceptorBindings, position + 1, chain,
+                        aroundInvokeForward));
             } else {
                 // Invoke the target method
                 return aroundInvokeForward.apply(this);

@@ -1,10 +1,13 @@
 package io.quarkus.arc.processor;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +31,7 @@ import io.quarkus.arc.InjectableBean.Kind;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.arc.MethodMetadata;
 import io.quarkus.arc.impl.ClientProxies;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.DecoratorDelegateProvider;
@@ -69,10 +73,27 @@ public final class MethodDescriptors {
             InjectableReferenceProvider.class,
             CreationalContext.class);
 
+    public static final MethodDescriptor ANNOTATION_TYPE = MethodDescriptor.ofMethod(Annotation.class, "annotationType",
+            Class.class);
+
+    public static final MethodDescriptor ARRAYS_COPY_OF = MethodDescriptor.ofMethod(Arrays.class, "copyOf", Object[].class,
+            Object[].class, int.class);
+
+    public static final MethodDescriptor MAP_OF_ENTRIES = MethodDescriptor.ofMethod(Map.class, "ofEntries", Map.class,
+            Map.Entry[].class);
+
+    public static final MethodDescriptor MAP_ENTRY = MethodDescriptor.ofMethod(Map.class, "entry", Map.Entry.class,
+            Object.class, Object.class);
+
+    public static final MethodDescriptor MAP_CONTAINS_KEY = MethodDescriptor.ofMethod(Map.class, "containsKey", boolean.class,
+            Object.class);
+
     public static final MethodDescriptor MAP_GET = MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class);
 
     public static final MethodDescriptor MAP_PUT = MethodDescriptor.ofMethod(Map.class, "put", Object.class, Object.class,
             Object.class);
+
+    public static final MethodDescriptor MAP_VALUES = MethodDescriptor.ofMethod(Map.class, "values", Collection.class);
 
     public static final MethodDescriptor INJECTABLE_REF_PROVIDER_GET = MethodDescriptor.ofMethod(
             InjectableReferenceProvider.class,
@@ -84,6 +105,9 @@ public final class MethodDescriptors {
     public static final MethodDescriptor LIST_ADD = MethodDescriptor.ofMethod(List.class, "add", boolean.class, Object.class);
 
     public static final MethodDescriptor LIST_GET = MethodDescriptor.ofMethod(List.class, "get", Object.class, int.class);
+
+    public static final MethodDescriptor COLLECTION_TO_ARRAY = MethodDescriptor.ofMethod(Collection.class, "toArray",
+            Object[].class, Object[].class);
 
     public static final MethodDescriptor OBJECT_EQUALS = MethodDescriptor.ofMethod(Object.class, "equals", boolean.class,
             Object.class);
@@ -164,13 +188,13 @@ public final class MethodDescriptors {
     public static final MethodDescriptor INVOCATION_CONTEXTS_PERFORM_AROUND_INVOKE = MethodDescriptor.ofMethod(
             InvocationContexts.class,
             "performAroundInvoke",
-            Object.class, Object.class, Method.class, Function.class, Object[].class, List.class,
+            Object.class, Object.class, Method.class, MethodMetadata.class, Function.class, Object[].class, List.class,
             Set.class);
 
     public static final MethodDescriptor INVOCATION_CONTEXTS_AROUND_CONSTRUCT = MethodDescriptor.ofMethod(
             InvocationContexts.class,
             "aroundConstruct",
-            InvocationContext.class, Constructor.class, List.class, Supplier.class, Set.class);
+            InvocationContext.class, Constructor.class, MethodMetadata.class, List.class, Supplier.class, Set.class);
 
     public static final MethodDescriptor INVOCATION_CONTEXTS_POST_CONSTRUCT = MethodDescriptor.ofMethod(
             InvocationContexts.class,
@@ -230,7 +254,7 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor INTERCEPTED_METHOD_METADATA_CONSTRUCTOR = MethodDescriptor.ofConstructor(
             InterceptedMethodMetadata.class,
-            List.class, Method.class, Set.class);
+            List.class, Method.class, MethodMetadata.class, Set.class);
 
     public static final MethodDescriptor CREATIONAL_CTX_HAS_DEPENDENT_INSTANCES = MethodDescriptor.ofMethod(
             CreationalContextImpl.class,
@@ -243,8 +267,9 @@ public final class MethodDescriptors {
             ClassLoader.class);
 
     public static final MethodDescriptor CL_FOR_NAME = MethodDescriptor.ofMethod(Class.class, "forName", Class.class,
-            String.class,
-            boolean.class, ClassLoader.class);
+            String.class, boolean.class, ClassLoader.class);
+
+    public static final MethodDescriptor CLASS_GET_NAME = MethodDescriptor.ofMethod(Class.class, "getName", String.class);
 
     public static final MethodDescriptor REMOVED_BEAN_IMPL = MethodDescriptor.ofConstructor(RemovedBeanImpl.class, Kind.class,
             String.class, Set.class, Set.class);

@@ -38,6 +38,17 @@ public interface ArcInvocationContext extends InvocationContext {
     <T extends Annotation> List<T> findIterceptorBindings(Class<T> annotationType);
 
     /**
+     * Returns a {@link MethodMetadata} representation of the intercepted method or constructor.
+     * This is similar to {@link #getMethod()} or {@link #getConstructor()}, except the implementation
+     * doesn't use reflection.
+     * <p>
+     * Returns {@code null} for {@code @PostConstruct} and {@code @PreDestroy} lifecycle callbacks.
+     *
+     * @return {@link MethodMetadata} representation of the intercepted method or constructor
+     */
+    MethodMetadata getMethodMetadata();
+
+    /**
      *
      * @param context
      * @param annotationType

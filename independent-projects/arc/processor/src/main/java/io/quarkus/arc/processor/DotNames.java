@@ -60,6 +60,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.NoClassInterceptors;
+import io.quarkus.arc.Reflectionless;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.VetoedProducer;
 import io.quarkus.arc.impl.ComputingCache;
@@ -133,6 +134,7 @@ public final class DotNames {
     public static final DotName NO_CLASS_INTERCEPTORS = create(NoClassInterceptors.class);
     public static final DotName DEPRECATED = create(Deprecated.class);
     public static final DotName KOTLIN_METADATA_ANNOTATION = create("kotlin.Metadata");
+    public static final DotName REFLECTIONLESS = create(Reflectionless.class);
 
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);

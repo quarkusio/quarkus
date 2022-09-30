@@ -67,6 +67,7 @@ public class BeanProcessor {
     private final String name;
     private final ResourceOutput output;
     private final AnnotationLiteralProcessor annotationLiterals;
+    private final MethodMetadataProcessor methodsMetadata;
     private final ReflectionRegistration reflectionRegistration;
     private final List<BeanRegistrar> beanRegistrars;
     private final List<ContextRegistrar> contextRegistrars;
@@ -106,6 +107,9 @@ public class BeanProcessor {
         this.contextRegistrars = initAndSort(builder.contextRegistrars, buildContext);
         this.beanDeploymentValidators = initAndSort(builder.beanDeploymentValidators, buildContext);
         this.beanDeployment = new BeanDeployment(buildContext, builder);
+
+        this.methodsMetadata = new MethodMetadataProcessor(builder.beanArchiveIndex, annotationLiterals,
+                beanDeployment.getAnnotationStore(), applicationClassPredicate);
 
         // Make it configurable if we find that the set of annotations needs to grow
         this.injectionPointAnnotationsPredicate = Predicate.not(DotNames.DEPRECATED::equals);
@@ -168,8 +172,8 @@ public class BeanProcessor {
         Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
         Map<ObserverInfo, String> observerToGeneratedName = new HashMap<>();
 
-        BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate, privateMembers,
-                generateSources, refReg, existingClasses, beanToGeneratedName,
+        BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, methodsMetadata, applicationClassPredicate,
+                privateMembers, generateSources, refReg, existingClasses, beanToGeneratedName,
                 injectionPointAnnotationsPredicate, suppressConditionGenerators);
         Collection<BeanInfo> beans = beanDeployment.getBeans();
         for (BeanInfo bean : beans) {
@@ -179,8 +183,8 @@ public class BeanProcessor {
         ClientProxyGenerator clientProxyGenerator = new ClientProxyGenerator(applicationClassPredicate, generateSources,
                 allowMocking, refReg, existingClasses);
 
-        InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals, applicationClassPredicate,
-                privateMembers, generateSources, refReg, existingClasses, beanToGeneratedName,
+        InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals, methodsMetadata,
+                applicationClassPredicate, privateMembers, generateSources, refReg, existingClasses, beanToGeneratedName,
                 injectionPointAnnotationsPredicate);
         Collection<InterceptorInfo> interceptors = beanDeployment.getInterceptors();
         for (InterceptorInfo interceptor : interceptors) {
@@ -188,16 +192,16 @@ public class BeanProcessor {
         }
         interceptors.forEach(interceptorGenerator::precomputeGeneratedName);
 
-        DecoratorGenerator decoratorGenerator = new DecoratorGenerator(annotationLiterals, applicationClassPredicate,
-                privateMembers, generateSources, refReg, existingClasses, beanToGeneratedName,
+        DecoratorGenerator decoratorGenerator = new DecoratorGenerator(annotationLiterals, methodsMetadata,
+                applicationClassPredicate, privateMembers, generateSources, refReg, existingClasses, beanToGeneratedName,
                 injectionPointAnnotationsPredicate);
         Collection<DecoratorInfo> decorators = beanDeployment.getDecorators();
         for (DecoratorInfo decorator : decorators) {
             decoratorGenerator.precomputeGeneratedName(decorator);
         }
 
-        SubclassGenerator subclassGenerator = new SubclassGenerator(annotationLiterals, applicationClassPredicate,
-                generateSources, refReg, existingClasses);
+        SubclassGenerator subclassGenerator = new SubclassGenerator(annotationLiterals, methodsMetadata,
+                applicationClassPredicate, generateSources, refReg, existingClasses);
 
         ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals, applicationClassPredicate,
                 privateMembers, generateSources, refReg, existingClasses, observerToGeneratedName,
@@ -396,6 +400,21 @@ public class BeanProcessor {
             }
         }
 
+        // Generate MethodMetadataImpls/ParameterMetadataImpls - at this point all methods metadata must be processed
+        if (methodsMetadata.hasClassesToGenerate()) {
+            MethodMetadataGenerator generator = new MethodMetadataGenerator(generateSources);
+            if (executor != null) {
+                Collection<Future<Collection<Resource>>> tasks = generator.generate(methodsMetadata.getMethodsToGenerate(),
+                        methodsMetadata.getParametersToGenerate(), existingClasses, executor);
+                for (Future<Collection<Resource>> future : tasks) {
+                    resources.addAll(future.get());
+                }
+            } else {
+                resources.addAll(generator.generate(methodsMetadata.getMethodsToGenerate(),
+                        methodsMetadata.getParametersToGenerate(), existingClasses));
+            }
+        }
+
         privateMembers.log();
 
         if (output != null) {
@@ -412,6 +431,10 @@ public class BeanProcessor {
 
     public AnnotationLiteralProcessor getAnnotationLiteralProcessor() {
         return annotationLiterals;
+    }
+
+    public MethodMetadataProcessor getMethodMetadataProcessor() {
+        return methodsMetadata;
     }
 
     public BeanDeployment process() throws IOException, InterruptedException, ExecutionException {

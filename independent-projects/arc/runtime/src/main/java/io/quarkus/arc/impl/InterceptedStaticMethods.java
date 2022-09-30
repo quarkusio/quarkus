@@ -22,8 +22,8 @@ public final class InterceptedStaticMethods {
         if (method == null) {
             throw new IllegalArgumentException("Intercepted method metadata not found for key: " + key);
         }
-        return InvocationContexts.performAroundInvoke(null, method.metadata.method, method.forward, args, method.metadata.chain,
-                method.metadata.bindings);
+        return InvocationContexts.performAroundInvoke(null, method.metadata.method, method.metadata.methodMetadata,
+                method.forward, args, method.metadata.chain, method.metadata.bindings);
     }
 
     public static final class InterceptedStaticMethod {

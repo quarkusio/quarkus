@@ -11,13 +11,16 @@ import java.util.Objects;
 import java.util.Set;
 
 import io.quarkus.arc.ArcInvocationContext;
+import io.quarkus.arc.MethodMetadata;
 
 abstract class AbstractInvocationContext implements ArcInvocationContext {
 
     private static final Object[] EMPTY_PARAMS = new Object[0];
 
+    // TODO collapse `method` and `constructor` into a single field of type `Executable` to save space?
     protected final Method method;
     protected final Constructor<?> constructor;
+    protected final MethodMetadata methodMetadata;
     protected final Set<Annotation> interceptorBindings;
     protected final List<InterceptorInvocation> chain;
     protected Object target;
@@ -25,12 +28,13 @@ abstract class AbstractInvocationContext implements ArcInvocationContext {
     protected ContextDataMap contextData;
 
     protected AbstractInvocationContext(Object target, Method method,
-            Constructor<?> constructor,
+            Constructor<?> constructor, MethodMetadata methodMetadata,
             Object[] parameters, ContextDataMap contextData,
             Set<Annotation> interceptorBindings, List<InterceptorInvocation> chain) {
         this.target = target;
         this.method = method;
         this.constructor = constructor;
+        this.methodMetadata = methodMetadata;
         this.parameters = parameters != null ? parameters : EMPTY_PARAMS;
         this.contextData = contextData != null ? contextData : new ContextDataMap(interceptorBindings);
         this.interceptorBindings = interceptorBindings;
@@ -88,7 +92,7 @@ abstract class AbstractInvocationContext implements ArcInvocationContext {
 
     protected void validateParameters(Object[] params) {
         int newParametersCount = Objects.requireNonNull(params).length;
-        Class<?>[] parameterTypes = method.getParameterTypes();
+        Class<?>[] parameterTypes = methodMetadata.getParameterTypes();
         if (parameterTypes.length != newParametersCount) {
             throw new IllegalArgumentException(
                     "Wrong number of parameters - method has " + Arrays.toString(parameterTypes) + ", attempting to set "
@@ -123,4 +127,8 @@ abstract class AbstractInvocationContext implements ArcInvocationContext {
         return constructor;
     }
 
+    @Override
+    public MethodMetadata getMethodMetadata() {
+        return methodMetadata;
+    }
 }

@@ -85,6 +85,7 @@ public class BeanGenerator extends AbstractGenerator {
     protected static final String FIELD_NAME_PROXY = "proxy";
 
     protected final AnnotationLiteralProcessor annotationLiterals;
+    protected final MethodMetadataProcessor methodsMetadata;
     protected final Predicate<DotName> applicationClassPredicate;
     protected final PrivateMembersCollector privateMembers;
     protected final Set<String> existingClasses;
@@ -93,13 +94,15 @@ public class BeanGenerator extends AbstractGenerator {
     protected final Predicate<DotName> injectionPointAnnotationsPredicate;
     protected final List<Function<BeanInfo, Consumer<BytecodeCreator>>> suppressConditionGenerators;
 
-    public BeanGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
+    public BeanGenerator(AnnotationLiteralProcessor annotationLiterals, MethodMetadataProcessor methodsMetadata,
+            Predicate<DotName> applicationClassPredicate,
             PrivateMembersCollector privateMembers, boolean generateSources, ReflectionRegistration reflectionRegistration,
             Set<String> existingClasses, Map<BeanInfo, String> beanToGeneratedName,
             Predicate<DotName> injectionPointAnnotationsPredicate,
             List<Function<BeanInfo, Consumer<BytecodeCreator>>> suppressConditionGenerators) {
         super(generateSources, reflectionRegistration);
         this.annotationLiterals = annotationLiterals;
+        this.methodsMetadata = methodsMetadata;
         this.applicationClassPredicate = applicationClassPredicate;
         this.privateMembers = privateMembers;
         this.existingClasses = existingClasses;
@@ -1374,32 +1377,44 @@ public class BeanGenerator extends AbstractGenerator {
         instanceHandle = create.createVariable(DescriptorUtils.extToInt(providerType.className()));
         if (!aroundConstructs.isEmpty()) {
             Optional<Injection> constructorInjection = bean.getConstructorInjection();
-            ResultHandle constructorHandle;
+
+            MethodInfo constructor;
             if (constructorInjection.isPresent()) {
-                List<String> paramTypes = new ArrayList<>();
-                for (InjectionPointInfo injectionPoint : constructorInjection.get().injectionPoints) {
-                    paramTypes.add(injectionPoint.getType().name().toString());
-                }
-                ResultHandle[] paramsHandles = new ResultHandle[2];
-                paramsHandles[0] = create.loadClass(providerType.className());
-                ResultHandle paramsArray = create.newArray(Class.class, create.load(paramTypes.size()));
-                for (ListIterator<String> iterator = paramTypes.listIterator(); iterator.hasNext();) {
-                    create.writeArrayValue(paramsArray, iterator.nextIndex(), create.loadClass(iterator.next()));
-                }
-                paramsHandles[1] = paramsArray;
-                constructorHandle = create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR,
-                        paramsHandles);
-                reflectionRegistration.registerMethod(constructorInjection.get().target.asMethod());
+                constructor = constructorInjection.get().target.asMethod();
             } else {
-                // constructor = Reflections.findConstructor(Foo.class)
-                ResultHandle[] paramsHandles = new ResultHandle[2];
-                paramsHandles[0] = create.loadClass(providerType.className());
-                paramsHandles[1] = create.newArray(Class.class, create.load(0));
-                constructorHandle = create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR,
-                        paramsHandles);
-                MethodInfo noArgsConstructor = bean.getTarget().get().asClass().method(Methods.INIT);
-                reflectionRegistration.registerMethod(noArgsConstructor);
+                constructor = bean.getTarget().get().asClass().method(Methods.INIT);
             }
+
+            ResultHandle constructorHandle;
+            if (aroundConstructs.isReflectionless()) {
+                constructorHandle = create.loadNull();
+            } else {
+                if (constructorInjection.isPresent()) {
+                    List<String> paramTypes = new ArrayList<>();
+                    for (InjectionPointInfo injectionPoint : constructorInjection.get().injectionPoints) {
+                        paramTypes.add(injectionPoint.getType().name().toString());
+                    }
+                    ResultHandle[] paramsHandles = new ResultHandle[2];
+                    paramsHandles[0] = create.loadClass(providerType.className());
+                    ResultHandle paramsArray = create.newArray(Class.class, create.load(paramTypes.size()));
+                    for (ListIterator<String> iterator = paramTypes.listIterator(); iterator.hasNext();) {
+                        create.writeArrayValue(paramsArray, iterator.nextIndex(), create.loadClass(iterator.next()));
+                    }
+                    paramsHandles[1] = paramsArray;
+                    constructorHandle = create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR,
+                            paramsHandles);
+                } else {
+                    // constructor = Reflections.findConstructor(Foo.class)
+                    ResultHandle[] paramsHandles = new ResultHandle[2];
+                    paramsHandles[0] = create.loadClass(providerType.className());
+                    paramsHandles[1] = create.newArray(Class.class, create.load(0));
+                    constructorHandle = create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR,
+                            paramsHandles);
+                }
+                reflectionRegistration.registerMethod(constructor);
+            }
+
+            ResultHandle methodMetadataHandle = methodsMetadata.createMethodMetadata(create, constructor);
 
             List<TransientReference> transientReferences = new ArrayList<>();
             List<ResultHandle> providerHandles = newProviderHandles(bean, beanCreator, create,
@@ -1430,7 +1445,7 @@ public class BeanGenerator extends AbstractGenerator {
 
             ResultHandle invocationContextHandle = create.invokeStaticMethod(
                     MethodDescriptors.INVOCATION_CONTEXTS_AROUND_CONSTRUCT, constructorHandle,
-                    aroundConstructsHandle, func.getInstance(),
+                    methodMetadataHandle, aroundConstructsHandle, func.getInstance(),
                     create.invokeStaticMethod(MethodDescriptors.SETS_OF, bindingsArray));
             TryBlock tryCatch = create.tryBlock();
             CatchBlockCreator exceptionCatch = tryCatch.addCatch(Exception.class);

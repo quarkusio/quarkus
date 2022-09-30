@@ -1,5 +1,6 @@
 package io.quarkus.arc.processor;
 
+import java.lang.annotation.Annotation;
 import java.util.Set;
 
 import io.quarkus.arc.impl.AnnotationLiterals;
@@ -35,6 +36,9 @@ final class FieldDescriptors {
             "EMPTY_STRING_ARRAY", String[].class);
     static final FieldDescriptor ANNOTATION_LITERALS_EMPTY_CLASS_ARRAY = FieldDescriptor.of(AnnotationLiterals.class,
             "EMPTY_CLASS_ARRAY", Class[].class);
+
+    static final FieldDescriptor ANNOTATION_LITERALS_EMPTY_ANNOTATION_ARRAY = FieldDescriptor.of(AnnotationLiterals.class,
+            "EMPTY_ANNOTATION_ARRAY", Annotation[].class);
 
     private FieldDescriptors() {
     }

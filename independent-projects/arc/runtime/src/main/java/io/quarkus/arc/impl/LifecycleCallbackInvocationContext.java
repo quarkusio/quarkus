@@ -6,6 +6,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Set;
 
+import io.quarkus.arc.MethodMetadata;
+
 /**
  * A simple InvocationContext implementation used for PostConstruct and PreDestroy callbacks.
  * <p>
@@ -15,9 +17,9 @@ class LifecycleCallbackInvocationContext extends AbstractInvocationContext {
 
     private int position = 0;
 
-    LifecycleCallbackInvocationContext(Object target, Constructor<?> constructor, Set<Annotation> interceptorBindings,
-            List<InterceptorInvocation> chain) {
-        super(target, null, constructor, null, null, interceptorBindings, chain);
+    LifecycleCallbackInvocationContext(Object target, Constructor<?> constructor, MethodMetadata methodMetadata,
+            Set<Annotation> interceptorBindings, List<InterceptorInvocation> chain) {
+        super(target, null, constructor, methodMetadata, null, null, interceptorBindings, chain);
     }
 
     @Override

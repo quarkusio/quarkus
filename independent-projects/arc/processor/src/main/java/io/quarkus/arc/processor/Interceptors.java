@@ -51,10 +51,12 @@ final class Interceptors {
                     "It will be assigned a default priority value of 0.");
             priority = 0;
         }
+        boolean reflectionless = store.hasAnnotation(interceptorClass, DotNames.REFLECTIONLESS);
         return new InterceptorInfo(interceptorClass, beanDeployment,
                 bindings.size() == 1 ? Collections.singleton(bindings.iterator().next())
                         : Collections.unmodifiableSet(bindings),
-                Injection.forBean(interceptorClass, null, beanDeployment, transformer), priority);
+                Injection.forBean(interceptorClass, null, beanDeployment, transformer), priority,
+                reflectionless);
     }
 
 }

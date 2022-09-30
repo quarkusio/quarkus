@@ -30,6 +30,8 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
 
     private final Set<AnnotationInstance> bindings;
 
+    private final boolean reflectionless;
+
     private final MethodInfo aroundInvoke;
 
     private final MethodInfo aroundConstruct;
@@ -39,11 +41,12 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
     private final MethodInfo preDestroy;
 
     InterceptorInfo(AnnotationTarget target, BeanDeployment beanDeployment, Set<AnnotationInstance> bindings,
-            List<Injection> injections, int priority) {
+            List<Injection> injections, int priority, boolean reflectionless) {
         super(target, beanDeployment, BuiltinScope.DEPENDENT.getInfo(),
                 Collections.singleton(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
                 null, null, false, Collections.emptyList(), null, false, null, priority);
         this.bindings = bindings;
+        this.reflectionless = reflectionless;
         List<MethodInfo> aroundInvokes = new ArrayList<>();
         List<MethodInfo> aroundConstructs = new ArrayList<>();
         List<MethodInfo> postConstructs = new ArrayList<>();
@@ -102,6 +105,10 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
 
     public Set<AnnotationInstance> getBindings() {
         return bindings;
+    }
+
+    public boolean isReflectionless() {
+        return reflectionless;
     }
 
     public MethodInfo getAroundInvoke() {

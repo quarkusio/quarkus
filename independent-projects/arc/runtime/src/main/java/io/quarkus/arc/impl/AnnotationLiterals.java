@@ -1,5 +1,7 @@
 package io.quarkus.arc.impl;
 
+import java.lang.annotation.Annotation;
+
 public final class AnnotationLiterals {
 
     public static final boolean[] EMPTY_BOOLEAN_ARRAY = new boolean[0];
@@ -13,6 +15,8 @@ public final class AnnotationLiterals {
 
     public static final String[] EMPTY_STRING_ARRAY = new String[0];
     public static final Class<?>[] EMPTY_CLASS_ARRAY = new Class[0];
+
+    public static final Annotation[] EMPTY_ANNOTATION_ARRAY = new Annotation[0];
 
     private AnnotationLiterals() {
     }

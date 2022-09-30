@@ -39,6 +39,7 @@ import org.jboss.jandex.TypeVariable;
 import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.InjectableDecorator;
 import io.quarkus.arc.InjectableInterceptor;
+import io.quarkus.arc.MethodMetadata;
 import io.quarkus.arc.Subclass;
 import io.quarkus.arc.impl.InterceptedMethodMetadata;
 import io.quarkus.arc.processor.BeanInfo.DecorationInfo;
@@ -74,10 +75,12 @@ public class SubclassGenerator extends AbstractGenerator {
 
     protected static final String FIELD_NAME_PREDESTROYS = "arc$preDestroys";
     protected static final String FIELD_NAME_CONSTRUCTED = "arc$constructed";
-    protected static final FieldDescriptor FIELD_METADATA_METHOD = FieldDescriptor.of(InterceptedMethodMetadata.class, "method",
-            Method.class);
-    protected static final FieldDescriptor FIELD_METADATA_CHAIN = FieldDescriptor.of(InterceptedMethodMetadata.class, "chain",
-            List.class);
+    protected static final FieldDescriptor FIELD_METADATA_METHOD = FieldDescriptor.of(InterceptedMethodMetadata.class,
+            "method", Method.class);
+    protected static final FieldDescriptor FIELD_METADATA_METHOD_METADATA = FieldDescriptor.of(InterceptedMethodMetadata.class,
+            "methodMetadata", MethodMetadata.class);
+    protected static final FieldDescriptor FIELD_METADATA_CHAIN = FieldDescriptor.of(InterceptedMethodMetadata.class,
+            "chain", List.class);
     protected static final FieldDescriptor FIELD_METADATA_BINDINGS = FieldDescriptor.of(InterceptedMethodMetadata.class,
             "bindings", Set.class);
 
@@ -90,13 +93,16 @@ public class SubclassGenerator extends AbstractGenerator {
     }
 
     private final AnnotationLiteralProcessor annotationLiterals;
+    private final MethodMetadataProcessor methodsMetadata;
 
-    public SubclassGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
+    public SubclassGenerator(AnnotationLiteralProcessor annotationLiterals, MethodMetadataProcessor methodsMetadata,
+            Predicate<DotName> applicationClassPredicate,
             boolean generateSources, ReflectionRegistration reflectionRegistration,
             Set<String> existingClasses) {
         super(generateSources, reflectionRegistration);
         this.applicationClassPredicate = applicationClassPredicate;
         this.annotationLiterals = annotationLiterals;
+        this.methodsMetadata = methodsMetadata;
         this.existingClasses = existingClasses;
     }
 
@@ -295,8 +301,10 @@ public class SubclassGenerator extends AbstractGenerator {
             }
         };
 
-        methodIdx = 1;
+        methodIdx = 0;
         for (MethodInfo method : interceptedOrDecoratedMethods) {
+            methodIdx++;
+
             MethodDescriptor methodDescriptor = MethodDescriptor.of(method);
             InterceptionInfo interception = bean.getInterceptedMethods().get(method);
             DecorationInfo decoration = bean.getDecoratedMethods().get(method);
@@ -306,43 +314,52 @@ public class SubclassGenerator extends AbstractGenerator {
             if (interception != null) {
                 // Each intercepted method has a corresponding InterceptedMethodMetadata field
                 FieldCreator metadataField = subclass
-                        .getFieldCreator("arc$" + methodIdx++, InterceptedMethodMetadata.class.getName())
+                        .getFieldCreator("arc$" + methodIdx, InterceptedMethodMetadata.class.getName())
                         .setModifiers(ACC_PRIVATE | ACC_FINAL);
 
                 // 1. Interceptor chain
                 ResultHandle chainHandle = interceptorChains.computeIfAbsent(interception.interceptors, interceptorChainsFun);
 
                 // 2. Method method = Reflections.findMethod(org.jboss.weld.arc.test.interceptors.SimpleBean.class,"foo",java.lang.String.class)
-                ResultHandle[] paramsHandles = new ResultHandle[3];
-                paramsHandles[0] = constructor.loadClass(providerTypeName);
-                paramsHandles[1] = constructor.load(method.name());
-                if (!parameters.isEmpty()) {
-                    ResultHandle paramsArray = constructor.newArray(Class.class, constructor.load(parameters.size()));
-                    for (ListIterator<Type> iterator = parameters.listIterator(); iterator.hasNext();) {
-                        constructor.writeArrayValue(paramsArray, iterator.nextIndex(),
-                                constructor.loadClass(iterator.next().name().toString()));
-                    }
-                    paramsHandles[2] = paramsArray;
+                ResultHandle methodHandle;
+                if (interception.isReflectionless()) {
+                    methodHandle = constructor.loadNull();
                 } else {
-                    paramsHandles[2] = constructor.readStaticField(FieldDescriptors.ANNOTATION_LITERALS_EMPTY_CLASS_ARRAY);
+                    ResultHandle[] paramsHandles = new ResultHandle[3];
+                    paramsHandles[0] = constructor.loadClass(providerTypeName);
+                    paramsHandles[1] = constructor.load(method.name());
+                    if (!parameters.isEmpty()) {
+                        ResultHandle paramsArray = constructor.newArray(Class.class, constructor.load(parameters.size()));
+                        for (ListIterator<Type> iterator = parameters.listIterator(); iterator.hasNext();) {
+                            constructor.writeArrayValue(paramsArray, iterator.nextIndex(),
+                                    constructor.loadClass(iterator.next().name().toString()));
+                        }
+                        paramsHandles[2] = paramsArray;
+                    } else {
+                        paramsHandles[2] = constructor.readStaticField(FieldDescriptors.ANNOTATION_LITERALS_EMPTY_CLASS_ARRAY);
+                    }
+                    methodHandle = constructor.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_METHOD, paramsHandles);
                 }
-                ResultHandle methodHandle = constructor.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_METHOD,
-                        paramsHandles);
 
-                // 3. Interceptor bindings
+                // 3. MethodMetadata (cheaper alternative to reflective `Method`)
+                ResultHandle methodMetadataHandle = methodsMetadata.createMethodMetadata(constructor, method);
+
+                // 4. Interceptor bindings
                 // Note that we use a shared list if possible
                 ResultHandle bindingsHandle = bindings.computeIfAbsent(
                         interception.bindings.stream().map(BindingKey::new).collect(Collectors.toList()), bindingsFun);
 
                 // Now create metadata for the given intercepted method
-                ResultHandle methodMetadataHandle = constructor.newInstance(
+                ResultHandle metadataHandle = constructor.newInstance(
                         MethodDescriptors.INTERCEPTED_METHOD_METADATA_CONSTRUCTOR,
-                        chainHandle, methodHandle, bindingsHandle);
+                        chainHandle, methodHandle, methodMetadataHandle, bindingsHandle);
 
-                constructor.writeInstanceField(metadataField.getFieldDescriptor(), constructor.getThis(), methodMetadataHandle);
+                constructor.writeInstanceField(metadataField.getFieldDescriptor(), constructor.getThis(), metadataHandle);
 
-                // Needed when running on native image
-                reflectionRegistration.registerMethod(method);
+                if (!interception.isReflectionless()) {
+                    // Needed when running on native image
+                    reflectionRegistration.registerMethod(method);
+                }
 
                 // Finally create the intercepted method
                 createInterceptedMethod(classOutput, bean, method, subclass, providerTypeName,
@@ -785,7 +802,10 @@ public class SubclassGenerator extends AbstractGenerator {
         ResultHandle methodMetadataHandle = tryCatch.readInstanceField(metadataField, tryCatch.getThis());
         ResultHandle ret = tryCatch.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXTS_PERFORM_AROUND_INVOKE,
                 tryCatch.getThis(),
-                tryCatch.readInstanceField(FIELD_METADATA_METHOD, methodMetadataHandle), func.getInstance(), paramsHandle,
+                tryCatch.readInstanceField(FIELD_METADATA_METHOD, methodMetadataHandle),
+                tryCatch.readInstanceField(FIELD_METADATA_METHOD_METADATA, methodMetadataHandle),
+                func.getInstance(),
+                paramsHandle,
                 tryCatch.readInstanceField(FIELD_METADATA_CHAIN, methodMetadataHandle),
                 tryCatch.readInstanceField(FIELD_METADATA_BINDINGS, methodMetadataHandle));
         tryCatch.returnValue(ret);

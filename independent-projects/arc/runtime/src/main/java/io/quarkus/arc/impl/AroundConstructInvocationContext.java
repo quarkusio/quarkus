@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import io.quarkus.arc.MethodMetadata;
+
 /**
  * An InvocationContext implementation used for AroundConstruct callbacks.
  */
@@ -13,9 +15,10 @@ class AroundConstructInvocationContext extends LifecycleCallbackInvocationContex
 
     private final Supplier<Object> aroundConstructForward;
 
-    AroundConstructInvocationContext(Constructor<?> constructor, Set<Annotation> interceptorBindings,
+    AroundConstructInvocationContext(Constructor<?> constructor, MethodMetadata methodMetadata,
+            Set<Annotation> interceptorBindings,
             List<InterceptorInvocation> chain, Supplier<Object> aroundConstructForward) {
-        super(null, constructor, interceptorBindings, chain);
+        super(null, constructor, methodMetadata, interceptorBindings, chain);
         this.aroundConstructForward = aroundConstructForward;
     }
 

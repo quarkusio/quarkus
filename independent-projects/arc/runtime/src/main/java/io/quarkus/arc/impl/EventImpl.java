@@ -223,7 +223,7 @@ class EventImpl<T> implements Event<T> {
 
         private final Class<?> runtimeType;
         private final List<ObserverMethod<? super T>> observerMethods;
-        private final EventMetadata eventMetadata;
+        final EventMetadata eventMetadata;
         private final boolean hasTxObservers;
         private final boolean activateRequestContext;
 

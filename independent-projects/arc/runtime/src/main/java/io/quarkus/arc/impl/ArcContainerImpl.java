@@ -67,6 +67,7 @@ import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.RemovedBean;
 import io.quarkus.arc.ResourceReferenceProvider;
 import io.quarkus.arc.impl.ArcCDIProvider.ArcCDI;
+import io.quarkus.arc.impl.EventImpl.Notifier;
 
 public class ArcContainerImpl implements ArcContainer {
 
@@ -111,13 +112,13 @@ public class ArcContainerImpl implements ArcContainer {
         this.currentContextFactory = currentContextFactory == null ? new ThreadLocalCurrentContextFactory()
                 : currentContextFactory;
 
-        Contexts.Builder contextsBuilder = new Contexts.Builder(
-                new RequestContext(this.currentContextFactory.create(RequestScoped.class)), new ApplicationContext(),
-                new SingletonContext());
-
+        List<Components> components = new ArrayList<>();
         for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
-            Components components = componentsProvider.getComponents();
-            for (InjectableBean<?> bean : components.getBeans()) {
+            components.add(componentsProvider.getComponents());
+        }
+
+        for (Components c : components) {
+            for (InjectableBean<?> bean : c.getBeans()) {
                 if (bean instanceof InjectableInterceptor) {
                     interceptors.add((InjectableInterceptor<?>) bean);
                 } else if (bean instanceof InjectableDecorator) {
@@ -126,26 +127,12 @@ public class ArcContainerImpl implements ArcContainer {
                     beans.add(bean);
                 }
             }
-            removedBeans.add(components.getRemovedBeans());
-            observers.addAll(components.getObservers());
-            // Add custom contexts
-            for (InjectableContext context : components.getContexts()) {
-                if (ApplicationScoped.class.equals(context.getScope())) {
-                    throw new IllegalStateException(
-                            "Failed to register a context - built-in application context is always active: " + context);
-                }
-                if (Singleton.class.equals(context.getScope())) {
-                    throw new IllegalStateException(
-                            "Failed to register a context - built-in singleton context is always active: " + context);
-                }
-                contextsBuilder.putContext(context);
-            }
-            transitiveInterceptorBindings.putAll(components.getTransitiveInterceptorBindings());
-            qualifierNonbindingMembers.putAll(components.getQualifierNonbindingMembers());
-            qualifiers.addAll(components.getQualifiers());
+            removedBeans.add(c.getRemovedBeans());
+            observers.addAll(c.getObservers());
+            transitiveInterceptorBindings.putAll(c.getTransitiveInterceptorBindings());
+            qualifierNonbindingMembers.putAll(c.getQualifierNonbindingMembers());
+            qualifiers.addAll(c.getQualifiers());
         }
-
-        this.contexts = contextsBuilder.build();
 
         // register built-in beans
         addBuiltInBeans(beans);
@@ -180,14 +167,31 @@ public class ArcContainerImpl implements ArcContainer {
         });
         this.transitiveInterceptorBindings = Map.copyOf(transitiveInterceptorBindings);
         this.registeredQualifiers = new Qualifiers(qualifiers, qualifierNonbindingMembers);
-    }
 
-    private static void addBuiltInBeans(List<InjectableBean<?>> beans) {
-        // BeanManager, Event<?>, Instance<?>, InjectionPoint
-        beans.add(new BeanManagerBean());
-        beans.add(new EventBean());
-        beans.add(InstanceBean.INSTANCE);
-        beans.add(new InjectionPointBean());
+        Contexts.Builder contextsBuilder = new Contexts.Builder(
+                new RequestContext(this.currentContextFactory.create(RequestScoped.class),
+                        notifierOrNull(Set.of(Initialized.Literal.REQUEST, Any.Literal.INSTANCE)),
+                        notifierOrNull(Set.of(BeforeDestroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
+                        notifierOrNull(Set.of(Destroyed.Literal.REQUEST, Any.Literal.INSTANCE))),
+                new ApplicationContext(),
+                new SingletonContext());
+
+        // Add custom contexts
+        for (Components c : components) {
+            for (InjectableContext context : c.getContexts()) {
+                if (ApplicationScoped.class.equals(context.getScope())) {
+                    throw new IllegalStateException(
+                            "Failed to register a context - built-in application context is always active: " + context);
+                }
+                if (Singleton.class.equals(context.getScope())) {
+                    throw new IllegalStateException(
+                            "Failed to register a context - built-in singleton context is always active: " + context);
+                }
+                contextsBuilder.putContext(context);
+            }
+        }
+
+        this.contexts = contextsBuilder.build();
     }
 
     public void init() {
@@ -421,6 +425,20 @@ public class ArcContainerImpl implements ArcContainer {
             }
         }
         return null;
+    }
+
+    private Notifier<Object> notifierOrNull(Set<Annotation> qualifiers) {
+        Notifier<Object> notifier = EventImpl.createNotifier(Object.class, Object.class,
+                qualifiers, this, false);
+        return notifier.isEmpty() ? null : notifier;
+    }
+
+    private static void addBuiltInBeans(List<InjectableBean<?>> beans) {
+        // BeanManager, Event<?>, Instance<?>, InjectionPoint
+        beans.add(new BeanManagerBean());
+        beans.add(new EventBean());
+        beans.add(InstanceBean.INSTANCE);
+        beans.add(new InjectionPointBean());
     }
 
     private <T> InstanceHandle<T> instanceHandle(Type type, Annotation... qualifiers) {

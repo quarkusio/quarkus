@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.deployment.tracing;
 
-import static io.quarkus.opentelemetry.deployment.OpenTelemetryProcessor.isClassPresent;
+import static io.quarkus.bootstrap.classloading.QuarkusClassLoader.isClassPresentAtRuntime;
 import static javax.interceptor.Interceptor.Priority.LIBRARY_AFTER;
 
 import java.util.ArrayList;
@@ -40,11 +40,11 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.opentelemetry.runtime.tracing.TracerProducer;
+import io.quarkus.opentelemetry.runtime.config.TracerRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
-import io.quarkus.opentelemetry.runtime.tracing.TracerRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.tracing.grpc.GrpcTracingClientInterceptor;
-import io.quarkus.opentelemetry.runtime.tracing.grpc.GrpcTracingServerInterceptor;
+import io.quarkus.opentelemetry.runtime.tracing.cdi.TracerProducer;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc.GrpcTracingClientInterceptor;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc.GrpcTracingServerInterceptor;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
@@ -59,7 +59,7 @@ public class TracerProcessor {
     private static final DotName SPAN_PROCESSOR = DotName.createSimple(SpanProcessor.class.getName());
 
     static class MetricsExtensionAvailable implements BooleanSupplier {
-        private static final boolean IS_MICROMETER_EXTENSION_AVAILABLE = isClassPresent(
+        private static final boolean IS_MICROMETER_EXTENSION_AVAILABLE = isClassPresentAtRuntime(
                 "io.quarkus.micrometer.runtime.binder.vertx.VertxHttpServerMetrics");
 
         @Override
@@ -81,7 +81,7 @@ public class TracerProcessor {
     }
 
     static class GrpcExtensionAvailable implements BooleanSupplier {
-        private static final boolean IS_GRPC_EXTENSION_AVAILABLE = isClassPresent(
+        private static final boolean IS_GRPC_EXTENSION_AVAILABLE = isClassPresentAtRuntime(
                 "io.quarkus.grpc.runtime.GrpcServerRecorder");
 
         @Override

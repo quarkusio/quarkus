@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
+import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class OpenTelemetrySamplerBeanTest {

@@ -12,6 +12,7 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.extension.aws.AwsXrayPropagator;
+import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class OpenTelemetryPropagatorsTest {

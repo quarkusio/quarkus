@@ -24,6 +24,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.arc.Unremovable;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 

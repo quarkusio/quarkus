@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.smallrye.config.SmallRyeConfig;

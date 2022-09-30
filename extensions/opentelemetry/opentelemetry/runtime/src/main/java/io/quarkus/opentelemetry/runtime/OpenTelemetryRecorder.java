@@ -8,6 +8,7 @@ import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.quarkus.opentelemetry.runtime.config.OpenTelemetryConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Vertx;

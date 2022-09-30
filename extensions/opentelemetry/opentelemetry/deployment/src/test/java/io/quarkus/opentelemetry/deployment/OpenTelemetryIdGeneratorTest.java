@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.extension.aws.trace.AwsXrayIdGenerator;
 import io.opentelemetry.sdk.trace.IdGenerator;
+import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class OpenTelemetryIdGeneratorTest {

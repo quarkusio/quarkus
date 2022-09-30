@@ -22,6 +22,9 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.trace.data.LinkData;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.sdk.trace.samplers.SamplingResult;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TestUtil;
+import io.quarkus.opentelemetry.deployment.common.TracerRouter;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 

@@ -11,6 +11,7 @@ import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryUtil;
+import io.quarkus.opentelemetry.runtime.config.TracerRuntimeConfig;
 
 public class TracerUtil {
     private TracerUtil() {

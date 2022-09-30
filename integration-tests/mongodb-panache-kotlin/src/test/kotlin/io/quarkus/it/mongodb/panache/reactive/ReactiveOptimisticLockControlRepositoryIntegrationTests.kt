@@ -321,12 +321,12 @@ class ReactiveOptimisticLockControlRepositoryIntegrationTests {
         val carV2 = CarV(id, 2023, null)
         try {
             // try to insert two with same id
-            carVRepository.persist(listOf(carV, carV2)).await().indefinitely()
+            carVRepository.persist(arrayListOf(carV, carV2)).await().indefinitely()
         } catch (ex: Exception) {
             assertEquals(0L, carV.version) // inserted
             assertNull(carV2.version) // failed
             try {
-                carVRepository.persist(listOf(carV, carV2)).await().indefinitely()
+                carVRepository.persist(arrayListOf(carV, carV2)).await().indefinitely()
             } catch (ignored: Exception) {
                 assertEquals(0L, carV.version) // didn't change
                 assertNull(carV2.version) // failed

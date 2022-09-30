@@ -1,5 +1,6 @@
 package io.quarkus.jaxp.deployment;
 
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -30,6 +31,8 @@ class JaxpProcessor {
 
     @BuildStep
     void resourceBundles(BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
+        Consumer<String> resourceBundleItemProducer = bundleName -> resourceBundle
+                .produce(new NativeImageResourceBundleBuildItem(bundleName, "java.xml"));
         Stream.of(
                 "com.sun.org.apache.xml.internal.serializer.utils.SerializerMessages",
                 "com.sun.org.apache.xml.internal.res.XMLErrorResources",
@@ -37,8 +40,7 @@ class JaxpProcessor {
                 "com.sun.org.apache.xerces.internal.impl.msg.XMLMessages",
                 "com.sun.org.apache.xerces.internal.impl.msg.XMLSchemaMessages",
                 "com.sun.org.apache.xerces.internal.impl.xpath.regex.message")
-                .map(NativeImageResourceBundleBuildItem::new)
-                .forEach(resourceBundle::produce);
+                .forEach(resourceBundleItemProducer);
     }
 
     @BuildStep

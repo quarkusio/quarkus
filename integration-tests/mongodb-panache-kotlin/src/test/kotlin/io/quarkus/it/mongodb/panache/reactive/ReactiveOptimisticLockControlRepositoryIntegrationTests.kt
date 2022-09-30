@@ -323,13 +323,23 @@ class ReactiveOptimisticLockControlRepositoryIntegrationTests {
             // try to insert two with same id
             carVRepository.persist(arrayListOf(carV, carV2)).await().indefinitely()
         } catch (ex: Exception) {
-            assertEquals(0L, carV.version) // inserted
-            assertNull(carV2.version) // failed
+            if (carV.version != null) {
+                assertEquals(0L, carV.version) // inserted
+                assertNull(carV2.version) // failed
+            } else {
+                assertEquals(0L, carV2.version) // inserted
+                assertNull(carV.version) // failed
+            }
             try {
                 carVRepository.persist(arrayListOf(carV, carV2)).await().indefinitely()
             } catch (ignored: Exception) {
-                assertEquals(0L, carV.version) // didn't change
-                assertNull(carV2.version) // failed
+                if (carV.version != null) {
+                    assertEquals(0L, carV.version) // inserted
+                    assertNull(carV2.version) // failed
+                } else {
+                    assertEquals(0L, carV2.version) // inserted
+                    assertNull(carV.version) // failed
+                }
             }
         }
     }

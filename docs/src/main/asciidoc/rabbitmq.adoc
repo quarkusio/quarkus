@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Getting Started to SmallRye Reactive Messaging with RabbitMQ
 :extension-status: preview
-
 include::_attributes.adoc[]
 
 This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with RabbitMQ.

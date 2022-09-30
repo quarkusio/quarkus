@@ -248,10 +248,10 @@ For example, The following code illustrates how you can store incoming payloads 
 
 [source,java]
 ----
-import io.smallrye.reactive.messaging.annotations.Blocking;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.control.ActivateRequestContext;
 import javax.transaction.Transactional;
 
 @ApplicationScoped
@@ -259,6 +259,7 @@ public class PriceStorage {
 
     @Incoming("prices")
     @Transactional
+    @ActivateRequestContex
     public void store(int priceInUsd) {
         Price price = new Price();
         price.value = priceInUsd;
@@ -2258,6 +2259,7 @@ To consume `Fruit` instances stored on a Kafka topic, and persist them into a da
 package org.acme;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.control.ActivateRequestContext;
 import javax.transaction.Transactional;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -2269,16 +2271,18 @@ public class FruitConsumer {
 
     @Incoming("fruits")                                     // <1>
     @Transactional                                          // <2>
-    public void persistFruits(Fruit fruit) {                // <3>
-        fruit.persist();                                    // <4>
+    @ActivateRequestContex                                  // <3>
+    public void persistFruits(Fruit fruit) {                // <4>
+        fruit.persist();                                    // <5>
     }
 }
 ----
 <1> Configuring the incoming channel. This channel reads from Kafka.
 <2> As we are writing in a database, we must be in a transaction. This annotation starts a new transaction and commits it when the method returns.
 Quarkus automatically considers the method as _blocking_. Indeed, writing to a database using classic Hibernate is blocking. So, Quarkus calls the method on a worker thread you can block (and not an I/O thread).
-<3> The method receives each Fruit. Note that you would need a deserializer to reconstruct the Fruit instances from the Kafka records.
-<4> Persist the received `fruit` object.
+<3> By default, the CDI request context is not activated in reactive messaging, but Hibernate mandates it.
+<4> The method receives each Fruit. Note that you would need a deserializer to reconstruct the Fruit instances from the Kafka records.
+<5> Persist the received `fruit` object.
 
 As mentioned in <4>, you need a deserializer that can create a `Fruit` from the record.
 This can be done using a Jackson deserializer:

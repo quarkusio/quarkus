@@ -4,11 +4,21 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using OpenTracing
+:extension-status: deprecated
 
 include::./attributes.adoc[]
 
 This guide explains how your Quarkus application can utilize OpenTracing to provide distributed tracing for
 interactive web applications.
+
+[IMPORTANT]
+====
+xref:opentelemetry.adoc[OpenTelemetry] is the recommended approach to tracing and telemetry for Quarkus.
+
+When Quarkus will upgrade to Eclipse MicroProfile 6, the SmallRye OpenTracing support will be discontinued.
+====
+
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 

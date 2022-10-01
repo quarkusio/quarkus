@@ -815,7 +815,7 @@ public class RaceWeight {
 }
 
 // Only the race and the average weight will be loaded
-PanacheQuery<RaceWeight> query = Person.find("select d.race, AVG(d.weight) from Dog d group by d.race).project(RaceWeight.class);
+PanacheQuery<RaceWeight> query = Person.find("select d.race, AVG(d.weight) from Dog d group by d.race").project(RaceWeight.class);
 ----
 <1> Hibernate ORM will use this constructor. When the query has a select clause, it is possible to have multiple constructors.
 
@@ -827,7 +827,7 @@ For example, this will fail:
 
 [source,java]
 ----
-PanacheQuery<RaceWeight> query = Person.find("select new MyView(d.race, AVG(d.weight)) from Dog d group by d.race).project(AnotherView.class);
+PanacheQuery<RaceWeight> query = Person.find("select new MyView(d.race, AVG(d.weight)) from Dog d group by d.race").project(AnotherView.class);
 ----
 ====
 

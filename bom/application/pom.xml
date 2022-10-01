@@ -199,6 +199,7 @@
         <jacoco.version>0.8.8</jacoco.version>
         <testcontainers.version>1.17.5</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
         <docker-java.version>3.2.13</docker-java.version> <!-- must be the version Testcontainers use -->
+        <com.dajudge.kindcontainer>1.3.0</com.dajudge.kindcontainer>
         <aesh-readline.version>2.2</aesh-readline.version>
         <aesh.version>2.6</aesh.version>
         <!-- these two artifacts needs to be compatible together -->
@@ -5843,6 +5844,17 @@
                 <groupId>io.github.crac</groupId>
                 <artifactId>org-crac</artifactId>
                 <version>${org-crac.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dajudge.kindcontainer</groupId>
+                <artifactId>kindcontainer</artifactId>
+                <version>${com.dajudge.kindcontainer}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <!-- Relocations -->

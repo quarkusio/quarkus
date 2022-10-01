@@ -319,7 +319,6 @@ class ReactiveOptimisticLockControlRepositoryIntegrationTests {
             // try to insert two with same id
             carVRepository.persist(carV, carV2).await().indefinitely()
         } catch (ex: Exception) {
-
             assertEquals(0L, carV.version) // inserted
             assertNull(carV2.version) // failed
 

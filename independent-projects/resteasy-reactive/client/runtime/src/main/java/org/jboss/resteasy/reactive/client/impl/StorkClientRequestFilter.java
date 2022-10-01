@@ -37,8 +37,7 @@ public class StorkClientRequestFilter implements ResteasyReactiveClientRequestFi
             try {
                 serviceInstance = Stork.getInstance()
                         .getService(serviceName)
-                        .selectInstanceAndRecordStart(measureTime)
-                        .log();
+                        .selectInstanceAndRecordStart(measureTime);
             } catch (Throwable e) {
                 log.error("Error selecting service instance for serviceName: " + serviceName, e);
                 requestContext.resume(e);

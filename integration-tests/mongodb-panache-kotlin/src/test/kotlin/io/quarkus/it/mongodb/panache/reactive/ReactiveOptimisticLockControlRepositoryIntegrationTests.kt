@@ -8,11 +8,7 @@ import io.quarkus.mongodb.panache.common.exception.OptimisticLockException
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheMongoRepositoryBase
 import io.quarkus.test.junit.QuarkusTest
 import io.smallrye.mutiny.CompositeException
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.*
@@ -321,25 +317,17 @@ class ReactiveOptimisticLockControlRepositoryIntegrationTests {
         val carV2 = CarV(id, 2023, null)
         try {
             // try to insert two with same id
-            carVRepository.persist(arrayListOf(carV, carV2)).await().indefinitely()
+            carVRepository.persist(carV, carV2).await().indefinitely()
         } catch (ex: Exception) {
-            if (carV.version != null) {
-                assertEquals(0L, carV.version) // inserted
-                assertNull(carV2.version) // failed
-            } else {
-                assertEquals(0L, carV2.version) // inserted
-                assertNull(carV.version) // failed
-            }
+
+            assertEquals(0L, carV.version) // inserted
+            assertNull(carV2.version) // failed
+
             try {
-                carVRepository.persist(arrayListOf(carV, carV2)).await().indefinitely()
+                carVRepository.persist(carV, carV2).await().indefinitely()
             } catch (ignored: Exception) {
-                if (carV.version != null) {
-                    assertEquals(0L, carV.version) // inserted
-                    assertNull(carV2.version) // failed
-                } else {
-                    assertEquals(0L, carV2.version) // inserted
-                    assertNull(carV.version) // failed
-                }
+                assertEquals(0L, carV.version) // didnt'change
+                assertNull(carV2.version) // failed
             }
         }
     }

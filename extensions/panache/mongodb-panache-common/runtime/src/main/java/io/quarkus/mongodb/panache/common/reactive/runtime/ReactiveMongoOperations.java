@@ -317,8 +317,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     private Uni<Void> update(ReactiveMongoCollection collection, List<Object> entities) {
         List<Uni<Void>> unis = entities.stream()
-                .map(entity -> update(collection, entity)
-                        .onItem().ignore().andContinueWithNull())//this guarantee the execution and rollbacks
+                .map(entity -> update(collection, entity))
                 .collect(Collectors.toList());
         return Uni.combine().all().unis(unis).collectFailures().combinedWith(u -> null);
     }

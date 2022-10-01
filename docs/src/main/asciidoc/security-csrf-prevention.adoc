@@ -104,7 +104,7 @@ public class UserNameResource {
     @Path("/csrfTokenForm")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_PLAIN)
-    public String postCsrfTokenForm(@FormParam("name") String name) {
+    public String postCsrfTokenForm(@FormParam("name") String userName) {
         return userName; <3>
     }
 }
@@ -123,7 +123,7 @@ quarkus.csrf-reactive.form-field-name=csrftoken
 quarkus.csrf-reactive.cookie-name=csrftoken
 ----
 
-Note that the CSRF filter has to read the input stream in order to verify the token and then re-create the stream for the application code to read it as well. The filter performs this work on an event loop thread so for small form payloads, such as the one shown in the example above, it will have negligible peformance side-effects. However if you deal with large form payloads then it is recommended to compare the CSRF form field and cookie values in the application code:
+Note that the CSRF filter has to read the input stream in order to verify the token and then re-create the stream for the application code to read it as well. The filter performs this work on an event loop thread so for small form payloads, such as the one shown in the example above, it will have negligible performance side-effects. However if you deal with large form payloads then it is recommended to compare the CSRF form field and cookie values in the application code:
 
 [source,java]
 ----

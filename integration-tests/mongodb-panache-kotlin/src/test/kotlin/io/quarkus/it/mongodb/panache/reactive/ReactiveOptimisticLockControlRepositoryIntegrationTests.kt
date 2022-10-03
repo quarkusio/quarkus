@@ -323,15 +323,23 @@ class ReactiveOptimisticLockControlRepositoryIntegrationTests {
             // try to insert two with same id
             carVRepository.persist(carV, carV2).await().indefinitely()
         } catch (ex: Exception) {
-            assertEquals(0L, carV.version) // inserted
-            assertNull(carV2.version) // failed
+            assertPersistManyWithNullVersionAndSameId(carV, carV2)
 
             try {
                 carVRepository.persist(carV, carV2).await().indefinitely()
             } catch (ignored: Exception) {
-                assertEquals(0L, carV.version) // didnt'change
-                assertNull(carV2.version) // failed
+                assertPersistManyWithNullVersionAndSameId(carV, carV2)
             }
+        }
+    }
+
+    private fun assertPersistManyWithNullVersionAndSameId(carV: CarV, carV2: CarV) {
+        if (carV.version != null) {
+            assertEquals(0L, carV.version) // inserted
+            assertNull(carV2.version) // failed
+        } else {
+            assertEquals(0L, carV2.version) // inserted
+            assertNull(carV.version) // failed
         }
     }
 

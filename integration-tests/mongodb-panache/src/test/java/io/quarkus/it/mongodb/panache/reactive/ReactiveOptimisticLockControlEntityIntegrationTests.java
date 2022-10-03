@@ -398,14 +398,23 @@ public class ReactiveOptimisticLockControlEntityIntegrationTests {
             //try to insert two with same id
             ReactiveCarVEntity.persist(carV, carV2).await().indefinitely();
         } catch (Exception ex) {
-            assertEquals(0L, carV.version); //inserted
-            assertNull(carV2.version); //failed
+            //just one is inserted
+            assertPersistManyWithNullVersionAndSameId(carV, carV2);
             try {
                 ReactiveCarVEntity.persist(carV, carV2).await().indefinitely();
             } catch (Exception ignored) {
-                assertEquals(0L, carV.version); //didn't change
-                assertNull(carV2.version); //failed
+                assertPersistManyWithNullVersionAndSameId(carV, carV2);
             }
+        }
+    }
+
+    private void assertPersistManyWithNullVersionAndSameId(CarV carV, CarV carV2) {
+        if (carV.version != null) {
+            assertEquals(0L, carV.version); //inserted
+            assertNull(carV2.version); //failed
+        } else {
+            assertEquals(0L, carV2.version); //inserted
+            assertNull(carV.version); //failed
         }
     }
 

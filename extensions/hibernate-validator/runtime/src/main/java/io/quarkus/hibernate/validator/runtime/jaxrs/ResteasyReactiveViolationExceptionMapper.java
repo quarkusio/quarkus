@@ -1,6 +1,9 @@
 package io.quarkus.hibernate.validator.runtime.jaxrs;
 
+import static io.quarkus.hibernate.validator.runtime.jaxrs.ValidatorMediaTypeUtil.SUPPORTED_MEDIA_TYPES;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -10,21 +13,18 @@ import javax.validation.ConstraintViolationException;
 import javax.validation.ElementKind;
 import javax.validation.Path;
 import javax.validation.ValidationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
+import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
+
 @Provider
 public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper<ValidationException> {
 
     private static final String VALIDATION_HEADER = "validation-exception";
-
-    @Context
-    HttpHeaders headers;
 
     @Override
     public Response toResponse(ValidationException exception) {
@@ -71,8 +71,12 @@ public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper
         Response.ResponseBuilder builder = Response.status(status);
         builder.header(VALIDATION_HEADER, "true");
 
+        var rrContext = CurrentRequestManager.get();
         // Check standard media types.
-        MediaType mediaType = ValidatorMediaTypeUtil.getAcceptMediaTypeFromSupported(headers.getAcceptableMediaTypes());
+        MediaType mediaType = ValidatorMediaTypeUtil.getAcceptMediaType(
+                rrContext.getHttpHeaders().getAcceptableMediaTypes(),
+                rrContext.getTarget() != null ? Arrays.asList(rrContext.getTarget().getProduces().getSortedMediaTypes())
+                        : SUPPORTED_MEDIA_TYPES);
         if (mediaType == null) {
             mediaType = MediaType.APPLICATION_JSON_TYPE;
         }

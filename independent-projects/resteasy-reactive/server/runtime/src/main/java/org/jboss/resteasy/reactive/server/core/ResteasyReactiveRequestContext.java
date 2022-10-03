@@ -111,8 +111,6 @@ public abstract class ResteasyReactiveRequestContext
     private String authority;
     private String remaining;
     private EncodedMediaType responseContentType;
-    private MediaType consumesMediaType;
-
     private Annotation[] methodAnnotations;
     private Annotation[] additionalAnnotations; // can be added by entity annotations or response filters
     private Annotation[] allAnnotations;
@@ -517,15 +515,6 @@ public abstract class ResteasyReactiveRequestContext
         } else {
             this.responseContentType = new EncodedMediaType(responseContentType);
         }
-        return this;
-    }
-
-    public MediaType getConsumesMediaType() {
-        return consumesMediaType;
-    }
-
-    public ResteasyReactiveRequestContext setConsumesMediaType(MediaType consumesMediaType) {
-        this.consumesMediaType = consumesMediaType;
         return this;
     }
 

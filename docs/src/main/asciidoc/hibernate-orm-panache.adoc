@@ -733,7 +733,7 @@ Hibernate will use **DTO projection** and generate a SELECT clause with the attr
 This is also called **dynamic instantiation** or **constructor expression**, more info can be found on the Hibernate guide:
 link:https://docs.jboss.org/hibernate/orm/current/userguide/html_single/Hibernate_User_Guide.html#hql-select-clause[hql select clause]
 
-The projection class needs to be a valid Java Bean and have a constructor that contains all its attributes, this constructor will be used to
+The projection class needs to have a constructor that contains all its attributes, this constructor will be used to
 instantiate the projection DTO instead of using the entity class. This class must have a matching constructor with all the class attributes as parameters.
 
 
@@ -764,6 +764,8 @@ The implementation of the `project(Class)` method uses the constructor's paramet
 so the compiler must be configured to store parameter names inside the compiled class.
 This is enabled by default if you are using the Quarkus Maven archetype. If you are not using it, add the property `<maven.compiler.parameters>true</maven.compiler.parameters>` to your `pom.xml`.
 ====
+
+TIP: If you run Java 17+, records are a good fit for projection classes.
 
 If in the DTO projection object you have a field from a referenced entity, you can use the `@ProjectedFieldName` annotation to provide the path for the SELECT statement.
 

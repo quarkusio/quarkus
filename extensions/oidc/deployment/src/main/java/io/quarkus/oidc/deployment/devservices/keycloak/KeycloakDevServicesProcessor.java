@@ -410,6 +410,8 @@ public class KeycloakDevServicesProcessor {
             this.fixedExposedPort = fixedExposedPort;
             this.startCommand = startCommand;
             this.showLogs = showLogs;
+
+            super.setWaitStrategy(Wait.forLogMessage(".*Keycloak.*started.*", 1));
         }
 
         @Override
@@ -482,7 +484,6 @@ public class KeycloakDevServicesProcessor {
             }
 
             LOG.infof("Using %s powered Keycloak distribution", keycloakX ? "Quarkus" : "WildFly");
-            super.setWaitStrategy(Wait.forLogMessage(".*Keycloak.*started.*", 1));
         }
 
         private Integer findRandomPort() {
@@ -546,7 +547,7 @@ public class KeycloakDevServicesProcessor {
 
     private void createDefaultRealm(String keycloakUrl, Map<String, String> users, String oidcClientId,
             String oidcClientSecret) {
-        RealmRepresentation realm = createRealmRep();
+        RealmRepresentation realm = createDefaultRealmRep();
 
         realm.getClients().add(createClient(oidcClientId, oidcClientSecret));
         for (Map.Entry<String, String> entry : users.entrySet()) {
@@ -637,13 +638,15 @@ public class KeycloakDevServicesProcessor {
                 : roles;
     }
 
-    private RealmRepresentation createRealmRep() {
+    private RealmRepresentation createDefaultRealmRep() {
         RealmRepresentation realm = new RealmRepresentation();
 
         realm.setRealm(getDefaultRealmName());
         realm.setEnabled(true);
         realm.setUsers(new ArrayList<>());
         realm.setClients(new ArrayList<>());
+        realm.setAccessTokenLifespan(600);
+        realm.setSsoSessionMaxLifespan(600);
 
         RolesRepresentation roles = new RolesRepresentation();
         List<RoleRepresentation> realmRoles = new ArrayList<>();

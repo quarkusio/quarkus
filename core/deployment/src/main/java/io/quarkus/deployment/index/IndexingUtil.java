@@ -241,13 +241,13 @@ public class IndexingUtil {
             }
             try (InputStream in = Files.newInputStream(visit.getPath())) {
                 IndexReader reader = new IndexReader(in);
-                if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
-                    log.warnf(
-                            "Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency",
-                            visit.getPath());
-                    return null;
-                }
                 try {
+                    if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
+                        log.warnf(
+                                "Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency",
+                                visit.getPath());
+                        return null;
+                    }
                     return reader.read();
                 } catch (UnsupportedVersion e) {
                     throw new UnsupportedVersion(

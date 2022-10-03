@@ -176,7 +176,7 @@ public class AmqpDevServicesProcessor {
         final Supplier<RunningDevService> defaultAmqpBrokerSupplier = () -> {
             // Starting the broker
             ArtemisContainer container = new ArtemisContainer(
-                    DockerImageName.parse(config.imageName),
+                    DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("artemiscloud/activemq-artemis-broker"),
                     config.extra,
                     config.fixedExposedPort,
                     launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null);

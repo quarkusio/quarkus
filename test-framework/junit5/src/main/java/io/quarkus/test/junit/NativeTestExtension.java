@@ -217,6 +217,7 @@ public class NativeTestExtension extends AbstractQuarkusTestWithContextExtension
                     }
                 },
                 System.getProperty("native.image.path"),
+                config.getOptionalValue("quarkus.package.output-directory", String.class).orElse(null),
                 requiredTestClass));
         return launcher;
     }

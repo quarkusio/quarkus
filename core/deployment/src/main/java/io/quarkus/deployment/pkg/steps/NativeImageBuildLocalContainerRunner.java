@@ -87,7 +87,7 @@ public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContai
         OutputFilter outputFilter = new OutputFilter();
         if (!ExecUtil.execWithTimeout(new File("."), outputFilter, Duration.ofMillis(3000),
                 "docker", "context", "ls", "--format",
-                "'{{- if .Current -}} {{- .DockerEndpoint -}} {{- end -}}'")) {
+                "{{- if .Current -}} {{- .DockerEndpoint -}} {{- end -}}")) {
             LOGGER.debug("Docker context lookup didn't succeed in time");
             return null;
         }

@@ -535,7 +535,7 @@ or with the secret retrieved from a xref:credentials-provider.adoc[CredentialsPr
 quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
 quarkus.oidc-client.client-id=quarkus-app
 
-# This is a key which will be used to retrieve a secret from the map of credentails returned from CredentialsProvider
+# This is a key which will be used to retrieve a secret from the map of credentials returned from CredentialsProvider
 quarkus.oidc-client.credentials.client-secret.provider.key=mysecret-key
 # Set it only if more than one CredentialsProvider can be registered
 quarkus.oidc-client.credentials.client-secret.provider.name=oidc-credentials-provider

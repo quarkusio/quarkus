@@ -5,6 +5,8 @@ import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;
 import static io.smallrye.config.SmallRyeConfigBuilder.META_INF_MICROPROFILE_CONFIG_PROPERTIES;
+import static java.lang.Integer.MAX_VALUE;
+import static java.lang.Integer.MIN_VALUE;
 
 import java.io.IOException;
 import java.net.URL;
@@ -13,7 +15,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -39,13 +40,13 @@ import io.smallrye.config.DotEnvConfigSourceProvider;
 import io.smallrye.config.EnvConfigSource;
 import io.smallrye.config.FallbackConfigSourceInterceptor;
 import io.smallrye.config.KeyMap;
-import io.smallrye.config.KeyMapBackedConfigSource;
 import io.smallrye.config.Priorities;
 import io.smallrye.config.ProfileConfigSourceInterceptor;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SysPropConfigSource;
+import io.smallrye.config.common.MapBackedConfigSource;
 import io.smallrye.config.common.utils.ConfigSourceUtil;
 
 /**
@@ -115,10 +116,8 @@ public final class ConfigUtils {
             builder.addDiscoveredValidator();
             builder.withDefaultValue(UUID_KEY, UUID.randomUUID().toString());
             builder.withSources(new DotEnvConfigSourceProvider());
-            builder.withSources(
-                    new DefaultsConfigSource(loadBuildTimeRunTimeValues(), "BuildTime RunTime Fixed", Integer.MAX_VALUE));
-            builder.withSources(
-                    new DefaultsConfigSource(loadRunTimeDefaultValues(), "RunTime Defaults", Integer.MIN_VALUE + 100));
+            builder.withSources(new DefaultsConfigSource(loadBuildTimeRunTimeValues(), "BuildTime RunTime Fixed", MAX_VALUE));
+            builder.withSources(new DefaultsConfigSource(loadRunTimeDefaultValues(), "RunTime Defaults", MIN_VALUE + 100));
         } else {
             List<ConfigSource> sources = new ArrayList<>();
             sources.addAll(classPathSources(META_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
@@ -381,26 +380,18 @@ public final class ConfigUtils {
         }
     }
 
-    static class DefaultsConfigSource extends KeyMapBackedConfigSource {
+    static class DefaultsConfigSource extends MapBackedConfigSource {
         private final KeyMap<String> wildcards;
-        private final Set<String> propertyNames;
 
         public DefaultsConfigSource(final Map<String, String> properties, final String name, final int ordinal) {
-            super(name, ordinal, propertiesToKeyMap(properties));
+            // Defaults may contain wildcards, but we don't want to expose them in getPropertyNames, so we need to filter them
+            super(name, filterWildcards(properties), ordinal);
             this.wildcards = new KeyMap<>();
-            this.propertyNames = new HashSet<>();
             for (Map.Entry<String, String> entry : properties.entrySet()) {
                 if (entry.getKey().contains("*")) {
                     this.wildcards.findOrAdd(entry.getKey()).putRootValue(entry.getValue());
-                } else {
-                    this.propertyNames.add(entry.getKey());
                 }
             }
-        }
-
-        @Override
-        public Set<String> getPropertyNames() {
-            return propertyNames;
         }
 
         @Override
@@ -409,15 +400,15 @@ public final class ConfigUtils {
             return value == null ? wildcards.findRootValue(propertyName) : value;
         }
 
-        private static KeyMap<String> propertiesToKeyMap(final Map<String, String> properties) {
-            KeyMap<String> keyMap = new KeyMap<>();
+        private static Map<String, String> filterWildcards(final Map<String, String> properties) {
+            Map<String, String> filtered = new HashMap<>();
             for (Map.Entry<String, String> entry : properties.entrySet()) {
                 if (entry.getKey().contains("*")) {
                     continue;
                 }
-                keyMap.findOrAdd(entry.getKey()).putRootValue(entry.getValue());
+                filtered.put(entry.getKey(), entry.getValue());
             }
-            return keyMap;
+            return filtered;
         }
     }
 

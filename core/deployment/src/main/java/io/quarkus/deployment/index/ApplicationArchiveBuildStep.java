@@ -102,6 +102,9 @@ public class ApplicationArchiveBuildStep {
             removedResources.put(new GACT(entry.getKey().split(":")), entry.getValue());
         }
 
+        // Add resources removed from the classpath by extensions
+        removedResources.putAll(curateOutcomeBuildItem.getApplicationModel().getRemovedResources());
+
         List<ApplicationArchive> applicationArchives = scanForOtherIndexes(buildCloseables,
                 appMarkers, root, additionalApplicationArchiveBuildItem, indexDependencyBuildItems, indexCache,
                 curateOutcomeBuildItem, removedResources);

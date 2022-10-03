@@ -176,7 +176,7 @@ public class RabbitMQDevServicesProcessor {
         }
 
         ConfiguredRabbitMQContainer container = new ConfiguredRabbitMQContainer(
-                DockerImageName.parse(config.imageName),
+                DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("rabbitmq"),
                 config.fixedExposedPort,
                 config.fixedExposedHttpPort,
                 launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null);

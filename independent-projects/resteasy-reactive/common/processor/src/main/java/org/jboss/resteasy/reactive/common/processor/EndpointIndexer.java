@@ -148,7 +148,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             DotName.createSimple("org.jboss.resteasy.reactive.server.SimpleResourceInfo"), //TODO: fixme
             RESOURCE_INFO)));
 
-    private static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(INSTANT, LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME,
+    protected static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(INSTANT, LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME,
             OFFSET_TIME,
             OFFSET_DATE_TIME, ZONED_DATE_TIME);
 
@@ -226,7 +226,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Function<String, BeanFactory<Object>> factoryCreator;
     private final Consumer<ResourceMethodCallbackData> resourceMethodCallback;
     private final AnnotationStore annotationStore;
-    private final ApplicationScanningResult applicationScanningResult;
+    protected final ApplicationScanningResult applicationScanningResult;
     private final Set<DotName> contextTypes;
     private final MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension;
     private final MultipartParameterIndexerExtension multipartParameterIndexerExtension;
@@ -283,7 +283,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             if (classLevelExceptionMappers != null) {
                 clazz.setClassLevelExceptionMappers(classLevelExceptionMappers);
             }
-            List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
+            List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(), new HashSet<>(),
                     clazz.getPathParameters(), clazz.getPath(), considerApplication);
             clazz.getMethods().addAll(methods);
 
@@ -351,7 +351,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             Map<String, Object> methodContext);
 
     protected List<ResourceMethod> createEndpoints(ClassInfo currentClassInfo,
-            ClassInfo actualEndpointInfo, Set<String> seenMethods,
+            ClassInfo actualEndpointInfo, Set<String> seenMethods, Set<String> existingClassNameBindings,
             Set<String> pathParameters, String resourceClassPath, boolean considerApplication) {
         if (considerApplication && applicationScanningResult != null
                 && !applicationScanningResult.keepClass(actualEndpointInfo.name().toString())) {
@@ -373,6 +373,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 classConsumes, pathParameters, classStreamElementType);
 
         Set<String> classNameBindings = NameBindingUtil.nameBindingNames(index, currentClassInfo);
+        if (classNameBindings.isEmpty()) {
+            classNameBindings = existingClassNameBindings;
+        }
 
         for (DotName httpMethod : httpAnnotationToMethod.keySet()) {
             List<MethodInfo> methods = currentClassInfo.methods();
@@ -438,7 +441,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         if (superClassName != null && !superClassName.equals(OBJECT)) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
-                ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
+                ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods, classNameBindings,
                         pathParameters, resourceClassPath, considerApplication));
             }
         }
@@ -446,7 +449,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         for (DotName i : interfaces) {
             ClassInfo superClass = index.getClassByName(i);
             if (superClass != null) {
-                ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
+                ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods, classNameBindings,
                         pathParameters, resourceClassPath, considerApplication));
             }
         }
@@ -1283,8 +1286,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                                 currentClassInfo, actualEndpointInfo, index);
                     }
 
-                    handleOptionalParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
-                            genericElementType);
+                    handleOptionalParam(existingConverters, anns, errorLocation, hasRuntimeConverters, builder, elementType,
+                            genericElementType, currentMethodInfo);
                 }
                 builder.setOptional(true);
             } else if (convertible) {
@@ -1382,8 +1385,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             boolean hasRuntimeConverters, PARAM builder, String elementType) {
     }
 
-    protected void handleOptionalParam(Map<String, String> existingConverters, String errorLocation,
-            boolean hasRuntimeConverters, PARAM builder, String elementType, String genericElementType) {
+    protected void handleOptionalParam(Map<String, String> existingConverters,
+            Map<DotName, AnnotationInstance> parameterAnnotations,
+            String errorLocation,
+            boolean hasRuntimeConverters, PARAM builder, String elementType, String genericElementType,
+            MethodInfo currentMethodInfo) {
     }
 
     protected void handleSetParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,

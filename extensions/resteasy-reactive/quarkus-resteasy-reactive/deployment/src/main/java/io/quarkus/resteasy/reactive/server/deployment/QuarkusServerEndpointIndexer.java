@@ -15,6 +15,9 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.processor.DefaultProducesHandler;
+import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner;
+import org.jboss.resteasy.reactive.common.processor.scanning.ScannedSerializer;
+import org.jboss.resteasy.reactive.common.processor.scanning.SerializerScanningResult;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.processor.ServerEndpointIndexer;
@@ -43,6 +46,7 @@ public class QuarkusServerEndpointIndexer
     private final ResteasyReactiveRecorder resteasyReactiveRecorder;
 
     private final Predicate<String> applicationClassPredicate;
+    private SerializerScanningResult serializerScanningResult;
 
     QuarkusServerEndpointIndexer(Builder builder) {
         super(builder);
@@ -170,10 +174,33 @@ public class QuarkusServerEndpointIndexer
             return;
         }
         if (hasJson(method) || (hasNoTypesDefined(method) && isDefaultJson())) {
-            LOGGER.warnf("Quarkus detected the use of JSON in JAX-RS method '" + info.declaringClass().name() + "#"
-                    + info.name()
-                    + "' but no JSON extension has been added. Consider adding 'quarkus-resteasy-reactive-jackson' or 'quarkus-resteasy-reactive-jsonb'.");
+            if (serializerScanningResult == null) {
+                serializerScanningResult = ResteasyReactiveScanner.scanForSerializers(index, applicationScanningResult);
+            }
+            boolean appProvidedJsonReaderExists = appProvidedJsonProviderExists(serializerScanningResult.getReaders());
+            boolean appProvidedJsonWriterExists = appProvidedJsonProviderExists(serializerScanningResult.getWriters());
+            if (!appProvidedJsonReaderExists || !appProvidedJsonWriterExists) {
+                LOGGER.warnf("Quarkus detected the use of JSON in JAX-RS method '" + info.declaringClass().name() + "#"
+                        + info.name()
+                        + "' but no JSON extension has been added. Consider adding 'quarkus-resteasy-reactive-jackson' or 'quarkus-resteasy-reactive-jsonb'.");
+            }
         }
+    }
+
+    private boolean appProvidedJsonProviderExists(List<ScannedSerializer> providers) {
+        boolean appProvidedJsonReaderExists = false;
+        for (ScannedSerializer provider : providers) {
+            for (String mt : provider.getMediaTypeStrings()) {
+                if (isJson(mt)) {
+                    appProvidedJsonReaderExists = true;
+                    break;
+                }
+            }
+            if (appProvidedJsonReaderExists) {
+                break;
+            }
+        }
+        return appProvidedJsonReaderExists;
     }
 
     private boolean isDefaultJson() {

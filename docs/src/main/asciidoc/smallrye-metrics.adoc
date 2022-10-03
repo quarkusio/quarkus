@@ -5,6 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 
 = SmallRye Metrics
+:extension-status: deprecated
 
 include::./attributes.adoc[]
 
@@ -15,7 +16,14 @@ SmallRye Metrics allows applications to gather metrics and statistics that provi
 
 Apart from application-specific metrics described in this guide, you may also use built-in metrics exposed by various Quarkus extensions. These are described in the guide for each particular extension that supports built-in metrics.
 
-IMPORTANT: xref:micrometer.adoc[Micrometer] is the recommended approach to metrics for Quarkus. Use the SmallRye Metrics extension when it is required to retain MicroProfile specification compatibility.
+[IMPORTANT]
+====
+xref:micrometer.adoc[Micrometer] is the recommended approach to metrics for Quarkus. Use the SmallRye Metrics extension when it is required to retain MicroProfile specification compatibility.
+
+When Quarkus will upgrade to Eclipse MicroProfile 6, the SmallRye Metrics support will be discontinued.
+====
+
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 

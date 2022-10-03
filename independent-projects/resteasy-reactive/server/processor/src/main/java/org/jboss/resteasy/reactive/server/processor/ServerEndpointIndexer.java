@@ -335,8 +335,11 @@ public class ServerEndpointIndexer
         builder.setConverter(new SortedSetConverter.SortedSetSupplier(converter));
     }
 
-    protected void handleOptionalParam(Map<String, String> existingConverters, String errorLocation,
-            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType, String genericElementType) {
+    protected void handleOptionalParam(Map<String, String> existingConverters,
+            Map<DotName, AnnotationInstance> parameterAnnotations,
+            String errorLocation,
+            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType, String genericElementType,
+            MethodInfo currentMethodInfo) {
         ParameterConverterSupplier converter = null;
 
         if (genericElementType != null) {
@@ -352,6 +355,9 @@ public class ServerEndpointIndexer
                 converter = new SortedSetConverter.SortedSetSupplier(genericTypeConverter);
                 builder.setSingle(false);
             }
+        } else if (SUPPORT_TEMPORAL_PARAMS.contains(DotName.createSimple(elementType))) {
+            converter = determineTemporalConverter(DotName.createSimple(elementType), parameterAnnotations,
+                    currentMethodInfo);
         }
 
         if (converter == null) {
@@ -395,6 +401,11 @@ public class ServerEndpointIndexer
     protected void handleTemporalParam(ServerIndexedParameter builder, DotName paramType,
             Map<DotName, AnnotationInstance> parameterAnnotations,
             MethodInfo currentMethodInfo) {
+        builder.setConverter(determineTemporalConverter(paramType, parameterAnnotations, currentMethodInfo));
+    }
+
+    private ParameterConverterSupplier determineTemporalConverter(DotName paramType,
+            Map<DotName, AnnotationInstance> parameterAnnotations, MethodInfo currentMethodInfo) {
         String format = null;
         String dateTimeFormatterProviderClassName = null;
 
@@ -418,8 +429,7 @@ public class ServerEndpointIndexer
                         "'java.time.Instant' types must not be annotated with '@DateFormat'",
                         currentMethodInfo));
             }
-            builder.setConverter(new InstantParamConverter.Supplier());
-            return;
+            return new InstantParamConverter.Supplier();
         }
 
         if ((format != null) && (dateTimeFormatterProviderClassName != null)) {
@@ -432,23 +442,17 @@ public class ServerEndpointIndexer
         }
 
         if (LOCAL_DATE.equals(paramType)) {
-            builder.setConverter(new LocalDateParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
-            return;
+            return new LocalDateParamConverter.Supplier(format, dateTimeFormatterProviderClassName);
         } else if (LOCAL_DATE_TIME.equals(paramType)) {
-            builder.setConverter(new LocalDateTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
-            return;
+            return new LocalDateTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName);
         } else if (LOCAL_TIME.equals(paramType)) {
-            builder.setConverter(new LocalTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
-            return;
+            return new LocalTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName);
         } else if (OFFSET_DATE_TIME.equals(paramType)) {
-            builder.setConverter(new OffsetDateTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
-            return;
+            return new OffsetDateTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName);
         } else if (OFFSET_TIME.equals(paramType)) {
-            builder.setConverter(new OffsetTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
-            return;
+            return new OffsetTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName);
         } else if (ZONED_DATE_TIME.equals(paramType)) {
-            builder.setConverter(new ZonedDateTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
-            return;
+            return new ZonedDateTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName);
         }
 
         throw new RuntimeException(

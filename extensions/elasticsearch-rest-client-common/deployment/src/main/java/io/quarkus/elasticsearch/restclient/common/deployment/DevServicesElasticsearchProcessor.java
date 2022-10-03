@@ -176,7 +176,7 @@ public class DevServicesElasticsearchProcessor {
             throw new BuildException("Dev services for Elasticsearch didn't support Opensearch", Collections.emptyList());
         }
 
-        // Hibernate search Elasticsearch have a version configuration property, we need to check that it is coherent
+        // Hibernate Search Elasticsearch have a version configuration property, we need to check that it is coherent
         // with the image we are about to launch
         if (buildItemConfig.version != null) {
             String containerTag = config.imageName.substring(config.imageName.indexOf(':') + 1);
@@ -197,7 +197,7 @@ public class DevServicesElasticsearchProcessor {
         // Starting the server
         final Supplier<DevServicesResultBuildItem.RunningDevService> defaultElasticsearchSupplier = () -> {
             ElasticsearchContainer container = new ElasticsearchContainer(
-                    DockerImageName.parse(config.imageName));
+                    DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("elasticsearch/elasticsearch"));
             ConfigureUtil.configureSharedNetwork(container, "elasticsearch");
             if (config.serviceName != null) {
                 container.withLabel(DEV_SERVICE_LABEL, config.serviceName);

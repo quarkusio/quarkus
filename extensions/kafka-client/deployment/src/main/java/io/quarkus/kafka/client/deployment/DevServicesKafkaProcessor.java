@@ -152,7 +152,7 @@ public class DevServicesKafkaProcessor {
             // get current partitions for topics asked to be created
             Set<String> currentTopics = adminClient.listTopics().names()
                     .get(adminClientTimeout, TimeUnit.MILLISECONDS);
-            Map<String, TopicDescription> partitions = adminClient.describeTopics(currentTopics).all()
+            Map<String, TopicDescription> partitions = adminClient.describeTopics(currentTopics).allTopicNames()
                     .get(adminClientTimeout, TimeUnit.MILLISECONDS);
             // find new topics to create
             List<NewTopic> newTopics = topicPartitions.entrySet().stream()
@@ -246,7 +246,7 @@ public class DevServicesKafkaProcessor {
                         KAFKA_BOOTSTRAP_SERVERS, container.getBootstrapServers());
             } else {
                 RedPandaKafkaContainer container = new RedPandaKafkaContainer(
-                        DockerImageName.parse(config.imageName),
+                        DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("vectorized/redpanda"),
                         config.fixedExposedPort,
                         launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
                         useSharedNetwork, config.redpanda);

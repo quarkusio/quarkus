@@ -18,7 +18,7 @@ import javax.interceptor.InvocationContext;
  * asynchronously, possibly on a different thread.
  * <p>
  * Note that context data and method parameters are mutable and are not guarded/synchronized. We expect them to be modified
- * before or after dispatch. If modified before and after dispatch an unpredicatble behavior may occur.
+ * before or after dispatch. If modified before and after dispatch an unpredictable behavior may occur.
  */
 class AroundInvokeInvocationContext extends AbstractInvocationContext {
 

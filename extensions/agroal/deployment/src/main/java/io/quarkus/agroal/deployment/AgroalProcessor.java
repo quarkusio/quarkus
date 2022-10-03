@@ -23,11 +23,13 @@ import io.quarkus.agroal.runtime.DataSourceJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.DataSourceSupport;
 import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.runtime.DataSourcesJdbcBuildTimeConfig;
+import io.quarkus.agroal.runtime.JdbcDriver;
 import io.quarkus.agroal.runtime.TransactionIntegration;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -197,7 +199,10 @@ class AgroalProcessor {
             SslNativeConfigBuildItem sslNativeConfig,
             Capabilities capabilities,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+        additionalBeans.produce(new AdditionalBeanBuildItem(JdbcDriver.class));
+
         if (aggregatedBuildTimeConfigBuildItems.isEmpty()) {
             // No datasource has been configured so bail out
             return;
@@ -209,8 +214,8 @@ class AgroalProcessor {
         // add the @DataSource class otherwise it won't be registered as a qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(DataSource.class).build());
 
-        // add implementations of AgroalPoolInterceptor
-        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(AgroalPoolInterceptor.class));
+        // make AgroalPoolInterceptor beans unremovable, users still have to make them beans
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(AgroalPoolInterceptor.class));
 
         // create the DataSourceSupport bean that DataSourceProducer uses as a dependency
         DataSourceSupport dataSourceSupport = getDataSourceSupport(aggregatedBuildTimeConfigBuildItems, sslNativeConfig,

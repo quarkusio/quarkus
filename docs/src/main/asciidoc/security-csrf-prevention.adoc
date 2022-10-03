@@ -7,9 +7,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery(CSRF)] is an attack that forces an end user to execute unwanted actions on a web application in which they are currently authenticated.
+https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery (CSRF)] is an attack that forces an end user to execute unwanted actions on a web application in which they are currently authenticated.
 
-Quarkus Security provides a CSRF prevention feature which consists of a xref:resteasy-reactive.adoc[Resteasy Reactive] server filter which creates and verifies CSRF tokens and an HTML form parameter provider which supports the xref:qute-reference.adoc#injecting-beans-directly-in-templates[injection of CSRF tokens in Qute templates].
+Quarkus Security provides a CSRF prevention feature which consists of a xref:resteasy-reactive.adoc[RESTEasy Reactive] server filter which creates and verifies CSRF tokens and an HTML form parameter provider which supports the xref:qute-reference.adoc#injecting-beans-directly-in-templates[injection of CSRF tokens in Qute templates].
 
 == Creating the Project
 
@@ -45,7 +45,7 @@ This will add the following to your build file:
 implementation("io.quarkus:quarkus-csrf-reactive")
 ----
 
-Next lets add a Qute template producing an HTML form:
+Next, let's add a `csrfToken.html` Qute template producing an HTML form in the `src/main/resources/templates` folder:
 
 [source,html]
 ----
@@ -67,10 +67,7 @@ Next lets add a Qute template producing an HTML form:
 </body>
 </html>
 ----
-
 <1> This expression is used to inject a CSRF token into a hidden form field. This token will be verified by the CSRF filter against a CSRF cookie.
-
-You can name the file containing this template as `csrfToken.html` and put it in a `src/main/resources/templates` folder.
 
 Now let's create a resource class which returns an HTML form and handles form POST requests:
 
@@ -107,19 +104,18 @@ public class UserNameResource {
     @Path("/csrfTokenForm")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_PLAIN)
-    public String postCsrfTokenForm(@FormParam("name") String name) {
+    public String postCsrfTokenForm(@FormParam("name") String userName) {
         return userName; <3>
     }
 }
 ----
-
 <1> Inject the `csrfToken.html` as a `Template`.
-<2> Return HTML form with a hidden form field containing a CSRF token created by the CSRF filter.
-<3> Handle the form POST request, this method can only be invoked only if the CSRF filter has successfully verified the token.
+<2> Return the HTML form with a hidden form field containing a CSRF token created by the CSRF filter.
+<3> Handle the form POST request, this method can only be invoked if the CSRF filter has successfully verified the token.
 
 The form POST request will fail with HTTP status `400` if the filter finds the hidden CSRF form field is missing, the CSRF cookie is missing, or if the CSRF form field and CSRF cookie values do not match.
 
-At this stage no additional configuration is needed - by default the CSRF form field and cookie name will be set to `csrf_token`, and the filter will verify the token. But lets change these names:
+At this stage no additional configuration is needed - by default the CSRF form field and cookie name will be set to `csrf_token`, and the filter will verify the token. But let's change these names:
 
 [source,properties]
 ----
@@ -127,7 +123,7 @@ quarkus.csrf-reactive.form-field-name=csrftoken
 quarkus.csrf-reactive.cookie-name=csrftoken
 ----
 
-Note that the CSRF filter has to read the input stream in order to verify the token and then re-create the stream for the application code to read it as well. The filter performs this work on an event loop thread so for small form payloads such as the one shown in the example above it will have negligible peformance side-effects. However if you deal with large form payloads then it is recommended to compare the CSRF form field and cookie values in the application code:
+Note that the CSRF filter has to read the input stream in order to verify the token and then re-create the stream for the application code to read it as well. The filter performs this work on an event loop thread so for small form payloads, such as the one shown in the example above, it will have negligible performance side-effects. However if you deal with large form payloads then it is recommended to compare the CSRF form field and cookie values in the application code:
 
 [source,java]
 ----
@@ -172,7 +168,6 @@ public class UserNameResource {
     }
 }
 ----
-
 <1> Compare the CSRF form field and cookie values and fail with HTTP status `400` if they don't match.
 
 Also disable the token verification in the filter:
@@ -181,7 +176,6 @@ Also disable the token verification in the filter:
 ----
 quarkus.csrf-reactive.verify-token=false
 ----
-
 
 [[csrf-reactive-configuration-reference]]
 == Configuration Reference

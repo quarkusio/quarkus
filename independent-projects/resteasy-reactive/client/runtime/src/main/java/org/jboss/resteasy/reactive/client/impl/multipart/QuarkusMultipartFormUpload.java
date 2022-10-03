@@ -20,7 +20,6 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.impl.headers.HeadersAdaptor;
-import io.vertx.core.streams.Pipe;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.impl.InboundBuffer;
 
@@ -231,17 +230,6 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
     public synchronized QuarkusMultipartFormUpload endHandler(Handler<Void> handler) {
         endHandler = handler;
         return this;
-    }
-
-    /**
-     * The reason we need a custom Pipe here is that if we don't manually throttle the read stream,
-     * the fact that the underlying connection is shared can lead to exhaustion of heap memory.
-     * See <a href="https://github.com/eclipse-vertx/vert.x/issues/4473">this</a> for more details.
-     */
-    @Override
-    public Pipe<Buffer> pipe() {
-        pause();
-        return new RequestTrackingPipe<>(this, 16);
     }
 
 }

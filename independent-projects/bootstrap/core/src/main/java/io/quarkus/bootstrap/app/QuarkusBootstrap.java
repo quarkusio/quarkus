@@ -65,6 +65,7 @@ public class QuarkusBootstrap implements Serializable {
 
     private final Properties buildSystemProperties;
     private final String baseName;
+    private final String originalBaseName;
     private final Path targetDirectory;
 
     private final Mode mode;
@@ -102,6 +103,7 @@ public class QuarkusBootstrap implements Serializable {
         this.test = builder.test;
         this.localProjectDiscovery = builder.localProjectDiscovery;
         this.baseName = builder.baseName;
+        this.originalBaseName = builder.originalJarName;
         this.baseClassLoader = builder.baseClassLoader;
         this.targetDirectory = builder.targetDirectory;
         this.appModelResolver = builder.appModelResolver;
@@ -235,6 +237,10 @@ public class QuarkusBootstrap implements Serializable {
         return baseName;
     }
 
+    public String getOriginalBaseName() {
+        return originalBaseName;
+    }
+
     public ClassLoader getBaseClassLoader() {
         return baseClassLoader;
     }
@@ -262,6 +268,7 @@ public class QuarkusBootstrap implements Serializable {
     public Builder clonedBuilder() {
         Builder builder = new Builder()
                 .setBaseName(baseName)
+                .setOriginalBaseName(originalBaseName)
                 .setProjectRoot(projectRoot)
                 .setBaseClassLoader(baseClassLoader)
                 .setBuildSystemProperties(buildSystemProperties)
@@ -304,6 +311,7 @@ public class QuarkusBootstrap implements Serializable {
         boolean rebuild;
         PathCollection applicationRoot;
         String baseName;
+        String originalJarName;
         Path projectRoot;
         ClassLoader baseClassLoader = ClassLoader.getSystemClassLoader();
         final List<AdditionalDependency> additionalApplicationArchives = new ArrayList<>();
@@ -414,6 +422,11 @@ public class QuarkusBootstrap implements Serializable {
 
         public Builder setBaseName(String baseName) {
             this.baseName = baseName;
+            return this;
+        }
+
+        public Builder setOriginalBaseName(String originalJarName) {
+            this.originalJarName = originalJarName;
             return this;
         }
 

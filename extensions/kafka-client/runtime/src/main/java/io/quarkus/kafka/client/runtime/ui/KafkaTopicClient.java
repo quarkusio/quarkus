@@ -9,12 +9,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -27,6 +24,7 @@ import org.apache.kafka.common.TopicPartitionInfo;
 import org.apache.kafka.common.serialization.BytesSerializer;
 import org.apache.kafka.common.utils.Bytes;
 
+import io.quarkus.kafka.client.runtime.KafkaAdminClient;
 import io.quarkus.kafka.client.runtime.ui.model.Order;
 import io.quarkus.kafka.client.runtime.ui.model.converter.KafkaModelConverter;
 import io.quarkus.kafka.client.runtime.ui.model.request.KafkaMessageCreateRequest;
@@ -38,21 +36,14 @@ public class KafkaTopicClient {
     // TODO: make configurable
     private static final int RETRIES = 3;
 
-    //TODO: inject me
-    private AdminClient adminClient;
+    @Inject
+    KafkaAdminClient adminClient;
 
     KafkaModelConverter modelConverter = new KafkaModelConverter();
 
     @Inject
     @Identifier("default-kafka-broker")
     Map<String, Object> config;
-
-    @PostConstruct
-    void init() {
-        Map<String, Object> conf = new HashMap<>(config);
-        conf.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "5000");
-        adminClient = AdminClient.create(conf);
-    }
 
     private Producer<Bytes, Bytes> createProducer() {
         Map<String, Object> config = new HashMap<>(this.config);
@@ -260,8 +251,6 @@ public class KafkaTopicClient {
 
     public List<Integer> partitions(String topicName) throws ExecutionException, InterruptedException {
         return adminClient.describeTopics(List.of(topicName))
-                .allTopicNames()
-                .get()
                 .values().stream()
                 .reduce((a, b) -> {
                     throw new IllegalStateException(

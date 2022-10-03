@@ -26,7 +26,7 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
      *
      * @asciidoclet
      */
-    @ConfigItem(defaultValueDocumentation = "`true` if Hibernate ORM is enabled; `false` otherwise")
+    @ConfigItem(defaultValueDocumentation = "'true' if Hibernate ORM is enabled; 'false' otherwise")
     public Optional<Boolean> active = Optional.empty();
 
     /**

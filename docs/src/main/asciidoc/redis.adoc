@@ -526,4 +526,4 @@ Once the build is finished, you can run the executable with:
 
 == Going further
 
-To learn more about the Quarkus Redis extension, check link:redis-reference.adoc[the Redis extension reference guide].
+To learn more about the Quarkus Redis extension, check xref:redis-reference.adoc[the Redis extension reference guide].

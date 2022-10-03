@@ -464,8 +464,18 @@ public class ClientImpl implements Client {
         }
 
         @Override
+        public long setPeriodic(long initialDelay, long delay, Handler<Long> handler) {
+            return getDelegate().setPeriodic(initialDelay, delay, handler);
+        }
+
+        @Override
         public TimeoutStream periodicStream(long l) {
             return getDelegate().periodicStream(l);
+        }
+
+        @Override
+        public TimeoutStream periodicStream(long initialDelay, long delay) {
+            return getDelegate().periodicStream(initialDelay, delay);
         }
 
         @Override

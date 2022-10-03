@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
@@ -34,6 +35,15 @@ public class LocalDateTimeParamTest {
     }
 
     @Test
+    public void localDateTimeAsOptionalQueryParam() {
+        RestAssured.get("/hello/optional?date=1984-08-08T01:02:03")
+                .then().statusCode(200).body(Matchers.equalTo("hello#1984"));
+
+        RestAssured.get("/hello/optional")
+                .then().statusCode(200).body(Matchers.equalTo("hello#2022"));
+    }
+
+    @Test
     public void localDateTimeAsPathParam() {
         RestAssured.get("/hello/1995-09-21 01:02:03")
                 .then().statusCode(200).body(Matchers.equalTo("hello@9"));
@@ -51,6 +61,12 @@ public class LocalDateTimeParamTest {
         @GET
         public String helloQuery(@RestQuery LocalDateTime date) {
             return "hello#" + date.getYear();
+        }
+
+        @Path("optional")
+        @GET
+        public String helloOptionalQuery(@RestQuery Optional<LocalDateTime> date) {
+            return "hello#" + date.orElse(LocalDateTime.of(2022, 1, 1, 0, 0)).getYear();
         }
 
         @GET

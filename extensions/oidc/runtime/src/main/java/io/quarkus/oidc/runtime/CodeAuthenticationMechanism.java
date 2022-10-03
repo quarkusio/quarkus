@@ -130,6 +130,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
 
         if (!isStateValid(requestParams, parsedStateCookieValue[0])) {
+            LOG.error("State verification has failed, completing the code flow with HTTP status 401");
             return Uni.createFrom().failure(new AuthenticationCompletionException());
         }
 
@@ -164,10 +165,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 LOG.debugf("Error URI: %s", finalErrorUri);
                 return Uni.createFrom().failure(new AuthenticationRedirectException(finalErrorUri));
             } else {
+                LOG.error(
+                        "Authentication has failed but no error handler is found, completing the code flow with HTTP status 401");
                 return Uni.createFrom().failure(new AuthenticationCompletionException());
             }
         } else {
-            LOG.debug("State cookie is present but neither 'code' nor 'error' query parameter is returned");
+            LOG.error("State cookie is present but neither 'code' nor 'error' query parameter is returned");
             return Uni.createFrom().failure(new AuthenticationCompletionException());
         }
 
@@ -241,7 +244,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     public Uni<? extends SecurityIdentity> apply(Throwable t) {
                                         if (t instanceof AuthenticationRedirectException) {
                                             LOG.debug("Redirecting after the reauthentication");
-                                            throw (AuthenticationRedirectException) t;
+                                            return Uni.createFrom().failure((AuthenticationRedirectException) t);
                                         }
 
                                         if (!(t instanceof TokenAutoRefreshException)) {
@@ -250,17 +253,20 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                             .hasErrorCode(ErrorCodes.EXPIRED);
 
                                             if (!expired) {
-                                                LOG.debugf("Authentication failure: %s", t.getCause());
-                                                throw new AuthenticationCompletionException(t.getCause());
+                                                LOG.errorf("ID token verification failure: %s", t.getCause());
+                                                return Uni.createFrom()
+                                                        .failure(new AuthenticationCompletionException(t.getCause()));
                                             }
                                             if (session.getRefreshToken() == null) {
                                                 LOG.debug(
                                                         "Token has expired, token refresh is not possible because the refresh token is null");
-                                                throw new AuthenticationFailedException(t.getCause());
+                                                return Uni.createFrom()
+                                                        .failure(new AuthenticationFailedException(t.getCause()));
                                             }
                                             if (!configContext.oidcConfig.token.refreshExpired) {
                                                 LOG.debug("Token has expired, token refresh is not allowed");
-                                                throw new AuthenticationFailedException(t.getCause());
+                                                return Uni.createFrom()
+                                                        .failure(new AuthenticationFailedException(t.getCause()));
                                             }
                                             LOG.debug("Token has expired, trying to refresh it");
                                             return refreshSecurityIdentity(configContext,
@@ -495,7 +501,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 String codeChallenge = encoder.encodeToString(codeChallengeBytes);
                 bean.setCodeChallenge(codeChallenge);
             } catch (Exception ex) {
-                throw new AuthenticationFailedException(ex);
+                LOG.errorf("Code challenge creation failure: %s", ex.getMessage());
+                throw new AuthenticationCompletionException(ex);
             }
 
             return bean;
@@ -541,15 +548,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     public Uni<SecurityIdentity> apply(final AuthorizationCodeTokens tokens, final Throwable tOuter) {
 
                         if (tOuter != null) {
-                            LOG.debugf("Exception during the code to token exchange: %s", tOuter.getMessage());
+                            LOG.errorf("Exception during the code to token exchange: %s", tOuter.getMessage());
                             return Uni.createFrom().failure(new AuthenticationCompletionException(tOuter));
                         }
 
                         boolean internalIdToken = !configContext.oidcConfig.authentication.isIdTokenRequired().orElse(true);
                         if (tokens.getIdToken() == null) {
                             if (!internalIdToken) {
-                                return Uni.createFrom()
-                                        .failure(new AuthenticationCompletionException("ID Token is not available"));
+                                LOG.errorf("ID token is not available in the authorization code grant response");
+                                return Uni.createFrom().failure(new AuthenticationCompletionException());
                             } else {
                                 tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig, null));
                             }
@@ -616,7 +623,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             LOG.debugf("Starting the final redirect");
                                             return tInner;
                                         }
-                                        LOG.debugf("ID token verification has failed: %s", tInner.getMessage());
+                                        LOG.errorf("ID token verification has failed: %s", tInner.getMessage());
                                         return new AuthenticationCompletionException(tInner);
                                     }
                                 });
@@ -638,9 +645,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             try {
                 json = OidcUtils.decryptJson(parsedStateCookieValue[1], configContext.getPkceSecretKey());
             } catch (Exception ex) {
-                LOG.tracef("State cookie value can not be decrypted for the %s tenant",
+                LOG.errorf("State cookie value can not be decrypted for the %s tenant",
                         configContext.oidcConfig.tenantId.get());
-                throw new AuthenticationFailedException(ex);
+                throw new AuthenticationCompletionException(ex);
             }
             bean.setRestorePath(json.getString(STATE_COOKIE_RESTORE_PATH));
             bean.setCodeVerifier(json.getString(OidcConstants.PKCE_CODE_VERIFIER));
@@ -672,7 +679,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         JsonObject idTokenJson = OidcUtils.decodeJwtContent(idToken);
 
                         if (!idTokenJson.containsKey("exp") || !idTokenJson.containsKey("iat")) {
-                            LOG.debug("ID Token is required to contain 'exp' and 'iat' claims");
+                            LOG.error("ID Token is required to contain 'exp' and 'iat' claims");
                             throw new AuthenticationCompletionException();
                         }
                         long maxAge = idTokenJson.getLong("exp") - idTokenJson.getLong("iat");
@@ -779,7 +786,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             try {
                 return OidcUtils.encryptJson(json, configContext.getPkceSecretKey());
             } catch (Exception ex) {
-                throw new AuthenticationFailedException(ex);
+                LOG.errorf("State containing the code verifier can not be encrypted: %s", ex.getMessage());
+                throw new AuthenticationCompletionException(ex);
             }
         } else {
             return extraStateValue.getRestorePath();
@@ -857,7 +865,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     @Override
                     public Uni<SecurityIdentity> apply(final AuthorizationCodeTokens tokens, final Throwable t) {
                         if (t != null) {
-                            LOG.errorf("ID token refresh has failed: %s", t.getMessage());
+                            LOG.debugf("ID token refresh has failed: %s", t.getMessage());
                             if (autoRefresh) {
                                 LOG.debug("Using the current SecurityIdentity since the ID token is still valid");
                                 return Uni.createFrom().item(((TokenAutoRefreshException) t).getSecurityIdentity());
@@ -967,7 +975,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 .map(new Function<Void, Void>() {
                     @Override
                     public Void apply(Void t) {
-                        throw new AuthenticationRedirectException(buildLogoutRedirectUri(configContext, idToken, context));
+                        String logoutUri = buildLogoutRedirectUri(configContext, idToken, context);
+                        LOG.debugf("Logout uri: %s");
+                        throw new AuthenticationRedirectException(logoutUri);
                     }
                 });
     }

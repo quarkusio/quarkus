@@ -176,6 +176,14 @@ public class TemplateProducer {
             throw ambiguousTemplates("getId()");
         }
 
+        @Override
+        public Fragment getFragment(String identifier) {
+            if (unambiguousTemplate != null) {
+                return unambiguousTemplate.get().getFragment(identifier);
+            }
+            throw ambiguousTemplates("getFragment()");
+        }
+
         private UnsupportedOperationException ambiguousTemplates(String method) {
             return new UnsupportedOperationException("Ambiguous injected templates do not support " + method);
         }

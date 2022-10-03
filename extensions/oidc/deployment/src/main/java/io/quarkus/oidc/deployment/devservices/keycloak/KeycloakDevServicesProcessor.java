@@ -262,10 +262,16 @@ public class KeycloakDevServicesProcessor {
         boolean createDefaultRealm = realmRep == null && capturedDevServicesConfiguration.createRealm;
         Map<String, String> users = getUsers(capturedDevServicesConfiguration.users, createDefaultRealm);
 
-        if (createDefaultRealm) {
-            createDefaultRealm(clientAuthServerBaseUrl, users, oidcClientId, oidcClientSecret);
-        } else if (realmRep != null && keycloakX) {
-            createRealm(clientAuthServerBaseUrl, realmRep);
+        WebClient client = OidcDevServicesUtils.createWebClient(vertxInstance);
+        try {
+            String adminToken = getAdminToken(client, clientAuthServerBaseUrl);
+            if (createDefaultRealm) {
+                createDefaultRealm(client, adminToken, clientAuthServerBaseUrl, users, oidcClientId, oidcClientSecret);
+            } else if (realmRep != null && keycloakX) {
+                createRealm(client, adminToken, clientAuthServerBaseUrl, realmRep);
+            }
+        } finally {
+            client.close();
         }
 
         Map<String, String> configProperties = new HashMap<>();
@@ -545,7 +551,8 @@ public class KeycloakDevServicesProcessor {
         return null;
     }
 
-    private void createDefaultRealm(String keycloakUrl, Map<String, String> users, String oidcClientId,
+    private void createDefaultRealm(WebClient client, String token, String keycloakUrl, Map<String, String> users,
+            String oidcClientId,
             String oidcClientSecret) {
         RealmRepresentation realm = createDefaultRealmRep();
 
@@ -554,18 +561,24 @@ public class KeycloakDevServicesProcessor {
             realm.getUsers().add(createUser(entry.getKey(), entry.getValue(), getUserRoles(entry.getKey())));
         }
 
-        createRealm(keycloakUrl, realm);
+        createRealm(client, token, keycloakUrl, realm);
     }
 
-    private void createRealm(String keycloakUrl, RealmRepresentation realm) {
-        WebClient client = OidcDevServicesUtils.createWebClient(vertxInstance);
+    private String getAdminToken(WebClient client, String keycloakUrl) {
         try {
-            LOG.tracef("Getting admin token before creating the realm %s", realm.getRealm());
+            LOG.tracef("Acquiring admin token");
 
-            String token = OidcDevServicesUtils.getPasswordAccessToken(client,
+            return OidcDevServicesUtils.getPasswordAccessToken(client,
                     keycloakUrl + "/realms/master/protocol/openid-connect/token",
                     "admin-cli", null, "admin", "admin", null, oidcConfig.devui.webClientTimeout);
+        } catch (Throwable t) {
+            LOG.errorf("Admin token can not be acquired: %s", t.getMessage());
+        }
+        return null;
+    }
 
+    private void createRealm(WebClient client, String token, String keycloakUrl, RealmRepresentation realm) {
+        try {
             LOG.tracef("Creating the realm %s", realm.getRealm());
             HttpResponse<Buffer> createRealmResponse = client.postAbs(keycloakUrl + "/admin/realms")
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
@@ -598,8 +611,6 @@ public class KeycloakDevServicesProcessor {
             realmStatusCodeUni.await().atMost(Duration.ofSeconds(10));
         } catch (Throwable t) {
             LOG.errorf("Realm %s can not be created: %s", realm.getRealm(), t.getMessage());
-        } finally {
-            client.close();
         }
     }
 

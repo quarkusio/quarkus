@@ -130,4 +130,8 @@ public interface Capability {
     String CONFLUENT_REGISTRY_AVRO = CONFLUENT_REGISTRY + ".avro";
 
     String PICOCLI = QUARKUS_PREFIX + "picocli";
+
+    String KAFKA = QUARKUS_PREFIX + "kafka";
+
+    String SMALLRYE_REACTIVE_MESSAGING = QUARKUS_PREFIX + "smallrye.reactive.messaging";
 }

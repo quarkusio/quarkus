@@ -6,6 +6,9 @@ import java.util.Arrays;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.bitmap.ReactiveTransactionalBitMapCommands;
+import io.quarkus.redis.datasource.bloom.ReactiveTransactionalBloomCommands;
+import io.quarkus.redis.datasource.countmin.ReactiveTransactionalCountMinCommands;
+import io.quarkus.redis.datasource.cuckoo.ReactiveTransactionalCuckooCommands;
 import io.quarkus.redis.datasource.geo.ReactiveTransactionalGeoCommands;
 import io.quarkus.redis.datasource.hash.ReactiveTransactionalHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveTransactionalHyperLogLogCommands;
@@ -15,6 +18,7 @@ import io.quarkus.redis.datasource.list.ReactiveTransactionalListCommands;
 import io.quarkus.redis.datasource.set.ReactiveTransactionalSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveTransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.string.ReactiveTransactionalStringCommands;
+import io.quarkus.redis.datasource.topk.ReactiveTransactionalTopKCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.ReactiveTransactionalValueCommands;
 import io.smallrye.mutiny.Uni;
@@ -102,6 +106,30 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
     public <K> ReactiveTransactionalJsonCommands<K> json(Class<K> redisKeyType) {
         return new ReactiveTransactionalJsonCommandsImpl<>(this,
                 (ReactiveJsonCommandsImpl<K>) this.reactive.json(redisKeyType), tx);
+    }
+
+    @Override
+    public <K, V> ReactiveTransactionalBloomCommands<K, V> bloom(Class<K> redisKeyType, Class<V> valueType) {
+        return new ReactiveTransactionalBloomCommandsImpl<>(this,
+                (ReactiveBloomCommandsImpl<K, V>) this.reactive.bloom(redisKeyType), tx);
+    }
+
+    @Override
+    public <K, V> ReactiveTransactionalCuckooCommands<K, V> cuckoo(Class<K> redisKeyType, Class<V> valueType) {
+        return new ReactiveTransactionalCuckooCommandsImpl<>(this,
+                (ReactiveCuckooCommandsImpl<K, V>) this.reactive.cuckoo(redisKeyType, valueType), tx);
+    }
+
+    @Override
+    public <K, V> ReactiveTransactionalCountMinCommands<K, V> countmin(Class<K> redisKeyType, Class<V> valueType) {
+        return new ReactiveTransactionalCountMinCommandsImpl<>(this,
+                (ReactiveCountMinCommandsImpl<K, V>) this.reactive.countmin(redisKeyType, valueType), tx);
+    }
+
+    @Override
+    public <K, V> ReactiveTransactionalTopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType) {
+        return new ReactiveTransactionalTopKCommandsImpl<>(this,
+                (ReactiveTopKCommandsImpl<K, V>) this.reactive.topk(redisKeyType, valueType), tx);
     }
 
     @Override

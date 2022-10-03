@@ -2,6 +2,7 @@ package io.quarkus.qute;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -183,6 +184,36 @@ public class IncludeTest {
         Engine engine = Engine.builder().addDefaults().build();
         engine.putTemplate("foo", engine.parse("{val ?: 'bar'}"));
         assertEquals("bar", engine.parse("{#include foo _isolated /}").data("val", "baz").render());
+    }
+
+    @Test
+    public void testFragment() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("foo", engine.parse("---{#fragment bar}{val}{/fragment}---"));
+        Template baz = engine.parse(
+                "{#fragment nested}NESTED{/fragment} {#include foo[bar] val=1 /} {#include baz[nested] /}");
+        engine.putTemplate("baz", baz);
+        assertEquals("NESTED 1 NESTED", baz.render());
+    }
+
+    @Test
+    public void testInvalidFragment() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("foo", engine.parse("foo"));
+        TemplateException expected = assertThrows(TemplateException.class,
+                () -> engine.parse("{#include foo[foo_and_bar] /}", null, "bum.html").render());
+        assertEquals(IncludeSectionHelper.Code.FRAGMENT_NOT_FOUND, expected.getCode());
+        assertEquals(
+                "Rendering error in template [bum.html] line 1: fragment [foo_and_bar] not found in the included template [foo]",
+                expected.getMessage());
+
+        expected = assertThrows(TemplateException.class,
+                () -> engine.parse("{#include foo[foo-and_bar] /}", null, "bum.html").render());
+        assertEquals(IncludeSectionHelper.Code.INVALID_FRAGMENT_ID, expected.getCode());
+        assertEquals(
+                "Rendering error in template [bum.html] line 1: invalid fragment identifier [foo-and_bar]",
+                expected.getMessage());
+
     }
 
 }

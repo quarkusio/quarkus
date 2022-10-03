@@ -46,6 +46,10 @@ public class RestClientRecorder {
         providerFactory = clientProviderFactory;
     }
 
+    public void setResteasyProviderFactoryInstance() {
+        ResteasyProviderFactory.setInstance(providerFactory);
+    }
+
     private static void registerProviders(ResteasyProviderFactory providerFactory, boolean useBuiltIn,
             Set<String> providersToRegister,
             Set<String> contributedProviders) {

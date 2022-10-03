@@ -335,7 +335,13 @@ public class JibProcessor {
             registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig());
             String dockerConfigEnv = System.getenv().get("DOCKER_CONFIG");
             if (dockerConfigEnv != null) {
-                registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig(Path.of(dockerConfigEnv)));
+                Path dockerConfigPath = Path.of(dockerConfigEnv);
+                if (Files.isDirectory(dockerConfigPath)) {
+                    // this matches jib's behaviour,
+                    // see https://github.com/GoogleContainerTools/jib/blob/master/jib-maven-plugin/README.md#authentication-methods
+                    dockerConfigPath = dockerConfigPath.resolve("config.json");
+                }
+                registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig(dockerConfigPath));
             }
         }
         return registryImage;

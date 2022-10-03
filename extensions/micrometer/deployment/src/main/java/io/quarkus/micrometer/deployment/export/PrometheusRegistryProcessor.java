@@ -5,6 +5,7 @@ import java.util.function.BooleanSupplier;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -14,6 +15,8 @@ import io.quarkus.micrometer.deployment.MicrometerRegistryProviderBuildItem;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.PrometheusConfigGroup;
+import io.quarkus.micrometer.runtime.export.EmptyExemplarSamplerProvider;
+import io.quarkus.micrometer.runtime.export.OpentelemetryExemplarSamplerProvider;
 import io.quarkus.micrometer.runtime.export.PrometheusRecorder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -38,6 +41,13 @@ public class PrometheusRegistryProcessor {
         }
     }
 
+    public static class TraceEnabled implements BooleanSupplier {
+        @Override
+        public boolean getAsBoolean() {
+            return QuarkusClassLoader.isClassPresentAtRuntime("io.quarkus.opentelemetry.runtime.OpenTelemetryUtil");
+        }
+    }
+
     @BuildStep
     MicrometerRegistryProviderBuildItem createPrometheusRegistry(MicrometerConfig config,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -53,6 +63,24 @@ public class PrometheusRegistryProcessor {
 
         // Include the PrometheusMeterRegistry in a possible CompositeMeterRegistry
         return new MicrometerRegistryProviderBuildItem(REGISTRY_CLASS);
+    }
+
+    @BuildStep(onlyIf = { TraceEnabled.class })
+    void registerOpentelemetryExemplarSamplerProvider(
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(OpentelemetryExemplarSamplerProvider.class)
+                .setUnremovable()
+                .build());
+    }
+
+    @BuildStep(onlyIfNot = { TraceEnabled.class })
+    void registerEmptyExamplarProvider(
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(EmptyExemplarSamplerProvider.class)
+                .setUnremovable()
+                .build());
     }
 
     @BuildStep

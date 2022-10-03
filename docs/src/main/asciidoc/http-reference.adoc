@@ -127,8 +127,8 @@ Your `application.properties` would then look like this:
 
 [source,properties]
 ----
-quarkus.http.ssl.certificate.file=/path/to/certificate
-quarkus.http.ssl.certificate.key-file=/path/to/key
+quarkus.http.ssl.certificate.files=/path/to/certificate
+quarkus.http.ssl.certificate.key-files=/path/to/key
 ----
 
 === Providing a keystore

@@ -53,6 +53,12 @@
             <optional>true</optional>
         </dependency>
 
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <!-- Dependencies for Binding (optional) -->
 
         <dependency>

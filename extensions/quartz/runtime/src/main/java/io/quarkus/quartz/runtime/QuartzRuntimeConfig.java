@@ -66,6 +66,15 @@ public class QuartzRuntimeConfig {
     @ConfigItem(name = "misfire-policy")
     public Map<String, QuartzMisfirePolicyConfig> misfirePolicyPerJobs;
 
+    /**
+     * When set to {@code true}, blocking scheduled methods are invoked on a thread managed by Quartz instead of a
+     * thread from the regular Quarkus thread pool (default).
+     * <p>
+     * When this option is enabled, blocking scheduled methods do not run on a {@code duplicated context}.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean runBlockingScheduledMethodOnQuartzThread;
+
     @ConfigGroup
     public static class QuartzMisfirePolicyConfig {
         /**

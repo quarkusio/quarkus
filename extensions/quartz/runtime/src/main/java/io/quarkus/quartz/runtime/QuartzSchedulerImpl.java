@@ -83,6 +83,7 @@ import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 
 @Typed({ QuartzScheduler.class, Scheduler.class })
@@ -323,7 +324,8 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                                         }
                                     }
                                 }, invoker,
-                                SchedulerUtils.parseOverdueGracePeriod(scheduled, defaultOverdueGracePeriod)));
+                                SchedulerUtils.parseOverdueGracePeriod(scheduled, defaultOverdueGracePeriod),
+                                quartzSupport.getRuntimeConfig().runBlockingScheduledMethodOnQuartzThread));
                     }
                 }
                 if (transaction != null) {
@@ -607,10 +609,26 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
             if (trigger != null && trigger.invoker != null) { // could be null from previous runs
                 if (trigger.invoker.isBlocking()) {
-                    try {
-                        trigger.invoker.invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
-                    } catch (Exception e) {
-                        throw new JobExecutionException(e);
+                    if (trigger.runBlockingMethodOnQuartzThread) {
+                        try {
+                            trigger.invoker.invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
+                        } catch (Exception e) {
+                            // already logged by the StatusEmitterInvoker
+                        }
+                    } else {
+                        Context context = VertxContext.getOrCreateDuplicatedContext(vertx);
+                        VertxContextSafetyToggle.setContextSafe(context, true);
+                        context.executeBlocking(new Handler<Promise<Object>>() {
+                            @Override
+                            public void handle(Promise<Object> p) {
+                                try {
+                                    trigger.invoker.invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
+                                    p.complete();
+                                } catch (Exception e) {
+                                    p.tryFail(e);
+                                }
+                            }
+                        }, false);
                     }
                 } else {
                     Context context = VertxContext.getOrCreateDuplicatedContext(vertx);
@@ -642,12 +660,15 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         final ScheduledInvoker invoker;
         final Duration gracePeriod;
 
+        final boolean runBlockingMethodOnQuartzThread;
+
         QuartzTrigger(org.quartz.TriggerKey triggerKey, Function<TriggerKey, org.quartz.Trigger> triggerFunction,
-                ScheduledInvoker invoker, Duration gracePeriod) {
+                ScheduledInvoker invoker, Duration gracePeriod, boolean runBlockingMethodOnQuartzThread) {
             this.triggerKey = triggerKey;
             this.triggerFunction = triggerFunction;
             this.invoker = invoker;
             this.gracePeriod = gracePeriod;
+            this.runBlockingMethodOnQuartzThread = runBlockingMethodOnQuartzThread;
         }
 
         @Override

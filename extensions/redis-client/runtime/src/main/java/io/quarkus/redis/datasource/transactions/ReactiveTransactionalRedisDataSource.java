@@ -1,6 +1,9 @@
 package io.quarkus.redis.datasource.transactions;
 
 import io.quarkus.redis.datasource.bitmap.ReactiveTransactionalBitMapCommands;
+import io.quarkus.redis.datasource.bloom.ReactiveTransactionalBloomCommands;
+import io.quarkus.redis.datasource.countmin.ReactiveTransactionalCountMinCommands;
+import io.quarkus.redis.datasource.cuckoo.ReactiveTransactionalCuckooCommands;
 import io.quarkus.redis.datasource.geo.ReactiveTransactionalGeoCommands;
 import io.quarkus.redis.datasource.hash.ReactiveTransactionalHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveTransactionalHyperLogLogCommands;
@@ -10,6 +13,7 @@ import io.quarkus.redis.datasource.list.ReactiveTransactionalListCommands;
 import io.quarkus.redis.datasource.set.ReactiveTransactionalSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveTransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.string.ReactiveTransactionalStringCommands;
+import io.quarkus.redis.datasource.topk.ReactiveTransactionalTopKCommands;
 import io.quarkus.redis.datasource.value.ReactiveTransactionalValueCommands;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Command;
@@ -288,6 +292,99 @@ public interface ReactiveTransactionalRedisDataSource {
      * @return the object to manipulate JSON values.
      */
     <K> ReactiveTransactionalJsonCommands<K> json(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to manipulate Bloom filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a>.
+     *
+     * @param valueType the type of value to store in the filters
+     * @param <V> the type of value
+     * @return the object to manipulate Bloom filters
+     */
+    default <V> ReactiveTransactionalBloomCommands<String, V> bloom(Class<V> valueType) {
+        return bloom(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to manipulate Bloom filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a>.
+     *
+     * @param redisKeyType the type of the key
+     * @param valueType the type of value to store in the filters
+     * @param <K> the type of key
+     * @param <V> the type of value
+     * @return the object to manipulate Bloom filters
+     */
+    <K, V> ReactiveTransactionalBloomCommands<K, V> bloom(Class<K> redisKeyType, Class<V> valueType);
+
+    /**
+     * Gets the object to manipulate Cuckoo filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the Cuckoo
+     * filter support).
+     *
+     * @param <V> the type of the values added into the Cuckoo filter
+     * @return the object to manipulate Cuckoo values.
+     */
+    default <V> ReactiveTransactionalCuckooCommands<String, V> cuckoo(Class<V> valueType) {
+        return cuckoo(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to manipulate Cuckoo filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the Cuckoo
+     * filter support).
+     *
+     * @param <K> the type of keys
+     * @param <V> the type of the values added into the Cuckoo filter
+     * @return the object to manipulate Cuckoo values.
+     */
+    <K, V> ReactiveTransactionalCuckooCommands<K, V> cuckoo(Class<K> redisKeyType, Class<V> valueType);
+
+    /**
+     * Gets the object to manipulate Count-Min sketches.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the count-min
+     * sketches support).
+     *
+     * @param <V> the type of the values added into the count-min sketches
+     * @return the object to manipulate count-min sketches.
+     */
+    default <V> ReactiveTransactionalCountMinCommands<String, V> countmin(Class<V> valueType) {
+        return countmin(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to manipulate Count-Min sketches.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the count-min
+     * sketches support).
+     *
+     * @param <K> the type of keys
+     * @param <V> the type of the values added into the count-min sketches
+     * @return the object to manipulate count-min sketches.
+     */
+    <K, V> ReactiveTransactionalCountMinCommands<K, V> countmin(Class<K> redisKeyType, Class<V> valueType);
+
+    /**
+     * Gets the object to manipulate Top-K list.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the top-k
+     * list support).
+     *
+     * @param <V> the type of the values added into the top-k lists
+     * @return the object to manipulate top-k lists.
+     */
+    default <V> ReactiveTransactionalTopKCommands<String, V> topk(Class<V> valueType) {
+        return topk(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to manipulate Top-K list.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the top-k
+     * list support).
+     *
+     * @param <K> the type of keys
+     * @param <V> the type of the values added into the top-k lists
+     * @return the object to manipulate top-k lists.
+     */
+    <K, V> ReactiveTransactionalTopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType);
 
     /**
      * Executes a command.

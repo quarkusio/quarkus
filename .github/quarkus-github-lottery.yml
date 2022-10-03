@@ -13,3 +13,8 @@ participants:
     days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
     triage:
       maxIssues: 3
+  - username: "gsmet"
+    timezone: "Europe/Paris"
+    days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+    triage:
+      maxIssues: 3

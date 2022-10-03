@@ -18,10 +18,10 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
-import org.jboss.resteasy.api.validation.Validation;
-
 @Provider
 public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper<ValidationException> {
+
+    private static final String VALIDATION_HEADER = "validation-exception";
 
     @Context
     HttpHeaders headers;
@@ -69,7 +69,7 @@ public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper
     private Response buildViolationReportResponse(ConstraintViolationException cve) {
         Status status = Status.BAD_REQUEST;
         Response.ResponseBuilder builder = Response.status(status);
-        builder.header(Validation.VALIDATION_HEADER, "true");
+        builder.header(VALIDATION_HEADER, "true");
 
         // Check standard media types.
         MediaType mediaType = ValidatorMediaTypeUtil.getAcceptMediaTypeFromSupported(headers.getAcceptableMediaTypes());

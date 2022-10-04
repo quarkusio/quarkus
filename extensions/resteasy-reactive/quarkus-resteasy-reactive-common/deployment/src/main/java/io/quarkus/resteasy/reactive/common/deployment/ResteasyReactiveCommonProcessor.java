@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.common.deployment;
 
+import static org.jboss.resteasy.reactive.common.model.ResourceInterceptor.FILTER_SOURCE_METHOD_METADATA_KEY;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,6 +23,7 @@ import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.resteasy.reactive.common.jaxrs.RuntimeDelegateImpl;
 import org.jboss.resteasy.reactive.common.model.InterceptorContainer;
 import org.jboss.resteasy.reactive.common.model.PreMatchInterceptorContainer;
@@ -170,8 +173,18 @@ public class ResteasyReactiveCommonProcessor {
             interceptor.setPriority(priority);
         }
         if (filterItem instanceof ContainerRequestFilterBuildItem) {
-            interceptor.setNonBlockingRequired(((ContainerRequestFilterBuildItem) filterItem).isNonBlockingRequired());
-            interceptor.setReadBody(((ContainerRequestFilterBuildItem) filterItem).isReadBody());
+            ContainerRequestFilterBuildItem crfbi = (ContainerRequestFilterBuildItem) filterItem;
+            interceptor.setNonBlockingRequired(crfbi.isNonBlockingRequired());
+            interceptor.setReadBody(crfbi.isReadBody());
+            MethodInfo filterSourceMethod = crfbi.getFilterSourceMethod();
+            if (filterSourceMethod != null) {
+                interceptor.metadata = Map.of(FILTER_SOURCE_METHOD_METADATA_KEY, filterSourceMethod);
+            }
+        } else if (filterItem instanceof ContainerResponseFilterBuildItem) {
+            MethodInfo filterSourceMethod = ((ContainerResponseFilterBuildItem) filterItem).getFilterSourceMethod();
+            if (filterSourceMethod != null) {
+                interceptor.metadata = Map.of(FILTER_SOURCE_METHOD_METADATA_KEY, filterSourceMethod);
+            }
         }
         if (interceptors instanceof PreMatchInterceptorContainer
                 && ((ContainerRequestFilterBuildItem) filterItem).isPreMatching()) {

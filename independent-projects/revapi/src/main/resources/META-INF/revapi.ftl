@@ -5,11 +5,17 @@
 The summary of the API changes between artifacts <#list analysis.oldApi.archives as archive>`${archive.name}`<#sep>, </#list> and
 <#list analysis.newApi.archives as archive>`${archive.name}`<#sep>, </#list>
 
-<#assign oldDependencyNames = analysis.oldApi.supplementaryArchives?map(supplementaryArchive -> supplementaryArchive.name)>
-<#assign newDependencyNames = analysis.newApi.supplementaryArchives?map(supplementaryArchive -> supplementaryArchive.name)>
+<#assign oldSupplementaryArchives = analysis.oldApi.supplementaryArchives>
+<#assign newSupplementaryArchives = analysis.newApi.supplementaryArchives>
 
-<#assign removedDependencyNames = oldDependencyNames?filter(name -> !newDependencyNames?seq_contains(name))>
-<#assign addedDependencyNames = newDependencyNames?filter(name -> !oldDependencyNames?seq_contains(name))>
+<#assign oldDependencyNames = oldSupplementaryArchives?map(supplementaryArchive -> supplementaryArchive.name)>
+<#assign newDependencyNames = newSupplementaryArchives?map(supplementaryArchive -> supplementaryArchive.name)>
+
+<#assign oldDependencyBaseNames = oldSupplementaryArchives?map(supplementaryArchive -> supplementaryArchive.baseName)>
+<#assign newDependencyBaseNames = newSupplementaryArchives?map(supplementaryArchive -> supplementaryArchive.baseName)>
+
+<#assign removedDependencyNames = oldDependencyNames?filter(name -> !newDependencyBaseNames?seq_contains(name?keep_before_last(":")))>
+<#assign addedDependencyNames = newDependencyNames?filter(name -> !oldDependencyBaseNames?seq_contains(name?keep_before_last(":")))>
 
 <#assign count = 0>
 <#compress>
@@ -60,6 +66,21 @@ xref:others[${count}]
 
 |Dependencies Removed
 |xref:removed[${removedDependencyNames?size}]
+
+<#assign count = 0>
+|Dependencies Changed
+|<#list oldSupplementaryArchives as oldArchive>
+ <#list newSupplementaryArchives as newArchive>
+ <#if oldArchive.baseName == newArchive.baseName>
+ <#assign oldVersion=oldArchive.version?replace('[^\\d]','','r')>
+ <#assign newVersion=newArchive.version?replace('[^\\d]','','r')>
+ <#if (newVersion?number> oldVersion?number)?c?boolean || (newVersion?number < oldVersion?number)?c?boolean>
+ <#assign count++>
+ </#if>
+ </#if>
+ </#list>
+ </#list>
+ xref:dependencyChange[${count}]
 
 |===
 </#compress>
@@ -207,6 +228,23 @@ ${name}
 [.lead]
 ${name}
 ===============================
+</#list>
+
+=== [[dependencyChange]]Changed Dependencies
+<#list oldSupplementaryArchives as oldArchive>
+<#list newSupplementaryArchives as newArchive>
+<#if oldArchive.baseName == newArchive.baseName>
+<#assign oldVersion=oldArchive.version?replace('[^\\d]','','r')>
+<#assign newVersion=newArchive.version?replace('[^\\d]','','r')>
+<#if (newVersion?number > oldVersion?number)?c?boolean || (newVersion?number < oldVersion?number)?c?boolean>
+===============================
+[.lead]
+*Old Version*:  ${oldArchive.name} +
+*New Version*:  ${newArchive.name}
+===============================
+</#if>
+</#if>
+</#list>
 </#list>
 
 </#if>

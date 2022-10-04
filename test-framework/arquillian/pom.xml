@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>quarkus-arquillian</artifactId>
-     <name>Quarkus - Test Framework - Arquillian Adapter</name>
+    <name>Quarkus - Test Framework - Arquillian Adapter</name>
 
     <dependencyManagement>
         <dependencies>
@@ -82,16 +82,9 @@
             <artifactId>arquillian-container-test-impl-base</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.arquillian.junit</groupId>
-            <artifactId>arquillian-junit-container</artifactId>
+            <groupId>org.jboss.arquillian.junit5</groupId>
+            <artifactId>arquillian-junit5-container</artifactId>
             <scope>compile</scope>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>compile</scope>
-            <version>${junit4.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -100,23 +93,18 @@
             <scope>compile</scope>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <dependencies>
-                    <!--Adding this seems to prevent TestNG from attempting to run the tests instead of junit-->
-                    <dependency>
-                        <groupId>org.apache.maven.surefire</groupId>
-                        <artifactId>surefire-junit47</artifactId>
-                        <version>${version.surefire.plugin}</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-        </plugins>
-    </build>
 
 </project>

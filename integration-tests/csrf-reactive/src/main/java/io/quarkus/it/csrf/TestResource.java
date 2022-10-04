@@ -2,11 +2,13 @@ package io.quarkus.it.csrf;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.CookieParam;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
 
 import io.quarkus.qute.Template;
@@ -17,7 +19,10 @@ import io.vertx.ext.web.RoutingContext;
 public class TestResource {
 
     @Inject
-    Template csrfToken;
+    Template csrfTokenForm;
+
+    @Inject
+    Template csrfTokenMultipart;
 
     @Inject
     RoutingContext routingContext;
@@ -26,7 +31,7 @@ public class TestResource {
     @Path("/csrfTokenForm")
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance getCsrfTokenForm() {
-        return csrfToken.instance();
+        return csrfTokenForm.instance();
     }
 
     @POST
@@ -35,6 +40,23 @@ public class TestResource {
     @Produces(MediaType.TEXT_PLAIN)
     public String postCsrfTokenForm(@FormParam("name") String name) {
         return name + ":" + routingContext.get("csrf_token_verified", false);
+    }
+
+    @GET
+    @Path("/csrfTokenMultipart")
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance getCsrfTokenMultipart() {
+        return csrfTokenMultipart.instance();
+    }
+
+    @POST
+    @Path("/csrfTokenMultipart")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.TEXT_PLAIN)
+    public String postCsrfTokenMultipart(@FormParam("name") String name,
+            @FormParam("csrf-token") String csrfTokenParam, @CookieParam("csrftoken") Cookie csrfTokenCookie) {
+        return name + ":" + routingContext.get("csrf_token_verified", false) + ":"
+                + csrfTokenCookie.getValue().equals(csrfTokenParam);
     }
 
     @GET

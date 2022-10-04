@@ -22,12 +22,12 @@ import io.restassured.RestAssured;
 public class CsrfReactiveTest {
 
     @Test
-    public void testCsrfToken() throws Exception {
+    public void testCsrfTokenInForm() throws Exception {
         try (final WebClient webClient = createWebClient()) {
 
             HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenForm");
 
-            assertEquals("CSRF Token Test", htmlPage.getTitleText());
+            assertEquals("CSRF Token Form Test", htmlPage.getTitleText());
 
             HtmlForm loginForm = htmlPage.getForms().get(0);
 
@@ -52,7 +52,7 @@ public class CsrfReactiveTest {
 
             HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenForm");
 
-            assertEquals("CSRF Token Test", htmlPage.getTitleText());
+            assertEquals("CSRF Token Form Test", htmlPage.getTitleText());
 
             HtmlForm loginForm = htmlPage.getForms().get(0);
 
@@ -74,12 +74,37 @@ public class CsrfReactiveTest {
     }
 
     @Test
+    public void testCsrfTokenInMultipart() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+
+            HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenMultipart");
+
+            assertEquals("CSRF Token Multipart Test", htmlPage.getTitleText());
+
+            HtmlForm loginForm = htmlPage.getForms().get(0);
+
+            loginForm.getInputByName("name").setValueAttribute("alice");
+
+            assertNotNull(webClient.getCookieManager().getCookie("csrftoken"));
+
+            TextPage textPage = loginForm.getInputByName("submit").click();
+
+            assertEquals("alice:true:true", textPage.getContent());
+
+            textPage = webClient.getPage("http://localhost:8081/service/hello");
+            assertEquals("hello", textPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testWrongCsrfTokenCookieValue() throws Exception {
         try (final WebClient webClient = createWebClient()) {
 
             HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenForm");
 
-            assertEquals("CSRF Token Test", htmlPage.getTitleText());
+            assertEquals("CSRF Token Form Test", htmlPage.getTitleText());
 
             HtmlForm loginForm = htmlPage.getForms().get(0);
 
@@ -109,7 +134,7 @@ public class CsrfReactiveTest {
 
             HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenForm");
 
-            assertEquals("CSRF Token Test", htmlPage.getTitleText());
+            assertEquals("CSRF Token Form Test", htmlPage.getTitleText());
 
             assertNotNull(webClient.getCookieManager().getCookie("csrftoken"));
 

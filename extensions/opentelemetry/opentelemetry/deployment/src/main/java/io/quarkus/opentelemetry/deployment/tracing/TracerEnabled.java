@@ -2,7 +2,7 @@ package io.quarkus.opentelemetry.deployment.tracing;
 
 import java.util.function.BooleanSupplier;
 
-import io.quarkus.opentelemetry.runtime.OpenTelemetryConfig;
+import io.quarkus.opentelemetry.runtime.config.OpenTelemetryConfig;
 
 public class TracerEnabled implements BooleanSupplier {
     OpenTelemetryConfig otelConfig;

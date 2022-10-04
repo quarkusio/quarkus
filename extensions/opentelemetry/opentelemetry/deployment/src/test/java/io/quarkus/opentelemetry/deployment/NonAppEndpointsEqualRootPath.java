@@ -8,6 +8,8 @@ import javax.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.TracerRouter;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 

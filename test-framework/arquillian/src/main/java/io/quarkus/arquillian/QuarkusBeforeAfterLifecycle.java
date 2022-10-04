@@ -11,7 +11,8 @@ import org.jboss.arquillian.core.api.annotation.Observes;
 
 public class QuarkusBeforeAfterLifecycle {
 
-    private static final String JUNIT_CALLBACKS = "io.quarkus.arquillian.QuarkusJunitCallbacks";
+    private static final String JUNIT4_CALLBACKS = "io.quarkus.arquillian.QuarkusJunit4Callbacks";
+    private static final String JUNIT5_CALLBACKS = "io.quarkus.arquillian.QuarkusJunit5Callbacks";
     private static final String TESTNG_CALLBACKS = "io.quarkus.arquillian.QuarkusTestNgCallbacks";
     private static final String JUNIT_INVOKE_BEFORES = "invokeJunitBefores";
     private static final String JUNIT_INVOKE_AFTERS = "invokeJunitAfters";
@@ -29,8 +30,10 @@ public class QuarkusBeforeAfterLifecycle {
     public void on(@Observes(precedence = DEFAULT_PRECEDENCE) org.jboss.arquillian.test.spi.event.suite.Before event)
             throws Throwable {
         if (!event.getTestClass().isAnnotationPresent(RunAsClient.class)) {
-            if (isJunitAvailable()) {
-                invokeCallbacks(JUNIT_INVOKE_BEFORES, JUNIT_CALLBACKS);
+            if (isJunit5Available()) {
+                invokeCallbacks(JUNIT_INVOKE_BEFORES, JUNIT5_CALLBACKS);
+            } else if (isJunit4Available()) {
+                invokeCallbacks(JUNIT_INVOKE_BEFORES, JUNIT4_CALLBACKS);
             }
             if (isTestNGAvailable()) {
                 invokeCallbacks(TESTNG_INVOKE_BEFORE_METHOD, TESTNG_CALLBACKS);
@@ -41,8 +44,10 @@ public class QuarkusBeforeAfterLifecycle {
     public void on(@Observes(precedence = DEFAULT_PRECEDENCE) org.jboss.arquillian.test.spi.event.suite.After event)
             throws Throwable {
         if (!event.getTestClass().isAnnotationPresent(RunAsClient.class)) {
-            if (isJunitAvailable()) {
-                invokeCallbacks(JUNIT_INVOKE_AFTERS, JUNIT_CALLBACKS);
+            if (isJunit5Available()) {
+                invokeCallbacks(JUNIT_INVOKE_AFTERS, JUNIT5_CALLBACKS);
+            } else if (isJunit4Available()) {
+                invokeCallbacks(JUNIT_INVOKE_AFTERS, JUNIT4_CALLBACKS);
             }
             if (isTestNGAvailable()) {
                 invokeCallbacks(TESTNG_INVOKE_AFTER_METHOD, TESTNG_CALLBACKS);
@@ -66,20 +71,22 @@ public class QuarkusBeforeAfterLifecycle {
         }
     }
 
-    private boolean isJunitAvailable() {
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        try {
-            cl.loadClass("org.jboss.arquillian.junit.container.JUnitTestRunner");
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
+    private boolean isJunit5Available() {
+        return isClassAvailable("org.jboss.arquillian.junit5.ArquillianExtension");
+    }
+
+    private boolean isJunit4Available() {
+        return isClassAvailable("org.jboss.arquillian.junit.container.JUnitTestRunner");
     }
 
     private boolean isTestNGAvailable() {
+        return isClassAvailable("org.jboss.arquillian.testng.container.TestNGTestRunner");
+    }
+
+    private boolean isClassAvailable(String className) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         try {
-            cl.loadClass("org.jboss.arquillian.testng.container.TestNGTestRunner");
+            cl.loadClass(className);
             return true;
         } catch (ClassNotFoundException e) {
             return false;

@@ -24,6 +24,10 @@ public interface PlatformConfiguration extends EnvVarHolder {
 
     boolean isAddBuildTimestamp();
 
+    boolean isAddVersionToLabelSelectors();
+
+    boolean isAddNameToLabelSelectors();
+
     Optional<String> getWorkingDir();
 
     Optional<List<String>> getCommand();

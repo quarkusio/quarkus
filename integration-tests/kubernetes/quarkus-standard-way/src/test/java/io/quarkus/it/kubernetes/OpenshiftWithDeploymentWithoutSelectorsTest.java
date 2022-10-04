@@ -1,7 +1,6 @@
 package io.quarkus.it.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -42,8 +41,7 @@ public class OpenshiftWithDeploymentWithoutSelectorsTest {
 
         assertThat(openshiftList).filteredOn(h -> "Deployment".equals(h.getKind())).singleElement().satisfies(h -> {
             Deployment deployment = (Deployment) h;
-            assertThat(deployment.getSpec().getSelector().getMatchLabels())
-                    .containsOnly(entry("app.kubernetes.io/name", APP_NAME));
+            assertThat(deployment.getSpec().getSelector().getMatchLabels()).isEmpty();
         });
 
         assertThat(openshiftList).filteredOn(i -> "Route".equals(i.getKind())).singleElement().satisfies(i -> {

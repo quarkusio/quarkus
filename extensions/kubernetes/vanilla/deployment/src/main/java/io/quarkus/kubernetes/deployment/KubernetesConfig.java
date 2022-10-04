@@ -295,6 +295,12 @@ public class KubernetesConfig implements PlatformConfiguration {
     boolean addVersionToLabelSelectors;
 
     /**
+     * If true, the 'app.kubernetes.io/name' label will be part of the selectors of Service and Deployment
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean addNameToLabelSelectors;
+
+    /**
      * If set to true, Quarkus will attempt to deploy the application to the target Kubernetes cluster
      */
     @ConfigItem(defaultValue = "false")
@@ -357,6 +363,16 @@ public class KubernetesConfig implements PlatformConfiguration {
     @Override
     public boolean isAddBuildTimestamp() {
         return addBuildTimestamp;
+    }
+
+    @Override
+    public boolean isAddNameToLabelSelectors() {
+        return addNameToLabelSelectors;
+    }
+
+    @Override
+    public boolean isAddVersionToLabelSelectors() {
+        return addVersionToLabelSelectors;
     }
 
     @Override

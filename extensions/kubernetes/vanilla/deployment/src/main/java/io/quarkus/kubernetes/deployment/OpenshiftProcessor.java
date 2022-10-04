@@ -26,15 +26,12 @@ import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
-import io.dekorate.kubernetes.decorator.RemoveFromSelectorDecorator;
-import io.dekorate.kubernetes.decorator.RemoveLabelDecorator;
 import io.dekorate.openshift.decorator.ApplyReplicasToDeploymentConfigDecorator;
 import io.dekorate.project.Project;
 import io.dekorate.s2i.config.S2iBuildConfig;
 import io.dekorate.s2i.config.S2iBuildConfigBuilder;
 import io.dekorate.s2i.decorator.AddBuilderImageStreamResourceDecorator;
 import io.dekorate.s2i.decorator.AddDockerImageStreamResourceDecorator;
-import io.dekorate.utils.Labels;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.ImageUtil;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
@@ -287,11 +284,6 @@ public class OpenshiftProcessor {
                 result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyBuilderImageDecorator(name, builderImage)));
             }
         });
-
-        if (!config.addVersionToLabelSelectors) {
-            result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveLabelDecorator(name, Labels.VERSION)));
-            result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveFromSelectorDecorator(name, Labels.VERSION)));
-        }
 
         // Service handling
         result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyServiceTypeDecorator(name, config.getServiceType().name())));

@@ -323,6 +323,12 @@ public class OpenshiftConfig implements PlatformConfiguration {
     boolean addVersionToLabelSelectors;
 
     /**
+     * If true, the 'app.kubernetes.io/name' label will be part of the selectors of Service and Deployment
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean addNameToLabelSelectors;
+
+    /**
      * Job configuration. It's only used if and only if {@code quarkus.openshift.deployment-kind} is `Job`.
      */
     JobConfig job;
@@ -359,6 +365,16 @@ public class OpenshiftConfig implements PlatformConfiguration {
     @Override
     public boolean isAddBuildTimestamp() {
         return addBuildTimestamp;
+    }
+
+    @Override
+    public boolean isAddNameToLabelSelectors() {
+        return addNameToLabelSelectors;
+    }
+
+    @Override
+    public boolean isAddVersionToLabelSelectors() {
+        return addVersionToLabelSelectors;
     }
 
     public Optional<String> getWorkingDir() {

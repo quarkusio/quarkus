@@ -10,6 +10,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -52,11 +53,15 @@ import io.dekorate.kubernetes.decorator.ApplyRequestsCpuDecorator;
 import io.dekorate.kubernetes.decorator.ApplyRequestsMemoryDecorator;
 import io.dekorate.kubernetes.decorator.ApplyWorkingDirDecorator;
 import io.dekorate.kubernetes.decorator.RemoveAnnotationDecorator;
+import io.dekorate.kubernetes.decorator.RemoveFromMatchingLabelsDecorator;
+import io.dekorate.kubernetes.decorator.RemoveFromSelectorDecorator;
+import io.dekorate.kubernetes.decorator.RemoveLabelDecorator;
 import io.dekorate.project.BuildInfo;
 import io.dekorate.project.FileProjectFactory;
 import io.dekorate.project.Project;
 import io.dekorate.project.ScmInfo;
 import io.dekorate.utils.Annotations;
+import io.dekorate.utils.Labels;
 import io.dekorate.utils.Strings;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
@@ -156,17 +161,8 @@ public class KubernetesCommonHelper {
             List<KubernetesRoleBindingBuildItem> roleBindings) {
         List<DecoratorBuildItem> result = new ArrayList<>();
 
-        annotations.forEach(a -> {
-            result.add(new DecoratorBuildItem(a.getTarget(),
-                    new AddAnnotationDecorator(name, a.getKey(), a.getValue())));
-        });
-
-        labels.forEach(l -> {
-            result.add(new DecoratorBuildItem(l.getTarget(),
-                    new AddLabelDecorator(name, l.getKey(), l.getValue())));
-        });
-
-        result.addAll(createAnnotationDecorators(project, target, name, config, metricsConfiguration, ports));
+        result.addAll(createLabelDecorators(project, target, name, config, labels));
+        result.addAll(createAnnotationDecorators(project, target, name, config, metricsConfiguration, annotations, ports));
         result.addAll(createPodDecorators(project, target, name, config));
         result.addAll(createContainerDecorators(project, target, name, config));
         result.addAll(createMountAndVolumeDecorators(project, target, name, config));
@@ -197,6 +193,30 @@ public class KubernetesCommonHelper {
                             new AddLabelDecorator(rb.getName(), l.getKey(), l.getValue(), "RoleBinding")));
                 });
             });
+        }
+
+        return result;
+    }
+
+    private static Collection<DecoratorBuildItem> createLabelDecorators(Optional<Project> project, String target, String name,
+            PlatformConfiguration config, List<KubernetesLabelBuildItem> labels) {
+
+        List<DecoratorBuildItem> result = new ArrayList<>();
+        labels.forEach(l -> {
+            result.add(new DecoratorBuildItem(l.getTarget(),
+                    new AddLabelDecorator(name, l.getKey(), l.getValue())));
+        });
+
+        if (!config.isAddVersionToLabelSelectors()) {
+            result.add(new DecoratorBuildItem(target, new RemoveLabelDecorator(name, Labels.VERSION)));
+            result.add(new DecoratorBuildItem(target, new RemoveFromSelectorDecorator(name, Labels.VERSION)));
+            result.add(new DecoratorBuildItem(target, new RemoveFromMatchingLabelsDecorator(name, Labels.VERSION)));
+        }
+
+        if (!config.isAddNameToLabelSelectors()) {
+            result.add(new DecoratorBuildItem(target, new RemoveLabelDecorator(name, Labels.NAME)));
+            result.add(new DecoratorBuildItem(target, new RemoveFromSelectorDecorator(name, Labels.NAME)));
+            result.add(new DecoratorBuildItem(target, new RemoveFromMatchingLabelsDecorator(name, Labels.NAME)));
         }
 
         return result;
@@ -410,8 +430,15 @@ public class KubernetesCommonHelper {
     private static List<DecoratorBuildItem> createAnnotationDecorators(Optional<Project> project, String target, String name,
             PlatformConfiguration config,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
+            List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesPortBuildItem> ports) {
         List<DecoratorBuildItem> result = new ArrayList<>();
+
+        annotations.forEach(a -> {
+            result.add(new DecoratorBuildItem(a.getTarget(),
+                    new AddAnnotationDecorator(name, a.getKey(), a.getValue())));
+        });
+
         ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
 
         project.ifPresent(p -> {
@@ -430,8 +457,10 @@ public class KubernetesCommonHelper {
             }
             if (vcsUrl != null) {
                 result.add(new DecoratorBuildItem(target,
-                        new AddAnnotationDecorator(name, new Annotation(QUARKUS_ANNOTATIONS_VCS_URL, vcsUrl, new String[0]))));
+                        new AddAnnotationDecorator(name,
+                                new Annotation(QUARKUS_ANNOTATIONS_VCS_URL, vcsUrl, new String[0]))));
             }
+
         });
 
         if (config.isAddBuildTimestamp()) {

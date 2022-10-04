@@ -166,8 +166,9 @@ public class BytecodeRecorderTestCase {
             IgnoredProperties ignoredProperties = new IgnoredProperties();
             ignoredProperties.setNotIgnored("Shows up");
             ignoredProperties.setIgnoredField("Does not show up");
+            ignoredProperties.setAnotherIgnoredField("Does not show up either");
             recorder.ignoredProperties(ignoredProperties);
-        }, new IgnoredProperties("Shows up", null));
+        }, new IgnoredProperties("Shows up", null, null));
     }
 
     @Test

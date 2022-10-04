@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.common.model;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.Priorities;
@@ -9,6 +10,8 @@ import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class ResourceInterceptor<T>
         implements Comparable<ResourceInterceptor<T>>, SettableResourceInterceptor<T>, HasPriority {
+
+    public static final String FILTER_SOURCE_METHOD_METADATA_KEY = "filterSourceMethod";
 
     private BeanFactory<T> factory;
     private int priority = Priorities.USER; // default priority as defined by spec
@@ -21,6 +24,8 @@ public class ResourceInterceptor<T>
     private Set<String> nameBindingNames = Collections.emptySet();
 
     private String className;
+
+    public transient Map<String, Object> metadata; // by using 'public transient' we ensure that this field will not be populated at runtime
 
     public void setFactory(BeanFactory<T> factory) {
         this.factory = factory;

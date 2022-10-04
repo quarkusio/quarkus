@@ -249,10 +249,14 @@ public final class ResteasyReactiveDotNames {
 
     public static final DotName ENCODED = DotName.createSimple(Encoded.class.getName());
 
-    public static final DotName QUARKUS_REST_CONTAINER_RESPONSE_FILTER = DotName
+    public static final DotName RESTEASY_REACTIVE_CONTAINER_RESPONSE_FILTER = DotName
             .createSimple("org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerResponseFilter");
-    public static final DotName QUARKUS_REST_CONTAINER_REQUEST_FILTER = DotName
+    public static final DotName RESTEASY_REACTIVE_CONTAINER_REQUEST_FILTER = DotName
             .createSimple("org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestFilter");
+
+    public static final DotName RESTEASY_REACTIVE_CONTAINER_REQUEST_CONTEXT = DotName
+            .createSimple("org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext");
+
     public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 
     public static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");

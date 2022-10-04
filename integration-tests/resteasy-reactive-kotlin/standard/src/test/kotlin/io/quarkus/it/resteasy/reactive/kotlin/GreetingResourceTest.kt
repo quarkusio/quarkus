@@ -20,6 +20,7 @@ class GreetingResourceTest {
             contentType(ContentType.JSON)
             body("message", CoreMatchers.`is`("hello foo bar"))
             header("method", "testSuspend")
+            header("method2", "testSuspend")
         }
     }
 

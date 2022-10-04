@@ -101,7 +101,8 @@ public class ResteasyReactiveScanningProcessor {
         return new ResourceInterceptorsContributorBuildItem(new Consumer<ResourceInterceptors>() {
             @Override
             public void accept(ResourceInterceptors interceptors) {
-                ResteasyReactiveInterceptorScanner.scanForInterceptors(interceptors, combinedIndexBuildItem.getIndex(),
+                ResteasyReactiveInterceptorScanner.scanForContainerRequestFilters(interceptors,
+                        combinedIndexBuildItem.getIndex(),
                         applicationResultBuildItem.getResult());
             }
         });
@@ -323,7 +324,8 @@ public class ResteasyReactiveScanningProcessor {
                         .setPriority(generated.getPriority())
                         .setPreMatching(generated.isPreMatching())
                         .setNonBlockingRequired(generated.isNonBlocking())
-                        .setReadBody(generated.isReadBody());
+                        .setReadBody(generated.isReadBody())
+                        .setFilterSourceMethod(generated.getFilterSourceMethod());
                 if (!generated.getNameBindingNames().isEmpty()) {
                     builder.setNameBindingNames(generated.getNameBindingNames());
                 }
@@ -335,7 +337,8 @@ public class ResteasyReactiveScanningProcessor {
                 ContainerResponseFilterBuildItem.Builder builder = new ContainerResponseFilterBuildItem.Builder(
                         generated.getGeneratedClassName())
                         .setRegisterAsBean(false)// it has already been made a bean
-                        .setPriority(generated.getPriority());
+                        .setPriority(generated.getPriority())
+                        .setFilterSourceMethod(generated.getFilterSourceMethod());
                 if (!generated.getNameBindingNames().isEmpty()) {
                     builder.setNameBindingNames(generated.getNameBindingNames());
                 }

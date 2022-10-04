@@ -153,17 +153,41 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             LOG.debugf("Authentication has failed, error: %s, description: %s", error, errorDescription);
 
             if (oidcTenantConfig.authentication.errorPath.isPresent()) {
-                URI absoluteUri = URI.create(context.request().absoluteURI());
+                Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
+                return resolvedContext.onItem()
+                        .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
+                            @Override
+                            public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
+                                URI absoluteUri = URI.create(context.request().absoluteURI());
 
-                StringBuilder errorUri = new StringBuilder(buildUri(context,
-                        isForceHttps(oidcTenantConfig),
-                        absoluteUri.getAuthority(),
-                        oidcTenantConfig.authentication.errorPath.get()));
-                errorUri.append('?').append(getRequestParametersAsQuery(absoluteUri, requestParams, oidcTenantConfig));
+                                String userQuery = null;
 
-                String finalErrorUri = errorUri.toString();
-                LOG.debugf("Error URI: %s", finalErrorUri);
-                return Uni.createFrom().failure(new AuthenticationRedirectException(finalErrorUri));
+                                // This is an original redirect from IDP, check if the original request path and query need to be restored
+                                CodeAuthenticationStateBean stateBean = getCodeAuthenticationBean(parsedStateCookieValue,
+                                        tenantContext);
+                                if (stateBean != null && stateBean.getRestorePath() != null) {
+                                    String restorePath = stateBean.getRestorePath();
+                                    int userQueryIndex = restorePath.indexOf("?");
+                                    if (userQueryIndex >= 0 && userQueryIndex + 1 < restorePath.length()) {
+                                        userQuery = restorePath.substring(userQueryIndex + 1);
+                                    }
+                                }
+
+                                StringBuilder errorUri = new StringBuilder(buildUri(context,
+                                        isForceHttps(oidcTenantConfig),
+                                        absoluteUri.getAuthority(),
+                                        oidcTenantConfig.authentication.errorPath.get()));
+                                errorUri.append('?')
+                                        .append(getRequestParametersAsQuery(absoluteUri, requestParams, oidcTenantConfig));
+                                if (userQuery != null) {
+                                    errorUri.append('&').append(userQuery);
+                                }
+
+                                String finalErrorUri = errorUri.toString();
+                                LOG.debugf("Error URI: %s", finalErrorUri);
+                                return Uni.createFrom().failure(new AuthenticationRedirectException(finalErrorUri));
+                            }
+                        });
             } else {
                 LOG.error(
                         "Authentication has failed but no error handler is found, completing the code flow with HTTP status 401");

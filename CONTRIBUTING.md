@@ -150,8 +150,8 @@ Wait for a bit and you're done.
 When using the `main` branch, you need to use the group id `io.quarkus` instead of `io.quarkus.platform` for both the
 Quarkus BOM and the Quarkus Maven Plugin.
 
-In a standard Quarkus pom.xml set the `quarkus.platform.group-id`-property to `io.quarkus` and
-the `quarkus.platform.version`-property to `999-SNAPSHOT` to build your application against the locally installed main
+In a standard Quarkus pom.xml set the `quarkus.platform.group-id` property to `io.quarkus` and
+the `quarkus.platform.version` property to `999-SNAPSHOT` to build your application against the locally installed main
 branch.
 
 You can now test your application.

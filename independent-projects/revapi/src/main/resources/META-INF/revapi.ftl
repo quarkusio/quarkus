@@ -239,8 +239,7 @@ ${name}
 <#if (newVersion?number > oldVersion?number)?c?boolean || (newVersion?number < oldVersion?number)?c?boolean>
 ===============================
 [.lead]
-*Old Version*:  ${oldArchive.name} +
-*New Version*:  ${newArchive.name}
+${oldArchive.name} ->  ${newArchive.name?keep_after_last(":")}
 ===============================
 </#if>
 </#if>

@@ -17,6 +17,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
@@ -147,7 +148,7 @@ public class CodeFlowTest {
             endpointErrorLocation = "http" + endpointErrorLocation.substring(5);
 
             HtmlPage page = webClient.getPage(URI.create(endpointErrorLocation).toURL());
-            assertEquals("error: invalid_scope, error_description: Invalid scopes: unknown",
+            assertEquals("code: b, error: invalid_scope, error_description: Invalid scopes: unknown",
                     page.getBody().asText());
             webClient.getCookieManager().clearCookies();
         }
@@ -499,6 +500,8 @@ public class CodeFlowTest {
     }
 
     @Test
+    // See https://github.com/quarkusio/quarkus/issues/27900
+    @Disabled("flaky")
     public void testTokenAutoRefresh() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenant-autorefresh");

@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.client.impl;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.sse.SseEventSource;
 import javax.ws.rs.sse.SseEventSource.Builder;

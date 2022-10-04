@@ -51,6 +51,14 @@ public class QuartzRuntimeConfig {
     public QuartzStartMode startMode;
 
     /**
+     * The maximum amount of time Quarkus will wait for currently running jobs to finish.
+     * If the value is {@code 0}, then Quarkus will not wait at all for these jobs to finish
+     * - it will call {@code org.quartz.Scheduler.shutdown(false)} in this case.
+     */
+    @ConfigItem(defaultValue = "10")
+    public Duration shutdownWaitTime;
+
+    /**
      * Misfire policy per job configuration.
      */
     @ConfigDocSection

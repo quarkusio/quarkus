@@ -11,6 +11,8 @@ import java.util.function.Function;
 import javax.enterprise.inject.Instance;
 import javax.inject.Singleton;
 
+import org.jboss.logging.Logger;
+
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.IdentityProviderManager;
@@ -25,6 +27,8 @@ import io.vertx.ext.web.RoutingContext;
  */
 @Singleton
 public class HttpAuthenticator {
+    private static final Logger log = Logger.getLogger(HttpAuthenticator.class);
+
     private final IdentityProviderManager identityProviderManager;
     private final Instance<PathMatchingHttpSecurityPolicy> pathMatchingPolicy;
     private final HttpAuthenticationMechanism[] mechanisms;
@@ -137,10 +141,14 @@ public class HttpAuthenticator {
         routingContext.request().resume();
         Uni<Boolean> result = null;
 
-        HttpAuthenticationMechanism matchingMech = routingContext.get(HttpAuthenticationMechanism.class.getName());
-        if (matchingMech != null) {
-            result = matchingMech.sendChallenge(routingContext);
+        // we only require auth mechanism to put itself into routing context when there is more than one mechanism registered
+        if (mechanisms.length > 1) {
+            HttpAuthenticationMechanism matchingMech = routingContext.get(HttpAuthenticationMechanism.class.getName());
+            if (matchingMech != null) {
+                result = matchingMech.sendChallenge(routingContext);
+            }
         }
+
         if (result == null) {
             result = mechanisms[0].sendChallenge(routingContext);
             for (int i = 1; i < mechanisms.length; ++i) {
@@ -160,6 +168,7 @@ public class HttpAuthenticator {
             @Override
             public Uni<? extends Boolean> apply(Boolean authDone) {
                 if (!authDone) {
+                    log.debug("Authentication has not been done, returning HTTP status 401");
                     routingContext.response().setStatusCode(401);
                     routingContext.response().end();
                 }
@@ -169,9 +178,12 @@ public class HttpAuthenticator {
     }
 
     public Uni<ChallengeData> getChallenge(RoutingContext routingContext) {
-        HttpAuthenticationMechanism matchingMech = routingContext.get(HttpAuthenticationMechanism.class.getName());
-        if (matchingMech != null) {
-            return matchingMech.getChallenge(routingContext);
+        // we only require auth mechanism to put itself into routing context when there is more than one mechanism registered
+        if (mechanisms.length > 1) {
+            HttpAuthenticationMechanism matchingMech = routingContext.get(HttpAuthenticationMechanism.class.getName());
+            if (matchingMech != null) {
+                return matchingMech.getChallenge(routingContext);
+            }
         }
         Uni<ChallengeData> result = mechanisms[0].getChallenge(routingContext);
         for (int i = 1; i < mechanisms.length; ++i) {

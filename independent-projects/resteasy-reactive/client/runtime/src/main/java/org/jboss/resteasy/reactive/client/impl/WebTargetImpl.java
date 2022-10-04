@@ -1,22 +1,25 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import io.vertx.core.http.HttpClient;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.ext.ParamConverterProvider;
+
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
+
+import io.vertx.core.http.HttpClient;
 
 public class WebTargetImpl implements WebTarget {
 
@@ -317,8 +320,43 @@ public class WebTargetImpl implements WebTarget {
 
     protected InvocationBuilderImpl createQuarkusRestInvocationBuilder(HttpClient client, UriBuilder uri,
             ConfigurationImpl configuration) {
-        return new InvocationBuilderImpl(uri.build(), restClient, client, this, configuration,
+        URI actualUri = uri.build();
+        registerStorkFilterIfNeeded(configuration, actualUri);
+        return new InvocationBuilderImpl(actualUri, restClient, client, this, configuration,
                 handlerChain.setPreClientSendHandler(preClientSendHandler), requestContext);
+    }
+
+    /**
+     * If the URI starts with stork:// or storks://, then register the StorkClientRequestFilter automatically.
+     *
+     * @param configuration the configuration
+     * @param actualUri the uri
+     */
+    private static void registerStorkFilterIfNeeded(ConfigurationImpl configuration, URI actualUri) {
+        if (actualUri.getScheme() != null && actualUri.getScheme().startsWith("stork")
+                && !isStorkAlreadyRegistered(configuration)) {
+            configuration.register(StorkClientRequestFilter.class);
+        }
+    }
+
+    /**
+     * Checks if the Stork request filter is already registered.
+     * We cannot use configuration.isRegistered, as the user registration uses a subclass, and so fail the equality
+     * expectation.
+     * <p>
+     * This method prevents having the stork filter registered twice: once because the uri starts with stork:// and,
+     * once from the user.
+     *
+     * @param configuration the configuration
+     * @return {@code true} if stork is already registered.
+     */
+    private static boolean isStorkAlreadyRegistered(ConfigurationImpl configuration) {
+        for (Class<?> clazz : configuration.getClasses()) {
+            if (clazz.getName().startsWith(StorkClientRequestFilter.class.getName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

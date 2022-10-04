@@ -1,5 +1,11 @@
 package io.quarkus.devtools.codestarts.jbang;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import io.quarkus.devtools.codestarts.CodestartProjectInputBuilder;
 import io.quarkus.devtools.codestarts.DataKey;
 import io.quarkus.devtools.codestarts.utils.NestedMaps;
@@ -8,11 +14,6 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.extensions.Extensions;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class QuarkusJBangCodestartProjectInputBuilder extends CodestartProjectInputBuilder {
     public Collection<ArtifactCoords> extensions = new ArrayList<>();

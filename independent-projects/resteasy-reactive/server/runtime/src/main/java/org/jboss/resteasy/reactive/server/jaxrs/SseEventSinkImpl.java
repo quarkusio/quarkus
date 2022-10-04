@@ -3,8 +3,10 @@ package org.jboss.resteasy.reactive.server.jaxrs;
 import java.util.Collections;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
+
 import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.SseEventSink;
+
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.SseUtil;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;

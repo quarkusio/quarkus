@@ -1,11 +1,13 @@
 package io.quarkus.bootstrap.logging;
 
-import io.quarkus.bootstrap.graal.ImageInfo;
 import java.util.logging.Handler;
 import java.util.logging.Level;
+
 import org.jboss.logmanager.EmbeddedConfigurator;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
+
+import io.quarkus.bootstrap.graal.ImageInfo;
 
 /**
  *
@@ -13,10 +15,28 @@ import org.jboss.logmanager.handlers.ConsoleHandler;
 public final class InitialConfigurator implements EmbeddedConfigurator {
 
     public static final QuarkusDelayedHandler DELAYED_HANDLER = new QuarkusDelayedHandler();
+    private static final Level MIN_LEVEL;
+
+    private static final String SYS_PROP_NAME = "logging.initial-configurator.min-level";
+
+    static {
+        Level minLevel = Level.ALL;
+        String minLevelSysProp = System.getProperty(SYS_PROP_NAME);
+        if (minLevelSysProp != null) {
+            try {
+                minLevel = Level.parse(minLevelSysProp);
+            } catch (IllegalArgumentException ignored) {
+                throw new IllegalArgumentException(
+                        String.format("Unable to convert %s (obtained from the %s system property) into a known logging level.",
+                                minLevelSysProp, SYS_PROP_NAME));
+            }
+        }
+        MIN_LEVEL = minLevel;
+    }
 
     @Override
     public Level getMinimumLevelOf(final String loggerName) {
-        return Level.ALL;
+        return MIN_LEVEL;
     }
 
     @Override

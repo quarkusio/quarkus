@@ -1,8 +1,9 @@
 package org.jboss.resteasy.reactive.server.vertx;
 
+import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
+
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
-import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 
 public class ResteasyReactiveVertxHandler implements Handler<RoutingContext> {
 

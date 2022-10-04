@@ -9,8 +9,11 @@ import io.quarkus.redis.datasource.RedisCommandExtraArguments;
 
 /**
  * Argument list for the Redis <a href="https://redis.io/commands/getex">GETEX</a> command.
+ *
+ * @deprecated use {@link io.quarkus.redis.datasource.value.GetExArgs} instead
  */
-public class GetExArgs implements RedisCommandExtraArguments {
+@Deprecated
+public class GetExArgs extends io.quarkus.redis.datasource.value.GetExArgs implements RedisCommandExtraArguments {
 
     private long ex = -1;
     private long exAt = -1;

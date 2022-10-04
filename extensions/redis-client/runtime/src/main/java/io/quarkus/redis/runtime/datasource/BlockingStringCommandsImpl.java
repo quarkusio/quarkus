@@ -5,15 +5,17 @@ import java.util.Map;
 
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.string.GetExArgs;
-import io.quarkus.redis.datasource.string.ReactiveStringCommands;
 import io.quarkus.redis.datasource.string.SetArgs;
 import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.datasource.value.ReactiveValueCommands;
+import io.quarkus.redis.datasource.value.ValueCommands;
 
-public class BlockingStringCommandsImpl<K, V> extends AbstractRedisCommandGroup implements StringCommands<K, V> {
+public class BlockingStringCommandsImpl<K, V> extends AbstractRedisCommandGroup
+        implements StringCommands<K, V>, ValueCommands<K, V> {
 
-    private final ReactiveStringCommands<K, V> reactive;
+    private final ReactiveValueCommands<K, V> reactive;
 
-    public BlockingStringCommandsImpl(RedisDataSource ds, ReactiveStringCommands<K, V> reactive, Duration timeout) {
+    public BlockingStringCommandsImpl(RedisDataSource ds, ReactiveValueCommands<K, V> reactive, Duration timeout) {
         super(ds, timeout);
         this.reactive = reactive;
     }
@@ -46,6 +48,12 @@ public class BlockingStringCommandsImpl<K, V> extends AbstractRedisCommandGroup 
 
     @Override
     public V getex(K key, GetExArgs args) {
+        return reactive.getex(key, args)
+                .await().atMost(timeout);
+    }
+
+    @Override
+    public V getex(K key, io.quarkus.redis.datasource.value.GetExArgs args) {
         return reactive.getex(key, args)
                 .await().atMost(timeout);
     }
@@ -120,6 +128,12 @@ public class BlockingStringCommandsImpl<K, V> extends AbstractRedisCommandGroup 
     }
 
     @Override
+    public void set(K key, V value, io.quarkus.redis.datasource.value.SetArgs setArgs) {
+        reactive.set(key, value, setArgs)
+                .await().atMost(timeout);
+    }
+
+    @Override
     public V setGet(K key, V value) {
         return reactive.setGet(key, value)
                 .await().atMost(timeout);
@@ -127,6 +141,12 @@ public class BlockingStringCommandsImpl<K, V> extends AbstractRedisCommandGroup 
 
     @Override
     public V setGet(K key, V value, SetArgs setArgs) {
+        return reactive.setGet(key, value, setArgs)
+                .await().atMost(timeout);
+    }
+
+    @Override
+    public V setGet(K key, V value, io.quarkus.redis.datasource.value.SetArgs setArgs) {
         return reactive.setGet(key, value, setArgs)
                 .await().atMost(timeout);
     }

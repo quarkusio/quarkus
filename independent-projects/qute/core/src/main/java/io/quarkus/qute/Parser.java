@@ -1,10 +1,5 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.Expression.Part;
-import io.quarkus.qute.SectionHelperFactory.BlockInfo;
-import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
-import io.quarkus.qute.SectionHelperFactory.ParserDelegate;
-import io.quarkus.qute.TemplateNode.Origin;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.CharBuffer;
@@ -28,7 +23,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.qute.Expression.Part;
+import io.quarkus.qute.SectionHelperFactory.BlockInfo;
+import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
+import io.quarkus.qute.SectionHelperFactory.ParserDelegate;
+import io.quarkus.qute.TemplateNode.Origin;
 
 /**
  * Simple non-reusable parser.
@@ -80,6 +82,8 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     // The number of param declarations with default values for which a synthetic {#let} section was added
     private int paramDeclarationDefaults;
 
+    private TemplateImpl template;
+
     public Parser(EngineImpl engine, Reader reader, String templateId, String generatedId, Optional<Variant> variant) {
         this.engine = engine;
         this.templateId = templateId;
@@ -113,6 +117,13 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 }
             };
         }
+    }
+
+    private Template currentTemplate() {
+        if (template == null) {
+            throw new IllegalStateException("Template [" + templateId + "] is not parsed yet");
+        }
+        return template;
     }
 
     Template parse() {
@@ -167,7 +178,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             // Param declarations with default values - a synthetic {#let} section has no end tag, i.e. {/let} so we need to handle this specially
             for (int i = 0; i < paramDeclarationDefaults; i++) {
                 SectionNode.Builder section = sectionStack.pop();
-                sectionStack.peek().currentBlock().addNode(section.build());
+                sectionStack.peek().currentBlock().addNode(section.build(this::currentTemplate));
                 // Remove the last type info map from the stack
                 scopeStack.pop();
             }
@@ -181,7 +192,8 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                         .argument("tag", root.helperName)
                         .build();
             }
-            TemplateImpl template = new TemplateImpl(engine, root.build(), templateId, generatedId, variant);
+            template = new TemplateImpl(engine, root.build(this::currentTemplate), templateId, generatedId,
+                    variant);
 
             Set<TemplateNode> nodesToRemove = Collections.emptySet();
             if (hasLineSeparator && engine.removeStandaloneLines) {
@@ -482,7 +494,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 // Remove params from the stack
                 paramsStack.pop();
                 // Add node to the parent block
-                sectionStack.peek().currentBlock().addNode(sectionNode.build());
+                sectionStack.peek().currentBlock().addNode(sectionNode.build(this::currentTemplate));
             } else {
                 scopeStack.addFirst(newScope);
                 sectionStack.addFirst(sectionNode);
@@ -520,7 +532,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             }
             // Pop the section and its main block
             section = sectionStack.pop();
-            sectionStack.peek().currentBlock().addNode(section.build());
+            sectionStack.peek().currentBlock().addNode(section.build(this::currentTemplate));
         }
 
         // Remove the last type info map from the stack
@@ -939,11 +951,6 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         Iterator<String> strPartsIterator = strParts.iterator();
         while (strPartsIterator.hasNext()) {
             Part part = createPart(idGenerator, namespace, first, strPartsIterator, scope, origin, value);
-            if (!isValidIdentifier(part.getName())) {
-                throw error(ParserError.INVALID_IDENTIFIER, "invalid identifier found [{value}]", origin)
-                        .argument("value", value)
-                        .build();
-            }
             if (first == null) {
                 first = part;
             }
@@ -977,6 +984,12 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 throw TemplateException.builder()
                         .message((literal == null ? "Null" : "Non-literal")
                                 + " value used in bracket notation [{value}] {origin}")
+                        .argument("value", value)
+                        .build();
+            }
+        } else {
+            if (!isValidIdentifier(value)) {
+                throw error(ParserError.INVALID_IDENTIFIER, "invalid identifier found [{value}]", origin)
                         .argument("value", value)
                         .build();
             }

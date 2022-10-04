@@ -473,7 +473,8 @@ public class TestResourceManager implements Closeable {
                         allProps.putAll(start);
                     }
                 } catch (Exception e) {
-                    throw new RuntimeException("Unable to start Quarkus test resource " + entry.getTestResource(), e);
+                    throw new RuntimeException(
+                            "Unable to start Quarkus test resource " + entry.getTestResource().getClass().toString(), e);
                 }
             }
         }

@@ -2,21 +2,24 @@ package org.jboss.resteasy.reactive.server.vertx.test.multipart;
 
 import static org.hamcrest.CoreMatchers.not;
 
-import io.restassured.RestAssured;
-import io.restassured.builder.MultiPartSpecBuilder;
-import io.restassured.specification.MultiPartSpecification;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
+import io.restassured.builder.MultiPartSpecBuilder;
+import io.restassured.specification.MultiPartSpecification;
 
 public class InvalidEncodingTest {
 

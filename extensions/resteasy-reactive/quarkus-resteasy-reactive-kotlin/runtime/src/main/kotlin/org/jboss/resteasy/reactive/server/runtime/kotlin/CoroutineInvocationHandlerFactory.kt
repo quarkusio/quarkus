@@ -3,8 +3,6 @@ package org.jboss.resteasy.reactive.server.runtime.kotlin
 import io.quarkus.arc.Unremovable
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler
-import javax.enterprise.context.ApplicationScoped
-import javax.inject.Inject
 import javax.inject.Singleton
 
 /**

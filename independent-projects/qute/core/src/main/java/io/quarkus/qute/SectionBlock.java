@@ -1,7 +1,5 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.SectionHelperFactory.BlockInfo;
-import io.quarkus.qute.TemplateNode.Origin;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -9,6 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+
+import io.quarkus.qute.SectionHelperFactory.BlockInfo;
+import io.quarkus.qute.TemplateNode.Origin;
 
 /**
  * Each section consists of one or more blocks. The main block is always present. Additional blocks start with a label
@@ -65,7 +66,7 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
         return expressions;
     }
 
-    Expression find(Predicate<Expression> predicate) {
+    Expression findExpression(Predicate<Expression> predicate) {
         for (Expression e : this.expressions.values()) {
             if (predicate.test(e)) {
                 return e;
@@ -99,6 +100,45 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
             }
         }
         return declarations != null ? declarations : Collections.emptyList();
+    }
+
+    TemplateNode findNode(Predicate<TemplateNode> predicate) {
+        for (TemplateNode node : nodes) {
+            if (predicate.test(node)) {
+                return node;
+            }
+            if (node.isSection()) {
+                SectionNode sectionNode = (SectionNode) node;
+                TemplateNode found = sectionNode.findNode(predicate);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    List<TemplateNode> findNodes(Predicate<TemplateNode> predicate) {
+        List<TemplateNode> ret = null;
+        for (TemplateNode node : nodes) {
+            if (predicate.test(node)) {
+                if (ret == null) {
+                    ret = new ArrayList<>();
+                }
+                ret.add(node);
+            }
+            if (node.isSection()) {
+                SectionNode sectionNode = (SectionNode) node;
+                List<TemplateNode> found = sectionNode.findNodes(predicate);
+                if (!found.isEmpty()) {
+                    if (ret == null) {
+                        ret = new ArrayList<>();
+                    }
+                    ret.addAll(found);
+                }
+            }
+        }
+        return ret == null ? Collections.emptyList() : ret;
     }
 
     @Override

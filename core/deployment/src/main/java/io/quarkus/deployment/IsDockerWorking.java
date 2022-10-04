@@ -1,11 +1,8 @@
 
 package io.quarkus.deployment;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -15,7 +12,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -176,29 +172,6 @@ public class IsDockerWorking implements BooleanSupplier {
             }
         }
 
-        public static class OutputFilter implements Function<InputStream, Runnable> {
-            private final StringBuilder builder = new StringBuilder();
-
-            @Override
-            public Runnable apply(InputStream is) {
-                return () -> {
-
-                    try (InputStreamReader isr = new InputStreamReader(is);
-                            BufferedReader reader = new BufferedReader(isr)) {
-
-                        for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-                            builder.append(line);
-                        }
-                    } catch (IOException e) {
-                        throw new RuntimeException("Error reading stream.", e);
-                    }
-                };
-            }
-
-            public String getOutput() {
-                return builder.toString();
-            }
-        }
     }
 
     private enum Result {

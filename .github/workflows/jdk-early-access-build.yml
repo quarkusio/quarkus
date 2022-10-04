@@ -60,7 +60,7 @@ jobs:
           release: ${{ matrix.version }}
       - name: Set up JDK from other provider than jdk.java.net
         if: matrix.dist != 'jdk.java.net'
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: ${{ matrix.dist }}
           java-version: ${{ matrix.version }}
@@ -73,7 +73,7 @@ jobs:
         run: |
           ss -ln
           sudo service mysql stop || true
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.ref || 'main' }}
       - uses: n1hility/cancel-previous-runs@v2
@@ -89,7 +89,7 @@ jobs:
         shell: bash
       - name: Cache Maven Repository
         id: cache-maven
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.m2/repository
           # refresh cache every month to avoid unlimited growth
@@ -122,7 +122,7 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: test-reports-linux-jvm${{ matrix.version }}

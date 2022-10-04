@@ -249,7 +249,8 @@ public class OidcRecorder {
                 .transformToUni(new Function<OidcProviderClient, Uni<? extends OidcProvider>>() {
                     @Override
                     public Uni<OidcProvider> apply(OidcProviderClient client) {
-                        if (client.getMetadata().getJsonWebKeySetUri() != null) {
+                        if (client.getMetadata().getJsonWebKeySetUri() != null
+                                && !oidcConfig.token.requireJwtIntrospectionOnly) {
                             return getJsonWebSetUni(client, oidcConfig).onItem()
                                     .transform(new Function<JsonWebKeySet, OidcProvider>() {
 

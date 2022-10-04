@@ -25,7 +25,9 @@ class CountriesResource(private val json: Json) {
                 .build(CountriesClient::class.java)
             val result = client.country(
                 Country(
-                    "Sweden", "SE", "Stockholm",
+                    "Sweden",
+                    "SE",
+                    "Stockholm",
                     listOf(Currency("SEK", "Swedish Crowns", "kr"))
                 )
             )
@@ -71,7 +73,9 @@ class CountriesResource(private val json: Json) {
         router.route("/countries").blockingHandler { rc: RoutingContext ->
             val body = listOf(
                 Country(
-                    "Sweden", "SE", "Stockholm",
+                    "Sweden",
+                    "SE",
+                    "Stockholm",
                     listOf(Currency("SEK", "Swedish Crowns", "kr"))
                 )
             )

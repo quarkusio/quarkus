@@ -25,7 +25,6 @@
                 <plugin>
                     <groupId>de.thetaphi</groupId>
                     <artifactId>forbiddenapis</artifactId>
-                    <version>${forbiddenapis-maven-plugin.version}</version>
                     <executions>
                         <execution>
                             <id>verify-forbidden-apis</id>

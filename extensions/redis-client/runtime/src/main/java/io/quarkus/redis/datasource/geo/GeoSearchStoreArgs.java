@@ -174,12 +174,12 @@ public class GeoSearchStoreArgs<V> implements RedisCommandExtraArguments {
         if (radius > 0) {
             list.add("BYRADIUS");
             list.add(Double.toString(radius));
-            list.add(unit.name());
+            list.add(unit.toString());
         } else {
             list.add("BYBOX");
             list.add(Double.toString(width));
             list.add(Double.toString(height));
-            list.add(unit.name());
+            list.add(unit.toString());
         }
 
         if (direction != null) {

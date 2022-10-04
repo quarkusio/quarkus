@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.interfaces.ECPrivateKey;
+import java.time.Instant;
 
 import org.junit.jupiter.api.Test;
 
@@ -96,7 +97,8 @@ public class KubernetesClientTest {
                 .times(2);
 
         mockServer.expect().delete().withPath("/api/v1/namespaces/test/pods/pod1")
-                .andReturn(200, "{}")
+                .andReturn(200, new PodBuilder(pod1)
+                        .editMetadata().withDeletionTimestamp(Instant.now().toString()).endMetadata().build())
                 .once();
 
         // PUT on /pod/test will createOrReplace, which attempts a POST first, then a PUT if receiving a 409

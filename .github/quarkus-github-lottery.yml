@@ -1,0 +1,20 @@
+notifications:
+  createIssues:
+    repository: "quarkusio/quarkus-github-lottery-reports"
+buckets:
+  triage:
+    needsTriageLabel: "triage/needs-triage"
+    notificationExpiration: P3D
+labels:
+  needsTriage: "triage/needs-triage"
+participants:
+  - username: "yrodiere"
+    timezone: "Europe/Paris"
+    days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+    triage:
+      maxIssues: 3
+  - username: "gsmet"
+    timezone: "Europe/Paris"
+    days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+    triage:
+      maxIssues: 3

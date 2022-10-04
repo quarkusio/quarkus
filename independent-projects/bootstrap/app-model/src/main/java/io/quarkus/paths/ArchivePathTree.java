@@ -1,6 +1,5 @@
 package io.quarkus.paths;
 
-import io.quarkus.fs.util.ZipUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
@@ -14,6 +13,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.jar.Manifest;
+
+import io.quarkus.fs.util.ZipUtils;
 
 public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 

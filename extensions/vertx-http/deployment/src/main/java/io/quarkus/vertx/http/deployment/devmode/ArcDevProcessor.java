@@ -95,8 +95,6 @@ public class ArcDevProcessor {
         props.put("quarkus.arc.auto-producer-methods", "" + arcConfig.autoProducerMethods);
         props.put("quarkus.arc.selected-alternatives", "" + arcConfig.selectedAlternatives.map(Object::toString).orElse(""));
         props.put("quarkus.arc.exclude-types", "" + arcConfig.excludeTypes.map(Object::toString).orElse(""));
-        props.put("quarkus.arc.config-properties-default-naming-strategy",
-                "" + arcConfig.configPropertiesDefaultNamingStrategy.toString());
         return props;
     }
 

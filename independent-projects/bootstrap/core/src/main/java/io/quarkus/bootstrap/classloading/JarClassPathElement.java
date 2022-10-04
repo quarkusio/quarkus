@@ -1,9 +1,5 @@
 package io.quarkus.bootstrap.classloading;
 
-import io.quarkus.paths.OpenPathTree;
-import io.quarkus.paths.PathTree;
-import io.smallrye.common.io.jar.JarEntries;
-import io.smallrye.common.io.jar.JarFiles;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -29,7 +25,13 @@ import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.paths.OpenPathTree;
+import io.quarkus.paths.PathTree;
+import io.smallrye.common.io.jar.JarEntries;
+import io.smallrye.common.io.jar.JarFiles;
 
 /**
  * A class path element that represents a file on the file system

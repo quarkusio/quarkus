@@ -3,16 +3,18 @@ package io.quarkus.arc.test.observers.inheritance.typevariable;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.Unremovable;
-import io.quarkus.arc.test.ArcTestContainer;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.Unremovable;
+import io.quarkus.arc.test.ArcTestContainer;
 
 /**
  * https://github.com/quarkusio/quarkus/issues/25364

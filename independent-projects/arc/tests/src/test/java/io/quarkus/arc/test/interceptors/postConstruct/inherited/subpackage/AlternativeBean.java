@@ -1,9 +1,10 @@
 package io.quarkus.arc.test.interceptors.postConstruct.inherited.subpackage;
 
-import io.quarkus.arc.test.interceptors.postConstruct.inherited.OriginalBean;
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Alternative;
+
+import io.quarkus.arc.test.interceptors.postConstruct.inherited.OriginalBean;
 
 @Alternative
 @ApplicationScoped

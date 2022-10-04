@@ -121,7 +121,6 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     }
 
     protected void populate(String persistenceUnitName, SessionFactoryOptionsBuilder options, StandardServiceRegistry ssr) {
-
         // will use user override value or default to false if not supplied to follow
         // JPA spec.
         final boolean jtaTransactionAccessEnabled = runtimeSettings.getBoolean(
@@ -157,6 +156,11 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         options.addSessionFactoryObservers(new ServiceRegistryCloser());
 
         options.applyEntityNotFoundDelegate(new JpaEntityNotFoundDelegate());
+
+        // This is necessary for Hibernate Reactive, see https://github.com/quarkusio/quarkus/issues/15814
+        // This is also necessary for Hibernate ORM if we want to prevent calls to getters on initialized entities
+        // outside of sessions from throwing exceptions, see https://github.com/quarkusio/quarkus/discussions/27657
+        options.enableCollectionInDefaultFetchGroup(true);
 
         if (this.validatorFactory != null) {
             options.applyValidatorFactory(validatorFactory);

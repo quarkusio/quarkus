@@ -173,7 +173,8 @@ public class DevServicesApicurioRegistryProcessor {
                         getRegistryUrlConfigs("http://" + address.getUrl())))
                 .orElseGet(() -> {
                     ApicurioRegistryContainer container = new ApicurioRegistryContainer(
-                            DockerImageName.parse(config.imageName), config.fixedExposedPort,
+                            DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("apicurio/apicurio-registry-mem"),
+                            config.fixedExposedPort,
                             launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
                             useSharedNetwork);
                     timeout.ifPresent(container::withStartupTimeout);

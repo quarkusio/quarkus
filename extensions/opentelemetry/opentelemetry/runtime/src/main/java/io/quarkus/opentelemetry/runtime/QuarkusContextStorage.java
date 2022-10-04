@@ -1,7 +1,6 @@
 package io.quarkus.opentelemetry.runtime;
 
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
-import static io.smallrye.common.vertx.VertxContext.getOrCreateDuplicatedContext;
 import static io.smallrye.common.vertx.VertxContext.isDuplicatedContext;
 
 import org.jboss.logging.Logger;
@@ -9,6 +8,7 @@ import org.jboss.logging.Logger;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.context.Scope;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Vertx;
 
 /**
@@ -118,8 +118,10 @@ public enum QuarkusContextStorage implements ContextStorage {
      */
     public static io.vertx.core.Context getVertxContext() {
         io.vertx.core.Context context = Vertx.currentContext();
-        if (context != null) {
-            io.vertx.core.Context dc = getOrCreateDuplicatedContext(context);
+        if (context != null && VertxContext.isOnDuplicatedContext()) {
+            return context;
+        } else if (context != null) {
+            io.vertx.core.Context dc = VertxContext.createNewDuplicatedContext(context);
             setContextSafe(dc, true);
             return dc;
         }

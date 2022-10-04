@@ -3,17 +3,12 @@ package org.jboss.resteasy.reactive.server.processor.generation.multipart;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
 
-import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.ws.rs.core.MediaType;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -28,6 +23,14 @@ import org.jboss.resteasy.reactive.server.core.multipart.MultipartMessageBodyWri
 import org.jboss.resteasy.reactive.server.core.multipart.MultipartOutputInjectionTarget;
 import org.jboss.resteasy.reactive.server.core.multipart.PartItem;
 import org.jboss.resteasy.reactive.server.processor.util.JavaBeanUtil;
+
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 
 final class FormDataOutputMapperGenerator {
 

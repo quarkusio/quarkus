@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.net.URI;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -106,6 +107,12 @@ public class SubResourceTest {
         @ClientHeaderParam(name = "fromRootMethod", value = "{fillingMethod}")
         @ClientHeaderParam(name = "overridable", value = "RootClient#sub")
         SubClient sub(@PathParam("rootParam") String rootParam, @PathParam("methodParam") String methodParam);
+
+        // we only add this to make sure that the inclusion of @ClientHeaderParam does not break
+        // when the rest client interface contains a method returning a primitive type
+        @Path("/dummy")
+        @DELETE
+        boolean dummy();
 
         default String fillingMethod() {
             return "RootClientComputed";

@@ -1,10 +1,11 @@
 package io.quarkus.registry.catalog.selection;
 
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public class ExtensionOrigins {
 

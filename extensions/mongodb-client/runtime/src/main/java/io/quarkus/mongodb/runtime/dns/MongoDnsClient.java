@@ -9,6 +9,9 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -20,7 +23,6 @@ import com.mongodb.MongoConfigurationException;
 import com.mongodb.spi.dns.DnsClient;
 import com.mongodb.spi.dns.DnsException;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.vertx.core.dns.DnsClientOptions;
@@ -46,8 +48,14 @@ public class MongoDnsClient implements DnsClient {
 
     private final io.vertx.mutiny.core.dns.DnsClient dnsClient;
 
-    MongoDnsClient() {
-        Vertx vertx = Arc.container().instance(Vertx.class).get();
+    // the static fields are used in order to hold DNS resolution result that has been performed on the main thread
+    // at application startup
+    // the reason we need this is to ensure that no blocking of event loop threads will occur due to DNS resolution
+    private static final Map<String, List<SrvRecord>> SRV_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, List<String>> TXT_CACHE = new ConcurrentHashMap<>();
+
+    MongoDnsClient(io.vertx.core.Vertx vertx) {
+        Vertx mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
 
         boolean activity = config.getOptionalValue(DNS_LOG_ACTIVITY, Boolean.class).orElse(false);
 
@@ -69,7 +77,7 @@ public class MongoDnsClient implements DnsClient {
                     .setHost(server)
                     .setPort(port);
         }
-        dnsClient = vertx.createDnsClient(dnsClientOptions);
+        dnsClient = mutinyVertx.createDnsClient(dnsClientOptions);
     }
 
     private static List<String> nameServers() {
@@ -118,7 +126,17 @@ public class MongoDnsClient implements DnsClient {
                 .orElse(Duration.ofSeconds(5));
 
         try {
-            List<SrvRecord> srvRecords = dnsClient.resolveSRV(srvHost).await().atMost(timeout);
+            List<SrvRecord> srvRecords;
+            if (SRV_CACHE.containsKey(srvHost)) {
+                srvRecords = SRV_CACHE.get(srvHost);
+            } else {
+                srvRecords = dnsClient.resolveSRV(srvHost).invoke(new Consumer<>() {
+                    @Override
+                    public void accept(List<SrvRecord> srvRecords) {
+                        SRV_CACHE.put(srvHost, srvRecords);
+                    }
+                }).await().atMost(timeout);
+            }
 
             if (srvRecords.isEmpty()) {
                 throw new MongoConfigurationException("No SRV records available for host " + srvHost);
@@ -143,11 +161,18 @@ public class MongoDnsClient implements DnsClient {
      * Here we concatenate TXT records together with a '&' separator as required by connection strings
      */
     public List<String> resolveTxtRequest(final String host) {
+        if (TXT_CACHE.containsKey(host)) {
+            return TXT_CACHE.get(host);
+        }
         try {
             Duration timeout = config.getOptionalValue(DNS_LOOKUP_TIMEOUT, Duration.class)
                     .orElse(Duration.ofSeconds(5));
-
-            return dnsClient.resolveTXT(host).await().atMost(timeout);
+            return dnsClient.resolveTXT(host).invoke(new Consumer<>() {
+                @Override
+                public void accept(List<String> strings) {
+                    TXT_CACHE.put(host, strings);
+                }
+            }).await().atMost(timeout);
         } catch (Throwable e) {
             throw new MongoConfigurationException("Unable to look up TXT record for host " + host, e);
         }

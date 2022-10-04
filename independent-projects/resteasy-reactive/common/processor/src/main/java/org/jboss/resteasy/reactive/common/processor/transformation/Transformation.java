@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.common.processor.transformation;
 
 import java.util.Collection;
 import java.util.function.Consumer;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 

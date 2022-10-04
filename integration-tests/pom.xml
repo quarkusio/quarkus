@@ -228,6 +228,7 @@
                 <module>oidc-tenancy</module>
                 <module>oidc-wiremock</module>
                 <module>keycloak-authorization</module>
+                <module>csrf-reactive</module>
                 <module>reactive-db2-client</module>
                 <module>reactive-pg-client</module>
                 <module>reactive-mysql-client</module>
@@ -287,6 +288,7 @@
                 <module>reactive-messaging-rabbitmq</module>
                 <module>reactive-messaging-rabbitmq-dyn</module>
                 <module>reactive-messaging-hibernate-reactive</module>
+                <module>reactive-messaging-hibernate-orm</module>
                 <module>rest-client</module>
                 <module>resteasy-reactive-kotlin</module>
                 <module>rest-client-reactive</module>
@@ -308,6 +310,7 @@
                 <module>opentelemetry-vertx</module>
                 <module>opentelemetry-reactive</module>
                 <module>opentelemetry-grpc</module>
+                <module>opentelemetry-reactive-messaging</module>
                 <module>logging-json</module>
                 <module>jaxb</module>
                 <module>jaxp</module>

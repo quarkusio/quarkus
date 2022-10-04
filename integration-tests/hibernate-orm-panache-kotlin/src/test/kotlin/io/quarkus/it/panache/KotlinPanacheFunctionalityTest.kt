@@ -32,9 +32,12 @@ open class KotlinPanacheFunctionalityTest {
     @Test
     fun testPanacheSerialisation() {
         RestAssured.given().accept(ContentType.XML)
-                .`when`()["/test/ignored-properties"]
-                .then().body(Matchers.`is`(
-                        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><person><id>666</id><name>Eddie</name><serialisationTrick>1</serialisationTrick><status>DECEASED</status></person>"))
+            .`when`()["/test/ignored-properties"]
+            .then().body(
+                Matchers.`is`(
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><person><id>666</id><name>Eddie</name><serialisationTrick>1</serialisationTrick><status>DECEASED</status></person>"
+                )
+            )
     }
 
     /**
@@ -52,8 +55,9 @@ open class KotlinPanacheFunctionalityTest {
         // check
 // hence no 'persistence'-attribute
         Assertions.assertEquals(
-                "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
-                personAsString)
+            "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
+            personAsString
+        )
     }
 
     @Test

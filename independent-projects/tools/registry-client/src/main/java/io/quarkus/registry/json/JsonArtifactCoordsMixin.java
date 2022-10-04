@@ -3,6 +3,7 @@ package io.quarkus.registry.json;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import io.quarkus.maven.dependency.ArtifactKey;
 
 /**

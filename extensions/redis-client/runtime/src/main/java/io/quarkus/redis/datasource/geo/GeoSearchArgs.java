@@ -56,7 +56,7 @@ public class GeoSearchArgs<V> implements RedisCommandExtraArguments {
      * @param latitude the latitude
      * @return the current {@code GeoSearchArgs}
      */
-    private GeoSearchArgs<V> fromCoordinate(double longitude, double latitude) {
+    public GeoSearchArgs<V> fromCoordinate(double longitude, double latitude) {
         this.longitude = longitude;
         this.latitude = latitude;
         return this;
@@ -212,12 +212,12 @@ public class GeoSearchArgs<V> implements RedisCommandExtraArguments {
         if (radius > 0) {
             list.add("BYRADIUS");
             list.add(Double.toString(radius));
-            list.add(unit.name());
+            list.add(unit.toString());
         } else {
             list.add("BYBOX");
             list.add(Double.toString(width));
             list.add(Double.toString(height));
-            list.add(unit.name());
+            list.add(unit.toString());
         }
 
         if (direction != null) {

@@ -6,19 +6,22 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.quarkus.arc.AlternativePriority;
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.Priority;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Alternative;
 import javax.enterprise.inject.Stereotype;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.AlternativePriority;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.Priority;
+import io.quarkus.arc.test.ArcTestContainer;
 
 // copy of `StereotypeAlternativeTest` that uses ArC `@Priority` and `@AlternativePriority`
 // instead of Jakarta Common Annotations `@Priority`

@@ -1,21 +1,25 @@
 package org.jboss.resteasy.reactive.server.vertx;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.vertx.core.Context;
-import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerRequest;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.core.LazyResponse;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpServerRequest;
 
 public class ResteasyReactiveOutputStream extends OutputStream {
 
@@ -53,9 +57,9 @@ public class ResteasyReactiveOutputStream extends OutputStream {
             }
         });
 
-        request.response().endHandler(new Handler<Void>() {
+        context.getContext().addEndHandler(new Handler<AsyncResult<Void>>() {
             @Override
-            public void handle(Void event) {
+            public void handle(AsyncResult<Void> event) {
                 synchronized (request.connection()) {
                     if (waitingForDrain) {
                         request.connection().notifyAll();

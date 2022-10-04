@@ -4,12 +4,13 @@ import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.CoreMatchers.is;
 
-import io.smallrye.mutiny.Uni;
 import java.util.function.Supplier;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
@@ -18,6 +19,8 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.smallrye.mutiny.Uni;
 
 public class FilterWithPathParamsTest {
 

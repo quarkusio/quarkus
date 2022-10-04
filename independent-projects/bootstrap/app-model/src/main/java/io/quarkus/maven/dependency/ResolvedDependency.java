@@ -1,12 +1,13 @@
 package io.quarkus.maven.dependency;
 
+import java.nio.file.Path;
+
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.paths.EmptyPathTree;
 import io.quarkus.paths.MultiRootPathTree;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathTree;
-import java.nio.file.Path;
 
 public interface ResolvedDependency extends Dependency {
 

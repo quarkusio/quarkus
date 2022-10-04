@@ -1,13 +1,14 @@
 package io.quarkus.bootstrap.workspace;
 
-import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.paths.EmptyPathTree;
-import io.quarkus.paths.PathCollection;
-import io.quarkus.paths.PathTree;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.paths.EmptyPathTree;
+import io.quarkus.paths.PathCollection;
+import io.quarkus.paths.PathTree;
 
 public interface WorkspaceModule {
 

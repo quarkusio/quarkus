@@ -2,13 +2,14 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Futures.evaluateParams;
 
-import io.quarkus.qute.TemplateNode.Origin;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+
+import io.quarkus.qute.TemplateNode.Origin;
 
 public class EvalSectionHelper implements SectionHelper {
 

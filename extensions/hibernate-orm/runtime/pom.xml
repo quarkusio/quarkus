@@ -91,7 +91,7 @@
 
                 <!-- Not necessary at runtime -->
                 <exclusion>
-                    <groupId>org.jboss</groupId>
+                    <groupId>io.smallrye</groupId>
                     <artifactId>jandex</artifactId>
                 </exclusion>
             </exclusions>

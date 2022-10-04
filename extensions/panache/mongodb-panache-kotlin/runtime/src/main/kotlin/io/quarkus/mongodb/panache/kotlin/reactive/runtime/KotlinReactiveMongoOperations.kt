@@ -1,9 +1,9 @@
 package io.quarkus.mongodb.panache.kotlin.reactive.runtime
 
 import io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate
-import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheQuery
 import io.quarkus.mongodb.panache.common.reactive.runtime.ReactiveMongoOperations
 import io.quarkus.mongodb.panache.common.reactive.runtime.ReactivePanacheUpdateImpl
+import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheQuery
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.Uni
@@ -32,7 +32,7 @@ class KotlinReactiveMongoOperations : ReactiveMongoOperations<ReactivePanacheQue
      * @return the new query implementation
      */
     override fun createQuery(collection: ReactiveMongoCollection<*>, query: Document?, sortDoc: Document?) =
-            ReactivePanacheQueryImpl(collection, query, sortDoc)
+        ReactivePanacheQueryImpl(collection, query, sortDoc)
 
     /**
      * Creates the update implementation
@@ -44,7 +44,7 @@ class KotlinReactiveMongoOperations : ReactiveMongoOperations<ReactivePanacheQue
      * @return the new query implementation
      */
     override fun createUpdate(collection: ReactiveMongoCollection<*>, entityClass: Class<*>, docUpdate: Document) =
-            ReactivePanacheUpdateImpl(this, entityClass, docUpdate, collection)
+        ReactivePanacheUpdateImpl(this, entityClass, docUpdate, collection)
 
     /**
      * Extracts the query results in to a List.

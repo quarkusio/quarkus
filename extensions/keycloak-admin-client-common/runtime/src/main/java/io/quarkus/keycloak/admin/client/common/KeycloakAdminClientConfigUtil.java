@@ -2,7 +2,10 @@ package io.quarkus.keycloak.admin.client.common;
 
 import static io.quarkus.keycloak.admin.client.common.KeycloakAdminClientConfig.GrantType.PASSWORD;
 
+import org.jboss.logging.Logger;
+
 public class KeycloakAdminClientConfigUtil {
+    private static final Logger LOG = Logger.getLogger(KeycloakAdminClientConfigUtil.class);
 
     /**
      * Validates configuration properties. KeycloakBuilder also validates inputs (our config properties) when build()
@@ -11,7 +14,10 @@ public class KeycloakAdminClientConfigUtil {
     public static void validate(KeycloakAdminClientConfig config) {
 
         if (config.serverUrl.isEmpty()) {
-            throw new KeycloakAdminClientException("configuration property 'server-url' is required");
+            LOG.debug(
+                    "Configuration property 'server-url' is not set, 'Keycloak' admin client injection will fail, "
+                            + "use org.keycloak.admin.client.KeycloakBuilder to create it instead");
+            return;
         }
 
         // client id is also required in both cases, but since it's not nullable, we can skip its validation

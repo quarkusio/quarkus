@@ -1,8 +1,9 @@
 package io.quarkus.arc;
 
-import io.quarkus.arc.impl.ArcContainerImpl;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
+
+import io.quarkus.arc.impl.ArcContainerImpl;
 
 /**
  * Provides access to the ArC container.

@@ -3,8 +3,15 @@ package io.quarkus.panache.common.deployment.visitors;
 import static io.quarkus.panache.common.deployment.PanacheConstants.JAXB_ANNOTATION_PREFIX;
 import static io.quarkus.panache.common.deployment.PanacheConstants.JAXB_TRANSIENT_SIGNATURE;
 import static io.quarkus.panache.common.deployment.PanacheConstants.JSON_IGNORE_DOT_NAME;
+import static io.quarkus.panache.common.deployment.PanacheConstants.JSON_PROPERTY_ACCESS;
+import static io.quarkus.panache.common.deployment.PanacheConstants.JSON_PROPERTY_ACCESS_SIGNATURE;
+import static io.quarkus.panache.common.deployment.PanacheConstants.JSON_PROPERTY_DEFAULT_VALUE;
 import static io.quarkus.panache.common.deployment.PanacheConstants.JSON_PROPERTY_DOT_NAME;
+import static io.quarkus.panache.common.deployment.PanacheConstants.JSON_PROPERTY_INDEX;
+import static io.quarkus.panache.common.deployment.PanacheConstants.JSON_PROPERTY_NAMESPACE;
+import static io.quarkus.panache.common.deployment.PanacheConstants.JSON_PROPERTY_REQUIRED;
 import static io.quarkus.panache.common.deployment.PanacheConstants.JSON_PROPERTY_SIGNATURE;
+import static io.quarkus.panache.common.deployment.PanacheConstants.JSON_PROPERTY_VALUE;
 
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
@@ -140,10 +147,7 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
                         AnnotationInstance jsonPropertyInstance = fieldInfo.annotation(JSON_PROPERTY_DOT_NAME);
                         // propagate the value of @JsonProperty field annotation to the newly added method annotation
                         if (jsonPropertyInstance != null) {
-                            AnnotationValue jsonPropertyValue = jsonPropertyInstance.value();
-                            if ((jsonPropertyValue != null) && !jsonPropertyValue.asString().isEmpty()) {
-                                visitor.visit("value", jsonPropertyValue.asString());
-                            }
+                            propagateJsonPropertyValues(jsonPropertyInstance, visitor);
                         }
                     }
                     visitor.visitEnd();
@@ -187,6 +191,35 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
                 mv.visitMaxs(0, 0);
                 mv.visitEnd();
             }
+        }
+    }
+
+    private void propagateJsonPropertyValues(AnnotationInstance from, AnnotationVisitor to) {
+        copyAnnotationStringValue(from, to, JSON_PROPERTY_VALUE);
+        copyAnnotationStringValue(from, to, JSON_PROPERTY_NAMESPACE);
+        copyAnnotationStringValue(from, to, JSON_PROPERTY_DEFAULT_VALUE);
+
+        AnnotationValue jsonPropertyRequired = from.value(JSON_PROPERTY_REQUIRED);
+        if (jsonPropertyRequired != null) {
+            to.visit(JSON_PROPERTY_REQUIRED, jsonPropertyRequired.asBoolean());
+        }
+
+        AnnotationValue jsonPropertyIndex = from.value(JSON_PROPERTY_INDEX);
+        if (jsonPropertyIndex != null) {
+            to.visit(JSON_PROPERTY_INDEX, jsonPropertyIndex.asInt());
+        }
+
+        AnnotationValue jsonPropertyAccess = from.value(JSON_PROPERTY_ACCESS);
+        if (jsonPropertyAccess != null) {
+            to.visitEnum(JSON_PROPERTY_ACCESS, JSON_PROPERTY_ACCESS_SIGNATURE, jsonPropertyAccess.asString());
+        }
+
+    }
+
+    private void copyAnnotationStringValue(AnnotationInstance from, AnnotationVisitor to, String property) {
+        AnnotationValue value = from.value(property);
+        if ((value != null) && !value.asString().isEmpty()) {
+            to.visit(property, value.asString());
         }
     }
 

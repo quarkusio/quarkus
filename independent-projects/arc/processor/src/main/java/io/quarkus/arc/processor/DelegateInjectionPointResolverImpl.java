@@ -5,6 +5,7 @@ import static org.jboss.jandex.Type.Kind.WILDCARD_TYPE;
 
 import java.util.Collections;
 import java.util.List;
+
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.jandex.WildcardType;

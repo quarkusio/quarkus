@@ -43,9 +43,7 @@ public class DeploymentClasspathBuilder {
                             dependencies);
                 } else {
                     DependencyUtils.requireDeploymentDependency(deploymentConfigurationName, extension, dependencies);
-                    if (!alreadyProcessed.add(extension.getExtensionId())) {
-                        continue;
-                    }
+                    alreadyProcessed.add(extension.getExtensionId());
                 }
             }
         });
@@ -73,9 +71,9 @@ public class DeploymentClasspathBuilder {
         }
         Set<ExtensionDependency> extensions = new LinkedHashSet<>();
         for (ResolvedArtifact moduleArtifact : dependency.getModuleArtifacts()) {
-            ExtensionDependency extension = DependencyUtils.getExtensionInfoOrNull(project, moduleArtifact);
-            if (extension != null) {
-                extensions.add(extension);
+            var optionalExtension = DependencyUtils.getOptionalExtensionInfo(project, moduleArtifact);
+            if (optionalExtension.isPresent()) {
+                extensions.add(optionalExtension.get());
                 return extensions;
             }
         }

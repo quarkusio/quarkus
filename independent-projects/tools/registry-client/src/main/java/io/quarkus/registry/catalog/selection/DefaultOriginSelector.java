@@ -1,6 +1,5 @@
 package io.quarkus.registry.catalog.selection;
 
-import io.quarkus.maven.dependency.ArtifactKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -10,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+
+import io.quarkus.maven.dependency.ArtifactKey;
 
 public class DefaultOriginSelector implements OriginSelector {
 

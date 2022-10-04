@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.AnnotatedParameter;
@@ -20,6 +21,7 @@ import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Location;
@@ -102,11 +104,23 @@ public class TemplateProducer {
         private final String path;
         private final TemplateVariants variants;
         private final Engine engine;
+        private final LazyValue<Template> unambiguousTemplate;
 
         public InjectableTemplate(String path, Map<String, TemplateVariants> templateVariants, Engine engine) {
             this.path = path;
             this.variants = templateVariants.get(path);
             this.engine = engine;
+            if (variants == null || variants.variantToTemplate.size() == 1) {
+                unambiguousTemplate = new LazyValue<>(new Supplier<Template>() {
+                    @Override
+                    public Template get() {
+                        String id = variants != null ? variants.defaultTemplate : path;
+                        return engine.getTemplate(id);
+                    }
+                });
+            } else {
+                unambiguousTemplate = null;
+            }
         }
 
         @Override
@@ -116,32 +130,62 @@ public class TemplateProducer {
 
         @Override
         public List<Expression> getExpressions() {
-            throw new UnsupportedOperationException("Injected templates do not support getExpressions()");
+            if (unambiguousTemplate != null) {
+                return unambiguousTemplate.get().getExpressions();
+            }
+            throw ambiguousTemplates("getExpressions()");
         }
 
         @Override
         public Expression findExpression(Predicate<Expression> predicate) {
-            throw new UnsupportedOperationException("Injected templates do not support findExpression()");
+            if (unambiguousTemplate != null) {
+                return unambiguousTemplate.get().findExpression(predicate);
+            }
+            throw ambiguousTemplates("findExpression()");
         }
 
         @Override
         public List<ParameterDeclaration> getParameterDeclarations() {
-            throw new UnsupportedOperationException("Injected templates do not support getParameterDeclarations()");
+            if (unambiguousTemplate != null) {
+                return unambiguousTemplate.get().getParameterDeclarations();
+            }
+            throw ambiguousTemplates("getParameterDeclarations()");
         }
 
         @Override
         public String getGeneratedId() {
-            throw new UnsupportedOperationException("Injected templates do not support getGeneratedId()");
+            if (unambiguousTemplate != null) {
+                return unambiguousTemplate.get().getGeneratedId();
+            }
+            throw ambiguousTemplates("getGeneratedId()");
         }
 
         @Override
         public Optional<Variant> getVariant() {
-            throw new UnsupportedOperationException("Injected templates do not support getVariant()");
+            if (unambiguousTemplate != null) {
+                return unambiguousTemplate.get().getVariant();
+            }
+            throw ambiguousTemplates("getVariant()");
         }
 
         @Override
         public String getId() {
-            throw new UnsupportedOperationException("Injected templates do not support getId()");
+            if (unambiguousTemplate != null) {
+                return unambiguousTemplate.get().getId();
+            }
+            throw ambiguousTemplates("getId()");
+        }
+
+        @Override
+        public Fragment getFragment(String identifier) {
+            if (unambiguousTemplate != null) {
+                return unambiguousTemplate.get().getFragment(identifier);
+            }
+            throw ambiguousTemplates("getFragment()");
+        }
+
+        private UnsupportedOperationException ambiguousTemplates(String method) {
+            return new UnsupportedOperationException("Ambiguous injected templates do not support " + method);
         }
 
         @Override
@@ -209,6 +253,9 @@ public class TemplateProducer {
             }
 
             private Template template() {
+                if (unambiguousTemplate != null) {
+                    return unambiguousTemplate.get();
+                }
                 Variant selected = (Variant) getAttribute(TemplateInstance.SELECTED_VARIANT);
                 String id;
                 if (selected != null) {

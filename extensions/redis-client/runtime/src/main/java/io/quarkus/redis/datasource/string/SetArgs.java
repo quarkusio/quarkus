@@ -9,8 +9,11 @@ import io.quarkus.redis.datasource.RedisCommandExtraArguments;
 
 /**
  * Argument list for the Redis <a href="https://redis.io/commands/SET">SET</a> command.
+ *
+ * @deprecated Use {@link io.quarkus.redis.datasource.value.SetArgs} instead.
  */
-public class SetArgs implements RedisCommandExtraArguments {
+@Deprecated
+public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implements RedisCommandExtraArguments {
 
     private long ex = -1;
     private long exAt = -1;

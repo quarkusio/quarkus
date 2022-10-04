@@ -1,13 +1,16 @@
 package io.quarkus.arc.test.observers.duplicate.bindings;
 
-import io.quarkus.arc.test.ArcTestContainer;
 import java.lang.annotation.Annotation;
+
 import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.spi.CDI;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.test.ArcTestContainer;
 
 /**
  * Tests that when you try to resolve observer methods via

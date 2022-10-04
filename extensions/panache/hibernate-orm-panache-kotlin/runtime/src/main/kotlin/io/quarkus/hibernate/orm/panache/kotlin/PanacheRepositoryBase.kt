@@ -17,7 +17,7 @@ import kotlin.reflect.KClass
  * @param Entity The type of entity to operate on
  * @param Id The ID type of the entity
  */
-interface PanacheRepositoryBase<Entity : Any, Id: Any> {
+interface PanacheRepositoryBase<Entity : Any, Id : Any> {
 
     /**
      * Returns the [EntityManager] for the [Entity] for extra operations (eg. CriteriaQueries)
@@ -33,8 +33,10 @@ interface PanacheRepositoryBase<Entity : Any, Id: Any> {
      * @return the [EntityManager] tied to the given class
      */
     @GenerateBridge
-    @Deprecated(message="use Panache.getEntityManager() instead to access an entity manager for any entity class",
-        replaceWith = ReplaceWith("Panache.getEntityManager()"))
+    @Deprecated(
+        message = "use Panache.getEntityManager() instead to access an entity manager for any entity class",
+        replaceWith = ReplaceWith("Panache.getEntityManager()")
+    )
     fun getEntityManager(clazz: KClass<Any>): EntityManager = throw implementationInjectionMissing()
 
     /**

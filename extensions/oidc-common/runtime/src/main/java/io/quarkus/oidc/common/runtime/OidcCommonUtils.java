@@ -409,7 +409,11 @@ public class OidcCommonUtils {
                 .retry()
                 .withBackOff(CONNECTION_BACKOFF_DURATION, CONNECTION_BACKOFF_DURATION)
                 .expireIn(connectionDelayInMillisecs)
-                .onFailure().transform(t -> t.getCause());
+                .onFailure().transform(t -> {
+                    LOG.warn("OIDC Server is not available:", t.getCause() != null ? t.getCause() : t);
+                    // don't wrap it to avoid information leak
+                    return new RuntimeException("OIDC Server is not available");
+                });
     }
 
     private static byte[] getFileContent(Path path) throws IOException {

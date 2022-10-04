@@ -1,11 +1,12 @@
 package io.quarkus.bootstrap.model;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 public class PlatformInfo implements Serializable {
 

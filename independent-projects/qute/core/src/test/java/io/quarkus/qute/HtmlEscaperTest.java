@@ -4,11 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.qute.TemplateNode.Origin;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.TemplateNode.Origin;
 
 public class HtmlEscaperTest {
 

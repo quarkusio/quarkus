@@ -3,10 +3,6 @@
  */
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.resolver.maven.workspace.ProjectModuleResolver;
-import io.quarkus.bootstrap.util.DependencyUtils;
-import io.quarkus.bootstrap.util.PropertyUtils;
-import io.quarkus.maven.dependency.ArtifactKey;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -16,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -47,6 +44,11 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.version.GenericVersionScheme;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
+
+import io.quarkus.bootstrap.resolver.maven.workspace.ProjectModuleResolver;
+import io.quarkus.bootstrap.util.DependencyUtils;
+import io.quarkus.bootstrap.util.PropertyUtils;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
  *

@@ -1,10 +1,11 @@
 package io.quarkus.bootstrap.model;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.GACTV;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.GACTV;
 
 /**
  * Platform release info that is encoded into a property in a platform properties artifact

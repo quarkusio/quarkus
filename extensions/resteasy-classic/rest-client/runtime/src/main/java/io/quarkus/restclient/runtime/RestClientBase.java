@@ -66,7 +66,7 @@ public class RestClientBase {
         return builder.build(proxyType);
     }
 
-    void configureBuilder(RestClientBuilder builder) {
+    protected void configureBuilder(RestClientBuilder builder) {
         configureBaseUrl(builder);
         configureTimeouts(builder);
         configureProviders(builder);
@@ -77,7 +77,7 @@ public class RestClientBase {
         configureCustomProperties(builder);
     }
 
-    private void configureCustomProperties(RestClientBuilder builder) {
+    protected void configureCustomProperties(RestClientBuilder builder) {
         Optional<Integer> connectionPoolSize = oneOf(clientConfigByClassName().connectionPoolSize,
                 clientConfigByConfigKey().connectionPoolSize, configRoot.connectionPoolSize);
         if (connectionPoolSize.isPresent()) {
@@ -92,7 +92,7 @@ public class RestClientBase {
         }
     }
 
-    private void configureProxy(RestClientBuilder builder) {
+    protected void configureProxy(RestClientBuilder builder) {
         Optional<String> proxyAddress = oneOf(clientConfigByClassName().proxyAddress, clientConfigByConfigKey().proxyAddress,
                 configRoot.proxyAddress);
         if (proxyAddress.isPresent() && !NONE.equals(proxyAddress.get())) {
@@ -116,7 +116,7 @@ public class RestClientBase {
         }
     }
 
-    private void configureRedirects(RestClientBuilder builder) {
+    protected void configureRedirects(RestClientBuilder builder) {
         Optional<Boolean> followRedirects = oneOf(clientConfigByClassName().followRedirects,
                 clientConfigByConfigKey().followRedirects, configRoot.followRedirects);
         if (followRedirects.isPresent()) {
@@ -124,7 +124,7 @@ public class RestClientBase {
         }
     }
 
-    private void configureQueryParamStyle(RestClientBuilder builder) {
+    protected void configureQueryParamStyle(RestClientBuilder builder) {
         Optional<QueryParamStyle> queryParamStyle = oneOf(clientConfigByClassName().queryParamStyle,
                 clientConfigByConfigKey().queryParamStyle, configRoot.queryParamStyle);
         if (queryParamStyle.isPresent()) {
@@ -132,7 +132,7 @@ public class RestClientBase {
         }
     }
 
-    private void configureSsl(RestClientBuilder builder) {
+    protected void configureSsl(RestClientBuilder builder) {
         Optional<String> trustStore = oneOf(clientConfigByClassName().trustStore, clientConfigByConfigKey().trustStore,
                 configRoot.trustStore);
         if (trustStore.isPresent() && !trustStore.get().isBlank() && !NONE.equals(trustStore.get())) {
@@ -249,7 +249,7 @@ public class RestClientBase {
         }
     }
 
-    private void configureProviders(RestClientBuilder builder) {
+    protected void configureProviders(RestClientBuilder builder) {
         Optional<String> providers = oneOf(clientConfigByClassName().providers, clientConfigByConfigKey().providers,
                 configRoot.providers);
 
@@ -277,7 +277,7 @@ public class RestClientBase {
         }
     }
 
-    private void configureTimeouts(RestClientBuilder builder) {
+    protected void configureTimeouts(RestClientBuilder builder) {
         Long connectTimeout = oneOf(clientConfigByClassName().connectTimeout,
                 clientConfigByConfigKey().connectTimeout).orElse(this.configRoot.connectTimeout);
         if (connectTimeout != null) {
@@ -291,7 +291,7 @@ public class RestClientBase {
         }
     }
 
-    private void configureBaseUrl(RestClientBuilder builder) {
+    protected void configureBaseUrl(RestClientBuilder builder) {
         Optional<String> baseUrlOptional = oneOf(clientConfigByClassName().uri, clientConfigByConfigKey().uri);
         if (baseUrlOptional.isEmpty()) {
             baseUrlOptional = oneOf(clientConfigByClassName().url, clientConfigByConfigKey().url);
@@ -313,13 +313,12 @@ public class RestClientBase {
         try {
             builder.baseUrl(new URL(baseUrl));
         } catch (MalformedURLException e) {
-            throw new IllegalArgumentException("The value of URL was invalid " + baseUrl, e);
-        } catch (Exception e) {
-            if ("com.oracle.svm.core.jdk.UnsupportedFeatureError".equals(e.getClass().getCanonicalName())) {
+            if (e.getMessage().contains(
+                    "It must be enabled by adding the --enable-url-protocols=https option to the native-image command")) {
                 throw new IllegalArgumentException(baseUrl
                         + " requires SSL support but it is disabled. You probably have set quarkus.ssl.native to false.");
             }
-            throw e;
+            throw new IllegalArgumentException("The value of URL was invalid " + baseUrl, e);
         }
     }
 
@@ -334,7 +333,7 @@ public class RestClientBase {
     @SafeVarargs
     private static <T> Optional<T> oneOf(Optional<T>... optionals) {
         for (Optional<T> o : optionals) {
-            if (o.isPresent()) {
+            if (o != null && o.isPresent()) {
                 return o;
             }
         }

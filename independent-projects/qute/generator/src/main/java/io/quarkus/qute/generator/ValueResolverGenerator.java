@@ -3,24 +3,6 @@ package io.quarkus.qute.generator;
 import static java.util.function.Predicate.not;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
-import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.CatchBlockCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.DescriptorUtils;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.FunctionCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.TryBlock;
-import io.quarkus.qute.EvalContext;
-import io.quarkus.qute.EvaluatedParams;
-import io.quarkus.qute.NamespaceResolver;
-import io.quarkus.qute.TemplateData;
-import io.quarkus.qute.ValueResolver;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,6 +21,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -51,6 +34,25 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.CatchBlockCreator;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.DescriptorUtils;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.FunctionCreator;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TryBlock;
+import io.quarkus.qute.EvalContext;
+import io.quarkus.qute.EvaluatedParams;
+import io.quarkus.qute.NamespaceResolver;
+import io.quarkus.qute.TemplateData;
+import io.quarkus.qute.ValueResolver;
 
 /**
  * Generates value resolvers backed by classes.
@@ -994,6 +996,7 @@ public class ValueResolverGenerator {
             case ARRAY:
             case TYPE_VARIABLE:
             case UNRESOLVED_TYPE_VARIABLE:
+            case TYPE_VARIABLE_REFERENCE:
             case WILDCARD_TYPE:
                 return true;
             default:

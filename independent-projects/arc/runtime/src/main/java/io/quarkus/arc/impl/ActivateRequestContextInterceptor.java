@@ -1,16 +1,19 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ManagedContext;
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+
 import javax.annotation.Priority;
 import javax.enterprise.context.control.ActivateRequestContext;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.ManagedContext;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 @Interceptor
 @ActivateRequestContext
@@ -38,14 +41,16 @@ public class ActivateRequestContextInterceptor {
         }
 
         return activate(requestContext)
-                .thenCompose(v -> proceedWithStage(ctx))
-                .whenComplete((r, t) -> requestContext.terminate());
+                .thenCompose(state -> proceedWithStage(ctx).whenComplete((r, t) -> {
+                    requestContext.destroy(state);
+                    requestContext.deactivate();
+                }));
     }
 
-    private static CompletionStage<ManagedContext> activate(ManagedContext requestContext) {
+    private static CompletionStage<InjectableContext.ContextState> activate(ManagedContext requestContext) {
         try {
             requestContext.activate();
-            return CompletableFuture.completedStage(requestContext);
+            return CompletableFuture.completedStage(requestContext.getState());
         } catch (Throwable t) {
             return CompletableFuture.failedStage(t);
         }
@@ -68,8 +73,13 @@ public class ActivateRequestContextInterceptor {
 
             return Multi.createFrom().deferred(() -> {
                 requestContext.activate();
-                return proceedWithMulti(ctx);
-            }).onTermination().invoke(requestContext::terminate);
+                InjectableContext.ContextState state = requestContext.getState();
+                return proceedWithMulti(ctx)
+                        .onTermination().invoke(() -> {
+                            requestContext.destroy(state);
+                            requestContext.deactivate();
+                        });
+            });
         });
     }
 
@@ -90,8 +100,13 @@ public class ActivateRequestContextInterceptor {
 
             return Uni.createFrom().deferred(() -> {
                 requestContext.activate();
-                return proceedWithUni(ctx);
-            }).eventually(requestContext::terminate);
+                InjectableContext.ContextState state = requestContext.getState();
+                return proceedWithUni(ctx)
+                        .eventually(() -> {
+                            requestContext.destroy(state);
+                            requestContext.deactivate();
+                        });
+            });
         });
     }
 

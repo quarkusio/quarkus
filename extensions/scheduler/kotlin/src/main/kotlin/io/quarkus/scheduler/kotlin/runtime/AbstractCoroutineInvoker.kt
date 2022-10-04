@@ -9,12 +9,12 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.future.asCompletableFuture
 import java.util.concurrent.CompletionStage
 
-abstract class AbstractCoroutineInvoker: ScheduledInvoker {
+abstract class AbstractCoroutineInvoker : ScheduledInvoker {
 
     override fun invoke(execution: ScheduledExecution): CompletionStage<Void> {
         val coroutineScope = Arc.container().instance(ApplicationCoroutineScope::class.java).get()
         val dispatcher: CoroutineDispatcher = Vertx.currentContext()?.let(::VertxDispatcher)
-                ?: throw IllegalStateException("No Vertx context found")
+            ?: throw IllegalStateException("No Vertx context found")
 
         return coroutineScope.async(context = dispatcher) {
             invokeBean(execution)

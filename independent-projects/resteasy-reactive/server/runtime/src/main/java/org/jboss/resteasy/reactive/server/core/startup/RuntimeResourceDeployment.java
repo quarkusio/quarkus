@@ -8,6 +8,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,11 +21,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
+
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
@@ -503,7 +506,27 @@ public class RuntimeResourceDeployment {
             if (genericParameterTypes[i] instanceof ParameterizedType) {
                 Type[] genericArguments = ((ParameterizedType) genericParameterTypes[i]).getActualTypeArguments();
                 if (genericArguments.length == 1) {
-                    quarkusConverter.init(paramConverterProviders, loadClass(genericArguments[0].getTypeName()),
+                    String genericTypeClassName = null;
+                    Type genericType = genericArguments[0];
+                    if (genericType instanceof Class) {
+                        genericTypeClassName = ((Class<?>) genericType).getName();
+                    } else if (genericType instanceof WildcardType) {
+                        WildcardType genericTypeWildcardType = (WildcardType) genericType;
+                        Type[] upperBounds = genericTypeWildcardType.getUpperBounds();
+                        Type[] lowerBounds = genericTypeWildcardType.getLowerBounds();
+                        if ((lowerBounds.length == 0) && (upperBounds.length == 1)) {
+                            Type genericTypeUpperBoundType = upperBounds[0];
+                            if (genericTypeUpperBoundType instanceof Class) {
+                                genericTypeClassName = ((Class<?>) genericTypeUpperBoundType).getName();
+                            }
+                        }
+                    }
+                    //TODO: are there any other cases we can support?
+                    if (genericTypeClassName == null) {
+                        throw new IllegalArgumentException(
+                                "Unable to support parameter converter with type: '" + genericType.getTypeName() + "'");
+                    }
+                    quarkusConverter.init(paramConverterProviders, loadClass(genericTypeClassName),
                             genericArguments[0],
                             parameterAnnotations[i]);
                     return;

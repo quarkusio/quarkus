@@ -45,20 +45,20 @@ public class BatchFetchSizeTest {
 
         transaction.begin();
         List<MainEntity> entities = session.createQuery("from MainEntity", MainEntity.class).list();
-        assertThat(entities).allSatisfy(e -> assertThat(Hibernate.isPropertyInitialized(e, "others"))
+        assertThat(entities).allSatisfy(e -> assertThat(Hibernate.isInitialized(e.others))
                 .as("'others' initialized for " + e).isFalse());
 
         MainEntity entity = entities.get(0);
         // Trigger initialization for the collection from one entity.
         entity.others.get(0);
-        assertThat(Hibernate.isPropertyInitialized(entity, "others"))
+        assertThat(Hibernate.isInitialized(entity.others))
                 .as("'others' initialized for " + entity).isTrue();
 
         // 20 entities were already in the session when the initialization above occurred,
         // so it should have triggered batch initialization of several 'others' collections.
         assertThat(entities).hasSize(20);
         assertThat(entities)
-                .filteredOn(e -> Hibernate.isPropertyInitialized(e, "others"))
+                .filteredOn(e -> Hibernate.isInitialized(e.others))
                 .hasSize(16); // Default batch fetch size is 16
         transaction.commit();
     }

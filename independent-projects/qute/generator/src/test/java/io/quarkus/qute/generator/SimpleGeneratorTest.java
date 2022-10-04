@@ -3,12 +3,6 @@ package io.quarkus.qute.generator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.quarkus.qute.Engine;
-import io.quarkus.qute.EngineBuilder;
-import io.quarkus.qute.NamespaceResolver;
-import io.quarkus.qute.Resolver;
-import io.quarkus.qute.TestEvalContext;
-import io.quarkus.qute.ValueResolver;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -18,6 +12,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
@@ -28,6 +23,13 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.Engine;
+import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.NamespaceResolver;
+import io.quarkus.qute.Resolver;
+import io.quarkus.qute.TestEvalContext;
+import io.quarkus.qute.ValueResolver;
 
 public class SimpleGeneratorTest {
 
@@ -141,6 +143,28 @@ public class SimpleGeneratorTest {
         assertEquals("OK", engine.parse("{#if enum is MyEnum:BAR}OK{/if}").data("enum", MyEnum.BAR).render());
         assertEquals("one", engine.parse("{MyEnum:valueOf('ONE').name}").render());
         assertEquals("10", engine.parse("{io_quarkus_qute_generator_MyService:getDummy(5)}").render());
+    }
+
+    @Test
+    public void testArrays() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("1,2,3,4,5,6,7,8,9,10,", engine.parse("{#for i in 10}{i_count},{/for}").render());
+        assertEquals("0,1,2,3,4,5,6,7,8,9,", engine.parse("{#for i in 10}{i_index},{/for}").render());
+        assertEquals("odd,even,odd,even,odd,even,odd,even,odd,even,",
+                engine.parse("{#for i in 10}{i_indexParity},{/for}").render());
+        assertEquals("true,false,true,false,true,",
+                engine.parse("{#for i in 5}{i_odd},{/for}").render());
+        assertEquals("false,true,false,true,false,",
+                engine.parse("{#for i in 5}{i_even},{/for}").render());
+        { //these two are not documented in the guide (https://quarkus.io/guides/qute-reference)
+            assertEquals("true,false,true,false,true,",
+                    engine.parse("{#for i in 5}{i_isOdd},{/for}").render());
+            assertEquals("false,true,false,true,false,",
+                    engine.parse("{#for i in 5}{i_isEven},{/for}").render());
+        }
+        assertEquals("true,true,true,true,false,", engine.parse("{#for i in 5}{i_hasNext},{/for}").render());
+        assertEquals("false,false,false,false,true,", engine.parse("{#for i in 5}{i_isLast},{/for}").render());
+        assertEquals("true,false,false,false,false,", engine.parse("{#for i in 5}{i_isFirst},{/for}").render());
     }
 
     private Resolver newResolver(String className)

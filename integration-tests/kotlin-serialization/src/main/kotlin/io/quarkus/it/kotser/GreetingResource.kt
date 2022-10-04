@@ -59,4 +59,3 @@ class GreetingResource {
 
     fun reflect() = "hello, world"
 }
-

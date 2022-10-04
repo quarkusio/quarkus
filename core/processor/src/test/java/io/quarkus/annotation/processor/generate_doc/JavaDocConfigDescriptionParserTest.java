@@ -26,6 +26,12 @@ public class JavaDocConfigDescriptionParserTest {
     }
 
     @Test
+    public void removeParagraphIndentation() {
+        String parsed = parser.parseConfigDescription("First paragraph<br><br> Second Paragraph");
+        assertEquals("First paragraph\n\nSecond Paragraph", parsed);
+    }
+
+    @Test
     public void parseUntrimmedJavaDoc() {
         String parsed = parser.parseConfigDescription("                ");
         assertEquals("", parsed);

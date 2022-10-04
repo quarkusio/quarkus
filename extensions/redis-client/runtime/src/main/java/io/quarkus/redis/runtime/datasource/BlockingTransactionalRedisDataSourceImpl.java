@@ -3,16 +3,22 @@ package io.quarkus.redis.runtime.datasource;
 import java.time.Duration;
 
 import io.quarkus.redis.datasource.bitmap.TransactionalBitMapCommands;
+import io.quarkus.redis.datasource.bloom.TransactionalBloomCommands;
+import io.quarkus.redis.datasource.countmin.TransactionalCountMinCommands;
+import io.quarkus.redis.datasource.cuckoo.TransactionalCuckooCommands;
 import io.quarkus.redis.datasource.geo.TransactionalGeoCommands;
 import io.quarkus.redis.datasource.hash.TransactionalHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.TransactionalHyperLogLogCommands;
+import io.quarkus.redis.datasource.json.TransactionalJsonCommands;
 import io.quarkus.redis.datasource.keys.TransactionalKeyCommands;
 import io.quarkus.redis.datasource.list.TransactionalListCommands;
 import io.quarkus.redis.datasource.set.TransactionalSetCommands;
 import io.quarkus.redis.datasource.sortedset.TransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.string.TransactionalStringCommands;
+import io.quarkus.redis.datasource.topk.TransactionalTopKCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
+import io.quarkus.redis.datasource.value.TransactionalValueCommands;
 import io.vertx.mutiny.redis.client.Command;
 
 public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRedisDataSource {
@@ -64,7 +70,12 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
 
     @Override
     public <K, V> TransactionalStringCommands<K, V> string(Class<K> redisKeyType, Class<V> valueType) {
-        return new BlockingTransactionalStringCommandsImpl<>(this, reactive.string(redisKeyType, valueType), timeout);
+        return new BlockingTransactionalStringCommandsImpl<>(this, reactive.value(redisKeyType, valueType), timeout);
+    }
+
+    @Override
+    public <K, V> TransactionalValueCommands<K, V> value(Class<K> redisKeyType, Class<V> valueType) {
+        return new BlockingTransactionalStringCommandsImpl<>(this, reactive.value(redisKeyType, valueType), timeout);
     }
 
     @Override
@@ -81,6 +92,31 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
     @Override
     public <K> TransactionalBitMapCommands<K> bitmap(Class<K> redisKeyType) {
         return new BlockingTransactionalBitMapCommandsImpl<>(this, reactive.bitmap(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K> TransactionalJsonCommands<K> json(Class<K> redisKeyType) {
+        return new BlockingTransactionalJsonCommandsImpl<>(this, reactive.json(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K, V> TransactionalBloomCommands<K, V> bloom(Class<K> redisKeyType, Class<V> valueType) {
+        return new BlockingTransactionalBloomCommandsImpl<>(this, reactive.bloom(redisKeyType, valueType), timeout);
+    }
+
+    @Override
+    public <K, V> TransactionalCuckooCommands<K, V> cuckoo(Class<K> redisKeyType, Class<V> valueType) {
+        return new BlockingTransactionalCuckooCommandsImpl<>(this, reactive.cuckoo(redisKeyType, valueType), timeout);
+    }
+
+    @Override
+    public <K, V> TransactionalCountMinCommands<K, V> countmin(Class<K> redisKeyType, Class<V> valueType) {
+        return new BlockingTransactionalCountMinCommandsImpl<>(this, reactive.countmin(redisKeyType, valueType), timeout);
+    }
+
+    @Override
+    public <K, V> TransactionalTopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType) {
+        return new BlockingTransactionalTopKCommandsImpl<>(this, reactive.topk(redisKeyType, valueType), timeout);
     }
 
     @Override

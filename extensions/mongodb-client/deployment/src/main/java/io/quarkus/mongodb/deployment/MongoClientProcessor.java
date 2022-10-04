@@ -69,6 +69,7 @@ import io.quarkus.mongodb.runtime.dns.MongoDnsClient;
 import io.quarkus.mongodb.runtime.dns.MongoDnsClientProvider;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import io.quarkus.vertx.deployment.VertxBuildItem;
 
 public class MongoClientProcessor {
     private static final String MONGODB_TRACING_COMMANDLISTENER_CLASSNAME = "io.quarkus.mongodb.tracing.MongoTracingCommandListener";
@@ -281,7 +282,8 @@ public class MongoClientProcessor {
             MongoClientBuildTimeConfig mongoClientBuildTimeConfig,
             MongodbConfig mongodbConfig,
             List<MongoUnremovableClientsBuildItem> mongoUnremovableClientsBuildItem,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+            VertxBuildItem vertxBuildItem) {
 
         boolean makeUnremovable = !mongoUnremovableClientsBuildItem.isEmpty();
 
@@ -328,6 +330,8 @@ public class MongoClientProcessor {
                     .produce(createReactiveSyntheticBean(recorder, mongodbConfig, makeUnremovable, mongoClientName.getName(),
                             mongoClientName.isAddQualifier()));
         }
+
+        recorder.performInitialization(mongodbConfig, vertxBuildItem.getVertx());
     }
 
     private SyntheticBeanBuildItem createBlockingSyntheticBean(MongoClientRecorder recorder, MongodbConfig mongodbConfig,

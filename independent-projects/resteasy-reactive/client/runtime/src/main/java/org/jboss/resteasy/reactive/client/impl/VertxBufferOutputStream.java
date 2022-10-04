@@ -1,8 +1,9 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import io.vertx.core.buffer.Buffer;
 import java.io.IOException;
 import java.io.OutputStream;
+
+import io.vertx.core.buffer.Buffer;
 
 public class VertxBufferOutputStream extends OutputStream {
     private final Buffer buffer;

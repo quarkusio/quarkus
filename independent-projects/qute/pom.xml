@@ -40,10 +40,10 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.release>11</maven.compiler.release>
-        <version.junit>5.9.0</version.junit>
+        <version.junit>5.9.1</version.junit>
         <version.assertj>3.23.1</version.assertj>
-        <version.jandex>2.4.3.Final</version.jandex>
-        <version.gizmo>1.1.0.Final</version.gizmo>
+        <version.jandex>3.0.1</version.jandex>
+        <version.gizmo>1.2.0.Final</version.gizmo>
         <version.jboss-logging>3.5.0.Final</version.jboss-logging>
         <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
         <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
@@ -86,7 +86,7 @@
                 <version>${version.jboss-logging}</version>
             </dependency>
             <dependency>
-                <groupId>org.jboss</groupId>
+                <groupId>io.smallrye</groupId>
                 <artifactId>jandex</artifactId>
                 <version>${version.jandex}</version>
             </dependency>
@@ -189,8 +189,10 @@
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
                         <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>
-                        <removeUnused>true</removeUnused>
+                        <groups>java.,javax.,jakarta.,org.,com.</groups>
+                        <staticGroups>*</staticGroups>
                         <skip>${format.skip}</skip>
+                        <removeUnused>true</removeUnused>
                     </configuration>
                 </plugin>
             </plugins>

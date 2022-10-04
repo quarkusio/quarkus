@@ -7,6 +7,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
@@ -16,6 +18,7 @@ import io.vertx.ext.web.RoutingContext;
 @Provider
 @Priority(Priorities.USER + 1)
 public class AuthenticationFailedExceptionMapper implements ExceptionMapper<AuthenticationFailedException> {
+    private static final Logger log = Logger.getLogger(AuthenticationFailedExceptionMapper.class.getName());
 
     private volatile CurrentVertxRequest currentVertxRequest;
 
@@ -38,8 +41,13 @@ public class AuthenticationFailedExceptionMapper implements ExceptionMapper<Auth
                 if (challengeData.headerName != null) {
                     status.header(challengeData.headerName.toString(), challengeData.headerContent);
                 }
+                log.debugf("Returning an authentication challenge, status code: %d", challengeData.status);
                 return status.build();
+            } else {
+                log.error("HttpAuthenticator is not found, returning HTTP status 401");
             }
+        } else {
+            log.error("RoutingContext is not found, returning HTTP status 401");
         }
         return Response.status(401).entity("Not Authenticated").build();
     }

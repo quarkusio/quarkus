@@ -7,7 +7,7 @@ import org.jboss.resteasy.reactive.server.spi.EndpointInvoker
  *
  * @see [KotlinCoroutineIntegrationProcessor] the build-time part of coroutine support
  */
-interface CoroutineEndpointInvoker: EndpointInvoker {
+interface CoroutineEndpointInvoker : EndpointInvoker {
     /**
      * Delegates control over the bean that defines the endpoint
      *

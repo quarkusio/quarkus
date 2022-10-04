@@ -13,7 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.redis.client.deployment.RedisTestResource;
 import io.quarkus.redis.datasource.RedisDataSource;
-import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.QuarkusTestResource;
 
@@ -68,10 +68,10 @@ public class CacheTest {
     @ApplicationScoped
     public static class MyRedisCache {
 
-        private final StringCommands<String, BusinessObject> commands;
+        private final ValueCommands<String, BusinessObject> commands;
 
         public MyRedisCache(RedisDataSource ds) {
-            commands = ds.string(BusinessObject.class);
+            commands = ds.value(BusinessObject.class);
         }
 
         public BusinessObject get(String key) {

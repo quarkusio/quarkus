@@ -2,11 +2,13 @@ package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.quarkus.qute.Qute.Fmt;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.Qute.Fmt;
 
 public class QuteTest {
 

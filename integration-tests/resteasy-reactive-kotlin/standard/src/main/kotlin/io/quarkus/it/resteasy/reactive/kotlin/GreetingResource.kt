@@ -17,8 +17,7 @@ class GreetingResource(val headers: HttpHeaders) {
     @GET
     @Path("noop")
     suspend fun noop() {
-
     }
 }
 
-data class Greeting(val message:String)
+data class Greeting(val message: String)

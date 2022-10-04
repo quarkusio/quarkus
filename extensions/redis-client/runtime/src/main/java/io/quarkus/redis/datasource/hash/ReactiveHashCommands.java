@@ -126,6 +126,7 @@ public interface ReactiveHashCommands<K, F, V> extends ReactiveRedisCommands {
      * @param key the key
      * @param fields the fields
      * @return list of values associated with the given fields, in the same order as they are requested.
+     *         If a requested field does not exist, the returned map contains a {@code null} value for that field.
      **/
     Uni<Map<F, V>> hmget(K key, F... fields);
 

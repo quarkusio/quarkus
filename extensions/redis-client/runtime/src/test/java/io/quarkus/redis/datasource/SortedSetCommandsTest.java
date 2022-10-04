@@ -236,6 +236,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void zintercard() {
         setOfPlaces.zadd("zset1", Map.of(Place.crussol, 1.0, Place.grignan, 2.0));
         setOfPlaces.zadd("zset2", Map.of(Place.crussol, 2.0, Place.grignan, 1.0));
@@ -734,6 +735,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     public void zmpopMin() {
         assertThat(setOfPlaces.zmpopMin("zset1")).isEqualTo(null);
 
@@ -754,6 +756,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     public void zmpopMax() {
         assertThat(setOfPlaces.zmpopMax("zset1")).isEqualTo(null);
 
@@ -774,6 +777,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     public void bzmpopMin() {
         assertThat(setOfPlaces.bzmpopMin(Duration.ofSeconds(1), "zset1")).isEqualTo(null);
 
@@ -796,6 +800,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     public void bzmpopMax() {
         assertThat(setOfPlaces.bzmpopMax(Duration.ofSeconds(1), "zset1")).isEqualTo(null);
 

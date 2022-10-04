@@ -21,6 +21,7 @@ import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 
+import io.quarkus.quartz.QuartzScheduler;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -42,7 +43,9 @@ public class InjectQuartzSchedulerTest {
 
         static final CountDownLatch LATCH = new CountDownLatch(2);
 
-        void onStart(@Observes StartupEvent event, Scheduler quartz) throws SchedulerException {
+        void onStart(@Observes StartupEvent event, Scheduler quartz, QuartzScheduler quartzScheduler)
+                throws SchedulerException {
+            assertTrue(quartz == quartzScheduler.getScheduler());
             JobDetail job = JobBuilder.newJob(Starter.class)
                     .withIdentity("myJob", "myGroup")
                     .build();

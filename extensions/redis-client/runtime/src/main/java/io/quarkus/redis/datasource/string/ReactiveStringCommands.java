@@ -15,7 +15,9 @@ import io.smallrye.mutiny.Uni;
  *
  * @param <K> the type of the key
  * @param <V> the type of the value
+ * @deprecated Use {@link io.quarkus.redis.datasource.value.ReactiveValueCommands} instead.
  */
+@Deprecated
 public interface ReactiveStringCommands<K, V> extends ReactiveRedisCommands {
 
     /**
@@ -181,7 +183,8 @@ public interface ReactiveStringCommands<K, V> extends ReactiveRedisCommands {
      * Requires Redis 1.0.0
      *
      * @param keys the keys
-     * @return list of values at the specified keys.
+     * @return the value of key, or {@code null} when key does not exist. If one of the passed key does not exist, the
+     *         returned map contains a {@code null} value associated with the missing key.
      **/
     Uni<Map<K, V>> mget(K... keys);
 

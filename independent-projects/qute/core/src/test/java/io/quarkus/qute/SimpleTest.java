@@ -3,8 +3,6 @@ package io.quarkus.qute;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.quarkus.qute.Results.NotFound;
-import io.quarkus.qute.TemplateNode.Origin;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -13,7 +11,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.LongAdder;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.Results.NotFound;
+import io.quarkus.qute.TemplateNode.Origin;
 
 public class SimpleTest {
 

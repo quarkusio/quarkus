@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+
 import javax.json.JsonArray;
 import javax.json.JsonWriter;
 import javax.ws.rs.WebApplicationException;

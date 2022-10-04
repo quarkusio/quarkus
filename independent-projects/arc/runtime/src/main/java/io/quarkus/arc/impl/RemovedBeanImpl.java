@@ -1,10 +1,11 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.InjectableBean.Kind;
-import io.quarkus.arc.RemovedBean;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Set;
+
+import io.quarkus.arc.InjectableBean.Kind;
+import io.quarkus.arc.RemovedBean;
 
 public final class RemovedBeanImpl implements RemovedBean {
 

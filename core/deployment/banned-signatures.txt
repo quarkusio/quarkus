@@ -1,0 +1,3 @@
+@defaultMessage Don't use Maven classes. They won't be available when using Gradle.
+org.apache.maven.**
+org.codehaus.plexus.**

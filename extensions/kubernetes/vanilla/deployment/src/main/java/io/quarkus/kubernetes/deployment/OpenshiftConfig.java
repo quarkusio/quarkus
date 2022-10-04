@@ -1,12 +1,16 @@
 
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.Constants.BATCH_GROUP;
+import static io.quarkus.kubernetes.deployment.Constants.BATCH_VERSION;
+import static io.quarkus.kubernetes.deployment.Constants.CRONJOB;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG_GROUP;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
+import static io.quarkus.kubernetes.deployment.Constants.JOB;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 import static io.quarkus.kubernetes.deployment.Constants.S2I;
 import static io.quarkus.kubernetes.deployment.Constants.STATEFULSET;
@@ -22,6 +26,7 @@ import io.dekorate.kubernetes.annotation.ServiceType;
 import io.quarkus.container.image.deployment.ContainerImageCapabilitiesUtil;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -36,7 +41,9 @@ public class OpenshiftConfig implements PlatformConfiguration {
     public static enum DeploymentResourceKind {
         Deployment(DEPLOYMENT, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION),
         DeploymentConfig(DEPLOYMENT_CONFIG, DEPLOYMENT_CONFIG_GROUP, DEPLOYMENT_CONFIG_VERSION),
-        StatefulSet(STATEFULSET, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION);
+        StatefulSet(STATEFULSET, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION),
+        Job(JOB, BATCH_GROUP, BATCH_VERSION),
+        CronJob(CRONJOB, BATCH_GROUP, BATCH_VERSION);
 
         public final String kind;
         public final String apiGroup;
@@ -59,7 +66,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     /**
      * The kind of the deployment resource to use.
-     * Supported values are 'Deployment' and 'DeploymentConfig' defaulting to the latter.
+     * Supported values are 'Deployment', 'StatefulSet', 'Job', 'CronJob' and 'DeploymentConfig' defaulting to the latter.
      */
     @ConfigItem
     Optional<DeploymentResourceKind> deploymentKind;
@@ -315,6 +322,16 @@ public class OpenshiftConfig implements PlatformConfiguration {
     @ConfigItem(defaultValue = "true")
     boolean addVersionToLabelSelectors;
 
+    /**
+     * Job configuration. It's only used if and only if {@code quarkus.openshift.deployment-kind} is `Job`.
+     */
+    JobConfig job;
+
+    /**
+     * CronJob configuration. It's only used if and only if {@code quarkus.openshift.deployment-kind} is `CronJob`.
+     */
+    CronJobConfig cronJob;
+
     public Optional<String> getPartOf() {
         return partOf;
     }
@@ -549,7 +566,13 @@ public class OpenshiftConfig implements PlatformConfiguration {
         return containerImageConfig.builder.map(b -> b.equals(OPENSHIFT) || b.equals(S2I)).orElse(implicitlyEnabled);
     }
 
-    public DeploymentResourceKind getDeploymentResourceKind() {
-        return deploymentKind.orElse(DeploymentResourceKind.DeploymentConfig);
+    public DeploymentResourceKind getDeploymentResourceKind(Capabilities capabilities) {
+        if (deploymentKind.isPresent()) {
+            return deploymentKind.get();
+        } else if (capabilities.isPresent(Capability.PICOCLI)) {
+            return DeploymentResourceKind.Job;
+        }
+
+        return DeploymentResourceKind.DeploymentConfig;
     }
 }

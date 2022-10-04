@@ -1,9 +1,10 @@
 package io.quarkus.registry.catalog;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.registry.json.JsonBuilder;
 import java.util.Collection;
 import java.util.Map;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.json.JsonBuilder;
 
 /**
  * Platform release

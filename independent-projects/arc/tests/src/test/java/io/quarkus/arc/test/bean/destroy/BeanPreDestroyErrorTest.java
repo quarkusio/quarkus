@@ -2,17 +2,20 @@ package io.quarkus.arc.test.bean.destroy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.math.BigDecimal;
+
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Disposes;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class BeanPreDestroyErrorTest {
 

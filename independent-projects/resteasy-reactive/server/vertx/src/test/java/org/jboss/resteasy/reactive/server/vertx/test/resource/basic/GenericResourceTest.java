@@ -1,8 +1,10 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic;
 
 import java.util.function.Supplier;
+
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
+
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.GenericResourceCrudResource;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.GenericResourceStudent;

@@ -1,9 +1,11 @@
 package org.jboss.resteasy.reactive.server.vertx.test.customproviders;
 
-import io.smallrye.mutiny.Uni;
 import javax.ws.rs.container.ContainerResponseContext;
+
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
+
+import io.smallrye.mutiny.Uni;
 
 public class UniResponseFilter {
 

@@ -3,22 +3,8 @@ package io.quarkus.arc.processor;
 import static java.util.stream.Collectors.toList;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.Components;
-import io.quarkus.arc.ComponentsProvider;
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.processor.ResourceOutput.Resource;
-import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.CatchBlockCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.TryBlock;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,10 +19,28 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.objectweb.asm.Type;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.Components;
+import io.quarkus.arc.ComponentsProvider;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.processor.ResourceOutput.Resource;
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.CatchBlockCreator;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.FunctionCreator;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TryBlock;
 
 /**
  *
@@ -122,11 +126,24 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 beanIdToBeanHandle);
 
         // Break removed beans processing into multiple addRemovedBeans() methods
-        ResultHandle removedBeansHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
-        ResultHandle typeCacheHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+        FunctionCreator removedBeansSupplier = getComponents.createFunction(Supplier.class);
+        BytecodeCreator removedBeansSupplierBytecode = removedBeansSupplier.getBytecode();
+        ResultHandle removedBeansList = removedBeansSupplierBytecode
+                .newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+        ResultHandle typeCacheHandle = removedBeansSupplierBytecode.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
         if (detectUnusedFalsePositives) {
-            processRemovedBeans(componentsProvider, getComponents, removedBeansHandle, typeCacheHandle, beanDeployment,
+            // Generate static addRemovedBeans() methods
+            processRemovedBeans(componentsProvider, removedBeansSupplierBytecode, removedBeansList, typeCacheHandle,
+                    beanDeployment,
                     classOutput);
+        }
+        removedBeansSupplierBytecode.returnValue(removedBeansList);
+
+        // All qualifiers
+        ResultHandle qualifiers = getComponents.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+        for (ClassInfo qualifier : beanDeployment.getQualifiers()) {
+            getComponents.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers,
+                    getComponents.load(qualifier.name().toString()));
         }
 
         // Qualifier non-binding members
@@ -143,9 +160,9 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
         ResultHandle componentsHandle = getComponents.newInstance(
                 MethodDescriptor.ofConstructor(Components.class, Collection.class, Collection.class, Collection.class,
-                        Map.class, Collection.class, Map.class),
-                beansHandle, observersHandle, contextsHandle, transitiveBindingsHandle, removedBeansHandle,
-                qualifiersNonbindingMembers);
+                        Map.class, Supplier.class, Map.class, Set.class),
+                beansHandle, observersHandle, contextsHandle, transitiveBindingsHandle, removedBeansSupplier.getInstance(),
+                qualifiersNonbindingMembers, qualifiers);
         getComponents.returnValue(componentsHandle);
 
         // Finally write the bytecode
@@ -154,8 +171,11 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         List<Resource> resources = new ArrayList<>();
         for (Resource resource : classOutput.getResources()) {
             resources.add(resource);
-            resources.add(ResourceImpl.serviceProvider(ComponentsProvider.class.getName(),
-                    (resource.getName().replace('/', '.')).getBytes(StandardCharsets.UTF_8), null));
+            if (resource.getName().endsWith(COMPONENTS_PROVIDER_SUFFIX)) {
+                // We need to filter out nested classes and functions
+                resources.add(ResourceImpl.serviceProvider(ComponentsProvider.class.getName(),
+                        (resource.getName().replace('/', '.')).getBytes(StandardCharsets.UTF_8), null));
+            }
         }
         return resources;
     }
@@ -259,10 +279,10 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         }
     }
 
-    private void processRemovedBeans(ClassCreator componentsProvider, MethodCreator getComponents,
+    private void processRemovedBeans(ClassCreator componentsProvider, BytecodeCreator targetMethod,
             ResultHandle removedBeansHandle, ResultHandle typeCacheHandle, BeanDeployment beanDeployment,
             ClassOutput classOutput) {
-        try (RemovedBeanAdder removedBeanAdder = new RemovedBeanAdder(componentsProvider, getComponents, removedBeansHandle,
+        try (RemovedBeanAdder removedBeanAdder = new RemovedBeanAdder(componentsProvider, targetMethod, removedBeansHandle,
                 typeCacheHandle, classOutput)) {
             for (BeanInfo remnovedBean : beanDeployment.getRemovedBeans()) {
                 removedBeanAdder.addComponent(remnovedBean);
@@ -381,10 +401,10 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
         @Override
         void invokeAddMethod() {
-            getComponentsMethod.invokeVirtualMethod(
+            targetMethod.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(componentsProvider.getClassName(),
                             addMethod.getMethodDescriptor().getName(), void.class, Map.class, List.class),
-                    getComponentsMethod.getThis(), beanIdToBeanHandle, observersHandle);
+                    targetMethod.getThis(), beanIdToBeanHandle, observersHandle);
         }
 
         @Override
@@ -428,9 +448,9 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
         private final MapTypeCache typeCache;
 
-        public RemovedBeanAdder(ClassCreator componentsProvider, MethodCreator getComponentsMethod,
+        public RemovedBeanAdder(ClassCreator componentsProvider, BytecodeCreator targetMethod,
                 ResultHandle removedBeansHandle, ResultHandle typeCacheHandle, ClassOutput classOutput) {
-            super(getComponentsMethod, componentsProvider);
+            super(targetMethod, componentsProvider);
             this.removedBeansHandle = removedBeansHandle;
             this.typeCacheHandle = typeCacheHandle;
             this.sharedQualifers = new HashMap<>();
@@ -447,10 +467,10 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             // Clear the shared maps for each addRemovedBeansX() method
             sharedQualifers.clear();
 
-            // private void addRemovedBeans1(List removedBeans, List typeCache)
+            // static void addRemovedBeans1(List removedBeans, List typeCache)
             MethodCreator addMethod = componentsProvider
                     .getMethodCreator(ADD_REMOVED_BEANS + group++, void.class, List.class, Map.class)
-                    .setModifiers(ACC_PRIVATE);
+                    .setModifiers(ACC_STATIC);
             // Get the TCCL - we will use it later
             ResultHandle currentThread = addMethod
                     .invokeStaticMethod(MethodDescriptors.THREAD_CURRENT_THREAD);
@@ -463,10 +483,11 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
         @Override
         void invokeAddMethod() {
-            getComponentsMethod.invokeVirtualMethod(
+            // Static methods are invoked from within the generated supplier
+            targetMethod.invokeStaticMethod(
                     MethodDescriptor.ofMethod(componentsProvider.getClassName(),
                             addMethod.getMethodDescriptor().getName(), void.class, List.class, Map.class),
-                    getComponentsMethod.getThis(), removedBeansHandle, typeCacheHandle);
+                    removedBeansHandle, typeCacheHandle);
         }
 
         @Override
@@ -606,10 +627,10 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
         @Override
         void invokeAddMethod() {
-            getComponentsMethod.invokeVirtualMethod(
+            targetMethod.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(componentsProvider.getClassName(),
                             addMethod.getMethodDescriptor().getName(), void.class, Map.class),
-                    getComponentsMethod.getThis(), beanIdToBeanHandle);
+                    targetMethod.getThis(), beanIdToBeanHandle);
         }
 
         @Override
@@ -701,12 +722,12 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         protected int group;
         private int componentsAdded;
         protected MethodCreator addMethod;
-        protected final MethodCreator getComponentsMethod;
+        protected final BytecodeCreator targetMethod;
         protected final ClassCreator componentsProvider;
 
-        public ComponentAdder(MethodCreator getComponentsMethod, ClassCreator componentsProvider) {
+        public ComponentAdder(BytecodeCreator getComponentsMethod, ClassCreator componentsProvider) {
             this.group = 1;
-            this.getComponentsMethod = getComponentsMethod;
+            this.targetMethod = getComponentsMethod;
             this.componentsProvider = componentsProvider;
         }
 

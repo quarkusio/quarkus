@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
+
 import org.eclipse.aether.version.Version;
 
 public class BootstrapArtifactVersion implements Version {

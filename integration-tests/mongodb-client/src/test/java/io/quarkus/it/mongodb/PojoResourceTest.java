@@ -16,14 +16,11 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.it.mongodb.pojo.Pojo;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.mongodb.MongoTestResource;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
 @QuarkusTest
-@QuarkusTestResource(MongoTestResource.class)
 @DisabledOnOs(OS.WINDOWS)
 public class PojoResourceTest {
 

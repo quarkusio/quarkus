@@ -6,10 +6,12 @@ import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.string.GetExArgs;
 import io.quarkus.redis.datasource.string.ReactiveStringCommands;
 import io.quarkus.redis.datasource.string.SetArgs;
+import io.quarkus.redis.datasource.value.ReactiveValueCommands;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
 
-public class ReactiveStringCommandsImpl<K, V> extends AbstractStringCommands<K, V> implements ReactiveStringCommands<K, V> {
+public class ReactiveStringCommandsImpl<K, V> extends AbstractStringCommands<K, V>
+        implements ReactiveStringCommands<K, V>, ReactiveValueCommands<K, V> {
 
     private final ReactiveRedisDataSource reactive;
 
@@ -36,6 +38,12 @@ public class ReactiveStringCommandsImpl<K, V> extends AbstractStringCommands<K, 
     }
 
     @Override
+    public Uni<Void> set(K key, V value, io.quarkus.redis.datasource.value.SetArgs setArgs) {
+        return super._set(key, value, setArgs)
+                .replaceWithVoid();
+    }
+
+    @Override
     public Uni<V> setGet(K key, V value) {
         return super._setGet(key, value)
                 .map(this::decodeV);
@@ -43,6 +51,12 @@ public class ReactiveStringCommandsImpl<K, V> extends AbstractStringCommands<K, 
 
     @Override
     public Uni<V> setGet(K key, V value, SetArgs setArgs) {
+        return super._setGet(key, value, setArgs)
+                .map(this::decodeV);
+    }
+
+    @Override
+    public Uni<V> setGet(K key, V value, io.quarkus.redis.datasource.value.SetArgs setArgs) {
         return super._setGet(key, value, setArgs)
                 .map(this::decodeV);
     }
@@ -103,6 +117,12 @@ public class ReactiveStringCommandsImpl<K, V> extends AbstractStringCommands<K, 
 
     @Override
     public Uni<V> getex(K key, GetExArgs args) {
+        return super._getex(key, args)
+                .map(this::decodeV);
+    }
+
+    @Override
+    public Uni<V> getex(K key, io.quarkus.redis.datasource.value.GetExArgs args) {
         return super._getex(key, args)
                 .map(this::decodeV);
     }

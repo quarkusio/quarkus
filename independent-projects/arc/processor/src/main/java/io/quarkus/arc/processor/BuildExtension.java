@@ -4,6 +4,7 @@ import static io.quarkus.arc.processor.BuildExtension.SimpleKey.simpleBuiltIn;
 
 import java.util.Collection;
 import java.util.Map;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;

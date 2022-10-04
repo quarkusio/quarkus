@@ -95,6 +95,11 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         return this;
     }
 
+    public RestClientBuilderImpl trustStore(KeyStore trustStore, String trustStorePassword) {
+        clientBuilder.trustStore(trustStore, trustStorePassword.toCharArray());
+        return this;
+    }
+
     @Override
     public RestClientBuilderImpl keyStore(KeyStore keyStore, String keystorePassword) {
         clientBuilder.keyStore(keyStore, keystorePassword);

@@ -3,7 +3,6 @@ package io.quarkus.resteasy.reactive.server.runtime;
 import javax.ws.rs.core.SecurityContext;
 
 import org.jboss.resteasy.reactive.server.core.Deployment;
-import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.vertx.VertxResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
@@ -20,11 +19,11 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
     final CurrentIdentityAssociation association;
     boolean userSetup = false;
 
-    public QuarkusResteasyReactiveRequestContext(Deployment deployment, ProvidersImpl providers,
+    public QuarkusResteasyReactiveRequestContext(Deployment deployment,
             RoutingContext context, ThreadSetupAction requestContext, ServerRestHandler[] handlerChain,
             ServerRestHandler[] abortHandlerChain, ClassLoader devModeTccl,
             CurrentIdentityAssociation currentIdentityAssociation) {
-        super(deployment, providers, context, requestContext, handlerChain, abortHandlerChain, devModeTccl);
+        super(deployment, context, requestContext, handlerChain, abortHandlerChain, devModeTccl);
         this.association = currentIdentityAssociation;
         if (VertxContext.isOnDuplicatedContext()) {
             VertxContextSafetyToggle.setCurrentContextSafe(true);
@@ -43,6 +42,13 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
                 association.setIdentity(QuarkusHttpUser.getSecurityIdentity(context, null));
             }
         }
+    }
+
+    @Override
+    protected void requestScopeDeactivated() {
+        // we intentionally don't call 'CurrentRequestManager.set(null)'
+        // because there is no need to clear the current request
+        // as that is backed by a DuplicatedContext and not accessible to other requests anyway
     }
 
     protected SecurityContext createSecurityContext() {

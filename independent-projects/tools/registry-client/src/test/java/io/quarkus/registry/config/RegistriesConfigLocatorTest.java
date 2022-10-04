@@ -2,13 +2,15 @@ package io.quarkus.registry.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 public class RegistriesConfigLocatorTest {
 

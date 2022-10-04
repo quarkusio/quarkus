@@ -54,9 +54,9 @@ To generate the index just add the following plugin to your build file:
 <build>
   <plugins>
     <plugin>
-      <groupId>org.jboss.jandex</groupId>
+      <groupId>io.smallrye</groupId>
       <artifactId>jandex-maven-plugin</artifactId>
-      <version>{jandex-maven-plugin-version}</version>
+      <version>{jandex-version}</version>
       <executions>
         <execution>
           <id>make-index</id>

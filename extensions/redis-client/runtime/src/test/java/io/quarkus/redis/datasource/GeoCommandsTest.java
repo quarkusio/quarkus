@@ -494,6 +494,17 @@ public class GeoCommandsTest extends DatasourceTestBase {
             assertThat(gv.geohash).isEmpty();
         });
 
+        args = new GeoSearchArgs<Place>().fromCoordinate(CRUSSOL_LONGITUDE, CRUSSOL_LATITUDE)
+                .byRadius(5, GeoUnit.KM).withCoordinates().withDistance().descending();
+        places = geo.geosearch(key, args);
+        assertThat(places).hasSize(1).allSatisfy(gv -> {
+            assertThat(gv.member).isEqualTo(Place.crussol);
+            assertThat(gv.longitude).isNotEmpty();
+            assertThat(gv.latitude).isNotEmpty();
+            assertThat(gv.distance).isNotEmpty();
+            assertThat(gv.geohash).isEmpty();
+        });
+
     }
 
     @Test

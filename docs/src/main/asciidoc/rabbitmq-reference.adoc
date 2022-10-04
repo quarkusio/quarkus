@@ -222,7 +222,7 @@ three strategies, controlled by the failure-strategy channel setting:
 
 === Serialization
 
-When sendingWhen sending a `Message<T>`, the connector converts the message into a RabbitMQ Message. The payload is converted to the RabbitMQ Message body.
+When sending a `Message<T>`, the connector converts the message into a RabbitMQ Message. The payload is converted to the RabbitMQ Message body.
 
 [options=header]
 |===
@@ -446,8 +446,8 @@ Next we configure the `rabbitmq` credentials provider. The `credentials-role` op
 role we created in Vault, in our case `my-role`. The `credentials-mount` option must be set to `rabbitmq`.
 [source, properties]
 ----
-quarkus.vault.credentials-provider.rabbitmq.credentials-role = my-role
-quarkus.vault.credentials-provider.rabbitmq.credentials-mount = rabbitmq
+quarkus.vault.credentials-provider.rabbitmq.credentials-role=my-role
+quarkus.vault.credentials-provider.rabbitmq.credentials-mount=rabbitmq
 ----
 
 NOTE: The `credentials-mount` is used directly as the mount of the secret engine in Vault. Here we are using

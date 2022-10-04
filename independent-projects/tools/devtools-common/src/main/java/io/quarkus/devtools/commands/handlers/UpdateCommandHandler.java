@@ -1,5 +1,14 @@
 package io.quarkus.devtools.commands.handlers;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
@@ -19,14 +28,6 @@ import io.quarkus.registry.catalog.selection.ExtensionOrigins;
 import io.quarkus.registry.catalog.selection.OriginCombination;
 import io.quarkus.registry.catalog.selection.OriginPreference;
 import io.quarkus.registry.catalog.selection.OriginSelector;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class UpdateCommandHandler implements QuarkusCommandHandler {
 

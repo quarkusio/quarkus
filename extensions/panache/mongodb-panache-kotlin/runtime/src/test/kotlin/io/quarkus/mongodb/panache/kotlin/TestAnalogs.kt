@@ -27,7 +27,6 @@ import io.quarkus.mongodb.panache.PanacheMongoEntityBase as JavaPanacheMongoEnti
 import io.quarkus.mongodb.panache.PanacheMongoRepository as JavaPanacheMongoRepository
 import io.quarkus.mongodb.panache.PanacheMongoRepositoryBase as JavaPanacheMongoRepositoryBase
 import io.quarkus.mongodb.panache.PanacheQuery as JavaPanacheQuery
-
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity as ReactiveJavaPanacheMongoEntity
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntityBase as ReactiveJavaPanacheMongoEntityBase
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository as ReactiveJavaPanacheMongoRepository
@@ -66,46 +65,48 @@ class TestAnalogs {
         compare(ReactiveJavaPanacheMongoEntityBase::class, ReactivePanacheMongoEntityBase::class, ReactivePanacheMongoCompanionBase::class)
     }
 
-    private fun compare(javaEntity: KClass<*>,
-                        kotlinEntity: KClass<*>,
-                        companion: KClass<*>) {
+    private fun compare(
+        javaEntity: KClass<*>,
+        kotlinEntity: KClass<*>,
+        companion: KClass<*>
+    ) {
         val javaMethods = map(javaEntity).methods
         val kotlinMethods = map(kotlinEntity).methods
-                .filterNot {
-                    it.name.contains("getId")
-                            || it.name.contains("setId")
-                            || it.name.contains("getOperations")
-                }
-                .toMutableList()
+            .filterNot {
+                it.name.contains("getId") ||
+                    it.name.contains("setId") ||
+                    it.name.contains("getOperations")
+            }
+            .toMutableList()
         val companionMethods = map(companion).methods
         val implemented = mutableListOf<Method>()
 
         javaMethods
-                .forEach {
-                    if (!it.isStatic()) {
-                        if (it in kotlinMethods) {
-                            kotlinMethods -= it
-                            implemented += it
-                        }
-                    } else {
-                        if (it in companionMethods) {
-                            companionMethods -= it
-                            implemented += it
-                        }
+            .forEach {
+                if (!it.isStatic()) {
+                    if (it in kotlinMethods) {
+                        kotlinMethods -= it
+                        implemented += it
+                    }
+                } else {
+                    if (it in companionMethods) {
+                        companionMethods -= it
+                        implemented += it
                     }
                 }
+            }
         javaMethods.removeIf {
             it.name == "findByIdOptional" ||
-                    it in implemented
+                it in implemented
         }
 
         methods("javaMethods", javaMethods)
         methods("kotlinMethods", kotlinMethods)
         methods("companionMethods", companionMethods)
 
-        assertTrue(javaMethods.isEmpty(), "New methods not implemented: ${javaMethods}")
-        assertTrue(kotlinMethods.isEmpty(), "Old methods not removed: ${kotlinMethods}")
-        assertTrue(companionMethods.isEmpty(), "Old methods not removed: ${companionMethods}")
+        assertTrue(javaMethods.isEmpty(), "New methods not implemented: $javaMethods")
+        assertTrue(kotlinMethods.isEmpty(), "Old methods not removed: $kotlinMethods")
+        assertTrue(companionMethods.isEmpty(), "Old methods not removed: $companionMethods")
     }
 
     private fun map(type: KClass<*>): AnalogVisitor {
@@ -114,9 +115,8 @@ class TestAnalogs {
         }
     }
 
-
     private fun KClass<*>.bytes() =
-            java.classLoader.getResourceAsStream(qualifiedName.toString().replace(".", "/") + ".class")
+        java.classLoader.getResourceAsStream(qualifiedName.toString().replace(".", "/") + ".class")
 
     private fun compare(javaClass: AnalogVisitor, kotlinClass: AnalogVisitor, allowList: List<String> = listOf()) {
         val javaMethods = javaClass.methods
@@ -124,20 +124,20 @@ class TestAnalogs {
         val implemented = mutableListOf<Method>()
 
         javaMethods
-                .forEach {
-                    if (it in kotlinMethods) {
-                        kotlinMethods -= it
-                        implemented += it
-                    }
+            .forEach {
+                if (it in kotlinMethods) {
+                    kotlinMethods -= it
+                    implemented += it
                 }
+            }
 
         javaMethods.removeIf {
             it.name in allowList ||
-                    it in implemented
+                it in implemented
         }
 
-        assertTrue(javaMethods.isEmpty(), "New methods not implemented: ${javaMethods}")
-        assertTrue(kotlinMethods.isEmpty(), "Old methods not removed: ${kotlinMethods}")
+        assertTrue(javaMethods.isEmpty(), "New methods not implemented: $javaMethods")
+        assertTrue(kotlinMethods.isEmpty(), "Old methods not removed: $kotlinMethods")
     }
 
     @Suppress("unused")
@@ -145,9 +145,9 @@ class TestAnalogs {
         if (methods.isNotEmpty()) {
             println("$label: ")
             methods
-                    .forEach {
-                        println(it)
-                    }
+                .forEach {
+                    println(it)
+                }
             println()
         }
     }
@@ -155,13 +155,18 @@ class TestAnalogs {
 
 class AnalogVisitor : ClassVisitor(Gizmo.ASM_API_VERSION) {
     val erasures = mapOf(
-            getType(PanacheMongoEntityBase::class.java).descriptor to getType(Object::class.java).descriptor,
-            getType(ReactivePanacheMongoEntityBase::class.java).descriptor to getType(Object::class.java).descriptor
+        getType(PanacheMongoEntityBase::class.java).descriptor to getType(Object::class.java).descriptor,
+        getType(ReactivePanacheMongoEntityBase::class.java).descriptor to getType(Object::class.java).descriptor
     )
 
     val methods = mutableListOf<Method>()
-    override fun visitMethod(access: Int, name: String, descriptor: String, signature: String?,
-                             exceptions: Array<out String>?): MethodVisitor? {
+    override fun visitMethod(
+        access: Int,
+        name: String,
+        descriptor: String,
+        signature: String?,
+        exceptions: Array<out String>?
+    ): MethodVisitor? {
         if (name != "<clinit>" && name != "<init>" && !descriptor.endsWith(ByteCodeType(Optional::class.java).descriptor())) {
             val method = Method(access, name, erase(getReturnType(descriptor)), erase(getArgumentTypes(descriptor)))
             methods += method
@@ -171,9 +176,11 @@ class AnalogVisitor : ClassVisitor(Gizmo.ASM_API_VERSION) {
 
     private fun erase(type: Type): String {
         var value = type.descriptor
-        erasures.entries.forEach(Consumer {
-            value = value.replace(it.key, it.value)
-        })
+        erasures.entries.forEach(
+            Consumer {
+                value = value.replace(it.key, it.value)
+            }
+        )
         return value
     }
 
@@ -184,8 +191,8 @@ class Method(val access: Int, val name: String, val type: String, val parameters
     fun isStatic() = access.matches(Opcodes.ACC_STATIC)
 
     override fun toString(): String {
-        return (if (isStatic()) "static " else "") + "fun ${name}(${parameters.joinToString(", ")})" +
-                (if (type != Unit::class.qualifiedName) ": $type" else "")
+        return (if (isStatic()) "static " else "") + "fun $name(${parameters.joinToString(", ")})" +
+            (if (type != Unit::class.qualifiedName) ": $type" else "")
     }
 
     override fun equals(other: Any?): Boolean {
@@ -204,7 +211,6 @@ class Method(val access: Int, val name: String, val type: String, val parameters
         result = 31 * result + parameters.hashCode()
         return result
     }
-
 }
 
 fun Int.matches(mask: Int) = (this and mask) == mask

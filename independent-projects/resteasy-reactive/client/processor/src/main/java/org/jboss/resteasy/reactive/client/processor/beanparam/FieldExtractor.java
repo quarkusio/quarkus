@@ -1,9 +1,10 @@
 package org.jboss.resteasy.reactive.client.processor.beanparam;
 
+import org.jboss.resteasy.reactive.client.impl.ReflectionUtil;
+
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import org.jboss.resteasy.reactive.client.impl.ReflectionUtil;
 
 public class FieldExtractor extends ValueExtractor {
 

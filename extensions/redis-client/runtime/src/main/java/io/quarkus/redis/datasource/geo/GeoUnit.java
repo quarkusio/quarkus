@@ -1,5 +1,7 @@
 package io.quarkus.redis.datasource.geo;
 
+import java.util.Locale;
+
 public enum GeoUnit {
 
     /**
@@ -21,4 +23,9 @@ public enum GeoUnit {
      * mile.
      */
     MI;
+
+    public String toString() {
+        // Redis 6 requires lower case, uppercase has only been added in Redis 7.
+        return name().toLowerCase(Locale.ROOT);
+    }
 }

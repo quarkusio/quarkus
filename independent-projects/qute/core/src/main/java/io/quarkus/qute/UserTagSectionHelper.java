@@ -63,12 +63,9 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
 
         @Override
         public ParametersInfo getParameters() {
-            return ParametersInfo.builder()
-                    .addParameter(Parameter.builder(IT).defaultValue(IT))
-                    .addParameter(Parameter.builder(IncludeSectionHelper.Factory.ISOLATED)
-                            .defaultValue(IncludeSectionHelper.Factory.ISOLATED_DEFAULT_VALUE).optional()
-                            .valuePredicate(v -> IncludeSectionHelper.Factory.ISOLATED.equals(v)))
-                    .build();
+            ParametersInfo.Builder builder = ParametersInfo.builder().addParameter(Parameter.builder(IT).defaultValue(IT));
+            addDefaultParams(builder);
+            return builder.build();
         }
 
         @Override

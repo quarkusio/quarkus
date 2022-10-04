@@ -2,15 +2,18 @@ package org.jboss.resteasy.reactive.server.vertx.test;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.smallrye.common.annotation.Blocking;
 import java.util.function.Supplier;
+
 import javax.enterprise.inject.spi.DeploymentException;
 import javax.ws.rs.Path;
+
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.smallrye.common.annotation.Blocking;
 
 public class InnerClassTest {
 

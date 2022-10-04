@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
+import org.jboss.logging.Logger;
 import org.jose4j.lang.UnresolvableKeyException;
 
 import io.quarkus.oidc.AccessTokenCredential;
@@ -36,6 +37,8 @@ import io.vertx.ext.web.RoutingContext;
 @ApplicationScoped
 public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticationRequest> {
 
+    private static final Logger LOG = Logger.getLogger(OidcIdentityProvider.class);
+
     static final String REFRESH_TOKEN_GRANT_RESPONSE = "refresh_token_grant_response";
     static final String NEW_AUTHENTICATION = "new_authentication";
 
@@ -61,6 +64,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         if (!(request.getToken() instanceof AccessTokenCredential || request.getToken() instanceof IdTokenCredential)) {
             return Uni.createFrom().nullItem();
         }
+        LOG.debug("Starting creating SecurityIdentity");
         RoutingContext vertxContext = HttpSecurityUtils.getRoutingContextAttribute(request);
         vertxContext.put(AuthenticationRequestContext.class.getName(), context);
 
@@ -84,6 +88,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             RoutingContext vertxContext,
             TenantConfigContext resolvedContext) {
         if (resolvedContext.oidcConfig.publicKey.isPresent()) {
+            LOG.debug("Performing token verification with a configured public key");
             return validateTokenWithoutOidcServer(request, resolvedContext);
         } else {
             return validateAllTokensWithOidcServer(vertxContext, request, resolvedContext);
@@ -280,20 +285,27 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     private Uni<TokenVerificationResult> verifyTokenUni(TenantConfigContext resolvedContext, String token) {
         if (OidcUtils.isOpaqueToken(token)) {
             if (!resolvedContext.oidcConfig.token.allowOpaqueTokenIntrospection) {
+                LOG.debug("Token is opaque but the opaque token introspection is not allowed");
                 throw new AuthenticationFailedException();
             }
+            LOG.debug("Starting the opaque token introspection");
             return introspectTokenUni(resolvedContext, token);
-        } else if (resolvedContext.provider.getMetadata().getJsonWebKeySetUri() == null) {
+        } else if (resolvedContext.provider.getMetadata().getJsonWebKeySetUri() == null
+                || resolvedContext.oidcConfig.token.requireJwtIntrospectionOnly) {
             // Verify JWT token with the remote introspection
+            LOG.debug("Starting the JWT token introspection");
             return introspectTokenUni(resolvedContext, token);
         } else {
             // Verify JWT token with the local JWK keys with a possible remote introspection fallback
             try {
+                LOG.debug("Verifying the JWT token with the local JWK keys");
                 return Uni.createFrom().item(resolvedContext.provider.verifyJwtToken(token));
             } catch (Throwable t) {
                 if (t.getCause() instanceof UnresolvableKeyException) {
+                    LOG.debug("No matching JWK key is found, refreshing and repeating the verification");
                     return refreshJwksAndVerifyTokenUni(resolvedContext, token);
                 } else {
+                    LOG.debugf("Token verification has failed: %s", t.getMessage());
                     return Uni.createFrom().failure(t);
                 }
             }
@@ -368,6 +380,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             }
         }
 
+        LOG.debug("Requesting UserInfo");
         String accessToken = vertxContext.get(OidcConstants.ACCESS_TOKEN_VALUE);
         if (accessToken == null) {
             accessToken = request.getToken().getToken();

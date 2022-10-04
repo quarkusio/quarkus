@@ -72,7 +72,7 @@ recipeList:
   # JAX-RS - See below for the specs
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy.version
-      newValue: 6.0.3.Final
+      newValue: 6.2.0.Final
   # JAXB - See below
   # JSON - See below
   # JSON Bind
@@ -81,7 +81,7 @@ recipeList:
       newValue: 3.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: yasson.version
-      newValue: 3.0.1
+      newValue: 3.0.2
   # JPA
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jpa
@@ -134,15 +134,14 @@ recipeList:
   # Security - See below
   - org.openrewrite.maven.ChangePropertyValue:
       key: quarkus-security.version
-      newValue: 2.0.0.Alpha1
+      newValue: 2.0.0.Alpha2
   # Servlet
-  # TODO EE 10 6.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.servlet-api.version
-      newValue: 5.0.0
+      newValue: 6.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: quarkus-http.version
-      newValue: 5.0.0.Alpha1
+      newValue: 5.0.0.Alpha2
   # Transaction
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jta
@@ -169,23 +168,22 @@ recipeList:
       newValue: 3.0.1
   - org.openrewrite.maven.ChangePropertyValue:
       key: hibernate-validator.version
-      newValue: 8.0.0.CR3
+      newValue: 8.0.0.Final
   # Websockets
-  # TODO EE 10 2.1.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.websocket-api.version
-      newValue: 2.0.0
+      newValue: 2.1.0
   # XML Bind
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.xml.bind-api.version
       newValue: 4.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jaxb-runtime.version
-      newValue: 4.0.0
+      newValue: 4.0.1
   # WildFly Security
   - org.openrewrite.maven.ChangePropertyValue:
       key: wildfly-elytron.version
-      newValue: 2.0.0.Beta3
+      newValue: 2.0.0.Final
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-jaxrs-jaxb
@@ -205,7 +203,7 @@ recipeList:
       addIfMissing: true
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.ws.rs-api.version
-      newValue: 3.0.0
+      newValue: 3.1.0
       addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe
@@ -298,6 +296,51 @@ recipeList:
       artifactId: jakarta.json
   - org.openrewrite.maven.RemoveProperty:
       propertyName: jakarta.json.version
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: io.smallrye
+      artifactId: smallrye-health
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.eclipse
+      artifactId: yasson
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.jboss.resteasy
+      artifactId: resteasy-json-binding-provider
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.jboss.resteasy
+      artifactId: resteasy-json-p-provider
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.apache.activemq
+      artifactId: artemis-server
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.apache.activemq
+      artifactId: artemis-amqp-protocol
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.eclipse
+      artifactId: yasson
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.eclipse
+      artifactId: yasson
+      exclusionGroupId: org.glassfish
+      exclusionArtifactId: jakarta.json
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: jakarta.json.bind
+      artifactId: jakarta.json.bind-api
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-json
@@ -305,15 +348,23 @@ displayName: Adjust Jakarta JSON dependencies
 recipeList:
   - org.openrewrite.maven.AddManagedDependency:
       groupId: org.eclipse.parsson
-      artifactId: jakarta.json
+      artifactId: parsson
       version: "${parsson.version}"
+  - org.openrewrite.maven.AddManagedDependency:
+      groupId: jakarta.json
+      artifactId: jakarta.json-api
+      version: "${jakarta.json-api.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: parsson.version
       newValue: 1.1.1
       addIfMissing: true
   - org.openrewrite.maven.ChangePropertyValue:
+      key: jakarta.json-api.version
+      newValue: 2.1.1
+      addIfMissing: true
+  - org.openrewrite.maven.ChangePropertyValue:
       key: jboss-logmanager.version
-      newValue: 1.1.0
+      newValue: 1.1.1
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-json-switch
@@ -323,7 +374,7 @@ recipeList:
       oldGroupId: org.glassfish
       oldArtifactId: jakarta.json
       newGroupId: org.eclipse.parsson
-      newArtifactId: jakarta.json
+      newArtifactId: parsson
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.build-parent
@@ -345,15 +396,13 @@ recipeList:
       groupId: jakarta.authentication
       artifactId: jakarta.authentication-api
       version: "${jakarta.authentication-api}"
-  # TODO EE 10 2.1.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.authorization-api.version
-      newValue: 2.0.0
+      newValue: 2.1.0
       addIfMissing: true
-  # TODO EE 10 3.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.authentication-api
-      newValue: 2.0.0
+      newValue: 3.0.0
       addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe
@@ -520,10 +569,10 @@ recipeList:
       newValue: 6.0.0-RC4
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-graphql.version
-      newValue: 2.0.0.RC8
+      newValue: 2.0.0.RC10
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-health.version
-      newValue: 4.0.0-RC2
+      newValue: 4.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-jwt.version
       newValue: 2.0
@@ -558,10 +607,10 @@ recipeList:
       newValue: 4.0.1
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-metrics.version
-      newValue: 4.0.0-RC1
+      newValue: 4.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-open-api.version
-      newValue: 3.0.0-RC3
+      newValue: 3.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-opentracing-api.version
       newValue: 3.0
@@ -570,7 +619,7 @@ recipeList:
       newValue: 3.0.0-RC1
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-reactive-messaging.version
-      newValue: 4.0.0.RC1
+      newValue: 4.0.0.RC3
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-rest-client.version
       newValue: 3.0
@@ -628,7 +677,7 @@ recipeList:
       newValue: 3.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy-reactive-testsuite.repo.ref
-      newValue: c5785f3465fa87395574fde1274c1712b3aa728b
+      newValue: 4116f1a0c5605ad00d7779367dac8002af8c6882
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.maven.javax.managed
@@ -800,12 +849,6 @@ type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.infinispan
 displayName: Adjust Infinispan version and dependencies
 recipeList:
-  - org.openrewrite.maven.ChangePropertyValue:
-      key: infinispan.version
-      newValue: 14.0.0.Dev04
-  - org.openrewrite.maven.ChangePropertyValue:
-      key: infinispan.protostream.version
-      newValue: 14.0.0.CR2
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.infinispan
       oldArtifactId: infinispan-core
@@ -816,41 +859,24 @@ recipeList:
       oldGroupId: org.infinispan
       oldArtifactId: infinispan-client-hotrod
       newGroupId: org.infinispan
-      newArtifactId: infinispan-client-hotrod
-      newClassifier: jakarta
+      newArtifactId: infinispan-client-hotrod-jakarta
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.infinispan
       oldArtifactId: infinispan-commons
       newGroupId: org.infinispan
-      newArtifactId: infinispan-commons
-      newClassifier: jakarta
+      newArtifactId: infinispan-commons-jakarta
   - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
       oldGroupId: org.infinispan
       oldArtifactId: infinispan-core
       newGroupId: org.infinispan
-      newArtifactId: infinispan-core
-      newClassifier: jakarta
+      newArtifactId: infinispan-core-jakarta
   - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
       oldGroupId: org.infinispan
       oldArtifactId: infinispan-client-hotrod
       newGroupId: org.infinispan
-      newArtifactId: infinispan-client-hotrod
-      newClassifier: jakarta
+      newArtifactId: infinispan-client-hotrod-jakarta
   - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
       oldGroupId: org.infinispan
       oldArtifactId: infinispan-commons
       newGroupId: org.infinispan
-      newArtifactId: infinispan-commons
-      newClassifier: jakarta
----
-type: specs.openrewrite.org/v1beta/recipe
-name: io.quarkus.fix-infinispan-commons
-displayName: Adjust Infinispan version and dependencies
-recipeList:
-  - org.openrewrite.maven.ExcludeDependency:
-      groupId: org.infinispan
-      artifactId: infinispan-commons
-  - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
-      groupId: org.infinispan
-      artifactId: infinispan-commons
-      classifier: jakarta
+      newArtifactId: infinispan-commons-jakarta

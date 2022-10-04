@@ -57,7 +57,7 @@ class ReactiveBookRepositoryResource {
     @POST
     fun addBook(book: Book): Uni<Response> {
         return reactiveBookRepository.persist(book).map {
-            //the ID is populated before sending it to the database
+            // the ID is populated before sending it to the database
             Response.created(URI.create("/books/entity${book.id}")).build()
         }
     }
@@ -68,18 +68,18 @@ class ReactiveBookRepositoryResource {
     // PATCH is not correct here but it allows to test persistOrUpdate without a specific subpath
     @PATCH
     fun upsertBook(book: Book): Uni<Response> =
-            reactiveBookRepository.persistOrUpdate(book).map { Response.accepted().build() }
+        reactiveBookRepository.persistOrUpdate(book).map { Response.accepted().build() }
 
     @DELETE
     @Path("/{id}")
     fun deleteBook(@PathParam("id") id: String?): Uni<Void> {
         return reactiveBookRepository.deleteById(ObjectId(id))
-                .map { d ->
-                    if (d) {
-                        return@map null
-                    }
-                    throw NotFoundException()
+            .map { d ->
+                if (d) {
+                    return@map null
                 }
+                throw NotFoundException()
+            }
     }
 
     @GET
@@ -89,31 +89,46 @@ class ReactiveBookRepositoryResource {
     @GET
     @Path("/search/{author}")
     fun getBooksByAuthor(@PathParam("author") author: String): Uni<List<Book>> =
-            reactiveBookRepository.list("author", author)
+        reactiveBookRepository.list("author", author)
 
     @GET
     @Path("/search")
-    fun search(@QueryParam("author") author: String?, @QueryParam("title") title: String?,
-               @QueryParam("dateFrom") dateFrom: String?, @QueryParam("dateTo") dateTo: String?): Uni<Book?> {
+    fun search(
+        @QueryParam("author") author: String?,
+        @QueryParam("title") title: String?,
+        @QueryParam("dateFrom") dateFrom: String?,
+        @QueryParam("dateTo") dateTo: String?
+    ): Uni<Book?> {
         return if (author != null) {
             reactiveBookRepository.find("{'author': ?1,'bookTitle': ?2}", author, title!!).firstResult()
         } else {
             reactiveBookRepository
-                    .find("{'creationDate': {\$gte: ?1}, 'creationDate': {\$lte: ?2}}", LocalDate.parse(dateFrom),
-                            LocalDate.parse(dateTo))
-                    .firstResult()
+                .find(
+                    "{'creationDate': {\$gte: ?1}, 'creationDate': {\$lte: ?2}}",
+                    LocalDate.parse(dateFrom),
+                    LocalDate.parse(dateTo)
+                )
+                .firstResult()
         }
     }
 
     @GET
     @Path("/search2")
-    fun search2(@QueryParam("author") author: String?, @QueryParam("title") title: String?,
-                @QueryParam("dateFrom") dateFrom: String?, @QueryParam("dateTo") dateTo: String?): Uni<Book?> {
+    fun search2(
+        @QueryParam("author") author: String?,
+        @QueryParam("title") title: String?,
+        @QueryParam("dateFrom") dateFrom: String?,
+        @QueryParam("dateTo") dateTo: String?
+    ): Uni<Book?> {
         return if (author != null) {
-            reactiveBookRepository.find("{'author': :author,'bookTitle': :title}",
-                    Parameters.with("author", author).and("title", title)).firstResult()
-        } else reactiveBookRepository.find("{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
-                Parameters.with("dateFrom", LocalDate.parse(dateFrom)).and("dateTo", LocalDate.parse(dateTo))).firstResult()
+            reactiveBookRepository.find(
+                "{'author': :author,'bookTitle': :title}",
+                Parameters.with("author", author).and("title", title)
+            ).firstResult()
+        } else reactiveBookRepository.find(
+            "{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
+            Parameters.with("dateFrom", LocalDate.parse(dateFrom)).and("dateTo", LocalDate.parse(dateTo))
+        ).firstResult()
     }
 
     @DELETE

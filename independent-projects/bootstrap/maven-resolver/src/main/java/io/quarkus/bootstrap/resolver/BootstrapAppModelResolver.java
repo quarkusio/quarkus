@@ -1,22 +1,5 @@
 package io.quarkus.bootstrap.resolver;
 
-import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
-import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.model.ApplicationModelBuilder;
-import io.quarkus.bootstrap.resolver.maven.ApplicationDependencyTreeResolver;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.util.DependencyUtils;
-import io.quarkus.bootstrap.workspace.ArtifactSources;
-import io.quarkus.bootstrap.workspace.SourceDir;
-import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.ResolvableDependency;
-import io.quarkus.maven.dependency.ResolvedDependency;
-import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
-import io.quarkus.paths.PathCollection;
-import io.quarkus.paths.PathList;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -26,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
@@ -44,6 +28,24 @@ import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 import org.eclipse.aether.version.Version;
+
+import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.model.ApplicationModelBuilder;
+import io.quarkus.bootstrap.resolver.maven.ApplicationDependencyTreeResolver;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.util.DependencyUtils;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
+import io.quarkus.bootstrap.workspace.SourceDir;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.ResolvableDependency;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
+import io.quarkus.paths.PathCollection;
+import io.quarkus.paths.PathList;
 
 /**
  * @author Alexey Loubyansky

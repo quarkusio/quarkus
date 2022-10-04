@@ -1,8 +1,5 @@
 package io.quarkus.bootstrap.workspace;
 
-import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.paths.PathCollection;
-import io.quarkus.paths.PathList;
 import java.io.File;
 import java.io.Serializable;
 import java.nio.file.Path;
@@ -12,6 +9,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.paths.PathCollection;
+import io.quarkus.paths.PathList;
 
 public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
 

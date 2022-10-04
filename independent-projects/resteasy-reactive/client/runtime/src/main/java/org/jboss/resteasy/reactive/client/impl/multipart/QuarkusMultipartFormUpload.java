@@ -1,5 +1,9 @@
 package org.jboss.resteasy.reactive.client.impl.multipart;
 
+import java.io.File;
+import java.nio.charset.Charset;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
@@ -18,9 +22,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.impl.headers.HeadersAdaptor;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.impl.InboundBuffer;
-import java.io.File;
-import java.nio.charset.Charset;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * based on {@link io.vertx.ext.web.client.impl.MultipartFormUpload}

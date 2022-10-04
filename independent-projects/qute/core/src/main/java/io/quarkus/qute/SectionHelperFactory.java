@@ -1,12 +1,14 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.TemplateNode.Origin;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
+
+import io.quarkus.qute.TemplateNode.Origin;
 
 /**
  * Factory to create a new {@link SectionHelper} based on the {@link SectionInitContextImpl}.
@@ -240,6 +242,14 @@ public interface SectionHelperFactory<T extends SectionHelper> {
         public default Origin getOrigin() {
             return getBlocks().get(0).origin;
         }
+
+        /**
+         * Note that the returned supplier may only be used after the template is parsed, e.g. during the invocation of
+         * {@link SectionHelper#resolve(io.quarkus.qute.SectionHelper.SectionResolutionContext)}.
+         *
+         * @return the current template
+         */
+        Supplier<Template> getCurrentTemplate();
 
     }
 

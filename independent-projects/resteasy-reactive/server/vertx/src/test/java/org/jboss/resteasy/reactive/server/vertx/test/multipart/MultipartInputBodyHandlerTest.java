@@ -3,14 +3,13 @@ package org.jboss.resteasy.reactive.server.vertx.test.multipart;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 
-import io.restassured.RestAssured;
-import io.vertx.ext.web.handler.BodyHandler;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Supplier;
+
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.resteasy.reactive.server.vertx.test.multipart.other.OtherPackageFormDataBase;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -20,6 +19,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
+import io.vertx.ext.web.handler.BodyHandler;
 
 public class MultipartInputBodyHandlerTest extends AbstractMultipartTest {
 

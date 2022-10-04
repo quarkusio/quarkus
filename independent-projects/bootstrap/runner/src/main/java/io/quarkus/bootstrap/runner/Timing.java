@@ -1,11 +1,13 @@
 package io.quarkus.bootstrap.runner;
 
-import io.quarkus.bootstrap.graal.ImageInfo;
-import io.quarkus.bootstrap.logging.InitialConfigurator;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.logging.Handler;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.bootstrap.graal.ImageInfo;
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 
 /**
  * Class that is responsible for printing out timing results.

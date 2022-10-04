@@ -2,6 +2,8 @@ package io.quarkus.arc.processor;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 
@@ -31,7 +33,7 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
     }
 
     public THIS param(String name, boolean[] value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
@@ -41,7 +43,7 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
     }
 
     public THIS param(String name, byte[] value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
@@ -51,7 +53,7 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
     }
 
     public THIS param(String name, short[] value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
@@ -61,7 +63,7 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
     }
 
     public THIS param(String name, int[] value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
@@ -71,7 +73,7 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
     }
 
     public THIS param(String name, long[] value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
@@ -81,7 +83,7 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
     }
 
     public THIS param(String name, float[] value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
@@ -91,7 +93,7 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
     }
 
     public THIS param(String name, double[] value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
@@ -101,57 +103,57 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
     }
 
     public THIS param(String name, char[] value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, String value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, String[] value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, Enum<?> value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, Enum<?>[] value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, Class<?> value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, Class<?>[] value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, ClassInfo value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, ClassInfo[] value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, AnnotationInstance value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 
     public THIS param(String name, AnnotationInstance[] value) {
-        params.put(name, value);
+        params.put(name, Objects.requireNonNull(value));
         return self();
     }
 

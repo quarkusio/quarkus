@@ -17,7 +17,7 @@ public class KafkaRuntimeConfigProducer {
 
     // not "kafka.", because we also inspect env vars, which start with "KAFKA_"
     private static final String CONFIG_PREFIX = "kafka";
-
+    private static final String UI_CONFIG_PREFIX = CONFIG_PREFIX + ".ui";
     private static final String GROUP_ID = "group.id";
 
     @Produces
@@ -29,7 +29,10 @@ public class KafkaRuntimeConfigProducer {
 
         for (String propertyName : config.getPropertyNames()) {
             String propertyNameLowerCase = propertyName.toLowerCase();
-            if (!propertyNameLowerCase.startsWith(CONFIG_PREFIX)) {
+            if (propertyNameLowerCase.startsWith(UI_CONFIG_PREFIX)) {
+                config.getOptionalValue(propertyName, String.class).orElse("");
+            }
+            if (!propertyNameLowerCase.startsWith(CONFIG_PREFIX) || propertyNameLowerCase.startsWith(UI_CONFIG_PREFIX)) {
                 continue;
             }
             // Replace _ by . - This is because Kafka properties tend to use . and env variables use _ for every special

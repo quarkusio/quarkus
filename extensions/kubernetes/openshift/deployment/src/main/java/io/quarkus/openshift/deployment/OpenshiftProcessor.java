@@ -2,6 +2,7 @@ package io.quarkus.openshift.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
@@ -14,11 +15,11 @@ import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 public class OpenshiftProcessor {
 
     @BuildStep
-    public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, OpenshiftConfig config,
+    public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities, OpenshiftConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
 
-        DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind();
+        DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind(capabilities);
         deploymentTargets
                 .produce(
                         new KubernetesDeploymentTargetBuildItem(OPENSHIFT, deploymentResourceKind.kind,

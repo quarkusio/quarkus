@@ -1,12 +1,14 @@
 package io.quarkus.devtools.project.create;
 
+import java.nio.file.Path;
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.PlatformStreamCoords;
-import java.nio.file.Path;
-import java.util.List;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 
 public class UpstreamStreamCoordsWithNullPlatformKeyTest extends MultiplePlatformBomsTestBase {
 

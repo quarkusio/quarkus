@@ -1,10 +1,11 @@
 package io.quarkus.bootstrap.app;
 
+import java.io.Serializable;
+import java.nio.file.Path;
+
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
-import java.io.Serializable;
-import java.nio.file.Path;
 
 /**
  * An additional archive that should be added to the generated application.

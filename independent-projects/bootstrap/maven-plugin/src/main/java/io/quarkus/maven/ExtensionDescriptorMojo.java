@@ -1,31 +1,5 @@
 package io.quarkus.maven;
 
-import com.fasterxml.jackson.core.json.JsonReadFeature;
-import com.fasterxml.jackson.core.util.DefaultIndenter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.model.ApplicationModelBuilder;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
-import io.quarkus.bootstrap.util.DependencyUtils;
-import io.quarkus.fs.util.ZipUtils;
-import io.quarkus.maven.ExtensionDescriptorMojo.RemovedResources;
-import io.quarkus.maven.capabilities.CapabilitiesConfig;
-import io.quarkus.maven.capabilities.CapabilityConfig;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.GACTV;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -44,6 +18,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -73,6 +48,33 @@ import org.eclipse.aether.resolution.ArtifactDescriptorResult;
 import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
+
+import com.fasterxml.jackson.core.json.JsonReadFeature;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.model.ApplicationModelBuilder;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
+import io.quarkus.bootstrap.util.DependencyUtils;
+import io.quarkus.fs.util.ZipUtils;
+import io.quarkus.maven.capabilities.CapabilitiesConfig;
+import io.quarkus.maven.capabilities.CapabilityConfig;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACTV;
 
 /**
  * @deprecated in favor of {@code io.quarkus:quarkus-extension-maven-plugin}.
@@ -199,7 +201,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     @Parameter(required = false, defaultValue = "${skipExtensionValidation}")
     private boolean skipExtensionValidation;
 
-    @Parameter(required = false, defaultValue = "${ignoreNotDetectedQuarkusCoreVersion")
+    @Parameter(required = false, defaultValue = "${ignoreNotDetectedQuarkusCoreVersion}")
     boolean ignoreNotDetectedQuarkusCoreVersion;
 
     @Parameter

@@ -2,14 +2,13 @@ package org.jboss.resteasy.reactive.client.impl;
 
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.READ_TIMEOUT;
 
-import io.vertx.core.Context;
-import io.vertx.core.http.HttpClient;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.CompletionStageRxInvoker;
@@ -24,9 +23,13 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
+
+import io.vertx.core.Context;
+import io.vertx.core.http.HttpClient;
 
 public class InvocationBuilderImpl implements Invocation.Builder {
 

@@ -93,10 +93,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
 import javax.enterprise.inject.spi.DeploymentException;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.sse.SseEventSink;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -146,7 +148,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             DotName.createSimple("org.jboss.resteasy.reactive.server.SimpleResourceInfo"), //TODO: fixme
             RESOURCE_INFO)));
 
-    private static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(INSTANT, LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME,
+    protected static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(INSTANT, LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME,
             OFFSET_TIME,
             OFFSET_DATE_TIME, ZONED_DATE_TIME);
 
@@ -224,7 +226,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Function<String, BeanFactory<Object>> factoryCreator;
     private final Consumer<ResourceMethodCallbackData> resourceMethodCallback;
     private final AnnotationStore annotationStore;
-    private final ApplicationScanningResult applicationScanningResult;
+    protected final ApplicationScanningResult applicationScanningResult;
     private final Set<DotName> contextTypes;
     private final MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension;
     private final MultipartParameterIndexerExtension multipartParameterIndexerExtension;
@@ -281,7 +283,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             if (classLevelExceptionMappers != null) {
                 clazz.setClassLevelExceptionMappers(classLevelExceptionMappers);
             }
-            List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
+            List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(), new HashSet<>(),
                     clazz.getPathParameters(), clazz.getPath(), considerApplication);
             clazz.getMethods().addAll(methods);
 
@@ -349,7 +351,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             Map<String, Object> methodContext);
 
     protected List<ResourceMethod> createEndpoints(ClassInfo currentClassInfo,
-            ClassInfo actualEndpointInfo, Set<String> seenMethods,
+            ClassInfo actualEndpointInfo, Set<String> seenMethods, Set<String> existingClassNameBindings,
             Set<String> pathParameters, String resourceClassPath, boolean considerApplication) {
         if (considerApplication && applicationScanningResult != null
                 && !applicationScanningResult.keepClass(actualEndpointInfo.name().toString())) {
@@ -371,6 +373,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 classConsumes, pathParameters, classStreamElementType);
 
         Set<String> classNameBindings = NameBindingUtil.nameBindingNames(index, currentClassInfo);
+        if (classNameBindings.isEmpty()) {
+            classNameBindings = existingClassNameBindings;
+        }
 
         for (DotName httpMethod : httpAnnotationToMethod.keySet()) {
             List<MethodInfo> methods = currentClassInfo.methods();
@@ -436,7 +441,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         if (superClassName != null && !superClassName.equals(OBJECT)) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
-                ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
+                ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods, classNameBindings,
                         pathParameters, resourceClassPath, considerApplication));
             }
         }
@@ -444,7 +449,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         for (DotName i : interfaces) {
             ClassInfo superClass = index.getClassByName(i);
             if (superClass != null) {
-                ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
+                ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods, classNameBindings,
                         pathParameters, resourceClassPath, considerApplication));
             }
         }
@@ -1037,17 +1042,41 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
         }
         if (pos != -1) {
-            List<Type> params = JandexUtil.resolveTypeParameters(actualEndpointClass.name(), currentClass.name(),
-                    indexView);
-
-            Type resolved = params.get(pos);
-            if (resolved.kind() != Type.Kind.TYPE_VARIABLE
-                    || !resolved.asTypeVariable().identifier().equals(typeVariable.identifier())) {
+            Type resolved = resolveTypeParameters(pos, actualEndpointClass, currentClass, indexView);
+            if (resolved != null
+                    && (resolved.kind() != Type.Kind.TYPE_VARIABLE
+                            || !resolved.asTypeVariable().identifier().equals(typeVariable.identifier()))) {
                 return resolved;
             }
         }
 
         return typeVariable.bounds().get(0);
+    }
+
+    private static Type resolveTypeParameters(int position, ClassInfo actualEndpointClass, ClassInfo currentClass,
+            IndexView indexView) {
+        List<Type> params = JandexUtil.resolveTypeParameters(actualEndpointClass.name(), currentClass.name(),
+                indexView);
+
+        if (position < params.size()) {
+            return params.get(position);
+        }
+
+        // if not found, try to find the type from the methods
+        for (MethodInfo method : actualEndpointClass.methods()) {
+            for (int paramIndex = 0; paramIndex < method.parametersCount(); paramIndex++) {
+                Type paramType = method.parameterType(paramIndex);
+                if (paramType.kind() == Kind.PARAMETERIZED_TYPE) {
+                    ParameterizedType parameterizedType = paramType.asParameterizedType();
+                    if (parameterizedType.name().equals(currentClass.name())
+                            && position < parameterizedType.arguments().size()) {
+                        return parameterizedType.arguments().get(position);
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     private static String appendPath(String prefix, String suffix) {
@@ -1257,15 +1286,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                                 currentClassInfo, actualEndpointInfo, index);
                     }
 
-                    handleOptionalParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
-                            genericElementType);
+                    handleOptionalParam(existingConverters, anns, errorLocation, hasRuntimeConverters, builder, elementType,
+                            genericElementType, currentMethodInfo);
                 }
                 builder.setOptional(true);
             } else if (convertible) {
                 typeHandled = true;
                 elementType = toClassName(pt, currentClassInfo, actualEndpointInfo, index);
                 handleOtherParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
-            } else {
+            } else if (builder.getType() != ParameterType.BEAN) {
                 // the "element" type is not of importance as in this case the signature is used at runtime to determine the proper types
                 elementType = DUMMY_ELEMENT_TYPE.toString();
                 addReaderForType(additionalReaders, pt);
@@ -1356,8 +1385,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             boolean hasRuntimeConverters, PARAM builder, String elementType) {
     }
 
-    protected void handleOptionalParam(Map<String, String> existingConverters, String errorLocation,
-            boolean hasRuntimeConverters, PARAM builder, String elementType, String genericElementType) {
+    protected void handleOptionalParam(Map<String, String> existingConverters,
+            Map<DotName, AnnotationInstance> parameterAnnotations,
+            String errorLocation,
+            boolean hasRuntimeConverters, PARAM builder, String elementType, String genericElementType,
+            MethodInfo currentMethodInfo) {
     }
 
     protected void handleSetParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,

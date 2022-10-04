@@ -5,6 +5,21 @@ import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+
+import javax.enterprise.util.AnnotationLiteral;
+
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.arc.processor.AnnotationLiteralProcessor.AnnotationLiteralClassInfo;
 import io.quarkus.arc.processor.AnnotationLiteralProcessor.CacheKey;
@@ -16,18 +31,6 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import javax.enterprise.util.AnnotationLiteral;
-import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type;
-import org.jboss.logging.Logger;
 
 /**
  * This is an internal companion of {@link AnnotationLiteralProcessor} that handles generating

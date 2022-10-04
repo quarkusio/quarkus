@@ -1,21 +1,5 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
-import io.quarkus.bootstrap.model.ApplicationModelBuilder;
-import io.quarkus.bootstrap.model.CapabilityContract;
-import io.quarkus.bootstrap.model.PlatformImportsImpl;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.util.BootstrapUtils;
-import io.quarkus.bootstrap.util.DependencyUtils;
-import io.quarkus.bootstrap.util.PropertyUtils;
-import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.DependencyFlags;
-import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
-import io.quarkus.paths.PathList;
-import io.quarkus.paths.PathTree;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -35,6 +19,7 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
+
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositoryException;
 import org.eclipse.aether.RepositorySystemSession;
@@ -55,6 +40,23 @@ import org.eclipse.aether.util.graph.selector.ExclusionDependencySelector;
 import org.eclipse.aether.util.graph.transformer.ConflictIdSorter;
 import org.eclipse.aether.util.graph.transformer.ConflictMarker;
 import org.jboss.logging.Logger;
+
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
+import io.quarkus.bootstrap.model.ApplicationModelBuilder;
+import io.quarkus.bootstrap.model.CapabilityContract;
+import io.quarkus.bootstrap.model.PlatformImportsImpl;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.util.BootstrapUtils;
+import io.quarkus.bootstrap.util.DependencyUtils;
+import io.quarkus.bootstrap.util.PropertyUtils;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
+import io.quarkus.paths.PathList;
+import io.quarkus.paths.PathTree;
 
 public class ApplicationDependencyTreeResolver {
 

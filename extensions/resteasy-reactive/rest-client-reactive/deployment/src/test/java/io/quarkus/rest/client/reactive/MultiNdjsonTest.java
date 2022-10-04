@@ -55,7 +55,7 @@ public class MultiNdjsonTest {
             fail("Streaming did not complete in time");
         }
         assertThat(collected).hasSize(4)
-                .contains("one", "two", "three", "four");
+                .contains("\"one\"", "\"two\"", "\"three\"", "\"four\"");
     }
 
     @Test

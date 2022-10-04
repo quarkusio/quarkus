@@ -7,7 +7,6 @@ import org.jboss.logging.Logger
 import java.net.URI
 import java.time.LocalDate
 import javax.annotation.PostConstruct
-import javax.ws.rs.Consumes
 import javax.ws.rs.DELETE
 import javax.ws.rs.GET
 import javax.ws.rs.NotFoundException
@@ -16,9 +15,7 @@ import javax.ws.rs.POST
 import javax.ws.rs.PUT
 import javax.ws.rs.Path
 import javax.ws.rs.PathParam
-import javax.ws.rs.Produces
 import javax.ws.rs.QueryParam
-import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
 @Path("/books/entity")
@@ -73,29 +70,44 @@ class BookEntityResource {
     @GET
     @Path("/search/{author}")
     fun getBooksByAuthor(@PathParam("author") author: String): List<BookShortView> =
-            BookEntity.find("author", author).project(BookShortView::class.java).list()
+        BookEntity.find("author", author).project(BookShortView::class.java).list()
 
     @GET
     @Path("/search")
-    fun search(@QueryParam("author") author: String?, @QueryParam("title") title: String?,
-               @QueryParam("dateFrom") dateFrom: String?, @QueryParam("dateTo") dateTo: String?): BookEntity? {
+    fun search(
+        @QueryParam("author") author: String?,
+        @QueryParam("title") title: String?,
+        @QueryParam("dateFrom") dateFrom: String?,
+        @QueryParam("dateTo") dateTo: String?
+    ): BookEntity? {
         return if (author != null) {
             BookEntity.find("{'author': ?1,'bookTitle': ?2}", author, title!!).firstResult()
         } else BookEntity
-                .find("{'creationDate': {\$gte: ?1}, 'creationDate': {\$lte: ?2}}", LocalDate.parse(dateFrom),
-                        LocalDate.parse(dateTo))
-                .firstResult()
+            .find(
+                "{'creationDate': {\$gte: ?1}, 'creationDate': {\$lte: ?2}}",
+                LocalDate.parse(dateFrom),
+                LocalDate.parse(dateTo)
+            )
+            .firstResult()
     }
 
     @GET
     @Path("/search2")
-    fun search2(@QueryParam("author") author: String?, @QueryParam("title") title: String?,
-                @QueryParam("dateFrom") dateFrom: String?, @QueryParam("dateTo") dateTo: String?): BookEntity? {
+    fun search2(
+        @QueryParam("author") author: String?,
+        @QueryParam("title") title: String?,
+        @QueryParam("dateFrom") dateFrom: String?,
+        @QueryParam("dateTo") dateTo: String?
+    ): BookEntity? {
         return if (author != null) {
-            BookEntity.find("{'author': :author,'bookTitle': :title}",
-                    Parameters.with("author", author).and("title", title)).firstResult()
-        } else BookEntity.find("{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
-                Parameters.with("dateFrom", LocalDate.parse(dateFrom)).and("dateTo", LocalDate.parse(dateTo))).firstResult()
+            BookEntity.find(
+                "{'author': :author,'bookTitle': :title}",
+                Parameters.with("author", author).and("title", title)
+            ).firstResult()
+        } else BookEntity.find(
+            "{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
+            Parameters.with("dateFrom", LocalDate.parse(dateFrom)).and("dateTo", LocalDate.parse(dateTo))
+        ).firstResult()
     }
 
     @DELETE

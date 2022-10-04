@@ -39,7 +39,7 @@ class TestEndpoint {
     @Transactional
     fun testModel(): String {
         Person.flush()
-        Assertions.assertNotNull(Person.getEntityManager());
+        Assertions.assertNotNull(Person.getEntityManager())
 
         Assertions.assertDoesNotThrow {
             Person.findById(Long.MIN_VALUE)
@@ -221,7 +221,7 @@ class TestEndpoint {
             person2.persistAndFlush()
             Assertions.fail<Any>()
         } catch (pe: PersistenceException) {
-            //this is expected
+            // this is expected
         }
         return "OK"
     }
@@ -233,8 +233,10 @@ class TestEndpoint {
         var updateByIndexParameter: Int = Person.update("update from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1")
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        var updateByNamedParameter: Int = Person.update("update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                Parameters.with("pName", "stefp2").map())
+        var updateByNamedParameter: Int = Person.update(
+            "update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
+            Parameters.with("pName", "stefp2").map()
+        )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, Person.deleteAll())
@@ -245,8 +247,10 @@ class TestEndpoint {
         updateByIndexParameter = Person.update("from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1")
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        updateByNamedParameter = Person.update("from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                Parameters.with("pName", "stefp2").map())
+        updateByNamedParameter = Person.update(
+            "from Person2 p set p.name = 'stefNEW' where p.name = :pName",
+            Parameters.with("pName", "stefp2").map()
+        )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, Person.deleteAll())
@@ -257,8 +261,10 @@ class TestEndpoint {
         updateByIndexParameter = Person.update("set name = 'stefNEW' where name = ?1", "stefp1")
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        updateByNamedParameter = Person.update("set name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2").map())
+        updateByNamedParameter = Person.update(
+            "set name = 'stefNEW' where name = :pName",
+            Parameters.with("pName", "stefp2").map()
+        )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, Person.deleteAll())
@@ -269,8 +275,10 @@ class TestEndpoint {
         updateByIndexParameter = Person.update("name = 'stefNEW' where name = ?1", "stefp1")
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        updateByNamedParameter = Person.update("name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2").map())
+        updateByNamedParameter = Person.update(
+            "name = 'stefNEW' where name = :pName",
+            Parameters.with("pName", "stefp2").map()
+        )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, Person.deleteAll())
@@ -281,8 +289,10 @@ class TestEndpoint {
         updateByIndexParameter = Person.update("name = 'stefNEW' where name = ?1", "stefp1")
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        updateByNamedParameter = Person.update("name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2"))
+        updateByNamedParameter = Person.update(
+            "name = 'stefNEW' where name = :pName",
+            Parameters.with("pName", "stefp2")
+        )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, Person.deleteAll())
@@ -290,20 +300,27 @@ class TestEndpoint {
 //        Assertions.assertThrows(PanacheQueryException::class.java, { Person.update(null) },
 //                "PanacheQueryException should have thrown")
 
-        Assertions.assertThrows(PanacheQueryException::class.java, { Person.update(" ") },
-                "PanacheQueryException should have thrown")
+        Assertions.assertThrows(
+            PanacheQueryException::class.java,
+            { Person.update(" ") },
+            "PanacheQueryException should have thrown"
+        )
     }
 
     private fun testUpdateDAO() {
         makeSavedPerson("p1")
         makeSavedPerson("p2")
 
-        var updateByIndexParameter: Int = personRepository.update("update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
-                "stefp1")
+        var updateByIndexParameter: Int = personRepository.update(
+            "update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
+            "stefp1"
+        )
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        var updateByNamedParameter: Int = personRepository.update("update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                Parameters.with("pName", "stefp2").map())
+        var updateByNamedParameter: Int = personRepository.update(
+            "update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
+            Parameters.with("pName", "stefp2").map()
+        )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, personRepository.deleteAll())
@@ -314,8 +331,10 @@ class TestEndpoint {
         updateByIndexParameter = personRepository.update("from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1")
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        updateByNamedParameter = personRepository.update("from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                Parameters.with("pName", "stefp2").map())
+        updateByNamedParameter = personRepository.update(
+            "from Person2 p set p.name = 'stefNEW' where p.name = :pName",
+            Parameters.with("pName", "stefp2").map()
+        )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, personRepository.deleteAll())
@@ -326,8 +345,10 @@ class TestEndpoint {
         updateByIndexParameter = personRepository.update("set name = 'stefNEW' where name = ?1", "stefp1")
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        updateByNamedParameter = personRepository.update("set name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2").map())
+        updateByNamedParameter = personRepository.update(
+            "set name = 'stefNEW' where name = :pName",
+            Parameters.with("pName", "stefp2").map()
+        )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, personRepository.deleteAll())
@@ -338,8 +359,10 @@ class TestEndpoint {
         updateByIndexParameter = personRepository.update("name = 'stefNEW' where name = ?1", "stefp1")
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        updateByNamedParameter = personRepository.update("name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2").map())
+        updateByNamedParameter = personRepository.update(
+            "name = 'stefNEW' where name = :pName",
+            Parameters.with("pName", "stefp2").map()
+        )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, personRepository.deleteAll())
@@ -350,8 +373,10 @@ class TestEndpoint {
         updateByIndexParameter = personRepository.update("name = 'stefNEW' where name = ?1", "stefp1")
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        updateByNamedParameter = personRepository.update("name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2"))
+        updateByNamedParameter = personRepository.update(
+            "name = 'stefNEW' where name = :pName",
+            Parameters.with("pName", "stefp2")
+        )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, personRepository.deleteAll())
@@ -359,8 +384,11 @@ class TestEndpoint {
 //        Assertions.assertThrows(PanacheQueryException::class.java, { personDao.update(null) },
 //                "PanacheQueryException should have thrown")
 
-        Assertions.assertThrows(PanacheQueryException::class.java, { personRepository.update(" ") },
-                "PanacheQueryException should have thrown")
+        Assertions.assertThrows(
+            PanacheQueryException::class.java,
+            { personRepository.update(" ") },
+            "PanacheQueryException should have thrown"
+        )
     }
 
     private fun testSorting() {
@@ -410,7 +438,7 @@ class TestEndpoint {
         Assertions.assertEquals(order2, list)
 
         list = Person.stream("name = :name", sort2, Parameters.with("name", "stef").map())
-                .collect(Collectors.toList())
+            .collect(Collectors.toList())
         Assertions.assertEquals(order2, list)
 
         list = Person.find("name = :name", sort2, Parameters.with("name", "stef")).list()
@@ -477,7 +505,7 @@ class TestEndpoint {
     @Transactional
     fun testModelDao(): String {
         personRepository.flush()
-        Assertions.assertNotNull(personRepository.getEntityManager());
+        Assertions.assertNotNull(personRepository.getEntityManager())
 
         var persons = personRepository.findAll().list()
         Assertions.assertEquals(0, persons.size)
@@ -625,7 +653,7 @@ class TestEndpoint {
 
         testUpdateDAO()
 
-        //flush
+        // flush
         val person1 = Person()
         person1.name = "testFlush1"
         person1.uniqueName = "unique"
@@ -637,7 +665,7 @@ class TestEndpoint {
             personRepository.persistAndFlush(person2)
             Assertions.fail<Any>()
         } catch (pe: PersistenceException) {
-            //this is expected
+            // this is expected
         }
 
         return "OK"
@@ -660,7 +688,7 @@ class TestEndpoint {
         personRepository.persist(person3)
 
         val sort1 = Sort.by("name", "status")
-        val order1: List<Person> = listOf(person3, person2, person1 )
+        val order1: List<Person> = listOf(person3, person2, person1)
 
         var list = personRepository.findAll(sort1).list()
         Assertions.assertEquals(order1, list)
@@ -906,7 +934,7 @@ class TestEndpoint {
         val person = Person.findAll().firstResult()
         Assertions.assertEquals("1", person?.name)
 
-        if(person != null) {
+        if (person != null) {
             person.name = "2"
         }
         return "OK"
@@ -1022,7 +1050,6 @@ class TestEndpoint {
         Assertions.assertNotNull(f.getAnnotation(XmlTransient::class.java))
     }
 
-
     @GET
     @Path("9036")
     @Transactional
@@ -1047,8 +1074,8 @@ class TestEndpoint {
 
         // should be filtered
         val query = Person.findAll(Sort.by("id"))
-                .filter("Person.isAlive")
-                .filter("Person.hasName", Parameters.with("name", "Stef"))
+            .filter("Person.isAlive")
+            .filter("Person.hasName", Parameters.with("name", "Stef"))
         Assertions.assertEquals(1, query.count())
         Assertions.assertEquals(1, query.list().size)
         Assertions.assertEquals(livePerson, query.list()[0])

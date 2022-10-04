@@ -11,18 +11,24 @@ import java.util.function.Function;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
+import io.quarkus.redis.datasource.bloom.ReactiveBloomCommands;
+import io.quarkus.redis.datasource.countmin.ReactiveCountMinCommands;
+import io.quarkus.redis.datasource.cuckoo.ReactiveCuckooCommands;
 import io.quarkus.redis.datasource.geo.ReactiveGeoCommands;
 import io.quarkus.redis.datasource.hash.ReactiveHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveHyperLogLogCommands;
+import io.quarkus.redis.datasource.json.ReactiveJsonCommands;
 import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
 import io.quarkus.redis.datasource.list.ReactiveListCommands;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveSortedSetCommands;
 import io.quarkus.redis.datasource.string.ReactiveStringCommands;
+import io.quarkus.redis.datasource.topk.ReactiveTopKCommands;
 import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
+import io.quarkus.redis.datasource.value.ReactiveValueCommands;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.redis.client.Command;
@@ -252,6 +258,11 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     }
 
     @Override
+    public <K, V> ReactiveValueCommands<K, V> value(Class<K> redisKeyType, Class<V> valueType) {
+        return new ReactiveStringCommandsImpl<>(this, redisKeyType, valueType);
+    }
+
+    @Override
     public <K, V> ReactiveSetCommands<K, V> set(Class<K> redisKeyType, Class<V> memberType) {
         return new ReactiveSetCommandsImpl<>(this, redisKeyType, memberType);
     }
@@ -269,6 +280,31 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     @Override
     public <K> ReactiveBitMapCommands<K> bitmap(Class<K> redisKeyType) {
         return new ReactiveBitMapCommandsImpl<>(this, redisKeyType);
+    }
+
+    @Override
+    public <K> ReactiveJsonCommands<K> json(Class<K> redisKeyType) {
+        return new ReactiveJsonCommandsImpl<>(this, redisKeyType);
+    }
+
+    @Override
+    public <K, V> ReactiveBloomCommands<K, V> bloom(Class<K> redisKeyType, Class<V> valueType) {
+        return new ReactiveBloomCommandsImpl<>(this, redisKeyType, valueType);
+    }
+
+    @Override
+    public <K, V> ReactiveCuckooCommands<K, V> cuckoo(Class<K> redisKeyType, Class<V> valueType) {
+        return new ReactiveCuckooCommandsImpl<>(this, redisKeyType, valueType);
+    }
+
+    @Override
+    public <K, V> ReactiveCountMinCommands<K, V> countmin(Class<K> redisKeyType, Class<V> valueType) {
+        return new ReactiveCountMinCommandsImpl<>(this, redisKeyType, valueType);
+    }
+
+    @Override
+    public <K, V> ReactiveTopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType) {
+        return new ReactiveTopKCommandsImpl<>(this, redisKeyType, valueType);
     }
 
     @Override

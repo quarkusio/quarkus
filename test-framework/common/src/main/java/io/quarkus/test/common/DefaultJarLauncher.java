@@ -165,6 +165,6 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
 
     @Override
     public void close() {
-        quarkusProcess.destroy();
+        LauncherUtil.destroyProcess(quarkusProcess);
     }
 }

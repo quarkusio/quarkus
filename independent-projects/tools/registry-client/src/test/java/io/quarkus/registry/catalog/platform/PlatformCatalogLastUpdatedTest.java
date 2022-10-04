@@ -2,6 +2,25 @@ package io.quarkus.registry.catalog.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.Iterator;
+
+import org.apache.maven.artifact.repository.metadata.Metadata;
+import org.apache.maven.artifact.repository.metadata.SnapshotVersion;
+import org.apache.maven.artifact.repository.metadata.Versioning;
+import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
+import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.metadata.DefaultMetadata;
+import org.eclipse.aether.metadata.Metadata.Nature;
+import org.junit.jupiter.api.Test;
+
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.Constants;
@@ -17,23 +36,6 @@ import io.quarkus.registry.config.RegistriesConfigMapperHelper;
 import io.quarkus.registry.config.RegistryConfig;
 import io.quarkus.registry.config.RegistryDescriptorConfig;
 import io.quarkus.registry.config.RegistryPlatformsConfig;
-import java.io.Reader;
-import java.io.Writer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.Iterator;
-import org.apache.maven.artifact.repository.metadata.Metadata;
-import org.apache.maven.artifact.repository.metadata.SnapshotVersion;
-import org.apache.maven.artifact.repository.metadata.Versioning;
-import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
-import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.metadata.DefaultMetadata;
-import org.eclipse.aether.metadata.Metadata.Nature;
-import org.junit.jupiter.api.Test;
 
 public class PlatformCatalogLastUpdatedTest {
 

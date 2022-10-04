@@ -12,21 +12,35 @@ import io.smallrye.mutiny.Uni;
 public interface OidcClient extends Closeable {
 
     /**
-     * Returns the grant tokens
+     * Get the grant access and refresh tokens.
      */
     default Uni<Tokens> getTokens() {
         return getTokens(Collections.emptyMap());
     }
 
     /**
-     * Returns the grant tokens
+     * Get the grant access and refresh tokens with additional grant parameters.
      *
      * @param additionalGrantParameters additional grant parameters
+     * @return Uni<Tokens>
      */
     Uni<Tokens> getTokens(Map<String, String> additionalGrantParameters);
 
     /**
-     * Refreshes the grant tokens
+     * Refresh and return a new pair of access and refresh tokens.
+     * Note a refresh token grant will typically return not only a new access token but also a new refresh token.
+     *
+     * @param refreshToken refresh token
+     * @return Uni<Tokens>
      */
     Uni<Tokens> refreshTokens(String refreshToken);
+
+    /**
+     * Revoke the access token.
+     *
+     * @param refreshToken access token which needs to be revoked
+     * @return Uni<Boolean> true if the token has been revoked or found already being invalidated,
+     *         false if the token can not be currently revoked in which case a revocation request might be retried.
+     */
+    Uni<Boolean> revokeAccessToken(String accessToken);
 }

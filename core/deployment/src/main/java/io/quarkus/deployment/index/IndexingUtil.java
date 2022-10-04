@@ -19,6 +19,7 @@ import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassSummary;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexReader;
@@ -134,20 +135,29 @@ public class IndexingUtil {
         if (additionalIndex.contains(classDotName)) {
             return;
         }
+
+        DotName superclassName;
+        Set<DotName> annotationNames;
+
         ClassInfo classInfo = quarkusIndex.getClassByName(classDotName);
         if (classInfo == null) {
             log.debugf("Index class: %s", className);
             try (InputStream stream = IoUtil.readClass(classLoader, className)) {
-                classInfo = indexer.index(stream);
-                additionalIndex.add(classInfo.name());
+                ClassSummary summary = indexer.indexWithSummary(stream);
+                additionalIndex.add(summary.name());
+                superclassName = summary.superclassName();
+                annotationNames = summary.annotations();
             } catch (Exception e) {
                 throw new IllegalStateException("Failed to index: " + className, e);
             }
         } else {
             // The class could be indexed by quarkus - we still need to distinguish framework classes
             additionalIndex.add(classDotName);
+            superclassName = classInfo.superName();
+            annotationNames = classInfo.annotationsMap().keySet();
         }
-        for (DotName annotationName : classInfo.annotationsMap().keySet()) {
+
+        for (DotName annotationName : annotationNames) {
             if (!additionalIndex.contains(annotationName) && quarkusIndex.getClassByName(annotationName) == null) {
                 try (InputStream annotationStream = IoUtil.readClass(classLoader, annotationName.toString())) {
                     if (annotationStream == null) {
@@ -162,8 +172,8 @@ public class IndexingUtil {
                 }
             }
         }
-        if (classInfo.superName() != null && !classInfo.superName().equals(OBJECT)) {
-            indexClass(classInfo.superName().toString(), indexer, quarkusIndex, additionalIndex, classLoader);
+        if (superclassName != null && !superclassName.equals(OBJECT)) {
+            indexClass(superclassName.toString(), indexer, quarkusIndex, additionalIndex, classLoader);
         }
     }
 
@@ -174,20 +184,26 @@ public class IndexingUtil {
         if (additionalIndex.contains(classDotName)) {
             return;
         }
+
+        Set<DotName> annotationNames;
+
         ClassInfo classInfo = quarkusIndex.getClassByName(classDotName);
         if (classInfo == null) {
             log.debugf("Index class: %s", className);
             try (InputStream stream = new ByteArrayInputStream(beanData)) {
-                classInfo = indexer.index(stream);
-                additionalIndex.add(classInfo.name());
+                ClassSummary summary = indexer.indexWithSummary(stream);
+                additionalIndex.add(summary.name());
+                annotationNames = summary.annotations();
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to index: " + className, e);
             }
         } else {
             // The class could be indexed by quarkus - we still need to distinguish framework classes
             additionalIndex.add(classDotName);
+            annotationNames = classInfo.annotationsMap().keySet();
         }
-        for (DotName annotationName : classInfo.annotationsMap().keySet()) {
+
+        for (DotName annotationName : annotationNames) {
             if (!additionalIndex.contains(annotationName) && quarkusIndex.getClassByName(annotationName) == null) {
                 try (InputStream annotationStream = IoUtil.readClass(classLoader, annotationName.toString())) {
                     log.debugf("Index annotation: %s", annotationName);
@@ -241,13 +257,13 @@ public class IndexingUtil {
             }
             try (InputStream in = Files.newInputStream(visit.getPath())) {
                 IndexReader reader = new IndexReader(in);
-                if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
-                    log.warnf(
-                            "Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency",
-                            visit.getPath());
-                    return null;
-                }
                 try {
+                    if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
+                        log.warnf(
+                                "Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency",
+                                visit.getPath());
+                        return null;
+                    }
                     return reader.read();
                 } catch (UnsupportedVersion e) {
                     throw new UnsupportedVersion(

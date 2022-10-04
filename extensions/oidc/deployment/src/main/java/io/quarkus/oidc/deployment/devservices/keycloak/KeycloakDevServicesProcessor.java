@@ -262,10 +262,16 @@ public class KeycloakDevServicesProcessor {
         boolean createDefaultRealm = realmRep == null && capturedDevServicesConfiguration.createRealm;
         Map<String, String> users = getUsers(capturedDevServicesConfiguration.users, createDefaultRealm);
 
-        if (createDefaultRealm) {
-            createDefaultRealm(clientAuthServerBaseUrl, users, oidcClientId, oidcClientSecret);
-        } else if (realmRep != null && keycloakX) {
-            createRealm(clientAuthServerBaseUrl, realmRep);
+        WebClient client = OidcDevServicesUtils.createWebClient(vertxInstance);
+        try {
+            String adminToken = getAdminToken(client, clientAuthServerBaseUrl);
+            if (createDefaultRealm) {
+                createDefaultRealm(client, adminToken, clientAuthServerBaseUrl, users, oidcClientId, oidcClientSecret);
+            } else if (realmRep != null && keycloakX) {
+                createRealm(client, adminToken, clientAuthServerBaseUrl, realmRep);
+            }
+        } finally {
+            client.close();
         }
 
         Map<String, String> configProperties = new HashMap<>();
@@ -334,7 +340,9 @@ public class KeycloakDevServicesProcessor {
                     capturedDevServicesConfiguration.realmPath,
                     capturedDevServicesConfiguration.serviceName,
                     capturedDevServicesConfiguration.shared,
-                    capturedDevServicesConfiguration.javaOpts);
+                    capturedDevServicesConfiguration.javaOpts,
+                    capturedDevServicesConfiguration.startCommand,
+                    capturedDevServicesConfiguration.showLogs);
 
             timeout.ifPresent(oidcContainer::withStartupTimeout);
             oidcContainer.start();
@@ -383,10 +391,12 @@ public class KeycloakDevServicesProcessor {
         private String hostName;
         private final boolean keycloakX;
         private RealmRepresentation realmRep;
+        private final Optional<String> startCommand;
+        private final boolean showLogs;
 
         public QuarkusOidcContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
                 Optional<String> realmPath, String containerLabelValue,
-                boolean sharedContainer, Optional<String> javaOpts) {
+                boolean sharedContainer, Optional<String> javaOpts, Optional<String> startCommand, boolean showLogs) {
             super(dockerImageName);
 
             this.useSharedNetwork = useSharedNetwork;
@@ -404,6 +414,10 @@ public class KeycloakDevServicesProcessor {
             }
 
             this.fixedExposedPort = fixedExposedPort;
+            this.startCommand = startCommand;
+            this.showLogs = showLogs;
+
+            super.setWaitStrategy(Wait.forLogMessage(".*Keycloak.*started.*", 1));
         }
 
         @Override
@@ -436,7 +450,7 @@ public class KeycloakDevServicesProcessor {
             if (keycloakX) {
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PROP, KEYCLOAK_ADMIN_USER);
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);
-                withCommand(KEYCLOAK_QUARKUS_START_CMD
+                withCommand(startCommand.orElse(KEYCLOAK_QUARKUS_START_CMD)
                         + (useSharedNetwork ? " --hostname-port=" + fixedExposedPort.getAsInt() : ""));
             } else {
                 addEnv(KEYCLOAK_WILDFLY_USER_PROP, KEYCLOAK_ADMIN_USER);
@@ -469,8 +483,13 @@ public class KeycloakDevServicesProcessor {
                 addEnv(KEYCLOAK_WILDFLY_IMPORT_PROP, KEYCLOAK_DOCKER_REALM_PATH);
             }
 
+            if (showLogs) {
+                super.withLogConsumer(t -> {
+                    LOG.info("Keycloak: " + t.getUtf8String());
+                });
+            }
+
             LOG.infof("Using %s powered Keycloak distribution", keycloakX ? "Quarkus" : "WildFly");
-            super.setWaitStrategy(Wait.forLogMessage(".*Keycloak.*started.*", 1));
         }
 
         private Integer findRandomPort() {
@@ -532,27 +551,34 @@ public class KeycloakDevServicesProcessor {
         return null;
     }
 
-    private void createDefaultRealm(String keycloakUrl, Map<String, String> users, String oidcClientId,
+    private void createDefaultRealm(WebClient client, String token, String keycloakUrl, Map<String, String> users,
+            String oidcClientId,
             String oidcClientSecret) {
-        RealmRepresentation realm = createRealmRep();
+        RealmRepresentation realm = createDefaultRealmRep();
 
         realm.getClients().add(createClient(oidcClientId, oidcClientSecret));
         for (Map.Entry<String, String> entry : users.entrySet()) {
             realm.getUsers().add(createUser(entry.getKey(), entry.getValue(), getUserRoles(entry.getKey())));
         }
 
-        createRealm(keycloakUrl, realm);
+        createRealm(client, token, keycloakUrl, realm);
     }
 
-    private void createRealm(String keycloakUrl, RealmRepresentation realm) {
-        WebClient client = OidcDevServicesUtils.createWebClient(vertxInstance);
+    private String getAdminToken(WebClient client, String keycloakUrl) {
         try {
-            LOG.tracef("Getting admin token before creating the realm %s", realm.getRealm());
+            LOG.tracef("Acquiring admin token");
 
-            String token = OidcDevServicesUtils.getPasswordAccessToken(client,
+            return OidcDevServicesUtils.getPasswordAccessToken(client,
                     keycloakUrl + "/realms/master/protocol/openid-connect/token",
                     "admin-cli", null, "admin", "admin", null, oidcConfig.devui.webClientTimeout);
+        } catch (Throwable t) {
+            LOG.errorf("Admin token can not be acquired: %s", t.getMessage());
+        }
+        return null;
+    }
 
+    private void createRealm(WebClient client, String token, String keycloakUrl, RealmRepresentation realm) {
+        try {
             LOG.tracef("Creating the realm %s", realm.getRealm());
             HttpResponse<Buffer> createRealmResponse = client.postAbs(keycloakUrl + "/admin/realms")
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
@@ -578,12 +604,13 @@ public class KeycloakDevServicesProcessor {
                     .retry()
                     .withBackOff(Duration.ofSeconds(2), Duration.ofSeconds(2))
                     .expireIn(10 * 1000)
-                    .onFailure().transform(t -> t.getCause());
+                    .onFailure().transform(t -> {
+                        return new RuntimeException("Keycloak server is not available"
+                                + (t.getMessage() != null ? (": " + t.getMessage()) : ""));
+                    });
             realmStatusCodeUni.await().atMost(Duration.ofSeconds(10));
         } catch (Throwable t) {
             LOG.errorf("Realm %s can not be created: %s", realm.getRealm(), t.getMessage());
-        } finally {
-            client.close();
         }
     }
 
@@ -622,13 +649,15 @@ public class KeycloakDevServicesProcessor {
                 : roles;
     }
 
-    private RealmRepresentation createRealmRep() {
+    private RealmRepresentation createDefaultRealmRep() {
         RealmRepresentation realm = new RealmRepresentation();
 
         realm.setRealm(getDefaultRealmName());
         realm.setEnabled(true);
         realm.setUsers(new ArrayList<>());
         realm.setClients(new ArrayList<>());
+        realm.setAccessTokenLifespan(600);
+        realm.setSsoSessionMaxLifespan(600);
 
         RolesRepresentation roles = new RolesRepresentation();
         List<RoleRepresentation> realmRoles = new ArrayList<>();

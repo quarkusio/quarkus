@@ -10,7 +10,7 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-integration-test-k8s-service-binding-jdbc</artifactId>
+    <artifactId>quarkus-integration-test-kubernetes-service-binding-jdbc</artifactId>
     <name>Quarkus - Integration Tests - Kubernetes Service Binding JDBC</name>
 
     <dependencies>

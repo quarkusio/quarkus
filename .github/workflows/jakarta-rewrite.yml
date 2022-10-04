@@ -17,7 +17,7 @@ jobs:
         with:
           token: ${{ secrets.JAKARTA_PUSH_PAT }}
       - name: Set up JDK 11
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: 11

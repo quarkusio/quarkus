@@ -2,13 +2,15 @@ package io.quarkus.arc.test.inheritance;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Model;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.test.ArcTestContainer;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Model;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class ScopeInheritanceStereotypeTest {
 

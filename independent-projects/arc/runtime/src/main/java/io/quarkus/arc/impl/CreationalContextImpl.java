@@ -1,14 +1,16 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableReferenceProvider;
-import io.quarkus.arc.InstanceHandle;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
+
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
+
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.arc.InstanceHandle;
 
 /**
  *
@@ -47,16 +49,17 @@ public class CreationalContextImpl<T> implements CreationalContext<T>, Function<
         return dependentInstances != null && !dependentInstances.isEmpty();
     }
 
-    boolean destroyDependentInstance(Object dependentInstance) {
-        synchronized (this) {
-            if (dependentInstances != null) {
-                for (Iterator<InstanceHandle<?>> iterator = dependentInstances.iterator(); iterator.hasNext();) {
-                    InstanceHandle<?> instanceHandle = iterator.next();
-                    if (instanceHandle.get() == dependentInstance) {
-                        instanceHandle.destroy();
-                        iterator.remove();
-                        return true;
+    public synchronized boolean removeDependentInstance(Object dependentInstance, boolean destroy) {
+        if (dependentInstances != null) {
+            for (Iterator<InstanceHandle<?>> it = dependentInstances.iterator(); it.hasNext();) {
+                InstanceHandle<?> handle = it.next();
+                // The reference equality is used on purpose!
+                if (handle.get() == dependentInstance) {
+                    if (destroy) {
+                        handle.destroy();
                     }
+                    it.remove();
+                    return true;
                 }
             }
         }

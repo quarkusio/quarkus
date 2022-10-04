@@ -1,9 +1,10 @@
 package io.quarkus.qute;
 
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
+
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Represents an instance of {@link Template}.
@@ -118,6 +119,16 @@ public interface TemplateInstance {
      * @return the original template
      */
     Template getTemplate();
+
+    /**
+     *
+     * @param id
+     * @return the fragment or {@code null}
+     * @see Template#getFragment(String)
+     */
+    default Template getFragment(String id) {
+        return getTemplate().getFragment(id);
+    }
 
     /**
      * Register an action that is performed after the rendering is finished.

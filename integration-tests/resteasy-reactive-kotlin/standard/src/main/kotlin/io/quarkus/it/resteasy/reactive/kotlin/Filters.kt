@@ -4,6 +4,7 @@ import kotlinx.coroutines.delay
 import org.jboss.resteasy.reactive.server.ServerRequestFilter
 import org.jboss.resteasy.reactive.server.ServerResponseFilter
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo
+import java.security.SecureRandom
 import javax.ws.rs.container.ContainerRequestContext
 import javax.ws.rs.container.ContainerResponseContext
 import javax.ws.rs.core.Response
@@ -11,18 +12,20 @@ import javax.ws.rs.core.UriInfo
 
 class Filters {
 
+    private val secureRandom = SecureRandom()
+
     @ServerRequestFilter
-    suspend fun addHeader(uriInfo: UriInfo, context: ContainerRequestContext){
+    suspend fun addHeader(uriInfo: UriInfo, context: ContainerRequestContext) {
         delay(100)
         context.headers.add("firstName", "foo")
         delay(100)
     }
 
     @ServerRequestFilter
-    suspend fun addHeaderOrAbort(context: ContainerRequestContext): Response?{
+    suspend fun addHeaderOrAbort(context: ContainerRequestContext): Response? {
         delay(100)
         if (context.headers.containsKey("abort")) {
-            return Response.noContent().build()
+            return Response.noContent().header("random", "" + secureRandom.nextInt()).build()
         }
         context.headers.add("lastName", "bar")
         delay(100)

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
+
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.BeanManager;
@@ -88,7 +89,8 @@ public interface ArcContainer {
      * Returns a supplier that can be used to create new instances, or null if no matching bean can be found.
      *
      * Note that if there are multiple sub classes of the given type this will return the exact match. This means
-     * that this can be used to directly instantiate superclasses of other beans without causing problems.
+     * that this can be used to directly instantiate superclasses of other beans without causing problems. This behavior differs
+     * to standard CDI rules where an ambiguous dependency would exist.
      *
      * see https://github.com/quarkusio/quarkus/issues/3369
      *

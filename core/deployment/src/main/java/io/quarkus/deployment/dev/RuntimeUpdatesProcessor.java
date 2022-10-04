@@ -53,6 +53,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.runner.DevModeMediator;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.changeagent.ClassChangeAgent;
 import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
@@ -484,7 +485,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                         int index = 0;
                         for (Path i : changedClassResults.changedClasses) {
                             byte[] bytes = Files.readAllBytes(i);
-                            String name = indexer.index(new ByteArrayInputStream(bytes)).name().toString();
+                            String name = indexer.indexWithSummary(new ByteArrayInputStream(bytes)).name().toString();
                             defs[index++] = new ClassDefinition(
                                     Thread.currentThread().getContextClassLoader().loadClass(name),
                                     classTransformers.apply(name, bytes));
@@ -602,6 +603,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     ret.add(i.getKey());
                 }
             }
+            List<Path> removedFiles = List.of();
             for (Map.Entry<String, String> remaining : ourHashes.entrySet()) {
                 String file = remaining.getKey();
                 if (file.endsWith("META-INF/MANIFEST.MF") || file.contains("META-INF/maven")
@@ -609,8 +611,14 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     //we have some filters, for files that we don't want to delete
                     continue;
                 }
-                log.info("Deleting removed file " + file);
-                Files.deleteIfExists(applicationRoot.resolve(file));
+                log.info("Scheduled for removal " + file);
+                if (removedFiles.isEmpty()) {
+                    removedFiles = new ArrayList<>();
+                }
+                removedFiles.add(applicationRoot.resolve(file));
+            }
+            if (!removedFiles.isEmpty()) {
+                DevModeMediator.removedFiles.addLast(removedFiles);
             }
             return ret;
         } catch (IOException e) {

@@ -82,7 +82,7 @@ public class RestClientCDIDelegateBuilderTest {
         new RestClientCDIDelegateBuilder<>(TestClient.class,
                 "http://localhost:8080",
                 "test-client",
-                configRoot).build(restClientBuilderMock);
+                configRoot).configureBuilder(restClientBuilderMock);
 
         // then
 
@@ -109,7 +109,7 @@ public class RestClientCDIDelegateBuilderTest {
         Mockito.verify(restClientBuilderMock).register(MyResponseFilter1.class);
         Mockito.verify(restClientBuilderMock).queryParamStyle(QueryParamStyle.COMMA_SEPARATED);
 
-        Mockito.verify(restClientBuilderMock).trustStore(Mockito.any());
+        Mockito.verify(restClientBuilderMock).trustStore(Mockito.any(), Mockito.anyString());
         Mockito.verify(restClientBuilderMock).keyStore(Mockito.any(), Mockito.anyString());
     }
 
@@ -125,7 +125,7 @@ public class RestClientCDIDelegateBuilderTest {
         new RestClientCDIDelegateBuilder<>(TestClient.class,
                 "http://localhost:8080",
                 "test-client",
-                configRoot).build(restClientBuilderMock);
+                configRoot).configureBuilder(restClientBuilderMock);
 
         // then
 
@@ -151,7 +151,7 @@ public class RestClientCDIDelegateBuilderTest {
         Mockito.verify(restClientBuilderMock).register(MyResponseFilter2.class);
         Mockito.verify(restClientBuilderMock).queryParamStyle(QueryParamStyle.MULTI_PAIRS);
 
-        Mockito.verify(restClientBuilderMock).trustStore(Mockito.any());
+        Mockito.verify(restClientBuilderMock).trustStore(Mockito.any(), Mockito.anyString());
         Mockito.verify(restClientBuilderMock).keyStore(Mockito.any(), Mockito.anyString());
     }
 

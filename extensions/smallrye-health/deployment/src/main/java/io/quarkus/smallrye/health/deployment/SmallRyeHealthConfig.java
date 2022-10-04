@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.health.deployment;
 
+import java.util.OptionalInt;
+
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -54,6 +56,12 @@ public class SmallRyeHealthConfig {
      */
     @ConfigItem(defaultValue = "false")
     boolean contextPropagation;
+
+    /**
+     * The number of the maximum health groups that can be created.
+     */
+    @ConfigItem
+    OptionalInt maxGroupRegistriesCount;
 
     /**
      * SmallRye Health UI configuration

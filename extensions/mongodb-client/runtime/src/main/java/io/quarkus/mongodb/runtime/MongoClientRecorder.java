@@ -9,6 +9,7 @@ import javax.enterprise.inject.Default;
 import javax.enterprise.inject.literal.NamedLiteral;
 import javax.enterprise.util.AnnotationLiteral;
 
+import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoClient;
 import com.mongodb.event.ConnectionPoolListener;
 
@@ -16,8 +17,10 @@ import io.quarkus.arc.Arc;
 import io.quarkus.mongodb.metrics.MicrometerConnectionPoolListener;
 import io.quarkus.mongodb.metrics.MongoMetricsConnectionPoolListener;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
+import io.quarkus.mongodb.runtime.dns.MongoDnsClientProvider;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.vertx.core.Vertx;
 
 @Recorder
 public class MongoClientRecorder {
@@ -103,5 +106,26 @@ public class MongoClientRecorder {
                 return new MongoMetricsConnectionPoolListener();
             }
         };
+    }
+
+    /**
+     * We need to perform some initialization work on the main thread to ensure that reactive operations (such as DNS
+     * resolution)
+     * don't end up being performed on the event loop
+     */
+    public void performInitialization(MongodbConfig config, RuntimeValue<Vertx> vertx) {
+        MongoDnsClientProvider.vertx = vertx.getValue();
+        initializeDNSLookup(config.defaultMongoClientConfig);
+        for (MongoClientConfig mongoClientConfig : config.mongoClientConfigs.values()) {
+            initializeDNSLookup(mongoClientConfig);
+        }
+    }
+
+    private void initializeDNSLookup(MongoClientConfig mongoClientConfig) {
+        if (mongoClientConfig.connectionString.isEmpty()) {
+            return;
+        }
+        // this ensures that DNS resolution will take place if necessary
+        new ConnectionString(mongoClientConfig.connectionString.get());
     }
 }

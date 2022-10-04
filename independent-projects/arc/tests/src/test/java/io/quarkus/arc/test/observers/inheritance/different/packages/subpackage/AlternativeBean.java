@@ -1,9 +1,10 @@
 package io.quarkus.arc.test.observers.inheritance.different.packages.subpackage;
 
-import io.quarkus.arc.test.observers.inheritance.different.packages.OriginalBean;
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Alternative;
+
+import io.quarkus.arc.test.observers.inheritance.different.packages.OriginalBean;
 
 @Alternative
 @ApplicationScoped

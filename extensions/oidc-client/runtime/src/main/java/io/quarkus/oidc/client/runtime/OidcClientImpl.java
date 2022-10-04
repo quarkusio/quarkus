@@ -20,6 +20,7 @@ import io.quarkus.oidc.client.Tokens;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.groups.UniOnItem;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
@@ -37,6 +38,7 @@ public class OidcClientImpl implements OidcClient {
 
     private final WebClient client;
     private final String tokenRequestUri;
+    private final String tokenRevokeUri;
     private final MultiMap tokenGrantParams;
     private final MultiMap commonRefreshGrantParams;
     private final String grantType;
@@ -45,10 +47,11 @@ public class OidcClientImpl implements OidcClient {
     private final OidcClientConfig oidcConfig;
     private volatile boolean closed;
 
-    public OidcClientImpl(WebClient client, String tokenRequestUri, String grantType,
+    public OidcClientImpl(WebClient client, String tokenRequestUri, String tokenRevokeUri, String grantType,
             MultiMap tokenGrantParams, MultiMap commonRefreshGrantParams, OidcClientConfig oidcClientConfig) {
         this.client = client;
         this.tokenRequestUri = tokenRequestUri;
+        this.tokenRevokeUri = tokenRevokeUri;
         this.tokenGrantParams = tokenGrantParams;
         this.commonRefreshGrantParams = commonRefreshGrantParams;
         this.grantType = grantType;
@@ -78,6 +81,32 @@ public class OidcClientImpl implements OidcClient {
         return getJsonResponse(refreshGrantParams, Collections.emptyMap(), true);
     }
 
+    @Override
+    public Uni<Boolean> revokeAccessToken(String accessToken) {
+        checkClosed();
+        if (accessToken == null) {
+            throw new OidcClientException("Access token is null");
+        }
+        if (tokenRevokeUri != null) {
+            MultiMap tokenRevokeParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+            tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN, accessToken);
+            return postRequest(client.postAbs(tokenRevokeUri), tokenRevokeParams, Map.of(), false)
+                    .transform(resp -> toRevokeResponse(resp));
+        } else {
+            LOG.debugf("%s OidcClient can not revoke the access token because the revocation endpoint URL is not set");
+            return Uni.createFrom().item(false);
+        }
+
+    }
+
+    private Boolean toRevokeResponse(HttpResponse<Buffer> resp) {
+        // Per RFC7009, 200 is returned if a token has been revoked successfully or if the client submitted an
+        // invalid token, https://datatracker.ietf.org/doc/html/rfc7009#section-2.2.
+        // 503 is at least theoretically possible if the OIDC server declines and suggests to Retry-After some period of time.
+        // However this period of time can be set to unpredictable value.
+        return resp.statusCode() == 503 ? false : true;
+    }
+
     private Uni<Tokens> getJsonResponse(MultiMap formBody, Map<String, String> additionalGrantParameters, boolean refresh) {
         //Uni needs to be lazy by default, we don't send the request unless
         //something has subscribed to it. This is important for the CAS state
@@ -85,52 +114,62 @@ public class OidcClientImpl implements OidcClient {
         return Uni.createFrom().deferred(new Supplier<Uni<? extends Tokens>>() {
             @Override
             public Uni<Tokens> get() {
-                MultiMap body = formBody;
-                HttpRequest<Buffer> request = client.postAbs(tokenRequestUri);
-                request.putHeader(HttpHeaders.CONTENT_TYPE.toString(),
-                        HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
-                if (oidcConfig.headers != null) {
-                    for (Map.Entry<String, String> headerEntry : oidcConfig.headers.entrySet()) {
-                        request.putHeader(headerEntry.getKey(), headerEntry.getValue());
-                    }
-                }
-                if (clientSecretBasicAuthScheme != null) {
-                    request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
-                } else if (clientJwtKey != null) {
-                    // if it is a refresh then a map has already been copied
-                    body = !refresh ? copyMultiMap(body) : body;
-                    String jwt = OidcCommonUtils.signJwtWithKey(oidcConfig, tokenRequestUri, clientJwtKey);
-
-                    if (OidcCommonUtils.isClientSecretPostJwtAuthRequired(oidcConfig.credentials)) {
-                        body.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
-                        body.add(OidcConstants.CLIENT_SECRET, jwt);
-                    } else {
-                        body.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
-                        body.add(OidcConstants.CLIENT_ASSERTION, jwt);
-                    }
-                } else if (!OidcCommonUtils.isClientSecretPostAuthRequired(oidcConfig.credentials)) {
-                    body = copyMultiMap(body).set(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
-                }
-                if (!additionalGrantParameters.isEmpty()) {
-                    body = copyMultiMap(body);
-                    for (Map.Entry<String, String> entry : additionalGrantParameters.entrySet()) {
-                        body.add(entry.getKey(), entry.getValue());
-                    }
-                }
-                // Retry up to three times with a one-second delay between the retries if the connection is closed
-                Uni<HttpResponse<Buffer>> response = request.sendBuffer(OidcCommonUtils.encodeForm(body))
-                        .onFailure(ConnectException.class)
-                        .retry()
-                        .atMost(oidcConfig.connectionRetryCount)
-                        .onFailure().transform(t -> {
-                            LOG.warn("OIDC Server is not available:", t.getCause() != null ? t.getCause() : t);
-                            // don't wrap t to avoid information leak
-                            return new OidcClientException("OIDC Server is not available");
-                        });
-                return response.onItem()
+                return postRequest(client.postAbs(tokenRequestUri), formBody, additionalGrantParameters, refresh)
                         .transform(resp -> emitGrantTokens(resp, refresh));
             }
         });
+    }
+
+    private UniOnItem<HttpResponse<Buffer>> postRequest(HttpRequest<Buffer> request, MultiMap formBody,
+            Map<String, String> additionalGrantParameters,
+            boolean refresh) {
+        MultiMap body = formBody;
+        request.putHeader(HttpHeaders.CONTENT_TYPE.toString(),
+                HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
+        if (oidcConfig.headers != null) {
+            for (Map.Entry<String, String> headerEntry : oidcConfig.headers.entrySet()) {
+                request.putHeader(headerEntry.getKey(), headerEntry.getValue());
+            }
+        }
+        if (clientSecretBasicAuthScheme != null) {
+            request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
+        } else if (clientJwtKey != null) {
+            // if it is a refresh then a map has already been copied
+            body = !refresh ? copyMultiMap(body) : body;
+            String jwt = OidcCommonUtils.signJwtWithKey(oidcConfig, tokenRequestUri, clientJwtKey);
+
+            if (OidcCommonUtils.isClientSecretPostJwtAuthRequired(oidcConfig.credentials)) {
+                body.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+                body.add(OidcConstants.CLIENT_SECRET, jwt);
+            } else {
+                body.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
+                body.add(OidcConstants.CLIENT_ASSERTION, jwt);
+            }
+        } else if (OidcCommonUtils.isClientSecretPostAuthRequired(oidcConfig.credentials)) {
+            body = !refresh ? copyMultiMap(body) : body;
+            body.set(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+            body.set(OidcConstants.CLIENT_SECRET, OidcCommonUtils.clientSecret(oidcConfig.credentials));
+        } else {
+            body = !refresh ? copyMultiMap(body) : body;
+            body = copyMultiMap(body).set(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+        }
+        if (!additionalGrantParameters.isEmpty()) {
+            body = copyMultiMap(body);
+            for (Map.Entry<String, String> entry : additionalGrantParameters.entrySet()) {
+                body.add(entry.getKey(), entry.getValue());
+            }
+        }
+        // Retry up to three times with a one-second delay between the retries if the connection is closed
+        Uni<HttpResponse<Buffer>> response = request.sendBuffer(OidcCommonUtils.encodeForm(body))
+                .onFailure(ConnectException.class)
+                .retry()
+                .atMost(oidcConfig.connectionRetryCount)
+                .onFailure().transform(t -> {
+                    LOG.warn("OIDC Server is not available:", t.getCause() != null ? t.getCause() : t);
+                    // don't wrap it to avoid information leak
+                    return new OidcClientException("OIDC Server is not available");
+                });
+        return response.onItem();
     }
 
     private Tokens emitGrantTokens(HttpResponse<Buffer> resp, boolean refresh) {

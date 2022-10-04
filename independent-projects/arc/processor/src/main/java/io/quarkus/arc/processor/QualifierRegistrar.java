@@ -2,7 +2,9 @@ package io.quarkus.arc.processor;
 
 import java.util.Map;
 import java.util.Set;
+
 import javax.inject.Qualifier;
+
 import org.jboss.jandex.DotName;
 
 /**

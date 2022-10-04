@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.client.deployment.RedisTestResource;
 import io.quarkus.redis.datasource.RedisDataSource;
-import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.QuarkusTestResource;
 
@@ -34,8 +34,8 @@ public class DataSourceTest {
 
     @Test
     public void testThatTheDatasourceUseDifferentDatabases() {
-        StringCommands<String, String> r1s = r1.string(String.class);
-        StringCommands<String, String> r2s = r2.string(String.class);
+        ValueCommands<String, String> r1s = r1.value(String.class);
+        ValueCommands<String, String> r2s = r2.value(String.class);
 
         r1s.set("key", "hello");
         Assertions.assertThat(r2s.get("key")).isNull();

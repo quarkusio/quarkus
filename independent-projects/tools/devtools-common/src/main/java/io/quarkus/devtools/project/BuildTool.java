@@ -1,13 +1,14 @@
 package io.quarkus.devtools.project;
 
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Locale;
+
 import io.quarkus.devtools.project.buildfile.GroovyGradleBuildFile;
 import io.quarkus.devtools.project.buildfile.KotlinGradleBuildFile;
 import io.quarkus.devtools.project.buildfile.MavenBuildFile;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Locale;
 
 /**
  * An enum of build tools, such as Maven and Gradle.

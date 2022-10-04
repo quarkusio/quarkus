@@ -12,8 +12,13 @@ import org.jboss.logging.Logger;
 public class LogCleanupFilter implements Filter {
 
     final Map<String, LogCleanupFilterElement> filterElements = new HashMap<>();
+    public static final String SHUTDOWN_MESSAGE = " [Error Occurred After Shutdown]";
 
-    public LogCleanupFilter(Collection<LogCleanupFilterElement> filterElements) {
+    private final LoggingSetupRecorder.ShutdownNotifier shutdownNotifier;
+
+    public LogCleanupFilter(Collection<LogCleanupFilterElement> filterElements,
+            LoggingSetupRecorder.ShutdownNotifier shutdownNotifier) {
+        this.shutdownNotifier = shutdownNotifier;
         for (LogCleanupFilterElement element : filterElements) {
             this.filterElements.put(element.getLoggerName(), element);
         }
@@ -21,6 +26,13 @@ public class LogCleanupFilter implements Filter {
 
     @Override
     public boolean isLoggable(LogRecord record) {
+
+        //we also use this filter to add a warning about errors generated after shutdown
+        if (record.getLevel().intValue() >= org.jboss.logmanager.Level.ERROR.intValue() && shutdownNotifier.shutdown) {
+            if (!record.getMessage().endsWith(SHUTDOWN_MESSAGE)) {
+                record.setMessage(record.getMessage() + SHUTDOWN_MESSAGE);
+            }
+        }
         // Only allow filtering messages of warning level and lower
         if (record.getLevel().intValue() > Level.WARNING.intValue()) {
             return true;

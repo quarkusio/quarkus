@@ -6,22 +6,21 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509KeyManager;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 import io.netty.handler.ssl.ApplicationProtocolConfig;
-import io.netty.handler.ssl.OpenSslServerContext;
+import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.VertxException;
 import io.vertx.core.dns.AddressResolverOptions;
 import io.vertx.core.eventbus.EventBusOptions;
 import io.vertx.core.eventbus.impl.HandlerHolder;
@@ -140,83 +139,57 @@ final class Target_io_vertx_core_eventbus_impl_clustered_ClusteredEventBusCluste
     }
 }
 
-@TargetClass(className = "io.vertx.core.net.impl.SSLHelper")
-final class Target_io_vertx_core_net_impl_SSLHelper {
-
-    @Alias
-    private boolean client;
+@TargetClass(className = "io.vertx.core.spi.tls.DefaultSslContextFactory")
+final class Target_DefaultSslContextFactory {
 
     @Alias
     private Set<String> enabledCipherSuites;
 
     @Alias
-    private boolean openSsl;
-
-    @Alias
     private List<String> applicationProtocols;
 
     @Alias
-    private KeyManagerFactory getKeyMgrFactory(VertxInternal vertx) throws Exception {
-        return null;
-    }
+    private ClientAuth clientAuth;
 
     @Substitute
-    private SslContext createContext(VertxInternal vertx, boolean useAlpn, X509KeyManager mgr,
-            TrustManagerFactory trustMgrFactory) {
-        try {
-            SslContextBuilder builder;
-            if (client) {
-                builder = SslContextBuilder.forClient();
-                KeyManagerFactory keyMgrFactory = getKeyMgrFactory(vertx);
-                if (keyMgrFactory != null) {
-                    builder.keyManager(keyMgrFactory);
-                }
-            } else {
-                if (mgr != null) {
-                    builder = SslContextBuilder.forServer(mgr.getPrivateKey(null), null, mgr.getCertificateChain(null));
-                } else {
-                    KeyManagerFactory keyMgrFactory = getKeyMgrFactory(vertx);
-                    if (keyMgrFactory == null) {
-                        throw new VertxException("Key/certificate is mandatory for SSL");
-                    }
-                    builder = SslContextBuilder.forServer(keyMgrFactory);
-                }
+    private SslContext createContext(boolean useAlpn, boolean client, KeyManagerFactory kmf, TrustManagerFactory tmf)
+            throws SSLException {
+        SslContextBuilder builder;
+        if (client) {
+            builder = SslContextBuilder.forClient();
+            if (kmf != null) {
+                builder.keyManager(kmf);
             }
-            Collection<String> cipherSuites = enabledCipherSuites;
-            if (openSsl) {
-                throw new UnsupportedOperationException("OpenSSL not supported in native images");
-            } else {
-                builder.sslProvider(SslProvider.JDK);
-                if (cipherSuites == null || cipherSuites.isEmpty()) {
-                    cipherSuites = Target_io_vertx_core_net_impl_DefaultJDKCipherSuite.get();
-                }
-            }
-            if (trustMgrFactory != null) {
-                builder.trustManager(trustMgrFactory);
-            }
-            if (cipherSuites != null && cipherSuites.size() > 0) {
-                builder.ciphers(cipherSuites);
-            }
-            if (useAlpn && applicationProtocols != null && applicationProtocols.size() > 0) {
-                builder.applicationProtocolConfig(new ApplicationProtocolConfig(
-                        ApplicationProtocolConfig.Protocol.ALPN,
-                        ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE,
-                        ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT,
-                        applicationProtocols));
-            }
-            SslContext ctx = builder.build();
-            if (ctx instanceof OpenSslServerContext) {
-                throw new UnsupportedOperationException("OpenSSL not supported in native images");
-            }
-            return ctx;
-        } catch (Exception e) {
-            throw new VertxException(e);
+        } else {
+            builder = SslContextBuilder.forServer(kmf);
         }
+        Collection<String> cipherSuites = enabledCipherSuites;
+        builder.sslProvider(SslProvider.JDK);
+        if (cipherSuites == null || cipherSuites.isEmpty()) {
+            cipherSuites = Target_io_vertx_core_spi_tls_DefaultJDKCipherSuite.get();
+        }
+        if (tmf != null) {
+            builder.trustManager(tmf);
+        }
+        if (cipherSuites != null && cipherSuites.size() > 0) {
+            builder.ciphers(cipherSuites);
+        }
+        if (useAlpn && applicationProtocols != null && applicationProtocols.size() > 0) {
+            builder.applicationProtocolConfig(new ApplicationProtocolConfig(
+                    ApplicationProtocolConfig.Protocol.ALPN,
+                    ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE,
+                    ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT,
+                    applicationProtocols));
+        }
+        if (clientAuth != null) {
+            builder.clientAuth(clientAuth);
+        }
+        return builder.build();
     }
 }
 
-@TargetClass(className = "io.vertx.core.net.impl.DefaultJDKCipherSuite")
-final class Target_io_vertx_core_net_impl_DefaultJDKCipherSuite {
+@TargetClass(className = "io.vertx.core.spi.tls.DefaultJDKCipherSuite")
+final class Target_io_vertx_core_spi_tls_DefaultJDKCipherSuite {
     @Alias
     static List<String> get() {
         return null;

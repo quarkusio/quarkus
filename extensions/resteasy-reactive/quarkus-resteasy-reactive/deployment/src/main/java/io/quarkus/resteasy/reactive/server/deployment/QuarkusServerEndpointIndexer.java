@@ -15,6 +15,9 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.processor.DefaultProducesHandler;
+import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner;
+import org.jboss.resteasy.reactive.common.processor.scanning.ScannedSerializer;
+import org.jboss.resteasy.reactive.common.processor.scanning.SerializerScanningResult;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.processor.ServerEndpointIndexer;
@@ -23,9 +26,7 @@ import org.jboss.resteasy.reactive.server.spi.EndpointInvokerFactory;
 
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.JsonDefaultProducersHandler;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 
@@ -36,22 +37,17 @@ public class QuarkusServerEndpointIndexer
 
     private final Capabilities capabilities;
     private final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
-    private final BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer;
-    private final BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer;
     private final DefaultProducesHandler defaultProducesHandler;
     private final JsonDefaultProducersHandler jsonDefaultProducersHandler;
     private final ResteasyReactiveRecorder resteasyReactiveRecorder;
 
-    private final Predicate<String> applicationClassPredicate;
+    private SerializerScanningResult serializerScanningResult;
 
     QuarkusServerEndpointIndexer(Builder builder) {
         super(builder);
         this.capabilities = builder.capabilities;
         this.generatedClassBuildItemBuildProducer = builder.generatedClassBuildItemBuildProducer;
-        this.bytecodeTransformerBuildProducer = builder.bytecodeTransformerBuildProducer;
-        this.reflectiveClassProducer = builder.reflectiveClassProducer;
         this.defaultProducesHandler = builder.defaultProducesHandler;
-        this.applicationClassPredicate = builder.applicationClassPredicate;
         this.resteasyReactiveRecorder = builder.resteasyReactiveRecorder;
         this.jsonDefaultProducersHandler = new JsonDefaultProducersHandler();
     }
@@ -109,8 +105,6 @@ public class QuarkusServerEndpointIndexer
         private final Capabilities capabilities;
 
         private BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
-        private BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer;
-        private BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer;
         private ResteasyReactiveRecorder resteasyReactiveRecorder;
         private DefaultProducesHandler defaultProducesHandler = DefaultProducesHandler.Noop.INSTANCE;
         public Predicate<String> applicationClassPredicate;
@@ -124,21 +118,9 @@ public class QuarkusServerEndpointIndexer
             return new QuarkusServerEndpointIndexer(this);
         }
 
-        public Builder setBytecodeTransformerBuildProducer(
-                BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer) {
-            this.bytecodeTransformerBuildProducer = bytecodeTransformerBuildProducer;
-            return this;
-        }
-
         public Builder setGeneratedClassBuildItemBuildProducer(
                 BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
             this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
-            return this;
-        }
-
-        public Builder setReflectiveClassProducer(
-                BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
-            this.reflectiveClassProducer = reflectiveClassProducer;
             return this;
         }
 
@@ -170,10 +152,33 @@ public class QuarkusServerEndpointIndexer
             return;
         }
         if (hasJson(method) || (hasNoTypesDefined(method) && isDefaultJson())) {
-            LOGGER.warnf("Quarkus detected the use of JSON in JAX-RS method '" + info.declaringClass().name() + "#"
-                    + info.name()
-                    + "' but no JSON extension has been added. Consider adding 'quarkus-resteasy-reactive-jackson' or 'quarkus-resteasy-reactive-jsonb'.");
+            if (serializerScanningResult == null) {
+                serializerScanningResult = ResteasyReactiveScanner.scanForSerializers(index, applicationScanningResult);
+            }
+            boolean appProvidedJsonReaderExists = appProvidedJsonProviderExists(serializerScanningResult.getReaders());
+            boolean appProvidedJsonWriterExists = appProvidedJsonProviderExists(serializerScanningResult.getWriters());
+            if (!appProvidedJsonReaderExists || !appProvidedJsonWriterExists) {
+                LOGGER.warnf("Quarkus detected the use of JSON in JAX-RS method '" + info.declaringClass().name() + "#"
+                        + info.name()
+                        + "' but no JSON extension has been added. Consider adding 'quarkus-resteasy-reactive-jackson' or 'quarkus-resteasy-reactive-jsonb'.");
+            }
         }
+    }
+
+    private boolean appProvidedJsonProviderExists(List<ScannedSerializer> providers) {
+        boolean appProvidedJsonReaderExists = false;
+        for (ScannedSerializer provider : providers) {
+            for (String mt : provider.getMediaTypeStrings()) {
+                if (isJson(mt)) {
+                    appProvidedJsonReaderExists = true;
+                    break;
+                }
+            }
+            if (appProvidedJsonReaderExists) {
+                break;
+            }
+        }
+        return appProvidedJsonReaderExists;
     }
 
     private boolean isDefaultJson() {

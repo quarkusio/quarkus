@@ -93,8 +93,8 @@ updates:
       # Agroal
       - dependency-name: io.agroal:*
       # Jandex
-      - dependency-name: org.jboss:jandex
-      - dependency-name: org.jboss.jandex:jandex-maven-plugin
+      - dependency-name: io.smallrye:jandex
+      - dependency-name: io.smallrye:jandex-maven-plugin
       # WireMock
       - dependency-name: com.github.tomakehurst:wiremock-jre8-standalone
       - dependency-name: uk.co.automatictester:wiremock-maven-plugin
@@ -224,4 +224,14 @@ updates:
     open-pull-requests-limit: 4
     labels:
       - area/dependencies
+    rebase-strategy: disabled
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "00:30"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 2
+    labels:
+      - area/infra
     rebase-strategy: disabled

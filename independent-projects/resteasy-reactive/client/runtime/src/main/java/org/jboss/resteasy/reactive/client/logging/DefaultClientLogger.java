@@ -1,13 +1,15 @@
 package org.jboss.resteasy.reactive.client.logging;
 
+import java.util.Map;
+
+import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.api.ClientLogger;
+
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
-import java.util.Map;
-import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.client.api.ClientLogger;
 
 public class DefaultClientLogger implements ClientLogger {
     private static final Logger log = Logger.getLogger(DefaultClientLogger.class);

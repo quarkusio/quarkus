@@ -1,5 +1,13 @@
 package io.quarkus.qute.generator;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.qute.CompletedStage;
@@ -9,13 +17,6 @@ import io.quarkus.qute.Expression;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.Results.NotFound;
 import io.quarkus.qute.TemplateInstance;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.function.BiConsumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public final class Descriptors {
 

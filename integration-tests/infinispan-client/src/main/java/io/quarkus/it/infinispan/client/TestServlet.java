@@ -47,6 +47,10 @@ public class TestServlet {
     RemoteCache<String, Magazine> magazineCache;
 
     @Inject
+    @Remote(CacheSetup.AUTHORS_CACHE)
+    RemoteCache<String, Author> authorsCache;
+
+    @Inject
     CounterManager counterManager;
 
     @GET
@@ -232,6 +236,15 @@ public class TestServlet {
         }
         return list.stream()
                 .map(m -> m.getName() + ":" + m.getPublicationYearMonth())
+                .collect(Collectors.joining(",", "[", "]"));
+    }
+
+    @Path("create-cache-default-config/authors")
+    @GET
+    public String magazineQuery() {
+        cacheSetup.ensureStarted();
+        return authorsCache.values().stream()
+                .map(a -> a.getName())
                 .collect(Collectors.joining(",", "[", "]"));
     }
 }

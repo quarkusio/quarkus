@@ -10,11 +10,20 @@ import javax.transaction.TransactionManager;
 import javax.transaction.TransactionScoped;
 
 import com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean;
+import com.arjuna.ats.arjuna.recovery.TransactionStatusConnectionManager;
 import com.arjuna.ats.internal.arjuna.coordinator.CheckedActionFactoryImple;
 import com.arjuna.ats.internal.arjuna.objectstore.ShadowNoFileLockStore;
+import com.arjuna.ats.internal.arjuna.recovery.AtomicActionExpiryScanner;
+import com.arjuna.ats.internal.arjuna.recovery.AtomicActionRecoveryModule;
+import com.arjuna.ats.internal.arjuna.recovery.ExpiredTransactionStatusManagerScanner;
 import com.arjuna.ats.internal.arjuna.utils.SocketProcessId;
 import com.arjuna.ats.internal.jta.recovery.arjunacore.CommitMarkableResourceRecordRecoveryModule;
+import com.arjuna.ats.internal.jta.recovery.arjunacore.JTAActionStatusServiceXAResourceOrphanFilter;
+import com.arjuna.ats.internal.jta.recovery.arjunacore.JTANodeNameXAResourceOrphanFilter;
+import com.arjuna.ats.internal.jta.recovery.arjunacore.JTATransactionLogXAResourceOrphanFilter;
 import com.arjuna.ats.internal.jta.recovery.arjunacore.RecoverConnectableAtomicAction;
+import com.arjuna.ats.internal.jta.recovery.arjunacore.XARecoveryModule;
+import com.arjuna.ats.internal.jta.resources.arjunacore.XAResourceRecord;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.UserTransactionImple;
@@ -32,12 +41,14 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.narayana.jta.runtime.CDIDelegatingTransactionManager;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaProducers;
@@ -64,13 +75,14 @@ class NarayanaJtaProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
+    @Produce(NarayanaInitBuildItem.class)
     public void build(NarayanaJtaRecorder recorder,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit,
             BuildProducer<FeatureBuildItem> feature,
             TransactionManagerConfiguration transactions, ShutdownContextBuildItem shutdownContextBuildItem) {
-        recorder.handleShutdown(shutdownContextBuildItem);
+        recorder.handleShutdown(shutdownContextBuildItem, transactions);
         feature.produce(new FeatureBuildItem(Feature.NARAYANA_JTA));
         additionalBeans.produce(new AdditionalBeanBuildItem(NarayanaJtaProducers.class));
         additionalBeans.produce(new AdditionalBeanBuildItem(CDIDelegatingTransactionManager.class));
@@ -81,6 +93,9 @@ class NarayanaJtaProcessor {
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(SocketProcessId.class.getName()));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(CommitMarkableResourceRecordRecoveryModule.class.getName()));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(RecoverConnectableAtomicAction.class.getName()));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem(TransactionStatusConnectionManager.class.getName()));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem(JTAActionStatusServiceXAResourceOrphanFilter.class.getName()));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem(AtomicActionExpiryScanner.class.getName()));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, JTAEnvironmentBean.class.getName(),
                 UserTransactionImple.class.getName(),
@@ -89,7 +104,14 @@ class NarayanaJtaProcessor {
                 TransactionSynchronizationRegistryImple.class.getName(),
                 ObjectStoreEnvironmentBean.class.getName(),
                 ShadowNoFileLockStore.class.getName(),
-                SocketProcessId.class.getName()));
+                SocketProcessId.class.getName(),
+                AtomicActionRecoveryModule.class.getName(),
+                XARecoveryModule.class.getName(),
+                XAResourceRecord.class.getName(),
+                JTATransactionLogXAResourceOrphanFilter.class.getName(),
+                JTANodeNameXAResourceOrphanFilter.class.getName(),
+                JTAActionStatusServiceXAResourceOrphanFilter.class.getName(),
+                ExpiredTransactionStatusManagerScanner.class.getName()));
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
         builder.addBeanClass(TransactionalInterceptorSupports.class);
@@ -152,4 +174,8 @@ class NarayanaJtaProcessor {
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(TransactionManager.class));
     }
 
+    @BuildStep
+    void logCleanupFilters(BuildProducer<LogCleanupFilterBuildItem> logCleanupFilters) {
+        logCleanupFilters.produce(new LogCleanupFilterBuildItem("com.arjuna.ats.jbossatx", "ARJUNA032010:", "ARJUNA032013:"));
+    }
 }

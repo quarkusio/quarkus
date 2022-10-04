@@ -2,9 +2,6 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
-import io.quarkus.gizmo.DescriptorUtils;
-import io.quarkus.gizmo.Gizmo;
-import io.quarkus.gizmo.MethodDescriptor;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,7 +14,9 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import javax.enterprise.inject.spi.DeploymentException;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -30,6 +29,10 @@ import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+
+import io.quarkus.gizmo.DescriptorUtils;
+import io.quarkus.gizmo.Gizmo;
+import io.quarkus.gizmo.MethodDescriptor;
 
 /**
  *
@@ -438,6 +441,7 @@ final class Methods {
                 return a.asParameterizedType().name();
             case TYPE_VARIABLE:
             case UNRESOLVED_TYPE_VARIABLE:
+            case TYPE_VARIABLE_REFERENCE:
             case WILDCARD_TYPE:
             default:
                 return DotNames.OBJECT;

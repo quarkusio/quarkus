@@ -13,6 +13,7 @@ import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.resolver.dns.DnsServerAddressStreamProviders;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -253,9 +254,21 @@ class NettyProcessor {
     //if debug logging is enabled netty logs lots of exceptions
     //see https://github.com/quarkusio/quarkus/issues/5213
     @BuildStep
-    LogCleanupFilterBuildItem cleanup() {
+    LogCleanupFilterBuildItem cleanupUnsafeLog() {
         return new LogCleanupFilterBuildItem(PlatformDependent.class.getName() + "0", Level.TRACE, "direct buffer constructor",
                 "jdk.internal.misc.Unsafe", "sun.misc.Unsafe");
+    }
+
+    /**
+     * On mac, if you do not have the `MacOSDnsServerAddressStreamProvider` class, Netty prints a warning saying it
+     * falls back to the default system DNS provider. This is not a problem and generates tons of questions.
+     *
+     * @return the log cleanup item removing the message
+     */
+    @BuildStep
+    LogCleanupFilterBuildItem cleanupMacDNSInLog() {
+        return new LogCleanupFilterBuildItem(DnsServerAddressStreamProviders.class.getName(), Level.WARN,
+                "Can not find io.netty.resolver.dns.macos.MacOSDnsServerAddressStreamProvider in the classpath");
     }
 
     private String calculateMaxOrder(OptionalInt userConfig, List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems,

@@ -1,18 +1,20 @@
 package org.jboss.resteasy.reactive.client.handlers;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
+import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
+
 import io.netty.buffer.ByteBuf;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpHeaders;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InterruptedIOException;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
-import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
 
 class VertxClientInputStream extends InputStream {
 

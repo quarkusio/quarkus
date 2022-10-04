@@ -21,6 +21,7 @@ import io.quarkus.redis.datasource.string.SetArgs;
 import io.quarkus.redis.datasource.string.StringCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
+@SuppressWarnings("deprecation")
 public class StringCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource ds;
@@ -98,15 +99,24 @@ public class StringCommandsTest extends DatasourceTestBase {
 
     @Test
     void mget() {
-        assertThat(strings.mget(key)).isEmpty();
+        assertThat(strings.mget(key)).containsExactly(entry(key, null));
         strings.set("one", "1");
         strings.set("two", "2");
         assertThat(strings.mget("one", "two")).containsExactly(entry("one", "1"), entry("two", "2"));
     }
 
     @Test
+    void mgetWithMissingKey() {
+        assertThat(strings.mget(key)).containsExactly(entry(key, null));
+        strings.set("one", "1");
+        strings.set("two", "2");
+        assertThat(strings.mget("one", "missing", "two")).containsExactly(entry("one", "1"),
+                entry("missing", null), entry("two", "2"));
+    }
+
+    @Test
     void mset() {
-        assertThat(strings.mget("one", "two")).isEmpty();
+        assertThat(strings.mget(key)).containsExactly(entry(key, null));
         Map<String, String> map = new LinkedHashMap<>();
         map.put("one", "1");
         map.put("two", "2");
@@ -256,6 +266,7 @@ public class StringCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void lcs() {
         strings.mset(Map.of("key1", "ohmytext", "key2", "mynewtext"));
         assertThat(strings.lcs("key1", "key2")).isEqualTo("mytext");

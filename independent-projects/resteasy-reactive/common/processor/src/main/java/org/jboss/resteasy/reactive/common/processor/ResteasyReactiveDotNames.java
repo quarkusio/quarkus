@@ -1,10 +1,5 @@
 package org.jboss.resteasy.reactive.common.processor;
 
-import io.smallrye.common.annotation.Blocking;
-import io.smallrye.common.annotation.NonBlocking;
-import io.smallrye.common.annotation.RunOnVirtualThread;
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigDecimal;
@@ -26,6 +21,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.RequestScoped;
@@ -80,6 +76,7 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
+
 import org.jboss.jandex.DotName;
 import org.jboss.resteasy.reactive.DummyElementType;
 import org.jboss.resteasy.reactive.MultipartForm;
@@ -95,6 +92,12 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.RestSseElementType;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.reactivestreams.Publisher;
+
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
+import io.smallrye.common.annotation.RunOnVirtualThread;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 public final class ResteasyReactiveDotNames {
 

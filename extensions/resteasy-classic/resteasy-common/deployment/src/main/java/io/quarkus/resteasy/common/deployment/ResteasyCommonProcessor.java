@@ -54,6 +54,7 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigSourceProviderBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
@@ -152,6 +153,14 @@ public class ResteasyCommonProcessor {
                 (capabilities.isCapabilityWithPrefixPresent(Capability.RESTEASY_JSON_JACKSON)
                         // RESTEASY_JSONB or RESTEASY_JSONB_CLIENT
                         || capabilities.isCapabilityWithPrefixPresent(Capability.RESTEASY_JSON_JSONB)));
+    }
+
+    @BuildStep
+    void disableDefaultExceptionMapper(BuildProducer<SystemPropertyBuildItem> systemProperties) {
+        // RESTEasy 6.2 introduced a default exception mapper (as per JAX-RS 3.1 spec)
+        // but we want to keep Quarkus consistent and have Vert.x handle the exceptions
+        // as we have a better error handling in our Vert.x error handler.
+        systemProperties.produce(new SystemPropertyBuildItem("dev.resteasy.exception.mapper", "false"));
     }
 
     @BuildStep

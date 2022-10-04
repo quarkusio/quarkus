@@ -1,17 +1,20 @@
 package org.jboss.resteasy.reactive.server.vertx.serializers;
 
-import io.vertx.core.buffer.Buffer;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
+
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
+
+import io.vertx.core.buffer.Buffer;
 
 @Provider
 public class ServerVertxBufferMessageBodyWriter implements ServerMessageBodyWriter<Buffer> {

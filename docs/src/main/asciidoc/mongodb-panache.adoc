@@ -7,9 +7,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 :config-file: application.properties
-:mongodb-doc-root-url: https://mongodb.github.io/mongo-java-driver/4.2
+:mongodb-doc-root-url: https://www.mongodb.com/docs/drivers/java/sync/current
 
-MongoDB is a well known NoSQL Database that is widely used, but using its raw API can be cumbersome as you need to express your entities and your queries as a MongoDB link:{mongodb-doc-root-url}/bson/documents/#document[`Document`].
+MongoDB is a well known NoSQL Database that is widely used, but using its raw API can be cumbersome as you need to express your entities and your queries as a MongoDB link:{mongodb-doc-root-url}/fundamentals/data-formats/documents/#document[`Document`].
 
 MongoDB with Panache provides active record style entities (and repositories) like you have in xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
 
@@ -169,7 +169,7 @@ public class Person extends PanacheMongoEntity {
 
 NOTE: Annotating with `@MongoEntity` is optional. Here the entity will be stored in the `ThePerson` collection instead of the default `Person` collection.
 
-MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos/[PojoCodecProvider] to convert your entities to a MongoDB `Document`.
+MongoDB with Panache uses the link:{mongodb-doc-root-url}/fundamentals/data-formats/document-data-format-pojo[PojoCodecProvider] to convert your entities to a MongoDB `Document`.
 
 You will be allowed to use the following annotations to customize this mapping:
 
@@ -319,7 +319,7 @@ public class Person  {
 
 NOTE: Annotating with `@MongoEntity` is optional. Here the entity will be stored in the `ThePerson` collection instead of the default `Person` collection.
 
-MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos/[PojoCodecProvider] to convert your entities to a MongoDB `Document`.
+MongoDB with Panache uses the link:{mongodb-doc-root-url}/fundamentals/data-formats/document-data-format-pojo/[PojoCodecProvider] to convert your entities to a MongoDB `Document`.
 
 You will be allowed to use the following annotations to customize this mapping:
 
@@ -746,7 +746,7 @@ quarkus.log.category."io.quarkus.mongodb.panache.runtime".level=DEBUG
 
 == The PojoCodecProvider: easy object to BSON document conversion.
 
-MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos[PojoCodecProvider], with link:{mongodb-doc-root-url}/pojos/#pojo-support[automatic POJO support],
+MongoDB with Panache uses the link:{mongodb-doc-root-url}/fundamentals/data-formats/document-data-format-pojo/[PojoCodecProvider], with link:{mongodb-doc-root-url}/fundamentals/data-formats/document-data-format-pojo/#configure-the-driver-for-pojos[automatic POJO support],
 to automatically convert your object to a BSON document.
 
 In case you encounter the `org.bson.codecs.configuration.CodecConfigurationException` exception, it means the codec is not able to
@@ -764,6 +764,9 @@ See xref:mongodb.adoc#simplifying-mongodb-client-usage-using-bson-codec[Using BS
 MongoDB offers ACID transactions since version 4.0.
 
 To use them with MongoDB with Panache you need to annotate the method that starts the transaction with the `@Transactional` annotation.
+
+In MongoDB, a transaction is only possible on a replicaset,
+luckily our xref:mongodb.adoc#dev-services[Dev Services for MongoDB] setups a single node replicaset so it is compatible with transactions.
 
 WARNING: Transaction support inside MongoDB with Panache is still experimental.
 
@@ -829,7 +832,7 @@ Kotlin data classes are a very convenient way of defining data carrier classes, 
 But this type of class comes with some limitations: all fields needs to be initialized at construction time or be marked as nullable,
 and the generated constructor needs to have as parameters all the fields of the data class.
 
-MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos[PojoCodecProvider], a MongoDB codec which mandates the presence of a parameterless constructor.
+MongoDB with Panache uses the link:{mongodb-doc-root-url}/fundamentals/data-formats/document-data-format-pojo[PojoCodecProvider], a MongoDB codec which mandates the presence of a parameterless constructor.
 
 Therefore, if you want to use a data class as an entity class, you need a way to make Kotlin generate an empty constructor.
 To do so, you need to provide default values for all the fields of your classes.
@@ -843,7 +846,7 @@ First, you can create a BSON Codec which will be automatically registered by Qua
 See this part of the documentation: xref:mongodb.adoc#simplifying-mongodb-client-usage-using-bson-codec[Using BSON codec].
 
 Another option is to use the `@BsonCreator` annotation to tell the `PojoCodecProvider` to use the Kotlin data class default constructor,
-in this case all constructor parameters have to be annotated with `@BsonProperty`: see link:{mongodb-doc-root-url}/bson/pojos/#supporting-pojos-without-no-args-constructors[Supporting pojos without no args constructor].
+in this case all constructor parameters have to be annotated with `@BsonProperty`: see link:{mongodb-doc-root-url}/fundamentals/data-formats/pojo-customization/#pojos-without-no-argument-constructors[Supporting pojos without no args constructor].
 
 This will only work when the entity extends `PanacheMongoEntityBase` and not `PanacheMongoEntity`, as the ID field also needs to be included in the constructor.
 
@@ -891,7 +894,7 @@ and when defining your repositories: `ReactivePanacheMongoRepository` or `Reacti
 [TIP]
 .Mutiny
 ====
-The reactive API of the MongoDB with Panache uses Mutiny reactive types.
+The reactive API of MongoDB with Panache uses Mutiny reactive types.
 If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an intuitive reactive programming library].
 ====
 

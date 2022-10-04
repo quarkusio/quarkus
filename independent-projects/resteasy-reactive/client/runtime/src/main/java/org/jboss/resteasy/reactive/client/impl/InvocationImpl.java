@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.client.impl;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Entity;

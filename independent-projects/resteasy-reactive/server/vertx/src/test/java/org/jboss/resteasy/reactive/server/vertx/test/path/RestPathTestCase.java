@@ -1,12 +1,14 @@
 package org.jboss.resteasy.reactive.server.vertx.test.path;
 
-import io.restassured.RestAssured;
 import java.util.function.Consumer;
+
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.server.processor.ResteasyReactiveDeploymentManager;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
 
 public class RestPathTestCase {
 

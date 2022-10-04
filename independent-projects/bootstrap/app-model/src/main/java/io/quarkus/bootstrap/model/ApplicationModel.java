@@ -1,16 +1,17 @@
 package io.quarkus.bootstrap.model;
 
-import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.maven.dependency.ResolvedDependency;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 public interface ApplicationModel {
 

@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.server.core;
 
 import java.io.Closeable;
 import java.io.IOException;
+
 import org.jboss.logging.Logger;
 
 public class CloseRunnable implements Runnable {

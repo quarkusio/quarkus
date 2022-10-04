@@ -55,7 +55,7 @@ import io.quarkus.quartz.runtime.QuartzBuildTimeConfig;
 import io.quarkus.quartz.runtime.QuartzExtensionPointConfig;
 import io.quarkus.quartz.runtime.QuartzRecorder;
 import io.quarkus.quartz.runtime.QuartzRuntimeConfig;
-import io.quarkus.quartz.runtime.QuartzScheduler;
+import io.quarkus.quartz.runtime.QuartzSchedulerImpl;
 import io.quarkus.quartz.runtime.QuartzSupport;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -73,7 +73,7 @@ public class QuartzProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem beans() {
-        return new AdditionalBeanBuildItem(QuartzScheduler.class);
+        return new AdditionalBeanBuildItem(QuartzSchedulerImpl.class);
     }
 
     @BuildStep
@@ -165,7 +165,7 @@ public class QuartzProcessor {
             reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, SimpleTriggerImpl.class.getName()));
             reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, driverDialect.getDriver().get()));
             reflectiveClasses
-                    .add(new ReflectiveClassBuildItem(true, true, "io.quarkus.quartz.runtime.QuartzScheduler$InvokerJob"));
+                    .add(new ReflectiveClassBuildItem(true, true, "io.quarkus.quartz.runtime.QuartzSchedulerImpl$InvokerJob"));
             reflectiveClasses
                     .add(new ReflectiveClassBuildItem(true, false, QuarkusQuartzConnectionPoolProvider.class.getName()));
         }

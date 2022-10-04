@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.common.processor.scanning;
 
 import java.util.List;
+
 import javax.ws.rs.Priorities;
 import javax.ws.rs.RuntimeType;
 

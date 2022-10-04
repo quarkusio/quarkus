@@ -4,11 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import java.util.Arrays;
 import java.util.List;
+
 import org.eclipse.aether.repository.RemoteRepository;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 
 public class ProxyAndMirrorSettingsReposTest extends BootstrapMavenContextTestBase {
 

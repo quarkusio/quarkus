@@ -7,6 +7,7 @@ import static java.util.stream.Collectors.toList;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,11 +30,15 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.ws.rs.Consumes;
 import javax.ws.rs.Priorities;
+import javax.ws.rs.Produces;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
+import javax.ws.rs.ext.Providers;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -68,6 +73,7 @@ import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningRes
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
 import org.jboss.resteasy.reactive.common.types.AllWriteableMarker;
 import org.jboss.resteasy.reactive.common.util.Encode;
+import org.jboss.resteasy.reactive.common.util.types.Types;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
@@ -93,6 +99,7 @@ import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyBufferMe
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxAsyncFileMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxBufferMessageBodyWriter;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.arc.Unremovable;
@@ -125,6 +132,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
@@ -436,8 +444,6 @@ public class ResteasyReactiveProcessor {
                     .setEndpointInvokerFactory(
                             new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
                     .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
-                    .setBytecodeTransformerBuildProducer(bytecodeTransformerBuildItemBuildProducer)
-                    .setReflectiveClassProducer(reflectiveClassBuildItemBuildProducer)
                     .setExistingConverters(existingConverters)
                     .setScannedResourcePaths(scannedResourcePaths)
                     .setConfig(createRestReactiveConfig(config))
@@ -672,6 +678,88 @@ public class ResteasyReactiveProcessor {
         if (!dateTimeFormatterProviderClassNames.isEmpty()) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, false,
                     dateTimeFormatterProviderClassNames.toArray(EMPTY_STRING_ARRAY)));
+        }
+    }
+
+    /**
+     * RESTEasy Classic also includes the providers that are set in the 'META-INF/services/javax.ws.rs.ext.Providers' file
+     * This is not a ServiceLoader call, but essentially provides the same functionality.
+     */
+    @BuildStep
+    public void providersFromClasspath(BuildProducer<MessageBodyReaderBuildItem> messageBodyReaderProducer,
+            BuildProducer<MessageBodyWriterBuildItem> messageBodyWriterProducer) {
+        String fileName = "META-INF/services/" + Providers.class.getName();
+        // we never want to include the Classic RESTEasy providers - these can end up on the classpath by using the Keycloak client for example
+        Predicate<String> ignoredProviders = s -> s.startsWith("org.jboss.resteasy.plugins.providers");
+        try {
+            Set<String> detectedProviders = new HashSet<>(ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+                    fileName));
+            for (String providerClassName : detectedProviders) {
+                if (ignoredProviders.test(providerClassName)) {
+                    continue;
+                }
+                try {
+                    Class<?> providerClass = Class.forName(providerClassName, false,
+                            Thread.currentThread().getContextClassLoader());
+                    if (MessageBodyReader.class.isAssignableFrom(providerClass)) {
+                        String handledClassName = determineHandledGenericTypeOfProviderInterface(providerClass,
+                                MessageBodyReader.class);
+                        if (handledClassName == null) {
+                            log.warn("Unable to determine which type MessageBodyReader '" + providerClass.getName()
+                                    + "' handles so this Provider will be ignored");
+                            continue;
+                        }
+                        MessageBodyReaderBuildItem.Builder builder = new MessageBodyReaderBuildItem.Builder(
+                                providerClassName, handledClassName).setBuiltin(true);
+                        Consumes consumes = providerClass.getAnnotation(Consumes.class);
+                        if (consumes != null) {
+                            builder.setMediaTypeStrings(Arrays.asList(consumes.value()));
+                        } else {
+                            builder.setMediaTypeStrings(Collections.singletonList(MediaType.WILDCARD_TYPE.toString()));
+                        }
+                        messageBodyReaderProducer.produce(builder.build()); // TODO: does it make sense to limit these to the Server?
+                    }
+                    if (MessageBodyWriter.class.isAssignableFrom(providerClass)) {
+                        String handledClassName = determineHandledGenericTypeOfProviderInterface(providerClass,
+                                MessageBodyWriter.class);
+                        if (handledClassName == null) {
+                            log.warn("Unable to determine which type MessageBodyWriter '" + providerClass.getName()
+                                    + "' handles so this Provider will be ignored");
+                            continue;
+                        }
+                        MessageBodyWriterBuildItem.Builder builder = new MessageBodyWriterBuildItem.Builder(
+                                providerClassName, handledClassName).setBuiltin(true);
+                        Produces produces = providerClass.getAnnotation(Produces.class);
+                        if (produces != null) {
+                            builder.setMediaTypeStrings(Arrays.asList(produces.value()));
+                        } else {
+                            builder.setMediaTypeStrings(Collections.singletonList(MediaType.WILDCARD_TYPE.toString()));
+                        }
+                        messageBodyWriterProducer.produce(builder.build()); // TODO: does it make sense to limit these to the Server?
+                    }
+                    // TODO: handle other providers as well
+                } catch (ClassNotFoundException e) {
+                    log.warn("Unable to load class '" + providerClassName
+                            + "' when trying to determine what kind of JAX-RS Provider it is.", e);
+                }
+            }
+        } catch (IOException e) {
+            log.warn("Unable to properly detect and parse the contents of '" + fileName + "'", e);
+        }
+    }
+
+    @Nullable
+    private static String determineHandledGenericTypeOfProviderInterface(Class<?> providerClass,
+            Class<?> targetProviderInterface) {
+
+        java.lang.reflect.Type[] types = Types.findParameterizedTypes(providerClass, targetProviderInterface);
+        if ((types == null) || (types.length != 1)) {
+            return null;
+        }
+        try {
+            return Types.getRawType(types[0]).getName();
+        } catch (Exception ignored) {
+            return null;
         }
     }
 

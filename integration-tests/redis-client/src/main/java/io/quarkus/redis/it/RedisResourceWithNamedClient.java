@@ -9,22 +9,22 @@ import javax.ws.rs.PathParam;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
-import io.quarkus.redis.datasource.string.ReactiveStringCommands;
-import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.datasource.value.ReactiveValueCommands;
+import io.quarkus.redis.datasource.value.ValueCommands;
 import io.smallrye.mutiny.Uni;
 
 @Path("/quarkus-redis-with-name")
 @ApplicationScoped
 public class RedisResourceWithNamedClient {
 
-    private final StringCommands<String, String> blocking;
-    private final ReactiveStringCommands<String, String> reactive;
+    private final ValueCommands<String, String> blocking;
+    private final ReactiveValueCommands<String, String> reactive;
 
     public RedisResourceWithNamedClient(
             @RedisClientName("named-client") RedisDataSource ds,
             @RedisClientName("named-reactive-client") ReactiveRedisDataSource reactiveDs) {
-        blocking = ds.string(String.class);
-        reactive = reactiveDs.string(String.class);
+        blocking = ds.value(String.class);
+        reactive = reactiveDs.value(String.class);
     }
 
     // synchronous

@@ -1,6 +1,7 @@
 package io.quarkus.cli.build;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ import io.quarkus.registry.config.RegistriesConfigLocator;
 import picocli.CommandLine;
 
 public class MavenRunner implements BuildSystemRunner {
+    public static String MAVEN_SETTINGS = "maven.settings";
     static final String[] windowsWrapper = { "mvnw.cmd", "mvnw.bat" };
     static final String otherWrapper = "mvnw";
 
@@ -238,13 +240,13 @@ public class MavenRunner implements BuildSystemRunner {
             args.addFirst("-Dstyle.color=always");
         }
 
-        String mavenSettings = propertiesOptions.properties.remove("maven.settings");
+        String mavenSettings = propertiesOptions.properties.remove(MAVEN_SETTINGS);
         if (mavenSettings != null && !mavenSettings.isEmpty()) {
             args.add("-s");
             args.add(mavenSettings);
         } else {
-            mavenSettings = System.getProperty("maven.settings");
-            if (mavenSettings != null && !mavenSettings.isEmpty()) {
+            mavenSettings = System.getProperty(MAVEN_SETTINGS);
+            if (mavenSettings != null && !mavenSettings.isEmpty() && Files.exists(Path.of(mavenSettings))) {
                 args.add("-s");
                 args.add(mavenSettings);
             }

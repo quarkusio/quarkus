@@ -1,7 +1,5 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InjectableBean;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Arrays;
@@ -11,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import javax.el.ELResolver;
 import javax.el.ExpressionFactory;
 import javax.enterprise.context.ContextNotActiveException;
@@ -41,6 +40,9 @@ import javax.enterprise.inject.spi.ObserverMethod;
 import javax.enterprise.inject.spi.ProducerFactory;
 import javax.inject.Qualifier;
 import javax.interceptor.InterceptorBinding;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableBean;
 
 /**
  * @author Martin Kouba
@@ -163,7 +165,7 @@ public class BeanManagerImpl implements BeanManager {
     @Override
     public boolean isQualifier(Class<? extends Annotation> annotationType) {
         return annotationType.isAnnotationPresent(Qualifier.class)
-                || ArcContainerImpl.instance().getCustomQualifiers().contains(annotationType.getName());
+                || ArcContainerImpl.instance().registeredQualifiers.isRegistered(annotationType);
     }
 
     @Override

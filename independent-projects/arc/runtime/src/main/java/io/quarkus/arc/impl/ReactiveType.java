@@ -1,10 +1,11 @@
 package io.quarkus.arc.impl;
 
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
+
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 /**
  * A method reactive returned type.

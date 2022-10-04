@@ -1,18 +1,5 @@
 package io.quarkus.bootstrap.app;
 
-import io.quarkus.bootstrap.classloading.ClassPathElement;
-import io.quarkus.bootstrap.classloading.ClassPathResource;
-import io.quarkus.bootstrap.classloading.FilteredClassPathElement;
-import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.AppModel;
-import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.util.BootstrapUtils;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.DependencyFlags;
-import io.quarkus.maven.dependency.ResolvedDependency;
-import io.quarkus.paths.OpenPathTree;
-import io.quarkus.paths.PathTree;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
@@ -30,6 +17,20 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
+
+import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.ClassPathResource;
+import io.quarkus.bootstrap.classloading.FilteredClassPathElement;
+import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.util.BootstrapUtils;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.OpenPathTree;
+import io.quarkus.paths.PathTree;
 
 /**
  * The result of the curate step that is done by QuarkusBootstrap.
@@ -147,6 +148,8 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             BiConsumer<CuratedApplication, Map<String, Object>> biConsumer = clazz.getDeclaredConstructor().newInstance();
             biConsumer.accept(this, params);
             return biConsumer;
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {

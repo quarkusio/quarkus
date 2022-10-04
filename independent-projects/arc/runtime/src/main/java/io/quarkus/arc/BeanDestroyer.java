@@ -3,6 +3,7 @@ package io.quarkus.arc;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
+
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 

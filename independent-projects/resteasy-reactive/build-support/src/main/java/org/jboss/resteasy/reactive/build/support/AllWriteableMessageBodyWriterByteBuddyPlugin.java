@@ -8,7 +8,11 @@ import static net.bytebuddy.matcher.ElementMatchers.not;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.ws.rs.ext.MessageBodyWriter;
+
+import org.jboss.resteasy.reactive.common.types.AllWriteableMarker;
+
 import net.bytebuddy.build.Plugin;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.ClassFileLocator;
@@ -18,7 +22,6 @@ import net.bytebuddy.jar.asm.ClassVisitor;
 import net.bytebuddy.jar.asm.MethodVisitor;
 import net.bytebuddy.jar.asm.Opcodes;
 import net.bytebuddy.utility.OpenedClassReader;
-import org.jboss.resteasy.reactive.common.types.AllWriteableMarker;
 
 public class AllWriteableMessageBodyWriterByteBuddyPlugin implements Plugin {
 

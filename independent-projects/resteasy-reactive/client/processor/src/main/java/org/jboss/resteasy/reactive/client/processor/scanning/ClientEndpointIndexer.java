@@ -11,7 +11,9 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+
 import javax.ws.rs.core.MediaType;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -67,7 +69,7 @@ public class ClientEndpointIndexer
                 }
                 clazz.setPath(path);
             }
-            List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
+            List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(), new HashSet<>(),
                     clazz.getPathParameters(), clazz.getPath(), false);
             clazz.getMethods().addAll(methods);
 
@@ -99,7 +101,8 @@ public class ClientEndpointIndexer
             throw new IllegalStateException("Subresource method returns an invalid type: " + method.returnType().name());
         }
 
-        List<ResourceMethod> endpoints = createEndpoints(subResourceClass, subResourceClass, new HashSet<>(), new HashSet<>(),
+        List<ResourceMethod> endpoints = createEndpoints(subResourceClass, subResourceClass,
+                new HashSet<>(), new HashSet<>(), new HashSet<>(),
                 "", false);
         resourceMethod.setSubResourceMethods(endpoints);
     }

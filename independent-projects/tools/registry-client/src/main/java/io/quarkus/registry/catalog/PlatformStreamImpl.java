@@ -1,15 +1,17 @@
 package io.quarkus.registry.catalog;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.quarkus.registry.json.JsonBuilder;
-import io.quarkus.registry.json.JsonEntityWithAnySupport;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import io.quarkus.registry.json.JsonBuilder;
+import io.quarkus.registry.json.JsonEntityWithAnySupport;
 
 /**
  * Asymmetric data manipulation:

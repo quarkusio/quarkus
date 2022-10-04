@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.Path;
@@ -9,6 +10,7 @@ import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.HttpHeaders;
 
 import io.quarkus.security.Authenticated;
+import io.vertx.ext.web.RoutingContext;
 
 @Path("/tenant-logout")
 public class TenantLogout {
@@ -16,10 +18,13 @@ public class TenantLogout {
     @Context
     HttpHeaders headers;
 
+    @Inject
+    RoutingContext context;
+
     @Authenticated
     @GET
     public String getTenantLogout() {
-        return "Tenant Logout";
+        return "Tenant Logout, refreshed: " + (context.get("refresh_token_grant_response") != null);
     }
 
     // It is needed for the proactive-auth=false to work: /tenant-logout/logout should match a user initiated logout request

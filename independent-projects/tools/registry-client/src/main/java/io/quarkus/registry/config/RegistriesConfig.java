@@ -1,9 +1,10 @@
 package io.quarkus.registry.config;
 
-import io.quarkus.registry.json.JsonBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+
+import io.quarkus.registry.json.JsonBuilder;
 
 /**
  * Registry client configuration. Consists of a list of registry configurations that will be

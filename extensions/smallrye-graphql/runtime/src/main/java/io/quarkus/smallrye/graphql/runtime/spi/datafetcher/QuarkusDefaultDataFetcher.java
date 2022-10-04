@@ -3,6 +3,7 @@ package io.quarkus.smallrye.graphql.runtime.spi.datafetcher;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 
 import org.eclipse.microprofile.graphql.GraphQLException;
 
@@ -28,7 +29,8 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
     }
 
     @Override
-    public <T> T invokeAndTransform(DataFetchingEnvironment dfe, DataFetcherResult.Builder<Object> resultBuilder,
+    public <T> T invokeAndTransform(io.smallrye.graphql.api.Context c, DataFetchingEnvironment dfe,
+            DataFetcherResult.Builder<Object> resultBuilder,
             Object[] transformedArguments) throws Exception {
 
         ManagedContext requestContext = Arc.container().requestContext();
@@ -36,9 +38,9 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
             RequestContextHelper.reactivate(requestContext, dfe);
             Context vc = Vertx.currentContext();
             if (runBlocking(dfe) || BlockingHelper.blockingShouldExecuteNonBlocking(operation, vc)) {
-                return super.invokeAndTransform(dfe, resultBuilder, transformedArguments);
+                return super.invokeAndTransform(c, dfe, resultBuilder, transformedArguments);
             } else {
-                return invokeAndTransformBlocking(dfe, resultBuilder, transformedArguments, vc);
+                return invokeAndTransformBlocking(c, dfe, resultBuilder, transformedArguments, vc);
             }
         } finally {
             deactivate(requestContext);
@@ -63,7 +65,8 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> T invokeAndTransformBlocking(final DataFetchingEnvironment dfe, DataFetcherResult.Builder<Object> resultBuilder,
+    private <T> T invokeAndTransformBlocking(final io.smallrye.graphql.api.Context c, final DataFetchingEnvironment dfe,
+            DataFetcherResult.Builder<Object> resultBuilder,
             Object[] transformedArguments, Context vc) throws Exception {
 
         SmallRyeThreadContext threadContext = Arc.container().select(SmallRyeThreadContext.class).get();
@@ -87,7 +90,7 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
                 resultBuilder.clearErrors().data(null).error(new AbortExecutionException(e));
                 return (T) resultBuilder.build();
             } catch (Throwable ex) {
-                eventEmitter.fireOnDataFetchError(dfe.getExecutionId().toString(), ex);
+                eventEmitter.fireOnDataFetchError(c, ex);
                 throw ex;
             }
         });
@@ -108,10 +111,20 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
             return (List<T>) operationInvoker.invokePrivileged(arguments);
         });
 
+        // this gets called on a batch error, so that error callbacks can run with the proper context too
+        Consumer<Throwable> onErrorConsumer = threadContext.contextualConsumer((Throwable exception) -> {
+            io.smallrye.graphql.api.Context context = dfe.getGraphQlContext().get("context");
+            eventEmitter.fireOnDataFetchError(context, exception);
+        });
+
         // Here call blocking with context
         BlockingHelper.runBlocking(vc, contextualCallable, result);
-        return result.future().toCompletionStage();
-
+        return result.future().toCompletionStage()
+                .whenComplete((resultList, error) -> {
+                    if (error != null) {
+                        onErrorConsumer.accept(error);
+                    }
+                });
     }
 
     private boolean runBlocking(DataFetchingEnvironment dfe) {

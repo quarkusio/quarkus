@@ -10,13 +10,6 @@ import org.junit.jupiter.api.Test;
 public class ConfigValidationTest {
 
     @Test
-    public void serverUrlIsRequiredTest() {
-        final KeycloakAdminClientConfig config = createConfig();
-        config.serverUrl = Optional.empty();
-        Assertions.assertThrows(KeycloakAdminClientConfigUtil.KeycloakAdminClientException.class, () -> validate(config));
-    }
-
-    @Test
     public void passwordGrantTypeTest() {
         // negative test
         Assertions.assertDoesNotThrow(() -> validate(createConfig()));

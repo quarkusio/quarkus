@@ -1,8 +1,5 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.impl.CurrentInjectionPointProvider.InjectionPointImpl;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
 import java.lang.reflect.Type;
@@ -12,8 +9,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
+
 import javax.enterprise.context.Dependent;
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.spi.InjectionPoint;
+
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.impl.CurrentInjectionPointProvider.InjectionPointImpl;
 
 public final class Instances {
 
@@ -46,11 +49,19 @@ public final class Instances {
         return List.copyOf(nonSuppressed);
     }
 
+    private static List<InjectableBean<?>> resolveAllBeans(Type requiredType, Set<Annotation> requiredQualifiers) {
+        if (requiredQualifiers == null || requiredQualifiers.isEmpty()) {
+            // If no qualifier is specified then @Any is used
+            return resolveBeans(requiredType, new Annotation[] { Any.Literal.INSTANCE });
+        }
+        return resolveBeans(requiredType, requiredQualifiers.toArray(EMPTY_ANNOTATION_ARRAY));
+    }
+
     @SuppressWarnings("unchecked")
     public static <T> List<T> listOf(InjectableBean<?> targetBean, Type injectionPointType, Type requiredType,
             Set<Annotation> requiredQualifiers,
             CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position) {
-        List<InjectableBean<?>> beans = resolveBeans(requiredType, requiredQualifiers);
+        List<InjectableBean<?>> beans = resolveAllBeans(requiredType, requiredQualifiers);
         if (beans.isEmpty()) {
             return Collections.emptyList();
         }
@@ -87,7 +98,7 @@ public final class Instances {
     public static <T> List<InstanceHandle<T>> listOfHandles(Supplier<InjectionPoint> injectionPoint, Type requiredType,
             Set<Annotation> requiredQualifiers,
             CreationalContextImpl<?> creationalContext) {
-        List<InjectableBean<?>> beans = resolveBeans(requiredType, requiredQualifiers);
+        List<InjectableBean<?>> beans = resolveAllBeans(requiredType, requiredQualifiers);
         if (beans.isEmpty()) {
             return Collections.emptyList();
         }

@@ -6,15 +6,17 @@ import static io.quarkus.devtools.codestarts.jbang.QuarkusJBangCodestartCatalog.
 import static io.quarkus.devtools.testing.SnapshotTesting.assertThatDirectoryTreeMatchSnapshots;
 import static io.quarkus.devtools.testing.SnapshotTesting.assertThatMatchSnapshot;
 
-import io.quarkus.devtools.codestarts.utils.NestedMaps;
-import io.quarkus.devtools.testing.SnapshotTesting;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
+import io.quarkus.devtools.testing.SnapshotTesting;
 
 class QuarkusJBangCodestartGenerationTest {
 

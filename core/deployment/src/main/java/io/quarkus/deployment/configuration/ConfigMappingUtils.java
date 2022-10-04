@@ -30,7 +30,10 @@ import io.smallrye.config.ConfigMappingLoader;
 import io.smallrye.config.ConfigMappingMetadata;
 
 public class ConfigMappingUtils {
+
     public static final DotName CONFIG_MAPPING_NAME = DotName.createSimple(ConfigMapping.class.getName());
+
+    private static final DotName OPTIONAL = DotName.createSimple(Optional.class.getName());
 
     private ConfigMappingUtils() {
     }
@@ -109,7 +112,12 @@ public class ConfigMappingUtils {
         // For implicit converters
         for (ClassInfo classInfo : mappingsInfo) {
             for (MethodInfo method : classInfo.methods()) {
-                reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, method.returnType().name().toString()));
+                Type type = method.returnType();
+                if (type.name().equals(OPTIONAL)) {
+                    // E.g. Optional<Foo>
+                    type = type.asParameterizedType().arguments().get(0);
+                }
+                reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, type.name().toString()));
             }
         }
 

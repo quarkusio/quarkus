@@ -1224,7 +1224,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 }
                 // check if the matching field is ignored
                 try {
-                    if (param.getClass().getDeclaredField(i.getName()).getAnnotation(IgnoreProperty.class) != null) {
+                    Field field = param.getClass().getDeclaredField(i.getName());
+                    if (ignoreField(field)) {
                         continue;
                     }
                 } catch (NoSuchFieldException ignored) {
@@ -1414,7 +1415,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
         //now handle accessible fields
         for (Field field : param.getClass().getFields()) {
             // check if the field is ignored
-            if (field.getAnnotation(IgnoreProperty.class) != null) {
+            if (ignoreField(field)) {
                 continue;
             }
             if (!handledProperties.contains(field.getName())) {
@@ -1549,6 +1550,13 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 return context.loadDeferred(objectValue);
             }
         };
+    }
+
+    /**
+     * Returns {@code true} iff the field is annotated {@link IgnoreProperty} or the field is marked as {@code transient}
+     */
+    private static boolean ignoreField(Field field) {
+        return (field.getAnnotation(IgnoreProperty.class) != null) || Modifier.isTransient(field.getModifiers());
     }
 
     private DeferredParameter findLoaded(final Object param) {

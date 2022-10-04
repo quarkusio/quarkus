@@ -1,10 +1,5 @@
 package io.quarkus.bootstrap.resolver.maven.workspace;
 
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
-import io.quarkus.bootstrap.resolver.maven.BootstrapModelBuilderFactory;
-import io.quarkus.bootstrap.resolver.maven.BootstrapModelResolver;
-import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -13,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.Profile;
@@ -24,6 +20,12 @@ import org.apache.maven.model.resolution.ModelResolver;
 import org.apache.maven.model.resolution.UnresolvableModelException;
 import org.apache.maven.model.resolution.WorkspaceModelResolver;
 import org.jboss.logging.Logger;
+
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.BootstrapModelBuilderFactory;
+import io.quarkus.bootstrap.resolver.maven.BootstrapModelResolver;
+import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 
 public class WorkspaceLoader implements WorkspaceModelResolver {
 

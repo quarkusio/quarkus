@@ -3,6 +3,7 @@ package io.quarkus.arc.impl;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
+
 import javax.interceptor.InvocationContext;
 
 public final class InterceptedStaticMethods {

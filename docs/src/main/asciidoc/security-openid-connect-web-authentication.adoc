@@ -3,18 +3,36 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Using OpenID Connect (OIDC) to Protect Web Applications using Authorization Code Flow
-
+= OpenID Connect (OIDC) authorization code flow mechanism
 include::./attributes.adoc[]
 :toc:
 
-This guide demonstrates how to use Quarkus OpenID Connect (OIDC) Extension to protect your Quarkus HTTP endpoints using OpenID Connect Authorization Code Flow supported by OpenID Connect compliant Authorization Servers such as https://www.keycloak.org[Keycloak].
+The Quarkus OpenID Connect (OIDC) extension can protect application HTTP endpoints by using the OIDC Authorization Code Flow mechanism supported by OIDC-compliant authorization servers, such as https://www.keycloak.org[Keycloak].
 
-The extension allows to easily authenticate the users of your web application by redirecting them to the OpenID Connect Provider (e.g.: Keycloak) to login and, once the authentication is complete, return them back with the code confirming the successful authentication. The extension will request ID and access tokens from the OpenID Connect Provider using an authorization code grant and verify these tokens in order to authorize access to the application.
+The Authorization Code Flow mechanism authenticates users of your web application by redirecting them to an OIDC provider, such as Keycloak, to log in. 
+After authentication, the OIDC provider redirects the user back to the application with an authorization code that confirms that authentication was successful. Then, the application exchanges this code with the OIDC provider for an ID token (which represents the authenticated user), an access token, and a refresh token to authorize the user's access to the application. 
 
-Please read the xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications] guide if you need to protect your applications using Bearer Token Authorization.
+The following diagram outlines the Authorization Code Flow mechanism in Quarkus.
 
-Please read the xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy] guide how to support multiple tenants.
+.Authorization code flow mechanism in Quarkus
+image::authorization_code_flow.png[alt=Authorization Code Flow, width="60%", align=center]
+. The Quarkus user requests access to a Quarkus web-app application.
+. The Quarkus web-app redirects the user to the authorization endpoint, that is, the OIDC provider for authentication.
+. The OIDC provider redirects the user to a login and authentication prompt.
+. At the prompt, the user enters their user credentials.
+. The OIDC provider authenticates the user credentials entered and, if successful, issues an authorization code then redirects the user back to the Quarkus web-app with the code included as a query parameter.
+. The Quarkus web-app exchanges this authorization code with the OIDC provider for ID, access, and refresh tokens. 
+
+The authorization code flow is completed and the Quarkus web-app uses the tokens issued to access information about the user and grant the relevant role-based authorization to that user. 
+The following tokens are issued: 
+
+* ID token: The Quarkus web-app uses the user information in the ID token to enable the authenticated user to log in securely and to provide role-based access to the web-app. 
+* Access token: The Quarkus web-app might use the access token to access the UserInfo API to get additional information about the authenticated user or propagate it to another endpoint.
+* Refresh token: (Optional) If the ID and access tokens expire, the Quarkus web-app can use the refresh token to get new ID and access tokens.  
+
+For information about protecting your applications using Bearer Token authorization, see xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications].
+
+For information about multitenant support, see xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy].
 
 == Quickstart
 

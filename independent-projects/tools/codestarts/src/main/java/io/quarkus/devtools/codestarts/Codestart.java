@@ -1,13 +1,14 @@
 package io.quarkus.devtools.codestarts;
 
-import io.quarkus.devtools.codestarts.core.CodestartSpec;
-import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+
+import io.quarkus.devtools.codestarts.core.CodestartSpec;
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
 
 public final class Codestart {
     public static final String BASE_LANGUAGE = "base";

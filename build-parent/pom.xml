@@ -20,10 +20,10 @@
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
-        <kotlin.version>1.7.10</kotlin.version>
+        <kotlin.version>1.7.20</kotlin.version>
         <dokka.version>1.7.10</dokka.version>
         <scala.version>2.13.8</scala.version>
-        <scala-maven-plugin.version>4.7.1</scala-maven-plugin.version>
+        <scala-maven-plugin.version>4.7.2</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
 
@@ -33,9 +33,9 @@
         <version.exec.plugin>3.0.0</version.exec.plugin>
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
-        <!-- jandex maven plugin version -->
-        <jandex-maven-plugin.version>1.2.3</jandex-maven-plugin.version>
-        <jandex-gradle-plugin.version>0.13.0</jandex-gradle-plugin.version>
+        <!-- Jandex versions -->
+        <jandex.version>3.0.1</jandex.version>
+        <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
@@ -43,7 +43,7 @@
         <graal-sdk.version-for-documentation>22.2.0</graal-sdk.version-for-documentation>
         <mandrel.version-for-documentation>22.2</mandrel.version-for-documentation>
 
-        <asciidoctorj.version>2.5.5</asciidoctorj.version>
+        <asciidoctorj.version>2.5.6</asciidoctorj.version>
         <htmlunit.version>2.40.0</htmlunit.version>
         <javaparser-core.version>3.24.2</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
@@ -103,7 +103,7 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
-        <keycloak.version>19.0.1</keycloak.version>
+        <keycloak.version>19.0.2</keycloak.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.version}-legacy</keycloak.docker.legacy.image>
 
@@ -111,11 +111,11 @@
 
         <assertj.version>3.23.1</assertj.version>
 
-        <wiremock-jre8.version>2.33.2</wiremock-jre8.version>
+        <wiremock-jre8.version>2.34.0</wiremock-jre8.version>
         <wiremock-maven-plugin.version>7.2.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.24.0</artemis.version>
+        <artemis.version>2.26.0</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
@@ -133,8 +133,10 @@
         <truststore-maven-plugin.version>3.0.0</truststore-maven-plugin.version>
 
         <!-- Webjars used by the Dev UI -->
-        <webjar.bootstrap.version>4.6.1</webjar.bootstrap.version>
-        <webjar.font-awesome.version>6.1.2</webjar.font-awesome.version>
+        <webjar.bootstrap.version>4.6.2</webjar.bootstrap.version>
+        <webjar.bootstrap-multiselect.version>0.9.15</webjar.bootstrap-multiselect.version>
+        <webjar.bootstrap-icons.version>1.9.1</webjar.bootstrap-icons.version>
+        <webjar.font-awesome.version>6.2.0</webjar.font-awesome.version>
         <webjar.jquery.version>3.6.1</webjar.jquery.version>
         <webjar.codemirror.version>5.62.2</webjar.codemirror.version>
         <!-- we don't add mermaid as a dependency as it brings a ton of things we don't use -->
@@ -311,6 +313,16 @@
             </dependency>
             <dependency>
                 <groupId>org.webjars</groupId>
+                <artifactId>bootstrap-multiselect</artifactId>
+                <version>${webjar.bootstrap-multiselect.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>bootstrap-icons</artifactId>
+                <version>${webjar.bootstrap-icons.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars</groupId>
                 <artifactId>font-awesome</artifactId>
                 <version>${webjar.font-awesome.version}</version>
             </dependency>
@@ -329,7 +341,7 @@
                 <artifactId>d3js</artifactId>
                 <version>${webjar.d3js.version}</version>
             </dependency>
-           <dependency>
+            <dependency>
                 <groupId>org.webjars</groupId>
                 <artifactId>chartjs</artifactId>
                 <version>${webjar.chartjs.version}</version>
@@ -587,9 +599,9 @@
                     </configuration>
                 </plugin>
                 <plugin>
-                    <groupId>org.jboss.jandex</groupId>
+                    <groupId>io.smallrye</groupId>
                     <artifactId>jandex-maven-plugin</artifactId>
-                    <version>${jandex-maven-plugin.version}</version>
+                    <version>${jandex.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
@@ -689,6 +701,11 @@
                     <artifactId>asciidoctor-maven-plugin</artifactId>
                     <version>${asciidoctor-maven-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>de.thetaphi</groupId>
+                    <artifactId>forbiddenapis</artifactId>
+                    <version>${forbiddenapis-maven-plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
@@ -770,6 +787,49 @@
                                 </goals>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>format-kotlin</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>!no-format</name>
+                </property>
+                <file>
+                    <exists>src/main/kotlin</exists>
+                </file>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.diffplug.spotless</groupId>
+                        <artifactId>spotless-maven-plugin</artifactId>
+                        <version>2.25.0</version>
+                        <executions>
+                            <execution>
+                                <id>format-kotlin</id>
+                                <phase>process-sources</phase>
+                                <goals>
+                                    <goal>apply</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+
+                        <configuration>
+                            <kotlin>
+                                <!--
+                                    <ktfmt>
+                                        <style>DEFAULT</style> &lt;!&ndash; optional, other options are DEFAULT, DROPBOX, GOOGLE and KOTLINLANG &ndash;&gt;
+                                    </ktfmt>
+                                -->
+                                <ktlint/>
+
+                            </kotlin>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
@@ -979,7 +1039,7 @@
                                         <pluginExecution>
                                             <pluginExecutionFilter>
                                                 <groupId>
-                                                    org.jboss.jandex
+                                                    io.smallrye
                                                 </groupId>
                                                 <artifactId>
                                                     jandex-maven-plugin
@@ -1219,6 +1279,7 @@
                             </activeStyles>
                             <activeRecipes>
                                 <recipe>io.quarkus.build-parent</recipe>
+                                <recipe>io.quarkus.jakarta-json-cleanup</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>

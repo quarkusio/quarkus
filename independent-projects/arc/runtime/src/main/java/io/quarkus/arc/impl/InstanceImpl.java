@@ -1,13 +1,5 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ClientProxy;
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableContext;
-import io.quarkus.arc.InjectableInstance;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.WithCaching;
-import io.quarkus.arc.impl.CurrentInjectionPointProvider.InjectionPointImpl;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
 import java.lang.reflect.ParameterizedType;
@@ -20,6 +12,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
+
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.AmbiguousResolutionException;
@@ -28,6 +21,15 @@ import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ClientProxy;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.WithCaching;
+import io.quarkus.arc.impl.CurrentInjectionPointProvider.InjectionPointImpl;
 
 /**
  *
@@ -138,7 +140,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
             context.destroy(proxy.arc_bean());
         } else {
             // First try to destroy a dependent instance
-            if (!creationalContext.destroyDependentInstance(instance)) {
+            if (!creationalContext.removeDependentInstance(instance, true)) {
                 // If not successful then try the singleton context
                 SingletonContext singletonContext = (SingletonContext) Arc.container().getActiveContext(Singleton.class);
                 singletonContext.destroyInstance(instance);
@@ -185,6 +187,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
     private InjectableBean<T> bean() {
         List<InjectableBean<?>> beans = beans();
         if (beans.isEmpty()) {
+            ArcContainerImpl.instance().scanRemovedBeans(requiredType, requiredQualifiers.toArray(new Annotation[] {}));
             throw new UnsatisfiedResolutionException(
                     "No bean found for required type [" + requiredType + "] and qualifiers [" + requiredQualifiers + "]");
         } else if (beans.size() > 1) {

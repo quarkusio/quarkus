@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
 import java.util.List;
+
 import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
@@ -9,6 +10,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.MessageBodyWriter;
+
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;

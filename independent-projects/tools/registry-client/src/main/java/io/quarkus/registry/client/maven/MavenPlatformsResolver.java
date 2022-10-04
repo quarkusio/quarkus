@@ -1,5 +1,14 @@
 package io.quarkus.registry.client.maven;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Objects;
+
+import org.apache.maven.artifact.repository.metadata.Metadata;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.resolution.ArtifactResult;
+
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.Constants;
@@ -7,13 +16,6 @@ import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.PlatformCatalog;
 import io.quarkus.registry.client.RegistryPlatformsResolver;
 import io.quarkus.registry.config.RegistryPlatformsConfig;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Objects;
-import org.apache.maven.artifact.repository.metadata.Metadata;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.resolution.ArtifactResult;
 
 public class MavenPlatformsResolver implements RegistryPlatformsResolver {
 

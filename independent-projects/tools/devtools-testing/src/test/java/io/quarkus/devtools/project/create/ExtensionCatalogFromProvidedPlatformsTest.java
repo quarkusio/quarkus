@@ -2,21 +2,23 @@ package io.quarkus.devtools.project.create;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
-import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.registry.ExtensionCatalogResolver;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.stream.Collectors;
+
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.ExtensionCatalogResolver;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public class ExtensionCatalogFromProvidedPlatformsTest extends MultiplePlatformBomsTestBase {
 

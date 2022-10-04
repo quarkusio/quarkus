@@ -1,8 +1,9 @@
 package io.quarkus.bootstrap.model;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
 import java.util.Collection;
 import java.util.Map;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 public interface PlatformImports {
 

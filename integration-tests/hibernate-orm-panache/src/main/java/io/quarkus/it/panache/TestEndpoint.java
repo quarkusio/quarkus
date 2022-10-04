@@ -33,6 +33,7 @@ import org.hibernate.jpa.QueryHints;
 import org.junit.jupiter.api.Assertions;
 
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
@@ -1582,6 +1583,42 @@ public class TestEndpoint {
         assertEquals(josePerson.id, persons.get(persons.size() - 1).id);
 
         Person.deleteAll();
+
+        return "OK";
+    }
+
+    @GET
+    @Path("testEnhancement27184DeleteDetached")
+    // NOT @Transactional
+    public String testEnhancement27184DeleteDetached() {
+        QuarkusTransaction.begin();
+        Person.deleteAll();
+        QuarkusTransaction.commit();
+
+        QuarkusTransaction.begin();
+        Person person = new Person();
+        person.name = "Yoann";
+        person.persist();
+        QuarkusTransaction.commit();
+
+        QuarkusTransaction.begin();
+        assertTrue(Person.findByIdOptional(person.id).isPresent());
+        QuarkusTransaction.commit();
+
+        QuarkusTransaction.begin();
+        // 'person' is detached at this point,
+        // since the previous transaction and session were closed.
+        // We want .delete() to work regardless.
+        person.delete();
+        QuarkusTransaction.commit();
+
+        QuarkusTransaction.begin();
+        assertFalse(Person.findByIdOptional(person.id).isPresent());
+        QuarkusTransaction.commit();
+
+        QuarkusTransaction.begin();
+        Person.deleteAll();
+        QuarkusTransaction.commit();
 
         return "OK";
     }

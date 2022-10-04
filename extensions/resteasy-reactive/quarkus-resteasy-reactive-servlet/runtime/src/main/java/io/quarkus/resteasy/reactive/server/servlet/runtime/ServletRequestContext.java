@@ -28,7 +28,6 @@ import javax.ws.rs.core.SecurityContext;
 
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
@@ -66,11 +65,11 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     Consumer<Throwable> asyncWriteHandler;
     protected Consumer<ResteasyReactiveRequestContext> preCommitTask;
 
-    public ServletRequestContext(Deployment deployment, ProvidersImpl providers,
+    public ServletRequestContext(Deployment deployment,
             HttpServletRequest request, HttpServletResponse response,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain,
             RoutingContext context, HttpServerExchange exchange) {
-        super(deployment, providers, requestContext, handlerChain, abortHandlerChain);
+        super(deployment, requestContext, handlerChain, abortHandlerChain);
         this.request = request;
         this.response = response;
         this.context = context;

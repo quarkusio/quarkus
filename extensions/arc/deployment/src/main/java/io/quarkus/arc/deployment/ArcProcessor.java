@@ -81,6 +81,7 @@ import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.LaunchModeProducer;
 import io.quarkus.arc.runtime.LoggerProducer;
+import io.quarkus.arc.runtime.context.ArcContextProvider;
 import io.quarkus.arc.runtime.test.PreloadedTestApplicationClassPredicate;
 import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.deployment.Capabilities;
@@ -114,6 +115,7 @@ import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.runtime.test.TestApplicationClassPredicate;
 import io.quarkus.runtime.util.HashUtil;
+import io.quarkus.smallrye.context.deployment.spi.ThreadContextProviderBuildItem;
 
 /**
  * This class contains build steps that trigger various phases of the bean processing.
@@ -147,7 +149,7 @@ public class ArcProcessor {
         List<String> quarkusApplications = new ArrayList<>();
         for (ClassInfo quarkusApplication : combinedIndex.getIndex()
                 .getAllKnownImplementors(DotName.createSimple(QuarkusApplication.class.getName()))) {
-            if (quarkusApplication.classAnnotation(DotNames.DECORATOR) == null) {
+            if (quarkusApplication.declaredAnnotation(DotNames.DECORATOR) == null) {
                 quarkusApplications.add(quarkusApplication.name().toString());
             }
         }
@@ -468,7 +470,7 @@ public class ArcProcessor {
                 } else {
                     declaringClass = injectionPoint.getTarget().asMethod().declaringClass();
                 }
-                if (declaringClass.classAnnotation(DotNames.KOTLIN_METADATA_ANNOTATION) != null) {
+                if (declaringClass.declaredAnnotation(DotNames.KOTLIN_METADATA_ANNOTATION) != null) {
                     validationErrors.produce(new ValidationErrorBuildItem(
                             new DefinitionException(
                                     "kotlin.collections.List cannot be used together with the @All qualifier, please use MutableList or java.util.List instead: "
@@ -810,6 +812,13 @@ public class ArcProcessor {
             }
         } catch (AmbiguousResolutionException e) {
             errors.produce(new ValidationErrorBuildItem(e));
+        }
+    }
+
+    @BuildStep
+    void registerContextPropagation(ArcConfig config, BuildProducer<ThreadContextProviderBuildItem> threadContextProvider) {
+        if (config.contextPropagation.enabled) {
+            threadContextProvider.produce(new ThreadContextProviderBuildItem(ArcContextProvider.class));
         }
     }
 

@@ -242,14 +242,12 @@ class SmallRyeHealthProcessor {
                 .build());
 
         SmallRyeIndividualHealthGroupHandler handler = new SmallRyeIndividualHealthGroupHandler();
-        for (String healthGroup : healthGroups) {
-            routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    .nestedRoute(healthConfig.rootPath, healthConfig.groupPath + "/" + healthGroup)
-                    .handler(handler)
-                    .displayOnNotFoundPage()
-                    .blockingRoute()
-                    .build());
-        }
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .nestedRoute(healthConfig.rootPath, healthConfig.groupPath + "/*")
+                .handler(handler)
+                .displayOnNotFoundPage()
+                .blockingRoute()
+                .build());
 
         // Register the wellness handler
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
@@ -274,6 +272,10 @@ class SmallRyeHealthProcessor {
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config) {
         if (healthConfig.contextPropagation) {
             config.produce(new RunTimeConfigurationDefaultBuildItem("io.smallrye.health.context.propagation", "true"));
+        }
+        if (healthConfig.maxGroupRegistriesCount.isPresent()) {
+            config.produce(new RunTimeConfigurationDefaultBuildItem("io.smallrye.health.maxGroupRegistriesCount",
+                    String.valueOf(healthConfig.maxGroupRegistriesCount.getAsInt())));
         }
         config.produce(new RunTimeConfigurationDefaultBuildItem("io.smallrye.health.delayChecksInitializations", "true"));
     }

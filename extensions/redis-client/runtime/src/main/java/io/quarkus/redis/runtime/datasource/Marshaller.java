@@ -18,6 +18,7 @@ import java.util.function.Function;
 import io.quarkus.redis.datasource.codecs.Codec;
 import io.quarkus.redis.datasource.codecs.Codecs;
 import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.ResponseType;
 
 public class Marshaller {
 
@@ -79,6 +80,9 @@ public class Marshaller {
     final <T> T decode(Class<T> clazz, Response r) {
         if (r == null) {
             return null;
+        }
+        if (r.type() == ResponseType.SIMPLE) {
+            return decode(clazz, r.toString().getBytes());
         }
         return decode(clazz, r.toBytes());
     }
@@ -149,9 +153,7 @@ public class Marshaller {
         Map<F, V> map = new LinkedHashMap<>();
         for (F field : fields) {
             Response v = iterator.next();
-            if (v != null) { // Skip null entries
-                map.put(field, decode(typeOfValue, v));
-            }
+            map.put(field, decode(typeOfValue, v));
         }
         return map;
     }

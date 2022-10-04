@@ -1,12 +1,13 @@
 package org.jboss.resteasy.reactive.server.processor.scanning;
 
-import io.quarkus.gizmo.Gizmo;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiFunction;
+
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
+
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.resteasy.reactive.common.processor.AsmUtil;
@@ -26,6 +27,8 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+
+import io.quarkus.gizmo.Gizmo;
 
 public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 

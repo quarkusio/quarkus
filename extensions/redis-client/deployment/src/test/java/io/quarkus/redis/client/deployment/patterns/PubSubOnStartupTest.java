@@ -21,7 +21,7 @@ import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.pubsub.PubSubCommands;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
-import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.runtime.Startup;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -115,11 +115,11 @@ public class PubSubOnStartupTest {
     @ApplicationScoped
     public static class MyCache {
 
-        private final StringCommands<String, BusinessObject> commands;
+        private final ValueCommands<String, BusinessObject> commands;
         private final PubSubCommands<Notification> pub;
 
         public MyCache(RedisDataSource ds) {
-            commands = ds.string(BusinessObject.class);
+            commands = ds.value(BusinessObject.class);
             pub = ds.pubsub(Notification.class);
         }
 

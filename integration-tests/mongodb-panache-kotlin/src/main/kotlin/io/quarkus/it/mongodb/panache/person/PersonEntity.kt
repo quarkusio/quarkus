@@ -16,6 +16,5 @@ class PersonEntity : PanacheMongoEntityBase() {
         fun findOrdered(): List<PersonEntity> {
             return findAll(Sort.by("lastname", "firstname")).list()
         }
-
     }
 }

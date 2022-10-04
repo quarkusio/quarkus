@@ -1,14 +1,15 @@
 package io.quarkus.devtools.commands.handlers;
 
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.function.BiConsumer;
+
 import io.quarkus.devtools.commands.ListCategories;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.registry.catalog.Category;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.function.BiConsumer;
 
 /**
  * Instances of this class are thread-safe. It lists extension categories according to the options passed in as properties of

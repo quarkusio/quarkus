@@ -79,7 +79,8 @@ public final class EngineBuilder {
     public EngineBuilder addDefaultSectionHelpers() {
         return addSectionHelpers(new IfSectionHelper.Factory(), new LoopSectionHelper.Factory(iterationMetadataPrefix),
                 new WithSectionHelper.Factory(), new IncludeSectionHelper.Factory(), new InsertSectionHelper.Factory(),
-                new SetSectionHelper.Factory(), new WhenSectionHelper.Factory(), new EvalSectionHelper.Factory());
+                new SetSectionHelper.Factory(), new WhenSectionHelper.Factory(), new EvalSectionHelper.Factory(),
+                new FragmentSectionHelper.Factory());
     }
 
     public EngineBuilder addValueResolver(Supplier<ValueResolver> resolverSupplier) {

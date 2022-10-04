@@ -2,17 +2,19 @@ package io.quarkus.bootstrap.resolver;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.quarkus.maven.dependency.ArtifactDependency;
-import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.maven.dependency.DependencyFlags;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.maven.dependency.ArtifactDependency;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.DependencyFlags;
 
 /**
  *

@@ -12,7 +12,7 @@ import javax.persistence.ManyToOne
 open class Dog() : PanacheEntityBase {
     companion object : PanacheCompanion<Dog>
 
-    constructor(name: String, race: String): this() {
+    constructor(name: String, race: String) : this() {
         this.name = name
         this.race = race
     }
@@ -21,6 +21,7 @@ open class Dog() : PanacheEntityBase {
     var owner: Person? = null
     var name: String? = null
     var race: String? = null
+
     /**
      * The auto-generated ID field. This field is set by Hibernate ORM when this entity
      * is persisted.

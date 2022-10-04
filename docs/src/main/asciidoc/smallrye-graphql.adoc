@@ -742,8 +742,8 @@ Update `GalaxyService` to provide search:
             .collect(Collectors.toList());
         results.addAll(matchingFilms);
         List<Character> matchingCharacters = getAllCharacters().stream()
-            .filter(character -> character.name.contains(query)
-                || character.surname.contains(query))
+            .filter(character -> character.getName().contains(query)
+                || character.getSurname().contains(query))
             .collect(Collectors.toList());
         results.addAll(matchingCharacters);
         return results;

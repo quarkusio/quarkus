@@ -1,16 +1,12 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.impl.ComputingCache;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
+
 import javax.enterprise.util.AnnotationLiteral;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ArrayType;
@@ -20,6 +16,13 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
+
+import io.quarkus.arc.impl.ComputingCache;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 
 /**
  * Handles generating bytecode for annotation literals. The

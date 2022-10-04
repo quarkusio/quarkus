@@ -1,7 +1,5 @@
 package io.quarkus.bootstrap.classloading;
 
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.paths.OpenPathTree;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.security.ProtectionDomain;
@@ -10,6 +8,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.jar.Manifest;
+
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.paths.OpenPathTree;
 
 public class FilteredClassPathElement implements ClassPathElement {
 

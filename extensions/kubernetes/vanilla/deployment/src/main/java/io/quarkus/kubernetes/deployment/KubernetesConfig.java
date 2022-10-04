@@ -1,6 +1,8 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.Constants.CRONJOB;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
+import static io.quarkus.kubernetes.deployment.Constants.JOB;
 import static io.quarkus.kubernetes.deployment.Constants.STATEFULSET;
 
 import java.util.Collections;
@@ -11,6 +13,8 @@ import java.util.OptionalInt;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -19,7 +23,9 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public enum DeploymentResourceKind {
         Deployment(DEPLOYMENT),
-        StatefulSet(STATEFULSET);
+        StatefulSet(STATEFULSET),
+        Job(JOB),
+        CronJob(CRONJOB);
 
         final String kind;
 
@@ -46,13 +52,12 @@ public class KubernetesConfig implements PlatformConfiguration {
      */
     @ConfigItem(defaultValue = "${quarkus.container-image.tag}")
     Optional<String> version;
-
     /**
      * The kind of the deployment resource to use.
-     * Supported values are 'Deployment' and 'StatefulSet' defaulting to the first.
+     * Supported values are 'StatefulSet', 'Job', 'CronJob' and 'Deployment' defaulting to the latter.
      */
-    @ConfigItem(defaultValue = "Deployment")
-    KubernetesConfig.DeploymentResourceKind deploymentKind;
+    @ConfigItem
+    Optional<KubernetesConfig.DeploymentResourceKind> deploymentKind;
 
     /**
      * The namespace the generated resources should belong to.
@@ -274,6 +279,16 @@ public class KubernetesConfig implements PlatformConfiguration {
     IngressConfig ingress;
 
     /**
+     * Job configuration. It's only used if and only if {@code quarkus.kubernetes.deployment-kind} is `Job`.
+     */
+    JobConfig job;
+
+    /**
+     * CronJob configuration. It's only used if and only if {@code quarkus.kubernetes.deployment-kind} is `CronJob`.
+     */
+    CronJobConfig cronJob;
+
+    /**
      * If true, the 'app.kubernetes.io/version' label will be part of the selectors of Service and Deployment
      */
     @ConfigItem(defaultValue = "true")
@@ -325,10 +340,6 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public Optional<String> getVersion() {
         return version;
-    }
-
-    public String getDeploymentResourceKind() {
-        return deploymentKind.kind;
     }
 
     public Optional<String> getNamespace() {
@@ -516,5 +527,15 @@ public class KubernetesConfig implements PlatformConfiguration {
     @Override
     public SecurityContextConfig getSecurityContext() {
         return securityContext;
+    }
+
+    public KubernetesConfig.DeploymentResourceKind getDeploymentResourceKind(Capabilities capabilities) {
+        if (deploymentKind.isPresent()) {
+            return deploymentKind.get();
+        } else if (capabilities.isPresent(Capability.PICOCLI)) {
+            return KubernetesConfig.DeploymentResourceKind.Job;
+        }
+
+        return DeploymentResourceKind.Deployment;
     }
 }

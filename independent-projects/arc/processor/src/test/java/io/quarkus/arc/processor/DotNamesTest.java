@@ -5,12 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.processor.DotNamesTest.Nested.NestedNested;
 import java.io.IOException;
+
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.arc.processor.DotNamesTest.Nested.NestedNested;
 
 public class DotNamesTest {
 

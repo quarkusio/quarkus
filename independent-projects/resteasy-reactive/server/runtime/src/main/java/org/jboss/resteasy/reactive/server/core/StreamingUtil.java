@@ -1,18 +1,20 @@
 package org.jboss.resteasy.reactive.server.core;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
+
 import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.server.StreamingOutputStream;
 import org.jboss.resteasy.reactive.server.handlers.PublisherResponseHandler;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 
@@ -56,7 +58,7 @@ public class StreamingUtil {
         MessageBodyWriter<Object>[] writers = (MessageBodyWriter<Object>[]) serialisers
                 .findWriters(null, entityClass, mediaType, RuntimeType.SERVER)
                 .toArray(ServerSerialisers.NO_WRITER);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        StreamingOutputStream baos = new StreamingOutputStream();
         boolean wrote = false;
         for (MessageBodyWriter<Object> writer : writers) {
             // Spec(API) says we should use class/type/mediaType but doesn't talk about annotations

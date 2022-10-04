@@ -1,5 +1,8 @@
 package io.quarkus.devtools.project.state;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -7,8 +10,6 @@ import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionOrigin;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 
 public class TopExtensionDependency {
 

@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.junit.jupiter.api.Disabled;
+
+@Disabled("flaky")
 public class CompositeBuildWithDependenciesDevModeTest extends QuarkusDevGradleTestBase {
 
     @Override

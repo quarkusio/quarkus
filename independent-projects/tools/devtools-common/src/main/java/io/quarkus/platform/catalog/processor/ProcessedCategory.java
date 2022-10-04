@@ -2,13 +2,14 @@ package io.quarkus.platform.catalog.processor;
 
 import static io.quarkus.registry.catalog.Category.MD_PINNED;
 
-import io.quarkus.registry.catalog.Category;
-import io.quarkus.registry.catalog.Extension;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import io.quarkus.registry.catalog.Category;
+import io.quarkus.registry.catalog.Extension;
 
 public final class ProcessedCategory {
     private final Category category;

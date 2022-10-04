@@ -1,5 +1,6 @@
 package io.quarkus.it.infinispan.client;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -50,5 +51,53 @@ public class InfinispanClientFunctionalityTest {
     @Test
     public void testQueryWithCustomMarshaller() {
         RestAssured.when().get("/test/magazinequery/IM").then().body(is("[TIME:1923-03,TIME:1997-04]"));
+    }
+
+    @Test
+    public void testAuthor() {
+        RestAssured.when().get("/test/create-cache-default-config/authors").then().body(is("[George]"));
+    }
+
+    @Test
+    public void testCacheAnnotations() {
+        RestAssured.when().get("/books/hp-1")
+                .then()
+                .body(containsString("Philosopher's Stone"));
+
+        RestAssured.when().get("/books/hp-2")
+                .then()
+                .body(containsString("Chamber of Secrets"));
+
+        RestAssured.when().get("/books/hp-3")
+                .then()
+                .body(containsString("Prisoner of Azkaban"));
+
+        RestAssured.when().get("/books/hp-4")
+                .then()
+                .body(containsString("computed book"));
+
+        RestAssured.when().get("/books/hp-3/extra-params")
+                .then().statusCode(500);
+
+        RestAssured.when().delete("/books/hp-1")
+                .then()
+                .statusCode(200);
+
+        RestAssured.when().get("/books/hp-1")
+                .then()
+                .body(containsString("computed book"));
+
+        RestAssured.when().delete("/books")
+                .then()
+                .statusCode(200);
+
+        RestAssured.when().get("/books/hp-2")
+                .then()
+                .body(containsString("computed book"));
+
+        RestAssured.when().get("/books/hp-3")
+                .then()
+                .body(containsString("computed book"));
+
     }
 }

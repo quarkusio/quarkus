@@ -1,10 +1,48 @@
 package org.jboss.resteasy.reactive.client.handlers;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import javax.ws.rs.InternalServerErrorException;
+import javax.ws.rs.ProcessingException;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Variant;
+
+import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.AsyncResultUni;
+import org.jboss.resteasy.reactive.client.api.ClientLogger;
+import org.jboss.resteasy.reactive.client.api.LoggingScope;
+import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
+import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
+import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;
+import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
+import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
+import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
+import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload;
+import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartResponseDecoder;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
+import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
+
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.stork.Stork;
 import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -23,42 +61,6 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.streams.Pipe;
 import io.vertx.core.streams.Pump;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Variant;
-import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.client.AsyncResultUni;
-import org.jboss.resteasy.reactive.client.api.ClientLogger;
-import org.jboss.resteasy.reactive.client.api.LoggingScope;
-import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
-import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
-import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;
-import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
-import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
-import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
-import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload;
-import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartResponseDecoder;
-import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
-import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
-import org.jboss.resteasy.reactive.common.core.Serialisers;
-import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
     private static final Logger log = Logger.getLogger(ClientSendRequestHandler.class);
@@ -408,50 +410,18 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             return Uni.createFrom()
                     .failure(new IllegalArgumentException("Invalid REST Client URL used: '" + uri + "'"));
         }
-        if (uri.getScheme().startsWith(Stork.STORK)) {
-            String serviceName = uri.getHost();
-            if (serviceName == null) { // invalid URI
-                return Uni.createFrom()
-                        .failure(new IllegalArgumentException("Invalid REST Client URL used: '" + uri + "'"));
-            }
-            Uni<ServiceInstance> serviceInstance;
-            try {
-                serviceInstance = Stork.getInstance()
-                        .getService(serviceName)
-                        .selectInstanceAndRecordStart(shouldMeasureTime(state));
-            } catch (Throwable e) {
-                log.error("Error selecting service instance for serviceName: " + serviceName, e);
-                return Uni.createFrom().failure(e);
-            }
-            requestOptions = serviceInstance.onItem().transform(new Function<>() {
-                @Override
-                public RequestOptions apply(ServiceInstance serviceInstance) {
-                    if (serviceInstance.gatherStatistics() && shouldMeasureTime(state)) {
-                        state.setCallStatsCollector(serviceInstance);
-                    }
-
-                    boolean isHttps = serviceInstance.isSecure() || "storks".equals(uri.getScheme());
-
-                    return new RequestOptions()
-                            .setHost(serviceInstance.getHost())
-                            .setPort(serviceInstance.getPort())
-                            .setSsl(isHttps);
-                }
-            });
-        } else {
-            try {
-                URL ignored = uri.toURL();
-            } catch (MalformedURLException mue) {
-                log.error("Invalid REST Client URL used: '" + uri + "'");
-                return Uni.createFrom()
-                        .failure(new IllegalArgumentException("Invalid REST Client URL used: '" + uri + "'"));
-            }
-
-            boolean isHttps = "https".equals(uri.getScheme());
-            int port = getPort(isHttps, uri.getPort());
-            requestOptions = Uni.createFrom().item(new RequestOptions().setHost(uri.getHost())
-                    .setPort(port).setSsl(isHttps));
+        try {
+            URL ignored = uri.toURL();
+        } catch (MalformedURLException mue) {
+            log.error("Invalid REST Client URL used: '" + uri + "'");
+            return Uni.createFrom()
+                    .failure(new IllegalArgumentException("Invalid REST Client URL used: '" + uri + "'"));
         }
+
+        boolean isHttps = "https".equals(uri.getScheme());
+        int port = getPort(isHttps, uri.getPort());
+        requestOptions = Uni.createFrom().item(new RequestOptions().setHost(uri.getHost())
+                .setPort(port).setSsl(isHttps));
 
         return requestOptions.onItem()
                 .transform(r -> r.setMethod(HttpMethod.valueOf(state.getHttpMethod()))

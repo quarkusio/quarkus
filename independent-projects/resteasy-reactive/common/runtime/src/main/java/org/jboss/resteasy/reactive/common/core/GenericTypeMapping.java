@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.common.core;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.ws.rs.client.InvocationCallback;
 
 public class GenericTypeMapping {

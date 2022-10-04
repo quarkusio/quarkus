@@ -1,8 +1,10 @@
 package org.jboss.resteasy.reactive.server.vertx.test.customproviders;
 
 import java.util.Optional;
+
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 
 public class OptionalRequestFilter {

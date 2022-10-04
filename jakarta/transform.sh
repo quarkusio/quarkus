@@ -34,7 +34,7 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   # Build Kotlin Maven Plugin to allow skipping main compilation
   # (skipping test compilation is supported but not main)
   rm -rf target/kotlin
-  git clone -b v1.7.10-jakarta --depth 1 https://github.com/gsmet/kotlin.git target/kotlin
+  git clone -b v1.7.20-jakarta --depth 1 https://github.com/gsmet/kotlin.git target/kotlin
   pushd target/kotlin/libraries/tools/kotlin-maven-plugin
   mvn -B clean install -DskipTests -DskipITs
   popd
@@ -207,7 +207,8 @@ remove_banned_dependency "independent-projects/enforcer-rules/src/main/resources
 remove_banned_dependency "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
 update_banned_dependency "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" 'jakarta.xml.bind:jakarta.xml.bind-api' 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec'
 update_banned_dependency_advanced "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_3.0_spec</exclude>\n                <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
-update_banned_dependency_advanced "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" '<exclude>jakarta.json:jakarta.json-api</exclude>' "<exclude>jakarta.json:jakarta.json-api</exclude>\n                <exclude>org.glassfish:jakarta.json</exclude>"
+sed -i '/<!-- The API is packaged by the implementation-->/d' 'independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml'
+update_banned_dependency_advanced "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" '<exclude>jakarta.json:jakarta.json-api</exclude>' "<exclude>org.glassfish:jakarta.json</exclude>\n                <exclude>org.eclipse.parsson:jakarta.json</exclude>"
 update_banned_dependency_advanced "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" '<exclude>org.glassfish:javax.el</exclude>' "<exclude>org.glassfish:javax.el</exclude>\n                <exclude>org.glassfish:jakarta.el</exclude>"
 sed -i 's@<!-- Exclude jakarta.activation-api as the implementation contains it -->@<!-- Exclude com.sun.activation:jakarta.activation as we switched to Angus Activation -->@g' 'independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml'
 update_banned_dependency "independent-projects/enforcer-rules/src/main/resources/enforcer-rules/quarkus-banned-dependencies.xml" 'jakarta.activation:jakarta.activation-api' 'com.sun.activation:jakarta.activation'
@@ -229,8 +230,9 @@ sed -i 's@com.sun.xml.bind.v2.ContextFactory@org.glassfish.jaxb.runtime.v2.Conte
 sed -i '/com.sun.xml.internal.bind.v2.ContextFactory/d' extensions/jaxb/deployment/src/main/java/io/quarkus/jaxb/deployment/JaxbProcessor.java
 
 ## JSON-P implementation switch
-sed -i 's@<runnerParentFirstArtifact>org.glassfish:jakarta.json</runnerParentFirstArtifact>@<runnerParentFirstArtifact>org.eclipse.parsson:jakarta.json</runnerParentFirstArtifact>@g' extensions/logging-json/runtime/pom.xml
-sed -i 's@<parentFirstArtifact>org.glassfish:jakarta.json</parentFirstArtifact>@<parentFirstArtifact>org.eclipse.parsson:jakarta.json</parentFirstArtifact>@g' extensions/jsonp/runtime/pom.xml
+sed -i 's@<runnerParentFirstArtifact>org.glassfish:jakarta.json</runnerParentFirstArtifact>@<runnerParentFirstArtifact>org.eclipse.parsson:parsson</runnerParentFirstArtifact>\n                        <runnerParentFirstArtifact>jakarta.json:jakarta.json-api</runnerParentFirstArtifact>@g' extensions/logging-json/runtime/pom.xml
+sed -i 's@<parentFirstArtifact>org.glassfish:jakarta.json</parentFirstArtifact>@<parentFirstArtifact>org.eclipse.parsson:parsson</parentFirstArtifact>@g' extensions/jsonp/runtime/pom.xml
+sed -i 's@<excludedArtifact>org.glassfish:javax.json</excludedArtifact>@<excludedArtifact>org.glassfish:javax.json</excludedArtifact>\n                        <excludedArtifact>org.glassfish:jakarta.json</excludedArtifact>\n                        <excludedArtifact>org.eclipse.parsson:jakarta.json</excludedArtifact>@g' extensions/jsonp/runtime/pom.xml
 sed -i 's@import org.glassfish.json.JsonProviderImpl;@import org.eclipse.parsson.JsonProviderImpl;@g' extensions/jsonp/deployment/src/main/java/io/quarkus/jsonp/deployment/JsonpProcessor.java
 
 ## cleanup phase - needs to be done once everything has been rewritten
@@ -292,10 +294,14 @@ sed -i 's@<excludedArtifact>jakarta.xml.bind:jakarta.xml.bind-api</excludedArtif
 sed -i 's@<excludedArtifact>jakarta.ws.rs:jakarta.ws.rs-api</excludedArtifact>@<excludedArtifact>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_3.0_spec</excludedArtifact>\n                        <excludedArtifact>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</excludedArtifact>@g' extensions/resteasy-classic/resteasy-common/runtime/pom.xml
 rm extensions/resteasy-classic/resteasy-common/runtime/src/main/java/io/quarkus/resteasy/common/runtime/graal/{Target_org_jboss_resteasy_microprofile_config_FilterConfigSource.java,Target_org_jboss_resteasy_microprofile_config_ServletConfigSource.java,Target_org_jboss_resteasy_microprofile_config_ServletContextConfigSource.java,ServletMissing.java}
 sed -i 's@<quarkus.rest-client-reactive.scope>javax.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>@<quarkus.rest-client-reactive.scope>jakarta.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>@g' tcks/microprofile-rest-client-reactive/pom.xml
+sed -i '/public SSLContext getSSLContext() {/i \ \ \ \ @Override' extensions/websockets/client/runtime/src/main/java/io/quarkus/websockets/BearerTokenClientEndpointConfigurator.java
 
 sed -i 's@org.jboss.narayana.rts:narayana-lra@org.jboss.narayana.rts:narayana-lra-jakarta@g' extensions/narayana-lra/runtime/pom.xml
 sed -i 's@org.jboss.narayana.rts:lra-client@org.jboss.narayana.rts:lra-client-jakarta@g' extensions/narayana-lra/runtime/pom.xml
 sed -i 's@META-INF/services/javax.ws.rs.client.ClientBuilder@META-INF/services/jakarta.ws.rs.client.ClientBuilder@g' extensions/narayana-lra/runtime/pom.xml
+
+find integration-tests/gradle -name build.gradle | xargs sed -i 's/javax.enterprise.context.ApplicationScoped/jakarta.enterprise.context.ApplicationScoped/g'
+find integration-tests/gradle -name build.gradle | xargs sed -i 's/javax.ws.rs.Path/jakarta.ws.rs.Path/g'
 
 transform_documentation
 sed -i 's@javax/ws/rs@jakarta/ws/rs@g' docs/src/main/asciidoc/resteasy-reactive.adoc
@@ -330,6 +336,8 @@ git checkout -- extensions/kubernetes-service-binding/runtime/src/test/resources
 ./mvnw -f integration-tests formatter:format impsort:sort
 ./mvnw -f test-framework formatter:format impsort:sort
 
+for kotlin_project in `find . -name kotlin | grep -E 'src/main/kotlin$' | grep -v codestart | sed 's@src/main/kotlin@@g' | grep -v '/resources/'`; do mvn spotless:apply -f $kotlin_project; done
+
 # Disable non-compilable ITs
 # - Confluent registry client doesn't have a version supporting Jakarta packages
 
@@ -350,6 +358,10 @@ git commit -m 'Remove integration-tests/kafka-avro - see kafka-avro-apicurio2 in
 git fetch origin jakarta-10-cdi
 JAKARTA_10_CDI_HASH=$(git rev-parse origin/jakarta-10-cdi)
 git cherry-pick -x ${JAKARTA_10_CDI_HASH}
+
+## JAX-RS/RESTEasy Reactive
+git fetch origin jakarta-10-jaxrs
+git rev-list 3e7b6d56854a7402f7e2cfc6edbaa49b2da0f959..origin/jakarta-10-jaxrs | tac | xargs git cherry-pick -x
 
 # Build phase
 

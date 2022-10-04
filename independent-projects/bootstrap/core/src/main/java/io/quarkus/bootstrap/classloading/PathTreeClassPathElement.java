@@ -1,10 +1,5 @@
 package io.quarkus.bootstrap.classloading;
 
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.paths.OpenPathTree;
-import io.quarkus.paths.PathTree;
-import io.quarkus.paths.PathVisit;
-import io.quarkus.paths.PathVisitor;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
@@ -24,7 +19,14 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.jar.Manifest;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.paths.OpenPathTree;
+import io.quarkus.paths.PathTree;
+import io.quarkus.paths.PathVisit;
+import io.quarkus.paths.PathVisitor;
 
 public class PathTreeClassPathElement extends AbstractClassPathElement {
 

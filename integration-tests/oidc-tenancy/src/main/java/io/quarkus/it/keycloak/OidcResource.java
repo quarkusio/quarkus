@@ -1,9 +1,11 @@
 package io.quarkus.it.keycloak;
 
 import java.security.PublicKey;
+import java.time.Duration;
 import java.util.Base64;
 
 import javax.annotation.PostConstruct;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
@@ -36,8 +38,10 @@ public class OidcResource {
     private volatile boolean rotate;
     private volatile int jwkEndpointCallCount;
     private volatile int introspectionEndpointCallCount;
+    private volatile int revokeEndpointCallCount;
     private volatile int userInfoEndpointCallCount;
     private volatile boolean enableDiscovery = true;
+    private volatile int refreshEndpointCallCount;
 
     @PostConstruct
     public void init() throws Exception {
@@ -57,6 +61,7 @@ public class OidcResource {
                     "   \"token_endpoint\":" + "\"" + baseUri + "/token\"," +
                     "   \"introspection_endpoint\":" + "\"" + baseUri + "/introspect\"," +
                     "   \"userinfo_endpoint\":" + "\"" + baseUri + "/userinfo\"," +
+                    "   \"revocation_endpoint\":" + "\"" + baseUri + "/revoke\"," +
                     "   \"jwks_uri\":" + "\"" + baseUri + "/jwks\"" +
                     "  }";
         } else {
@@ -144,6 +149,27 @@ public class OidcResource {
     }
 
     @GET
+    @Path("revoke-endpoint-call-count")
+    public int revokeEndpointCallCount() {
+        return revokeEndpointCallCount;
+    }
+
+    @POST
+    @Path("revoke-endpoint-call-count")
+    public int resetRevokeEndpointCallCount() {
+        revokeEndpointCallCount = 0;
+        return revokeEndpointCallCount;
+    }
+
+    @POST
+    @Path("revoke")
+    public void revoke(@FormParam("token") String token) throws Exception {
+        if (token != null) {
+            revokeEndpointCallCount++;
+        }
+    }
+
+    @GET
     @Path("userinfo-endpoint-call-count")
     public int userInfoEndpointCallCount() {
         return userInfoEndpointCallCount;
@@ -170,7 +196,38 @@ public class OidcResource {
     @POST
     @Path("token")
     @Produces("application/json")
-    public String token(@QueryParam("kid") String kid) {
+    public String token(@FormParam("grant_type") String grantType) {
+        if ("authorization_code".equals(grantType)) {
+            return "{\"id_token\": \"" + jwt("1") + "\"," +
+                    "\"access_token\": \"" + jwt("1") + "\"," +
+                    "   \"token_type\": \"Bearer\"," +
+                    "   \"refresh_token\": \"123456789\"," +
+                    "   \"expires_in\": 300 }";
+        } else if ("refresh_token".equals(grantType)) {
+            // Emulate the case where the provider returns the refresh token only once
+            // and does not recycle refresh tokens during  the refresh token grant request.
+
+            if (refreshEndpointCallCount++ == 0) {
+                // first refresh token request
+                return "{\"id_token\": \"" + jwt("1") + "\"," +
+                        "\"access_token\": \"" + jwt("1") + "\"," +
+                        "   \"token_type\": \"Bearer\"," +
+                        "   \"expires_in\": 300 }";
+            } else {
+                // force an error to test the case where the refresh token eventually becomes invalid
+                // quarkus-oidc should redirect the user to authenticate again if refreshing the token fails
+                throw new BadRequestException();
+            }
+        } else {
+            // unexpected grant request
+            throw new BadRequestException();
+        }
+    }
+
+    @POST
+    @Path("accesstoken")
+    @Produces("application/json")
+    public String testAccessToken(@QueryParam("kid") String kid) {
         return "{\"access_token\": \"" + jwt(kid) + "\"," +
                 "   \"token_type\": \"Bearer\"," +
                 "   \"refresh_token\": \"123456789\"," +
@@ -180,7 +237,7 @@ public class OidcResource {
     @POST
     @Path("opaque-token")
     @Produces("application/json")
-    public String opaqueToken(@QueryParam("kid") String kid) {
+    public String testOpaqueToken(@QueryParam("kid") String kid) {
         return "{\"access_token\": \"987654321\"," +
                 "   \"token_type\": \"Bearer\"," +
                 "   \"refresh_token\": \"123456789\"," +
@@ -235,6 +292,7 @@ public class OidcResource {
                 .upn("alice")
                 .preferredUserName("alice")
                 .groups("user")
+                .expiresIn(Duration.ofSeconds(4))
                 .jws().keyId(kid)
                 .sign(key.getPrivateKey());
     }

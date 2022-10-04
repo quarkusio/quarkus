@@ -19,6 +19,17 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 import static org.jboss.resteasy.reactive.client.impl.multipart.QuarkusHttpPostBodyUtil.getMultipartDataBoundary;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusHttpPostBodyUtil.TransferEncodingMechanism;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.DefaultHttpContent;
 import io.netty.handler.codec.http.HttpConstants;
@@ -40,15 +51,6 @@ import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.StringUtil;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.IllegalCharsetNameException;
-import java.nio.charset.UnsupportedCharsetException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusHttpPostBodyUtil.TransferEncodingMechanism;
 
 /**
  * This decoder will decode response body.

@@ -111,13 +111,14 @@ Extension developers that want to make their configuration options platform-spec
 package io.quarkus.deployment.pkg;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public class NativeConfig {
+@ConfigMapping(prefix = "quarkus")
+public interface NativeConfig {
 
     /**
      * The docker image to use to do the image build
      */
-    @ConfigItem(defaultValue = "${platform.quarkus.native.builder-image}")
-    public String builderImage;
+    @WithDefault("${platform.quarkus.native.builder-image}")
+    String builderImage();
 }
 ----
 
@@ -126,7 +127,7 @@ A platform properties file for the example above would contain:
 
 [source,text,subs=attributes+]
 ----
-platform.quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor}
+platform.quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:{graalvm-flavor}
 ----
 
 There is also a Maven plugin goal that validates the platform properties content and its artifact coordinates and also checks whether the platform properties artifact is present in the platform's BOM. Here is a sample plugin configuration:

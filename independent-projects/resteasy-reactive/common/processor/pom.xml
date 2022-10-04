@@ -15,7 +15,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss</groupId>
+            <groupId>io.smallrye</groupId>
             <artifactId>jandex</artifactId>
         </dependency>
         <dependency>

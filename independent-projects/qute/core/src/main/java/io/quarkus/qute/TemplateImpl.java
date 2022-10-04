@@ -2,10 +2,12 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Namespaces.DATA_NAMESPACE;
 
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -14,7 +16,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+
 import org.jboss.logging.Logger;
+
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 class TemplateImpl implements Template {
 
@@ -26,6 +33,7 @@ class TemplateImpl implements Template {
     private final Optional<Variant> variant;
     final SectionNode root;
     private final List<ParameterDeclaration> parameterDeclarations;
+    private final LazyValue<Map<String, Fragment>> fragments;
 
     TemplateImpl(EngineImpl engine, SectionNode root, String templateId, String generatedId, Optional<Variant> variant) {
         this.engine = engine;
@@ -35,6 +43,8 @@ class TemplateImpl implements Template {
         this.variant = variant;
         // Note that param declarations can be removed if placed on a standalone line
         this.parameterDeclarations = ImmutableList.copyOf(root.getParameterDeclarations());
+        // Use a lazily initialized map to avoid unnecessary performance costs during parsing
+        this.fragments = initFragments(root);
     }
 
     @Override
@@ -81,6 +91,47 @@ class TemplateImpl implements Template {
     @Override
     public String toString() {
         return "Template " + templateId + " [generatedId=" + generatedId + "]";
+    }
+
+    @Override
+    public Fragment getFragment(String identifier) {
+        return fragments != null ? fragments.get().get(Objects.requireNonNull(identifier)) : null;
+    }
+
+    private LazyValue<Map<String, Fragment>> initFragments(SectionNode section) {
+        if (section.name.equals(Parser.ROOT_HELPER_NAME)) {
+            // Initialize the lazy map for root sections only
+            return new LazyValue<>(new Supplier<Map<String, Fragment>>() {
+
+                @Override
+                public Map<String, Fragment> get() {
+                    Predicate<TemplateNode> isFragmentNode = new Predicate<TemplateNode>() {
+                        @Override
+                        public boolean test(TemplateNode node) {
+                            if (!node.isSection()) {
+                                return false;
+                            }
+                            SectionNode sectionNode = (SectionNode) node;
+                            return sectionNode.helper instanceof FragmentSectionHelper;
+                        }
+                    };
+                    List<TemplateNode> fragmentNodes = section.findNodes(isFragmentNode);
+                    if (fragmentNodes.isEmpty()) {
+                        return Collections.emptyMap();
+                    } else {
+                        Map<String, Fragment> fragments = new HashMap<>();
+                        for (TemplateNode fragmentNode : fragmentNodes) {
+                            FragmentSectionHelper helper = (FragmentSectionHelper) ((SectionNode) fragmentNode).helper;
+                            Fragment fragment = new FragmentImpl(engine, (SectionNode) fragmentNode, helper.getIdentifier(),
+                                    engine.generateId(), variant);
+                            fragments.put(helper.getIdentifier(), fragment);
+                        }
+                        return fragments;
+                    }
+                }
+            });
+        }
+        return null;
     }
 
     private class TemplateInstanceImpl extends TemplateInstanceBase {
@@ -208,6 +259,32 @@ class TemplateImpl implements Template {
         @Override
         public String toString() {
             return "Instance of " + TemplateImpl.this.toString();
+        }
+
+    }
+
+    class FragmentImpl extends TemplateImpl implements Fragment {
+
+        public FragmentImpl(EngineImpl engine, SectionNode root, String fragmentId, String generatedId,
+                Optional<Variant> variant) {
+            super(engine, root, fragmentId, generatedId, variant);
+        }
+
+        @Override
+        public Fragment getFragment(String id) {
+            return TemplateImpl.this.getFragment(id);
+        }
+
+        @Override
+        public Template getOriginalTemplate() {
+            return TemplateImpl.this;
+        }
+
+        @Override
+        public TemplateInstance instance() {
+            TemplateInstance instance = super.instance();
+            instance.setAttribute(Fragment.ATTRIBUTE, true);
+            return instance;
         }
 
     }

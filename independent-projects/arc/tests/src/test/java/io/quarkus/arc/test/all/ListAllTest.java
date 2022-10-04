@@ -4,28 +4,35 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.InjectionPoint;
+import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.MyQualifier;
 
 public class ListAllTest {
 
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Service.class, ServiceAlpha.class, ServiceBravo.class);
 
+    @SuppressWarnings("serial")
     @Test
     public void testSelectAll() {
+        // the behavior should be equivalent to @Inject @Any Instance<Service>
         List<InstanceHandle<Service>> services = Arc.container().listAll(Service.class);
         assertEquals(2, services.size());
         assertThatExceptionOfType(UnsupportedOperationException.class)
@@ -43,6 +50,9 @@ public class ListAllTest {
         assertEquals(true, ServiceBravo.DESTROYED.get());
         assertThatExceptionOfType(IllegalStateException.class)
                 .isThrownBy(() -> bravoHandle.get());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> Arc.container().listAll(Service.class, new AnnotationLiteral<Test>() {
+                }));
     }
 
     interface Service {
@@ -63,6 +73,7 @@ public class ListAllTest {
         }
     }
 
+    @MyQualifier
     @Priority(5) // this impl should go first
     @Dependent
     static class ServiceBravo implements Service {

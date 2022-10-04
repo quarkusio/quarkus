@@ -73,6 +73,14 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <configuration>
+                    <removedResources>
+                        <artifact>
+                            <key>org.keycloak:keycloak-admin-client</key>
+                            <resources>org/keycloak/admin/client/JacksonProvider.class</resources>
+                        </artifact>
+                    </removedResources>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

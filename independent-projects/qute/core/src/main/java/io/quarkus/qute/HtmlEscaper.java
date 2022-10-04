@@ -1,9 +1,10 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.TemplateNode.Origin;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+
+import io.quarkus.qute.TemplateNode.Origin;
 
 public class HtmlEscaper implements ResultMapper {
 

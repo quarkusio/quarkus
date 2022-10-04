@@ -100,6 +100,8 @@
                 <exclude>org.jboss.modules:jboss-modules</exclude>
                 <!-- We prefer ByteBuddy where possible -->
                 <exclude>org.javassist:javassist</exclude>
+                <!-- Jandex moved to SmallRye -->
+                <exclude>org.jboss:jandex</exclude>
             </excludes>
             <includes>
                 <!-- this is for REST Assured -->

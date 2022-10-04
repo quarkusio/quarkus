@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -8,6 +9,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.AccessTokenResponse;
@@ -95,6 +99,67 @@ public class BearerTokenAuthorizationTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
             assertEquals("tenant-web-app2:alice", page.getBody().asText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCodeFlowRefreshTokens() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/tenant-refresh/tenant-web-app-refresh/api/user");
+            assertEquals("Sign in to quarkus-webapp", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            page = loginForm.getInputByName("login").click();
+
+            assertEquals("userName: alice, idToken: true, accessToken: true, refreshToken: true",
+                    page.getBody().asText());
+
+            assertNotNull(getSessionCookie(page.getWebClient(), "tenant-web-app-refresh"));
+            assertNotNull(getSessionAtCookie(page.getWebClient(), "tenant-web-app-refresh"));
+            Cookie rtCookie = getSessionRtCookie(page.getWebClient(), "tenant-web-app-refresh");
+            assertNotNull(rtCookie);
+
+            // Wait till the session expires - which should cause the first and also last token refresh request,
+            // id and access tokens should have new values, refresh token value should remain the same.
+            // No new sign-in process is required.
+            await().atLeast(6, TimeUnit.SECONDS);
+
+            page = webClient.getPage("http://localhost:8081/tenant-refresh/tenant-web-app-refresh/api/user");
+            assertEquals("userName: alice, idToken: true, accessToken: true, refreshToken: true",
+                    page.getBody().asText());
+
+            assertNotNull(getSessionCookie(page.getWebClient(), "tenant-web-app-refresh"));
+            assertNotNull(getSessionAtCookie(page.getWebClient(), "tenant-web-app-refresh"));
+            Cookie rtCookie2 = getSessionRtCookie(page.getWebClient(), "tenant-web-app-refresh");
+            assertNotNull(rtCookie2);
+            assertEquals(rtCookie2.getValue(), rtCookie.getValue());
+
+            //Verify all the cookies are cleared after the session timeout
+            webClient.getOptions().setRedirectEnabled(false);
+            webClient.getCache().clear();
+
+            await().atMost(10, TimeUnit.SECONDS)
+                    .pollInterval(Duration.ofSeconds(1))
+                    .until(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() throws Exception {
+                            webClient.getOptions().setRedirectEnabled(false);
+                            WebResponse webResponse = webClient
+                                    .loadWebResponse(new WebRequest(
+                                            URI.create("http://localhost:8081/tenant-refresh/tenant-web-app-refresh/api/user")
+                                                    .toURL()));
+                            // Should redirect to login page given that session is now expired and
+                            // the 2nd refresh token is expected to fail in the test OidcResource
+                            return 302 == webResponse.getStatusCode();
+                        }
+                    });
+
+            assertNull(getSessionCookie(webClient, "tenant-web-app-refresh"));
+            assertNull(getSessionAtCookie(webClient, "tenant-web-app-refresh"));
+            assertNull(getSessionRtCookie(webClient, "tenant-web-app-refresh"));
+
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -298,6 +363,7 @@ public class BearerTokenAuthorizationTest {
     public void testSimpleOidcJwtWithJwkRefresh() {
         RestAssured.when().post("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
         RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/revoke-endpoint-call-count").then().body(equalTo("0"));
         RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
         RestAssured.when().post("/oidc/disable-discovery").then().body(equalTo("false"));
         // Quarkus OIDC is initialized with JWK set with kid '1' as part of the discovery process
@@ -322,7 +388,7 @@ public class BearerTokenAuthorizationTest {
         RestAssured.when().post("/oidc/enable-introspection").then().body(equalTo("true"));
         // No timeout is required
         RestAssured.given().auth().oauth2(getAccessTokenFromSimpleOidc("3"))
-                .when().get("/tenant/tenant-oidc/api/user")
+                .when().get("/tenant/tenant-oidc/api/user?revoke=true")
                 .then()
                 .statusCode(200)
                 .body(equalTo("tenant-oidc:alice"));
@@ -340,6 +406,7 @@ public class BearerTokenAuthorizationTest {
         RestAssured.when().get("/oidc/jwk-endpoint-call-count").then().body(equalTo("2"));
         // both requests with kid `3` and with the opaque token required the remote introspection
         RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("3"));
+        RestAssured.when().get("/oidc/revoke-endpoint-call-count").then().body(equalTo("1"));
         RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
         RestAssured.when().post("/oidc/enable-discovery").then().body(equalTo("true"));
         RestAssured.when().post("/oidc/disable-rotate").then().body(equalTo("false"));
@@ -538,8 +605,9 @@ public class BearerTokenAuthorizationTest {
         String json = RestAssured
                 .given()
                 .queryParam("kid", kid)
+                .formParam("grant_type", "authorization_code")
                 .when()
-                .post("/oidc/token")
+                .post("/oidc/accesstoken")
                 .body().asString();
         JsonObject object = new JsonObject(json);
         return object.getString("access_token");
@@ -571,5 +639,13 @@ public class BearerTokenAuthorizationTest {
     private String getStateCookieSavedPath(WebClient webClient, String tenantId) {
         String[] parts = getStateCookie(webClient, tenantId).getValue().split("\\|");
         return parts.length == 2 ? parts[1] : null;
+    }
+
+    private Cookie getSessionAtCookie(WebClient webClient, String tenantId) {
+        return webClient.getCookieManager().getCookie("q_session_at" + (tenantId == null ? "_Default_test" : "_" + tenantId));
+    }
+
+    private Cookie getSessionRtCookie(WebClient webClient, String tenantId) {
+        return webClient.getCookieManager().getCookie("q_session_rt" + (tenantId == null ? "_Default_test" : "_" + tenantId));
     }
 }

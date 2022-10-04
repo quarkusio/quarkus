@@ -18,7 +18,7 @@
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <asciidoctorj-pdf.version>1.5.0-beta.8</asciidoctorj-pdf.version>
         <roaster-jdt.version>2.26.0.Final</roaster-jdt.version>
-        <maven-model-helper.version>19</maven-model-helper.version>
+        <maven-model-helper.version>20</maven-model-helper.version>
         <eclipse-collections.version>10.4.0</eclipse-collections.version>
         <quarkus-home-url>https://quarkus.io</quarkus-home-url>
         <quarkus-base-url>https://github.com/quarkusio/quarkus</quarkus-base-url>
@@ -371,6 +371,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-csrf-reactive-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -2790,6 +2803,23 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>generate-quarkus-mvn-plugin-docs</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipDocs}</skip>
+                            <mainClass>io.quarkus.docs.generation.QuarkusMavenPluginDocsGenerator</mainClass>
+                            <arguments>
+                                <argument>${project.basedir}/../devtools/maven/target/classes/META-INF/maven/plugin.xml</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>all-build-item-classes</id>
                         <phase>process-classes</phase>
                         <goals>
@@ -2888,7 +2918,7 @@
                         <kibana-image>${kibana.image}</kibana-image>
                         <keycloak-docker-image>${keycloak.docker.image}</keycloak-docker-image>
 
-                        <jandex-maven-plugin-version>${jandex-maven-plugin.version}</jandex-maven-plugin-version>
+                        <jandex-version>${jandex.version}</jandex-version>
                         <jandex-gradle-plugin-version>${jandex-gradle-plugin.version}</jandex-gradle-plugin-version>
                         <kotlin-version>${kotlin.version}</kotlin-version>
 

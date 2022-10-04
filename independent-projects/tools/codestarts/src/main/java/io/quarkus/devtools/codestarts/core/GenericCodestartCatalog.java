@@ -1,10 +1,11 @@
 package io.quarkus.devtools.codestarts.core;
 
+import java.util.Collection;
+
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.CodestartCatalog;
 import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.CodestartProjectInput;
-import java.util.Collection;
 
 public class GenericCodestartCatalog<T extends CodestartProjectInput> implements CodestartCatalog<T> {
 

@@ -1,9 +1,10 @@
 package io.quarkus.devtools.project.buildfile;
 
+import java.io.IOException;
+
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.buildfile.AbstractGradleBuildFile.Model;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import java.io.IOException;
 
 public class KotlinGradleBuildFilesCreator extends AbstractGradleBuildFilesCreator {
 

@@ -64,7 +64,7 @@ jobs:
         run: |
           echo -n ${{ github.event.number }} > pull-request-number
       - name: Upload pull request number
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: pull-request-number-${{ github.event.number }}
           path: pull-request-number
@@ -79,7 +79,7 @@ jobs:
         run: |
           echo -n 25363 > report-issue-number
       - name: Upload report issue number
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: report-issue-number-25363
           path: report-issue-number
@@ -114,7 +114,7 @@ jobs:
       gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
       gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Add quarkusio remote
@@ -128,7 +128,7 @@ jobs:
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: 11
@@ -139,7 +139,7 @@ jobs:
         shell: bash
       - name: Cache Maven Repository
         id: cache-maven
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.m2/repository
           # refresh cache every month to avoid unlimited growth
@@ -194,7 +194,7 @@ jobs:
         shell: bash
         run: tar -I 'pigz -9' -cf maven-repo.tgz -C ~ .m2/repository
       - name: Persist Maven Repo
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: maven-repo
           path: maven-repo.tgz
@@ -203,7 +203,7 @@ jobs:
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Initial JDK 11 Build"
@@ -222,18 +222,25 @@ jobs:
       GIB_IMPACTED_MODULES: ${{ needs.build-jdk11.outputs.gib_impacted }}
     outputs:
       native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
+      jvm_matrix: ${{ steps.calc-jvm-matrix.outputs.matrix }}
       run_jvm: ${{ steps.calc-run-flags.outputs.run_jvm }}
       run_devtools: ${{ steps.calc-run-flags.outputs.run_devtools }}
       run_gradle: ${{ steps.calc-run-flags.outputs.run_gradle }}
       run_maven: ${{ steps.calc-run-flags.outputs.run_maven }}
       run_tcks: ${{ steps.calc-run-flags.outputs.run_tcks }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Calculate matrix from native-tests.json
         id: calc-native-matrix
         run: |
           echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
           json=$(.github/filter-native-tests-json.sh "${GIB_IMPACTED_MODULES}" | tr -d '\n')
+          echo "${json}"
+          echo "::set-output name=matrix::${json}"
+      - name: Calculate matrix from matrix-jvm-tests.json
+        id: calc-jvm-matrix
+        run: |
+          json=$(.github/filter-jvm-tests-json.sh)
           echo "${json}"
           echo "::set-output name=matrix::${json}"
       - name: Calculate run flags
@@ -267,40 +274,12 @@ jobs:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
     strategy:
       fail-fast: false
-      matrix:
-        java:
-          - {
-            name: "11",
-            java-version: 11,
-            maven_args: "$JVM_TEST_MAVEN_ARGS",
-            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g",
-            os-name: "ubuntu-latest"
-          }
-          - {
-            name: "17",
-            java-version: 17,
-            maven_args: "$JVM_TEST_MAVEN_ARGS",
-            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g",
-            os-name: "ubuntu-latest"
-          }
-          - {
-            name: "18",
-            java-version: 18,
-            maven_args: "$JVM_TEST_MAVEN_ARGS",
-            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g",
-            os-name: "ubuntu-latest"
-          }
-          - {
-            name: "11 Windows",
-            java-version: 11,
-            maven_args: "-DskipDocs -Dformat.skip",
-            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g -Xlog:gc*=debug:file=windows-java-11.txt",
-            os-name: "windows-latest"
-          }
+      matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.jvm_matrix) }}
+
 
     steps:
       - name: Stop mysql
-        if: "!startsWith(matrix.java.os-name, 'windows')"
+        if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
         shell: bash
         run: |
           ss -ln
@@ -308,7 +287,7 @@ jobs:
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Add quarkusio remote
@@ -316,22 +295,23 @@ jobs:
         run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
 
       - name: apt clean
-        if: "!startsWith(matrix.java.os-name, 'windows')"
+        if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
         shell: bash
         run: sudo apt-get clean
 
       - name: Reclaim Disk Space
-        if: "!startsWith(matrix.java.os-name, 'windows')"
+        if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
         run: .github/ci-prerequisites.sh
 
       - name: Set up JDK ${{ matrix.java.java-version }}
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
+          architecture: ${{ matrix.java.architecture || 'x64' }}
 
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -351,14 +331,14 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: test-reports-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 5
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-JVM Tests - JDK ${{matrix.java.name}}"
@@ -368,7 +348,7 @@ jobs:
             LICENSE.txt
           retention-days: 2
       - name: Upload gc.log
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: "GC log - JDK ${{matrix.java.name}}"
           path: |
@@ -376,7 +356,7 @@ jobs:
             !**/build/tmp/**
           retention-days: 5
       - name: Upload build.log (if build failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-logs-JVM Tests - JDK ${{matrix.java.name}}"
@@ -411,9 +391,9 @@ jobs:
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -421,7 +401,7 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
@@ -433,7 +413,7 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: test-reports-maven-java${{matrix.java.name}}
@@ -448,7 +428,7 @@ jobs:
           if [ -d 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' 'integration-tests/maven/target/test-classes/projects/qit--uber--jar'; fi
         shell: bash
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Maven Tests - JDK ${{matrix.java.name}}"
@@ -486,9 +466,9 @@ jobs:
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -511,7 +491,7 @@ jobs:
         # Important: keep -pl ... in sync with "Calculate run flags"!
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS install -pl integration-tests/gradle
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Gradle Tests - JDK ${{matrix.java.name}}"
@@ -552,9 +532,9 @@ jobs:
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -562,7 +542,7 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
@@ -574,14 +554,14 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: test-reports-devtools-java${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 5
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Devtools Tests - JDK ${{matrix.java.name}}"
@@ -608,9 +588,9 @@ jobs:
             os-name: "ubuntu-latest"
           }
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -618,7 +598,7 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
@@ -628,7 +608,7 @@ jobs:
           git checkout development
           export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Quickstarts Compilation - JDK ${{matrix.java.name}}"
@@ -647,7 +627,7 @@ jobs:
     timeout-minutes: 150
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Add quarkusio remote
@@ -656,12 +636,12 @@ jobs:
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: 11
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -681,14 +661,14 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: test-reports-tcks
           path: 'test-reports.tgz'
           retention-days: 5
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-MicroProfile TCKs Tests"
@@ -717,11 +697,11 @@ jobs:
       - name: Support longpaths on Windows
         if: "startsWith(matrix.os-name, 'windows')"
         run: git config --global core.longpaths true
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: 11
@@ -746,7 +726,7 @@ jobs:
         run: |
           cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -764,14 +744,14 @@ jobs:
         shell: bash
         run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: test-reports-native-${{matrix.category}}
           path: 'test-reports.tgz'
           retention-days: 5
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Native Tests - ${{matrix.category}}"

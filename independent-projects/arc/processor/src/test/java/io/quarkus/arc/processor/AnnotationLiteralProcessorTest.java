@@ -2,16 +2,13 @@ package io.quarkus.arc.processor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.TestClassLoader;
 import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
@@ -20,6 +17,11 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Opcodes;
+
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TestClassLoader;
 
 public class AnnotationLiteralProcessorTest {
     public enum SimpleEnum {

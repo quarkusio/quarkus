@@ -6,5 +6,4 @@ enum class Status(val value: String) {
     override fun toString(): String {
         return value
     }
-
 }

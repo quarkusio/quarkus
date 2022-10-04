@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.cdi;
 
-import static io.quarkus.opentelemetry.runtime.OpenTelemetryConfig.INSTRUMENTATION_NAME;
+import static io.quarkus.opentelemetry.runtime.config.OpenTelemetryConfig.INSTRUMENTATION_NAME;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -22,7 +22,7 @@ import io.opentelemetry.instrumentation.api.annotation.support.ParameterAttribut
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
-import io.opentelemetry.instrumentation.api.util.SpanNames;
+import io.opentelemetry.instrumentation.api.instrumenter.util.SpanNames;
 import io.quarkus.arc.ArcInvocationContext;
 
 @SuppressWarnings("CdiInterceptorInspection")
@@ -43,7 +43,7 @@ public class WithSpanInterceptor {
                 MethodRequest::getArgs);
 
         this.instrumenter = builder.addAttributesExtractor(attributesExtractor)
-                .newInstrumenter(methodRequest -> spanKindFromMethod(methodRequest.getAnnotationBindings()));
+                .buildInstrumenter(methodRequest -> spanKindFromMethod(methodRequest.getAnnotationBindings()));
     }
 
     @AroundInvoke

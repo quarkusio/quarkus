@@ -1,11 +1,12 @@
 package io.quarkus.devtools.codestarts.core.reader;
 
-import io.quarkus.devtools.codestarts.CodestartResource;
-import io.quarkus.devtools.codestarts.CodestartResource.Source;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import io.quarkus.devtools.codestarts.CodestartResource;
+import io.quarkus.devtools.codestarts.CodestartResource.Source;
 
 public interface CodestartFileReader {
 

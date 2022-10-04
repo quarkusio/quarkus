@@ -16,6 +16,7 @@ import de.flapdoodle.embed.mongo.config.Defaults;
 import de.flapdoodle.embed.mongo.config.MongoCmdOptions;
 import de.flapdoodle.embed.mongo.config.MongodConfig;
 import de.flapdoodle.embed.mongo.config.Net;
+import de.flapdoodle.embed.mongo.distribution.IFeatureAwareVersion;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.process.config.RuntimeConfig;
 import de.flapdoodle.embed.process.io.Processors;
@@ -24,15 +25,29 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
     public static final String PORT = "port";
+    public static final String VERSION = "version";
     private static final int DEFAULT_PORT = 27017;
     private static MongodExecutable MONGO;
 
     private static final Logger LOGGER = Logger.getLogger(MongoTestResource.class);
     private Integer port;
+    private IFeatureAwareVersion version;
 
     @Override
     public void init(Map<String, String> initArgs) {
         port = Optional.ofNullable(initArgs.get(PORT)).map(Integer::parseInt).orElse(DEFAULT_PORT);
+        version = Optional.ofNullable(initArgs.get(VERSION)).map(versionStr -> {
+            try {
+                return Version.valueOf(versionStr);
+            } catch (IllegalArgumentException e) {
+                try {
+                    return Version.Main.valueOf(versionStr);
+                } catch (IllegalArgumentException ex) {
+                    throw new IllegalArgumentException(
+                            String.format("Unable to convert %s to a known Mongo version", versionStr));
+                }
+            }
+        }).orElse(Version.Main.V4_0);
     }
 
     @Override
@@ -45,7 +60,6 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
         } catch (ClassNotFoundException e) {
         }
         try {
-            Version.Main version = Version.Main.V4_0;
             LOGGER.infof("Starting Mongo %s on port %s", version, port);
             MongodConfig config = MongodConfig.builder()
                     .version(version)

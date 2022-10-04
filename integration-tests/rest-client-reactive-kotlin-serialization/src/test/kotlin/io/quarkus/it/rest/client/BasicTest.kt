@@ -35,5 +35,4 @@ open class BasicTest {
             .post("/call-not-found-countries")
         Assertions.assertThat(response.statusCode).isEqualTo(204)
     }
-
 }

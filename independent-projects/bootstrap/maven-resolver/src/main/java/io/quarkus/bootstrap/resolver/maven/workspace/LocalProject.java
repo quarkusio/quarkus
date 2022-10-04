@@ -1,5 +1,27 @@
 package io.quarkus.bootstrap.resolver.maven.workspace;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.apache.maven.model.Build;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.Parent;
+import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginExecution;
+import org.apache.maven.model.Resource;
+import org.apache.maven.model.building.ModelBuildingResult;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
+
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
@@ -18,26 +40,6 @@ import io.quarkus.paths.DirectoryPathTree;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathFilter;
 import io.quarkus.paths.PathList;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import org.apache.maven.model.Build;
-import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.Parent;
-import org.apache.maven.model.Plugin;
-import org.apache.maven.model.PluginExecution;
-import org.apache.maven.model.Resource;
-import org.apache.maven.model.building.ModelBuildingResult;
-import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 /**
  *

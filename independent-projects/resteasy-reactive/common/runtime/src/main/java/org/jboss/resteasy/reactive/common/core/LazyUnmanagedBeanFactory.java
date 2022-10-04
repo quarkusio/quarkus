@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.common.core;
 
 import java.util.function.Supplier;
+
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class LazyUnmanagedBeanFactory<T> implements BeanFactory<T> {

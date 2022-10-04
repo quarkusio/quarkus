@@ -103,7 +103,7 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
                 .put(marshaller.encode(key))
                 .put(marshaller.encode(from))
                 .put(marshaller.encode(to))
-                .put(unit.name()));
+                .put(unit.toString()));
     }
 
     Uni<Response> _geohash(K key, V... members) {
@@ -142,7 +142,7 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
 
         return execute(RedisCommand.of(Command.GEORADIUS)
                 .put(marshaller.encode(key)).put(longitude).put(latitude).put(radius)
-                .put(unit.name()));
+                .put(unit.toString()));
     }
 
     Uni<Response> _georadius(K key, double longitude, double latitude, double radius, GeoUnit unit,
@@ -155,7 +155,7 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
         nonNull(geoArgs, "geoArgs");
         return execute(RedisCommand.of(Command.GEORADIUS)
                 .put(marshaller.encode(key)).put(longitude).put(latitude).put(radius)
-                .put(unit.name())
+                .put(unit.toString())
                 .putArgs(geoArgs));
     }
 
@@ -169,7 +169,7 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
         nonNull(geoArgs, "geoArgs");
         return execute(RedisCommand.of(Command.GEORADIUS)
                 .put(marshaller.encode(key)).put(longitude).put(latitude).put(radius)
-                .put(unit.name())
+                .put(unit.toString())
                 .putArgs(geoArgs, keyCodec));
     }
 
@@ -180,7 +180,7 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
         nonNull(unit, "unit");
         nonNull(geoArgs, "geoArgs");
         return execute(RedisCommand.of(Command.GEORADIUSBYMEMBER).put(marshaller.encode(key)).put(marshaller.encode(member))
-                .put(distance).put(unit.name())
+                .put(distance).put(unit.toString())
                 .putArgs(geoArgs));
     }
 
@@ -190,7 +190,7 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
         positive(distance, "distance");
         nonNull(unit, "unit");
         return execute(RedisCommand.of(Command.GEORADIUSBYMEMBER).put(marshaller.encode(key))
-                .put(marshaller.encode(member)).put(distance).put(unit.name()));
+                .put(marshaller.encode(member)).put(distance).put(unit.toString()));
     }
 
     Uni<Response> _georadiusbymember(K key, V member, double distance, GeoUnit unit, GeoRadiusStoreArgs<K> geoArgs) {
@@ -201,7 +201,7 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
         nonNull(geoArgs, "geoArgs");
         return execute(RedisCommand.of(Command.GEORADIUSBYMEMBER).put(marshaller.encode(key))
                 .put(marshaller.encode(member))
-                .put(distance).put(unit.name())
+                .put(distance).put(unit.toString())
                 .putArgs(geoArgs, keyCodec));
     }
 

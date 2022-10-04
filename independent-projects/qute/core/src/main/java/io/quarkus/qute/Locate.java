@@ -2,11 +2,12 @@ package io.quarkus.qute;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import io.quarkus.qute.Locate.Locates;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+
+import io.quarkus.qute.Locate.Locates;
 
 /**
  * A custom {@link TemplateLocator}s are not available during the build time, therefore {@link Template} located by

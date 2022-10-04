@@ -41,7 +41,7 @@
             </plugin>
             <!--- @SpringBootConfigProperties needs to be part of the index -->
             <plugin>
-                <groupId>org.jboss.jandex</groupId>
+                <groupId>io.smallrye</groupId>
                 <artifactId>jandex-maven-plugin</artifactId>
                 <executions>
                     <execution>

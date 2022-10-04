@@ -1,5 +1,16 @@
 package io.quarkus.bootstrap.app;
 
+import java.io.Serializable;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
+
 import io.quarkus.bootstrap.BootstrapAppModelFactory;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
@@ -12,16 +23,6 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
-import java.io.Serializable;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.Set;
 
 /**
  * The entry point for starting/building a Quarkus application. This class sets up the base class loading
@@ -64,6 +65,7 @@ public class QuarkusBootstrap implements Serializable {
 
     private final Properties buildSystemProperties;
     private final String baseName;
+    private final String originalBaseName;
     private final Path targetDirectory;
 
     private final Mode mode;
@@ -101,6 +103,7 @@ public class QuarkusBootstrap implements Serializable {
         this.test = builder.test;
         this.localProjectDiscovery = builder.localProjectDiscovery;
         this.baseName = builder.baseName;
+        this.originalBaseName = builder.originalJarName;
         this.baseClassLoader = builder.baseClassLoader;
         this.targetDirectory = builder.targetDirectory;
         this.appModelResolver = builder.appModelResolver;
@@ -234,6 +237,10 @@ public class QuarkusBootstrap implements Serializable {
         return baseName;
     }
 
+    public String getOriginalBaseName() {
+        return originalBaseName;
+    }
+
     public ClassLoader getBaseClassLoader() {
         return baseClassLoader;
     }
@@ -261,6 +268,7 @@ public class QuarkusBootstrap implements Serializable {
     public Builder clonedBuilder() {
         Builder builder = new Builder()
                 .setBaseName(baseName)
+                .setOriginalBaseName(originalBaseName)
                 .setProjectRoot(projectRoot)
                 .setBaseClassLoader(baseClassLoader)
                 .setBuildSystemProperties(buildSystemProperties)
@@ -303,6 +311,7 @@ public class QuarkusBootstrap implements Serializable {
         boolean rebuild;
         PathCollection applicationRoot;
         String baseName;
+        String originalJarName;
         Path projectRoot;
         ClassLoader baseClassLoader = ClassLoader.getSystemClassLoader();
         final List<AdditionalDependency> additionalApplicationArchives = new ArrayList<>();
@@ -413,6 +422,11 @@ public class QuarkusBootstrap implements Serializable {
 
         public Builder setBaseName(String baseName) {
             this.baseName = baseName;
+            return this;
+        }
+
+        public Builder setOriginalBaseName(String originalJarName) {
+            this.originalJarName = originalJarName;
             return this;
         }
 

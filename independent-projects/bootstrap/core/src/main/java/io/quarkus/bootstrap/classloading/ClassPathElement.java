@@ -1,10 +1,5 @@
 package io.quarkus.bootstrap.classloading;
 
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.ResolvedDependency;
-import io.quarkus.paths.EmptyPathTree;
-import io.quarkus.paths.OpenPathTree;
-import io.quarkus.paths.PathTree;
 import java.io.Closeable;
 import java.nio.file.Path;
 import java.security.ProtectionDomain;
@@ -12,6 +7,12 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.jar.Manifest;
+
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.EmptyPathTree;
+import io.quarkus.paths.OpenPathTree;
+import io.quarkus.paths.PathTree;
 
 /**
  * Represents an element on the virtual classpath, such as a jar file or classes

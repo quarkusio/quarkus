@@ -3,15 +3,17 @@ package io.quarkus.devtools.codestarts.core;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.quarkus.devtools.codestarts.CodestartCatalog;
-import io.quarkus.devtools.codestarts.CodestartProjectGenerationTest;
-import io.quarkus.devtools.codestarts.CodestartProjectInput;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
+
 import org.assertj.core.util.Lists;
 import org.assertj.core.util.Sets;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.devtools.codestarts.CodestartCatalog;
+import io.quarkus.devtools.codestarts.CodestartProjectGenerationTest;
+import io.quarkus.devtools.codestarts.CodestartProjectInput;
 
 class CodestartDataTest {
     @Test

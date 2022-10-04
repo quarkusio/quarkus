@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -18,7 +19,6 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
-import org.jboss.jandex.TypeVariable;
 import org.junit.jupiter.api.Test;
 
 public class TypesTest {
@@ -31,7 +31,7 @@ public class TypesTest {
         DotName fooName = DotName.createSimple(Foo.class.getName());
         DotName producerName = DotName.createSimple(Producer.class.getName());
         ClassInfo fooClass = index.getClassByName(fooName);
-        Map<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariables = new HashMap<>();
+        Map<ClassInfo, Map<String, Type>> resolvedTypeVariables = new HashMap<>();
         BeanDeployment dummyDeployment = BeanProcessor.builder().setBeanArchiveIndex(index).build().getBeanDeployment();
 
         // Baz, Foo<String>, Object
@@ -46,7 +46,7 @@ public class TypesTest {
                 null)));
         assertEquals(resolvedTypeVariables.size(), 1);
         assertTrue(resolvedTypeVariables.containsKey(fooClass));
-        assertEquals(resolvedTypeVariables.get(fooClass).get(fooClass.typeParameters().get(0)),
+        assertEquals(resolvedTypeVariables.get(fooClass).get(fooClass.typeParameters().get(0).identifier()),
                 Type.create(DotName.createSimple(String.class.getName()), Kind.CLASS));
 
         resolvedTypeVariables.clear();

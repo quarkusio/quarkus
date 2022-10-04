@@ -1,8 +1,5 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.Parser.StringReader;
-import io.quarkus.qute.TemplateInstance.Initializer;
-import io.quarkus.qute.TemplateLocator.TemplateLocation;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -16,7 +13,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.qute.Parser.StringReader;
+import io.quarkus.qute.TemplateInstance.Initializer;
+import io.quarkus.qute.TemplateLocator.TemplateLocation;
 
 class EngineImpl implements Engine {
 

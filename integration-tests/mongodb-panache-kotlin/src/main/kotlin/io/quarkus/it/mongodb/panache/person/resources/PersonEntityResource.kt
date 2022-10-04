@@ -20,17 +20,17 @@ import javax.ws.rs.core.Response
 class PersonEntityResource {
     @GET
     fun getPersons(@QueryParam("sort") sort: String?): List<PersonEntity> =
-            sort?.let { PersonEntity.listAll(Sort.ascending(sort)) }
-                    ?: PersonEntity.listAll()
+        sort?.let { PersonEntity.listAll(Sort.ascending(sort)) }
+            ?: PersonEntity.listAll()
 
     @GET
     @Path("/search/{name}")
     fun searchPersons(@PathParam("name") name: String): Set<PersonName> {
         return PersonEntity.find("lastname = ?1 and status = ?2", name, Status.ALIVE)
-                .project(PersonName::class.java)
-                .withReadPreference(ReadPreference.primaryPreferred())
-                .list()
-                .toSet()
+            .project(PersonName::class.java)
+            .withReadPreference(ReadPreference.primaryPreferred())
+            .list()
+            .toSet()
     }
 
     @POST
@@ -81,7 +81,7 @@ class PersonEntityResource {
     @Path("/rename")
     fun rename(@QueryParam("previousName") previousName: String, @QueryParam("newName") newName: String): Response {
         PersonEntity.update("lastname", newName)
-                .where("lastname", previousName)
+            .where("lastname", previousName)
         return Response.ok().build()
     }
 }

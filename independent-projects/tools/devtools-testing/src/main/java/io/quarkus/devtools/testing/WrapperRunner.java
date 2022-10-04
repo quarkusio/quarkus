@@ -1,6 +1,5 @@
 package io.quarkus.devtools.testing;
 
-import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +16,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+
+import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 
 public final class WrapperRunner {
 

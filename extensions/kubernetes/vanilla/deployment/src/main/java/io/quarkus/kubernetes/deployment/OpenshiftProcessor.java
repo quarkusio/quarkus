@@ -73,13 +73,13 @@ public class OpenshiftProcessor {
     private static final String OPENSHIFT_V3_APP = "app";
 
     @BuildStep
-    public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, OpenshiftConfig config,
+    public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities, OpenshiftConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
         List<String> targets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
         boolean openshiftEnabled = targets.contains(OPENSHIFT);
 
-        DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind();
+        DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind(capabilities);
         deploymentTargets.produce(
                 new KubernetesDeploymentTargetBuildItem(OPENSHIFT, deploymentResourceKind.kind, deploymentResourceKind.apiGroup,
                         deploymentResourceKind.apiVersion, OPENSHIFT_PRIORITY, openshiftEnabled));
@@ -95,8 +95,8 @@ public class OpenshiftProcessor {
             Capabilities capabilities,
             BuildProducer<FallbackContainerImageRegistryBuildItem> containerImageRegistry) {
 
-        if (!containerImageConfig.registry.isPresent()) {
-            DeploymentResourceKind deploymentResourceKind = openshiftConfig.getDeploymentResourceKind();
+        if (!containerImageConfig.registry.isPresent() && !containerImageConfig.image.isPresent()) {
+            DeploymentResourceKind deploymentResourceKind = openshiftConfig.getDeploymentResourceKind(capabilities);
             if (deploymentResourceKind != DeploymentResourceKind.DeploymentConfig) {
                 if (openshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
                     // Images stored in internal openshift registry use the following pattern:
@@ -215,8 +215,8 @@ public class OpenshiftProcessor {
             result.add(new DecoratorBuildItem(new RemoveOptionalFromConfigMapKeySelectorDecorator()));
         }
 
-        DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind();
-        switch (deploymentResourceKind) {
+        DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
+        switch (deploymentKind) {
             case Deployment:
                 result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentConfigResourceDecorator(name)));
                 result.add(new DecoratorBuildItem(OPENSHIFT, new AddDeploymentResourceDecorator(name, config)));
@@ -224,6 +224,14 @@ public class OpenshiftProcessor {
             case StatefulSet:
                 result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentConfigResourceDecorator(name)));
                 result.add(new DecoratorBuildItem(OPENSHIFT, new AddStatefulSetResourceDecorator(name, config)));
+                break;
+            case Job:
+                result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentConfigResourceDecorator(name)));
+                result.add(new DecoratorBuildItem(OPENSHIFT, new AddJobResourceDecorator(name, config.job)));
+                break;
+            case CronJob:
+                result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentConfigResourceDecorator(name)));
+                result.add(new DecoratorBuildItem(OPENSHIFT, new AddCronJobResourceDecorator(name, config.cronJob)));
                 break;
         }
 
@@ -243,15 +251,6 @@ public class OpenshiftProcessor {
                     new io.dekorate.kubernetes.decorator.ApplyReplicasToDeploymentDecorator(name, config.getReplicas())));
             // This only affects StatefulSet
             result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyReplicasToStatefulSetDecorator(name, config.getReplicas())));
-        }
-
-        image.ifPresent(i -> {
-            result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyContainerImageDecorator(name, i.getImage())));
-        });
-        if ((!capabilities.isPresent(Capability.CONTAINER_IMAGE_S2I) && !capabilities.isPresent(Capability.OPENSHIFT))
-                || (capabilities.isPresent(Capability.OPENSHIFT) && !(capabilities.isPresent(Capability.CONTAINER_IMAGE_S2I)
-                        || capabilities.isPresent(Capability.CONTAINER_IMAGE_OPENSHIFT)))) {
-            result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentTriggerDecorator()));
         }
 
         config.getContainerName().ifPresent(containerName -> {
@@ -306,11 +305,12 @@ public class OpenshiftProcessor {
         result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyHttpGetActionPortDecorator(name, name, port)));
 
         // Handle non-openshift builds
-        if (deploymentResourceKind == DeploymentResourceKind.DeploymentConfig
+        if (deploymentKind == DeploymentResourceKind.DeploymentConfig
                 && !OpenshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
             image.ifPresent(i -> {
-                String registry = containerImageConfig.registry
-                        .orElse(fallbackRegistry.map(f -> f.getRegistry()).orElse("docker.io"));
+                String registry = i.registry
+                        .or(() -> containerImageConfig.registry)
+                        .orElse(fallbackRegistry.map(f -> f.getRegistry()).orElse(DOCKERIO_REGISTRY));
                 String repositoryWithRegistry = registry + "/" + i.getRepository();
                 ImageConfiguration imageConfiguration = new ImageConfigurationBuilder()
                         .withName(name)
@@ -319,7 +319,15 @@ public class OpenshiftProcessor {
 
                 result.add(new DecoratorBuildItem(OPENSHIFT,
                         new AddDockerImageStreamResourceDecorator(imageConfiguration, repositoryWithRegistry)));
+                String imageStreamWithTag = name + ":" + i.getTag();
+                result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyContainerImageDecorator(name, imageStreamWithTag)));
+                // remove the default trigger which has a wrong version
+                result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentTriggerDecorator()));
+                // re-add the trigger with the correct version
+                result.add(new DecoratorBuildItem(OPENSHIFT, new ChangeDeploymentTriggerDecorator(name, imageStreamWithTag)));
             });
+        } else if (image.isPresent()) {
+            result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyContainerImageDecorator(name, image.get().getImage())));
         }
 
         // Handle remote debug configuration

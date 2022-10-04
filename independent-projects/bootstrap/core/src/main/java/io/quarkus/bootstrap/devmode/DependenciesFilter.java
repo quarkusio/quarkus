@@ -1,14 +1,16 @@
 package io.quarkus.bootstrap.devmode;
 
-import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.maven.dependency.ResolvedDependency;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class DependenciesFilter {
 

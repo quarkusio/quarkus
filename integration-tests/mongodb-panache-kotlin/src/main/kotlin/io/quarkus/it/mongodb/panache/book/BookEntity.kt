@@ -1,5 +1,7 @@
 package io.quarkus.it.mongodb.panache.book
 
+import com.fasterxml.jackson.annotation.JsonFormat
+import com.fasterxml.jackson.annotation.JsonFormat.Shape
 import io.quarkus.mongodb.panache.common.MongoEntity
 import io.quarkus.mongodb.panache.kotlin.PanacheMongoCompanion
 import io.quarkus.mongodb.panache.kotlin.PanacheMongoEntity
@@ -8,8 +10,6 @@ import org.bson.codecs.pojo.annotations.BsonIgnore
 import org.bson.codecs.pojo.annotations.BsonProperty
 import org.bson.types.ObjectId
 import java.time.LocalDate
-import com.fasterxml.jackson.annotation.JsonFormat
-import com.fasterxml.jackson.annotation.JsonFormat.Shape
 
 @MongoEntity(collection = "TheBookEntity", clientName = "cl2")
 class BookEntity : PanacheMongoEntity() {
@@ -57,5 +57,4 @@ class BookEntity : PanacheMongoEntity() {
         this.details = details
         return this
     }
-
 }

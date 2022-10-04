@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -29,8 +30,8 @@ public class FilterGeneration {
             }
             MethodInfo methodInfo = instance.target().asMethod();
             GeneratedClassOutput output = new GeneratedClassOutput();
-            String generatedClassName = CustomFilterGenerator.generateContainerRequestFilter(methodInfo, output,
-                    unwrappableTypes, additionalBeanAnnotations);
+            String generatedClassName = new CustomFilterGenerator(unwrappableTypes, additionalBeanAnnotations)
+                    .generateContainerRequestFilter(methodInfo, output);
             Integer priority = null;
             boolean preMatching = false;
             boolean nonBlockingRequired = false;
@@ -87,8 +88,8 @@ public class FilterGeneration {
             Integer priority = null;
             Set<String> nameBindingNames = new HashSet<>();
             GeneratedClassOutput output = new GeneratedClassOutput();
-            String generatedClassName = CustomFilterGenerator.generateContainerResponseFilter(methodInfo, output,
-                    unwrappableTypes, additionalBeanAnnotations);
+            String generatedClassName = new CustomFilterGenerator(unwrappableTypes, additionalBeanAnnotations)
+                    .generateContainerResponseFilter(methodInfo, output);
 
             AnnotationValue priorityValue = instance.value("priority");
             if (priorityValue != null) {

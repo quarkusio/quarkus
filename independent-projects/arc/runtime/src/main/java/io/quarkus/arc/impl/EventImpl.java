@@ -2,10 +2,6 @@ package io.quarkus.arc.impl;
 
 import static javax.transaction.Status.STATUS_COMMITTED;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.AsyncObserverExceptionHandler;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.ManagedContext;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -23,6 +19,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
 import javax.enterprise.event.Event;
 import javax.enterprise.event.NotificationOptions;
 import javax.enterprise.event.ObserverException;
@@ -37,7 +34,13 @@ import javax.transaction.RollbackException;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.AsyncObserverExceptionHandler;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.ManagedContext;
 
 /**
  *
@@ -120,7 +123,7 @@ class EventImpl<T> implements Event<T> {
 
     @Override
     public Event<T> select(Annotation... qualifiers) {
-        Qualifiers.verify(qualifiers, ArcContainerImpl.instance().getCustomQualifiers());
+        ArcContainerImpl.instance().registeredQualifiers.verify(qualifiers);
         Set<Annotation> mergedQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergedQualifiers, qualifiers);
         return new EventImpl<T>(eventType, mergedQualifiers);
@@ -128,7 +131,7 @@ class EventImpl<T> implements Event<T> {
 
     @Override
     public <U extends T> Event<U> select(Class<U> subtype, Annotation... qualifiers) {
-        Qualifiers.verify(qualifiers, ArcContainerImpl.instance().getCustomQualifiers());
+        ArcContainerImpl.instance().registeredQualifiers.verify(qualifiers);
         Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergerdQualifiers, qualifiers);
         return new EventImpl<U>(subtype, mergerdQualifiers);
@@ -136,7 +139,7 @@ class EventImpl<T> implements Event<T> {
 
     @Override
     public <U extends T> Event<U> select(TypeLiteral<U> subtype, Annotation... qualifiers) {
-        Qualifiers.verify(qualifiers, ArcContainerImpl.instance().getCustomQualifiers());
+        ArcContainerImpl.instance().registeredQualifiers.verify(qualifiers);
         if (Types.containsTypeVariable(subtype.getType())) {
             throw new IllegalArgumentException(
                     "Event#select(TypeLiteral, Annotation...) cannot be used with type variable parameter");
@@ -220,7 +223,7 @@ class EventImpl<T> implements Event<T> {
 
         private final Class<?> runtimeType;
         private final List<ObserverMethod<? super T>> observerMethods;
-        private final EventMetadata eventMetadata;
+        final EventMetadata eventMetadata;
         private final boolean hasTxObservers;
         private final boolean activateRequestContext;
 

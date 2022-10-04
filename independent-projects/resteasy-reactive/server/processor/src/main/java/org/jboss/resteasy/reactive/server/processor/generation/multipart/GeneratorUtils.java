@@ -2,11 +2,12 @@ package org.jboss.resteasy.reactive.server.processor.generation.multipart;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.ResultHandle;
 import org.jboss.jandex.DotName;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
+
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.ResultHandle;
 
 public final class GeneratorUtils {
 

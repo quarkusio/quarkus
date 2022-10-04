@@ -2,10 +2,12 @@ package io.quarkus.qute;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import io.smallrye.mutiny.Uni;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+
 import org.junit.jupiter.api.Test;
+
+import io.smallrye.mutiny.Uni;
 
 public class TimeoutTest {
 

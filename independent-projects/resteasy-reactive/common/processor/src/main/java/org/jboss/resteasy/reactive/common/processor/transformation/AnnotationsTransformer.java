@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -70,7 +71,7 @@ public interface AnnotationsTransformer {
         AnnotationTarget getTarget();
 
         /**
-         * The initial set of annotations instances corresponds to {@link org.jboss.jandex.ClassInfo#classAnnotations()},
+         * The initial set of annotations instances corresponds to {@link org.jboss.jandex.ClassInfo#declaredAnnotations()},
          * {@link org.jboss.jandex.FieldInfo#annotations()} and {@link org.jboss.jandex.MethodInfo#annotations()} respectively.
          *
          * @return the annotation instances

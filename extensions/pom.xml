@@ -140,6 +140,7 @@
         <module>keycloak-admin-client</module>
         <module>keycloak-admin-client-reactive</module>
         <module>credentials</module>
+        <module>csrf-reactive</module>
 
         <!-- Infinispan -->
         <module>infinispan-client</module>

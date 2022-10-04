@@ -2,6 +2,7 @@ package io.quarkus.arc.processor;
 
 import java.io.IOException;
 import java.io.InputStream;
+
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;

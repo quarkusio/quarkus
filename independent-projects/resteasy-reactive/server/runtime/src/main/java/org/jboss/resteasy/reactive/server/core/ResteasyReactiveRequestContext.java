@@ -16,6 +16,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
+
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
@@ -26,6 +27,7 @@ import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
+
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
@@ -55,17 +57,11 @@ public abstract class ResteasyReactiveRequestContext
 
     public static final Object[] EMPTY_ARRAY = new Object[0];
     protected final Deployment deployment;
-    protected final ProvidersImpl providers;
     /**
      * The parameters array, populated by handlers
      */
     private Object[] parameters;
     private RuntimeResource target;
-
-    /**
-     * info about path params and other data about previously matched sub resource locators
-     */
-    private PreviousResource previousResource;
 
     /**
      * The parameter values extracted from the path.
@@ -115,8 +111,6 @@ public abstract class ResteasyReactiveRequestContext
     private String authority;
     private String remaining;
     private EncodedMediaType responseContentType;
-    private MediaType consumesMediaType;
-
     private Annotation[] methodAnnotations;
     private Annotation[] additionalAnnotations; // can be added by entity annotations or response filters
     private Annotation[] allAnnotations;
@@ -132,9 +126,6 @@ public abstract class ResteasyReactiveRequestContext
      */
     private List<UriMatch> matchedURIs;
 
-    private AsyncResponseImpl asyncResponse;
-    private SseEventSinkImpl sseEventSink;
-    private List<PathSegment> pathSegments;
     private ReaderInterceptor[] readerInterceptors;
     private WriterInterceptor[] writerInterceptors;
 
@@ -143,11 +134,10 @@ public abstract class ResteasyReactiveRequestContext
     private OutputStream underlyingOutputStream;
     private FormData formData;
 
-    public ResteasyReactiveRequestContext(Deployment deployment, ProvidersImpl providers,
+    public ResteasyReactiveRequestContext(Deployment deployment,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
         super(handlerChain, abortHandlerChain, requestContext);
         this.deployment = deployment;
-        this.providers = providers;
         this.parameters = EMPTY_ARRAY;
     }
 
@@ -160,7 +150,9 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     public ProvidersImpl getProviders() {
-        return providers;
+        // this is rarely called (basically only of '@Context Providers' is used),
+        // so let's avoid creating an extra field
+        return new ProvidersImpl(deployment);
     }
 
     /**
@@ -177,7 +169,8 @@ public abstract class ResteasyReactiveRequestContext
         position = 0;
         parameters = target.getParameterTypes().length == 0 ? EMPTY_ARRAY : new Object[target.getParameterTypes().length];
         if (setLocatorTarget) {
-            previousResource = new PreviousResource(this.target, pathParamValues, previousResource);
+            setProperty(PreviousResource.PROPERTY_KEY, new PreviousResource(this.target, pathParamValues,
+                    (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY)));
         }
         this.target = target;
     }
@@ -525,15 +518,6 @@ public abstract class ResteasyReactiveRequestContext
         return this;
     }
 
-    public MediaType getConsumesMediaType() {
-        return consumesMediaType;
-    }
-
-    public ResteasyReactiveRequestContext setConsumesMediaType(MediaType consumesMediaType) {
-        this.consumesMediaType = consumesMediaType;
-        return this;
-    }
-
     public Annotation[] getAllAnnotations() {
         if (allAnnotations == null) {
             Annotation[] methodAnnotations = getMethodAnnotations();
@@ -595,15 +579,18 @@ public abstract class ResteasyReactiveRequestContext
         return this;
     }
 
+    private static final String ASYNC_RESPONSE_PROPERTY_KEY = AbstractResteasyReactiveContext.CUSTOM_RR_PROPERTIES_PREFIX
+            + "AsyncResponse";
+
     public AsyncResponseImpl getAsyncResponse() {
-        return asyncResponse;
+        return (AsyncResponseImpl) getProperty(ASYNC_RESPONSE_PROPERTY_KEY);
     }
 
     public ResteasyReactiveRequestContext setAsyncResponse(AsyncResponseImpl asyncResponse) {
-        if (this.asyncResponse != null) {
+        if (getAsyncResponse() != null) {
             throw new RuntimeException("Async can only be started once");
         }
-        this.asyncResponse = asyncResponse;
+        setProperty(ASYNC_RESPONSE_PROPERTY_KEY, asyncResponse);
         return this;
     }
 
@@ -722,12 +709,15 @@ public abstract class ResteasyReactiveRequestContext
         return this;
     }
 
+    private static final String SSE_EVENT_SINK_PROPERTY_KEY = AbstractResteasyReactiveContext.CUSTOM_RR_PROPERTIES_PREFIX
+            + "SSEEventSink";
+
     public SseEventSinkImpl getSseEventSink() {
-        return sseEventSink;
+        return (SseEventSinkImpl) getProperty(SSE_EVENT_SINK_PROPERTY_KEY);
     }
 
     public void setSseEventSink(SseEventSinkImpl sseEventSink) {
-        this.sseEventSink = sseEventSink;
+        setProperty(SSE_EVENT_SINK_PROPERTY_KEY, sseEventSink);
     }
 
     /**
@@ -736,25 +726,33 @@ public abstract class ResteasyReactiveRequestContext
      * This is lazily initialized
      */
     public List<PathSegment> getPathSegments() {
-        if (pathSegments == null) {
+        if (getPathSegments0() == null) {
             initPathSegments();
         }
-        return pathSegments;
+        return getPathSegments0();
+    }
+
+    private static final String PATH_SEGMENTS__PROPERTY_KEY = AbstractResteasyReactiveContext.CUSTOM_RR_PROPERTIES_PREFIX
+            + "PathSegments";
+
+    private List<PathSegment> getPathSegments0() {
+        return (List<PathSegment>) getProperty(PATH_SEGMENTS__PROPERTY_KEY);
     }
 
     /**
-     * initializes the path seegments and removes any matrix params for the path
+     * initializes the path segments and removes any matrix params for the path
      * used for matching.
      */
     public void initPathSegments() {
-        if (pathSegments != null) {
+        if (getPathSegments0() != null) {
             return;
         }
         //this is not super optimised
         //I don't think we care about it that much though
         String path = getPath();
         String[] parts = path.split("/");
-        pathSegments = new ArrayList<>();
+        List<PathSegment> pathSegments = new ArrayList<>();
+        setProperty(PATH_SEGMENTS__PROPERTY_KEY, pathSegments);
         boolean hasMatrix = false;
         for (String i : parts) {
             if (i.isEmpty()) {
@@ -967,7 +965,7 @@ public abstract class ResteasyReactiveRequestContext
     public abstract Runnable registerTimer(long millis, Runnable task);
 
     public String getResourceLocatorPathParam(String name) {
-        return getResourceLocatorPathParam(name, previousResource);
+        return getResourceLocatorPathParam(name, (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY));
     }
 
     public FormData getFormData() {
@@ -1024,6 +1022,9 @@ public abstract class ResteasyReactiveRequestContext
     public abstract boolean resumeExternalProcessing();
 
     static class PreviousResource {
+
+        private static final String PROPERTY_KEY = AbstractResteasyReactiveContext.CUSTOM_RR_PROPERTIES_PREFIX
+                + "PreviousResource";
 
         public PreviousResource(RuntimeResource locatorTarget, Object locatorPathParamValues, PreviousResource prev) {
             this.locatorTarget = locatorTarget;

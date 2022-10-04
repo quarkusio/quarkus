@@ -1,16 +1,18 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
+
+import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 
 public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?>> {
 

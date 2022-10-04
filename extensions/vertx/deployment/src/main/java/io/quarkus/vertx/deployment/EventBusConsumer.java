@@ -169,14 +169,14 @@ class EventBusConsumer {
         // https://github.com/quarkusio/quarkus/issues/21621
         Optional<Type> headerType = Optional.empty();
         Type paramType;
-        if (method.parameters().size() == 2) {
-            Type firstParamType = method.parameters().get(0);
+        if (method.parametersCount() == 2) {
+            Type firstParamType = method.parameterType(0);
             if (VertxConstants.isMessageHeaders(firstParamType.name())) {
                 headerType = Optional.of(firstParamType);
             }
-            paramType = method.parameters().get(1);
+            paramType = method.parameterType(1);
         } else {
-            paramType = method.parameters().get(0);
+            paramType = method.parameterType(0);
         }
         if (paramType.name().equals(MESSAGE)) {
             // io.vertx.core.eventbus.Message

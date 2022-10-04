@@ -1,12 +1,14 @@
 package io.quarkus.bootstrap.resolver;
 
-import io.quarkus.bootstrap.model.ApplicationModel;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
+
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ModelBuilder;
 import org.gradle.tooling.ProjectConnection;
+
+import io.quarkus.bootstrap.model.ApplicationModel;
 
 public class QuarkusGradleModelFactory {
 

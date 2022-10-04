@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.common.processor;
 
 import java.util.List;
 import java.util.function.Function;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;

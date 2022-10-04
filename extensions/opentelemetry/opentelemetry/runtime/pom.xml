@@ -47,6 +47,11 @@
             <artifactId>quarkus-grpc</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-reactive-messaging</artifactId>
+            <optional>true</optional>
+        </dependency>
 
         <!-- OpenTelemetry Dependencies -->
         <dependency>

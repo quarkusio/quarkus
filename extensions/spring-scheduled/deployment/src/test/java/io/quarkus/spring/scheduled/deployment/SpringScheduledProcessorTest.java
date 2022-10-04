@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -13,16 +12,14 @@ import javax.enterprise.context.ApplicationScoped;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.junit.jupiter.api.Test;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import io.quarkus.arc.processor.BeanArchives;
-import io.quarkus.deployment.util.IoUtil;
 
 public class SpringScheduledProcessorTest {
 
@@ -116,17 +113,12 @@ public class SpringScheduledProcessorTest {
     }
 
     private IndexView getIndex(final Class<?>... classes) {
-        final Indexer indexer = new Indexer();
-        for (final Class<?> clazz : classes) {
-            final String className = clazz.getName();
-            try (InputStream stream = IoUtil.readClass(getClass().getClassLoader(), className)) {
-                final ClassInfo beanInfo = indexer.index(stream);
-            } catch (IOException e) {
-                throw new IllegalStateException("Failed to index: " + className, e);
-            }
+        try {
+            Index index = Index.of(classes);
+            return BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(), new ConcurrentHashMap<>(), index);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to index classes", e);
         }
-        return BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(), new ConcurrentHashMap<>(),
-                indexer.complete());
     }
 
     @ApplicationScoped

@@ -2,10 +2,11 @@ package io.quarkus.platform.catalog.processor;
 
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.isUnlisted;
 
+import java.util.*;
+
 import io.quarkus.registry.catalog.Category;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import java.util.*;
 
 public class CatalogProcessor {
     private static final String CODESTART_ARTIFACTS = "codestarts-artifacts";

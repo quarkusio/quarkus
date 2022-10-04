@@ -1,15 +1,17 @@
 package org.jboss.resteasy.reactive.server.processor.generation.multipart;
 
-import io.quarkus.gizmo.ClassOutput;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.objectweb.asm.ClassVisitor;
+
+import io.quarkus.gizmo.ClassOutput;
 
 public class GeneratedMultipartParamIndexerExtension implements EndpointIndexer.MultipartParameterIndexerExtension {
     private final Map<String, String> multipartInputGeneratedPopulators = new HashMap<>();

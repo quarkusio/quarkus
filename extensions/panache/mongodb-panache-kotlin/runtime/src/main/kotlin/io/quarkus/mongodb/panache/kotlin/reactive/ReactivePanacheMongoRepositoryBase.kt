@@ -23,7 +23,7 @@ import java.util.stream.Stream
  * @param Id The ID type of the entity
  * @see [ReactivePanacheMongoRepository]
  */
-interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
+interface ReactivePanacheMongoRepositoryBase<Entity : Any, Id : Any> {
     /**
      * Persist the given entity in the database.
      * This will set its ID field if not already set.
@@ -74,7 +74,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun find(query: String, vararg params: Any?): ReactivePanacheQuery<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a query and the given sort options, with optional indexed parameters.
@@ -88,7 +88,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun find(query: String, sort: Sort, vararg params: Any?): ReactivePanacheQuery<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a query, with named parameters.
@@ -101,7 +101,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun find(query: String, params: Map<String, Any?>): ReactivePanacheQuery<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
@@ -115,7 +115,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun find(query: String, sort: Sort, params: Map<String, Any?>): ReactivePanacheQuery<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a query, with named parameters.
@@ -128,7 +128,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun find(query: String, params: Parameters): ReactivePanacheQuery<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
@@ -142,7 +142,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun find(query: String, sort: Sort, params: Parameters): ReactivePanacheQuery<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a BSON query.
@@ -166,7 +166,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun find(query: Document, sort: Document): ReactivePanacheQuery<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find all entities of this type.
@@ -215,7 +215,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun list(query: String, sort: Sort, vararg params: Any?): Uni<List<Entity>> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities matching a query, with named parameters.
@@ -229,7 +229,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun list(query: String, params: Map<String, Any?>): Uni<List<Entity>> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities matching a query and the given sort options, with named parameters.
@@ -244,7 +244,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun list(query: String, sort: Sort, params: Map<String, Any?>): Uni<List<Entity>> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities matching a query, with named parameters.
@@ -347,7 +347,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun stream(query: String, sort: Sort, vararg params: Any?): Multi<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities matching a query, with named parameters.
@@ -361,7 +361,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun stream(query: String, params: Map<String, Any?>): Multi<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities matching a query and the given sort options, with named parameters.
@@ -376,7 +376,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun stream(query: String, sort: Sort, params: Map<String, Any?>): Multi<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities matching a query, with named parameters.
@@ -404,7 +404,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun stream(query: String, sort: Sort, params: Parameters): Multi<Entity> =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a BSON query.
@@ -580,7 +580,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param entities the entities to insert
      */
     fun persist(firstEntity: Entity, vararg entities: Entity): Uni<Void> =
-            INSTANCE.persist(firstEntity, *entities)
+        INSTANCE.persist(firstEntity, *entities)
 
     /**
      * Update all given entities.
@@ -602,7 +602,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param entities the entities to update
      */
     fun update(firstEntity: Entity, vararg entities: Entity): Uni<Void> =
-            INSTANCE.update(firstEntity, *entities)
+        INSTANCE.update(firstEntity, *entities)
 
     /**
      * Persist all given entities or update them if they already exist.
@@ -610,7 +610,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param entities the entities to update
      */
     fun persistOrUpdate(entities: Iterable<Entity>): Uni<Void> =
-            INSTANCE.persistOrUpdate(entities)
+        INSTANCE.persistOrUpdate(entities)
 
     /**
      * Persist all given entities or update them if they already exist.
@@ -618,7 +618,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param entities the entities to update
      */
     fun persistOrUpdate(entities: Stream<Entity>): Uni<Void> =
-            INSTANCE.persistOrUpdate(entities)
+        INSTANCE.persistOrUpdate(entities)
 
     /**
      * Persist all given entities or update them if they already exist.
@@ -626,7 +626,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * @param entities the entities to update
      */
     fun persistOrUpdate(firstEntity: Entity, vararg entities: Entity): Uni<Void> =
-            INSTANCE.persistOrUpdate(firstEntity, *entities)
+        INSTANCE.persistOrUpdate(firstEntity, *entities)
 
     /**
      * Update all entities of this type by the given update document, with optional indexed parameters.
@@ -639,7 +639,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun update(update: String, vararg params: Any?): io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Update all entities of this type by the given update document, with named parameters.
@@ -652,7 +652,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun update(update: String, params: Map<String, Any?>): io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Update all entities of this type by the given update document, with named parameters.
@@ -665,7 +665,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun update(update: String, params: Parameters): io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Update all entities of this type by the given BSON update document.
@@ -677,7 +677,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      */
     @GenerateBridge
     fun update(update: Document): io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate =
-            throw INSTANCE.implementationInjectionMissing()
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Allow to access the underlying Mongo Collection

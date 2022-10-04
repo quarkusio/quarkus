@@ -1,7 +1,11 @@
 package org.jboss.resteasy.reactive.server.runtime.kotlin
 
 import io.vertx.core.Context
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Runnable
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction
@@ -29,16 +33,16 @@ class ApplicationCoroutineScope : CoroutineScope, AutoCloseable {
 /**
  * Dispatches the coroutine in Vertx IO thread.
  */
-class VertxDispatcher(private val vertxContext: Context, private val requestScope : ThreadSetupAction.ThreadState, private val rrContext: ResteasyReactiveRequestContext) : CoroutineDispatcher() {
+class VertxDispatcher(private val vertxContext: Context, private val requestScope: ThreadSetupAction.ThreadState, private val rrContext: ResteasyReactiveRequestContext) : CoroutineDispatcher() {
     override fun dispatch(context: CoroutineContext, block: Runnable) {
         // context propagation for suspending functions is not enabled yet, will be handled later
         vertxContext.runOnContext {
             requestScope.activate()
-            CurrentRequestManager.set(rrContext);
+            CurrentRequestManager.set(rrContext)
             try {
                 block.run()
             } finally {
-                CurrentRequestManager.set(null);
+                CurrentRequestManager.set(null)
                 requestScope.deactivate()
             }
         }

@@ -1,15 +1,9 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.All;
-import io.quarkus.arc.Lock;
-import io.quarkus.arc.impl.ActivateRequestContextInterceptor;
-import io.quarkus.arc.impl.DefaultAsyncObserverExceptionHandler;
-import io.quarkus.arc.impl.Identified;
-import io.quarkus.arc.impl.InjectableRequestContextController;
-import io.quarkus.arc.impl.LockInterceptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -17,8 +11,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
+
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Destroyed;
 import javax.enterprise.context.Initialized;
@@ -28,6 +25,7 @@ import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Intercepted;
 import javax.enterprise.inject.Model;
 import javax.inject.Named;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
@@ -38,6 +36,14 @@ import org.jboss.jandex.Indexer;
 import org.jboss.jandex.ModuleInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+
+import io.quarkus.arc.All;
+import io.quarkus.arc.Lock;
+import io.quarkus.arc.impl.ActivateRequestContextInterceptor;
+import io.quarkus.arc.impl.DefaultAsyncObserverExceptionHandler;
+import io.quarkus.arc.impl.Identified;
+import io.quarkus.arc.impl.InjectableRequestContextController;
+import io.quarkus.arc.impl.LockInterceptor;
 
 public final class BeanArchives {
 
@@ -144,6 +150,73 @@ public final class BeanArchives {
             return allKnown;
         }
 
+        private void getAllKnownSubClasses(DotName className, Set<ClassInfo> allKnown, Set<DotName> processedClasses) {
+            final Set<DotName> subClassesToProcess = new HashSet<DotName>();
+            subClassesToProcess.add(className);
+            while (!subClassesToProcess.isEmpty()) {
+                final Iterator<DotName> toProcess = subClassesToProcess.iterator();
+                DotName name = toProcess.next();
+                toProcess.remove();
+                processedClasses.add(name);
+                getAllKnownSubClasses(name, allKnown, subClassesToProcess, processedClasses);
+            }
+        }
+
+        private void getAllKnownSubClasses(DotName name, Set<ClassInfo> allKnown, Set<DotName> subClassesToProcess,
+                Set<DotName> processedClasses) {
+            final Collection<ClassInfo> directSubclasses = getKnownDirectSubclasses(name);
+            if (directSubclasses != null) {
+                for (final ClassInfo clazz : directSubclasses) {
+                    final DotName className = clazz.name();
+                    if (!processedClasses.contains(className)) {
+                        allKnown.add(clazz);
+                        subClassesToProcess.add(className);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public Collection<ClassInfo> getKnownDirectSubinterfaces(DotName interfaceName) {
+            if (additionalClasses.isEmpty()) {
+                return index.getKnownDirectSubinterfaces(interfaceName);
+            }
+            Set<ClassInfo> directSubinterfaces = new HashSet<>(index.getKnownDirectSubinterfaces(interfaceName));
+            for (Optional<ClassInfo> additional : additionalClasses.values()) {
+                if (additional.isPresent() && additional.get().interfaceNames().contains(interfaceName)) {
+                    directSubinterfaces.add(additional.get());
+                }
+            }
+            return directSubinterfaces;
+        }
+
+        @Override
+        public Collection<ClassInfo> getAllKnownSubinterfaces(DotName interfaceName) {
+            if (additionalClasses.isEmpty()) {
+                return index.getAllKnownSubinterfaces(interfaceName);
+            }
+
+            Set<ClassInfo> result = new HashSet<>();
+
+            Queue<DotName> workQueue = new ArrayDeque<>();
+            Set<DotName> alreadyProcessed = new HashSet<>();
+
+            workQueue.add(interfaceName);
+            while (!workQueue.isEmpty()) {
+                DotName iface = workQueue.remove();
+                if (!alreadyProcessed.add(iface)) {
+                    continue;
+                }
+
+                for (ClassInfo directSubinterface : getKnownDirectSubinterfaces(iface)) {
+                    result.add(directSubinterface);
+                    workQueue.add(directSubinterface.name());
+                }
+            }
+
+            return result;
+        }
+
         @Override
         public Collection<ClassInfo> getKnownDirectImplementors(DotName className) {
             if (additionalClasses.isEmpty()) {
@@ -183,6 +256,27 @@ public final class BeanArchives {
             return allKnown;
         }
 
+        private void getKnownImplementors(DotName name, Set<ClassInfo> allKnown, Set<DotName> subInterfacesToProcess,
+                Set<DotName> processedClasses) {
+            final Collection<ClassInfo> list = getKnownDirectImplementors(name);
+            if (list != null) {
+                for (final ClassInfo clazz : list) {
+                    final DotName className = clazz.name();
+                    if (!processedClasses.contains(className)) {
+                        if (Modifier.isInterface(clazz.flags())) {
+                            subInterfacesToProcess.add(className);
+                        } else {
+                            if (!allKnown.contains(clazz)) {
+                                allKnown.add(clazz);
+                                processedClasses.add(className);
+                                getAllKnownSubClasses(className, allKnown, processedClasses);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         @Override
         public Collection<AnnotationInstance> getAnnotations(DotName annotationName) {
             return index.getAnnotations(annotationName);
@@ -208,51 +302,44 @@ public final class BeanArchives {
             return this.index.getKnownUsers(className);
         }
 
-        private void getAllKnownSubClasses(DotName className, Set<ClassInfo> allKnown, Set<DotName> processedClasses) {
-            final Set<DotName> subClassesToProcess = new HashSet<DotName>();
-            subClassesToProcess.add(className);
-            while (!subClassesToProcess.isEmpty()) {
-                final Iterator<DotName> toProcess = subClassesToProcess.iterator();
-                DotName name = toProcess.next();
-                toProcess.remove();
-                processedClasses.add(name);
-                getAllKnownSubClasses(name, allKnown, subClassesToProcess, processedClasses);
+        @Override
+        public Collection<ClassInfo> getClassesInPackage(DotName packageName) {
+            if (additionalClasses.isEmpty()) {
+                return index.getClassesInPackage(packageName);
             }
-        }
-
-        private void getAllKnownSubClasses(DotName name, Set<ClassInfo> allKnown, Set<DotName> subClassesToProcess,
-                Set<DotName> processedClasses) {
-            final Collection<ClassInfo> directSubclasses = getKnownDirectSubclasses(name);
-            if (directSubclasses != null) {
-                for (final ClassInfo clazz : directSubclasses) {
-                    final DotName className = clazz.name();
-                    if (!processedClasses.contains(className)) {
-                        allKnown.add(clazz);
-                        subClassesToProcess.add(className);
-                    }
+            Set<ClassInfo> classesInPackage = new HashSet<>(index.getClassesInPackage(packageName));
+            for (Optional<ClassInfo> additional : additionalClasses.values()) {
+                if (additional.isEmpty()) {
+                    continue;
+                }
+                if (Objects.equals(packageName, additional.get().name().packagePrefixName())) {
+                    classesInPackage.add(additional.get());
                 }
             }
+            return classesInPackage;
         }
 
-        private void getKnownImplementors(DotName name, Set<ClassInfo> allKnown, Set<DotName> subInterfacesToProcess,
-                Set<DotName> processedClasses) {
-            final Collection<ClassInfo> list = getKnownDirectImplementors(name);
-            if (list != null) {
-                for (final ClassInfo clazz : list) {
-                    final DotName className = clazz.name();
-                    if (!processedClasses.contains(className)) {
-                        if (Modifier.isInterface(clazz.flags())) {
-                            subInterfacesToProcess.add(className);
-                        } else {
-                            if (!allKnown.contains(clazz)) {
-                                allKnown.add(clazz);
-                                processedClasses.add(className);
-                                getAllKnownSubClasses(className, allKnown, processedClasses);
-                            }
-                        }
-                    }
-                }
+        @Override
+        public Set<DotName> getSubpackages(DotName packageName) {
+            if (additionalClasses.isEmpty()) {
+                return index.getSubpackages(packageName);
             }
+            Set<DotName> subpackages = new HashSet<>(index.getSubpackages(packageName));
+            for (Optional<ClassInfo> additional : additionalClasses.values()) {
+                if (additional.isEmpty()) {
+                    continue;
+                }
+                DotName pkg = additional.get().name().packagePrefixName();
+                while (pkg != null) {
+                    DotName superPkg = pkg.packagePrefixName();
+                    if (superPkg != null && superPkg.equals(packageName)) {
+                        subpackages.add(pkg);
+                    }
+                    pkg = superPkg;
+                }
+
+            }
+            return subpackages;
         }
 
         private Optional<ClassInfo> computeAdditional(DotName className) {

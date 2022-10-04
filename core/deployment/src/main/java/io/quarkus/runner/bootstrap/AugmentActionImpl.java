@@ -291,6 +291,9 @@ public class AugmentActionImpl implements AugmentAction {
             if (quarkusBootstrap.getBaseName() != null) {
                 builder.setBaseName(quarkusBootstrap.getBaseName());
             }
+            if (quarkusBootstrap.getOriginalBaseName() != null) {
+                builder.setOriginalBaseName(quarkusBootstrap.getOriginalBaseName());
+            }
 
             boolean auxiliaryApplication = curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication();
             builder.setAuxiliaryApplication(auxiliaryApplication);
@@ -326,6 +329,8 @@ public class AugmentActionImpl implements AugmentAction {
 
             try {
                 return builder.build().run();
+            } catch (RuntimeException e) {
+                throw e;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

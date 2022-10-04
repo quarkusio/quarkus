@@ -48,7 +48,7 @@ public class PubSubTest extends DatasourceTestBase {
         ps.publish("people", person1).await().indefinitely();
         ps.publish("people", person2).await().indefinitely();
 
-        ds.string(String.class, String.class)
+        ds.value(String.class, String.class)
                 .set("hello", "foo").await().indefinitely();
 
         ps.publish("people", person2).await().indefinitely();
@@ -68,7 +68,7 @@ public class PubSubTest extends DatasourceTestBase {
         ps.publish("people", person1).await().indefinitely();
         ps.publish("people", person2).await().indefinitely();
 
-        ds.string(String.class, String.class)
+        ds.value(String.class, String.class)
                 .set("hello", "foo").await().indefinitely();
 
         ps.publish("people", person2).await().indefinitely();
@@ -87,7 +87,7 @@ public class PubSubTest extends DatasourceTestBase {
         ps.publish("people1", person1).await().indefinitely();
         ps.publish("people2", person2).await().indefinitely();
 
-        ds.string(String.class, String.class)
+        ds.value(String.class, String.class)
                 .set("hello", "foo").await().indefinitely();
 
         ps.publish("people1", person2).await().indefinitely();
@@ -109,7 +109,7 @@ public class PubSubTest extends DatasourceTestBase {
         ps.publish("people1", person1).await().indefinitely();
         ps.publish("people2", person2).await().indefinitely();
 
-        ds.string(String.class, String.class)
+        ds.value(String.class, String.class)
                 .set("hello", "foo").await().indefinitely();
 
         ps.publish("people1", person2).await().indefinitely();
@@ -132,7 +132,7 @@ public class PubSubTest extends DatasourceTestBase {
             ps.publish("people", new Person("p" + i, "")).await().indefinitely();
         }
 
-        ds.string(String.class, String.class)
+        ds.value(String.class, String.class)
                 .set("hello", "foo").await().indefinitely();
 
         assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();

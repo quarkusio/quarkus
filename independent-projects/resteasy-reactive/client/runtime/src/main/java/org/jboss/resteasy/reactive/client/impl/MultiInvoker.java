@@ -1,20 +1,23 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import java.io.ByteArrayInputStream;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
+import org.jboss.resteasy.reactive.common.util.RestMediaType;
+
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.MultiEmitter;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.net.impl.ConnectionBase;
-import java.io.ByteArrayInputStream;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
-import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
 public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 

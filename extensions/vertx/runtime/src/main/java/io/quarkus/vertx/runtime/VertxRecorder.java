@@ -14,6 +14,7 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.CurrentContextFactory;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
@@ -64,6 +65,10 @@ public class VertxRecorder {
                 }
             });
         }
+    }
+
+    public RuntimeValue<CurrentContextFactory> currentContextFactory() {
+        return new RuntimeValue<>(new VertxCurrentContextFactory());
     }
 
     public static Vertx getVertx() {

@@ -2,8 +2,6 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
-import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
-import io.quarkus.gizmo.Gizmo;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,10 +13,12 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
 import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.enterprise.inject.spi.DefinitionException;
 import javax.enterprise.inject.spi.DeploymentException;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -33,6 +33,9 @@ import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+
+import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
+import io.quarkus.gizmo.Gizmo;
 
 public final class Beans {
 
@@ -916,7 +919,7 @@ public final class Beans {
                     mv.visitInsn(Opcodes.RETURN);
                     mv.visitMaxs(1, 1);
                     mv.visitEnd();
-                    LOGGER.debugf("Added a no-args constructor to bean class: ", className);
+                    LOGGER.debugf("Added a no-args constructor to bean class: %s", className);
                 }
             };
         }
@@ -935,7 +938,7 @@ public final class Beans {
                     if (name.equals(Methods.INIT)) {
                         access = access & (~Opcodes.ACC_PRIVATE);
                         LOGGER.debugf(
-                                "Changed visibility of a private no-args constructor to package-private: ",
+                                "Changed visibility of a private no-args constructor to package-private: %s",
                                 className);
                     }
                     return super.visitMethod(access, name, descriptor, signature, exceptions);

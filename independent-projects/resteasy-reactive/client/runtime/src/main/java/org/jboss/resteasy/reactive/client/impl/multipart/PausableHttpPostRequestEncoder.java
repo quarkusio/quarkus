@@ -19,6 +19,17 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static java.util.AbstractMap.SimpleImmutableEntry;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
@@ -45,16 +56,6 @@ import io.netty.handler.stream.ChunkedInput;
 import io.netty.util.internal.ObjectUtil;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.StringUtil;
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * A copy of {@link io.netty.handler.codec.http.multipart.HttpPostRequestEncoder} that supports pause/resume

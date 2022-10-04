@@ -6,7 +6,6 @@ import java.net.InetAddress;
 import java.util.Collections;
 import java.util.function.Consumer;
 
-import io.fabric8.kubernetes.client.GenericKubernetesClient;
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
 import io.quarkus.test.common.QuarkusTestResourceConfigurableLifecycleManager;
@@ -32,7 +31,7 @@ public class KubernetesServerTestResource extends AbstractKubernetesTestResource
     }
 
     @Override
-    protected GenericKubernetesClient<NamespacedKubernetesClient> getClient() {
+    protected NamespacedKubernetesClient getClient() {
         return server.getClient();
     }
 

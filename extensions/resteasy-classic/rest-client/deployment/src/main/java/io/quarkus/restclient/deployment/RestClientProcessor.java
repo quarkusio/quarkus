@@ -454,7 +454,7 @@ class RestClientProcessor {
             List<IgnoreClientProviderBuildItem> ignoreClientProviderBuildItems,
             CombinedIndexBuildItem combinedIndexBuildItem,
             ResteasyInjectionReadyBuildItem injectorFactory,
-            RestClientRecorder restClientRecorder) {
+            RestClientRecorder restClientRecorder, Capabilities capabilities) {
 
         for (IgnoreClientProviderBuildItem item : ignoreClientProviderBuildItems) {
             jaxrsProvidersToRegisterBuildItem.getProviders().remove(item.getProviderClassName());
@@ -464,6 +464,12 @@ class RestClientProcessor {
         restClientRecorder.initializeResteasyProviderFactory(injectorFactory.getInjectorFactory(),
                 jaxrsProvidersToRegisterBuildItem.useBuiltIn(),
                 jaxrsProvidersToRegisterBuildItem.getProviders(), jaxrsProvidersToRegisterBuildItem.getContributedProviders());
+
+        if (!capabilities.isPresent(Capability.RESTEASY)) {
+            // ResteasyProviderFactory will use our implementation when accessing instance statically. That's not
+            // necessary when RESTEasy classic is present as then provider factory with correct provider classes is generated.
+            restClientRecorder.setResteasyProviderFactoryInstance();
+        }
 
         // register the providers for reflection
         for (String providerToRegister : jaxrsProvidersToRegisterBuildItem.getProviders()) {

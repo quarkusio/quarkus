@@ -1,13 +1,5 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import io.netty.handler.codec.http.multipart.InterfaceHttpData;
-import io.smallrye.stork.api.ServiceInstance;
-import io.vertx.core.Context;
-import io.vertx.core.MultiMap;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientRequest;
-import io.vertx.core.http.HttpClientResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Entity;
@@ -34,6 +27,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
+
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
@@ -46,6 +40,15 @@ import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
+
+import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import io.smallrye.stork.api.ServiceInstance;
+import io.vertx.core.Context;
+import io.vertx.core.MultiMap;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.http.HttpClientResponse;
 
 /**
  * This is a stateful invocation, you can't invoke it twice.
@@ -526,5 +529,10 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
             }
         }
         return defaultValue;
+    }
+
+    @Override
+    protected boolean isRequestScopeManagementRequired() {
+        return false;
     }
 }

@@ -11,11 +11,12 @@ import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger(CoroutineInvocationHandler::class.java)
 
-class CoroutineInvocationHandler(private val invoker: EndpointInvoker,
-                                 private val coroutineScope: CoroutineScope) : ServerRestHandler {
+class CoroutineInvocationHandler(
+    private val invoker: EndpointInvoker,
+    private val coroutineScope: CoroutineScope
+) : ServerRestHandler {
 
     private val originalTCCL: ClassLoader = Thread.currentThread().contextClassLoader
-
 
     override fun handle(requestContext: ResteasyReactiveRequestContext) {
         if (requestContext.result != null) {
@@ -27,8 +28,8 @@ class CoroutineInvocationHandler(private val invoker: EndpointInvoker,
         }
 
         val requestScope = requestContext.captureCDIRequestScope()
-        val dispatcher: CoroutineDispatcher = Vertx.currentContext()?.let {VertxDispatcher(it,requestScope, requestContext)}
-                ?: throw IllegalStateException("No Vertx context found")
+        val dispatcher: CoroutineDispatcher = Vertx.currentContext()?.let { VertxDispatcher(it, requestScope, requestContext) }
+            ?: throw IllegalStateException("No Vertx context found")
 
         logger.trace("Handling request with dispatcher {}", dispatcher)
 

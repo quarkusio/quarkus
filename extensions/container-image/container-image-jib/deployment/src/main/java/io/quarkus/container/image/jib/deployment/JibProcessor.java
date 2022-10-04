@@ -90,8 +90,8 @@ public class JibProcessor {
     private static final IsClassPredicate IS_CLASS_PREDICATE = new IsClassPredicate();
     private static final String BINARY_NAME_IN_CONTAINER = "application";
 
-    private static final String JAVA_17_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17-runtime:1.11";
-    private static final String JAVA_11_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11-runtime:1.11";
+    private static final String JAVA_17_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17-runtime:1.14";
+    private static final String JAVA_11_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11-runtime:1.14";
     private static final String DEFAULT_BASE_IMAGE_USER = "185";
 
     private static final String OPENTELEMETRY_CONTEXT_CONTEXT_STORAGE_PROVIDER_SYS_PROP = "io.opentelemetry.context.contextStorageProvider";
@@ -335,7 +335,13 @@ public class JibProcessor {
             registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig());
             String dockerConfigEnv = System.getenv().get("DOCKER_CONFIG");
             if (dockerConfigEnv != null) {
-                registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig(Path.of(dockerConfigEnv)));
+                Path dockerConfigPath = Path.of(dockerConfigEnv);
+                if (Files.isDirectory(dockerConfigPath)) {
+                    // this matches jib's behaviour,
+                    // see https://github.com/GoogleContainerTools/jib/blob/master/jib-maven-plugin/README.md#authentication-methods
+                    dockerConfigPath = dockerConfigPath.resolve("config.json");
+                }
+                registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig(dockerConfigPath));
             }
         }
         return registryImage;
@@ -562,6 +568,8 @@ public class JibProcessor {
                     .setEnvironment(getEnvironmentVariables(jibConfig))
                     .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
 
+            mayInheritEntrypoint(jibContainerBuilder, entrypoint, jibConfig.jvmArguments);
+
             if (jibConfig.useCurrentTimestamp) {
                 jibContainerBuilder.setCreationTime(now);
             }
@@ -594,6 +602,15 @@ public class JibProcessor {
         }
 
         return jibContainerBuilder.addFileEntriesLayer(layerConfigurationBuilder.build());
+    }
+
+    private void mayInheritEntrypoint(JibContainerBuilder jibContainerBuilder, List<String> entrypoint,
+            List<String> arguments) {
+        if (entrypoint.size() == 1 && "INHERIT".equals(entrypoint.get(0))) {
+            jibContainerBuilder
+                    .setEntrypoint((List<String>) null)
+                    .setProgramArguments(arguments);
+        }
     }
 
     private List<String> determineEffectiveJvmArguments(JibConfig jibConfig, Optional<AppCDSResultBuildItem> appCDSResult) {
@@ -666,6 +683,7 @@ public class JibProcessor {
 
             if (jibConfig.jvmEntrypoint.isPresent()) {
                 jibContainerBuilder.setEntrypoint(jibConfig.jvmEntrypoint.get());
+                mayInheritEntrypoint(jibContainerBuilder, jibConfig.jvmEntrypoint.get(), jibConfig.jvmArguments);
             }
 
             return jibContainerBuilder;
@@ -701,6 +719,8 @@ public class JibProcessor {
                     .setEntrypoint(entrypoint)
                     .setEnvironment(getEnvironmentVariables(jibConfig))
                     .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
+
+            mayInheritEntrypoint(jibContainerBuilder, entrypoint, jibConfig.nativeArguments.orElse(null));
 
             if (jibConfig.useCurrentTimestamp) {
                 jibContainerBuilder.setCreationTime(Instant.now());

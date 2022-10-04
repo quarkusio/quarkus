@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.redis.client.deployment.RedisTestResource;
 import io.quarkus.redis.datasource.RedisDataSource;
-import io.quarkus.redis.datasource.string.StringCommands;
+import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.QuarkusTestResource;
 
@@ -47,10 +47,10 @@ public class CounterTest {
     @ApplicationScoped
     public static class MyRedisCounter {
 
-        private final StringCommands<String, Long> commands;
+        private final ValueCommands<String, Long> commands;
 
         public MyRedisCounter(RedisDataSource ds) {
-            commands = ds.string(Long.class);
+            commands = ds.value(Long.class);
         }
 
         public long get(String key) {

@@ -3,15 +3,18 @@ package io.quarkus.arc.test.bean.types;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Set;
+
 import javax.enterprise.context.Dependent;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class SimpleBeanTypesTest {
     @RegisterExtension

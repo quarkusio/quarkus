@@ -2,12 +2,6 @@ package io.quarkus.devtools.codestarts;
 
 import static io.quarkus.devtools.codestarts.Codestart.BASE_LANGUAGE;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import io.quarkus.devtools.codestarts.core.CodestartSpec;
-import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -23,6 +17,14 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+
+import io.quarkus.devtools.codestarts.core.CodestartSpec;
+import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
 
 public final class CodestartCatalogLoader {
 

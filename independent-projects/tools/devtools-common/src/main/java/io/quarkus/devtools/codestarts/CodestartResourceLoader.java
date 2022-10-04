@@ -1,11 +1,12 @@
 package io.quarkus.devtools.codestarts;
 
-import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 
 public final class CodestartResourceLoader implements CodestartPathLoader {
     private ResourceLoader resourceLoader;

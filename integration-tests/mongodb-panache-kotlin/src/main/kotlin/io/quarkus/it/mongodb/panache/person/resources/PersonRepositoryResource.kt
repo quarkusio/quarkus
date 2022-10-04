@@ -39,10 +39,10 @@ class PersonRepositoryResource {
     @Path("/search/{name}")
     fun searchPersons(@PathParam("name") name: String): Set<PersonName> {
         return personRepository.find("lastname = ?1 and status = ?2", name, Status.ALIVE)
-                .project(PersonName::class.java)
-                .withReadPreference(ReadPreference.primaryPreferred())
-                .list()
-                .toSet()
+            .project(PersonName::class.java)
+            .withReadPreference(ReadPreference.primaryPreferred())
+            .list()
+            .toSet()
     }
 
     @POST
@@ -76,7 +76,6 @@ class PersonRepositoryResource {
         val person = personRepository.findById(id.toLong())
         personRepository.delete(person!!)
     }
-
 
     @GET
     @Path("/{id}")

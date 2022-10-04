@@ -11,9 +11,9 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class KeycloakAdminClientBuildTimeConfig {
 
     /**
-     * Set to true if you want Quarkus to create the client bean for you.
+     * Set to true if Keycloak Admin Client injection is supported.
      */
-    @ConfigItem(name = ConfigItem.PARENT, defaultValue = "false")
-    public boolean enabled = false;
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled = true;
 
 }

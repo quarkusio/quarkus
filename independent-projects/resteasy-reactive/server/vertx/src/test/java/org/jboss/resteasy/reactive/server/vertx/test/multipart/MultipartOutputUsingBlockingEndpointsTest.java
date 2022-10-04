@@ -3,15 +3,17 @@ package org.jboss.resteasy.reactive.server.vertx.test.multipart;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 import javax.ws.rs.core.MediaType;
+
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.resteasy.reactive.server.vertx.test.multipart.other.OtherPackageFormDataBase;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 
 public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipartTest {
 

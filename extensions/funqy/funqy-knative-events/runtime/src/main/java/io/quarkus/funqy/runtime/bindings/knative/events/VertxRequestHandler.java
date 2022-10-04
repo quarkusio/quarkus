@@ -562,19 +562,25 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             }
         }
         currentVertxRequest.setCurrent(routingContext);
-        try {
-            RequestContextImpl funqContext = new RequestContextImpl();
-            if (event != null) {
-                funqContext.setContextData(CloudEvent.class, event);
-            }
-            FunqyRequestImpl funqyRequest = new FunqyRequestImpl(funqContext, input);
-            FunqyResponseImpl funqyResponse = new FunqyResponseImpl();
-            invoker.invoke(funqyRequest, funqyResponse);
-            return funqyResponse;
-        } finally {
-            if (requestContext.isActive()) {
-                requestContext.terminate();
-            }
+        RequestContextImpl funqContext = new RequestContextImpl();
+        if (event != null) {
+            funqContext.setContextData(CloudEvent.class, event);
         }
+        FunqyRequestImpl funqyRequest = new FunqyRequestImpl(funqContext, input);
+        FunqyResponseImpl funqyResponse = new FunqyResponseImpl();
+        invoker.invoke(funqyRequest, funqyResponse);
+
+        // The invoker set the output, but we need to extend that output (a Uni) with a termination block deactivating the
+        // request context if activated.
+        funqyResponse.setOutput(funqyResponse.getOutput()
+                .onTermination().invoke(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (requestContext.isActive()) {
+                            requestContext.terminate();
+                        }
+                    }
+                }));
+        return funqyResponse;
     }
 }

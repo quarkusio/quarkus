@@ -2,7 +2,6 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Booleans.isFalsy;
 
-import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -11,6 +10,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
+
+import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 
 /**
  * Basic {@code if} statement.

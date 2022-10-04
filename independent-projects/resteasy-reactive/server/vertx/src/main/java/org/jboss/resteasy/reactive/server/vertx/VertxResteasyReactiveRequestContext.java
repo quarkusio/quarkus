@@ -1,5 +1,30 @@
 package org.jboss.resteasy.reactive.server.vertx;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
+import javax.ws.rs.core.HttpHeaders;
+
+import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
+import org.jboss.resteasy.reactive.server.core.Deployment;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.core.multipart.FormData;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
+import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
+
 import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoop;
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -14,29 +39,6 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.impl.Http1xServerResponse;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import javax.ws.rs.core.HttpHeaders;
-import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
-import org.jboss.resteasy.reactive.server.core.Deployment;
-import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.core.multipart.FormData;
-import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
-import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
-import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
-import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
-import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequestContext
         implements ServerHttpRequest, ServerHttpResponse, Handler<Void> {
@@ -50,11 +52,11 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     protected Consumer<ResteasyReactiveRequestContext> preCommitTask;
     ContinueState continueState = ContinueState.NONE;
 
-    public VertxResteasyReactiveRequestContext(Deployment deployment, ProvidersImpl providers,
+    public VertxResteasyReactiveRequestContext(Deployment deployment,
             RoutingContext context,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain,
             ClassLoader devModeTccl) {
-        super(deployment, providers, requestContext, handlerChain, abortHandlerChain);
+        super(deployment, requestContext, handlerChain, abortHandlerChain);
         this.context = context;
         this.request = context.request();
         this.response = context.response();

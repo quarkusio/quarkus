@@ -1,20 +1,23 @@
 package io.quarkus.arc.test.decorators.generics;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.Priority;
-import io.quarkus.arc.Unremovable;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.util.List;
 import java.util.Set;
+
 import javax.decorator.Decorator;
 import javax.decorator.Delegate;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Any;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Inject;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.Priority;
+import io.quarkus.arc.Unremovable;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class DecoratorWithTypeVariableTest {
 

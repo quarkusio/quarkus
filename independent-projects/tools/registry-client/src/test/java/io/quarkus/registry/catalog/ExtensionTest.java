@@ -2,11 +2,13 @@ package io.quarkus.registry.catalog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 public class ExtensionTest {
 

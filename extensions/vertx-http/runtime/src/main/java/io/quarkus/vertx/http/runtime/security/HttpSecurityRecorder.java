@@ -92,6 +92,7 @@ public class HttpSecurityRecorder {
                                 }
                             });
                         } else if (throwable instanceof AuthenticationCompletionException) {
+                            log.debug("Authentication has failed, returning HTTP status 401");
                             event.response().setStatusCode(401);
                             event.response().end();
                         } else if (throwable instanceof AuthenticationRedirectException) {
@@ -107,8 +108,8 @@ public class HttpSecurityRecorder {
                     }
                 });
 
-                Uni<SecurityIdentity> potentialUser = authenticator.attemptAuthentication(event).memoize().indefinitely();
                 if (proactiveAuthentication) {
+                    Uni<SecurityIdentity> potentialUser = authenticator.attemptAuthentication(event).memoize().indefinitely();
                     potentialUser
                             .subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
                                 @Override
@@ -166,7 +167,13 @@ public class HttpSecurityRecorder {
                             });
                 } else {
 
-                    Uni<SecurityIdentity> lazyUser = potentialUser
+                    Uni<SecurityIdentity> lazyUser = Uni
+                            .createFrom()
+                            .nullItem()
+                            // Only attempt to authenticate if required
+                            .flatMap(n -> authenticator.attemptAuthentication(event))
+                            .memoize()
+                            .indefinitely()
                             .flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
                                 @Override
                                 public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {
@@ -260,7 +267,7 @@ public class HttpSecurityRecorder {
                 }
                 FormAuthConfig form = buildTimeConfig.auth.form;
                 PersistentLoginManager loginManager = new PersistentLoginManager(key, form.cookieName, form.timeout.toMillis(),
-                        form.newCookieInterval.toMillis());
+                        form.newCookieInterval.toMillis(), form.httpOnlyCookie);
                 String loginPage = form.loginPage.startsWith("/") ? form.loginPage : "/" + form.loginPage;
                 String errorPage = form.errorPage.startsWith("/") ? form.errorPage : "/" + form.errorPage;
                 String landingPage = form.landingPage.startsWith("/") ? form.landingPage : "/" + form.landingPage;

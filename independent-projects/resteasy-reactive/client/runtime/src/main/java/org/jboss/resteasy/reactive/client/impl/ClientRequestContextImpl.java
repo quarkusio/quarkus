@@ -3,8 +3,6 @@ package org.jboss.resteasy.reactive.client.impl;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
-import io.smallrye.common.vertx.VertxContext;
-import io.vertx.core.Context;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -23,21 +21,29 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.GenericEntity;
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
 import org.jboss.resteasy.reactive.common.NotImplementedYet;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
+
+import io.smallrye.common.vertx.VertxContext;
+import io.smallrye.stork.api.ServiceInstance;
+import io.vertx.core.Context;
+import io.vertx.core.Vertx;
 
 public class ClientRequestContextImpl implements ResteasyReactiveClientRequestContext {
 
@@ -54,16 +60,32 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
         this.configuration = configuration;
         this.headersMap = new ClientRequestHeadersMap(); //restClientRequestContext.requestHeaders.getHeaders()
 
+        // TODO This needs to be challenged:
         // Always create a duplicated context because each REST Client invocation must have its own context
         // A separate context allows integrations like OTel to create a separate Span for each invocation (expected)
-        Context current = client.vertx.getOrCreateContext();
-        this.context = VertxContext.createNewDuplicatedContext(current);
+        Context ctxt = Vertx.currentContext();
+        if (ctxt != null && VertxContext.isDuplicatedContext(ctxt)) {
+            this.context = ctxt;
+        } else {
+            Context current = client.vertx.getOrCreateContext();
+            this.context = VertxContext.createNewDuplicatedContext(current);
+        }
         restClientRequestContext.properties.put(VERTX_CONTEXT_PROPERTY, context);
     }
 
     @Override
     public Context getContext() {
         return context;
+    }
+
+    @Override
+    public GenericType<?> getResponseType() {
+        return restClientRequestContext.getResponseType();
+    }
+
+    @Override
+    public void setCallStatsCollector(ServiceInstance statCollectingServiceInstance) {
+        restClientRequestContext.setCallStatsCollector(statCollectingServiceInstance);
     }
 
     @Override

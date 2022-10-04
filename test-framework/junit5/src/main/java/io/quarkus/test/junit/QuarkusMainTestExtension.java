@@ -5,6 +5,7 @@ import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResourc
 import static io.quarkus.test.junit.QuarkusTestExtension.IO_QUARKUS_TESTING_TYPE;
 
 import java.io.Closeable;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.logging.Handler;
@@ -17,9 +18,11 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
+import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
@@ -27,6 +30,7 @@ import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.deployment.dev.testing.LogCapturingOutputFilter;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
+import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
@@ -35,7 +39,8 @@ import io.quarkus.test.junit.main.QuarkusMainLauncher;
 import io.quarkus.test.junit.main.QuarkusMainTest;
 
 public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
-        implements BeforeEachCallback, AfterEachCallback, ParameterResolver, BeforeAllCallback, AfterAllCallback {
+        implements InvocationInterceptor, BeforeEachCallback, AfterEachCallback, ParameterResolver, BeforeAllCallback,
+        AfterAllCallback {
 
     PrepareResult prepareResult;
     private static boolean hasPerTestResources;
@@ -53,18 +58,12 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
         Class<? extends QuarkusTestProfile> profile = getQuarkusTestProfile(context);
         ensurePrepared(context, profile);
-        var launch = context.getRequiredTestMethod().getAnnotation(Launch.class);
-        if (launch != null) {
-            String[] arguments = launch.value();
-            LaunchResult r = doLaunch(context, profile, arguments);
-            Assertions.assertEquals(launch.exitCode(), r.exitCode(),
-                    "Exit code did not match, output: " + r.getOutput() + " " + r.getErrorOutput());
-            this.result = r;
-        }
     }
 
     private void ensurePrepared(ExtensionContext extensionContext, Class<? extends QuarkusTestProfile> profile)
             throws Exception {
+        JBossVersion.disableVersionLogging();
+
         ExtensionContext.Store store = extensionContext.getStore(ExtensionContext.Namespace.GLOBAL);
         Class<?> testType = store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
         if (testType != null) {
@@ -190,6 +189,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
     private int doJavaStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile, String[] arguments)
             throws Exception {
+        JBossVersion.disableVersionLogging();
+
         TracingHandler.quarkusStarting();
         Closeable testResourceManager = null;
         try {
@@ -261,6 +262,14 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         Class<?> type = parameterContext.getParameter().getType();
         Class<? extends QuarkusTestProfile> profile = getQuarkusTestProfile(extensionContext);
         if (type == LaunchResult.class) {
+            var launch = extensionContext.getRequiredTestMethod().getAnnotation(Launch.class);
+            if (launch != null) {
+                doLaunchAndAssertExitCode(extensionContext, profile, launch);
+            } else {
+                throw new RuntimeException(
+                        "To use 'LaunchResult' as a method parameter, the test must be annotated with '@Launch'");
+            }
+
             return result;
         } else if (type == QuarkusMainLauncher.class) {
             return new QuarkusMainLauncher() {
@@ -276,6 +285,38 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         } else {
             throw new RuntimeException("Parameter type not supported");
         }
+    }
+
+    private void doLaunchAndAssertExitCode(ExtensionContext extensionContext, Class<? extends QuarkusTestProfile> profile,
+            Launch launch) {
+        // HACK: we launch the application in this method instead of in beforeEach in order to ensure that
+        // tests that use @BeforeEach will have a chance to run before the application is launched
+
+        String[] arguments = launch.value();
+        LaunchResult r;
+        try {
+            r = doLaunch(extensionContext, profile, arguments);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        Assertions.assertEquals(launch.exitCode(), r.exitCode(),
+                "Exit code did not match, output: " + r.getOutput() + " " + r.getErrorOutput());
+        this.result = r;
+    }
+
+    @Override
+    public void interceptTestMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
+        Class<? extends QuarkusTestProfile> profile = getQuarkusTestProfile(extensionContext);
+        if (invocationContext.getArguments().isEmpty()) {
+            var launch = extensionContext.getRequiredTestMethod().getAnnotation(Launch.class);
+            if (launch != null) {
+                // in this case, resolveParameter has not been called by JUnit, so we need to make sure the application is launched
+                doLaunchAndAssertExitCode(extensionContext, profile, launch);
+            }
+        }
+
+        invocation.proceed();
     }
 
     private boolean isIntegrationTest(Class<?> clazz) {

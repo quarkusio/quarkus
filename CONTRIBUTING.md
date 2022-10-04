@@ -35,6 +35,7 @@ fixes, documentation, examples... But first, read this page (including the small
         - [Automatic incremental build](#automatic-incremental-build)
             * [Special case `bom-descriptor-json`](#special-case--bom-descriptor-json-)
             * [Usage by CI](#usage-by-ci)
+* [Release your own version](#release)
 * [Documentation](#documentation)
     + [Building the documentation](#building-the-documentation)
     + [Referencing a new guide in the index](#referencing-a-new-guide-in-the-index)
@@ -149,8 +150,8 @@ Wait for a bit and you're done.
 When using the `main` branch, you need to use the group id `io.quarkus` instead of `io.quarkus.platform` for both the
 Quarkus BOM and the Quarkus Maven Plugin.
 
-In a standard Quarkus pom.xml set the `quarkus.platform.group-id`-property to `io.quarkus` and
-the `quarkus.platform.version`-property to `999-SNAPSHOT` to build your application against the locally installed main
+In a standard Quarkus pom.xml set the `quarkus.platform.group-id` property to `io.quarkus` and
+the `quarkus.platform.version` property to `999-SNAPSHOT` to build your application against the locally installed main
 branch.
 
 You can now test your application.
@@ -501,6 +502,33 @@ CI is using a slightly different GIB config than locally:
 * Certain "critical" branches like `main` are not built incrementally
 
 For more details see the `Get GIB arguments` step in `.github/workflows/ci-actions-incremental.yml`.
+
+## Release your own version
+
+You might want to release your own patched version of Quarkus to an internal repository.
+
+To do so, you will first need to update the version in the source code:
+
+```shell
+./update-version.sh "x.y.z-yourcompany"
+```
+
+We use a shell script as we also need to update the version in various descriptors and test files.
+The shell script calls `./mvnw versions:set` under the hood, among other things.
+
+Commit the changes, then run:
+
+```shell
+./mvnw --settings your-maven-settings.xml \
+    clean deploy \
+    -DskipTests -DskipITs \
+    -DperformRelease=true \
+    -Prelease \
+    -Ddokka \
+    -Dgpg.skip
+```
+
+If your Maven settings are in your global Maven settings file located in the `.m2/` directory, you can drop the `--settings your-maven-settings.xml` part.
 
 ## Documentation
 

@@ -1,8 +1,9 @@
 package io.quarkus.maven;
 
-import io.quarkus.maven.dependency.GACT;
 import java.io.Serializable;
 import java.util.Objects;
+
+import io.quarkus.maven.dependency.GACT;
 
 @Deprecated(forRemoval = true)
 /**

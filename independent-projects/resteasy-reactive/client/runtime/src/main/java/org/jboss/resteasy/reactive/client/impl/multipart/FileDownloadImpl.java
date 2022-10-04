@@ -1,9 +1,11 @@
 package org.jboss.resteasy.reactive.client.impl.multipart;
 
-import io.netty.handler.codec.http.multipart.FileUpload;
 import java.io.IOException;
 import java.nio.file.Path;
+
 import org.jboss.resteasy.reactive.multipart.FileDownload;
+
+import io.netty.handler.codec.http.multipart.FileUpload;
 
 public class FileDownloadImpl implements FileDownload {
 

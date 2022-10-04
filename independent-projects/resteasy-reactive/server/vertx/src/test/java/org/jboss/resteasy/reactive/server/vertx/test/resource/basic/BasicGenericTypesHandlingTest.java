@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic;
 
-import io.restassured.RestAssured;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -8,6 +7,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -16,6 +16,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
+
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.common.providers.serialisers.MessageReaderUtil;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
@@ -27,6 +28,8 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
 
 public class BasicGenericTypesHandlingTest {
 

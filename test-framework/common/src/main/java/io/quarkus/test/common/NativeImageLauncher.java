@@ -6,6 +6,8 @@ public interface NativeImageLauncher extends ArtifactLauncher<NativeImageLaunche
 
         String nativeImagePath();
 
+        String getConfiguredOutputDirectory();
+
         Class<?> testClass();
     }
 }

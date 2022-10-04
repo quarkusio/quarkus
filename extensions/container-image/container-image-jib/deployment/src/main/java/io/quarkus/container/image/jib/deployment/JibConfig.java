@@ -16,9 +16,9 @@ public class JibConfig {
     /**
      * The base image to be used when a container image is being produced for the jar build.
      *
-     * When the application is built against Java 17 or higher, {@code registry.access.redhat.com/ubi8/openjdk-17-runtime:1.11}
+     * When the application is built against Java 17 or higher, {@code registry.access.redhat.com/ubi8/openjdk-17-runtime:1.14}
      * is used as the default.
-     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-11-runtime:1.11} is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-11-runtime:1.14} is used as the default.
      */
     @ConfigItem
     public Optional<String> baseJvmImage;
@@ -29,7 +29,7 @@ public class JibConfig {
      * "registry.access.redhat.com/ubi8/ubi-minimal" which is a bigger base image, but provide more built-in utilities
      * such as the microdnf package manager.
      */
-    @ConfigItem(defaultValue = "quay.io/quarkus/quarkus-micro-image:1.0")
+    @ConfigItem(defaultValue = "quay.io/quarkus/quarkus-micro-image:2.0")
     public String baseNativeImage;
 
     /**
@@ -54,6 +54,8 @@ public class JibConfig {
      * If this is set, then it will be used as the entry point of the container image.
      * There are a few things to be aware of when creating an entry point
      * <ul>
+     * <li>Entrypoint "INHERIT" means to inherit entrypoint from base image, {@code jvmArguments} field is used for
+     * arguments</li>
      * <li>A valid entrypoint is jar package specific (see {@code quarkus.package.type})</li>
      * <li>A valid entrypoint depends on the location of both the launching scripts and the application jar file. To that
      * end it's helpful to remember that when {@code fast-jar} packaging is used (the default), all necessary application
@@ -62,7 +64,7 @@ public class JibConfig {
      * jars
      * are unpacked under the {@code /app} directory
      * and that directory is used as the working directory.</li>
-     * <li>Even if the {@code jvmArguments} field is set, it is ignored completely</li>
+     * <li>Even if the {@code jvmArguments} field is set, it is ignored completely unless entrypoint is "INHERIT"</li>
      * </ul>
      *
      * When this is not set, a proper default entrypoint will be constructed.
@@ -77,10 +79,12 @@ public class JibConfig {
      * If this is set, then it will be used as the entry point of the container image.
      * There are a few things to be aware of when creating an entry point
      * <ul>
+     * <li>Entrypoint "INHERIT" means to inherit entrypoint from base image, {@code nativeArguments} field is used for
+     * arguments</li>
      * <li>A valid entrypoint depends on the location of both the launching scripts and the native binary file. To that end
      * it's helpful to remember that the native application is added to the {@code /work} directory and that and the same
      * directory is also used as the working directory</li>
-     * <li>Even if the {@code nativeArguments} field is set, it is ignored completely</li>
+     * <li>Even if the {@code nativeArguments} field is set, it is ignored completely unless entrypoint is "INHERIT"</li>
      * </ul>
      *
      * When this is not set, a proper default entrypoint will be constructed.

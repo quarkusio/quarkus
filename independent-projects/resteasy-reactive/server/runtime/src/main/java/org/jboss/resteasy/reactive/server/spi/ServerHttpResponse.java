@@ -4,6 +4,7 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
+
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 public interface ServerHttpResponse extends StreamingResponse<ServerHttpResponse> {

@@ -1,12 +1,5 @@
 package io.quarkus.bootstrap.model;
 
-import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.DependencyFlags;
-import io.quarkus.maven.dependency.GACT;
-import io.quarkus.maven.dependency.ResolvedDependency;
-import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,7 +10,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.GACT;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 
 public class ApplicationModelBuilder {
 

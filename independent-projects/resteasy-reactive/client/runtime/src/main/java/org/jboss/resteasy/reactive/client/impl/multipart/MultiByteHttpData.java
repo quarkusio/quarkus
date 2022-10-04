@@ -15,6 +15,16 @@
  */
 package org.jboss.resteasy.reactive.client.impl.multipart;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
+
+import org.jboss.logging.Logger;
+import org.reactivestreams.Subscription;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -27,14 +37,6 @@ import io.smallrye.mutiny.Multi;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.impl.VertxByteBufAllocator;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
-import org.jboss.logging.Logger;
-import org.reactivestreams.Subscription;
 
 /**
  * A FileUpload implementation that is responsible for sending Multi&lt;Byte&gt; as a file in a multipart message.

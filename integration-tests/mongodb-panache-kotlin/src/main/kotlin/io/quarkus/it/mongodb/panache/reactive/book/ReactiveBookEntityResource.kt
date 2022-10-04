@@ -52,7 +52,7 @@ class ReactiveBookEntityResource {
     @POST
     fun addBook(book: ReactiveBookEntity): Uni<Response> {
         return book.persist<ReactiveBookEntity>().map {
-            //the ID is populated before sending it to the database
+            // the ID is populated before sending it to the database
             Response.created(URI.create("/books/entity${book.id}")).build()
         }
     }
@@ -63,18 +63,18 @@ class ReactiveBookEntityResource {
     // PATCH is not correct here but it allows to test persistOrUpdate without a specific subpath
     @PATCH
     fun upsertBook(book: ReactiveBookEntity): Uni<Response> =
-            book.persistOrUpdate<ReactiveBookEntity>().map { Response.accepted().build() }
+        book.persistOrUpdate<ReactiveBookEntity>().map { Response.accepted().build() }
 
     @DELETE
     @Path("/{id}")
     fun deleteBook(@PathParam("id") id: String?): Uni<Void> {
         return ReactiveBookEntity.deleteById(ObjectId(id))
-                .map { d ->
-                    if (d) {
-                        return@map null
-                    }
-                    throw NotFoundException()
+            .map { d ->
+                if (d) {
+                    return@map null
                 }
+                throw NotFoundException()
+            }
     }
 
     @GET
@@ -84,37 +84,50 @@ class ReactiveBookEntityResource {
     @GET
     @Path("/search/{author}")
     fun getBooksByAuthor(@PathParam("author") author: String): Uni<List<ReactiveBookEntity>> =
-            ReactiveBookEntity.list("author", author)
+        ReactiveBookEntity.list("author", author)
 
     @GET
     @Path("/search")
-    fun search(@QueryParam("author") author: String?, @QueryParam("title") title: String?,
-               @QueryParam("dateFrom") dateFrom: String?, @QueryParam("dateTo") dateTo: String?): Uni<ReactiveBookEntity?> {
+    fun search(
+        @QueryParam("author") author: String?,
+        @QueryParam("title") title: String?,
+        @QueryParam("dateFrom") dateFrom: String?,
+        @QueryParam("dateTo") dateTo: String?
+    ): Uni<ReactiveBookEntity?> {
         return if (author != null) {
             ReactiveBookEntity.find("{'author': ?1,'bookTitle': ?2}", author, title!!).firstResult()
         } else ReactiveBookEntity
-                .find("{'creationDate': {\$gte: ?1}, 'creationDate': {\$lte: ?2}}", parse(dateFrom),
-                        parse(dateTo))
-                .firstResult()
+            .find(
+                "{'creationDate': {\$gte: ?1}, 'creationDate': {\$lte: ?2}}",
+                parse(dateFrom),
+                parse(dateTo)
+            )
+            .firstResult()
     }
 
     @GET
     @Path("/search2")
-    fun search2(@QueryParam("author") author: String?, @QueryParam("title") title: String?,
-                @QueryParam("dateFrom") dateFrom: String?, @QueryParam("dateTo") dateTo: String?)
-            : Uni<ReactiveBookEntity?> =
-
-            if (author != null) {
-                ReactiveBookEntity.find("{'author': :author,'bookTitle': :title}",
-                        with("author", author).and("title", title)).firstResult()
-            } else {
-                ReactiveBookEntity.find("{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
-                        with("dateFrom", parse(dateFrom)).and("dateTo", parse(dateTo)))
-                        .firstResult()
-            }
+    fun search2(
+        @QueryParam("author") author: String?,
+        @QueryParam("title") title: String?,
+        @QueryParam("dateFrom") dateFrom: String?,
+        @QueryParam("dateTo") dateTo: String?
+    ): Uni<ReactiveBookEntity?> =
+        if (author != null) {
+            ReactiveBookEntity.find(
+                "{'author': :author,'bookTitle': :title}",
+                with("author", author).and("title", title)
+            ).firstResult()
+        } else {
+            ReactiveBookEntity.find(
+                "{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
+                with("dateFrom", parse(dateFrom)).and("dateTo", parse(dateTo))
+            )
+                .firstResult()
+        }
 
     @DELETE
-    fun deleteAll(): Uni<Void> = ReactiveBookEntity.deleteAll().map { l -> null }
+    fun deleteAll(): Uni<Void> = ReactiveBookEntity.deleteAll().map { null }
 
     companion object {
         private val LOGGER: Logger = Logger.getLogger(ReactiveBookEntityResource::class.java)

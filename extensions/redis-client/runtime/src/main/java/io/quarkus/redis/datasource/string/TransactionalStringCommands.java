@@ -4,6 +4,7 @@ import java.util.Map;
 
 import io.quarkus.redis.datasource.TransactionalRedisCommands;
 
+@Deprecated
 public interface TransactionalStringCommands<K, V> extends TransactionalRedisCommands {
 
     /**

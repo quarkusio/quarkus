@@ -21,7 +21,15 @@ public class Person {
     }
 
     public Person() {
-        // USed by the mapper.
+        // Used by the mapper.
+    }
+
+    @Override
+    public String toString() {
+        return "Person{" +
+                "firstname='" + firstname + '\'' +
+                ", lastname='" + lastname + '\'' +
+                '}';
     }
 
     @Override

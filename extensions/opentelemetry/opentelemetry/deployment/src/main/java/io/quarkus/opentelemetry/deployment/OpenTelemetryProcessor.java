@@ -3,7 +3,6 @@ package io.quarkus.opentelemetry.deployment;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -20,7 +19,8 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -31,12 +31,13 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.opentelemetry.deployment.tracing.TracerProviderBuildItem;
-import io.quarkus.opentelemetry.runtime.OpenTelemetryConfig;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryProducer;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
+import io.quarkus.opentelemetry.runtime.config.OpenTelemetryConfig;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
-import io.quarkus.opentelemetry.runtime.tracing.restclient.OpenTelemetryClientFilter;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.reactivemessaging.ReactiveMessagingTracingDecorator;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.restclient.OpenTelemetryClientFilter;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
@@ -52,15 +53,6 @@ public class OpenTelemetryProcessor {
     private static final DotName LEGACY_SPAN_ATRIBUTE = DotName.createSimple(
             io.opentelemetry.extension.annotations.SpanAttribute.class.getName());;
     private static final DotName SPAN_ATTRIBUTE = DotName.createSimple(SpanAttribute.class.getName());
-
-    static class RestClientAvailable implements BooleanSupplier {
-        private static final boolean IS_REST_CLIENT_AVAILABLE = isClassPresent("javax.ws.rs.client.ClientRequestFilter");
-
-        @Override
-        public boolean getAsBoolean() {
-            return IS_REST_CLIENT_AVAILABLE;
-        }
-    }
 
     @BuildStep
     AdditionalBeanBuildItem ensureProducerIsRetained() {
@@ -138,11 +130,24 @@ public class OpenTelemetryProcessor {
         }));
     }
 
-    @BuildStep(onlyIf = RestClientAvailable.class)
-    void registerProvider(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexed,
+    @BuildStep
+    void registerRestClientClassicProvider(
+            Capabilities capabilities,
+            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexed,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(OpenTelemetryClientFilter.class.getName()));
-        additionalBeans.produce(new AdditionalBeanBuildItem(OpenTelemetryClientFilter.class));
+        if (capabilities.isPresent(Capability.REST_CLIENT) && capabilities.isMissing(Capability.REST_CLIENT_REACTIVE)) {
+            additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(OpenTelemetryClientFilter.class.getName()));
+            additionalBeans.produce(new AdditionalBeanBuildItem(OpenTelemetryClientFilter.class));
+        }
+    }
+
+    @BuildStep
+    void registerReactiveMessagingMessageDecorator(
+            Capabilities capabilities,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        if (capabilities.isPresent(Capability.SMALLRYE_REACTIVE_MESSAGING)) {
+            additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingDecorator.class));
+        }
     }
 
     @BuildStep
@@ -167,9 +172,5 @@ public class OpenTelemetryProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void storeVertxOnContextStorage(OpenTelemetryRecorder recorder, CoreVertxBuildItem vertx) {
         recorder.storeVertxOnContextStorage(vertx.getVertx());
-    }
-
-    public static boolean isClassPresent(String classname) {
-        return QuarkusClassLoader.isClassPresentAtRuntime(classname);
     }
 }

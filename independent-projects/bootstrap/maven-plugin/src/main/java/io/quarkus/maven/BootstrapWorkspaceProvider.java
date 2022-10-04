@@ -1,13 +1,15 @@
 package io.quarkus.maven;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import org.codehaus.plexus.component.annotations.Component;
+import org.jboss.logging.Logger;
+
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import org.codehaus.plexus.component.annotations.Component;
-import org.jboss.logging.Logger;
 
 @Component(role = BootstrapWorkspaceProvider.class, instantiationStrategy = "singleton")
 public class BootstrapWorkspaceProvider {

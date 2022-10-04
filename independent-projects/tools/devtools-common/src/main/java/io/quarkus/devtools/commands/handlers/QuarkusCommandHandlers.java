@@ -5,14 +5,6 @@ import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getExtend
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getShortName;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.isUnlisted;
 
-import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
-import io.quarkus.devtools.commands.data.SelectionResult;
-import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.devtools.project.extensions.Extensions;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.registry.catalog.Extension;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -22,7 +14,17 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.StringUtils;
+
+import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
+import io.quarkus.devtools.commands.data.SelectionResult;
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.extensions.Extensions;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 final class QuarkusCommandHandlers {
 

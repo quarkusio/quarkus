@@ -294,6 +294,39 @@ public class FrontendApi {
 
 It injects and uses the REST client as usual.
 
+== Stork Filter
+The `baseUri` configured in the REST client will be processed by `StorkClientRequestFilter` class, this is a https://quarkus.io/specs/jaxrs/2.1/index.html#filters[JAX-RS filter].
+If you need to process the metadata associated with a message: HTTP headers, query parameters, media type, and other metadata, you can implement another filter to configure what you need.
+Let’s implement a custom filter to add logging capability to our service. We create `CustomLoggingFilter` and annotating it with the @Provider annotation:
+
+[source, java]
+----
+package org.acme;
+
+import io.vertx.core.http.HttpServerRequest;
+import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
+import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestFilter;
+
+import javax.ws.rs.ext.Provider;
+
+@Provider
+public class CustomLoggingFilter implements ResteasyReactiveClientRequestFilter {
+
+    private static final Logger LOG = Logger.getLogger(CustomLoggingFilter.class);
+
+    @Override
+    public void filter(ResteasyReactiveClientRequestContext requestContext) {
+        LOG.infof("Resolved address by Stork: %s",requestContext.getUri().toString());
+    }
+}
+----
+
+The order in which filters are executed is defined by https://quarkus.io/specs/jaxrs/2.1/index.html#priorities[Priorities].
+Note that `CustomLoggingFilter` is using a default value, so the user-level priority and the `StorkClientRequestFilter` uses the security authentication filter priority. This means that `StorkClientRequestFilter` will be executed before our `CustomLoggingFilter`.
+Use `@Priority` annotation to change this behaviour.
+
+
 == Stork configuration
 
 The system is almost complete. We only need to configure Stork and the `Registration` bean.

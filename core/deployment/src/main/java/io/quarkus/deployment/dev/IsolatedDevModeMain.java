@@ -22,8 +22,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import org.apache.maven.shared.utils.cli.CommandLineException;
-import org.apache.maven.shared.utils.cli.CommandLineUtils;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.formatters.ColorPatternFormatter;
@@ -47,6 +45,7 @@ import io.quarkus.deployment.console.ConsoleStateManager;
 import io.quarkus.deployment.dev.testing.MessageFormat;
 import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.deployment.steps.ClassTransformingBuildStep;
+import io.quarkus.deployment.util.CommandLineUtil;
 import io.quarkus.dev.appstate.ApplicationStartException;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.DeploymentFailedStartHandler;
@@ -122,8 +121,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                                     public void accept(String args) {
                                                         try {
                                                             context.setArgs(
-                                                                    CommandLineUtils.translateCommandline(args));
-                                                        } catch (CommandLineException e) {
+                                                                    CommandLineUtil.translateCommandline(args));
+                                                        } catch (Exception e) {
                                                             log.error("Failed to parse command line", e);
                                                             return;
                                                         }
@@ -450,9 +449,11 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             //        doStart(false, Collections.emptySet());
             if (deploymentProblem != null || RuntimeUpdatesProcessor.INSTANCE.getCompileProblem() != null) {
                 if (context.isAbortOnFailedStart()) {
-                    throw new RuntimeException(
-                            deploymentProblem == null ? RuntimeUpdatesProcessor.INSTANCE.getCompileProblem()
-                                    : deploymentProblem);
+                    Throwable throwable = deploymentProblem == null ? RuntimeUpdatesProcessor.INSTANCE.getCompileProblem()
+                            : deploymentProblem;
+
+                    throw (throwable instanceof RuntimeException ? (RuntimeException) throwable
+                            : new RuntimeException(throwable));
                 }
             }
             shutdownThread = new Thread(new Runnable() {
@@ -473,7 +474,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             Runtime.getRuntime().addShutdownHook(shutdownThread);
         } catch (Exception e) {
             close();
-            throw new RuntimeException(e);
+            throw (e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e));
         }
     }
 }

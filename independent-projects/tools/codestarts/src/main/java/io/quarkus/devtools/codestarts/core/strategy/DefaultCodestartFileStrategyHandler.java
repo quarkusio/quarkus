@@ -1,8 +1,9 @@
 package io.quarkus.devtools.codestarts.core.strategy;
 
-import io.quarkus.devtools.codestarts.CodestartResource.Source;
 import java.io.IOException;
 import java.nio.file.Path;
+
+import io.quarkus.devtools.codestarts.CodestartResource.Source;
 
 public interface DefaultCodestartFileStrategyHandler extends CodestartFileStrategyHandler {
 

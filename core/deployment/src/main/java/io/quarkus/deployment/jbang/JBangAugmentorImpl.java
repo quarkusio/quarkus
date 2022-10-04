@@ -54,6 +54,9 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
         if (quarkusBootstrap.getBaseName() != null) {
             builder.setBaseName(quarkusBootstrap.getBaseName());
         }
+        if (quarkusBootstrap.getOriginalBaseName() != null) {
+            builder.setOriginalBaseName(quarkusBootstrap.getOriginalBaseName());
+        }
 
         boolean auxiliaryApplication = curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication();
         builder.setAuxiliaryApplication(auxiliaryApplication);

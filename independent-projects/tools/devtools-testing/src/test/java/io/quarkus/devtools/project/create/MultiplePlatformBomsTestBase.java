@@ -2,6 +2,20 @@ package io.quarkus.devtools.project.create;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.apache.maven.model.Model;
+import org.apache.maven.model.Repository;
+import org.junit.jupiter.api.AfterAll;
+
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.devtools.commands.AddExtensions;
@@ -16,18 +30,6 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.PlatformStreamCoords;
 import io.quarkus.registry.config.RegistriesConfigLocator;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.Repository;
-import org.junit.jupiter.api.AfterAll;
 
 public abstract class MultiplePlatformBomsTestBase {
 

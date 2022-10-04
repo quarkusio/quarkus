@@ -1,11 +1,12 @@
 package io.quarkus.devtools.codestarts;
 
-import io.quarkus.devtools.messagewriter.MessageWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
+import io.quarkus.devtools.messagewriter.MessageWriter;
 
 public class CodestartProjectInputBuilder {
     Collection<String> dependencies = new ArrayList<>();

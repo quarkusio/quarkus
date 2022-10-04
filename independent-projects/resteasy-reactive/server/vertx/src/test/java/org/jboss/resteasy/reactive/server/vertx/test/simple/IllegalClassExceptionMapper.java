@@ -1,14 +1,15 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
-import io.quarkus.gizmo.Gizmo;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
+
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -16,6 +17,8 @@ import org.objectweb.asm.util.Printer;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceClassVisitor;
 import org.objectweb.asm.util.TraceMethodVisitor;
+
+import io.quarkus.gizmo.Gizmo;
 
 @Provider
 public class IllegalClassExceptionMapper implements ExceptionMapper<IncompatibleClassChangeError> {

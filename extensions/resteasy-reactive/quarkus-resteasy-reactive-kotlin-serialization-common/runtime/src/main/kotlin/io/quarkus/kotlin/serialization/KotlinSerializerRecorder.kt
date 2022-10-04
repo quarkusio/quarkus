@@ -3,7 +3,6 @@ package io.quarkus.kotlin.serialization
 import io.quarkus.runtime.annotations.Recorder
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.modules.EmptySerializersModule
 import java.util.function.Supplier
 
 @Recorder

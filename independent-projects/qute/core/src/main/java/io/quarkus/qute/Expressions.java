@@ -1,9 +1,10 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.TemplateNode.Origin;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import io.quarkus.qute.TemplateNode.Origin;
 
 public final class Expressions {
 

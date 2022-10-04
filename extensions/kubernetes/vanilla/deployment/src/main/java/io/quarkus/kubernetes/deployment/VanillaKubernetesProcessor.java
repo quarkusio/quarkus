@@ -33,6 +33,7 @@ import io.dekorate.project.Project;
 import io.dekorate.utils.Labels;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
@@ -57,10 +58,11 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 public class VanillaKubernetesProcessor {
 
     @BuildStep
-    public void checkVanillaKubernetes(ApplicationInfoBuildItem applicationInfo, KubernetesConfig config,
+    public void checkVanillaKubernetes(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities,
+            KubernetesConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
-        String kind = config.getDeploymentResourceKind();
+        String kind = config.getDeploymentResourceKind(capabilities).kind;
 
         List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
         if (userSpecifiedDeploymentTargets.isEmpty() || userSpecifiedDeploymentTargets.contains(KUBERNETES)) {
@@ -121,7 +123,7 @@ public class VanillaKubernetesProcessor {
 
     @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
-            OutputTargetBuildItem outputTarget, KubernetesConfig config, PackageConfig packageConfig,
+            OutputTargetBuildItem outputTarget, Capabilities capabilities, KubernetesConfig config, PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration, List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels, List<KubernetesEnvBuildItem> envs,
             Optional<ContainerImageInfoBuildItem> image, Optional<KubernetesCommandBuildItem> command,
@@ -142,9 +144,17 @@ public class VanillaKubernetesProcessor {
         result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config, metricsConfiguration,
                 annotations, labels, command, ports, livenessPath, readinessPath, roles, roleBindings));
 
-        if (config.deploymentKind == KubernetesConfig.DeploymentResourceKind.StatefulSet) {
+        KubernetesConfig.DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
+        if (deploymentKind != KubernetesConfig.DeploymentResourceKind.Deployment) {
             result.add(new DecoratorBuildItem(KUBERNETES, new RemoveDeploymentResourceDecorator(name)));
+        }
+
+        if (deploymentKind == KubernetesConfig.DeploymentResourceKind.StatefulSet) {
             result.add(new DecoratorBuildItem(KUBERNETES, new AddStatefulSetResourceDecorator(name, config)));
+        } else if (deploymentKind == KubernetesConfig.DeploymentResourceKind.Job) {
+            result.add(new DecoratorBuildItem(KUBERNETES, new AddJobResourceDecorator(name, config.job)));
+        } else if (deploymentKind == KubernetesConfig.DeploymentResourceKind.CronJob) {
+            result.add(new DecoratorBuildItem(KUBERNETES, new AddCronJobResourceDecorator(name, config.cronJob)));
         }
 
         if (config.ingress != null) {

@@ -1,11 +1,13 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic;
 
 import java.util.function.Supplier;
+
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.MatchedResource;
 import org.jboss.resteasy.reactive.server.vertx.test.simple.PortProviderUtil;
@@ -88,6 +90,17 @@ public class MatchedResourceTest {
         Assertions.assertEquals("text/html;charset=UTF-8", response.getHeaders().getFirst("Content-Type"));
         String res = response.readEntity(String.class);
         Assertions.assertEquals("*/*", res, "Wrong response content");
+        response.close();
+    }
+
+    @Test
+    @DisplayName("Test Invalid Q Value")
+    public void testInvalidQValue() throws Exception {
+        WebTarget base = client.target(generateURL("/match"));
+        Response response = base.request()
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=malformed")
+                .get();
+        Assertions.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
         response.close();
     }
 

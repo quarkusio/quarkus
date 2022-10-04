@@ -61,7 +61,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
-import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -277,7 +276,7 @@ public class SchedulerProcessor {
     public FeatureBuildItem build(SchedulerConfig config, BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             SchedulerRecorder recorder, List<ScheduledBusinessMethodItem> scheduledMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClasses, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            AnnotationProxyBuildItem annotationProxy, ExecutorBuildItem executor) {
+            AnnotationProxyBuildItem annotationProxy) {
 
         List<ScheduledMethodMetadata> scheduledMetadata = new ArrayList<>();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new Function<String, String>() {
@@ -311,7 +310,7 @@ public class SchedulerProcessor {
         }
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(SchedulerContext.class).setRuntimeInit()
-                .supplier(recorder.createContext(config, executor.getExecutorProxy(), scheduledMetadata))
+                .supplier(recorder.createContext(config, scheduledMetadata))
                 .done());
 
         return new FeatureBuildItem(Feature.SCHEDULER);

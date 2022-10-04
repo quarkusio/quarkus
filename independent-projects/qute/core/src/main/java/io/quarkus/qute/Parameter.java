@@ -1,8 +1,9 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
 import java.util.Objects;
 import java.util.function.Predicate;
+
+import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
 
 /**
  * Definition of a section factory parameter.
@@ -27,6 +28,7 @@ public final class Parameter {
     public final Predicate<String> valuePredicate;
 
     private static final Predicate<String> ALWAYS_TRUE = v -> true;
+    private static final Predicate<String> ALWAYS_FALSE = v -> false;
 
     public Parameter(String name, String defaultValue, boolean optional) {
         this(name, defaultValue, optional, ALWAYS_TRUE);
@@ -56,7 +58,7 @@ public final class Parameter {
     }
 
     /**
-     * Allows a factory parameter to refuse a value of an unnamed actual parameter.
+     * Allows a factory parameter to refuse a value of an <strong>unnamed</strong> actual parameter.
      *
      * @param value
      * @return {@code true} if the value is acceptable, {@code false} otherwise
@@ -97,6 +99,11 @@ public final class Parameter {
 
         public Builder valuePredicate(Predicate<String> valuePredicate) {
             this.valuePredicate = valuePredicate;
+            return this;
+        }
+
+        public Builder ignoreUnnamedValues() {
+            this.valuePredicate = ALWAYS_FALSE;
             return this;
         }
 

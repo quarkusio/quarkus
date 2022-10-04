@@ -1,7 +1,10 @@
 package org.jboss.resteasy.reactive.client.spi;
 
-import io.vertx.core.Context;
 import javax.ws.rs.client.ClientRequestContext;
+import javax.ws.rs.core.GenericType;
+
+import io.smallrye.stork.api.ServiceInstance;
+import io.vertx.core.Context;
 
 public interface ResteasyReactiveClientRequestContext extends ClientRequestContext {
 
@@ -24,4 +27,16 @@ public interface ResteasyReactiveClientRequestContext extends ClientRequestConte
      * @return the captured or created duplicated context. See {@link #VERTX_CONTEXT_PROPERTY} for details.
      */
     Context getContext();
+
+    GenericType<?> getResponseType();
+
+    /***
+     * This method is used to collect statistics about service instance calls in order to influence a Load Balancer algorithm
+     * depending on these statistics.
+     * You don't need to call this method in any case. It will be used by Stork when such a load balancer algorithm will be
+     * configured.
+     *
+     * @param instance
+     */
+    void setCallStatsCollector(ServiceInstance instance);
 }

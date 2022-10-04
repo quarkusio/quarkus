@@ -5,7 +5,6 @@ import org.eclipse.microprofile.rest.client.inject.RestClient
 import java.util.concurrent.ConcurrentHashMap
 import javax.enterprise.context.ApplicationScoped
 
-
 @ApplicationScoped
 class CountryNameConsumer(@RestClient private val countryGateway: CountriesGateway) {
 
@@ -16,5 +15,4 @@ class CountryNameConsumer(@RestClient private val countryGateway: CountriesGatew
         resolvedCounties.addAll(countryGateway.byName("fake$countryName"))
         resolvedCounties.addAll(countryGateway.byName(countryName))
     }
-
 }

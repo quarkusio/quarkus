@@ -4,17 +4,6 @@ import static io.quarkus.devtools.project.extensions.Extensions.toKey;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getGuide;
 import static java.util.stream.Collectors.toMap;
 
-import io.quarkus.devtools.commands.ListExtensions;
-import io.quarkus.devtools.commands.data.QuarkusCommandException;
-import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
-import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
-import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.devtools.project.extensions.ExtensionManager;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.platform.catalog.processor.ExtensionProcessor;
-import io.quarkus.registry.catalog.Extension;
-import io.quarkus.registry.catalog.ExtensionOrigin;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +15,18 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import io.quarkus.devtools.commands.ListExtensions;
+import io.quarkus.devtools.commands.data.QuarkusCommandException;
+import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
+import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.extensions.ExtensionManager;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.platform.catalog.processor.ExtensionProcessor;
+import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionOrigin;
 
 /**
  * Instances of this class are thread-safe. It lists extensions according to the options passed in as properties of

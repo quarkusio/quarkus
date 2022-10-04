@@ -10,6 +10,9 @@ import javax.enterprise.inject.spi.DeploymentException;
 import javax.inject.Inject;
 import javax.interceptor.Interceptor;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.ManagedContext;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.reactive.messaging.EmitterConfiguration;
 import io.smallrye.reactive.messaging.providers.extension.ChannelConfiguration;
@@ -37,6 +40,14 @@ public class SmallRyeReactiveMessagingLifecycle {
     }
 
     void onApplicationStart(@Observes @Priority(Interceptor.Priority.LIBRARY_BEFORE) StartupEvent event) {
+        // We do not want a request scope during the wiring, or it will be propagated and never terminated.
+        ManagedContext requestContext = Arc.container().requestContext();
+        boolean isRequestScopeActive = requestContext.isActive();
+        InjectableContext.ContextState state = null;
+        if (isRequestScopeActive) {
+            state = requestContext.getState();
+            requestContext.deactivate();
+        }
         try {
             mediatorManager.start();
         } catch (Exception e) {
@@ -44,6 +55,10 @@ public class SmallRyeReactiveMessagingLifecycle {
                 throw e;
             }
             throw new DeploymentException(e);
+        } finally {
+            if (state != null) {
+                requestContext.activate(state);
+            }
         }
     }
 

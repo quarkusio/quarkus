@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.common.jaxrs;
 
+import java.util.Objects;
+
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 import javax.ws.rs.core.Response.StatusType;
@@ -13,7 +15,16 @@ public class StatusTypeImpl implements StatusType {
 
     public StatusTypeImpl(int status, String reasonPhrase) {
         this.status = status;
-        this.reasonPhrase = reasonPhrase != null ? reasonPhrase : DEFAULT_REASON_PHRASE;
+        this.reasonPhrase = reasonPhrase != null ? reasonPhrase : getDefaultReasonPhrase(status);
+    }
+
+    private static String getDefaultReasonPhrase(int providedStatus) {
+        for (Response.Status defaultStatus : Response.Status.values()) {
+            if (providedStatus == defaultStatus.getStatusCode()) {
+                return defaultStatus.getReasonPhrase() != null ? defaultStatus.getReasonPhrase() : DEFAULT_REASON_PHRASE;
+            }
+        }
+        return DEFAULT_REASON_PHRASE;
     }
 
     @Override
@@ -29,6 +40,20 @@ public class StatusTypeImpl implements StatusType {
     @Override
     public String getReasonPhrase() {
         return reasonPhrase;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (!(other instanceof StatusType)) {
+            return false;
+        }
+        return this.status == ((StatusType) other).getStatusCode()
+                && this.reasonPhrase.equals(((StatusType) other).getReasonPhrase());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(status) + 37 * reasonPhrase.hashCode();
     }
 
     public static StatusTypeImpl valueOf(StatusType statusType) {

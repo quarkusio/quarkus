@@ -4,19 +4,25 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
+import io.quarkus.redis.datasource.bloom.ReactiveBloomCommands;
+import io.quarkus.redis.datasource.countmin.ReactiveCountMinCommands;
+import io.quarkus.redis.datasource.cuckoo.ReactiveCuckooCommands;
 import io.quarkus.redis.datasource.geo.ReactiveGeoCommands;
 import io.quarkus.redis.datasource.hash.ReactiveHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveHyperLogLogCommands;
+import io.quarkus.redis.datasource.json.ReactiveJsonCommands;
 import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
 import io.quarkus.redis.datasource.list.ReactiveListCommands;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveSortedSetCommands;
 import io.quarkus.redis.datasource.string.ReactiveStringCommands;
+import io.quarkus.redis.datasource.topk.ReactiveTopKCommands;
 import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
+import io.quarkus.redis.datasource.value.ReactiveValueCommands;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
@@ -234,6 +240,9 @@ public interface ReactiveRedisDataSource {
 
     /**
      * Gets the object to execute commands manipulating stored strings.
+     * <p>
+     * <strong>NOTE:</strong> Instead of {@code string}, this group is named {@code value} to avoid the confusion with the
+     * Java String type. Indeed, Redis strings can be strings, numbers, byte arrays...
      *
      * @param redisKeyType the type of the keys
      * @param valueType the type of the value, often String, or the value are encoded/decoded using codecs.
@@ -241,6 +250,33 @@ public interface ReactiveRedisDataSource {
      * @param <V> the type of the value
      * @return the object to manipulate stored strings.
      */
+    <K, V> ReactiveValueCommands<K, V> value(Class<K> redisKeyType, Class<V> valueType);
+
+    /**
+     * Gets the object to execute commands manipulating stored strings.
+     * <p>
+     * <strong>NOTE:</strong> Instead of {@code string}, this group is named {@code value} to avoid the confusion with the
+     * Java String type. Indeed, Redis strings can be strings, numbers, byte arrays...
+     *
+     * @param valueType the type of the value, often String, or the value are encoded/decoded using codecs.
+     * @param <V> the type of the value
+     * @return the object to manipulate stored strings.
+     */
+    default <V> ReactiveValueCommands<String, V> value(Class<V> valueType) {
+        return value(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to execute commands manipulating stored strings.
+     *
+     * @param redisKeyType the type of the keys
+     * @param valueType the type of the value, often String, or the value are encoded/decoded using codecs.
+     * @param <K> the type of the key
+     * @param <V> the type of the value
+     * @return the object to manipulate stored strings.
+     * @deprecated Use {@link #value(Class, Class)} instead
+     */
+    @Deprecated
     <K, V> ReactiveStringCommands<K, V> string(Class<K> redisKeyType, Class<V> valueType);
 
     /**
@@ -249,7 +285,9 @@ public interface ReactiveRedisDataSource {
      * @param valueType the type of the value, often String, or the value are encoded/decoded using codecs.
      * @param <V> the type of the value
      * @return the object to manipulate stored strings.
+     * @deprecated Use {@link #value(Class)} instead
      */
+    @Deprecated
     default <V> ReactiveStringCommands<String, V> string(Class<V> valueType) {
         return string(String.class, valueType);
     }
@@ -339,13 +377,122 @@ public interface ReactiveRedisDataSource {
     }
 
     /**
-     * Gets the objects to publish and receive messages.
+     * Gets the object to publish and receive messages.
      *
      * @param messageType the type of message
      * @param <V> the type of message
      * @return the object to publish and subscribe to Redis channels
      */
     <V> ReactivePubSubCommands<V> pubsub(Class<V> messageType);
+
+    /**
+     * Gets the object to manipulate JSON values.
+     * This group requires the <a href="https://redis.io/docs/stack/json/">RedisJSON module</a>.
+     *
+     * @return the object to manipulate JSON values.
+     */
+    default ReactiveJsonCommands<String> json() {
+        return json(String.class);
+    }
+
+    /**
+     * Gets the object to manipulate JSON values.
+     * This group requires the <a href="https://redis.io/docs/stack/json/">RedisJSON module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to manipulate JSON values.
+     */
+    <K> ReactiveJsonCommands<K> json(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to manipulate Bloom filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a>.
+     *
+     * @param <V> the type of the values added into the Bloom filter
+     * @return the object to manipulate bloom values.
+     */
+    default <V> ReactiveBloomCommands<String, V> bloom(Class<V> valueType) {
+        return bloom(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to manipulate Bloom filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a>.
+     *
+     * @param <K> the type of keys
+     * @param <V> the type of the values added into the Bloom filter
+     * @return the object to manipulate bloom values.
+     */
+    <K, V> ReactiveBloomCommands<K, V> bloom(Class<K> redisKeyType, Class<V> valueType);
+
+    /**
+     * Gets the object to manipulate Cuckoo filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the Cuckoo
+     * filter support).
+     *
+     * @param <V> the type of the values added into the Cuckoo filter
+     * @return the object to manipulate Cuckoo values.
+     */
+    default <V> ReactiveCuckooCommands<String, V> cuckoo(Class<V> valueType) {
+        return cuckoo(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to manipulate Cuckoo filters.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the Cuckoo
+     * filter support).
+     *
+     * @param <K> the type of keys
+     * @param <V> the type of the values added into the Cuckoo filter
+     * @return the object to manipulate Cuckoo values.
+     */
+    <K, V> ReactiveCuckooCommands<K, V> cuckoo(Class<K> redisKeyType, Class<V> valueType);
+
+    /**
+     * Gets the object to manipulate Count-Min sketches.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the count-min
+     * sketches support).
+     *
+     * @param <V> the type of the values added into the count-min sketches
+     * @return the object to manipulate count-min sketches.
+     */
+    default <V> ReactiveCountMinCommands<String, V> countmin(Class<V> valueType) {
+        return countmin(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to manipulate Count-Min sketches.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the count-min
+     * sketches support).
+     *
+     * @param <K> the type of keys
+     * @param <V> the type of the values added into the count-min sketches
+     * @return the object to manipulate count-min sketches.
+     */
+    <K, V> ReactiveCountMinCommands<K, V> countmin(Class<K> redisKeyType, Class<V> valueType);
+
+    /**
+     * Gets the object to manipulate Top-K list.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the top-k
+     * list support).
+     *
+     * @param <V> the type of the values added into the top-k lists
+     * @return the object to manipulate top-k lists.
+     */
+    default <V> ReactiveTopKCommands<String, V> topk(Class<V> valueType) {
+        return topk(String.class, valueType);
+    }
+
+    /**
+     * Gets the object to manipulate Top-K list.
+     * This group requires the <a href="https://redis.io/docs/stack/bloom/">RedisBloom module</a> (including the top-k
+     * list support).
+     *
+     * @param <K> the type of keys
+     * @param <V> the type of the values added into the top-k lists
+     * @return the object to manipulate top-k lists.
+     */
+    <K, V> ReactiveTopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType);
 
     /**
      * Executes a command.

@@ -2,13 +2,15 @@ package io.quarkus.qute.generator;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import io.quarkus.qute.TemplateGlobal;
 import java.io.IOException;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.PrimitiveType;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.TemplateGlobal;
 
 public class TemplateGlobalGeneratorTest {
 

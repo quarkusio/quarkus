@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.vertx.test.providers;
 
 import java.io.IOException;
+
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.ext.Provider;
 import javax.ws.rs.ext.WriterInterceptorContext;

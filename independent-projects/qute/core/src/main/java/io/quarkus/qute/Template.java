@@ -156,4 +156,52 @@ public interface Template {
      */
     List<ParameterDeclaration> getParameterDeclarations();
 
+    /**
+     * Attempts to find the fragment with the specified identifier.
+     * <p>
+     * Note that fragment identifiers must be unique in a template.
+     *
+     * @param id The fragment identifier
+     * @return the fragment or {@code null}
+     */
+    Fragment getFragment(String id);
+
+    /**
+     * @return {@code true} if this template is a fragment, {@code false} otherwise
+     */
+    default boolean isFragment() {
+        return false;
+    }
+
+    /**
+     * A fragment represents a part of the template that can be treated as a separate template.
+     */
+    interface Fragment extends Template {
+
+        /**
+         * An attibute with this key is added to a template instance of a fragment.
+         *
+         * @see TemplateInstance#setAttribute(String, Object)
+         */
+        String ATTRIBUTE = "qute$fragment";
+
+        /**
+         * Note that fragment identifiers must be unique in a template.
+         *
+         * @return the identifier of the fragment
+         */
+        @Override
+        String getId();
+
+        /**
+         * @return the template this fragment originates from
+         */
+        Template getOriginalTemplate();
+
+        @Override
+        default boolean isFragment() {
+            return true;
+        }
+    }
+
 }

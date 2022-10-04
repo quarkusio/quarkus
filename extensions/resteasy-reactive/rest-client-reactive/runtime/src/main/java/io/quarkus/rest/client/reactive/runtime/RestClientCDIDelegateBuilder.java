@@ -60,10 +60,11 @@ public class RestClientCDIDelegateBuilder<T> {
             throw new IllegalStateException("Expected RestClientBuilder to be an instance of "
                     + RestClientBuilderImpl.class.getName() + ", got " + builder.getClass().getName());
         }
-        return build((RestClientBuilderImpl) builder);
+        configureBuilder((RestClientBuilderImpl) builder);
+        return builder.build(jaxrsInterface);
     }
 
-    T build(RestClientBuilderImpl builder) {
+    void configureBuilder(RestClientBuilderImpl builder) {
         configureBaseUrl(builder);
         configureTimeouts(builder);
         configureProviders(builder);
@@ -73,12 +74,11 @@ public class RestClientCDIDelegateBuilder<T> {
         configureProxy(builder);
         configureShared(builder);
         configureCustomProperties(builder);
-        return builder.build(jaxrsInterface);
     }
 
     private void configureCustomProperties(RestClientBuilder builder) {
         Optional<String> encoder = configRoot.multipartPostEncoderMode;
-        if (encoder.isPresent()) {
+        if (encoder != null && encoder.isPresent()) {
             HttpPostRequestEncoder.EncoderMode mode = HttpPostRequestEncoder.EncoderMode
                     .valueOf(encoder.get().toUpperCase(Locale.ROOT));
             builder.property(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE, mode);
@@ -182,7 +182,7 @@ public class RestClientCDIDelegateBuilder<T> {
         }
     }
 
-    private void configureSsl(RestClientBuilder builder) {
+    private void configureSsl(RestClientBuilderImpl builder) {
 
         Optional<String> maybeTrustStore = oneOf(clientConfigByClassName().trustStore, clientConfigByConfigKey().trustStore,
                 configRoot.trustStore);
@@ -249,7 +249,7 @@ public class RestClientCDIDelegateBuilder<T> {
         }
     }
 
-    private void registerTrustStore(String trustStorePath, RestClientBuilder builder) {
+    private void registerTrustStore(String trustStorePath, RestClientBuilderImpl builder) {
         Optional<String> maybeTrustStorePassword = oneOf(clientConfigByClassName().trustStorePassword,
                 clientConfigByConfigKey().trustStorePassword, configRoot.trustStorePassword);
         Optional<String> maybeTrustStoreType = oneOf(clientConfigByClassName().trustStoreType,
@@ -269,7 +269,7 @@ public class RestClientCDIDelegateBuilder<T> {
                         e);
             }
 
-            builder.trustStore(trustStore);
+            builder.trustStore(trustStore, password);
         } catch (KeyStoreException e) {
             throw new IllegalArgumentException("Failed to initialize trust store from " + trustStorePath, e);
         }

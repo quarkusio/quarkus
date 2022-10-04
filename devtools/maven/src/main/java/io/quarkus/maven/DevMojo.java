@@ -1,5 +1,7 @@
 package io.quarkus.maven;
 
+import static io.smallrye.common.expression.Expression.Flag.LENIENT_SYNTAX;
+import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 import static java.util.function.Predicate.not;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.artifactId;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;
@@ -67,6 +69,7 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
+import org.eclipse.aether.graph.Exclusion;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.WorkspaceReader;
@@ -104,6 +107,7 @@ import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.common.expression.Expression;
 
 /**
  * The dev mojo, that runs a quarkus app in a forked process. A background compilation process is launched and any changes are
@@ -169,6 +173,7 @@ public class DevMojo extends AbstractMojo {
     private static final String ORG_JETBRAINS_KOTLIN = "org.jetbrains.kotlin";
     private static final String KOTLIN_MAVEN_PLUGIN = "kotlin-maven-plugin";
 
+    private static final String IO_SMALLRYE = "io.smallrye";
     private static final String ORG_JBOSS_JANDEX = "org.jboss.jandex";
     private static final String JANDEX_MAVEN_PLUGIN = "jandex-maven-plugin";
 
@@ -512,8 +517,9 @@ public class DevMojo extends AbstractMojo {
         boolean prepareNeeded = true;
         boolean prepareTestsNeeded = true;
 
-        String jandexGoalPhase = getGoalPhaseOrNull(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, "jandex", "process-classes");
-        boolean indexClassNeeded = jandexGoalPhase != null;
+        String jandexGoalPhase = getGoalPhaseOrNull(IO_SMALLRYE, JANDEX_MAVEN_PLUGIN, "jandex", "process-classes");
+        String legacyJandexGoalPhase = getGoalPhaseOrNull(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, "jandex", "process-classes");
+        boolean indexClassNeeded = legacyJandexGoalPhase != null || jandexGoalPhase != null;
 
         List<String> goals = session.getGoals();
         // check for default goal(s) if none were specified explicitly,
@@ -537,6 +543,10 @@ public class DevMojo extends AbstractMojo {
                     && POST_COMPILE_PHASES.indexOf(goal) >= POST_COMPILE_PHASES.indexOf(jandexGoalPhase)) {
                 indexClassNeeded = false;
             }
+            if (jandexGoalPhase == null && legacyJandexGoalPhase != null
+                    && POST_COMPILE_PHASES.indexOf(goal) >= POST_COMPILE_PHASES.indexOf(legacyJandexGoalPhase)) {
+                indexClassNeeded = false;
+            }
 
             if (POST_TEST_COMPILE_PHASES.contains(goal)) {
                 testCompileNeeded = false;
@@ -551,7 +561,7 @@ public class DevMojo extends AbstractMojo {
             triggerCompile(false, prepareNeeded);
         }
         if (indexClassNeeded) {
-            initClassIndexes();
+            initClassIndexes(jandexGoalPhase == null);
         }
         if (testCompileNeeded) {
             try {
@@ -573,8 +583,12 @@ public class DevMojo extends AbstractMojo {
                 Map.of("mode", LaunchMode.DEVELOPMENT.name(), QuarkusBootstrapMojo.CLOSE_BOOTSTRAPPED_APP, "false"));
     }
 
-    private void initClassIndexes() throws MojoExecutionException {
-        executeIfConfigured(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, "jandex", Collections.emptyMap());
+    private void initClassIndexes(boolean legacyJandex) throws MojoExecutionException {
+        if (legacyJandex) {
+            executeIfConfigured(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, "jandex", Collections.emptyMap());
+        } else {
+            executeIfConfigured(IO_SMALLRYE, JANDEX_MAVEN_PLUGIN, "jandex", Collections.emptyMap());
+        }
     }
 
     private PluginDescriptor getPluginDescriptor() {
@@ -972,7 +986,31 @@ public class DevMojo extends AbstractMojo {
         }
 
         builder.projectDir(project.getFile().getParentFile());
-        builder.buildSystemProperties((Map) project.getProperties());
+
+        Properties projectProperties = project.getProperties();
+        Map<String, String> effectiveProperties = new HashMap<>();
+        for (String name : projectProperties.stringPropertyNames()) {
+            if (name.startsWith("quarkus.")) {
+                effectiveProperties.put(name, projectProperties.getProperty(name));
+            }
+        }
+
+        // Add other properties that may be required for expansion
+        for (String value : effectiveProperties.values()) {
+            for (String reference : Expression.compile(value, LENIENT_SYNTAX, NO_TRIM).getReferencedStrings()) {
+                String referenceValue = session.getUserProperties().getProperty(reference);
+                if (referenceValue != null) {
+                    effectiveProperties.put(reference, referenceValue);
+                    continue;
+                }
+
+                referenceValue = projectProperties.getProperty(reference);
+                if (referenceValue != null) {
+                    effectiveProperties.put(reference, referenceValue);
+                }
+            }
+        }
+        builder.buildSystemProperties(effectiveProperties);
 
         builder.applicationName(project.getArtifactId());
         builder.applicationVersion(project.getVersion());
@@ -1096,10 +1134,10 @@ public class DevMojo extends AbstractMojo {
         for (Artifact appDep : project.getArtifacts()) {
             // only add the artifact if it's present in the dev mode context
             // we need this to avoid having jars on the classpath multiple times
-            ArtifactKey key = ArtifactKey.of(appDep.getGroupId(), appDep.getArtifactId(),
+            final ArtifactKey key = ArtifactKey.of(appDep.getGroupId(), appDep.getArtifactId(),
                     appDep.getClassifier(), appDep.getArtifactHandler().getExtension());
             if (!builder.isLocal(key) && configuredParentFirst.contains(key)) {
-                builder.classpathEntry(appDep.getFile());
+                builder.classpathEntry(key, appDep.getFile());
             }
         }
 
@@ -1203,6 +1241,21 @@ public class DevMojo extends AbstractMojo {
             throw new MojoExecutionException("Classpath resource " + pomPropsPath + " is missing version");
         }
 
+        final List<org.eclipse.aether.graph.Dependency> managed = new ArrayList<>(
+                project.getDependencyManagement().getDependencies().size());
+        project.getDependencyManagement().getDependencies().forEach(d -> {
+            final List<Exclusion> exclusions;
+            if (!d.getExclusions().isEmpty()) {
+                exclusions = new ArrayList<>(d.getExclusions().size());
+                d.getExclusions().forEach(e -> exclusions.add(new Exclusion(e.getGroupId(), e.getArtifactId(), null, null)));
+            } else {
+                exclusions = List.of();
+            }
+            managed.add(new org.eclipse.aether.graph.Dependency(
+                    new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()),
+                    d.getScope(), d.isOptional(), exclusions));
+        });
+
         final DefaultArtifact devModeJar = new DefaultArtifact(devModeGroupId, devModeArtifactId, ArtifactCoords.TYPE_JAR,
                 devModeVersion);
         final DependencyResult cpRes = repoSystem.resolveDependencies(repoSession,
@@ -1212,6 +1265,7 @@ public class DevMojo extends AbstractMojo {
                                         // it doesn't matter what the root artifact is, it's an alias
                                         .setRootArtifact(new DefaultArtifact("io.quarkus", "quarkus-devmode-alias",
                                                 ArtifactCoords.TYPE_JAR, "1.0"))
+                                        .setManagedDependencies(managed)
                                         .setDependencies(List.of(
                                                 new org.eclipse.aether.graph.Dependency(devModeJar, JavaScopes.RUNTIME),
                                                 new org.eclipse.aether.graph.Dependency(new DefaultArtifact(
@@ -1222,13 +1276,16 @@ public class DevMojo extends AbstractMojo {
 
         for (ArtifactResult appDep : cpRes.getArtifactResults()) {
             //we only use the launcher for launching from the IDE, we need to exclude it
-            if (!(appDep.getArtifact().getGroupId().equals("io.quarkus")
-                    && appDep.getArtifact().getArtifactId().equals("quarkus-ide-launcher"))) {
-                if (appDep.getArtifact().getGroupId().equals("io.quarkus")
-                        && appDep.getArtifact().getArtifactId().equals("quarkus-class-change-agent")) {
-                    builder.jvmArgs("-javaagent:" + appDep.getArtifact().getFile().getAbsolutePath());
+            final org.eclipse.aether.artifact.Artifact a = appDep.getArtifact();
+            if (!(a.getArtifactId().equals("quarkus-ide-launcher")
+                    && a.getGroupId().equals("io.quarkus"))) {
+                if (a.getArtifactId().equals("quarkus-class-change-agent")
+                        && a.getGroupId().equals("io.quarkus")) {
+                    builder.jvmArgs("-javaagent:" + a.getFile().getAbsolutePath());
                 } else {
-                    builder.classpathEntry(appDep.getArtifact().getFile());
+                    builder.classpathEntry(
+                            ArtifactKey.of(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getExtension()),
+                            a.getFile());
                 }
             }
         }

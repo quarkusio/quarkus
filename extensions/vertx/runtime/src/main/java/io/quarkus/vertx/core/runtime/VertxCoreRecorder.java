@@ -305,10 +305,15 @@ public class VertxCoreRecorder {
             initializeClusterOptions(conf, options);
         }
 
+        FileSystemOptions fileSystemOptions = new FileSystemOptions()
+                .setFileCachingEnabled(conf.caching)
+                .setClassPathResolvingEnabled(conf.classpathResolving);
+
         String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME);
         if (fileCacheDir == null) {
             File tmp = new File(System.getProperty("java.io.tmpdir", ".") + File.separator + VERTX_CACHE);
-            if (!tmp.isDirectory()) {
+            boolean cacheDirRequired = conf.caching || conf.classpathResolving;
+            if (!tmp.isDirectory() && cacheDirRequired) {
                 if (!tmp.mkdirs()) {
                     LOGGER.warnf("Unable to create Vert.x cache directory : %s", tmp.getAbsolutePath());
                 }
@@ -322,26 +327,25 @@ public class VertxCoreRecorder {
                 }
             }
 
-            File cache = getRandomDirectory(tmp);
-            LOGGER.debugf("Vert.x Cache configured to: %s", cache.getAbsolutePath());
-            fileCacheDir = cache.getAbsolutePath();
-            if (shutdown != null) {
-                shutdown.addLastShutdownTask(new Runnable() {
-                    @Override
-                    public void run() {
-                        // Recursively delete the created directory and all the files
-                        deleteDirectory(cache);
-                        // We do not delete the vertx-cache directory on purpose, as it could be used concurrently by
-                        // another application. In the worse case, it's just an empty directory.
-                    }
-                });
+            if (cacheDirRequired) {
+                File cache = getRandomDirectory(tmp);
+                LOGGER.debugf("Vert.x Cache configured to: %s", cache.getAbsolutePath());
+                fileSystemOptions.setFileCacheDir(cache.getAbsolutePath());
+                if (shutdown != null) {
+                    shutdown.addLastShutdownTask(new Runnable() {
+                        @Override
+                        public void run() {
+                            // Recursively delete the created directory and all the files
+                            deleteDirectory(cache);
+                            // We do not delete the vertx-cache directory on purpose, as it could be used concurrently by
+                            // another application. In the worse case, it's just an empty directory.
+                        }
+                    });
+                }
             }
         }
 
-        options.setFileSystemOptions(new FileSystemOptions()
-                .setFileCachingEnabled(conf.caching)
-                .setFileCacheDir(fileCacheDir)
-                .setClassPathResolvingEnabled(conf.classpathResolving));
+        options.setFileSystemOptions(fileSystemOptions);
         options.setWorkerPoolSize(conf.workerPoolSize);
         options.setInternalBlockingPoolSize(conf.internalBlockingPoolSize);
         blockingThreadPoolSize = conf.internalBlockingPoolSize;

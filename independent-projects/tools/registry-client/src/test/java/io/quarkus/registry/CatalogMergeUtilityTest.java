@@ -2,18 +2,20 @@ package io.quarkus.registry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.Platform;
 import io.quarkus.registry.catalog.PlatformCatalog;
 import io.quarkus.registry.catalog.PlatformRelease;
 import io.quarkus.registry.catalog.PlatformReleaseVersion;
 import io.quarkus.registry.catalog.PlatformStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import org.junit.jupiter.api.Test;
 
 /**
  * Verify package-private functionality to merge extension catalogs

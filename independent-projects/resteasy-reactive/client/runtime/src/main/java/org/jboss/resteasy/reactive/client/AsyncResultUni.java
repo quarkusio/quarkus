@@ -1,13 +1,14 @@
 package org.jboss.resteasy.reactive.client;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.operators.AbstractUni;
 import io.smallrye.mutiny.subscription.UniSubscriber;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 public class AsyncResultUni<T> extends AbstractUni<T> implements Uni<T> {
     private final Consumer<Handler<AsyncResult<T>>> subscriptionConsumer;

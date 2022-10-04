@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.deployment.index.IndexDependencyConfig;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -71,20 +70,12 @@ public class ArcConfig {
 
     /**
      * If set to true, the build fails if a private method that is neither an observer nor a producer, is annotated with an
-     * interceptor
-     * binding.
+     * interceptor binding.
      * An example of this is the use of {@code Transactional} on a private method of a bean.
      * If set to false, Quarkus simply logs a warning that the annotation will be ignored.
      */
     @ConfigItem(defaultValue = "false")
     public boolean failOnInterceptedPrivateMethod;
-
-    /**
-     * The default naming strategy for {@link ConfigProperties.NamingStrategy}. The allowed values are determined
-     * by that enum
-     */
-    @ConfigItem(defaultValue = "kebab-case")
-    public ConfigProperties.NamingStrategy configPropertiesDefaultNamingStrategy;
 
     /**
      * The list of selected alternatives for an application.
@@ -202,6 +193,12 @@ public class ArcConfig {
      */
     @ConfigItem
     public Optional<List<String>> ignoredSplitPackages;
+
+    /**
+     * Context propagation configuration.
+     */
+    @ConfigItem
+    public ArcContextPropagationConfig contextPropagation;
 
     public final boolean isRemoveUnusedBeansFieldValid() {
         return ALLOWED_REMOVE_UNUSED_BEANS_VALUES.contains(removeUnusedBeans.toLowerCase());

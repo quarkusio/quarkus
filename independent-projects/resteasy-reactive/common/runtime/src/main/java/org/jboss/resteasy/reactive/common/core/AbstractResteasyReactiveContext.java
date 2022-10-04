@@ -4,12 +4,16 @@ import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+
 import javax.ws.rs.container.CompletionCallback;
 import javax.ws.rs.container.ConnectionCallback;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.PreserveTargetException;
 import org.jboss.resteasy.reactive.spi.RestHandler;
@@ -27,11 +31,12 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     private boolean running = false;
     private volatile Executor executor; // ephemerally set by handlers to signal that we resume, it needs to be on this executor
     private volatile Executor lastExecutor; // contains the last executor which was provided during resume - needed to submit there if suspended again
+    // This is used to store properties used in the various JAX-RS context objects, but it also stores some of the properties of this
+    // object that are very infrequently accessed. This is done in order to cut down the size of this object in order to take advantage of better caching
     private Map<String, Object> properties;
     private final ThreadSetupAction requestContext;
     private ThreadSetupAction.ThreadState currentRequestScope;
     private List<CompletionCallback> completionCallbacks;
-    private List<ConnectionCallback> connectionCallbacks;
     private boolean abortHandlerChainStarted;
 
     private boolean closed = false;
@@ -130,7 +135,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         boolean processingSuspended = false;
         //if this is a blocking target we don't activate for the initial non-blocking part
         //unless there are pre-mapping filters as these may require CDI
-        boolean disasociateRequestScope = false;
+        boolean disassociateRequestScope = false;
         boolean aborted = false;
         try {
             while (position < handlers.length) {
@@ -146,7 +151,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                             running = true;
                             if (isRequestScopeManagementRequired()) {
                                 if (requestScopeActivated) {
-                                    disasociateRequestScope = true;
+                                    disassociateRequestScope = true;
                                     requestScopeActivated = false;
                                 }
                             } else {
@@ -190,7 +195,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                 }
                 close();
             } else {
-                if (disasociateRequestScope) {
+                if (disassociateRequestScope) {
                     requestScopeDeactivated();
                     currentRequestScope.deactivate();
                 }
@@ -333,6 +338,8 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
 
     protected abstract void handleUnrecoverableError(Throwable throwable);
 
+    protected static final String CUSTOM_RR_PROPERTIES_PREFIX = "$RR$";
+
     public Object getProperty(String name) {
         if (properties == null) {
             return null;
@@ -344,7 +351,14 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         if (properties == null) {
             return Collections.emptyList();
         }
-        return Collections.unmodifiableSet(properties.keySet());
+        Set<String> result = new HashSet<>();
+        for (String key : properties.keySet()) {
+            if (key.startsWith(CUSTOM_RR_PROPERTIES_PREFIX)) {
+                continue;
+            }
+            result.add(key);
+        }
+        return Collections.unmodifiableSet(result);
     }
 
     public void setProperty(String name, Object object) {
@@ -353,7 +367,11 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
             return;
         }
         if (properties == null) {
-            properties = new HashMap<>();
+            synchronized (this) {
+                if (properties == null) {
+                    properties = new ConcurrentHashMap<>();
+                }
+            }
         }
         properties.put(name, object);
     }
@@ -380,10 +398,15 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         completionCallbacks.add(callback);
     }
 
+    private static final String CONNECTION_CALLBACK_PROPERTY_KEY = CUSTOM_RR_PROPERTIES_PREFIX + "CONNECTION_CALLBACK";
+
     @Override
     public synchronized void registerConnectionCallback(ConnectionCallback callback) {
-        if (connectionCallbacks == null)
+        List<ConnectionCallback> connectionCallbacks = (List<ConnectionCallback>) getProperty(CONNECTION_CALLBACK_PROPERTY_KEY);
+        if (connectionCallbacks == null) {
             connectionCallbacks = new ArrayList<>();
+            setProperty(CONNECTION_CALLBACK_PROPERTY_KEY, connectionCallbacks);
+        }
         connectionCallbacks.add(callback);
     }
 

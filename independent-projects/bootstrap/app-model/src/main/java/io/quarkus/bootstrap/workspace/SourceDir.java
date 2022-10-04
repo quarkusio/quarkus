@@ -1,8 +1,9 @@
 package io.quarkus.bootstrap.workspace;
 
-import io.quarkus.paths.PathTree;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import io.quarkus.paths.PathTree;
 
 public interface SourceDir {
 

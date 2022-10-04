@@ -57,6 +57,9 @@ public class KubernetesWithStatefulSetResourceTest {
                             assertThat(podSpec.getTerminationGracePeriodSeconds()).isEqualTo(10);
                             assertThat(podSpec.getContainers()).allMatch(c -> APP_NAME.equals(c.getName()));
                         });
+                        assertThat(t.getMetadata()).satisfies(metadata -> {
+                            assertThat(metadata.getLabels()).containsEntry("app.kubernetes.io/name", APP_NAME);
+                        });
                     });
                     assertThat(statefulSetSpec.getSelector()).satisfies(ls -> {
                         assertThat(ls.getMatchLabels()).containsEntry("app.kubernetes.io/name", APP_NAME);

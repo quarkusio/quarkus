@@ -275,8 +275,13 @@ As mentioned above, the API is divided into groups:
 - set - `.set(memberType)`
 - sorted-set - `.sortedSet(memberType)`
 - stream (not available yet)
-- string - `.string(valueType)`
+- string - `.value(valueType)`
 - transactions - `withTransaction`
+- json - `.json()` (requires the https://redis.com/modules/redis-json/[redis-json] module on the server side)
+- bloom - `.bloom()` (requires the https://redis.com/modules/redis-bloom/[redis-bloom] module on the server side)
+- cuckoo - `.cuckoo()` (requires the https://redis.com/modules/redis-bloom/[redis-bloom] module on the server side, which also provides the cuckoo filter commands)
+- count-min - `.countmin()` (requires the https://redis.com/modules/redis-bloom/[redis-bloom] module on the server side, which also provides the count-min filter commands)
+- top-k - `.topk()` (requires the https://redis.com/modules/redis-bloom/[redis-bloom] module on the server side, which also provides the top-k filter commands)
 
 Each of these methods returns an object that lets you execute the commands related to the group.
 The following snippet demonstrates how to use the _hash_ group:
@@ -317,9 +322,9 @@ In this case, `quarkus-jackson` is used.
 
 To store binary data, use `byte[]`.
 
-=== The `string` group
+=== The `value` group
 
-The `string` group is used to manipulate https://redis.io/docs/manual/data-types/#strings[Redis Strings].
+The `value` group is used to manipulate https://redis.io/docs/manual/data-types/#strings[Redis Strings].
 Thus, this group is not limited to Java Strings but can be used for integers (like a counter) or binary content (like images).
 
 ==== Caching values
@@ -332,10 +337,10 @@ The following snippet shows how such a command can be used to store `BusinessObj
 @ApplicationScoped
 public static class MyRedisCache {
 
-    private final StringCommands<String, BusinessObject> commands;
+    private final ValueCommands<String, BusinessObject> commands;
 
     public MyRedisCache(RedisDataSource ds) {
-        commands = ds.string(BusinessObject.class);
+        commands = ds.value(BusinessObject.class);
     }
 
     public BusinessObject get(String key) {
@@ -375,10 +380,10 @@ In this case, we will use `byte[]` as value type:
 @ApplicationScoped
 public static class MyBinaryRepository {
 
-    private final StringCommands<String, byte[]> commands;
+    private final ValueCommands<String, byte[]> commands;
 
     public MyBinaryRepository(RedisDataSource ds) {
-        commands = ds.string(byte[].class);
+        commands = ds.value(byte[].class);
     }
 
     public byte[] get(String key) {
@@ -408,10 +413,10 @@ You can store counters in Redis as demonstrated below:
 @ApplicationScoped
 public static class MyRedisCounter {
 
-    private final StringCommands<String, Long> commands;
+    private final ValueCommands<String, Long> commands;
 
     public MyRedisCounter(RedisDataSource ds) {
-        commands = ds.string(Long.class); // <1>
+        commands = ds.value(Long.class); // <1>
     }
 
     public long get(String key) {
@@ -490,11 +495,11 @@ public static class MySubscriber implements Consumer<Notification> {
 @ApplicationScoped
 public static class MyCache {
 
-    private final StringCommands<String, BusinessObject> commands;
+    private final ValueCommands<String, BusinessObject> commands;
     private final PubSubCommands<Notification> pub;
 
     public MyCache(RedisDataSource ds) {
-        commands = ds.string(BusinessObject.class);
+        commands = ds.value(BusinessObject.class);
         pub = ds.pubsub(Notification.class);
     }
 
@@ -713,7 +718,7 @@ public static class MyExampleCustomizer implements RedisOptionsCustomizer {
 
 === Dev Services
 
-See link:redis-dev-services.adoc[Redis Dev Service].
+See xref:redis-dev-services.adoc[Redis Dev Service].
 
 [[redis-configuration-reference]]
 == Configuration Reference

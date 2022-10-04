@@ -1,12 +1,14 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource;
 
 import java.util.List;
+
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestPath;
 import org.junit.jupiter.api.Assertions;
@@ -60,10 +62,23 @@ public class ResourceLocatorSubresource {
         return params.param + " and " + params.value;
     }
 
+    @GET
+    @Path("/subresource4")
+    public String getValueFromGenericBeanParam(@BeanParam ParamsWithGeneric<String> params) {
+        return params.param + " and " + params.value;
+    }
+
     public static class Params {
         @RestPath
         String param;
         @QueryParam("value")
         String value;
+    }
+
+    public static class ParamsWithGeneric<T> {
+        @RestPath
+        String param;
+        @QueryParam("value")
+        T value;
     }
 }

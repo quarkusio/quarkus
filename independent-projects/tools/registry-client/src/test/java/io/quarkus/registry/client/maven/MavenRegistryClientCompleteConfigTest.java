@@ -2,11 +2,12 @@ package io.quarkus.registry.client.maven;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.Test;
+
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.config.RegistryConfig;
 import io.quarkus.registry.config.RegistryDescriptorConfig;
 import io.quarkus.registry.config.RegistryPlatformsConfig;
-import org.junit.jupiter.api.Test;
 
 public class MavenRegistryClientCompleteConfigTest {
 

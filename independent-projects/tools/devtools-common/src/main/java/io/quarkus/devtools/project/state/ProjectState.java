@@ -1,13 +1,14 @@
 package io.quarkus.devtools.project.state;
 
-import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.ArtifactKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
  * Represents a Quarkus project state focusing primarily on Quarkus-specific information, such as

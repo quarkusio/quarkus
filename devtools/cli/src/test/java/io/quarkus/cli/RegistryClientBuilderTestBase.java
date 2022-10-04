@@ -1,7 +1,7 @@
 package io.quarkus.cli;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
@@ -59,7 +59,7 @@ public abstract class RegistryClientBuilderTestBase {
 
         final BootstrapMavenContext mavenContext = new BootstrapMavenContext(
                 BootstrapMavenContext.config().setWorkspaceDiscovery(false));
-        final Settings settings = getBaseMavenSettings(mavenContext.getUserSettings().toPath());
+        final Settings settings = getBaseMavenSettings(mavenContext.getUserSettings());
 
         Profile profile = new Profile();
         settings.addActiveProfile("qs-test-registry");
@@ -106,11 +106,9 @@ public abstract class RegistryClientBuilderTestBase {
         return v;
     }
 
-    private static Settings getBaseMavenSettings(Path mavenSettings) throws IOException {
-        if (Files.exists(mavenSettings)) {
-            try (BufferedReader reader = Files.newBufferedReader(mavenSettings)) {
-                return new DefaultSettingsReader().read(reader, Map.of());
-            }
+    private static Settings getBaseMavenSettings(File mavenSettings) throws IOException {
+        if (mavenSettings != null && mavenSettings.exists()) {
+            return new DefaultSettingsReader().read(mavenSettings, Map.of());
         }
         return new Settings();
     }

@@ -27,6 +27,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-mutiny</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-netty</artifactId>
         </dependency>
         <dependency>
@@ -163,7 +167,6 @@
                         <configuration>
                             <activeRecipes>
                                 <recipe>io.quarkus.infinispan</recipe>
-                                <recipe>io.quarkus.fix-infinispan-commons</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>

@@ -1,7 +1,5 @@
 package org.jboss.resteasy.reactive.server.core;
 
-import io.smallrye.common.annotation.Blocking;
-import io.smallrye.common.annotation.NonBlocking;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -14,15 +12,20 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Response;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.ResteasyReactiveClientProblem;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveAsyncExceptionMapper;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveExceptionMapper;
+
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
 
 public class RuntimeExceptionMapper {
 

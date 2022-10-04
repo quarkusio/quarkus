@@ -10,12 +10,15 @@ public class IgnoredProperties {
     @IgnoreProperty
     private String ignoredField;
 
+    private transient String anotherIgnoredField;
+
     public IgnoredProperties() {
     }
 
-    public IgnoredProperties(String notIgnored, String ignoredField) {
+    public IgnoredProperties(String notIgnored, String ignoredField, String anotherIgnoredField) {
         this.notIgnored = notIgnored;
         this.ignoredField = ignoredField;
+        this.anotherIgnoredField = anotherIgnoredField;
     }
 
     public String getNotIgnored() {
@@ -34,6 +37,14 @@ public class IgnoredProperties {
         this.ignoredField = ignoredField;
     }
 
+    public String getAnotherIgnoredField() {
+        return anotherIgnoredField;
+    }
+
+    public void setAnotherIgnoredField(String anotherIgnoredField) {
+        this.anotherIgnoredField = anotherIgnoredField;
+    }
+
     @IgnoreProperty
     public String getSomethingElse() {
         throw new IllegalStateException("This should not have been called");
@@ -47,12 +58,13 @@ public class IgnoredProperties {
             return false;
         IgnoredProperties that = (IgnoredProperties) o;
         return Objects.equals(notIgnored, that.notIgnored) &&
-                Objects.equals(ignoredField, that.ignoredField);
+                Objects.equals(ignoredField, that.ignoredField) &&
+                Objects.equals(anotherIgnoredField, that.anotherIgnoredField);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(notIgnored, ignoredField);
+        return Objects.hash(notIgnored, ignoredField, anotherIgnoredField);
     }
 
     @Override

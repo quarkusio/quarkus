@@ -208,6 +208,14 @@ public class TransactionScopedSession implements Session {
     }
 
     @Override
+    public <T> T getReference(T object) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.getReference(object);
+        }
+    }
+
+    @Override
     public void flush() {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {

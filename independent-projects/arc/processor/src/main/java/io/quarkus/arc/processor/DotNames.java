@@ -1,17 +1,5 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.All;
-import io.quarkus.arc.AlternativePriority;
-import io.quarkus.arc.ArcInvocationContext;
-import io.quarkus.arc.DefaultBean;
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableInstance;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.NoClassInterceptors;
-import io.quarkus.arc.Unremovable;
-import io.quarkus.arc.VetoedProducer;
-import io.quarkus.arc.impl.ComputingCache;
-import io.quarkus.arc.impl.Identified;
 import java.io.Serializable;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Repeatable;
@@ -20,6 +8,7 @@ import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
@@ -59,8 +48,22 @@ import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InterceptorBinding;
 import javax.interceptor.InvocationContext;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+
+import io.quarkus.arc.All;
+import io.quarkus.arc.AlternativePriority;
+import io.quarkus.arc.ArcInvocationContext;
+import io.quarkus.arc.DefaultBean;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.NoClassInterceptors;
+import io.quarkus.arc.Unremovable;
+import io.quarkus.arc.VetoedProducer;
+import io.quarkus.arc.impl.ComputingCache;
+import io.quarkus.arc.impl.Identified;
 
 public final class DotNames {
 

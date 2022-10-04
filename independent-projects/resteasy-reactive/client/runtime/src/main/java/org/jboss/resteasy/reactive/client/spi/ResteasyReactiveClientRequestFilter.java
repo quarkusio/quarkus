@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.client.spi;
 
 import java.io.IOException;
+
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
 

@@ -1,15 +1,16 @@
 package io.quarkus.bootstrap.resolver;
 
-import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.maven.dependency.ResolvedDependency;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 /**
  * Application model resolver used to resolve application and/or its dependency artifacts.

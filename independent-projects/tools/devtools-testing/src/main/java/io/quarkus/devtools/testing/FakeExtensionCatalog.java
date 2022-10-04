@@ -1,10 +1,11 @@
 package io.quarkus.devtools.testing;
 
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public final class FakeExtensionCatalog {
 

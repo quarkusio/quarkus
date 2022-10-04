@@ -1,7 +1,5 @@
 package org.jboss.resteasy.reactive.client.impl.multipart;
 
-import io.smallrye.mutiny.Multi;
-import io.vertx.core.buffer.Buffer;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
@@ -9,15 +7,20 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
+
 import org.jboss.resteasy.reactive.client.impl.ClientSerialisers;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
+
+import io.smallrye.mutiny.Multi;
+import io.vertx.core.buffer.Buffer;
 
 /**
  * based on {@link io.vertx.ext.web.multipart.MultipartForm} and {@link io.vertx.ext.web.multipart.impl.MultipartFormImpl}

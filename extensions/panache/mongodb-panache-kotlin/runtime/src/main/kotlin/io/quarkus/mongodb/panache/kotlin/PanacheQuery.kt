@@ -15,14 +15,14 @@ import java.util.stream.Stream
  *
  * @param Entity The entity type being queried
  */
-interface PanacheQuery<Entity: Any> {
+interface PanacheQuery<Entity : Any> {
     /**
      * Defines a projection class: the getters, and the public fields, will be used to restrict which fields should be
      * retrieved from the database.
      *
      * @return a new query with the same state as the previous one (params, page, range, ...).
      */
-    fun <NewEntity: Any> project(type: Class<NewEntity>): PanacheQuery<NewEntity>
+    fun <NewEntity : Any> project(type: Class<NewEntity>): PanacheQuery<NewEntity>
 
     /**
      * Sets the current page.
@@ -46,7 +46,7 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-      * @see [previousPage]
+     * @see [previousPage]
      */
     fun nextPage(): PanacheQuery<Entity>
 
@@ -55,7 +55,7 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-      * @see [nextPage]
+     * @see [nextPage]
      */
     fun previousPage(): PanacheQuery<Entity>
 
@@ -64,7 +64,7 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-      * @see [lastPage]
+     * @see [lastPage]
      */
     fun firstPage(): PanacheQuery<Entity>
 
@@ -73,8 +73,8 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-      * @see [firstPage]
-      * @see [count]
+     * @see [firstPage]
+     * @see [count]
      */
     fun lastPage(): PanacheQuery<Entity>
 
@@ -84,8 +84,8 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return true if there is another page to read
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-      * @see [hasPreviousPage]
-      * @see [count]
+     * @see [hasPreviousPage]
+     * @see [count]
      */
     fun hasNextPage(): Boolean
 
@@ -94,7 +94,7 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return true if there is a previous page to read
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-      * @see [hasNextPage]
+     * @see [hasNextPage]
      */
     fun hasPreviousPage(): Boolean
 
@@ -155,8 +155,8 @@ interface PanacheQuery<Entity: Any> {
      * Returns the current page of results as a [List].
      *
      * @return the current page of results as a [List].
-      * @see [stream]
-      * @see [page]
+     * @see [stream]
+     * @see [page]
      */
     fun list(): List<Entity>
 
@@ -164,8 +164,8 @@ interface PanacheQuery<Entity: Any> {
      * Returns the current page of results as a [Stream].
      *
      * @return the current page of results as a [Stream].
-      * @see [list]
-      * @see [page]
+     * @see [list]
+     * @see [page]
      */
     fun stream(): Stream<Entity>
 
@@ -174,7 +174,7 @@ interface PanacheQuery<Entity: Any> {
      * a single result.
      *
      * @return the first result of the current page index, or null if there are no results.
-      * @see [singleResult]
+     * @see [singleResult]
      */
     fun firstResult(): Entity?
 
@@ -183,7 +183,7 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return the single result
      * @throws PanacheQueryException if there is not exactly one result.
-      * @see [firstResult]
+     * @see [firstResult]
      */
     fun singleResult(): Entity?
 }

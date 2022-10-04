@@ -28,4 +28,5 @@ public class KafkaBuildTimeConfig {
      */
     @ConfigItem
     public KafkaDevServicesBuildTimeConfig devservices;
+
 }

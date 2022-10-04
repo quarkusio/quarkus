@@ -2,10 +2,12 @@ package io.quarkus.bootstrap.resolver.maven.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import java.nio.file.Files;
 import java.util.Arrays;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 
 public class SubmodulePomReposEffectivePomTest extends BootstrapMavenContextTestBase {
 

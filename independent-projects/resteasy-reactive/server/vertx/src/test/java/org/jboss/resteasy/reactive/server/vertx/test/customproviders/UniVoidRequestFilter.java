@@ -1,10 +1,12 @@
 package org.jboss.resteasy.reactive.server.vertx.test.customproviders;
 
-import io.smallrye.mutiny.Uni;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
+
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
+
+import io.smallrye.mutiny.Uni;
 
 public class UniVoidRequestFilter {
 

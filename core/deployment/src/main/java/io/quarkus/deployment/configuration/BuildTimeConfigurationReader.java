@@ -474,6 +474,11 @@ public final class BuildTimeConfigurationReader {
                     if (configValue.getValue() != null) {
                         runTimeDefaultValues.put(configValue.getNameProfiled(), configValue.getValue());
                     }
+
+                    // in the case the user defined compound keys in YAML (or similar config source, that quotes the name)
+                    if (PropertiesUtil.isPropertyQuarkusCompoundName(ni)) {
+                        unknownBuildProperties.add(propertyName);
+                    }
                 }
             }
 
@@ -873,13 +878,16 @@ public final class BuildTimeConfigurationReader {
          * We collect all properties from eligible ConfigSources, because Config#getPropertyNames exclude the active
          * profiled properties, meaning that the property is written in the default config source without the profile
          * prefix. This may cause issues if we run with a different profile and fallback to defaults.
-         *
+         * <br>
          * We also filter the properties coming from the System with the registered roots, because we don't want to
          * record properties set by the compiling JVM (or other properties that are only related to the build).
+         * <br>
+         * Properties coming from the Environment are ignored.
          */
         private Set<String> getAllProperties(final Set<String> registeredRoots) {
             Set<String> properties = new HashSet<>();
             for (ConfigSource configSource : config.getConfigSources()) {
+                // This is a BuildTimeSysPropConfigSource
                 if (configSource instanceof SysPropConfigSource) {
                     for (String propertyName : configSource.getProperties().keySet()) {
                         NameIterator ni = new NameIterator(propertyName);
@@ -888,6 +896,7 @@ public final class BuildTimeConfigurationReader {
                         }
                     }
                 } else {
+                    // The BuildTimeEnvConfigSource returns an empty Set
                     properties.addAll(configSource.getPropertyNames());
                 }
             }
@@ -901,10 +910,10 @@ public final class BuildTimeConfigurationReader {
          * Use this Config instance to record the runtime default values. We cannot use the main Config
          * instance because it may record values coming from the EnvSource in build time. Environment variable values
          * may be completely different between build and runtime, so it doesn't make sense to record these.
-         *
+         * <br>
          * We do exclude the properties coming from the EnvSource, but a call to getValue may still provide a result
          * coming from the EnvSource, so we need to exclude it from the sources when recording values for runtime.
-         *
+         * <br>
          * We also do not want to completely exclude the EnvSource, because it may provide values for the build. This
          * is only specific when recording the defaults.
          *

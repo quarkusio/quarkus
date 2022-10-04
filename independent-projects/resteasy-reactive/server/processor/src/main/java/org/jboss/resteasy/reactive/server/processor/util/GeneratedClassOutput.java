@@ -1,8 +1,9 @@
 package org.jboss.resteasy.reactive.server.processor.util;
 
-import io.quarkus.gizmo.ClassOutput;
 import java.util.ArrayList;
 import java.util.List;
+
+import io.quarkus.gizmo.ClassOutput;
 
 public class GeneratedClassOutput implements ClassOutput {
 

@@ -17,6 +17,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
@@ -147,7 +148,7 @@ public class CodeFlowTest {
             endpointErrorLocation = "http" + endpointErrorLocation.substring(5);
 
             HtmlPage page = webClient.getPage(URI.create(endpointErrorLocation).toURL());
-            assertEquals("error: invalid_scope, error_description: Invalid scopes: unknown",
+            assertEquals("code: b, error: invalid_scope, error_description: Invalid scopes: unknown",
                     page.getBody().asText());
             webClient.getCookieManager().clearCookies();
         }
@@ -413,7 +414,7 @@ public class CodeFlowTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertTrue(page.asText().contains("Tenant Logout"));
+            assertEquals("Tenant Logout, refreshed: false", page.asText());
             assertNotNull(getSessionCookie(webClient, "tenant-logout"));
 
             page = webClient.getPage("http://localhost:8081/tenant-logout/logout");
@@ -422,37 +423,48 @@ public class CodeFlowTest {
 
             page = webClient.getPage("http://localhost:8081/tenant-logout");
             assertEquals("Sign in to logout-realm", page.getTitleText());
-            loginForm = page.getForms().get(0);
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testTokenRefresh() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/tenant-refresh");
+            assertEquals("Sign in to logout-realm", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertTrue(page.asText().contains("Tenant Logout"));
+            assertEquals("Tenant Refresh, refreshed: false", page.asText());
 
-            Cookie sessionCookie = getSessionCookie(webClient, "tenant-logout");
+            Cookie sessionCookie = getSessionCookie(webClient, "tenant-refresh");
             assertNotNull(sessionCookie);
             String idToken = getIdToken(sessionCookie);
 
             //wait now so that we reach the ID token timeout
             await().atMost(10, TimeUnit.SECONDS)
-                    .pollInterval(Duration.ofSeconds(1))
+                    .pollInterval(Duration.ofSeconds(2))
                     .until(new Callable<Boolean>() {
                         @Override
                         public Boolean call() throws Exception {
                             webClient.getOptions().setRedirectEnabled(false);
                             WebResponse webResponse = webClient
-                                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/tenant-logout").toURL()));
+                                    .loadWebResponse(
+                                            new WebRequest(URI.create("http://localhost:8081/tenant-refresh").toURL()));
                             assertEquals(200, webResponse.getStatusCode());
                             // Should not redirect to OP but silently refresh token
-                            Cookie newSessionCookie = getSessionCookie(webClient, "tenant-logout");
+                            Cookie newSessionCookie = getSessionCookie(webClient, "tenant-refresh");
                             assertNotNull(newSessionCookie);
-                            return !idToken.equals(getIdToken(newSessionCookie));
+                            return webResponse.getContentAsString().equals("Tenant Refresh, refreshed: true")
+                                    && !idToken.equals(getIdToken(newSessionCookie));
                         }
                     });
 
             // local session refreshed and still valid
-            page = webClient.getPage("http://localhost:8081/tenant-logout");
-            assertTrue(page.asText().contains("Tenant Logout"));
-            assertNotNull(getSessionCookie(webClient, "tenant-logout"));
+            page = webClient.getPage("http://localhost:8081/tenant-refresh");
+            assertEquals("Tenant Refresh, refreshed: false", page.asText());
+            assertNotNull(getSessionCookie(webClient, "tenant-refresh"));
 
             //wait now so that we reach the refresh timeout
             await().atMost(20, TimeUnit.SECONDS)
@@ -462,12 +474,13 @@ public class CodeFlowTest {
                         public Boolean call() throws Exception {
                             webClient.getOptions().setRedirectEnabled(false);
                             WebResponse webResponse = webClient
-                                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/tenant-logout").toURL()));
+                                    .loadWebResponse(
+                                            new WebRequest(URI.create("http://localhost:8081/tenant-refresh").toURL()));
                             // Should redirect to login page given that session is now expired at the OP
                             int statusCode = webResponse.getStatusCode();
 
                             if (statusCode == 302) {
-                                assertNull(getSessionCookie(webClient, "tenant-logout"));
+                                assertNull(getSessionCookie(webClient, "tenant-refresh"));
                                 return true;
                             }
 
@@ -479,7 +492,7 @@ public class CodeFlowTest {
             webClient.getOptions().setRedirectEnabled(true);
             webClient.getCookieManager().clearCookies();
 
-            page = webClient.getPage("http://localhost:8081/tenant-logout");
+            page = webClient.getPage("http://localhost:8081/tenant-refresh");
             assertNull(getSessionCookie(webClient, "tenant-logout"));
             assertEquals("Sign in to logout-realm", page.getTitleText());
             webClient.getCookieManager().clearCookies();
@@ -487,15 +500,17 @@ public class CodeFlowTest {
     }
 
     @Test
+    // See https://github.com/quarkusio/quarkus/issues/27900
+    @Disabled("flaky")
     public void testTokenAutoRefresh() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenant-autorefresh");
-            assertEquals("Sign in to logout-realm", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertTrue(page.asText().contains("Tenant AutoRefresh"));
+            assertEquals("Tenant AutoRefresh, refreshed: false", page.asText());
 
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-autorefresh");
             assertNotNull(sessionCookie);
@@ -504,23 +519,10 @@ public class CodeFlowTest {
             // Auto-refresh-interval is 30 secs so every call auto-refreshes the token
             // Right now the original ID token is still valid but will be auto-refreshed
             page = webClient.getPage("http://localhost:8081/tenant-autorefresh");
-            assertTrue(page.getBody().asText().contains("Tenant AutoRefresh"));
+            assertEquals("Tenant AutoRefresh, refreshed: true", page.asText());
             sessionCookie = getSessionCookie(webClient, "tenant-autorefresh");
             assertNotNull(sessionCookie);
             String nextIdToken = getIdToken(sessionCookie);
-            assertNotEquals(idToken, nextIdToken);
-            idToken = nextIdToken;
-
-            //wait now so that we reach the ID token timeout
-            await().atLeast(6, TimeUnit.SECONDS);
-
-            // ID token has expired, must be refreshed, auto-refresh-interval must not cause
-            // an auto-refresh loop even though it is larger than the ID token lifespan
-            page = webClient.getPage("http://localhost:8081/tenant-autorefresh");
-            assertTrue(page.getBody().asText().contains("Tenant AutoRefresh"));
-            sessionCookie = getSessionCookie(webClient, "tenant-autorefresh");
-            assertNotNull(sessionCookie);
-            nextIdToken = getIdToken(sessionCookie);
             assertNotEquals(idToken, nextIdToken);
 
             webClient.getCookieManager().clearCookies();

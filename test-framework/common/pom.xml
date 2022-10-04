@@ -27,7 +27,7 @@
             <artifactId>quarkus-bootstrap-gradle-resolver</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss</groupId>
+            <groupId>io.smallrye</groupId>
             <artifactId>jandex</artifactId>
         </dependency>
         <!-- Needed for RestAssured -->

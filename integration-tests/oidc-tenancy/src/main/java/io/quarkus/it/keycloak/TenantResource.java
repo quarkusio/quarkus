@@ -17,6 +17,8 @@ import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcSession;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.client.OidcClientConfig;
+import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.ext.web.RoutingContext;
 
@@ -43,11 +45,14 @@ public class TenantResource {
     OidcSession oidcSession;
 
     @Inject
+    OidcClients oidcClients;
+
+    @Inject
     RoutingContext routingContext;
 
     @GET
     @RolesAllowed("user")
-    public String userNameService(@PathParam("tenant") String tenant) {
+    public String userNameService(@PathParam("tenant") String tenant, @QueryParam("revoke") boolean revokeToken) {
         if (tenant.startsWith("tenant-web-app")) {
             throw new OIDCException("Wrong tenant");
         }
@@ -71,6 +76,19 @@ public class TenantResource {
             response += (",active:" + introspection.getBoolean("active"));
             response += (",cache-size:" + tokenCache.getCacheSize());
         }
+
+        if (revokeToken) {
+            OidcClientConfig oidcClientConfig = new OidcClientConfig();
+            oidcClientConfig.setClientId("client");
+            oidcClientConfig.setId("clientId");
+            oidcClientConfig.setTokenPath("http://localhost:8081/oidc/token");
+            oidcClientConfig.setRevokePath("http://localhost:8081/oidc/revoke");
+
+            oidcClients.newClient(oidcClientConfig)
+                    .chain(oidcClient -> oidcClient.revokeAccessToken(accessTokenCred.getToken())).await().indefinitely();
+
+        }
+
         return response;
     }
 
@@ -78,7 +96,7 @@ public class TenantResource {
     @RolesAllowed("user")
     @Path("no-discovery")
     public String userNameServiceNoDiscovery(@PathParam("tenant") String tenant) {
-        return userNameService(tenant);
+        return userNameService(tenant, false);
     }
 
     @GET

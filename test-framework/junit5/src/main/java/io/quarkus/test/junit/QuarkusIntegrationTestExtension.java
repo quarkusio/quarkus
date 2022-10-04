@@ -35,6 +35,7 @@ import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.opentest4j.TestAbortedException;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DevServicesContext;
@@ -134,6 +135,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
     private QuarkusTestExtensionState doProcessStart(Properties quarkusArtifactProperties,
             Class<? extends QuarkusTestProfile> profile, ExtensionContext context)
             throws Throwable {
+        JBossVersion.disableVersionLogging();
+
         String artifactType = getArtifactType(quarkusArtifactProperties);
 
         boolean isDockerLaunch = isContainer(artifactType);

@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.client.impl;
 
 import java.io.InputStream;
 import java.net.URI;
+
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.common.NotImplementedYet;
 import org.jboss.resteasy.reactive.common.jaxrs.AbstractRestResponseBuilder;

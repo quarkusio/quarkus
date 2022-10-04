@@ -25,20 +25,20 @@ public class ConnectionRecyclingTest extends DatasourceTestBase {
     void verifyThatConnectionsAreClosed() {
         String k = "increment";
         for (int i = 0; i < 1000; i++) {
-            ds.withConnection(x -> x.string(String.class, Integer.class).incr(k));
+            ds.withConnection(x -> x.value(String.class, Integer.class).incr(k));
         }
 
-        assertThat(ds.string(String.class, Integer.class).get(k)).isEqualTo(1000);
+        assertThat(ds.value(String.class, Integer.class).get(k)).isEqualTo(1000);
     }
 
     @Test
     void verifyThatConnectionsAreClosedWithTheReactiveDataSource() {
         String k = "increment";
         for (int i = 0; i < 1000; i++) {
-            rds.withConnection(x -> x.string(String.class, Integer.class).incr(k)
+            rds.withConnection(x -> x.value(String.class, Integer.class).incr(k)
                     .replaceWithVoid()).await().indefinitely();
         }
 
-        assertThat(rds.string(String.class, Integer.class).get(k).await().indefinitely()).isEqualTo(1000);
+        assertThat(rds.value(String.class, Integer.class).get(k).await().indefinitely()).isEqualTo(1000);
     }
 }

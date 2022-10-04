@@ -9,6 +9,33 @@ import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.NAME;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.SHARED;
 
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.ws.rs.RuntimeType;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.Invocation.Builder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Link;
+import javax.ws.rs.core.UriBuilder;
+
+import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.api.ClientLogger;
+import org.jboss.resteasy.reactive.client.api.LoggingScope;
+import org.jboss.resteasy.reactive.client.spi.ClientContext;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
+import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
+
 import io.netty.channel.EventLoopGroup;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -46,30 +73,6 @@ import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetServerOptions;
 import io.vertx.core.shareddata.SharedData;
 import io.vertx.core.spi.VerticleFactory;
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.Invocation.Builder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Link;
-import javax.ws.rs.core.UriBuilder;
-import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.client.api.ClientLogger;
-import org.jboss.resteasy.reactive.client.api.LoggingScope;
-import org.jboss.resteasy.reactive.client.spi.ClientContext;
-import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
-import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
-import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 
 public class ClientImpl implements Client {
 
@@ -461,8 +464,18 @@ public class ClientImpl implements Client {
         }
 
         @Override
+        public long setPeriodic(long initialDelay, long delay, Handler<Long> handler) {
+            return getDelegate().setPeriodic(initialDelay, delay, handler);
+        }
+
+        @Override
         public TimeoutStream periodicStream(long l) {
             return getDelegate().periodicStream(l);
+        }
+
+        @Override
+        public TimeoutStream periodicStream(long initialDelay, long delay) {
+            return getDelegate().periodicStream(initialDelay, delay);
         }
 
         @Override

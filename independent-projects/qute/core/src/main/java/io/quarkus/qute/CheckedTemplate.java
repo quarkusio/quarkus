@@ -56,9 +56,27 @@ import java.lang.annotation.Target;
 public @interface CheckedTemplate {
 
     /**
-     * Constant value for {@link #basePath()} indicating that the default strategy should be used.
+     * Constant value for {@link #basePath()} indicating that the default strategy should be used, i.e. the simple name of the
+     * declaring class for a nested static class or an empty string for a top level class.
      */
     String DEFAULTED = "<<defaulted>>";
+
+    /**
+     * Constant value for {@link #defaultName()} indicating that the method name should be used as-is.
+     */
+    String ELEMENT_NAME = "<<element name>>";
+
+    /**
+     * Constant value for {@link #defaultName()} indicating that the annotated element's name should be de-camel-cased and
+     * hyphenated, and then used.
+     */
+    String HYPHENATED_ELEMENT_NAME = "<<hyphenated element name>>";
+
+    /**
+     * Constant value for{@link #defaultName()} indicating that the annotated element's name should be de-camel-cased and parts
+     * separated by underscores, and then used.
+     */
+    String UNDERSCORED_ELEMENT_NAME = "<<underscored element name>>";
 
     /**
      * Example:
@@ -86,5 +104,13 @@ public @interface CheckedTemplate {
      * If set to true then the defined templates can only contain type-safe expressions.
      */
     boolean requireTypeSafeExpressions() default true;
+
+    /**
+     * The value may be one of the following: {@link #ELEMENT_NAME}, {@link #HYPHENATED_ELEMENT_NAME} and
+     * {@link #UNDERSCORED_ELEMENT_NAME}.
+     *
+     * @return the default name
+     */
+    String defaultName() default ELEMENT_NAME;
 
 }

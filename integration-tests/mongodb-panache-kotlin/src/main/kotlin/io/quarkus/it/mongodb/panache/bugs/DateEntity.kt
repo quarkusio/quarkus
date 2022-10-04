@@ -11,9 +11,11 @@ import java.util.Date
  * An entity that have all the supported date format.
  * Asserting #6566 and possibility other date issues.
  */
-class DateEntity(var dateDate: Date = Date(), var localDate: LocalDate = LocalDate.now(),
-                 var localDateTime: LocalDateTime = LocalDateTime.now(),
-                 var instant: Instant = Instant.now()) : PanacheMongoEntity() {
-    companion object: PanacheMongoCompanion<DateEntity>
-
+class DateEntity(
+    var dateDate: Date = Date(),
+    var localDate: LocalDate = LocalDate.now(),
+    var localDateTime: LocalDateTime = LocalDateTime.now(),
+    var instant: Instant = Instant.now()
+) : PanacheMongoEntity() {
+    companion object : PanacheMongoCompanion<DateEntity>
 }

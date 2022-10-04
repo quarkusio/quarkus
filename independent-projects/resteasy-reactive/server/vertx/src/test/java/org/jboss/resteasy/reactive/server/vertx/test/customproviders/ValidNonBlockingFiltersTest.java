@@ -2,13 +2,9 @@ package org.jboss.resteasy.reactive.server.vertx.test.customproviders;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.restassured.RestAssured;
-import io.restassured.http.Headers;
-import io.smallrye.common.annotation.Blocking;
-import io.smallrye.common.annotation.NonBlocking;
-import io.smallrye.mutiny.Uni;
 import java.io.IOException;
 import java.util.function.Supplier;
+
 import javax.annotation.Priority;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -20,6 +16,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
+
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
@@ -27,6 +24,12 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
+import io.restassured.http.Headers;
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
+import io.smallrye.mutiny.Uni;
 
 public class ValidNonBlockingFiltersTest {
 

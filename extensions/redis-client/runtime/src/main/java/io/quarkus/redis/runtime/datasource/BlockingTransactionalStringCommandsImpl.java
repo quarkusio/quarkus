@@ -4,18 +4,19 @@ import java.time.Duration;
 import java.util.Map;
 
 import io.quarkus.redis.datasource.string.GetExArgs;
-import io.quarkus.redis.datasource.string.ReactiveTransactionalStringCommands;
 import io.quarkus.redis.datasource.string.SetArgs;
 import io.quarkus.redis.datasource.string.TransactionalStringCommands;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
+import io.quarkus.redis.datasource.value.ReactiveTransactionalValueCommands;
+import io.quarkus.redis.datasource.value.TransactionalValueCommands;
 
 public class BlockingTransactionalStringCommandsImpl<K, V> extends AbstractTransactionalRedisCommandGroup
-        implements TransactionalStringCommands<K, V> {
+        implements TransactionalStringCommands<K, V>, TransactionalValueCommands<K, V> {
 
-    private final ReactiveTransactionalStringCommands<K, V> reactive;
+    private final ReactiveTransactionalValueCommands<K, V> reactive;
 
     public BlockingTransactionalStringCommandsImpl(TransactionalRedisDataSource ds,
-            ReactiveTransactionalStringCommands<K, V> reactive, Duration timeout) {
+            ReactiveTransactionalValueCommands<K, V> reactive, Duration timeout) {
         super(ds, timeout);
         this.reactive = reactive;
     }
@@ -47,6 +48,11 @@ public class BlockingTransactionalStringCommandsImpl<K, V> extends AbstractTrans
 
     @Override
     public void getex(K key, GetExArgs args) {
+        this.reactive.getex(key, args).await().atMost(this.timeout);
+    }
+
+    @Override
+    public void getex(K key, io.quarkus.redis.datasource.value.GetExArgs args) {
         this.reactive.getex(key, args).await().atMost(this.timeout);
     }
 
@@ -116,12 +122,22 @@ public class BlockingTransactionalStringCommandsImpl<K, V> extends AbstractTrans
     }
 
     @Override
+    public void set(K key, V value, io.quarkus.redis.datasource.value.SetArgs setArgs) {
+        this.reactive.set(key, value, setArgs).await().atMost(this.timeout);
+    }
+
+    @Override
     public void setGet(K key, V value) {
         this.reactive.setGet(key, value).await().atMost(this.timeout);
     }
 
     @Override
     public void setGet(K key, V value, SetArgs setArgs) {
+        this.reactive.setGet(key, value, setArgs).await().atMost(this.timeout);
+    }
+
+    @Override
+    public void setGet(K key, V value, io.quarkus.redis.datasource.value.SetArgs setArgs) {
         this.reactive.setGet(key, value, setArgs).await().atMost(this.timeout);
     }
 

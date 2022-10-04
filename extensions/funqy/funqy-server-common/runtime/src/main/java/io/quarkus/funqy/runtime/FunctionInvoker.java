@@ -122,22 +122,22 @@ public class FunctionInvoker {
         try {
             Object result = method.invoke(target, args);
             if (isAsync()) {
-                response.setOutput(((Uni<?>) result).onFailure().transform(t -> new ApplicationException(t)));
+                response.setOutput(((Uni<?>) result)
+                        .onFailure().transform(t -> new ApplicationException(t)));
             } else {
                 response.setOutput(Uni.createFrom().item(result));
             }
+            // Catch the exception but do not rethrow the exception,
+            // The handler decorates the uni with a termination block to handle the request scope deactivation.
         } catch (IllegalAccessException e) {
             InternalError ex = new InternalError("Failed to invoke function", e);
             response.setOutput(Uni.createFrom().failure(ex));
-            throw ex;
         } catch (InvocationTargetException e) {
             ApplicationException ex = new ApplicationException(e.getCause());
             response.setOutput(Uni.createFrom().failure(ex));
-            throw ex;
         } catch (Throwable t) {
             InternalError ex = new InternalError(t);
             response.setOutput(Uni.createFrom().failure(ex));
-            throw ex;
         }
     }
 

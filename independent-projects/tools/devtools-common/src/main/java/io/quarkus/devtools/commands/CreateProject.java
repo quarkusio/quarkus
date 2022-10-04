@@ -6,6 +6,14 @@ import static io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataCo
 import static io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataConverter.PlatformPropertiesKey.QUARKUS_MAVEN_PLUGIN_VERSION;
 import static java.util.Objects.requireNonNull;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
+
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
@@ -13,12 +21,6 @@ import io.quarkus.devtools.commands.handlers.CreateProjectCommandHandler;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.platform.tools.ToolsUtils;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Instances of this class are not thread-safe. They are created per invocation.
@@ -31,6 +33,8 @@ public class CreateProject {
         String PROJECT_GROUP_ID = "project.group-id";
         String PROJECT_ARTIFACT_ID = "project.artifact-id";
         String PROJECT_VERSION = "project.version";
+        String PROJECT_NAME = "project.name";
+        String PROJECT_DESCRIPTION = "project.description";
         String PACKAGE_NAME = "project.package-name";
         String EXTENSIONS = "project.extensions";
         String RESOURCE_CLASS_NAME = "project.resource.class-name";
@@ -68,6 +72,22 @@ public class CreateProject {
 
     public CreateProject version(String version) {
         setValue(PROJECT_VERSION, version);
+        return this;
+    }
+
+    public CreateProject name(String name) {
+        if (name == null || name.isBlank()) {
+            return this;
+        }
+        setValue(PROJECT_NAME, name);
+        return this;
+    }
+
+    public CreateProject description(String description) {
+        if (description == null || description.isBlank()) {
+            return this;
+        }
+        setValue(PROJECT_DESCRIPTION, description);
         return this;
     }
 

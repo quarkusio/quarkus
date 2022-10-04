@@ -77,6 +77,7 @@ import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
+import org.jboss.resteasy.reactive.client.impl.StorkClientRequestFilter;
 import org.jboss.resteasy.reactive.client.impl.UniInvoker;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
@@ -111,6 +112,7 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.multipart.FileDownload;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.processor.DotNames;
@@ -124,6 +126,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -208,6 +211,16 @@ public class JaxrsClientReactiveProcessor {
     @BuildStep
     void initializeRuntimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
         runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem(AsyncInvokerImpl.class.getName()));
+    }
+
+    @BuildStep
+    void initializeStorkFilter(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClassesBuildItem) {
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(StorkClientRequestFilter.class));
+        additionalIndexedClassesBuildItem
+                .produce(new AdditionalIndexedClassesBuildItem(StorkClientRequestFilter.class.getName()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, StorkClientRequestFilter.class));
     }
 
     @BuildStep
@@ -1597,6 +1610,7 @@ public class JaxrsClientReactiveProcessor {
                 case VOID:
                 case TYPE_VARIABLE:
                 case UNRESOLVED_TYPE_VARIABLE:
+                case TYPE_VARIABLE_REFERENCE:
                 case WILDCARD_TYPE:
                     throw new IllegalArgumentException("Unsupported multipart form field type: " + fieldType + " in " +
                             "field class " + formClassType.name());

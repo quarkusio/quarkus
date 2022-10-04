@@ -20,6 +20,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
+import io.quarkus.arc.deployment.CurrentContextFactoryBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.processor.AnnotationStore;
@@ -99,6 +100,15 @@ class VertxProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void currentContextFactory(BuildProducer<CurrentContextFactoryBuildItem> currentContextFactory,
+            VertxBuildConfig buildConfig, VertxRecorder recorder) {
+        if (buildConfig.customizeArcContext) {
+            currentContextFactory.produce(new CurrentContextFactoryBuildItem(recorder.currentContextFactory()));
+        }
+    }
+
+    @BuildStep
     public UnremovableBeanBuildItem unremovableBeans() {
         return new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(CONSUME_EVENT));
     }
@@ -115,7 +125,7 @@ class VertxProcessor {
                 AnnotationInstance consumeEvent = annotationStore.getAnnotation(method, CONSUME_EVENT);
                 if (consumeEvent != null) {
                     // Validate method params and return type
-                    List<Type> params = method.parameters();
+                    List<Type> params = method.parameterTypes();
                     if (params.size() == 2) {
                         if (!isMessageHeaders(params.get(0).name())) {
                             // If there are two parameters, the first must be message headers.

@@ -9,12 +9,16 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import io.quarkus.qute.Template.Fragment;
 
 public class IncludeSectionHelper implements SectionHelper {
 
     static final String DEFAULT_NAME = "$default$";
     private static final String TEMPLATE = "template";
+    private static final Map<String, Object> FRAGMENT_PARAMS = Map.of(Template.Fragment.ATTRIBUTE, true);
 
     protected final Supplier<Template> template;
     protected final Map<String, SectionBlock> extendingBlocks;
@@ -33,15 +37,18 @@ public class IncludeSectionHelper implements SectionHelper {
     public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
         if (parameters.isEmpty() && optimizeIfNoParams()) {
             // No params
-            SectionNode root = ((TemplateImpl) template.get()).root;
+            Template t = template.get();
+            SectionNode root = ((TemplateImpl) t).root;
+            ResolutionContext resolutionContext;
             if (isIsolated) {
-                return root.resolve(context.newResolutionContext(null, extendingBlocks));
+                resolutionContext = context.newResolutionContext(null, extendingBlocks);
             } else if (extendingBlocks.isEmpty()) {
                 // No params and no extending blocks: {#include foo /}
-                return root.resolve(context.resolutionContext());
+                resolutionContext = context.resolutionContext();
             } else {
-                return root.resolve(context.resolutionContext().createChild(null, extendingBlocks));
+                resolutionContext = context.resolutionContext().createChild(null, extendingBlocks);
             }
+            return root.resolve(resolutionContext, t.isFragment() ? FRAGMENT_PARAMS : null);
         } else {
             CompletableFuture<ResultNode> result = new CompletableFuture<>();
             evaluateParams(parameters, context.resolutionContext()).whenComplete((evaluatedParams, t1) -> {
@@ -58,9 +65,10 @@ public class IncludeSectionHelper implements SectionHelper {
                         } else {
                             resolutionContext = context.resolutionContext().createChild(data, extendingBlocks);
                         }
-                        SectionNode root = ((TemplateImpl) template.get()).root;
+                        Template t = template.get();
+                        SectionNode root = ((TemplateImpl) t).root;
                         // Execute the template with the params as the root context object
-                        root.resolve(resolutionContext)
+                        root.resolve(resolutionContext, t.isFragment() ? FRAGMENT_PARAMS : null)
                                 .whenComplete((resultNode, t2) -> {
                                     if (t2 != null) {
                                         result.completeExceptionally(t2);
@@ -94,18 +102,17 @@ public class IncludeSectionHelper implements SectionHelper {
 
         @Override
         public ParametersInfo getParameters() {
-            return ParametersInfo.builder().addParameter(TEMPLATE)
-                    .addParameter(Parameter.builder(ISOLATED).defaultValue(ISOLATED_DEFAULT_VALUE).optional()
-                            .valuePredicate(v -> ISOLATED.equals(v)))
-                    .build();
+            ParametersInfo.Builder builder = ParametersInfo.builder().addParameter(TEMPLATE);
+            addDefaultParams(builder);
+            return builder.build();
         }
 
         @Override
         protected boolean ignoreParameterInit(String key, String value) {
             return key.equals(TEMPLATE)
-                    // {#myTag _isolated=true /}
+                    // {#include foo _isolated=true /}
                     || key.equals(ISOLATED)
-                    // {#myTag _isolated /}
+                    // {#include foo _isolated /}
                     || value.equals(ISOLATED);
         }
 
@@ -134,6 +141,19 @@ public class IncludeSectionHelper implements SectionHelper {
         @Override
         public boolean treatUnknownSectionsAsBlocks() {
             return true;
+        }
+
+        void addDefaultParams(ParametersInfo.Builder builder) {
+            builder
+                    .addParameter(Parameter.builder(ISOLATED).defaultValue(ISOLATED_DEFAULT_VALUE).optional()
+                            .valuePredicate(new Predicate<String>() {
+
+                                @Override
+                                public boolean test(String v) {
+                                    return ISOLATED.equals(v);
+                                }
+                            }).build())
+                    .build();
         }
 
         @Override
@@ -194,18 +214,54 @@ public class IncludeSectionHelper implements SectionHelper {
                 }
             }
 
-            final String templateId = getTemplateId(context);
+            // foo - no fragment
+            // foo[bar] - template "foo" and fragment "bar"
+            // [fragment_01] - current template and fragment "fragment_01"
+            String templateId = getTemplateId(context);
+            final String fragmentId = getFragmentId(templateId, context);
+            Supplier<Template> currentTemplate;
+            if (fragmentId != null) {
+                // remove the trailing fragment part
+                templateId = templateId.substring(0, templateId.lastIndexOf('['));
+                if (templateId.isEmpty()) {
+                    // use the current template
+                    currentTemplate = context.getCurrentTemplate();
+                } else {
+                    currentTemplate = null;
+                }
+            } else {
+                currentTemplate = null;
+            }
+            final String finalTemplateId = templateId;
+
             final Engine engine = context.getEngine();
             Supplier<Template> template = new Supplier<Template>() {
                 @Override
                 public Template get() {
-                    Template template = engine.getTemplate(templateId);
+                    Template template;
+                    if (currentTemplate != null) {
+                        template = currentTemplate.get();
+                    } else {
+                        template = engine.getTemplate(finalTemplateId);
+                    }
                     if (template == null) {
                         throw engine.error("included template [{templateId}] not found")
                                 .code(Code.TEMPLATE_NOT_FOUND)
-                                .argument("templateId", templateId)
+                                .argument("templateId", finalTemplateId)
                                 .origin(context.getOrigin())
                                 .build();
+                    }
+                    if (fragmentId != null) {
+                        Fragment fragment = template.getFragment(fragmentId);
+                        if (fragment == null) {
+                            throw engine.error("fragment [{fragmentId}] not found in the included template [{templateId}]")
+                                    .code(Code.FRAGMENT_NOT_FOUND)
+                                    .argument("templateId", finalTemplateId)
+                                    .argument("fragmentId", fragmentId)
+                                    .origin(context.getOrigin())
+                                    .build();
+                        }
+                        template = fragment;
                     }
                     return template;
                 }
@@ -216,6 +272,26 @@ public class IncludeSectionHelper implements SectionHelper {
         }
 
         protected abstract String getTemplateId(SectionInitContext context);
+
+        protected String getFragmentId(String templateId, SectionInitContext context) {
+            if (templateId.endsWith("]")) {
+                // the fragment id can be found in the square brackets at the end of the template id
+                int lastLeftSquareBracket = templateId.lastIndexOf('[');
+                if (lastLeftSquareBracket != -1) {
+                    String fragmentId = templateId.substring(lastLeftSquareBracket + 1, templateId.length() - 1);
+                    if (FragmentSectionHelper.Factory.FRAGMENT_PATTERN.matcher(fragmentId).matches()) {
+                        return fragmentId;
+                    } else {
+                        throw context.getEngine().error("invalid fragment identifier [{fragmentId}]")
+                                .code(Code.INVALID_FRAGMENT_ID)
+                                .argument("fragmentId", fragmentId)
+                                .origin(context.getOrigin())
+                                .build();
+                    }
+                }
+            }
+            return null;
+        }
 
         protected void handleParamInit(String key, String value, SectionInitContext context, Map<String, Expression> params) {
             if (ignoreParameterInit(key, value)) {
@@ -250,6 +326,10 @@ public class IncludeSectionHelper implements SectionHelper {
         MULTIPLE_INSERTS_OF_NAME,
 
         TEMPLATE_NOT_FOUND,
+
+        FRAGMENT_NOT_FOUND,
+
+        INVALID_FRAGMENT_ID
 
         ;
 

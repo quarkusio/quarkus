@@ -7,15 +7,17 @@ import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import io.quarkus.devtools.codestarts.core.CodestartSpec;
-import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Set;
+
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.mockito.internal.util.collections.Sets;
+
+import io.quarkus.devtools.codestarts.core.CodestartSpec;
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
 
 class CodestartCatalogLoaderTest {
 

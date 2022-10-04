@@ -1,6 +1,7 @@
 package io.quarkus.bootstrap.resolver.maven;
 
 import java.util.Objects;
+
 import org.eclipse.aether.collection.DependencyCollectionContext;
 import org.eclipse.aether.collection.DependencySelector;
 import org.eclipse.aether.graph.Dependency;

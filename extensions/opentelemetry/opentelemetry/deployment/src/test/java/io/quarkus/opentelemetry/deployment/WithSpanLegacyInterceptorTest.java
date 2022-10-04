@@ -25,6 +25,7 @@ import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.extension.annotations.SpanAttribute;
 import io.opentelemetry.extension.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.config.SmallRyeConfig;

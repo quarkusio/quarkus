@@ -22,6 +22,7 @@ import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 
 import org.jboss.logging.Logger;
+import org.jboss.tm.XAResourceRecoveryRegistry;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.AgroalPoolInterceptor;
@@ -48,6 +49,7 @@ import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
+import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
 
 /**
  * This class is sort of a producer for {@link AgroalDataSource}.
@@ -71,7 +73,9 @@ public class DataSources {
     private final DataSourcesRuntimeConfig dataSourcesRuntimeConfig;
     private final DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig;
     private final DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig;
+    private final TransactionManagerConfiguration transactionRuntimeConfig;
     private final TransactionManager transactionManager;
+    private final XAResourceRecoveryRegistry xaResourceRecoveryRegistry;
     private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;
     private final DataSourceSupport dataSourceSupport;
     private final Instance<AgroalPoolInterceptor> agroalPoolInterceptors;
@@ -81,14 +85,18 @@ public class DataSources {
     public DataSources(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig, DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
             DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig,
+            TransactionManagerConfiguration transactionRuntimeConfig,
             TransactionManager transactionManager,
+            XAResourceRecoveryRegistry xaResourceRecoveryRegistry,
             TransactionSynchronizationRegistry transactionSynchronizationRegistry, DataSourceSupport dataSourceSupport,
             @Any Instance<AgroalPoolInterceptor> agroalPoolInterceptors) {
         this.dataSourcesBuildTimeConfig = dataSourcesBuildTimeConfig;
         this.dataSourcesRuntimeConfig = dataSourcesRuntimeConfig;
         this.dataSourcesJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig;
         this.dataSourcesJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig;
+        this.transactionRuntimeConfig = transactionRuntimeConfig;
         this.transactionManager = transactionManager;
+        this.xaResourceRecoveryRegistry = xaResourceRecoveryRegistry;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
         this.dataSourceSupport = dataSourceSupport;
         this.agroalPoolInterceptors = agroalPoolInterceptors;
@@ -211,8 +219,10 @@ public class DataSources {
                 .connectionFactoryConfiguration();
 
         boolean mpMetricsPresent = dataSourceSupport.mpMetricsPresent;
-        applyNewConfiguration(dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration, driver, jdbcUrl,
-                dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, mpMetricsPresent);
+        applyNewConfiguration(dataSourceName, dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration,
+                driver, jdbcUrl,
+                dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, transactionRuntimeConfig,
+                mpMetricsPresent);
 
         if (dataSourceSupport.disableSslSupport) {
             agroalConnectionConfigurer.disableSslSupport(resolvedDbKind, dataSourceConfiguration);
@@ -251,11 +261,12 @@ public class DataSources {
         return dataSource;
     }
 
-    private void applyNewConfiguration(AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+    private void applyNewConfiguration(String dataSourceName, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
             AgroalConnectionPoolConfigurationSupplier poolConfiguration,
             AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration, Class<?> driver, String jdbcUrl,
             DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig, DataSourceRuntimeConfig dataSourceRuntimeConfig,
-            DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig, boolean mpMetricsPresent) {
+            DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig, TransactionManagerConfiguration transactionRuntimeConfig,
+            boolean mpMetricsPresent) {
         connectionFactoryConfiguration.jdbcUrl(jdbcUrl);
         connectionFactoryConfiguration.connectionProviderClass(driver);
         connectionFactoryConfiguration.trackJdbcResources(dataSourceJdbcRuntimeConfig.detectStatementLeaks);
@@ -268,7 +279,17 @@ public class DataSources {
 
         if (dataSourceJdbcBuildTimeConfig.transactions != io.quarkus.agroal.runtime.TransactionIntegration.DISABLED) {
             TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
-                    transactionSynchronizationRegistry);
+                    transactionSynchronizationRegistry, null, false,
+                    dataSourceJdbcBuildTimeConfig.transactions == io.quarkus.agroal.runtime.TransactionIntegration.XA
+                            && transactionRuntimeConfig.enableRecovery
+                                    ? xaResourceRecoveryRegistry
+                                    : null);
+            if (dataSourceJdbcBuildTimeConfig.transactions == io.quarkus.agroal.runtime.TransactionIntegration.XA
+                    && !transactionRuntimeConfig.enableRecovery) {
+                log.warnv(
+                        "Datasource {0} enables XA but transaction recovery is not enabled. Please enable transaction recovery by setting quarkus.transaction-manager.enable-recovery=true, otherwise data may be lost if the application is terminated abruptly",
+                        dataSourceName);
+            }
             poolConfiguration.transactionIntegration(txIntegration);
         }
 
@@ -287,12 +308,14 @@ public class DataSources {
 
         // Authentication
         if (dataSourceRuntimeConfig.username.isPresent()) {
+            NamePrincipal username = new NamePrincipal(dataSourceRuntimeConfig.username.get());
             connectionFactoryConfiguration
-                    .principal(new NamePrincipal(dataSourceRuntimeConfig.username.get()));
+                    .principal(username).recoveryPrincipal(username);
         }
         if (dataSourceRuntimeConfig.password.isPresent()) {
+            SimplePassword password = new SimplePassword(dataSourceRuntimeConfig.password.get());
             connectionFactoryConfiguration
-                    .credential(new SimplePassword(dataSourceRuntimeConfig.password.get()));
+                    .credential(password).recoveryCredential(password);
         }
 
         // credentials provider

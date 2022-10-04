@@ -48,11 +48,17 @@ public class UnauthorizedExceptionMapper implements ExceptionMapper<Unauthorized
                     if (challengeData.headerName != null) {
                         status.header(challengeData.headerName.toString(), challengeData.headerContent);
                     }
+                    log.debugf("Returning an authentication challenge, status code: %d", challengeData.status);
                     return status.build();
                 } else {
+                    log.debug("ChallengeData is null, returning HTTP status 401");
                     return Response.status(401).build();
                 }
+            } else {
+                log.error("HttpAuthenticator is not found, returning HTTP status 401");
             }
+        } else {
+            log.error("RoutingContext is not found, returning HTTP status 401");
         }
         return Response.status(401).entity("Not authorized").build();
     }

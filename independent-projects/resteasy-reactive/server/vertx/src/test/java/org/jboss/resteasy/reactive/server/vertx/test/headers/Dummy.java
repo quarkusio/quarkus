@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.server.vertx.test.headers;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+
 import org.jboss.resteasy.reactive.ResponseHeader;
 import org.jboss.resteasy.reactive.ResponseStatus;
 

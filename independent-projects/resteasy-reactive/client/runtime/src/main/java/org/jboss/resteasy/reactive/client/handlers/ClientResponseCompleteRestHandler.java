@@ -1,8 +1,5 @@
 package org.jboss.resteasy.reactive.client.handlers;
 
-import io.netty.handler.codec.http.multipart.Attribute;
-import io.netty.handler.codec.http.multipart.FileUpload;
-import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -12,10 +9,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.client.impl.ClientResponseBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientResponseContextImpl;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
@@ -24,6 +23,10 @@ import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.FieldFiller;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
+
+import io.netty.handler.codec.http.multipart.Attribute;
+import io.netty.handler.codec.http.multipart.FileUpload;
+import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 
 public class ClientResponseCompleteRestHandler implements ClientRestHandler {
 

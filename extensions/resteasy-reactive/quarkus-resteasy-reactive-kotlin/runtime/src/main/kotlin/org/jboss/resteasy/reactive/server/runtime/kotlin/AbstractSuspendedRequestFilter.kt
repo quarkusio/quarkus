@@ -18,11 +18,10 @@ abstract class AbstractSuspendedRequestFilter : ResteasyReactiveContainerRequest
 
     abstract fun handleResult(containerRequestContext: ResteasyReactiveContainerRequestContext, uniResult: Uni<*>)
 
-
     private val originalTCCL: ClassLoader = Thread.currentThread().contextClassLoader
 
     override fun filter(containerRequestContext: ResteasyReactiveContainerRequestContext) {
-        val (dispatcher,coroutineScope) = prepareExecution(containerRequestContext.serverRequestContext as ResteasyReactiveRequestContext)
+        val (dispatcher, coroutineScope) = prepareExecution(containerRequestContext.serverRequestContext as ResteasyReactiveRequestContext)
 
         val uni = coroutineScope.async(context = dispatcher) {
             // ensure the proper CL is not lost in dev-mode

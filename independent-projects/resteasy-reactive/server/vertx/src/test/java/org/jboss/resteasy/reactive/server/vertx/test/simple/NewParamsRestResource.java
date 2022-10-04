@@ -1,9 +1,7 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
-import io.smallrye.common.annotation.Blocking;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
 import java.util.Optional;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -18,6 +16,7 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.Providers;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
+
 import org.jboss.resteasy.reactive.RestCookie;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.RestHeader;
@@ -28,6 +27,10 @@ import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 import org.junit.jupiter.api.Assertions;
+
+import io.smallrye.common.annotation.Blocking;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 
 @Path("/new-params/{klass}/{regex:[^/]+}")
 public class NewParamsRestResource {

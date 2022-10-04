@@ -31,6 +31,7 @@ import org.infinispan.query.api.continuous.ContinuousQueryListener;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
 
+import io.quarkus.infinispan.client.Remote;
 import io.quarkus.runtime.StartupEvent;
 
 @ApplicationScoped
@@ -40,9 +41,15 @@ public class CacheSetup {
 
     public static final String DEFAULT_CACHE = "default";
     public static final String MAGAZINE_CACHE = "magazine";
+    public static final String BOOKS_CACHE = "books";
+    public static final String AUTHORS_CACHE = "authors";
 
     @Inject
     RemoteCacheManager cacheManager;
+
+    @Inject
+    @Remote(AUTHORS_CACHE)
+    RemoteCache<String, Author> authors;
 
     private final Map<String, Book> matches = new ConcurrentHashMap<>();
 
@@ -51,6 +58,8 @@ public class CacheSetup {
     void onStart(@Observes StartupEvent ev) {
         RemoteCache<String, Book> defaultCache = cacheManager.getCache(DEFAULT_CACHE);
         RemoteCache<String, Magazine> magazineCache = cacheManager.getCache(MAGAZINE_CACHE);
+        RemoteCache<String, Book> booksCache = cacheManager.getCache(BOOKS_CACHE);
+
         defaultCache.addClientListener(new EventPrintListener());
 
         ContinuousQuery<String, Book> continuousQuery = Search.getContinuousQuery(defaultCache);
@@ -81,8 +90,10 @@ public class CacheSetup {
 
         log.info("Added continuous query listener");
 
+        Author gMartin = new Author("George", "Martin");
+
         defaultCache.put("book1", new Book("Game of Thrones", "Lots of people perish", 2010,
-                Collections.singleton(new Author("George", "Martin")), Type.FANTASY, new BigDecimal("23.99")));
+                Collections.singleton(gMartin), Type.FANTASY, new BigDecimal("23.99")));
         defaultCache.put("book2", new Book("Game of Thrones Path 2", "They win?", 2023,
                 Collections.singleton(new Author("Son", "Martin")), Type.FANTASY, new BigDecimal("54.99")));
 
@@ -93,6 +104,15 @@ public class CacheSetup {
                         "German Reparation Payments")));
         magazineCache.put("popular-time", new Magazine("TIME", YearMonth.of(1997, 4),
                 Arrays.asList("Yep, I'm gay", "Backlash against HMOS", "False Hope on Breast Cancer?")));
+
+        authors.put("aut-1", gMartin);
+
+        booksCache.put("hp-1", new Book("Philosopher's Stone", "Harry Potter and the Philosopher's Stone", 1997,
+                Collections.singleton(new Author("J. K. Rowling", "Rowling")), Type.FANTASY, new BigDecimal("50.99")));
+        booksCache.put("hp-2", new Book("Chamber of Secrets", "Harry Potter and the Chamber of Secrets", 1998,
+                Collections.singleton(new Author("J. K. Rowling", "Rowling")), Type.FANTASY, new BigDecimal("50.99")));
+        booksCache.put("hp-3", new Book("Prisoner of Azkaban", "Harry Potter and the Prisoner of Azkaban", 1999,
+                Collections.singleton(new Author("J. K. Rowling", "Rowling")), Type.FANTASY, new BigDecimal("50.99")));
 
         waitUntilStarted.countDown();
     }

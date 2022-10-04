@@ -34,7 +34,7 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
      *
      * @asciidoclet
      */
-    @ConfigItem(defaultValueDocumentation = "`true` if Hibernate Search is enabled; `false` otherwise")
+    @ConfigItem(defaultValueDocumentation = "'true' if Hibernate Search is enabled; 'false' otherwise")
     public Optional<Boolean> active;
 
     /**

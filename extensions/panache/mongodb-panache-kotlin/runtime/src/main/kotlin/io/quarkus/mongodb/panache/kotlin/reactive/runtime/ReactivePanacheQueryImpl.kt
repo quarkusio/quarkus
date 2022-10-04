@@ -1,14 +1,14 @@
 package io.quarkus.mongodb.panache.kotlin.reactive.runtime
 
-import io.quarkus.mongodb.panache.common.reactive.runtime.CommonReactivePanacheQueryImpl
-import io.quarkus.mongodb.reactive.ReactiveMongoCollection
-import org.bson.conversions.Bson
-import io.smallrye.mutiny.Uni
 import com.mongodb.ReadPreference
 import com.mongodb.client.model.Collation
+import io.quarkus.mongodb.panache.common.reactive.runtime.CommonReactivePanacheQueryImpl
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheQuery
+import io.quarkus.mongodb.reactive.ReactiveMongoCollection
 import io.quarkus.panache.common.Page
 import io.smallrye.mutiny.Multi
+import io.smallrye.mutiny.Uni
+import org.bson.conversions.Bson
 
 class ReactivePanacheQueryImpl<Entity> : ReactivePanacheQuery<Entity> {
     private val delegate: CommonReactivePanacheQueryImpl<Entity>

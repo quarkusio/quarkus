@@ -3,13 +3,6 @@ package io.quarkus.arc.processor;
 import static io.quarkus.arc.processor.BeanProcessor.initAndSort;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
-import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
-import io.quarkus.arc.processor.BeanProcessor.BuildContextImpl;
-import io.quarkus.arc.processor.BeanRegistrar.RegistrationContext;
-import io.quarkus.arc.processor.BuildExtension.BuildContext;
-import io.quarkus.arc.processor.BuildExtension.Key;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.ResultHandle;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -30,9 +23,11 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import javax.enterprise.event.Reception;
 import javax.enterprise.inject.spi.DefinitionException;
 import javax.enterprise.inject.spi.DeploymentException;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -45,6 +40,14 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
+
+import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
+import io.quarkus.arc.processor.BeanProcessor.BuildContextImpl;
+import io.quarkus.arc.processor.BeanRegistrar.RegistrationContext;
+import io.quarkus.arc.processor.BuildExtension.BuildContext;
+import io.quarkus.arc.processor.BuildExtension.Key;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.ResultHandle;
 
 public class BeanDeployment {
 
@@ -149,7 +152,7 @@ public class BeanDeployment {
                         nonbindingMembers = Collections.emptySet();
                     }
                     qualifierNonbindingMembers.put(dotName, nonbindingMembers);
-                    this.qualifiers.put(dotName, classInfo);
+                    qualifiers.put(dotName, classInfo);
                 }
             }
         }
@@ -558,7 +561,7 @@ public class BeanDeployment {
     }
 
     boolean isInheritedQualifier(DotName name) {
-        return (getQualifier(name).classAnnotation(DotNames.INHERITED) != null);
+        return (getQualifier(name).declaredAnnotation(DotNames.INHERITED) != null);
     }
 
     /**
@@ -682,7 +685,7 @@ public class BeanDeployment {
     private Map<DotName, ClassInfo> findContainerAnnotations(Map<DotName, ClassInfo> annotations, IndexView index) {
         Map<DotName, ClassInfo> containerAnnotations = new HashMap<>();
         for (ClassInfo annotation : annotations.values()) {
-            AnnotationInstance repeatableMetaAnnotation = annotation.classAnnotation(DotNames.REPEATABLE);
+            AnnotationInstance repeatableMetaAnnotation = annotation.declaredAnnotation(DotNames.REPEATABLE);
             if (repeatableMetaAnnotation != null) {
                 DotName containerAnnotationName = repeatableMetaAnnotation.value().asClass().name();
                 ClassInfo containerClass = getClassByName(index, containerAnnotationName);
@@ -799,7 +802,7 @@ public class BeanDeployment {
                 }
                 boolean isAdditionalStereotype = additionalStereotypes.contains(stereotypeName);
                 final ScopeInfo scope = getValidScope(scopes, stereotypeClass);
-                boolean isInherited = stereotypeClass.classAnnotation(DotNames.INHERITED) != null;
+                boolean isInherited = stereotypeClass.declaredAnnotation(DotNames.INHERITED) != null;
                 stereotypes.put(stereotypeName, new StereotypeInfo(scope, bindings, isAlternative, alternativePriority,
                         isNamed, isAdditionalStereotype, stereotypeClass, isInherited, parentStereotypes));
             }

@@ -1,5 +1,24 @@
 package io.quarkus.arc.processor;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import javax.enterprise.context.spi.Context;
+import javax.enterprise.context.spi.Contextual;
+import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.inject.spi.EventContext;
+import javax.enterprise.inject.spi.EventMetadata;
+import javax.interceptor.InvocationContext;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ClientProxy;
@@ -23,23 +42,6 @@ import io.quarkus.arc.impl.Reflections;
 import io.quarkus.arc.impl.RemovedBeanImpl;
 import io.quarkus.arc.impl.Sets;
 import io.quarkus.gizmo.MethodDescriptor;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import javax.enterprise.context.spi.Context;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.EventContext;
-import javax.enterprise.inject.spi.EventMetadata;
-import javax.interceptor.InvocationContext;
 
 /**
  *

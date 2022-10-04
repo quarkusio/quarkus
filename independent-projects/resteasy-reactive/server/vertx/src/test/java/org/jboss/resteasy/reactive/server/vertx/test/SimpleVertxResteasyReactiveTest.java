@@ -2,13 +2,15 @@ package org.jboss.resteasy.reactive.server.vertx.test;
 
 import static org.hamcrest.Matchers.equalTo;
 
-import io.restassured.RestAssured;
 import java.util.function.Supplier;
+
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
 
 public class SimpleVertxResteasyReactiveTest {
 

@@ -14,10 +14,10 @@ ifdef::devtools-wrapped[+]
 .Maven
 ----
 ifdef::build-additional-parameters[]
-./mvnw package -Dnative {build-additional-parameters}
+./mvnw install -Dnative {build-additional-parameters}
 endif::[]
 ifndef::build-additional-parameters[]
-./mvnw package -Dnative
+./mvnw install -Dnative
 endif::[]
 ----
 endif::[]

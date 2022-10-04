@@ -185,7 +185,7 @@ public class BaseCreateCommand implements Callable<Integer> {
         setValue(CreateProjectKey.NO_BUILDTOOL_WRAPPER, !codeGeneration.includeWrapper);
     }
 
-    private void setValue(String name, Object value) {
+    protected void setValue(String name, Object value) {
         if (value != null) {
             values.put(name, value);
         }

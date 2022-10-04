@@ -102,6 +102,7 @@ public class GoOfflineMojo extends AbstractMojo {
     private MavenArtifactResolver getResolver() throws MojoExecutionException {
         try {
             return MavenArtifactResolver.builder()
+                    .setCurrentProject(project.getBasedir().toString())
                     .setRemoteRepositoryManager(remoteRepositoryManager)
                     .setRemoteRepositories(repos)
                     .setPreferPomsFromWorkspace(true)

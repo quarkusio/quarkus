@@ -7,7 +7,6 @@ import java.util.concurrent.Executors;
 
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Status;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
@@ -23,8 +22,6 @@ import javax.ws.rs.core.UriInfo;
 
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.context.ThreadContext;
-import org.jboss.resteasy.annotations.Stream;
-import org.jboss.resteasy.annotations.Stream.MODE;
 import org.junit.jupiter.api.Assertions;
 import org.reactivestreams.Publisher;
 import org.wildfly.common.Assert;
@@ -46,8 +43,6 @@ public class MutinyContextEndpoint {
     ManagedExecutor all;
     @Inject
     ThreadContext allTc;
-    @Inject
-    HttpServletRequest servletRequest;
 
     ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -106,10 +101,13 @@ public class MutinyContextEndpoint {
     @GET
     @Path("/servlet-uni")
     public Uni<String> servletContextPropagation(@Context UriInfo uriInfo) {
+        RequestBean instance = Arc.container().instance(RequestBean.class).get();
+        String previousValue = instance.callMe();
         return Uni.createFrom().item("OK")
                 .emitOn(Infrastructure.getDefaultExecutor())
                 .map(text -> {
-                    Assertions.assertNotNull(servletRequest.getContentType());
+                    RequestBean instance2 = Arc.container().instance(RequestBean.class).get();
+                    Assertions.assertEquals(previousValue, instance2.callMe());
                     return text;
                 })
                 .onFailure().invoke(t -> System.out.println("Got failure " + t.getMessage()));
@@ -119,10 +117,13 @@ public class MutinyContextEndpoint {
     @Path("/servlet-uni-cs")
     public Uni<String> servletContextPropagationWithUniCreatedFromCSWithManagedExecutor(@Context UriInfo uriInfo) {
         CompletableFuture<String> ret = all.completedFuture("OK");
+        RequestBean instance = Arc.container().instance(RequestBean.class).get();
+        String previousValue = instance.callMe();
         return Uni.createFrom().completionStage(() -> ret)
                 .emitOn(Infrastructure.getDefaultExecutor())
                 .map(text -> {
-                    Assertions.assertNotNull(servletRequest.getContentType());
+                    RequestBean instance2 = Arc.container().instance(RequestBean.class).get();
+                    Assertions.assertEquals(previousValue, instance2.callMe());
                     return text;
                 });
     }
@@ -131,10 +132,13 @@ public class MutinyContextEndpoint {
     @Path("/servlet-tc-uni-cs")
     public Uni<String> servletThreadContext(@Context UriInfo uriInfo) {
         CompletableFuture<String> ret = allTc.withContextCapture(CompletableFuture.completedFuture("OK"));
+        RequestBean instance = Arc.container().instance(RequestBean.class).get();
+        String previousValue = instance.callMe();
         return Uni.createFrom().completionStage(() -> ret)
                 .emitOn(executor)
                 .map(text -> {
-                    Assertions.assertNotNull(servletRequest.getContentType());
+                    RequestBean instance2 = Arc.container().instance(RequestBean.class).get();
+                    Assertions.assertEquals(previousValue, instance2.callMe());
                     return text;
                 });
     }
@@ -418,7 +422,6 @@ public class MutinyContextEndpoint {
     @Transactional
     @GET
     @Path("/transaction-multi")
-    @Stream(value = MODE.RAW)
     public Multi<String> transactionPropagationWithMulti() throws SystemException {
         Person entity = new Person();
         entity.name = "Stef";

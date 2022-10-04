@@ -2,7 +2,7 @@
 package io.quarkus.it.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -11,6 +11,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.fabric8.kubernetes.api.model.ContainerPort;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -22,12 +23,14 @@ import io.quarkus.test.QuarkusProdModeTest;
 
 public class KubernetesServiceMappingTest {
 
+    private static final String APP_NAME = "kubernetes-service-mapping";
+
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("kubernetes-service-mapping")
+            .setApplicationName(APP_NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("kubernetes-service-mapping.properties")
+            .withConfigurationResource(APP_NAME + ".properties")
             .setLogFileName("k8s.log")
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-kubernetes", Version.getVersion())));
 
@@ -51,7 +54,16 @@ public class KubernetesServiceMappingTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
-
+                        List<ContainerPort> ports = podSpec.getContainers().get(0).getPorts();
+                        assertThat(ports.size()).isEqualTo(2);
+                        assertTrue(ports.stream().anyMatch(port -> "http".equals(port.getName())
+                                && port.getContainerPort() == 8080
+                                && "TCP".equals(port.getProtocol())),
+                                () -> "http port not found in the pod containers!");
+                        assertTrue(ports.stream().anyMatch(port -> "debug".equals(port.getName())
+                                && port.getContainerPort() == 5005
+                                && "UDP".equals(port.getProtocol())),
+                                () -> "debug port not found in the pod containers!");
                     });
                 });
             });
@@ -62,10 +74,19 @@ public class KubernetesServiceMappingTest {
                 assertThat(m.getName()).isEqualTo("kubernetes-service-mapping");
             });
             assertThat(s.getSpec()).satisfies(serviceSpec -> {
-                assertThat(serviceSpec.getPorts()).singleElement().satisfies(p -> {
-                    assertEquals(8080, p.getTargetPort().getIntVal());
-                    assertEquals(8080, p.getPort());
-                });
+                assertThat(serviceSpec.getPorts().size()).isEqualTo(2);
+                assertTrue(serviceSpec.getPorts().stream().anyMatch(port -> "http".equals(port.getName())
+                        && port.getTargetPort().getIntVal() == 8080
+                // Dekorate issue: https://github.com/dekorateio/dekorate/issues/1068
+                // && "TCP".equals(port.getProtocol())
+                        && port.getPort() == 8080),
+                        () -> "http port not found in the service!");
+                assertTrue(serviceSpec.getPorts().stream().anyMatch(port -> "debug".equals(port.getName())
+                        && port.getTargetPort().getIntVal() == 5005
+                // Dekorate issue: https://github.com/dekorateio/dekorate/issues/1068
+                // && "UDP".equals(port.getProtocol())
+                        && port.getPort() == 5005),
+                        () -> "debug port not found in the service!");
             });
         });
 

@@ -4,6 +4,12 @@
     <groupId>{project.group-id}</groupId>
     <artifactId>{project.artifact-id}</artifactId>
     <version>{project.version}</version>
+    {#if project.name }
+    <name>{project.name}</name>
+    {/if}
+    {#if project.description }
+    <description>{project.description}</description>
+    {/if}
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

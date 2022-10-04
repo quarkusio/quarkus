@@ -1,8 +1,9 @@
 package io.quarkus.arc.impl;
 
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,14 +11,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.Destroyed;
-import javax.enterprise.context.Initialized;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.Any;
 
 import org.jboss.logging.Logger;
 
@@ -38,15 +35,16 @@ class RequestContext implements ManagedContext {
 
     private final CurrentContext<RequestContextState> currentContext;
 
-    private final LazyValue<Notifier<Object>> initializedNotifier;
-    private final LazyValue<Notifier<Object>> beforeDestroyedNotifier;
-    private final LazyValue<Notifier<Object>> destroyedNotifier;
+    private final Notifier<Object> initializedNotifier;
+    private final Notifier<Object> beforeDestroyedNotifier;
+    private final Notifier<Object> destroyedNotifier;
 
-    public RequestContext(CurrentContext<RequestContextState> currentContext) {
+    public RequestContext(CurrentContext<RequestContextState> currentContext, Notifier<Object> initializedNotifier,
+            Notifier<Object> beforeDestroyedNotifier, Notifier<Object> destroyedNotifier) {
         this.currentContext = currentContext;
-        this.initializedNotifier = new LazyValue<>(RequestContext::createInitializedNotifier);
-        this.beforeDestroyedNotifier = new LazyValue<>(RequestContext::createBeforeDestroyedNotifier);
-        this.destroyedNotifier = new LazyValue<>(RequestContext::createDestroyedNotifier);
+        this.initializedNotifier = initializedNotifier;
+        this.beforeDestroyedNotifier = beforeDestroyedNotifier;
+        this.destroyedNotifier = destroyedNotifier;
     }
 
     @Override
@@ -195,24 +193,17 @@ class RequestContext implements ManagedContext {
         }
         if (state instanceof RequestContextState) {
             RequestContextState reqState = ((RequestContextState) state);
-            reqState.isValid = false;
-            synchronized (state) {
-                Map<Contextual<?>, ContextInstanceHandle<?>> map = ((RequestContextState) state).map;
+            if (reqState.invalidate()) {
                 // Fire an event with qualifier @BeforeDestroyed(RequestScoped.class) if there are any observers for it
-                try {
-                    fireIfNotEmpty(beforeDestroyedNotifier);
-                } catch (Exception e) {
-                    LOG.warn("An error occurred during delivery of the @BeforeDestroyed(RequestScoped.class) event", e);
+                fireIfNotEmpty(beforeDestroyedNotifier);
+                Map<Contextual<?>, ContextInstanceHandle<?>> map = ((RequestContextState) state).map;
+                if (!map.isEmpty()) {
+                    //Performance: avoid an iterator on the map elements
+                    map.forEach(this::destroyContextElement);
+                    map.clear();
                 }
-                //Performance: avoid an iterator on the map elements
-                map.forEach(this::destroyContextElement);
                 // Fire an event with qualifier @Destroyed(RequestScoped.class) if there are any observers for it
-                try {
-                    fireIfNotEmpty(destroyedNotifier);
-                } catch (Exception e) {
-                    LOG.warn("An error occurred during delivery of the @Destroyed(RequestScoped.class) event", e);
-                }
-                map.clear();
+                fireIfNotEmpty(destroyedNotifier);
             }
         } else {
             throw new IllegalArgumentException("Invalid state implementation: " + state.getClass().getName());
@@ -227,10 +218,14 @@ class RequestContext implements ManagedContext {
         }
     }
 
-    private void fireIfNotEmpty(LazyValue<Notifier<Object>> value) {
-        Notifier<Object> notifier = value.get();
-        if (!notifier.isEmpty()) {
-            notifier.notify(toString());
+    private void fireIfNotEmpty(Notifier<Object> notifier) {
+        if (notifier != null && !notifier.isEmpty()) {
+            try {
+                notifier.notify(toString());
+            } catch (Exception e) {
+                LOG.warn("An error occurred during delivery of the container lifecycle event for qualifiers "
+                        + notifier.eventMetadata.getQualifiers(), e);
+            }
         }
     }
 
@@ -239,33 +234,24 @@ class RequestContext implements ManagedContext {
         return new ContextNotActiveException(msg);
     }
 
-    private static Notifier<Object> createInitializedNotifier() {
-        return EventImpl.createNotifier(Object.class, Object.class,
-                new HashSet<>(Arrays.asList(Initialized.Literal.REQUEST, Any.Literal.INSTANCE)),
-                ArcContainerImpl.instance(), false);
-    }
-
-    private static Notifier<Object> createBeforeDestroyedNotifier() {
-        return EventImpl.createNotifier(Object.class, Object.class,
-                new HashSet<>(Arrays.asList(BeforeDestroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
-                ArcContainerImpl.instance(), false);
-    }
-
-    private static Notifier<Object> createDestroyedNotifier() {
-        return EventImpl.createNotifier(Object.class, Object.class,
-                new HashSet<>(Arrays.asList(Destroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
-                ArcContainerImpl.instance(), false);
-    }
-
     static class RequestContextState implements ContextState {
 
-        private final Map<Contextual<?>, ContextInstanceHandle<?>> map;
+        private static final VarHandle IS_VALID;
 
-        private volatile boolean isValid;
+        static {
+            try {
+                IS_VALID = MethodHandles.lookup().findVarHandle(RequestContextState.class, "isValid", int.class);
+            } catch (ReflectiveOperationException e) {
+                throw new Error(e);
+            }
+        }
+
+        private final Map<Contextual<?>, ContextInstanceHandle<?>> map;
+        private volatile int isValid;
 
         RequestContextState(ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> value) {
             this.map = Objects.requireNonNull(value);
-            this.isValid = true;
+            this.isValid = 1;
         }
 
         @Override
@@ -274,9 +260,17 @@ class RequestContext implements ManagedContext {
                     .collect(Collectors.toUnmodifiableMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
         }
 
+        /**
+         * @return {@code true} if the state was successfully invalidated, {@code false} otherwise
+         */
+        boolean invalidate() {
+            // Atomically sets the value just like AtomicBoolean.compareAndSet(boolean, boolean)
+            return IS_VALID.compareAndSet(this, 1, 0);
+        }
+
         @Override
         public boolean isValid() {
-            return isValid;
+            return isValid == 1;
         }
 
     }

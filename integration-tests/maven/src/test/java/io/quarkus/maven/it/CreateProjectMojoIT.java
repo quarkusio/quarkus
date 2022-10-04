@@ -84,6 +84,10 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         assertThat(new File(testDir, "src/main/docker/Dockerfile.jvm")).isFile();
 
         Model model = loadPom(testDir);
+
+        assertThat(model.getName()).isNull();
+        assertThat(model.getDescription()).isNull();
+
         final DependencyManagement dependencyManagement = model.getDependencyManagement();
         final List<Dependency> dependencies = dependencyManagement.getDependencies();
         assertThat(dependencies.stream()
@@ -113,6 +117,34 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
                 .returns(LogManager.class.getName(), from(Xpp3Dom::getValue));
         assertThat(surefireSystemProperties.getChild("maven.home"))
                 .returns("${maven.home}", from(Xpp3Dom::getValue));
+    }
+
+    @Test
+    public void testProjectGenerationFromScratchWithNameAndDescription() throws MavenInvocationException, IOException {
+        testDir = initEmptyProject("projects/project-generation-name-description");
+        assertThat(testDir).isDirectory();
+        invoker = initInvoker(testDir);
+
+        Properties properties = new Properties();
+        properties.put("projectGroupId", "org.acme");
+        properties.put("projectArtifactId", "acme");
+        properties.put("projectVersion", "1.0.0-SNAPSHOT");
+        properties.put("projectName", "My name");
+        properties.put("projectDescription", "My description");
+
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isZero();
+
+        // As the directory is not empty (log) navigate to the artifactID directory
+        testDir = new File(testDir, "acme");
+
+        assertThat(new File(testDir, "pom.xml")).isFile();
+
+        Model model = loadPom(testDir);
+
+        assertThat(model.getName()).isEqualTo("My name");
+        assertThat(model.getDescription()).isEqualTo("My description");
     }
 
     @Test

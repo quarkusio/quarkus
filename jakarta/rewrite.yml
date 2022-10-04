@@ -849,12 +849,6 @@ type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.infinispan
 displayName: Adjust Infinispan version and dependencies
 recipeList:
-  - org.openrewrite.maven.ChangePropertyValue:
-      key: infinispan.version
-      newValue: 14.0.0.CR2
-  - org.openrewrite.maven.ChangePropertyValue:
-      key: infinispan.protostream.version
-      newValue: 14.0.0.CR2
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.infinispan
       oldArtifactId: infinispan-core

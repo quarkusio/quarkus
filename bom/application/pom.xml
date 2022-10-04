@@ -130,8 +130,8 @@
         <junit.jupiter.version>5.9.1</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
         <testng.version>6.14.2</testng.version>
-        <infinispan.version>13.0.11.Final</infinispan.version>
-        <infinispan.protostream.version>4.4.3.Final</infinispan.protostream.version>
+        <infinispan.version>14.0.0.Final</infinispan.version>
+        <infinispan.protostream.version>4.5.0.Final</infinispan.protostream.version>
         <caffeine.version>2.9.3</caffeine.version>
         <netty.version>4.1.82.Final</netty.version>
         <brotli4j.version>1.8.0</brotli4j.version>
@@ -148,7 +148,7 @@
         <aws-lambda-java-events.version>3.11.0</aws-lambda-java-events.version>
         <aws-xray.version>2.11.2</aws-xray.version>
         <azure-functions-java-library.version>1.4.2</azure-functions-java-library.version>
-        <kotlin.version>1.7.10</kotlin.version>
+        <kotlin.version>1.7.20</kotlin.version>
         <kotlin.coroutine.version>1.6.4</kotlin.coroutine.version>
         <kotlin-serialization.version>1.4.0</kotlin-serialization.version>
         <kubernetes-client.version>6.1.1</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->

@@ -297,7 +297,7 @@ public class ConfigDescriptionsManager extends DevConsolePostHandler implements 
     }
 
     private boolean isQuoted(String part) {
-        return part.charAt(0) == '\"' && part.charAt(part.length() - 1) == '\"';
+        return part.length() >= 2 && part.charAt(0) == '\"' && part.charAt(part.length() - 1) == '\"';
     }
 
     @Override

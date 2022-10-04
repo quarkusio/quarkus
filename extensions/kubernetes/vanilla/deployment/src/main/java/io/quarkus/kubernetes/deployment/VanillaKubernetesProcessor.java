@@ -26,11 +26,7 @@ import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.kubernetes.decorator.ApplyReplicasToDeploymentDecorator;
 import io.dekorate.kubernetes.decorator.ApplyReplicasToStatefulSetDecorator;
-import io.dekorate.kubernetes.decorator.RemoveFromMatchingLabelsDecorator;
-import io.dekorate.kubernetes.decorator.RemoveFromSelectorDecorator;
-import io.dekorate.kubernetes.decorator.RemoveLabelDecorator;
 import io.dekorate.project.Project;
-import io.dekorate.utils.Labels;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -201,12 +197,6 @@ public class VanillaKubernetesProcessor {
                                             .withSecret(e.getSecret()).withConfigmap(e.getConfigMap()).withField(e.getField())
                                             .build())));
                 });
-
-        if (!config.addVersionToLabelSelectors) {
-            result.add(new DecoratorBuildItem(KUBERNETES, new RemoveLabelDecorator(name, Labels.VERSION)));
-            result.add(new DecoratorBuildItem(KUBERNETES, new RemoveFromSelectorDecorator(name, Labels.VERSION)));
-            result.add(new DecoratorBuildItem(KUBERNETES, new RemoveFromMatchingLabelsDecorator(name, Labels.VERSION)));
-        }
 
         config.getContainerName().ifPresent(containerName -> result
                 .add(new DecoratorBuildItem(KUBERNETES, new ChangeContainerNameDecorator(containerName))));

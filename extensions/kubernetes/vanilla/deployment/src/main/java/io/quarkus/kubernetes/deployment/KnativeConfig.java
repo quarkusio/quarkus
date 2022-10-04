@@ -223,6 +223,18 @@ public class KnativeConfig implements PlatformConfiguration {
     @ConfigItem
     ResourcesConfig resources;
 
+    /**
+     * If true, the 'app.kubernetes.io/version' label will be part of the selectors of Service and Deployment
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean addVersionToLabelSelectors;
+
+    /**
+     * If true, the 'app.kubernetes.io/name' label will be part of the selectors of Service and Deployment
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean addNameToLabelSelectors;
+
     public Optional<String> getPartOf() {
         return partOf;
     }
@@ -250,6 +262,16 @@ public class KnativeConfig implements PlatformConfiguration {
     @Override
     public boolean isAddBuildTimestamp() {
         return addBuildTimestamp;
+    }
+
+    @Override
+    public boolean isAddNameToLabelSelectors() {
+        return addNameToLabelSelectors;
+    }
+
+    @Override
+    public boolean isAddVersionToLabelSelectors() {
+        return addVersionToLabelSelectors;
     }
 
     @Override

@@ -2,6 +2,7 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -339,7 +340,7 @@ public final class Types {
                 throw new IllegalArgumentException("Unsupported return type");
             }
         }
-        return restrictBeanTypes(types, beanDeployment.getAnnotations(producerMethod));
+        return restrictBeanTypes(types, beanDeployment.getAnnotations(producerMethod), beanDeployment.getBeanArchiveIndex());
     }
 
     static Set<Type> getProducerFieldTypeClosure(FieldInfo producerField, BeanDeployment beanDeployment) {
@@ -368,7 +369,7 @@ public final class Types {
                 throw new IllegalArgumentException("Unsupported return type");
             }
         }
-        return restrictBeanTypes(types, beanDeployment.getAnnotations(producerField));
+        return restrictBeanTypes(types, beanDeployment.getAnnotations(producerField), beanDeployment.getBeanArchiveIndex());
     }
 
     static Set<Type> getClassBeanTypeClosure(ClassInfo classInfo, BeanDeployment beanDeployment) {
@@ -380,7 +381,7 @@ public final class Types {
             types = getTypeClosure(classInfo, null, buildResolvedMap(typeParameters, typeParameters,
                     Collections.emptyMap(), beanDeployment.getBeanArchiveIndex()), beanDeployment, null);
         }
-        return restrictBeanTypes(types, beanDeployment.getAnnotations(classInfo));
+        return restrictBeanTypes(types, beanDeployment.getAnnotations(classInfo), beanDeployment.getBeanArchiveIndex());
     }
 
     static List<Type> getResolvedParameters(ClassInfo classInfo, MethodInfo method, IndexView index) {
@@ -520,24 +521,43 @@ public final class Types {
         return resolvedTypeVariables;
     }
 
-    static Set<Type> restrictBeanTypes(Set<Type> types, Collection<AnnotationInstance> annotations) {
-        AnnotationInstance typed = annotations.stream().filter(a -> a.name().equals(DotNames.TYPED))
-                .findFirst().orElse(null);
+    static Set<Type> restrictBeanTypes(Set<Type> types, Collection<AnnotationInstance> annotations, IndexView index) {
+        AnnotationInstance typed = null;
+        for (AnnotationInstance a : annotations) {
+            if (a.name().equals(DotNames.TYPED)) {
+                typed = a;
+                break;
+            }
+        }
+        Set<DotName> typedClasses = Collections.emptySet();
         if (typed != null) {
             AnnotationValue typedValue = typed.value();
             if (typedValue == null) {
                 types.clear();
                 types.add(OBJECT_TYPE);
             } else {
-                Set<DotName> typedClasses = new HashSet<>();
+                typedClasses = new HashSet<>();
                 for (Type type : typedValue.asClassArray()) {
                     typedClasses.add(type.name());
                 }
-                for (Iterator<Type> iterator = types.iterator(); iterator.hasNext();) {
-                    Type nextType = iterator.next();
-                    if (!typedClasses.contains(nextType.name()) && !DotNames.OBJECT.equals(nextType.name())) {
-                        iterator.remove();
-                    }
+            }
+        }
+        for (Iterator<Type> it = types.iterator(); it.hasNext();) {
+            Type next = it.next();
+            if (DotNames.OBJECT.equals(next.name())) {
+                continue;
+            }
+            if (typed != null && !typedClasses.contains(next.name())) {
+                // Remove types restricted by @Typed
+                it.remove();
+                continue;
+            }
+            String className = next.name().toString();
+            if (className.startsWith("java.")) {
+                ClassInfo classInfo = index.getClassByName(next.name());
+                if (classInfo == null || !Modifier.isPublic(classInfo.flags())) {
+                    // and remove all non-public jdk types
+                    it.remove();
                 }
             }
         }

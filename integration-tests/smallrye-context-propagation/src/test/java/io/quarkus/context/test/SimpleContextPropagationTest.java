@@ -1,7 +1,5 @@
 package io.quarkus.context.test;
 
-import static org.hamcrest.Matchers.equalTo;
-
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.core.Response;
@@ -9,7 +7,6 @@ import javax.ws.rs.core.Response;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -76,7 +73,6 @@ public class SimpleContextPropagationTest {
     }
 
     @Test()
-    @Disabled("flaky")
     public void testArcMEContextPropagationDisabled() throws InterruptedException {
         // reset state
         RequestBean.initState();
@@ -124,23 +120,5 @@ public class SimpleContextPropagationTest {
     public void testTransactionNewContextPropagation() {
         RestAssured.when().get("/context/transaction-new").then()
                 .statusCode(Response.Status.OK.getStatusCode());
-    }
-
-    @Test()
-    public void testTransactionContextPropagationSingle() {
-        RestAssured.when().get("/context/transaction-single").then()
-                .statusCode(Response.Status.OK.getStatusCode())
-                .body(equalTo("OK"));
-        awaitState(() -> RestAssured.when().get("/context/transaction-single2").then()
-                .statusCode(Response.Status.OK.getStatusCode()));
-    }
-
-    @Test()
-    public void testTransactionContextPropagationPublisher() {
-        RestAssured.when().get("/context/transaction-publisher").then()
-                .statusCode(Response.Status.OK.getStatusCode())
-                .body(equalTo("OK"));
-        awaitState(() -> RestAssured.when().get("/context/transaction-publisher2").then()
-                .statusCode(Response.Status.OK.getStatusCode()));
     }
 }

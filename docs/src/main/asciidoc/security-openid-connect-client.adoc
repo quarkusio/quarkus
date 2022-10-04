@@ -158,7 +158,7 @@ import io.smallrye.mutiny.Uni;
 @RegisterRestClient
 @RegisterProvider(OidcClientRequestReactiveFilter.class)
 @Path("/")
-public interface ProtectedResourceOidcClientFilter {
+public interface RestClientWithOidcClientFilter {
 
     @GET
     @Produces("text/plain")
@@ -172,7 +172,7 @@ public interface ProtectedResourceOidcClientFilter {
 }
 ----
 
-where `ProtectedResourceOidcClientFilter` will depend on `OidcClientRequestReactiveFilter` to acquire and propagate the tokens and
+where `RestClientWithOidcClientFilter` will depend on `OidcClientRequestReactiveFilter` to acquire and propagate the tokens and
 
 [source,java]
 ----
@@ -191,7 +191,7 @@ import io.smallrye.mutiny.Uni;
 @RegisterRestClient
 @RegisterProvider(AccessTokenRequestReactiveFilter.class)
 @Path("/")
-public interface ProtectedResourceTokenPropagationFilter {
+public interface RestClientWithTokenPropagationFilter {
 
     @GET
     @Produces("text/plain")
@@ -205,9 +205,9 @@ public interface ProtectedResourceTokenPropagationFilter {
 }
 ----
 
-where `ProtectedResourceTokenPropagationFilter` will depend on `AccessTokenRequestReactiveFilter` to propagate the incoming, already existing tokens.
+where `RestClientWithTokenPropagationFilter` will depend on `AccessTokenRequestReactiveFilter` to propagate the incoming, already existing tokens.
 
-Note that both `ProtectedResourceOidcClientFilter` and `ProtectedResourceTokenPropagationFilter` interfaces are identical - the reason behind it is that combining `OidcClientRequestReactiveFilter` and `AccessTokenRequestReactiveFilter` on the same REST Client will cause side effects as both filters can interfere with other, for example, `OidcClientRequestReactiveFilter` may override the token propagated by `AccessTokenRequestReactiveFilter` or `AccessTokenRequestReactiveFilter` can fail if it is called when no token is available to propagate and `OidcClientRequestReactiveFilter` is expected to acquire a new token instead.
+Note that both `RestClientWithOidcClientFilter` and `RestClientWithTokenPropagationFilter` interfaces are identical - the reason behind it is that combining `OidcClientRequestReactiveFilter` and `AccessTokenRequestReactiveFilter` on the same REST Client will cause side effects as both filters can interfere with other, for example, `OidcClientRequestReactiveFilter` may override the token propagated by `AccessTokenRequestReactiveFilter` or `AccessTokenRequestReactiveFilter` can fail if it is called when no token is available to propagate and `OidcClientRequestReactiveFilter` is expected to acquire a new token instead.
 
 Now let's complete creating the application with adding `FrontendResource`:
 
@@ -219,7 +219,6 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
@@ -229,38 +228,38 @@ import io.smallrye.mutiny.Uni;
 public class FrontendResource {
     @Inject
     @RestClient
-    ProtectedResourceOidcClientFilter protectedResourceOidcClientFilter;
+    RestClientWithOidcClientFilter restClientWithOidcClientFilter;
 
     @Inject
     @RestClient
-    ProtectedResourceTokenPropagationFilter protectedResourceTokenPropagationFilter;
+    RestClientWithTokenPropagationFilter restClientWithTokenPropagationFilter;
 
     @GET
     @Path("user-name-with-oidc-client-token")
     @Produces("text/plain")
     public Uni<String> getUserNameWithOidcClientToken() {
-        return protectedResourceOidcClientFilter.getUserName();
+        return restClientWithOidcClientFilter.getUserName();
     }
 
     @GET
     @Path("admin-name-with-oidc-client-token")
     @Produces("text/plain")
     public Uni<String> getAdminNameWithOidcClientToken() {
-	    return protectedResourceOidcClientFilter.getAdminName();
+	    return restClientWithOidcClientFilter.getAdminName();
     }
 
     @GET
     @Path("user-name-with-propagated-token")
     @Produces("text/plain")
     public Uni<String> getUserNameWithPropagatedToken() {
-        return protectedResourceTokenPropagationFilter.getUserName();
+        return restClientWithTokenPropagationFilter.getUserName();
     }
 
     @GET
     @Path("admin-name-with-propagated-token")
     @Produces("text/plain")
     public Uni<String> getAdminNameWithPropagatedToken() {
-        return protectedResourceTokenPropagationFilter.getAdminName();
+        return restClientWithTokenPropagationFilter.getAdminName();
     }
 }
 ----
@@ -324,8 +323,8 @@ quarkus.oidc-client.grant-options.password.password=alice
 %dev.port=8080
 %test.port=8081
 
-org.acme.security.openid.connect.client.ProtectedResourceOidcClientFilter/mp-rest/url=http://localhost:${port}/protected
-org.acme.security.openid.connect.client.ProtectedResourceTokenPropagationFilter/mp-rest/url=http://localhost:${port}/protected
+org.acme.security.openid.connect.client.RestClientWithOidcClientFilter/mp-rest/url=http://localhost:${port}/protected
+org.acme.security.openid.connect.client.RestClientWithTokenPropagationFilter/mp-rest/url=http://localhost:${port}/protected
 ----
 
 This configuration references Keycloak which will be used by `ProtectedResource` to verify the incoming access tokens and by `OidcClient` to get the tokens for a user `alice` using a `password` grant. Both RESTClients point to `ProtectedResource`'s HTTP address.

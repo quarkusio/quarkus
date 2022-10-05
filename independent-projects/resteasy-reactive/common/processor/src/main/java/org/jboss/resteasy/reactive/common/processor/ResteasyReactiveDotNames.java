@@ -25,6 +25,7 @@ import java.util.concurrent.CompletionStage;
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.RequestScoped;
+import javax.enterprise.inject.Typed;
 import javax.enterprise.inject.Vetoed;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -166,6 +167,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName DEFAULT_VALUE = DotName.createSimple(DefaultValue.class.getName());
     public static final DotName NAME_BINDING = DotName.createSimple(NameBinding.class.getName());
     public static final DotName VETOED = DotName.createSimple(Vetoed.class.getName());
+    public static final DotName TYPED = DotName.createSimple(Typed.class.getName());
     public static final DotName APPLICATION_SCOPED = DotName.createSimple(ApplicationScoped.class.getName());
     public static final DotName SINGLETON = DotName.createSimple(Singleton.class.getName());
     public static final DotName REQUEST_SCOPED = DotName.createSimple(RequestScoped.class.getName());

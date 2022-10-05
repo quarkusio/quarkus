@@ -241,20 +241,11 @@ public class ArcContainerImpl implements ArcContainer {
             qualifiers = new Annotation[] { Default.Literal.INSTANCE };
         }
         Set<InjectableBean<?>> resolvedBeans = resolved.getValue(new Resolvable(type, qualifiers));
-        Set<InjectableBean<?>> filteredBean = resolvedBeans;
         if (resolvedBeans.size() > 1) {
-            //if there are multiple beans we look for an exact match
-            //this method is only called with the exact type required
-            //so ignoring subclasses is the correct behaviour
-            filteredBean = new HashSet<>();
-            for (InjectableBean<?> i : resolvedBeans) {
-                if (i.getBeanClass().equals(type)) {
-                    filteredBean.add(i);
-                }
-            }
+            throw new AmbiguousResolutionException("Beans: " + resolvedBeans);
         }
-        InjectableBean<T> bean = filteredBean.size() != 1 ? null
-                : (InjectableBean<T>) filteredBean.iterator().next();
+        InjectableBean<T> bean = resolvedBeans.size() != 1 ? null
+                : (InjectableBean<T>) resolvedBeans.iterator().next();
         if (bean == null) {
             return null;
         }

@@ -1,5 +1,6 @@
 package io.quarkus.it.mailer;
 
+import java.io.IOException;
 import java.time.Duration;
 
 import javax.inject.Inject;
@@ -57,6 +58,33 @@ public class MailResource {
     }
 
     /**
+     * Send a simple text email with non-ascii characters.
+     */
+    @GET
+    @Path("/text-non-ascii")
+    public String sendSimpleTextEmailWithNonAsciiCharacters() {
+        mailer.send(Mail.withText("nobody@quarkus.io",
+                "Příliš žluťoučký kůň úpěl ďábelské ódy na 各分野最高のライブラリと標準で構成された、",
+                "This is a simple test email with non-ascii characters.\n" +
+                        "Non-ascii characters: Příliš žluťoučký kůň úpěl ďábelské ódy na 各分野最高のライブラリと標準で構成された、\n" +
+                        "Regards,\nRoger the robot"));
+        return "ok";
+    }
+
+    /**
+     * Send a simple text email with human friendly address prefix.
+     */
+    @GET
+    @Path("/human-friendly-address")
+    public String sendEmailWithHumanFriendlyAddressPrefix() {
+        mailer.send(Mail.withText("Mr. Nobody <nobody@quarkus.io>",
+                "Simple test email",
+                "This is a simple test email.\nRegards,\nRoger the robot")
+                .setFrom("Roger the robot <roger-the-robot@quarkus.io>"));
+        return "ok";
+    }
+
+    /**
      * Send a simple HTML email.
      */
     @GET
@@ -65,6 +93,23 @@ public class MailResource {
         mailer.send(Mail.withHtml("nobody@quarkus.io",
                 "html test email",
                 "<h3>Hello!</h3><p>This is a simple test email.</p><p>Regards,</p><p>Roger the robot</p>"));
+        return "ok";
+    }
+
+    /**
+     * Send a simple HTML email with inline attachment.
+     */
+    @GET
+    @Path("/html-inline-attachment")
+    public String sendSimpleHtmlEmailWithAttachmentInline() throws IOException {
+        Buffer logo = vertx.fileSystem().readFile("META-INF/resources/logo.png").await().atMost(Duration.ofSeconds(1));
+        mailer.send(Mail.withHtml("nobody@quarkus.io",
+                "HTML test email",
+                "<h3>Hello!</h3><p>This is a simple test email.</p>" +
+                        "<p>Here is a file for you: <img src=\"cid:my-file@quarkus.io\"/></p>" +
+                        "<p>Regards,</p><p>Roger the robot</p>")
+                .addInlineAttachment("quarkus-logo.png", logo.getBytes(), "image/png",
+                        "<my-file@quarkus.io>"));
         return "ok";
     }
 

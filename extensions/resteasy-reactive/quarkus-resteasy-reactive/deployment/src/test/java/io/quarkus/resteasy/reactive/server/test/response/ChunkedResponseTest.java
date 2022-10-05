@@ -30,7 +30,7 @@ public class ChunkedResponseTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(HelloResource.class)
-                    .addAsResource(new StringAsset("quarkus.rest.output-buffer-size = 256"),
+                    .addAsResource(new StringAsset("quarkus.resteasy-reactive.output-buffer-size = 256"),
                             "application.properties"));
 
     @Test
@@ -68,7 +68,22 @@ public class ChunkedResponseTest {
     }
 
     @Provider
-    public static final class CustomStringMessageBodyWriter extends ServerStringMessageBodyHandler {
+    public static class CustomStringMessageBodyWriter extends ServerStringMessageBodyHandler {
+
+        @Override
+        public void writeResponse(Object o, Type genericType, ServerRequestContext context)
+                throws WebApplicationException {
+
+            try (OutputStream stream = context.getOrCreateOutputStream()) {
+                stream.write(((String) o).getBytes());
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+    }
+
+    @Provider
+    public static final class CustomStringMessageBodyWriter2 extends CustomStringMessageBodyWriter {
 
         @Override
         public void writeResponse(Object o, Type genericType, ServerRequestContext context)

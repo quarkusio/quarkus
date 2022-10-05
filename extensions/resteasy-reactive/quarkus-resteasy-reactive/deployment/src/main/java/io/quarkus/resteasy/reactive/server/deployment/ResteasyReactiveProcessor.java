@@ -42,6 +42,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Providers;
+import javax.ws.rs.ext.ReaderInterceptor;
+import javax.ws.rs.ext.WriterInterceptor;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -57,6 +59,8 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.InjectableBean;
+import org.jboss.resteasy.reactive.common.model.InterceptorContainer;
+import org.jboss.resteasy.reactive.common.model.PreMatchInterceptorContainer;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;
 import org.jboss.resteasy.reactive.common.model.ResourceFeature;
@@ -716,6 +720,75 @@ public class ResteasyReactiveProcessor {
         };
         resourceInterceptors.visitFilters(visitor);
         return ab.get();
+    }
+
+    // We want to add @Typed to resources and providers so that they can be resolved as CDI bean using purely their
+    // class as a bean type. This removes any ambiguity that potential subclasses may have.
+    @BuildStep
+    public void transformEndpoints(
+            ResourceScanningResultBuildItem resourceScanningResultBuildItem,
+            ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
+            BuildProducer<io.quarkus.arc.deployment.AnnotationsTransformerBuildItem> annotationsTransformer) {
+
+        // all found resources and sub-resources
+        Set<DotName> allResources = new HashSet<>();
+        allResources.addAll(resourceScanningResultBuildItem.getResult().getScannedResources().keySet());
+        allResources.addAll(resourceScanningResultBuildItem.getResult().getPossibleSubResources().keySet());
+
+        // discovered filters and interceptors
+        Set<String> filtersAndInterceptors = new HashSet<>();
+        InterceptorContainer<ReaderInterceptor> readerInterceptors = resourceInterceptorsBuildItem.getResourceInterceptors()
+                .getReaderInterceptors();
+        readerInterceptors.getNameResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+        readerInterceptors.getGlobalResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+        InterceptorContainer<WriterInterceptor> writerInterceptors = resourceInterceptorsBuildItem.getResourceInterceptors()
+                .getWriterInterceptors();
+        writerInterceptors.getNameResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+        writerInterceptors.getGlobalResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+        PreMatchInterceptorContainer<ContainerRequestFilter> containerRequestFilters = resourceInterceptorsBuildItem
+                .getResourceInterceptors().getContainerRequestFilters();
+        containerRequestFilters.getPreMatchInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+        containerRequestFilters.getNameResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+        containerRequestFilters.getGlobalResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+        InterceptorContainer<ContainerResponseFilter> containerResponseFilters = resourceInterceptorsBuildItem
+                .getResourceInterceptors().getContainerResponseFilters();
+        containerResponseFilters.getGlobalResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+        containerResponseFilters.getNameResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+
+        annotationsTransformer.produce(new io.quarkus.arc.deployment.AnnotationsTransformerBuildItem(
+                new io.quarkus.arc.processor.AnnotationsTransformer() {
+
+                    @Override
+                    public boolean appliesTo(AnnotationTarget.Kind kind) {
+                        return kind == AnnotationTarget.Kind.CLASS;
+                    }
+
+                    @Override
+                    public void transform(TransformationContext context) {
+                        ClassInfo clazz = context.getTarget().asClass();
+                        // check if the class is one of resources/sub-resources
+                        if (allResources.contains(clazz.name())
+                                && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
+                            context.transform().add(createTypedAnnotationInstance(clazz)).done();
+                            return;
+                        }
+                        // check if the class is one of providers, either explicitly declaring the annotation
+                        // or discovered as resource interceptor or filter
+                        if ((clazz.declaredAnnotation(ResteasyReactiveDotNames.PROVIDER) != null
+                                || filtersAndInterceptors.contains(clazz.name().toString()))
+                                && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
+                            // Add @Typed(MyResource.class)
+                            context.transform().add(createTypedAnnotationInstance(clazz)).done();
+                        }
+                    }
+                }));
+    }
+
+    private AnnotationInstance createTypedAnnotationInstance(ClassInfo clazz) {
+        return AnnotationInstance.create(ResteasyReactiveDotNames.TYPED, clazz,
+                new AnnotationValue[] { AnnotationValue.createArrayValue("value",
+                        new AnnotationValue[] { AnnotationValue.createClassValue("value",
+                                Type.create(clazz.name(), Type.Kind.CLASS)) }) });
     }
 
     private Collection<DotName> additionalContextTypes(List<ContextTypeBuildItem> contextTypeBuildItems) {

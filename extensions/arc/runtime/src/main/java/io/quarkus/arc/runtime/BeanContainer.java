@@ -20,9 +20,12 @@ public interface BeanContainer {
     }
 
     /**
-     * Note that if there are multiple sub classes of the given type this will return the exact match. This means
-     * that this can be used to directly instantiate superclasses of other beans without causing problems. This behavior differs
-     * to standard CDI rules where an ambiguous dependency would exist.
+     * Returns an instance factory for given bean type and qualifiers.
+     * <p/>
+     * This method follows standard CDI rules meaning that if there are two or more beans, an ambiguous dependency
+     * exception is thrown.
+     * Note that the factory itself is still allowed to return {@code null} if there is no matching bean which allows
+     * for fallback implementations.
      *
      * @param type
      * @param qualifiers

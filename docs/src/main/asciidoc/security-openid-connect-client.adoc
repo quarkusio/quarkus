@@ -31,7 +31,7 @@ In this example, we will build an application which consists of two JAX-RS resou
 * `/frontend/user-name-with-propagated-token`
 * `/frontend/admin-name-with-propagated-token`
 
-`FrontendResource` will use REST Client with `OpenID Connect Client Reactive Filter` to acquire and propagate an access token to `ProtectedResource` when either `/frontend/user-name-with-oidc-client` or `/frontend/admin-name-with-oidc-client` is called. And it will use REST Client with `OpenID Connect Token Propagation Reactive Filter` to propagate the current incoming access token to `ProtectedResource` when either `/frontend/user-name-with-propagated-token` or `/frontend/admin-name-with-propagated-token` is called.
+`FrontendResource` will use REST Client with `OpenID Connect Client Reactive Filter` to acquire and propagate an access token to `ProtectedResource` when either `/frontend/user-name-with-oidc-client-token` or `/frontend/admin-name-with-oidc-client-token` is called. And it will use REST Client with `OpenID Connect Token Propagation Reactive Filter` to propagate the current incoming access token to `ProtectedResource` when either `/frontend/user-name-with-propagated-token` or `/frontend/admin-name-with-propagated-token` is called.
 
 `ProtecedResource` has 2 endpoints:
 
@@ -139,7 +139,7 @@ public class ProtectedResource {
 
 As you can see `ProtectedResource` returns a name from both `userName()` and `adminName()` methods. The name is extracted from the current `JsonWebToken`.
 
-Next lets add REST Client with `OpenID Connect Client Reactive Filter` and another REST Client with `OpenID Connect Token Propagation Filter`, `FrontendResource` will use these two clients to call `ProtectedResource`:
+Next let's add a REST Client with `OpenID Connect Client Reactive Filter` and another REST Client with `OpenID Connect Token Propagation Filter`. `FrontendResource` will use these two clients to call `ProtectedResource`:
 
 [source,java]
 ----
@@ -158,7 +158,7 @@ import io.smallrye.mutiny.Uni;
 @RegisterRestClient
 @RegisterProvider(OidcClientRequestReactiveFilter.class)
 @Path("/")
-public interface ProtectedResourceOidcClientFilter {
+public interface RestClientWithOidcClientFilter {
 
     @GET
     @Produces("text/plain")
@@ -172,7 +172,7 @@ public interface ProtectedResourceOidcClientFilter {
 }
 ----
 
-where `ProtectedResourceOidcClientFilter` will depend on `OidcClientRequestReactiveFilter` to acquire and propagate the tokens and
+where `RestClientWithOidcClientFilter` will depend on `OidcClientRequestReactiveFilter` to acquire and propagate the tokens and
 
 [source,java]
 ----
@@ -191,7 +191,7 @@ import io.smallrye.mutiny.Uni;
 @RegisterRestClient
 @RegisterProvider(AccessTokenRequestReactiveFilter.class)
 @Path("/")
-public interface ProtectedResourceTokenPropagationFilter {
+public interface RestClientWithTokenPropagationFilter {
 
     @GET
     @Produces("text/plain")
@@ -205,9 +205,9 @@ public interface ProtectedResourceTokenPropagationFilter {
 }
 ----
 
-where `ProtectedResourceTokenPropagationFilter` will depend on `AccessTokenRequestReactiveFilter` to propagate the incoming, already existing tokens.
+where `RestClientWithTokenPropagationFilter` will depend on `AccessTokenRequestReactiveFilter` to propagate the incoming, already existing tokens.
 
-Note that both `ProtectedResourceOidcClientFilter` and `ProtectedResourceTokenPropagationFilter` interfaces are identical - the reason behind it is that combining `OidcClientRequestReactiveFilter` and `AccessTokenRequestReactiveFilter` on the same REST Client will cause side effects as both filters can interfere with other, for example, `OidcClientRequestReactiveFilter` may override the token propagated by `AccessTokenRequestReactiveFilter` or `AccessTokenRequestReactiveFilter` can fail if it is called when no token is available to propagate and `OidcClientRequestReactiveFilter` is expected to acquire a new token instead.
+Note that both `RestClientWithOidcClientFilter` and `RestClientWithTokenPropagationFilter` interfaces are identical - the reason behind it is that combining `OidcClientRequestReactiveFilter` and `AccessTokenRequestReactiveFilter` on the same REST Client will cause side effects as both filters can interfere with other, for example, `OidcClientRequestReactiveFilter` may override the token propagated by `AccessTokenRequestReactiveFilter` or `AccessTokenRequestReactiveFilter` can fail if it is called when no token is available to propagate and `OidcClientRequestReactiveFilter` is expected to acquire a new token instead.
 
 Now let's complete creating the application with adding `FrontendResource`:
 
@@ -219,7 +219,6 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
@@ -229,45 +228,45 @@ import io.smallrye.mutiny.Uni;
 public class FrontendResource {
     @Inject
     @RestClient
-    ProtectedResourceOidcClientFilter protectedResourceOidcClientFilter;
+    RestClientWithOidcClientFilter restClientWithOidcClientFilter;
 
     @Inject
     @RestClient
-    ProtectedResourceTokenPropagationFilter protectedResourceTokenPropagationFilter;
+    RestClientWithTokenPropagationFilter restClientWithTokenPropagationFilter;
 
     @GET
     @Path("user-name-with-oidc-client-token")
     @Produces("text/plain")
     public Uni<String> getUserNameWithOidcClientToken() {
-        return protectedResourceOidcClientFilter.getUserName();
+        return restClientWithOidcClientFilter.getUserName();
     }
 
     @GET
     @Path("admin-name-with-oidc-client-token")
     @Produces("text/plain")
     public Uni<String> getAdminNameWithOidcClientToken() {
-	    return protectedResourceOidcClientFilter.getAdminName();
+	    return restClientWithOidcClientFilter.getAdminName();
     }
 
     @GET
     @Path("user-name-with-propagated-token")
     @Produces("text/plain")
     public Uni<String> getUserNameWithPropagatedToken() {
-        return protectedResourceTokenPropagationFilter.getUserName();
+        return restClientWithTokenPropagationFilter.getUserName();
     }
 
     @GET
     @Path("admin-name-with-propagated-token")
     @Produces("text/plain")
     public Uni<String> getAdminNameWithPropagatedToken() {
-        return protectedResourceTokenPropagationFilter.getAdminName();
+        return restClientWithTokenPropagationFilter.getAdminName();
     }
 }
 ----
 
-`FrontendResource` will use REST Client with `OpenID Connect Client Reactive Filter` to acquire and propagate an access token to `ProtectedResource` when either `/frontend/user-name-with-oidc-client` or `/frontend/admin-name-with-oidc-client` is called. And it will use REST Client with `OpenID Connect Token Propagation Reactive Filter` to propagate the current incoming access token to `ProtectedResource` when either `/frontend/user-name-with-propagated-token` or `/frontend/admin-name-with-propagated-token` is called.
+`FrontendResource` will use REST Client with `OpenID Connect Client Reactive Filter` to acquire and propagate an access token to `ProtectedResource` when either `/frontend/user-name-with-oidc-client-token` or `/frontend/admin-name-with-oidc-client-token` is called. And it will use REST Client with `OpenID Connect Token Propagation Reactive Filter` to propagate the current incoming access token to `ProtectedResource` when either `/frontend/user-name-with-propagated-token` or `/frontend/admin-name-with-propagated-token` is called.
 
-Finally, lets add a JAX-RS `ExceptionMapper`:
+Finally, let's add a JAX-RS `ExceptionMapper`:
 
 [source,java]
 ----
@@ -324,8 +323,8 @@ quarkus.oidc-client.grant-options.password.password=alice
 %dev.port=8080
 %test.port=8081
 
-org.acme.security.openid.connect.client.ProtectedResourceOidcClientFilter/mp-rest/url=http://localhost:${port}/protected
-org.acme.security.openid.connect.client.ProtectedResourceTokenPropagationFilter/mp-rest/url=http://localhost:${port}/protected
+org.acme.security.openid.connect.client.RestClientWithOidcClientFilter/mp-rest/url=http://localhost:${port}/protected
+org.acme.security.openid.connect.client.RestClientWithTokenPropagationFilter/mp-rest/url=http://localhost:${port}/protected
 ----
 
 This configuration references Keycloak which will be used by `ProtectedResource` to verify the incoming access tokens and by `OidcClient` to get the tokens for a user `alice` using a `password` grant. Both RESTClients point to `ProtectedResource`'s HTTP address.
@@ -432,8 +431,8 @@ Now use this token to call `/frontend/user-name-with-propagated-token` and `/fro
 
 [source,bash]
 ----
-curl -v -X GET \
-  http://localhost:8080/frontend/user-name-with-propagated-token` \
+curl -i -X GET \
+  http://localhost:8080/frontend/user-name-with-propagated-token \
   -H "Authorization: Bearer "$access_token
 ----
 
@@ -441,8 +440,8 @@ will return `200` status code and the name `alice` while
 
 [source,bash]
 ----
-curl -v -X GET \
-  http://localhost:8080/frontend/admin-name-with-propagated-token` \
+curl -i -X GET \
+  http://localhost:8080/frontend/admin-name-with-propagated-token \
   -H "Authorization: Bearer "$access_token
 ----
 
@@ -464,8 +463,8 @@ and use this token to call `/frontend/user-name-with-propagated-token` and `/fro
 
 [source,bash]
 ----
-curl -v -X GET \
-  http://localhost:8080/frontend/user-name-with-propagated-token` \
+curl -i -X GET \
+  http://localhost:8080/frontend/user-name-with-propagated-token \
   -H "Authorization: Bearer "$access_token
 ----
 
@@ -473,28 +472,28 @@ will return `200` status code and the name `admin`, and
 
 [source,bash]
 ----
-curl -v -X GET \
-  http://localhost:8080/frontend/admin-name-with-propagated-token` \
+curl -i -X GET \
+  http://localhost:8080/frontend/admin-name-with-propagated-token \
   -H "Authorization: Bearer "$access_token
 ----
 
 will also return `200` status code and the name `admin`, as `admin` has both `user` and `admin` roles.
 
 
-Now lets check `FrontendResource` methods which do not propagate the existing tokens but use `OidcClient` to acquire and propagate the tokens. You have seen that `OidcClient` is configured to acquire the tokens for the `alice` user, so:
+Now let's check `FrontendResource` methods which do not propagate the existing tokens but use `OidcClient` to acquire and propagate the tokens. You have seen that `OidcClient` is configured to acquire the tokens for the `alice` user, so:
 
 [source,bash]
 ----
-curl -v -X GET \
-  http://localhost:8080/frontend/user-name-with-oidc-client`
+curl -i -X GET \
+  http://localhost:8080/frontend/user-name-with-oidc-client-token
 ----
 
 will return `200` status code and the name `alice`, but
 
 [source,bash]
 ----
-curl -v -X GET \
-  http://localhost:8080/frontend/admin-name-with-oidc-client`
+curl -i -X GET \
+  http://localhost:8080/frontend/admin-name-with-oidc-client-token
 ----
 
 will return `403` status code.

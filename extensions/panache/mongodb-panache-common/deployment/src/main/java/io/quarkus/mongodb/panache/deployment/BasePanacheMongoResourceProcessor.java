@@ -114,7 +114,7 @@ public abstract class BasePanacheMongoResourceProcessor {
         Map<String, Map<String, String>> replacementMap = new ConcurrentHashMap<>();
         for (PropertyMappingClassBuildStep classToMap : propertyMappingClasses) {
             DotName dotName = createSimple(classToMap.getClassName());
-            ClassInfo classInfo = index.getIndex().getClassByName(dotName);
+            ClassInfo classInfo = index.getComputingIndex().getClassByName(dotName);
             if (classInfo != null) {
                 // only compute field replacement for types inside the index
                 Map<String, String> classReplacementMap = replacementMap.computeIfAbsent(classToMap.getClassName(),
@@ -179,7 +179,7 @@ public abstract class BasePanacheMongoResourceProcessor {
         // climb up the hierarchy of types
         if (!target.superClassType().name().equals(JandexUtil.DOTNAME_OBJECT)) {
             Type superType = target.superClassType();
-            ClassInfo superClass = index.getIndex().getClassByName(superType.name());
+            ClassInfo superClass = index.getComputingIndex().getClassByName(superType.name());
             extractMappings(classPropertyMapping, superClass, index);
         }
     }
@@ -206,14 +206,14 @@ public abstract class BasePanacheMongoResourceProcessor {
             BuildProducer<BytecodeTransformerBuildItem> transformers) {
         // manage @BsonProperty for the @ProjectionFor annotation
         Map<DotName, Map<String, String>> propertyMapping = new HashMap<>();
-        for (AnnotationInstance annotationInstance : index.getIndex().getAnnotations(PROJECTION_FOR)) {
+        for (AnnotationInstance annotationInstance : index.getComputingIndex().getAnnotations(PROJECTION_FOR)) {
             Type targetClass = annotationInstance.value().asClass();
-            ClassInfo target = index.getIndex().getClassByName(targetClass.name());
+            ClassInfo target = index.getComputingIndex().getClassByName(targetClass.name());
             Map<String, String> classPropertyMapping = new HashMap<>();
             extractMappings(classPropertyMapping, target, index);
             propertyMapping.put(targetClass.name(), classPropertyMapping);
         }
-        for (AnnotationInstance annotationInstance : index.getIndex().getAnnotations(PROJECTION_FOR)) {
+        for (AnnotationInstance annotationInstance : index.getComputingIndex().getAnnotations(PROJECTION_FOR)) {
             Type targetClass = annotationInstance.value().asClass();
             Map<String, String> targetPropertyMapping = propertyMapping.get(targetClass.name());
             if (targetPropertyMapping != null && !targetPropertyMapping.isEmpty()) {
@@ -259,14 +259,14 @@ public abstract class BasePanacheMongoResourceProcessor {
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
         // of PanacheMongoEntity if we ask for subtypes of PanacheMongoEntityBase
-        for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(typeBundle.entityBase().dotName())) {
+        for (ClassInfo classInfo : index.getComputingIndex().getAllKnownSubclasses(typeBundle.entityBase().dotName())) {
             if (classInfo.name().equals(typeBundle.entity().dotName())) {
                 continue;
             }
             if (modelClasses.add(classInfo.name().toString()))
                 modelInfo.addEntityModel(createEntityModel(classInfo));
         }
-        for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(typeBundle.entity().dotName())) {
+        for (ClassInfo classInfo : index.getComputingIndex().getAllKnownSubclasses(typeBundle.entity().dotName())) {
             if (modelClasses.add(classInfo.name().toString()))
                 modelInfo.addEntityModel(createEntityModel(classInfo));
         }
@@ -338,22 +338,22 @@ public abstract class BasePanacheMongoResourceProcessor {
         Set<String> daoClasses = new HashSet<>();
         Set<Type> daoTypeParameters = new HashSet<>();
         DotName dotName = typeBundle.repositoryBase().dotName();
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(dotName)) {
+        for (ClassInfo classInfo : index.getComputingIndex().getAllKnownImplementors(dotName)) {
             // Skip PanacheMongoRepository and abstract repositories
             if (classInfo.name().equals(typeBundle.repository().dotName()) || repositoryEnhancer.skipRepository(classInfo)) {
                 continue;
             }
             daoClasses.add(classInfo.name().toString());
             daoTypeParameters.addAll(
-                    resolveTypeParameters(classInfo.name(), typeBundle.repositoryBase().dotName(), index.getIndex()));
+                    resolveTypeParameters(classInfo.name(), typeBundle.repositoryBase().dotName(), index.getComputingIndex()));
         }
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(typeBundle.repository().dotName())) {
+        for (ClassInfo classInfo : index.getComputingIndex().getAllKnownImplementors(typeBundle.repository().dotName())) {
             if (repositoryEnhancer.skipRepository(classInfo)) {
                 continue;
             }
             daoClasses.add(classInfo.name().toString());
             daoTypeParameters.addAll(
-                    resolveTypeParameters(classInfo.name(), typeBundle.repositoryBase().dotName(), index.getIndex()));
+                    resolveTypeParameters(classInfo.name(), typeBundle.repositoryBase().dotName(), index.getComputingIndex()));
         }
         for (String daoClass : daoClasses) {
             transformers.produce(new BytecodeTransformerBuildItem(daoClass, repositoryEnhancer));
@@ -416,16 +416,16 @@ public abstract class BasePanacheMongoResourceProcessor {
     protected ValidationPhaseBuildItem.ValidationErrorBuildItem validate(ValidationPhaseBuildItem validationPhase,
             CombinedIndexBuildItem index) throws BuildException {
         // we verify that no ID fields are defined (via @BsonId) when extending PanacheMongoEntity or ReactivePanacheMongoEntity
-        for (AnnotationInstance annotationInstance : index.getIndex().getAnnotations(BSON_ID)) {
+        for (AnnotationInstance annotationInstance : index.getComputingIndex().getAnnotations(BSON_ID)) {
             ClassInfo info = JandexUtil.getEnclosingClass(annotationInstance);
-            if (JandexUtil.isSubclassOf(index.getIndex(), info,
+            if (JandexUtil.isSubclassOf(index.getComputingIndex(), info,
                     getImperativeTypeBundle().entity().dotName())) {
                 BuildException be = new BuildException("You provide a MongoDB identifier via @BsonId inside '" + info.name() +
                         "' but one is already provided by PanacheMongoEntity, " +
                         "your class should extend PanacheMongoEntityBase instead, or use the id provided by PanacheMongoEntity",
                         Collections.emptyList());
                 return new ValidationPhaseBuildItem.ValidationErrorBuildItem(be);
-            } else if (JandexUtil.isSubclassOf(index.getIndex(), info,
+            } else if (JandexUtil.isSubclassOf(index.getComputingIndex(), info,
                     getReactiveTypeBundle().entity().dotName())) {
                 BuildException be = new BuildException("You provide a MongoDB identifier via @BsonId inside '" + info.name() +
                         "' but one is already provided by ReactivePanacheMongoEntity, " +

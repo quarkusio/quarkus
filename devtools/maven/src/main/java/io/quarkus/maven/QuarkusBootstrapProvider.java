@@ -6,6 +6,8 @@ import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +16,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.model.Model;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Component;
@@ -132,16 +135,21 @@ public class QuarkusBootstrapProvider implements Closeable {
                 throws MojoExecutionException {
             isWorkspaceDiscovery(mojo);
             try {
-                return MavenArtifactResolver.builder()
-                        .setWorkspaceDiscovery(
-                                mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST || isWorkspaceDiscovery(mojo))
+                final MavenArtifactResolver.Builder builder = MavenArtifactResolver.builder()
                         .setCurrentProject(mojo.mavenProject().getFile().toString())
                         .setPreferPomsFromWorkspace(mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST)
                         .setRepositorySystem(repoSystem)
                         .setRepositorySystemSession(mojo.repositorySystemSession())
                         .setRemoteRepositories(mojo.remoteRepositories())
-                        .setRemoteRepositoryManager(remoteRepoManager)
-                        .build();
+                        .setRemoteRepositoryManager(remoteRepoManager);
+                if (mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST || isWorkspaceDiscovery(mojo)) {
+                    final Map<Path, Model> projectModels = new HashMap<>(mojo.mavenSession().getAllProjects().size());
+                    for (MavenProject mp : mojo.mavenSession().getAllProjects()) {
+                        projectModels.put(mp.getBasedir().toPath(), mp.getOriginalModel());
+                    }
+                    builder.setWorkspaceDiscovery(true).setProjectModelProvider(projectModels::get);
+                }
+                return builder.build();
             } catch (BootstrapMavenException e) {
                 throw new MojoExecutionException("Failed to initialize Quarkus bootstrap Maven artifact resolver", e);
             }

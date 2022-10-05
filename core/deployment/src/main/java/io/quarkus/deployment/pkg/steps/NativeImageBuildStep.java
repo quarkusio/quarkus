@@ -30,6 +30,7 @@ import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathAggregateBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageEnableModule;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeMinimalJavaVersionBuildItem;
@@ -113,6 +114,7 @@ public class NativeImageBuildStep {
             List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
             List<ExcludeConfigBuildItem> excludeConfigs,
             NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed,
+            List<NativeImageEnableModule> enableModules,
             List<JPMSExportBuildItem> jpmsExportBuildItems,
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
             List<NativeImageFeatureBuildItem> nativeImageFeatures) {
@@ -137,6 +139,7 @@ public class NativeImageBuildStep {
                 .setNativeImageProperties(nativeImageProperties)
                 .setExcludeConfigs(excludeConfigs)
                 .setJPMSExportBuildItems(jpmsExportBuildItems)
+                .setEnableModules(enableModules)
                 .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
                 .setNativeImageSecurityProviders(nativeImageSecurityProviders)
                 .setOutputDir(outputDir)
@@ -175,6 +178,7 @@ public class NativeImageBuildStep {
             NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed,
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
             List<JPMSExportBuildItem> jpmsExportBuildItems,
+            List<NativeImageEnableModule> enableModules,
             List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions,
             List<UnsupportedOSBuildItem> unsupportedOses,
             Optional<ProcessInheritIODisabled> processInheritIODisabled,
@@ -238,6 +242,7 @@ public class NativeImageBuildStep {
                     .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
                     .setNativeImageSecurityProviders(nativeImageSecurityProviders)
                     .setJPMSExportBuildItems(jpmsExportBuildItems)
+                    .setEnableModules(enableModules)
                     .setNativeMinimalJavaVersions(nativeMinimalJavaVersions)
                     .setUnsupportedOSes(unsupportedOses)
                     .setOutputDir(outputDir)
@@ -520,6 +525,7 @@ public class NativeImageBuildStep {
             private List<ExcludeConfigBuildItem> excludeConfigs;
             private List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders;
             private List<JPMSExportBuildItem> jpmsExports;
+            private List<NativeImageEnableModule> enableModules;
             private List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions;
             private List<UnsupportedOSBuildItem> unsupportedOSes;
             private List<NativeImageFeatureBuildItem> nativeImageFeatures;
@@ -568,6 +574,11 @@ public class NativeImageBuildStep {
 
             public Builder setJPMSExportBuildItems(List<JPMSExportBuildItem> JPMSExportBuildItems) {
                 this.jpmsExports = JPMSExportBuildItems;
+                return this;
+            }
+
+            public Builder setEnableModules(List<NativeImageEnableModule> modules) {
+                this.enableModules = modules;
                 return this;
             }
 
@@ -858,6 +869,11 @@ public class NativeImageBuildStep {
                                             + "=ALL-UNNAMED");
                         }
                     }
+                }
+                if (enableModules != null && enableModules.size() > 0) {
+                    String modules = enableModules.stream().map(NativeImageEnableModule::getModuleName).distinct().sorted()
+                            .collect(Collectors.joining(","));
+                    nativeImageArgs.add("--add-modules=" + modules);
                 }
 
                 if (nativeMinimalJavaVersions != null && !nativeMinimalJavaVersions.isEmpty()) {

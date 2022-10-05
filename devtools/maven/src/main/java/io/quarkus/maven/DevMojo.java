@@ -221,6 +221,14 @@ public class DevMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${open-lang-package}")
     private boolean openJavaLang;
+
+    /**
+     * Allows configuring the modules to add to the application.
+     * The listed modules will be added using: {@code --add-modules m1,m2...}.
+     */
+    @Parameter(defaultValue = "${add-modules}")
+    private List<String> modules;
+
     /**
      * Whether the JVM launch, in debug mode, should be suspended. This parameter is only
      * relevant when the JVM is launched in {@link #debug debug mode}. This parameter supports the
@@ -983,6 +991,12 @@ public class DevMojo extends AbstractMojo {
         if (openJavaLang) {
             builder.jvmArgs("--add-opens");
             builder.jvmArgs("java.base/java.lang=ALL-UNNAMED");
+        }
+
+        if (modules != null && !modules.isEmpty()) {
+            String mods = String.join(",", this.modules);
+            builder.jvmArgs("--add-modules");
+            builder.jvmArgs(mods);
         }
 
         builder.projectDir(project.getFile().getParentFile());

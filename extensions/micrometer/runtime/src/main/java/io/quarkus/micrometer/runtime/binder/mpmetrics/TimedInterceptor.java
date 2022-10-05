@@ -10,10 +10,12 @@ import org.eclipse.microprofile.metrics.annotation.Timed;
 
 import io.micrometer.core.instrument.Timer;
 import io.quarkus.arc.ArcInvocationContext;
+import io.quarkus.arc.Reflectionless;
 
 @SuppressWarnings("unused")
 @Timed
 @Interceptor
+@Reflectionless
 @Priority(Interceptor.Priority.LIBRARY_BEFORE + 10)
 class TimedInterceptor {
 
@@ -26,12 +28,12 @@ class TimedInterceptor {
 
     @AroundConstruct
     Object timedConstructor(ArcInvocationContext context) throws Exception {
-        return time(context, context.getConstructor().getDeclaringClass().getSimpleName());
+        return time(context, context.getMethodMetadata().getDeclaringClass().getSimpleName());
     }
 
     @AroundInvoke
     Object timedMethod(ArcInvocationContext context) throws Exception {
-        return time(context, context.getMethod().getName());
+        return time(context, context.getMethodMetadata().getName());
     }
 
     Object time(ArcInvocationContext context, String methodName) throws Exception {

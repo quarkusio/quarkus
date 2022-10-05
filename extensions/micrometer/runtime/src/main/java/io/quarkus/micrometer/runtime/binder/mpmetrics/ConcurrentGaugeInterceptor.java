@@ -9,9 +9,11 @@ import org.eclipse.microprofile.metrics.MetricType;
 import org.eclipse.microprofile.metrics.annotation.ConcurrentGauge;
 
 import io.quarkus.arc.ArcInvocationContext;
+import io.quarkus.arc.Reflectionless;
 
 @ConcurrentGauge
 @Interceptor
+@Reflectionless
 @Priority(Interceptor.Priority.LIBRARY_BEFORE + 10)
 class ConcurrentGaugeInterceptor {
 
@@ -24,12 +26,12 @@ class ConcurrentGaugeInterceptor {
 
     @AroundConstruct
     Object cGaugeConstructor(ArcInvocationContext context) throws Exception {
-        return cGauge(context, context.getConstructor().getDeclaringClass().getSimpleName());
+        return cGauge(context, context.getMethodMetadata().getDeclaringClass().getSimpleName());
     }
 
     @AroundInvoke
     Object cGaugeMethod(ArcInvocationContext context) throws Exception {
-        return cGauge(context, context.getMethod().getName());
+        return cGauge(context, context.getMethodMetadata().getName());
     }
 
     Object cGauge(ArcInvocationContext context, String methodName) throws Exception {

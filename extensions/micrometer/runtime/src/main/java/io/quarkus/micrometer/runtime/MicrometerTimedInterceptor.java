@@ -1,6 +1,5 @@
 package io.quarkus.micrometer.runtime;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -18,6 +17,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.quarkus.arc.ArcInvocationContext;
+import io.quarkus.arc.MethodMetadata;
+import io.quarkus.arc.Reflectionless;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Functions;
 
@@ -25,6 +26,7 @@ import io.smallrye.mutiny.tuples.Functions;
  * Quarkus defined interceptor for types or methods annotated with {@link Timed @Timed}.
  */
 @Interceptor
+@Reflectionless
 @Timed
 @Priority(Interceptor.Priority.LIBRARY_BEFORE + 10)
 public class MicrometerTimedInterceptor {
@@ -48,7 +50,7 @@ public class MicrometerTimedInterceptor {
             return context.proceed();
         }
 
-        Class<?> returnType = context.getMethod().getReturnType();
+        Class<?> returnType = context.getMethodMetadata().getReturnType();
         if (TypesUtil.isCompletionStage(returnType)) {
             try {
                 return ((CompletionStage<?>) context.proceed()).whenComplete((result, throwable) -> {
@@ -85,7 +87,7 @@ public class MicrometerTimedInterceptor {
     }
 
     private List<Sample> getSamples(ArcInvocationContext context) {
-        Method method = context.getMethod();
+        MethodMetadata method = context.getMethodMetadata();
         Tags commonTags = getCommonTags(method.getDeclaringClass().getName(), method.getName());
         List<Timed> timed = context.findIterceptorBindings(Timed.class);
         if (timed.isEmpty()) {

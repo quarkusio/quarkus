@@ -9,10 +9,12 @@ import org.eclipse.microprofile.metrics.MetricType;
 import org.eclipse.microprofile.metrics.annotation.Counted;
 
 import io.quarkus.arc.ArcInvocationContext;
+import io.quarkus.arc.Reflectionless;
 
 @SuppressWarnings("unused")
 @Counted
 @Interceptor
+@Reflectionless
 @Priority(Interceptor.Priority.LIBRARY_BEFORE + 10)
 class CountedInterceptor {
 
@@ -25,12 +27,12 @@ class CountedInterceptor {
 
     @AroundConstruct
     Object countedConstructor(ArcInvocationContext context) throws Exception {
-        return increment(context, context.getConstructor().getDeclaringClass().getSimpleName());
+        return increment(context, context.getMethodMetadata().getDeclaringClass().getSimpleName());
     }
 
     @AroundInvoke
     Object countedMethod(ArcInvocationContext context) throws Exception {
-        return increment(context, context.getMethod().getName());
+        return increment(context, context.getMethodMetadata().getName());
     }
 
     Object increment(ArcInvocationContext context, String methodName) throws Exception {

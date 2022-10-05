@@ -5,7 +5,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.function.Function;
 
+import org.apache.maven.model.Model;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
@@ -33,6 +35,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     protected boolean preferPomsFromWorkspace;
     protected Boolean effectiveModelBuilder;
     protected Boolean wsModuleParentHierarchy;
+    protected Function<Path, Model> modelProvider;
 
     /**
      * Local repository location
@@ -261,6 +264,20 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     @SuppressWarnings("unchecked")
     public T setWorkspaceModuleParentHierarchy(boolean wsModuleParentHierarchy) {
         this.wsModuleParentHierarchy = wsModuleParentHierarchy;
+        return (T) this;
+    }
+
+    /**
+     * When workspace discovery is enabled, this method allows to set a POM
+     * provider that would return a {@link org.apache.maven.model.Model} for
+     * a given workspace module directory.
+     *
+     * @param modelProvider POM provider
+     * @return this instance
+     */
+    @SuppressWarnings("unchecked")
+    public T setProjectModelProvider(Function<Path, Model> modelProvider) {
+        this.modelProvider = modelProvider;
         return (T) this;
     }
 

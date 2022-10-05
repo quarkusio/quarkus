@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -69,6 +70,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver {
     private final Map<Path, LocalProject> projectCache = new HashMap<>();
     private final Path currentProjectPom;
     private Path workspaceRootPom;
+    private Function<Path, Model> modelProvider;
 
     private ModelBuilder modelBuilder;
     private ModelResolver modelResolver;
@@ -77,7 +79,9 @@ public class WorkspaceLoader implements WorkspaceModelResolver {
     private List<String> inactiveProfileIds;
     private List<Profile> profiles;
 
-    WorkspaceLoader(BootstrapMavenContext ctx, Path currentProjectPom) throws BootstrapMavenException {
+    WorkspaceLoader(BootstrapMavenContext ctx, Path currentProjectPom, Function<Path, Model> modelProvider)
+            throws BootstrapMavenException {
+        this.modelProvider = modelProvider;
         if (ctx != null && ctx.isEffectiveModelBuilder()) {
             modelBuilder = BootstrapModelBuilderFactory.getDefaultModelBuilder();
             modelResolver = BootstrapModelResolver.newInstance(ctx, workspace);
@@ -100,7 +104,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver {
     private boolean isPom(Path p) {
         if (Files.exists(p) && !Files.isDirectory(p)) {
             try {
-                loadAndCacheRawModel(p);
+                rawModel(p);
                 return true;
             } catch (BootstrapMavenException e) {
                 // not a POM file
@@ -115,7 +119,8 @@ public class WorkspaceLoader implements WorkspaceModelResolver {
     }
 
     private LocalProject loadAndCacheProject(Path pomFile) throws BootstrapMavenException {
-        final Model cachedRawModel = rawModelCache.get(pomFile.getParent());
+        Model cachedRawModel = rawModelCache.getOrDefault(pomFile.getParent(),
+                modelProvider == null ? null : modelProvider.apply(pomFile.getParent()));
         final LocalProject project;
         if (modelBuilder != null) {
             ModelBuildingRequest req = new DefaultModelBuildingRequest();
@@ -148,7 +153,8 @@ public class WorkspaceLoader implements WorkspaceModelResolver {
     }
 
     private Model rawModel(Path pomFile) throws BootstrapMavenException {
-        final Model rawModel = rawModelCache.get(pomFile.getParent());
+        final Model rawModel = rawModelCache.getOrDefault(pomFile.getParent(),
+                modelProvider == null ? null : modelProvider.apply(pomFile.getParent()));
         return rawModel == null ? loadAndCacheRawModel(pomFile) : rawModel;
     }
 

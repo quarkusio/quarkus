@@ -34,9 +34,9 @@ public class ElasticsearchDevServicesBuildTimeConfig {
 
     /**
      * The value for the ES_JAVA_OPTS env variable.
-     * Defaults to setting the heap to 1GB.
+     * Defaults to setting the heap to 512MB min - 1GB max.
      */
-    @ConfigItem(defaultValue = "-Xmx1g")
+    @ConfigItem(defaultValue = "-Xms512m -Xmx1g")
     public String javaOpts;
 
     /**

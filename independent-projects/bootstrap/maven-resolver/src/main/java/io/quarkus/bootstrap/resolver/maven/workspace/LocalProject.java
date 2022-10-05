@@ -47,6 +47,10 @@ import io.quarkus.paths.PathList;
  */
 public class LocalProject {
 
+    private static final String SRC_TEST_RESOURCES = "src/test/resources";
+
+    private static final String SRC_MAIN_RESOURCES = "src/main/resources";
+
     public static final String PROJECT_GROUPID = "${project.groupId}";
 
     private static final String PROJECT_BASEDIR = "${project.basedir}";
@@ -78,7 +82,7 @@ public class LocalProject {
 
     public static LocalProject loadWorkspace(Path path, boolean required) throws BootstrapMavenException {
         try {
-            return new WorkspaceLoader(null, path.normalize().toAbsolutePath()).load();
+            return new WorkspaceLoader(null, path.normalize().toAbsolutePath(), null).load();
         } catch (Exception e) {
             if (required) {
                 throw e;
@@ -96,12 +100,17 @@ public class LocalProject {
      * @throws BootstrapMavenException in case of an error
      */
     public static LocalProject loadWorkspace(BootstrapMavenContext ctx) throws BootstrapMavenException {
+        return loadWorkspace(ctx, null);
+    }
+
+    public static LocalProject loadWorkspace(BootstrapMavenContext ctx, Function<Path, Model> modelProvider)
+            throws BootstrapMavenException {
         final Path currentProjectPom = ctx.getCurrentProjectPomOrNull();
         if (currentProjectPom == null) {
             return null;
         }
         final Path rootProjectBaseDir = ctx.getRootProjectBaseDir();
-        final WorkspaceLoader wsLoader = new WorkspaceLoader(ctx, currentProjectPom);
+        final WorkspaceLoader wsLoader = new WorkspaceLoader(ctx, currentProjectPom, modelProvider);
 
         if (rootProjectBaseDir != null && !rootProjectBaseDir.equals(currentProjectPom.getParent())) {
             wsLoader.setWorkspaceRootPom(rootProjectBaseDir.resolve(POM_XML));
@@ -257,11 +266,11 @@ public class LocalProject {
         final List<Resource> resources = rawModel.getBuild() == null ? List.of()
                 : rawModel.getBuild().getResources();
         if (resources.isEmpty()) {
-            return PathList.of(resolveRelativeToBaseDir(null, "src/main/resources"));
+            return PathList.of(resolveRelativeToBaseDir(null, SRC_MAIN_RESOURCES));
         }
         return PathList.from(resources.stream()
                 .map(Resource::getDirectory)
-                .map(resourcesDir -> resolveRelativeToBaseDir(resourcesDir, "src/main/resources"))
+                .map(resourcesDir -> resolveRelativeToBaseDir(resourcesDir, SRC_MAIN_RESOURCES))
                 .collect(Collectors.toCollection(LinkedHashSet::new)));
     }
 
@@ -269,11 +278,11 @@ public class LocalProject {
         final List<Resource> resources = rawModel.getBuild() == null ? List.of()
                 : rawModel.getBuild().getTestResources();
         if (resources.isEmpty()) {
-            return PathList.of(resolveRelativeToBaseDir(null, "src/test/resources"));
+            return PathList.of(resolveRelativeToBaseDir(null, SRC_TEST_RESOURCES));
         }
         return PathList.from(resources.stream()
                 .map(Resource::getDirectory)
-                .map(resourcesDir -> resolveRelativeToBaseDir(resourcesDir, "src/test/resources"))
+                .map(resourcesDir -> resolveRelativeToBaseDir(resourcesDir, SRC_TEST_RESOURCES))
                 .collect(Collectors.toCollection(LinkedHashSet::new)));
     }
 
@@ -302,7 +311,8 @@ public class LocalProject {
     }
 
     public ResolvedDependency getAppArtifact(String extension) {
-        return new ResolvedArtifactDependency(key.getGroupId(), key.getArtifactId(), "", extension, getVersion(),
+        return new ResolvedArtifactDependency(key.getGroupId(), key.getArtifactId(), ArtifactCoords.DEFAULT_CLASSIFIER,
+                extension, getVersion(),
                 (PathCollection) null);
     }
 
@@ -521,14 +531,14 @@ public class LocalProject {
         final Path classesDir = getClassesDir();
         if (resources.isEmpty()) {
             return List.of(new DefaultSourceDir(
-                    new DirectoryPathTree(resolveRelativeToBaseDir(null, "src/main/resources")),
+                    new DirectoryPathTree(resolveRelativeToBaseDir(null, SRC_MAIN_RESOURCES)),
                     new DirectoryPathTree(classesDir, filter), Map.of()));
         }
         final List<SourceDir> sourceDirs = new ArrayList<>(resources.size());
         for (Resource r : resources) {
             sourceDirs.add(
                     new DefaultSourceDir(
-                            new DirectoryPathTree(resolveRelativeToBaseDir(r.getDirectory(), "src/main/resources")),
+                            new DirectoryPathTree(resolveRelativeToBaseDir(r.getDirectory(), SRC_MAIN_RESOURCES)),
                             new DirectoryPathTree((r.getTargetPath() == null ? classesDir
                                     : classesDir.resolve(stripProjectBasedirPrefix(r.getTargetPath(), PROJECT_OUTPUT_DIR))),
                                     filter),
@@ -543,14 +553,14 @@ public class LocalProject {
         final Path testClassesDir = getTestClassesDir();
         if (resources.isEmpty()) {
             return List.of(new DefaultSourceDir(
-                    new DirectoryPathTree(resolveRelativeToBaseDir(null, "src/test/resources")),
+                    new DirectoryPathTree(resolveRelativeToBaseDir(null, SRC_TEST_RESOURCES)),
                     new DirectoryPathTree(testClassesDir, filter), Map.of()));
         }
         final List<SourceDir> sourceDirs = new ArrayList<>(resources.size());
         for (Resource r : resources) {
             sourceDirs.add(
                     new DefaultSourceDir(
-                            new DirectoryPathTree(resolveRelativeToBaseDir(r.getDirectory(), "src/test/resources")),
+                            new DirectoryPathTree(resolveRelativeToBaseDir(r.getDirectory(), SRC_TEST_RESOURCES)),
                             new DirectoryPathTree((r.getTargetPath() == null ? testClassesDir
                                     : testClassesDir.resolve(stripProjectBasedirPrefix(r.getTargetPath(), PROJECT_OUTPUT_DIR))),
                                     filter),

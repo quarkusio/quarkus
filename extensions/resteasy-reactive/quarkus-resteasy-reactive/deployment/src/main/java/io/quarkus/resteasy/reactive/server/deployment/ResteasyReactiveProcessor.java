@@ -373,7 +373,6 @@ public class ResteasyReactiveProcessor {
             Optional<ClassLevelExceptionMappersBuildItem> classLevelExceptionMappers,
             BuildProducer<SetupEndpointsResultBuildItem> setupEndpointsResultProducer,
             BuildProducer<ResteasyReactiveResourceMethodEntriesBuildItem> resourceMethodEntriesBuildItemBuildProducer,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             ApplicationResultBuildItem applicationResultBuildItem,
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
@@ -488,7 +487,7 @@ public class ResteasyReactiveProcessor {
                             ClassInfo classInfoWithSecurity = consumeStandardSecurityAnnotations(method,
                                     entry.getActualEndpointInfo(), index, c -> c);
                             if (classInfoWithSecurity != null) {
-                                reflectiveClass.produce(new ReflectiveClassBuildItem(false, true, false,
+                                reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(false, true, false,
                                         entry.getActualEndpointInfo().name().toString()));
                             }
 
@@ -520,8 +519,9 @@ public class ResteasyReactiveProcessor {
                                             .build());
                                 }
                                 if (parameterType.name().equals(FILE)) {
-                                    reflectiveClass.produce(new ReflectiveClassBuildItem(false, true, false,
-                                            entry.getActualEndpointInfo().name().toString()));
+                                    reflectiveClassBuildItemBuildProducer
+                                            .produce(new ReflectiveClassBuildItem(false, true, false,
+                                                    entry.getActualEndpointInfo().name().toString()));
                                 }
                             }
                         }
@@ -648,7 +648,7 @@ public class ResteasyReactiveProcessor {
             initConverters.returnValue(null);
         }
 
-        handleDateFormatReflection(reflectiveClass, index);
+        handleDateFormatReflection(reflectiveClassBuildItemBuildProducer, index);
     }
 
     private Collection<DotName> additionalContextTypes(List<ContextTypeBuildItem> contextTypeBuildItems) {

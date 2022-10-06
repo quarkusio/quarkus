@@ -16,7 +16,7 @@ public class StorkConfigUtil {
         for (String serviceName : servicesConfigs) {
             builder.setServiceName(serviceName);
             ServiceConfiguration serviceConfiguration = storkConfiguration.serviceConfiguration.get(serviceName);
-            SimpleServiceConfig.SimpleConfigWithType storkServiceDiscoveryConfig = new SimpleServiceConfig.SimpleConfigWithType(
+            SimpleServiceConfig.SimpleServiceDiscoveryConfig storkServiceDiscoveryConfig = new SimpleServiceConfig.SimpleServiceDiscoveryConfig(
                     serviceConfiguration.serviceDiscovery.type, serviceConfiguration.serviceDiscovery.params);
             builder = builder.setServiceDiscovery(storkServiceDiscoveryConfig);
             SimpleServiceConfig.SimpleLoadBalancerConfig loadBalancerConfig = new SimpleServiceConfig.SimpleLoadBalancerConfig(

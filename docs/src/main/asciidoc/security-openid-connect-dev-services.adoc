@@ -177,6 +177,17 @@ To make Dev UI more useful for supporting the development of OIDC `web-app` appl
 It will ensure that all Dev UI options described in <<develop-service-applications, Developing OpenID Connect Service Applications>> will be available when your `web-app` application is run in dev mode. The limitation of this approach is that both access and ID tokens returned with the code flow and acquired with Dev UI will be sent to the endpoint as HTTP `Bearer` tokens - which will not work well if your endpoint requires the injection of `IdToken`.
 However, it will work as expected if your `web-app` application only uses the access token, for example, as a source of roles or to get `UserInfo`, even if it is assumed to be a `service` application in dev mode.
 
+Even a better option is to use a `hybrid` application type in devmode:
+
+[source,properties]
+----
+%prod.quarkus.oidc.application-type=web-app
+%test.quarkus.oidc.application-type=web-app
+%dev.quarkus.oidc.application-type=hybrid
+----
+
+It will ensure that if you access the application from the browser in dev mode, without using OIDC DevUI, then Quarkus OIDC will also perform the authorization code flow as in the production mode. But OIDC DevUI will also be more useful because `hybrid` applications can accept the bearer access tokens as well.
+
 === Running the tests
 
 You can run the tests against a Keycloak container started in a test mode in a xref:continuous-testing.adoc[Continuous Testing] mode.

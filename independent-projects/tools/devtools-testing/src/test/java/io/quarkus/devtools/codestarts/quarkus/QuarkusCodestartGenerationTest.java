@@ -297,13 +297,13 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
                 .satisfies(checkContains("./mvnw package"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.11"))//TODO: make a teste to java17
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.14"))//TODO: make a teste to java17
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
                 .satisfies(checkNotContains("ENTRYPOINT"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
                 .satisfies(checkContains("./mvnw package -Dquarkus.package.type=legacy-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.11"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.14"))
                 .satisfies(checkContains("EXPOSE 8080"))
                 .satisfies(checkContains("USER 185"))
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
@@ -323,13 +323,13 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
                 .satisfies(checkContains("./gradlew build"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.6"))
                 .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
                 .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
                 .satisfies(checkContains("./gradlew build -Dquarkus.package.type=legacy-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.6"))
                 .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
                 .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native-micro")).exists()

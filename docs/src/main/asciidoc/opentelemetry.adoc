@@ -176,7 +176,7 @@ services:
     image: otel/opentelemetry-collector:latest
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:Z
     ports:
       - "13133:13133" # Health_check extension
       - "4317:4317"   # OTLP gRPC receiver

@@ -77,7 +77,7 @@ public class FilterGeneration {
             }
 
             ret.add(new GeneratedFilter(output.getOutput(), generatedClassName, methodInfo.declaringClass().name().toString(),
-                    true, priority, preMatching, nonBlockingRequired, nameBindingNames, readBody));
+                    true, priority, preMatching, nonBlockingRequired, nameBindingNames, readBody, methodInfo));
         }
         for (AnnotationInstance instance : index
                 .getAnnotations(SERVER_RESPONSE_FILTER)) {
@@ -111,7 +111,7 @@ public class FilterGeneration {
             }
 
             ret.add(new GeneratedFilter(output.getOutput(), generatedClassName, methodInfo.declaringClass().name().toString(),
-                    false, priority, false, false, nameBindingNames, false));
+                    false, priority, false, false, nameBindingNames, false, methodInfo));
 
         }
         return ret;
@@ -128,10 +128,12 @@ public class FilterGeneration {
         final Set<String> nameBindingNames;
         final boolean readBody;
 
+        final MethodInfo filterSourceMethod;
+
         public GeneratedFilter(List<GeneratedClass> generatedClasses, String generatedClassName,
                 String declaringClassName,
                 boolean requestFilter, Integer priority, boolean preMatching, boolean nonBlocking,
-                Set<String> nameBindingNames, boolean readBody) {
+                Set<String> nameBindingNames, boolean readBody, MethodInfo filterSourceMethod) {
             this.generatedClasses = generatedClasses;
             this.generatedClassName = generatedClassName;
             this.declaringClassName = declaringClassName;
@@ -141,6 +143,7 @@ public class FilterGeneration {
             this.nonBlocking = nonBlocking;
             this.nameBindingNames = nameBindingNames;
             this.readBody = readBody;
+            this.filterSourceMethod = filterSourceMethod;
         }
 
         public String getGeneratedClassName() {
@@ -177,6 +180,10 @@ public class FilterGeneration {
 
         public boolean isReadBody() {
             return readBody;
+        }
+
+        public MethodInfo getFilterSourceMethod() {
+            return filterSourceMethod;
         }
     }
 

@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -34,6 +35,8 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.Produces;
 import javax.ws.rs.RuntimeType;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
@@ -57,6 +60,7 @@ import org.jboss.resteasy.reactive.common.model.InjectableBean;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;
 import org.jboss.resteasy.reactive.common.model.ResourceFeature;
+import org.jboss.resteasy.reactive.common.model.ResourceInterceptor;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.model.ResourceReader;
@@ -381,6 +385,7 @@ public class ResteasyReactiveProcessor {
             List<AnnotationsTransformerBuildItem> annotationTransformerBuildItems,
             List<ContextTypeBuildItem> contextTypeBuildItems,
             CompiledJavaVersionBuildItem compiledJavaVersionBuildItem,
+            ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
             Capabilities capabilities)
             throws NoSuchMethodException {
 
@@ -412,6 +417,9 @@ public class ResteasyReactiveProcessor {
                 beanContainerBuildItem);
         paramConverterProviders.initializeDefaultFactories(factoryFunction);
         paramConverterProviders.sort();
+
+        boolean filtersAccessResourceMethod = filtersAccessResourceMethod(
+                resourceInterceptorsBuildItem.getResourceInterceptors());
 
         GeneratedClassGizmoAdaptor classOutput = new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true);
         try (ClassCreator c = new ClassCreator(classOutput,
@@ -523,6 +531,11 @@ public class ResteasyReactiveProcessor {
                                             .produce(new ReflectiveClassBuildItem(false, true, false,
                                                     entry.getActualEndpointInfo().name().toString()));
                                 }
+                            }
+
+                            if (filtersAccessResourceMethod) {
+                                reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(false, true, false,
+                                        entry.getActualEndpointInfo().name().toString()));
                             }
                         }
 
@@ -649,6 +662,60 @@ public class ResteasyReactiveProcessor {
         }
 
         handleDateFormatReflection(reflectiveClassBuildItemBuildProducer, index);
+    }
+
+    private boolean filtersAccessResourceMethod(ResourceInterceptors resourceInterceptors) {
+        AtomicBoolean ab = new AtomicBoolean(false);
+        ResourceInterceptors.FiltersVisitor visitor = new ResourceInterceptors.FiltersVisitor() {
+
+            @Override
+            public VisitResult visitPreMatchRequestFilter(ResourceInterceptor<ContainerRequestFilter> interceptor) {
+                return inspect(interceptor);
+            }
+
+            @Override
+            public VisitResult visitGlobalRequestFilter(ResourceInterceptor<ContainerRequestFilter> interceptor) {
+                return inspect(interceptor);
+            }
+
+            @Override
+            public VisitResult visitNamedRequestFilter(ResourceInterceptor<ContainerRequestFilter> interceptor) {
+                return inspect(interceptor);
+            }
+
+            @Override
+            public VisitResult visitGlobalResponseFilter(ResourceInterceptor<ContainerResponseFilter> interceptor) {
+                return inspect(interceptor);
+            }
+
+            @Override
+            public VisitResult visitNamedResponseFilter(ResourceInterceptor<ContainerResponseFilter> interceptor) {
+                return inspect(interceptor);
+            }
+
+            private VisitResult inspect(ResourceInterceptor<?> interceptor) {
+                Map<String, Object> metadata = interceptor.metadata;
+                if (metadata == null) {
+                    return VisitResult.CONTINUE;
+                }
+                MethodInfo methodInfo = (MethodInfo) metadata.get(ResourceInterceptor.FILTER_SOURCE_METHOD_METADATA_KEY);
+                if (methodInfo == null) {
+                    return VisitResult.CONTINUE;
+                }
+                boolean result = createFilterClassIntrospector().usesGetResourceMethod(methodInfo);
+                if (result) {
+                    ab.set(true);
+                    return VisitResult.ABORT;
+                }
+                return VisitResult.CONTINUE;
+            }
+
+            private FilterClassIntrospector createFilterClassIntrospector() {
+                return new FilterClassIntrospector(Thread.currentThread().getContextClassLoader());
+            }
+        };
+        resourceInterceptors.visitFilters(visitor);
+        return ab.get();
     }
 
     private Collection<DotName> additionalContextTypes(List<ContextTypeBuildItem> contextTypeBuildItems) {

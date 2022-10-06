@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Flow;
 import java.util.function.Function;
 
 import javax.inject.Inject;
@@ -33,6 +34,8 @@ import io.quarkus.transaction.annotations.Rollback;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
 import io.smallrye.reactive.converters.Registry;
+import mutiny.zero.flow.adapters.AdaptersToFlow;
+import mutiny.zero.flow.adapters.AdaptersToReactiveStreams;
 
 public abstract class TransactionalInterceptorBase implements Serializable {
 
@@ -138,8 +141,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
             // handle asynchronously if not throwing
             if (!throwing && ret != null) {
                 ReactiveTypeConverter<Object> converter = null;
-                if (ret instanceof CompletionStage == false
-                        && (ret instanceof Publisher == false || ic.getMethod().getReturnType() != Publisher.class)) {
+                if (!isCompletionStage(ret) && !isSomePublisher(ic, ret)) {
                     @SuppressWarnings({ "rawtypes", "unchecked" })
                     Optional<ReactiveTypeConverter<Object>> lookup = Registry.lookup((Class) ret.getClass());
                     if (lookup.isPresent()) {
@@ -151,12 +153,15 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                         }
                     }
                 }
-                if (ret instanceof CompletionStage) {
+                if (isCompletionStage(ret)) {
                     ret = handleAsync(tm, tx, ic, ret, afterEndTransaction);
                     // convert back
                     if (converter != null)
                         ret = converter.fromCompletionStage((CompletionStage<?>) ret);
-                } else if (ret instanceof Publisher) {
+                } else if (isFlowPublisher(ret)) {
+                    // FIXME this needs to be tested
+                    ret = handleAsync(tm, tx, ic, ret, afterEndTransaction);
+                } else if (isLegacyPublisher(ret)) {
                     ret = handleAsync(tm, tx, ic, ret, afterEndTransaction);
                     // convert back
                     if (converter != null)
@@ -171,6 +176,23 @@ public abstract class TransactionalInterceptorBase implements Serializable {
             }
         }
         return ret;
+    }
+
+    private static boolean isLegacyPublisher(Object ret) {
+        return ret instanceof Publisher;
+    }
+
+    private boolean isSomePublisher(InvocationContext ic, Object ret) {
+        return isLegacyPublisher(ret) || (ic.getMethod().getReturnType() == Publisher.class)
+                || isFlowPublisher(ret) || (ic.getMethod().getReturnType() == Flow.Publisher.class);
+    }
+
+    private static boolean isFlowPublisher(Object ret) {
+        return ret instanceof Flow.Publisher;
+    }
+
+    private boolean isCompletionStage(Object ret) {
+        return ret instanceof CompletionStage;
     }
 
     private int getTransactionTimeoutFromAnnotation(InvocationContext ic) {
@@ -223,7 +245,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         // Suspend the transaction to remove it from the main request thread
         tm.suspend();
         afterEndTransaction.run();
-        if (ret instanceof CompletionStage) {
+        if (isCompletionStage(ret)) {
             return ((CompletionStage<?>) ret).handle((v, t) -> {
                 try {
                     doInTransaction(tm, tx, () -> {
@@ -249,8 +271,15 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                     throw new CompletionException(t);
                 return v;
             });
-        } else if (ret instanceof Publisher) {
-            ret = Multi.createFrom().publisher((Publisher<?>) ret)
+        } else if (isLegacyPublisher(ret) || isFlowPublisher(ret)) {
+            Flow.Publisher<?> pub;
+            boolean isLegacyRS = !isFlowPublisher(ret);
+            if (isLegacyRS) {
+                pub = AdaptersToFlow.publisher((Publisher<?>) ret);
+            } else {
+                pub = (Flow.Publisher<?>) ret;
+            }
+            ret = Multi.createFrom().publisher(pub)
                     .onFailure().invoke(t -> {
                         try {
                             doInTransaction(tm, tx, () -> handleExceptionNoThrow(ic, t, tx));
@@ -276,6 +305,9 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                             throw new RuntimeException(e);
                         }
                     });
+            if (isLegacyRS) {
+                ret = AdaptersToReactiveStreams.publisher((Multi<?>) ret);
+            }
         }
         return ret;
     }

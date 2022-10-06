@@ -6,6 +6,7 @@ import javax.ws.rs.Path;
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 
 import io.smallrye.mutiny.Multi;
+import mutiny.zero.flow.adapters.AdaptersToReactiveStreams;
 
 @Path("/reactive")
 public class ReactiveStreamOpsResource {
@@ -30,7 +31,7 @@ public class ReactiveStreamOpsResource {
     @Path("/stream-mutiny")
     public String stream2() {
         StringBuilder builder = new StringBuilder();
-        ReactiveStreams.fromPublisher(Multi.createFrom().items("d", "e", "f"))
+        ReactiveStreams.fromPublisher(AdaptersToReactiveStreams.publisher(Multi.createFrom().items("d", "e", "f")))
                 .map(String::toUpperCase)
                 .forEach(builder::append)
                 .run();

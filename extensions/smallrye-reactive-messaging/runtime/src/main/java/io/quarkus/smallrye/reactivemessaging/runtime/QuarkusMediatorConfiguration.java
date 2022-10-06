@@ -53,6 +53,8 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
 
     private Type ingestedPayload;
 
+    private boolean useReactiveStreams = false;
+
     public String getBeanId() {
         return beanId;
     }
@@ -259,5 +261,18 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
 
     public void setWorkerPoolName(String workerPoolName) {
         this.workerPoolName = workerPoolName;
+    }
+
+    public boolean isUseReactiveStreams() {
+        return useReactiveStreams;
+    }
+
+    public void setUseReactiveStreams(boolean usesReactiveStreams) {
+        this.useReactiveStreams = usesReactiveStreams;
+    }
+
+    @Override
+    public boolean usesReactiveStreams() {
+        return useReactiveStreams;
     }
 }

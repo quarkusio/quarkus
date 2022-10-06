@@ -3,6 +3,7 @@ package io.quarkus.it.mongodb.panache.reactive.book;
 import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.Flow;
 
 import javax.annotation.PostConstruct;
 import javax.ws.rs.*;
@@ -12,7 +13,6 @@ import javax.ws.rs.core.Response;
 import org.bson.types.ObjectId;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.SseElementType;
-import org.reactivestreams.Publisher;
 
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
@@ -41,7 +41,7 @@ public class ReactiveBookEntityResource {
     @Path("/stream")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @SseElementType(MediaType.APPLICATION_JSON)
-    public Publisher<ReactiveBookEntity> streamBooks(@QueryParam("sort") String sort) {
+    public Flow.Publisher<ReactiveBookEntity> streamBooks(@QueryParam("sort") String sort) {
         if (sort != null) {
             return ReactiveBookEntity.streamAll(Sort.ascending(sort));
         }

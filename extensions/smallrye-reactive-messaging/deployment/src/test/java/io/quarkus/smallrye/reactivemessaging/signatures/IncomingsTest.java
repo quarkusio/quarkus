@@ -5,6 +5,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Flow;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -13,7 +14,6 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.reactivestreams.Publisher;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Multi;
@@ -39,7 +39,7 @@ public class IncomingsTest {
     public static class ProducerOnA {
 
         @Outgoing("a")
-        public Publisher<String> produce() {
+        public Flow.Publisher<String> produce() {
             return Multi.createFrom().items("a", "b", "c");
         }
 
@@ -49,7 +49,7 @@ public class IncomingsTest {
     public static class ProducerOnB {
 
         @Outgoing("b")
-        public Publisher<String> produce() {
+        public Flow.Publisher<String> produce() {
             return Multi.createFrom().items("d", "e", "f");
         }
 

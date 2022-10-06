@@ -1,10 +1,9 @@
 package io.quarkus.vertx.web.runtime;
 
+import java.util.concurrent.Flow.Subscriber;
+import java.util.concurrent.Flow.Subscription;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.AsyncResult;

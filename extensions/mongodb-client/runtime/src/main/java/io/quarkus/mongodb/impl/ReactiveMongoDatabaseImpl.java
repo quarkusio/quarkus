@@ -1,6 +1,7 @@
 package io.quarkus.mongodb.impl;
 
 import java.util.List;
+import java.util.concurrent.Flow;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -22,6 +23,7 @@ import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.mongodb.reactive.ReactiveMongoDatabase;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import mutiny.zero.flow.adapters.AdaptersToFlow;
 
 public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
 
@@ -127,12 +129,11 @@ public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
         return Multi.createFrom().publisher(apply(options, database.listCollections(clazz)));
     }
 
-    private <T> ListCollectionsPublisher<T> apply(CollectionListOptions options,
-            ListCollectionsPublisher<T> collections) {
+    private <T> Flow.Publisher<T> apply(CollectionListOptions options, ListCollectionsPublisher<T> collections) {
         if (options == null) {
-            return collections;
+            return AdaptersToFlow.publisher(collections);
         } else {
-            return options.apply(collections);
+            return AdaptersToFlow.publisher(options.apply(collections));
         }
     }
 

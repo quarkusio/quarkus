@@ -6,9 +6,9 @@ import io.smallrye.mutiny.Uni
 import org.bson.types.ObjectId
 import org.jboss.logging.Logger
 import org.jboss.resteasy.annotations.SseElementType
-import org.reactivestreams.Publisher
 import java.net.URI
 import java.time.LocalDate.parse
+import java.util.concurrent.Flow
 import javax.annotation.PostConstruct
 import javax.ws.rs.DELETE
 import javax.ws.rs.GET
@@ -43,7 +43,7 @@ class ReactiveBookEntityResource {
     @Path("/stream")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @SseElementType(MediaType.APPLICATION_JSON)
-    fun streamBooks(@QueryParam("sort") sort: String?): Publisher<ReactiveBookEntity> {
+    fun streamBooks(@QueryParam("sort") sort: String?): Flow.Publisher<ReactiveBookEntity> {
         return if (sort != null) {
             ReactiveBookEntity.streamAll(Sort.ascending(sort))
         } else ReactiveBookEntity.streamAll()

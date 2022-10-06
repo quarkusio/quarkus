@@ -5,6 +5,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.Flow;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -13,7 +14,6 @@ import javax.inject.Inject;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.reactivestreams.Publisher;
 
 import io.quarkus.smallrye.reactivemessaging.blocking.beans.IncomingUsingSmallRyeBlocking;
 import io.quarkus.test.QuarkusUnitTest;
@@ -47,7 +47,7 @@ public class SmallRyeBlockingSubscriberTest {
     @ApplicationScoped
     public static class ProduceIn {
         @Outgoing("in")
-        public Publisher<String> produce() {
+        public Flow.Publisher<String> produce() {
             return Multi.createFrom().items("a", "b", "c", "d", "e", "f");
         }
     }

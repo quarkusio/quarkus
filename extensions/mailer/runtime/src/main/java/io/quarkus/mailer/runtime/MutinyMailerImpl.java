@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Flow.Publisher;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -13,7 +14,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.jboss.logging.Logger;
-import org.reactivestreams.Publisher;
 
 import io.quarkus.mailer.Attachment;
 import io.quarkus.mailer.Mail;

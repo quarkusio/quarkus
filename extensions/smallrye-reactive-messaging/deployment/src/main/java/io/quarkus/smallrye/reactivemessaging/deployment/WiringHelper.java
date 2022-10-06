@@ -110,8 +110,8 @@ public class WiringHelper {
      * @return {@code true} if the class implements the inbound connector interface
      */
     static boolean isInboundConnector(ClassInfo ci) {
-        // TODO Add the internal interface support
-        return ci.interfaceNames().contains(ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY);
+        return ci.interfaceNames().contains(ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY) ||
+                ci.interfaceNames().contains(ReactiveMessagingDotNames.INBOUND_CONNECTOR);
     }
 
     /**
@@ -121,8 +121,8 @@ public class WiringHelper {
      * @return {@code true} if the class implements the outbound connector interface
      */
     static boolean isOutboundConnector(ClassInfo ci) {
-        // TODO Add the internal interface support
-        return ci.interfaceNames().contains(ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY);
+        return ci.interfaceNames().contains(ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY) ||
+                ci.interfaceNames().contains(ReactiveMessagingDotNames.OUTBOUND_CONNECTOR);
     }
 
     /**

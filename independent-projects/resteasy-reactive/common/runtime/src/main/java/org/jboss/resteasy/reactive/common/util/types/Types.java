@@ -180,16 +180,20 @@ public final class Types {
         if (returnType instanceof ParameterizedType) {
             ParameterizedType type = (ParameterizedType) returnType;
             Type firstTypeArgument = type.getActualTypeArguments()[0];
-            if (type.getRawType() == CompletionStage.class) {
+            Type rawType = type.getRawType();
+            if (rawType == CompletionStage.class) {
                 return getEffectiveReturnType(firstTypeArgument);
             }
-            if (type.getRawType() == Uni.class) {
+            if (rawType == Uni.class) {
                 return getEffectiveReturnType(firstTypeArgument);
             }
-            if (type.getRawType() == Multi.class) {
+            if (rawType == Multi.class) {
                 return getEffectiveReturnType(firstTypeArgument);
             }
-            if (type.getRawType() == RestResponse.class) {
+            if (rawType == RestResponse.class) {
+                return getEffectiveReturnType(firstTypeArgument);
+            }
+            if ("kotlinx.coroutines.flow.Flow".equals(rawType.getTypeName())) { // TODO: this is very ugly and we should probably use some an SPI in order to decouple
                 return getEffectiveReturnType(firstTypeArgument);
             }
             return returnType;

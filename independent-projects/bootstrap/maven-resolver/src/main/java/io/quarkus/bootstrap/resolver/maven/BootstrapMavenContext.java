@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
@@ -169,7 +170,7 @@ public class BootstrapMavenContext {
             this.currentPom = currentProject.getRawModel().getPomFile().toPath();
             this.workspace = config.currentProject.getWorkspace();
         } else if (config.workspaceDiscovery) {
-            currentProject = resolveCurrentProject();
+            currentProject = resolveCurrentProject(config.modelProvider);
             this.workspace = currentProject == null ? null : currentProject.getWorkspace();
             if (workspace != null) {
                 if (config.repoSession == null && repoSession != null && repoSession.getWorkspaceReader() == null) {
@@ -315,9 +316,9 @@ public class BootstrapMavenContext {
         return localRepo == null ? localRepo = resolveLocalRepo(getEffectiveSettings()) : localRepo;
     }
 
-    private LocalProject resolveCurrentProject() throws BootstrapMavenException {
+    private LocalProject resolveCurrentProject(Function<Path, Model> modelProvider) throws BootstrapMavenException {
         try {
-            return LocalProject.loadWorkspace(this);
+            return LocalProject.loadWorkspace(this, modelProvider);
         } catch (Exception e) {
             throw new BootstrapMavenException("Failed to load current project at " + getCurrentProjectPomOrNull(), e);
         }

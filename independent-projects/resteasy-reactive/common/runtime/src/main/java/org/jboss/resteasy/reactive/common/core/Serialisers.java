@@ -151,7 +151,9 @@ public abstract class Serialisers {
             }
 
         }
-        return toMessageBodyWriters(findResourceWriters(writers, klass, produces, runtimeType));
+        var resourceWriters = findResourceWriters(writers, klass, produces, runtimeType);
+        resourceWriters.sort(new ResourceWriter.ResourceWriterComparator(produces));
+        return toMessageBodyWriters(resourceWriters);
     }
 
     protected List<ResourceWriter> findResourceWriters(QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers, Class<?> klass,

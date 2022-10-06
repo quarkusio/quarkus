@@ -8,8 +8,8 @@
         },
         {
             "category": "Data1",
-            "timeout": 65,
-            "test-modules": "jpa-h2, jpa-mariadb, jpa-mssql, jpa-derby, jpa-without-entity, hibernate-orm-tenancy/datasource, hibernate-orm-tenancy/connection-resolver, hibernate-orm-tenancy/connection-resolver-legacy-qualifiers",
+            "timeout": 70,
+            "test-modules": "jpa-h2, jpa-h2-embedded, jpa-mariadb, jpa-mssql, jpa-derby, jpa-without-entity, hibernate-orm-tenancy/datasource, hibernate-orm-tenancy/connection-resolver, hibernate-orm-tenancy/connection-resolver-legacy-qualifiers",
             "os-name": "ubuntu-latest"
         },
         {

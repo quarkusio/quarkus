@@ -1,6 +1,7 @@
 
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.Constants.KIND;
 import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.MINIKUBE;
@@ -80,7 +81,7 @@ public class KubernetesDeployer {
         final DeploymentTargetEntry selectedTarget = determineDeploymentTarget(
                 containerImageInfo, targets, activeContainerImageCapability.get(), containerImageConfig);
         selectedDeploymentTarget.produce(new SelectedKubernetesDeploymentTargetBuildItem(selectedTarget));
-        if (MINIKUBE.equals(selectedTarget.getName())) {
+        if (MINIKUBE.equals(selectedTarget.getName()) || KIND.equals(selectedTarget.getName())) {
             preventImplicitContainerImagePush.produce(new PreventImplicitContainerImagePushBuildItem());
         }
     }
@@ -185,7 +186,7 @@ public class KubernetesDeployer {
                 checkForNamespaceGroupAlignment = true;
             }
 
-        } else if (MINIKUBE.equals(selectedTarget.getName())) {
+        } else if (MINIKUBE.equals(selectedTarget.getName()) || KIND.equals(selectedTarget.getName())) {
             checkForMissingRegistry = false;
         } else if (containerImageConfig.isPushExplicitlyDisabled()) {
             checkForMissingRegistry = false;

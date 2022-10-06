@@ -63,7 +63,7 @@ public class OpenshiftWithRoutePropertiesTest {
                     assertThat(m.getAnnotations()).contains(entry("kubernetes.io/tls-acme", "true"));
                     assertThat(m.getNamespace()).isEqualTo("applications");
                 });
-                assertThat(r.getSpec().getPort().getTargetPort().getIntVal()).isEqualTo(9090);
+                assertThat(r.getSpec().getPort().getTargetPort().getStrVal()).isEqualTo("http");
                 assertThat(r.getSpec().getHost()).isEqualTo("foo.bar.io");
             });
         });

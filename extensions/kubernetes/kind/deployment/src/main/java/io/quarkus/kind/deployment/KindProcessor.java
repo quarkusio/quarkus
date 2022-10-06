@@ -57,7 +57,8 @@ public class KindProcessor {
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         resourceMeta.produce(
-                new KubernetesResourceMetadataBuildItem(KUBERNETES, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION, DEPLOYMENT, name));
+                new KubernetesResourceMetadataBuildItem(KUBERNETES, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION, DEPLOYMENT,
+                        name));
     }
 
     @BuildStep

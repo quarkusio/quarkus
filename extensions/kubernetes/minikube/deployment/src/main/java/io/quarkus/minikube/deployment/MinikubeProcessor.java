@@ -42,7 +42,6 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 public class MinikubeProcessor {
 
-    public static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
     private static final int MINIKUBE_PRIORITY = DEFAULT_PRIORITY + 20;
 
     @BuildStep

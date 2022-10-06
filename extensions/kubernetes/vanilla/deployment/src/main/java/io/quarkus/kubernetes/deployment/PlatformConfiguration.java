@@ -80,10 +80,6 @@ public interface PlatformConfiguration extends EnvVarHolder {
 
     ResourcesConfig getResources();
 
-    default boolean isExpose() {
-        return false;
-    }
-
     default String getConfigName() {
         return getClass().getSimpleName().replaceAll("Config$", "").toLowerCase();
     }

@@ -88,11 +88,22 @@ public class RolesResource {
 ----
 <1> Create  a default Keycloak Admin Client which can perform Keycloak `master` realm administration tasks as an `admin-cli` client, such as adding new realms, clients and users.
 
-The only configuration which is required to create this Keycloak Admin Client is a Keycloak server URL, for example:
+The only configuration which is required to create this Keycloak Admin Client is a Keycloak server URL.
+
+For example:
 
 [source,properties]
 ----
+# Quarkus based Keycloak distribution
 quarkus.keycloak.admin-client.server-url=http://localhost:8081
+----
+
+or
+
+[source,properties]
+----
+# WildFly based Keycloak distribution
+quarkus.keycloak.admin-client.server-url=http://localhost:8081/auth
 ----
 
 [NOTE]

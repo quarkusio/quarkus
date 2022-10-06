@@ -43,6 +43,7 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.BuildBase;
 import org.apache.maven.model.Dependency;
+import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.Profile;
@@ -90,6 +91,8 @@ import io.quarkus.bootstrap.devmode.DependenciesFilter;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.util.BootstrapUtils;
@@ -221,6 +224,14 @@ public class DevMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${open-lang-package}")
     private boolean openJavaLang;
+
+    /**
+     * Allows configuring the modules to add to the application.
+     * The listed modules will be added using: {@code --add-modules m1,m2...}.
+     */
+    @Parameter(defaultValue = "${add-modules}")
+    private List<String> modules;
+
     /**
      * Whether the JVM launch, in debug mode, should be suspended. This parameter is only
      * relevant when the JVM is launched in {@link #debug debug mode}. This parameter supports the
@@ -751,7 +762,6 @@ public class DevMojo extends AbstractMojo {
     }
 
     private void addProject(MavenDevModeLauncher.Builder builder, ResolvedDependency module, boolean root) throws Exception {
-
         if (!module.isJar()) {
             return;
         }
@@ -985,6 +995,12 @@ public class DevMojo extends AbstractMojo {
             builder.jvmArgs("java.base/java.lang=ALL-UNNAMED");
         }
 
+        if (modules != null && !modules.isEmpty()) {
+            String mods = String.join(",", this.modules);
+            builder.jvmArgs("--add-modules");
+            builder.jvmArgs(mods);
+        }
+
         builder.projectDir(project.getFile().getParentFile());
 
         Properties projectProperties = project.getProperties();
@@ -1070,30 +1086,37 @@ public class DevMojo extends AbstractMojo {
         if (appModel != null) {
             bootstrapProvider.close();
         } else {
-            final MavenArtifactResolver.Builder resolverBuilder = MavenArtifactResolver.builder()
+            final BootstrapMavenContextConfig<?> mvnConfig = BootstrapMavenContext.config()
                     .setRemoteRepositories(repos)
                     .setRemoteRepositoryManager(remoteRepositoryManager)
                     .setWorkspaceDiscovery(true)
                     .setPreferPomsFromWorkspace(true)
                     .setCurrentProject(project.getFile().toString());
 
-            // if it already exists, it may be a reload triggered by a change in a POM
-            // in which case we should not be using the original Maven session
-            boolean reinitializeMavenSession = Files.exists(appModelLocation);
-            if (reinitializeMavenSession) {
+            // if a serialized model is found, it may be a reload triggered by a change in a POM
+            // in which case we should not be using the original Maven session initialized with the previous POM version
+            if (Files.exists(appModelLocation)) {
                 Files.delete(appModelLocation);
                 // we can't re-use the repo system because we want to use our interpolating model builder
                 // a use-case where it fails with the original repo system is when dev mode is launched with -Dquarkus.platform.version=xxx
                 // overriding the version of the quarkus-bom in the pom.xml
             } else {
-                // we can re-use the original Maven session
-                resolverBuilder.setRepositorySystemSession(repoSession).setRepositorySystem(repoSystem);
+                // we can re-use the original Maven session and the system
+                mvnConfig.setRepositorySystemSession(repoSession).setRepositorySystem(repoSystem);
+                // there could be Maven extensions manipulating the project versions and models
+                // the ones returned from the Maven API could be different from the original pom.xml files
+                final Map<Path, Model> projectModels = new HashMap<>(session.getAllProjects().size());
+                for (MavenProject mp : session.getAllProjects()) {
+                    projectModels.put(mp.getBasedir().toPath(), mp.getOriginalModel());
+                }
+                mvnConfig.setProjectModelProvider(projectModels::get);
             }
 
-            appModel = new BootstrapAppModelResolver(resolverBuilder.build())
+            final BootstrapMavenContext mvnCtx = new BootstrapMavenContext(mvnConfig);
+            appModel = new BootstrapAppModelResolver(new MavenArtifactResolver(mvnCtx))
                     .setDevMode(true)
                     .setCollectReloadableDependencies(!noDeps)
-                    .resolveModel(ArtifactCoords.jar(project.getGroupId(), project.getArtifactId(), project.getVersion()));
+                    .resolveModel(mvnCtx.getCurrentProject().getAppArtifact());
         }
 
         // serialize the app model to avoid re-resolving it in the dev process

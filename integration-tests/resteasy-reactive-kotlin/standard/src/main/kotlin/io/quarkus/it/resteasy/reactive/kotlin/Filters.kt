@@ -7,6 +7,7 @@ import org.jboss.resteasy.reactive.server.SimpleResourceInfo
 import java.security.SecureRandom
 import javax.ws.rs.container.ContainerRequestContext
 import javax.ws.rs.container.ContainerResponseContext
+import javax.ws.rs.container.ResourceInfo
 import javax.ws.rs.core.Response
 import javax.ws.rs.core.UriInfo
 
@@ -33,9 +34,10 @@ class Filters {
     }
 
     @ServerResponseFilter
-    suspend fun addResponseHeader(context: ContainerResponseContext, simpleResourceInfo: SimpleResourceInfo) {
+    suspend fun addResponseHeader(context: ContainerResponseContext, simpleResourceInfo: SimpleResourceInfo, resourceInfo: ResourceInfo) {
         delay(100)
         context.headers.add("method", simpleResourceInfo.methodName)
+        context.headers.add("method2", resourceInfo.resourceMethod.name)
         delay(100)
     }
 }

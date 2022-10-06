@@ -87,6 +87,9 @@ public class QuarkusDev extends QuarkusTask {
     private final Property<Boolean> shouldPropagateJavaCompilerArgs;
     private final ListProperty<String> args;
     private final ListProperty<String> jvmArgs;
+
+    private final Property<Boolean> openJavaLang;
+    private final ListProperty<String> modules;
     private final ListProperty<String> compilerArgs;
 
     private final Set<File> filesIncludedInClasspath = new HashSet<>();
@@ -120,6 +123,9 @@ public class QuarkusDev extends QuarkusTask {
         args = objectFactory.listProperty(String.class);
         compilerArgs = objectFactory.listProperty(String.class);
         jvmArgs = objectFactory.listProperty(String.class);
+        openJavaLang = objectFactory.property(Boolean.class);
+        openJavaLang.convention(false);
+        modules = objectFactory.listProperty(String.class);
     }
 
     /**
@@ -217,6 +223,26 @@ public class QuarkusDev extends QuarkusTask {
     @Input
     public ListProperty<String> getArguments() {
         return args;
+    }
+
+    @Option(description = "Modules to add to the application", option = "modules")
+    public void setModules(List<String> modules) {
+        this.modules.set(modules);
+    }
+
+    @Input
+    public ListProperty<String> getModules() {
+        return modules;
+    }
+
+    @Option(description = "Open Java Lang module", option = "open-lang-package")
+    public void setOpenJavaLang(Boolean openJavaLang) {
+        this.openJavaLang.set(openJavaLang);
+    }
+
+    @Input
+    public Property<Boolean> getOpenJavaLang() {
+        return openJavaLang;
     }
 
     @SuppressWarnings("unused")
@@ -353,6 +379,17 @@ public class QuarkusDev extends QuarkusTask {
 
         if (getJvmArguments().isPresent() && !getJvmArguments().get().isEmpty()) {
             builder.jvmArgs(getJvmArgs());
+        }
+
+        if (getOpenJavaLang().isPresent() && getOpenJavaLang().get()) {
+            builder.jvmArgs("--add-opens");
+            builder.jvmArgs("java.base/java.lang=ALL-UNNAMED");
+        }
+
+        if (getModules().isPresent() && !getModules().get().isEmpty()) {
+            String mods = String.join(",", getModules().get());
+            builder.jvmArgs("--add-modules");
+            builder.jvmArgs(mods);
         }
 
         for (Map.Entry<String, ?> e : project.getProperties().entrySet()) {

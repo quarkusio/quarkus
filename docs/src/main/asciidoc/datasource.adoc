@@ -187,7 +187,7 @@ See <<other-databases>> if you want to use a JDBC driver for another database.
 [NOTE]
 ====
 The H2 and Derby databases can normally be configured to run in "embedded mode";
-the extension does not support compiling the embedded database engine into native executables.
+however the Derby extension does not support compiling the embedded database engine into native executables.
 
 Read <<in-memory-databases,Testing with in-memory databases>> (below) for suggestions regarding integration testing.
 ====
@@ -484,8 +484,11 @@ Our suggestion is to use the real database you intend to use in production; cont
 good reasons to also want the ability to run quick integration tests using the JVM powered databases,
 so this is possible as well.
 
-It is important to remember that when configuring H2 (or Derby) to use the embedded engine,
+It is important to remember that when configuring Derby to use the embedded engine,
 this will work as usual in JVM mode but such an application will not compile into a native executable, as the Quarkus extensions only cover for making the JDBC client code compatible with the native compilation step: embedding the whole database engine into a native executable is currently not implemented.
+
+Compiling H2 into a native-image is now possible (it didn't use to be) but this is considered experimental; even if this is technically possible,
+we would still recommend to consider carefully why you would want to embed H2 within your native-image.
 
 If you plan to run such integration tests in the JVM exclusively, it will of course work as usual.
 

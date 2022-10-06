@@ -355,7 +355,7 @@ This creates a new project importing the quarkus-artemis-jms extension:
 .pom.xml
 ----
 <dependency>
-    <groupId>io.quarkus</groupId>
+    <groupId>io.quarkiverse.artemis</groupId>
     <artifactId>quarkus-artemis-jms</artifactId>
 </dependency>
 ----
@@ -363,7 +363,7 @@ This creates a new project importing the quarkus-artemis-jms extension:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-artemis-jms")
+implementation("io.quarkiverse.artemis:quarkus-artemis-jms")
 ----
 
 With the project created, you can resume from <<starting-the-broker>> in the detailed steps above

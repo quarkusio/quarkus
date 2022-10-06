@@ -71,4 +71,57 @@ public class ResourceInterceptors {
         return this;
     }
 
+    public void visitFilters(FiltersVisitor visitor) {
+        for (var f : containerRequestFilters.getPreMatchInterceptors()) {
+            var visitResult = visitor.visitPreMatchRequestFilter(f);
+            if (visitResult == FiltersVisitor.VisitResult.ABORT) {
+                return;
+            }
+        }
+        for (var f : containerRequestFilters.getGlobalResourceInterceptors()) {
+            var visitResult = visitor.visitGlobalRequestFilter(f);
+            if (visitResult == FiltersVisitor.VisitResult.ABORT) {
+                return;
+            }
+
+        }
+        for (var f : containerRequestFilters.getNameResourceInterceptors()) {
+            var visitResult = visitor.visitNamedRequestFilter(f);
+            if (visitResult == FiltersVisitor.VisitResult.ABORT) {
+                return;
+            }
+        }
+
+        for (var f : containerResponseFilters.getGlobalResourceInterceptors()) {
+            var visitResult = visitor.visitGlobalResponseFilter(f);
+            if (visitResult == FiltersVisitor.VisitResult.ABORT) {
+                return;
+            }
+        }
+        for (var f : containerResponseFilters.getNameResourceInterceptors()) {
+            var visitResult = visitor.visitNamedResponseFilter(f);
+            if (visitResult == FiltersVisitor.VisitResult.ABORT) {
+                return;
+            }
+        }
+    }
+
+    public interface FiltersVisitor {
+
+        VisitResult visitPreMatchRequestFilter(ResourceInterceptor<ContainerRequestFilter> interceptor);
+
+        VisitResult visitGlobalRequestFilter(ResourceInterceptor<ContainerRequestFilter> interceptor);
+
+        VisitResult visitNamedRequestFilter(ResourceInterceptor<ContainerRequestFilter> interceptor);
+
+        VisitResult visitGlobalResponseFilter(ResourceInterceptor<ContainerResponseFilter> interceptor);
+
+        VisitResult visitNamedResponseFilter(ResourceInterceptor<ContainerResponseFilter> interceptor);
+
+        enum VisitResult {
+            CONTINUE,
+            ABORT
+        }
+    }
+
 }

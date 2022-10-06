@@ -51,6 +51,30 @@ public class MailerTest {
     }
 
     @Test
+    public void sendTextEmailWithNonAsciiCharacters() {
+        RestAssured.get("/mail/text-non-ascii");
+
+        await().until(() -> getLastEmail() != null);
+
+        TextEmail email = getLastEmail();
+        assertThat(email).isNotNull();
+        assertThat(email.subject).contains("Příliš žluťoučký kůň úpěl ďábelské ódy na 各分野最高のライブラリと標準で構成された、");
+        assertThat(email.text).contains("Příliš žluťoučký kůň úpěl ďábelské ódy na 各分野最高のライブラリと標準で構成された、");
+    }
+
+    @Test
+    public void sendEmailWithHumanFriendlyAddressPrefix() {
+        RestAssured.get("/mail/human-friendly-address");
+
+        await().until(() -> getLastEmail() != null);
+
+        TextEmail email = getLastEmail();
+        assertThat(email).isNotNull();
+        assertThat(email.from.text).contains("Roger the robot <roger-the-robot@quarkus.io>");
+        assertThat(email.to.text).contains("Mr. Nobody <nobody@quarkus.io>");
+    }
+
+    @Test
     public void checkAttachmentCache() {
         String body = RestAssured.get("/mail/attachments/cache").then().extract().asString();
         assertThat(body).isEqualTo("true");
@@ -98,6 +122,17 @@ public class MailerTest {
         assertThat(email.subject).isEqualTo("html test email");
         assertThat(email.html).contains("<h3>Hello!</h3>");
         assertThat(email.to.text).contains("nobody@quarkus.io");
+    }
+
+    @Test
+    public void sendSimpleHtmlEmailWithAttachmentInline() {
+        RestAssured.get("/mail/html-inline-attachment");
+
+        await().until(() -> getLastEmail() != null);
+
+        HtmlEmail email = getLastHtmlEmail();
+        assertThat(email).isNotNull();
+        assertThat(email.html).contains("<img src=\"data:image/png;base64,");
     }
 
     @Test

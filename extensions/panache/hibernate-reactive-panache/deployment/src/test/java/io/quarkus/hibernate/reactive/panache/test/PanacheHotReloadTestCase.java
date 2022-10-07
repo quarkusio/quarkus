@@ -18,7 +18,6 @@ public class PanacheHotReloadTestCase {
                     .addAsResource("application.properties")
                     .addAsResource("import.sql"));
 
-    @Test
     public void testAddNewFieldToEntity() {
         String expectedName = "{\"id\":1,\"name\":\"my name\"}";
         assertBodyIs(expectedName);

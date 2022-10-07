@@ -44,6 +44,9 @@ import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity;
 import io.quarkus.hibernate.orm.panache.kotlin.runtime.PanacheKotlinHibernateOrmRecorder;
 import io.quarkus.panache.common.deployment.ByteCodeType;
 import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildItem;
+import io.quarkus.panache.common.deployment.KotlinPanacheCompanionEnhancer;
+import io.quarkus.panache.common.deployment.KotlinPanacheEntityEnhancer;
+import io.quarkus.panache.common.deployment.KotlinPanacheRepositoryEnhancer;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
@@ -80,19 +83,19 @@ public final class KotlinPanacheResourceProcessor {
                 bundle.entityCompanionBase(), bundle.entityCompanion());
     }
 
-    public PanacheEntityEnhancer createEntityEnhancer(CombinedIndexBuildItem index,
+    private PanacheEntityEnhancer createEntityEnhancer(CombinedIndexBuildItem index,
             List<PanacheMethodCustomizer> methodCustomizers) {
-        return new KotlinPanacheEntityEnhancer(index.getIndex(), methodCustomizers);
+        return new KotlinPanacheEntityEnhancer(index.getIndex(), methodCustomizers, KotlinJpaTypeBundle.BUNDLE);
     }
 
     private PanacheRepositoryEnhancer createRepositoryEnhancer(CombinedIndexBuildItem index,
             List<PanacheMethodCustomizer> methodCustomizers) {
-        return new KotlinPanacheRepositoryEnhancer(index.getIndex(), methodCustomizers);
+        return new KotlinPanacheRepositoryEnhancer(index.getIndex(), methodCustomizers, KotlinJpaTypeBundle.BUNDLE);
     }
 
     private KotlinPanacheCompanionEnhancer createCompanionEnhancer(CombinedIndexBuildItem index,
             List<PanacheMethodCustomizer> customizers) {
-        return new KotlinPanacheCompanionEnhancer(index.getIndex(), customizers);
+        return new KotlinPanacheCompanionEnhancer(index.getIndex(), customizers, KotlinJpaTypeBundle.BUNDLE);
     }
 
     @BuildStep

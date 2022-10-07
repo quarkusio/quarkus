@@ -1,14 +1,13 @@
 package io.quarkus.opentelemetry.runtime;
 
-import java.util.AbstractMap;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.trace.Span;
@@ -49,18 +48,18 @@ public final class OpenTelemetryUtil {
     }
 
     public static ContextPropagators mapPropagators(List<String> propagators) {
-        Map<String, TextMapPropagator> spiPropagators = StreamSupport.stream(
-                ServiceLoader.load(ConfigurablePropagatorProvider.class).spliterator(), false)
-                .collect(
-                        Collectors.toMap(ConfigurablePropagatorProvider::getName,
-                                // Even though this param was added, propagators currently don't use any config properties
-                                // when the time arrives, and they do use it, we will need to implement a Quarkus
-                                // backed `ConfigProperties` class
-                                o -> o.getPropagator(null)));
+        Map<String, TextMapPropagator> spiPropagators = new HashMap<>();
+        for (var provider : ServiceLoader.load(ConfigurablePropagatorProvider.class)) {
+            // Even though this param was added, propagators currently don't use any config properties
+            // when the time arrives, and they do use it, we will need to implement a Quarkus
+            // backed `ConfigProperties` class
+            spiPropagators.put(provider.getName(), provider.getPropagator(null));
+        }
 
-        Set<TextMapPropagator> selectedPropagators = propagators.stream()
-                .map(propagator -> getPropagator(propagator.trim(), spiPropagators))
-                .collect(Collectors.toSet());
+        Set<TextMapPropagator> selectedPropagators = new HashSet<>(propagators.size());
+        for (String propagator : propagators) {
+            selectedPropagators.add(getPropagator(propagator.trim(), spiPropagators));
+        }
 
         return ContextPropagators.create(TextMapPropagator.composite(selectedPropagators));
     }
@@ -78,11 +77,18 @@ public final class OpenTelemetryUtil {
             return Collections.emptyMap();
         }
 
-        return headers.stream()
-                .filter(header -> !header.isEmpty())
-                .map(keyValuePair -> keyValuePair.split("=", 2))
-                .map(keyValuePair -> new AbstractMap.SimpleImmutableEntry<>(keyValuePair[0].trim(), keyValuePair[1].trim()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (first, next) -> next, LinkedHashMap::new));
+        Map<String, String> result = new LinkedHashMap<>();
+        for (String header : headers) {
+            if (header.isEmpty()) {
+                continue;
+            }
+            String[] parts = header.split("=", 2);
+            String key = parts[0].trim();
+            String value = parts[1].trim();
+            result.put(key, value);
+        }
+
+        return result;
     }
 
     /**

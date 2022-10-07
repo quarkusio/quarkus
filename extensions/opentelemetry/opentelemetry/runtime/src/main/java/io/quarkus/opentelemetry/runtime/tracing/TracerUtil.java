@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import javax.enterprise.inject.Any;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
 
 import io.opentelemetry.api.common.Attributes;
@@ -40,11 +41,18 @@ public class TracerUtil {
 
     public static Sampler mapSampler(TracerRuntimeConfig.SamplerConfig samplerConfig,
             List<String> dropTargets) {
-        Sampler sampler = CDI.current()
-                .select(Sampler.class, Any.Literal.INSTANCE)
-                .stream()
-                .filter(o -> !(o instanceof LateBoundSampler))
-                .findFirst().orElseGet(() -> getBaseSampler(samplerConfig.samplerName, samplerConfig.ratio));
+        Sampler sampler = null;
+        Instance<Sampler> samplerInstance = CDI.current().select(Sampler.class, Any.Literal.INSTANCE);
+        for (Sampler s : samplerInstance) {
+            if (s instanceof LateBoundSampler) {
+                continue;
+            }
+            sampler = s;
+            break;
+        }
+        if (sampler == null) {
+            sampler = getBaseSampler(samplerConfig.samplerName, samplerConfig.ratio);
+        }
 
         if (!dropTargets.isEmpty()) {
             sampler = new DropTargetsSampler(sampler, dropTargets);

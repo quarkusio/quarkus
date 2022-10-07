@@ -67,17 +67,21 @@ public enum QuarkusContextStorage implements ContextStorage {
         vertxContext.putLocal(OTEL_CONTEXT, toAttach);
         OpenTelemetryUtil.setMDCData(toAttach, vertxContext);
 
-        return () -> {
-            if (getContext(vertxContext) != toAttach) {
-                log.warn("Context in storage not the expected context, Scope.close was not called correctly");
-            }
+        return new Scope() {
 
-            if (beforeAttach == null) {
-                vertxContext.removeLocal(OTEL_CONTEXT);
-                OpenTelemetryUtil.clearMDCData(vertxContext);
-            } else {
-                vertxContext.putLocal(OTEL_CONTEXT, beforeAttach);
-                OpenTelemetryUtil.setMDCData(beforeAttach, vertxContext);
+            @Override
+            public void close() {
+                if (getContext(vertxContext) != toAttach) {
+                    log.warn("Context in storage not the expected context, Scope.close was not called correctly");
+                }
+
+                if (beforeAttach == null) {
+                    vertxContext.removeLocal(OTEL_CONTEXT);
+                    OpenTelemetryUtil.clearMDCData(vertxContext);
+                } else {
+                    vertxContext.putLocal(OTEL_CONTEXT, beforeAttach);
+                    OpenTelemetryUtil.setMDCData(beforeAttach, vertxContext);
+                }
             }
         };
     }

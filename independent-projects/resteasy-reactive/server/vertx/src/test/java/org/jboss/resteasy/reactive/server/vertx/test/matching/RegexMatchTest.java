@@ -35,4 +35,15 @@ public class RegexMatchTest {
                 .statusCode(404);
     }
 
+    @Test
+    public void testLiteralInRegex() {
+        RestAssured.get("/regex/abb/foo/alongpathtotriggerbug")
+                .then()
+                .statusCode(200)
+                .body(equalTo("plain:abb/foo/alongpathtotriggerbug"));
+        RestAssured.get("/regex/abb/literal/ddc")
+                .then()
+                .statusCode(200)
+                .body(equalTo("literal:abb/ddc"));
+    }
 }

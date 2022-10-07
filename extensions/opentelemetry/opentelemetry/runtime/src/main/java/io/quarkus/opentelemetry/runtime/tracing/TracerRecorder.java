@@ -115,11 +115,13 @@ public class TracerRecorder {
                 .select(Resource.class, Any.Literal.INSTANCE);
 
         // Merge resource instances with env attributes
-        Resource resource = allResources.stream()
-                .reduce(Resource.empty(), Resource::merge)
-                .merge(config.resourceAttributes
-                        .map(TracerUtil::mapResourceAttributes)
-                        .orElseGet(Resource::empty));
+        Resource resource = Resource.empty();
+        for (Resource r : allResources) {
+            resource = resource.merge(r);
+        }
+        if (config.resourceAttributes.isPresent()) {
+            resource = resource.merge(TracerUtil.mapResourceAttributes(config.resourceAttributes.get()));
+        }
 
         // Update Delayed attributes to contain new runtime attributes if necessary
         if (resource.getAttributes().size() > 0) {

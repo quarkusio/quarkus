@@ -177,6 +177,7 @@
                 <module>jpa-postgresql-withxml</module>
                 <module>jpa-mariadb</module>
                 <module>jpa-h2</module>
+                <module>jpa-h2-embedded</module>
                 <module>jpa-mssql</module>
                 <module>jpa-mysql</module>
                 <module>jpa-oracle</module>

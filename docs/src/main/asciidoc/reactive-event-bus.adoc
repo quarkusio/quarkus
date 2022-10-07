@@ -267,17 +267,20 @@ The `EventBus` object provides methods to:
 
 1. `send` a message to a specific address - one single consumer receives the message.
 2. `publish` a message to a specific address - all consumers receive the messages.
-3. `send` a message and expect reply
+3. `send` a message and expect reply asynchronously
+4. `send` a message and expect reply in a blocking manner
 
 [source, java]
 ----
 // Case 1
-bus.sendAndForget("greeting", name)
+bus.<String>requestAndForget("greeting", name);
 // Case 2
-bus.publish("greeting", name)
+bus.publish("greeting", name);
 // Case 3
 Uni<String> response = bus.<String>request("address", "hello, how are you?")
         .onItem().transform(Message::body);
+// Case 4
+String response = bus.<String>requestAndAwait("greeting", name).body();
 ----
 
 == Putting things together - bridging HTTP and messages

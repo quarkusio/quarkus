@@ -349,7 +349,9 @@ public class KeycloakDevServicesProcessor {
 
             String internalUrl = startURL(oidcContainer.getHost(), oidcContainer.getPort(), oidcContainer.keycloakX);
             String hostUrl = oidcContainer.useSharedNetwork
-                    ? startURL("localhost", oidcContainer.fixedExposedPort.getAsInt(), oidcContainer.keycloakX)
+                    // we need to use auto-detected host and port, so it works when docker host != localhost
+                    ? startURL(oidcContainer.getSharedNetworkExternalHost(), oidcContainer.getSharedNetworkExternalPort(),
+                            oidcContainer.keycloakX)
                     : null;
 
             Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer, internalUrl, hostUrl,
@@ -406,7 +408,7 @@ public class KeycloakDevServicesProcessor {
             this.javaOpts = javaOpts;
             this.keycloakX = isKeycloakX(dockerImageName);
 
-            if (sharedContainer && fixedExposedPort.isEmpty()) {
+            if (useSharedNetwork && fixedExposedPort.isEmpty()) {
                 // We need to know the port we are exposing when using the shared network, in order to be able to tell
                 // Keycloak what the client URL is. This is necessary in order for Keycloak to create the proper 'issuer'
                 // when creating tokens
@@ -435,6 +437,11 @@ public class KeycloakDevServicesProcessor {
 
             if (fixedExposedPort.isPresent()) {
                 addFixedExposedPort(fixedExposedPort.getAsInt(), KEYCLOAK_PORT);
+                if (useSharedNetwork) {
+                    // expose random port for which we are able to ask Testcontainers for the actual mapped port at runtime
+                    // as from the host's perspective Testcontainers actually expose container ports on random host port
+                    addExposedPort(KEYCLOAK_PORT);
+                }
             } else {
                 addExposedPort(KEYCLOAK_PORT);
             }
@@ -526,6 +533,24 @@ public class KeycloakDevServicesProcessor {
                 return hostName;
             }
             return super.getHost();
+        }
+
+        /**
+         * Host name used for calls from outside of docker when {@code useSharedNetwork} is true.
+         *
+         * @return host name
+         */
+        private String getSharedNetworkExternalHost() {
+            return super.getHost();
+        }
+
+        /**
+         * Host port used for calls from outside of docker when {@code useSharedNetwork} is true.
+         *
+         * @return port
+         */
+        private int getSharedNetworkExternalPort() {
+            return getFirstMappedPort();
         }
 
         public int getPort() {

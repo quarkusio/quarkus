@@ -31,10 +31,10 @@ endif::[]
 endif::[]
 ifdef::create-app-extensions[]
 ifndef::create-app-code[]
-    --extension={create-app-extensions} \
+    --extension='{create-app-extensions}' \
 endif::[]
 ifdef::create-app-code[]
-    --extension={create-app-extensions}
+    --extension='{create-app-extensions}'
 endif::[]
 endif::[]
 ifndef::create-app-code[]
@@ -82,10 +82,10 @@ endif::[]
 endif::[]
 ifdef::create-app-extensions[]
 ifndef::create-app-code[]
-    -Dextensions="{create-app-extensions}" \
+    -Dextensions='{create-app-extensions}' \
 endif::[]
 ifdef::create-app-code[]
-    -Dextensions="{create-app-extensions}"
+    -Dextensions='{create-app-extensions}'
 endif::[]
 endif::[]
 ifndef::create-app-code[]

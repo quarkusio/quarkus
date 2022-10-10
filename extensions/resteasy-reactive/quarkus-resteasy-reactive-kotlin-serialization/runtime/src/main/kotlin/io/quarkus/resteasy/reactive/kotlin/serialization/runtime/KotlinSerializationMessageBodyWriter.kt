@@ -1,4 +1,4 @@
-package io.quarkus.kotlin.serialization
+package io.quarkus.resteasy.reactive.kotlin.serialization.runtime
 
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json

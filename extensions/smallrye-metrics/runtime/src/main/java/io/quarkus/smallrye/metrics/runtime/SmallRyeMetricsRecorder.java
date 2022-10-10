@@ -194,7 +194,7 @@ public class SmallRyeMetricsRecorder {
         //HACK: registration is done via statics, but cleanup is done via pre destroy
         //however if the bean is not used it will not be created, so no cleanup will be done
         //we force bean creation here to make sure the container can restart correctly
-        container.instance(MetricRegistries.class).getApplicationRegistry();
+        container.beanInstance(MetricRegistries.class).getApplicationRegistry();
     }
 
     public void dropRegistriesAtShutdown(ShutdownContext shutdownContext) {

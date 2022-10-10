@@ -54,7 +54,7 @@ public class TestRecorder {
      * @param beanContainer - CDI bean container
      */
     public void loadDSAPublicKeyProducer(DSAPublicKey publicKey, BeanContainer beanContainer) {
-        PublicKeyProducer keyProducer = beanContainer.instance(PublicKeyProducer.class);
+        PublicKeyProducer keyProducer = beanContainer.beanInstance(PublicKeyProducer.class);
         keyProducer.setPublicKey(publicKey);
     }
 

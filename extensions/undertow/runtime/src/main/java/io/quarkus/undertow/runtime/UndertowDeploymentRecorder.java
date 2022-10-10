@@ -252,7 +252,7 @@ public class UndertowDeploymentRecorder {
             InstanceFactory<? extends Servlet> instanceFactory) throws Exception {
 
         InstanceFactory<? extends Servlet> factory = instanceFactory != null ? instanceFactory
-                : new QuarkusInstanceFactory(beanContainer.instanceFactory(servletClass));
+                : new QuarkusInstanceFactory(beanContainer.beanInstanceFactory(servletClass));
         ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) servletClass,
                 factory);
         deploymentInfo.getValue().addServlet(servletInfo);
@@ -304,7 +304,7 @@ public class UndertowDeploymentRecorder {
             InstanceFactory<? extends Filter> instanceFactory) throws Exception {
 
         InstanceFactory<? extends Filter> factory = instanceFactory != null ? instanceFactory
-                : new QuarkusInstanceFactory(beanContainer.instanceFactory(filterClass));
+                : new QuarkusInstanceFactory(beanContainer.beanInstanceFactory(filterClass));
         FilterInfo filterInfo = new FilterInfo(name, (Class<? extends Filter>) filterClass, factory);
         info.getValue().addFilter(filterInfo);
         filterInfo.setAsyncSupported(asyncSupported);
@@ -329,7 +329,7 @@ public class UndertowDeploymentRecorder {
         info.getValue()
                 .addListener(new ListenerInfo((Class<? extends EventListener>) listenerClass,
                         (InstanceFactory<? extends EventListener>) new QuarkusInstanceFactory<>(
-                                factory.instanceFactory(listenerClass))));
+                                factory.beanInstanceFactory(listenerClass))));
     }
 
     public void addMimeMapping(RuntimeValue<DeploymentInfo> info, String extension,
@@ -457,7 +457,7 @@ public class UndertowDeploymentRecorder {
             info.getValue().setClassIntrospecter(new ClassIntrospecter() {
                 @Override
                 public <T> InstanceFactory<T> createInstanceFactory(Class<T> clazz) throws NoSuchMethodException {
-                    BeanContainer.Factory<T> res = beanContainer.instanceFactory(clazz);
+                    BeanContainer.Factory<T> res = beanContainer.beanInstanceFactory(clazz);
                     if (res == null) {
                         return defaultVal.createInstanceFactory(clazz);
                     }

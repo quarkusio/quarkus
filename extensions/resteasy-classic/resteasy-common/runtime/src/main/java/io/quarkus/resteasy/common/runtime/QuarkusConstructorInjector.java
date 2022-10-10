@@ -32,7 +32,7 @@ public class QuarkusConstructorInjector implements ConstructorInjector {
         if (factory != null) {
             return factory.get().get();
         }
-        factory = Arc.container().instanceSupplier(this.ctor.getDeclaringClass());
+        factory = Arc.container().beanInstanceSupplier(this.ctor.getDeclaringClass());
         if (factory == null) {
             return delegate.construct(unwrapAsync);
         }
@@ -45,7 +45,7 @@ public class QuarkusConstructorInjector implements ConstructorInjector {
         if (factory != null) {
             return factory.get().get();
         }
-        factory = Arc.container().instanceSupplier(this.ctor.getDeclaringClass());
+        factory = Arc.container().beanInstanceSupplier(this.ctor.getDeclaringClass());
         if (factory == null) {
             return delegate.construct(request, response, unwrapAsync);
         }

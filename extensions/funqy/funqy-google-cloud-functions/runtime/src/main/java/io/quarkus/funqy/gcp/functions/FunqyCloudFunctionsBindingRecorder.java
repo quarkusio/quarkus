@@ -32,7 +32,7 @@ public class FunqyCloudFunctionsBindingRecorder {
 
     public void init(BeanContainer bc) {
         beanContainer = bc;
-        objectMapper = beanContainer.instance(ObjectMapper.class);
+        objectMapper = beanContainer.beanInstance(ObjectMapper.class);
 
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
             if (invoker.hasInput()) {

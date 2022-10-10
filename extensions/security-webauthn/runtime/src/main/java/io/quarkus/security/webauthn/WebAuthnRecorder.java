@@ -32,9 +32,9 @@ public class WebAuthnRecorder {
     }
 
     public void setupRoutes(BeanContainer beanContainer, RuntimeValue<Router> routerValue, String prefix) {
-        WebAuthnSecurity security = beanContainer.instance(WebAuthnSecurity.class);
-        WebAuthnAuthenticationMechanism authMech = beanContainer.instance(WebAuthnAuthenticationMechanism.class);
-        IdentityProviderManager identityProviderManager = beanContainer.instance(IdentityProviderManager.class);
+        WebAuthnSecurity security = beanContainer.beanInstance(WebAuthnSecurity.class);
+        WebAuthnAuthenticationMechanism authMech = beanContainer.beanInstance(WebAuthnAuthenticationMechanism.class);
+        IdentityProviderManager identityProviderManager = beanContainer.beanInstance(IdentityProviderManager.class);
         WebAuthnController controller = new WebAuthnController(security, config.getValue(), identityProviderManager, authMech);
         Router router = routerValue.getValue();
         BodyHandler bodyHandler = BodyHandler.create();

@@ -77,11 +77,11 @@ public class AmazonLambdaRecorder {
      */
     public static void handle(InputStream inputStream, OutputStream outputStream, Context context) throws IOException {
         if (streamHandlerClass != null) {
-            RequestStreamHandler handler = beanContainer.instance(streamHandlerClass);
+            RequestStreamHandler handler = beanContainer.beanInstance(streamHandlerClass);
             handler.handleRequest(inputStream, outputStream, context);
         } else {
             Object request = objectReader.readValue(inputStream);
-            RequestHandler handler = beanContainer.instance(handlerClass);
+            RequestHandler handler = beanContainer.beanInstance(handlerClass);
             Object response = handler.handleRequest(request, context);
             objectWriter.writeValue(outputStream, response);
         }
@@ -166,7 +166,7 @@ public class AmazonLambdaRecorder {
 
             @Override
             protected Object processRequest(Object input, AmazonLambdaContext context) throws Exception {
-                RequestHandler handler = beanContainer.instance(handlerClass);
+                RequestHandler handler = beanContainer.beanInstance(handlerClass);
                 return handler.handleRequest(input, context);
             }
 
@@ -188,7 +188,7 @@ public class AmazonLambdaRecorder {
             @Override
             protected void processRequest(InputStream input, OutputStream output, AmazonLambdaContext context)
                     throws Exception {
-                RequestStreamHandler handler = beanContainer.instance(streamHandlerClass);
+                RequestStreamHandler handler = beanContainer.beanInstance(streamHandlerClass);
                 handler.handleRequest(input, output, context);
 
             }

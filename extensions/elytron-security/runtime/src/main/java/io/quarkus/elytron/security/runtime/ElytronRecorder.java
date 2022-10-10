@@ -31,7 +31,7 @@ public class ElytronRecorder {
     }
 
     public void setDomainForIdentityProvider(BeanContainer bc, RuntimeValue<SecurityDomain> domain) {
-        bc.instance(ElytronSecurityDomainManager.class).setDomain(domain.getValue());
+        bc.beanInstance(ElytronSecurityDomainManager.class).setDomain(domain.getValue());
     }
 
     /**

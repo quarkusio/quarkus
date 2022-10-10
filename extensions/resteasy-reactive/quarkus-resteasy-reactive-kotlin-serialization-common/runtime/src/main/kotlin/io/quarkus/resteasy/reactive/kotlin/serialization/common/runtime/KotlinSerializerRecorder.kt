@@ -1,4 +1,4 @@
-package io.quarkus.kotlin.serialization
+package io.quarkus.resteasy.reactive.kotlin.serialization.common.runtime
 
 import io.quarkus.runtime.annotations.Recorder
 import kotlinx.serialization.ExperimentalSerializationApi

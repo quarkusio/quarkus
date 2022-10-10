@@ -99,6 +99,21 @@ public interface ArcContainer {
      * @param <T>
      * @return
      */
+    <T> Supplier<InstanceHandle<T>> beanInstanceSupplier(Class<T> type, Annotation... qualifiers);
+
+    /**
+     * This method is deprecated and will be removed in future versions.
+     * Use {@link #beanInstanceSupplier(Class, Annotation...)} instead.
+     * </p>
+     * As opposed to {@link #beanInstanceSupplier(Class, Annotation...)}, this method does <b>NOT</b> follow CDI
+     * resolution rules and in case of ambiguous resolution performs a choice based on the class type parameter.
+     *
+     * @param type
+     * @param qualifiers
+     * @return
+     * @param <T>
+     */
+    @Deprecated
     <T> Supplier<InstanceHandle<T>> instanceSupplier(Class<T> type, Annotation... qualifiers);
 
     /**

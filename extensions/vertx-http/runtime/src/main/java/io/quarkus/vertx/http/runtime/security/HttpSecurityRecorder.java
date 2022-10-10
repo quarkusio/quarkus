@@ -241,7 +241,7 @@ public class HttpSecurityRecorder {
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer container) {
-                container.instance(PathMatchingHttpSecurityPolicy.class).init(permissions, policies);
+                container.beanInstance(PathMatchingHttpSecurityPolicy.class).init(permissions, policies);
             }
         };
     }

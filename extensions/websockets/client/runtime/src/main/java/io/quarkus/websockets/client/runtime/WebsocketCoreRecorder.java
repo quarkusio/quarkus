@@ -125,7 +125,7 @@ public class WebsocketCoreRecorder {
         ServerWebSocketContainer container = serverContainerFactory.create(new ObjectIntrospecter() {
             @Override
             public <T> ObjectFactory<T> createInstanceFactory(Class<T> clazz) {
-                BeanContainer.Factory<T> factory = beanContainer.instanceFactory(clazz);
+                BeanContainer.Factory<T> factory = beanContainer.beanInstanceFactory(clazz);
                 return new ObjectFactory<T>() {
                     @Override
                     public ObjectHandle<T> createInstance() {

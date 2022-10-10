@@ -9,6 +9,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.container.ResourceContext;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Configuration;
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
@@ -53,12 +54,14 @@ public class NewParamsRestResource {
             @RestHeader("") String paramEmpty,
             @RestForm String f,
             @RestMatrix String m,
-            @RestCookie String c) {
+            @RestCookie String c,
+            @RestCookie("c") Cookie cookie) {
         return "params: p: " + p + ", q: " + q + ", h: " + h + ", xMyHeader: " + xMyHeader + ", testHeaderParam: "
                 + testHeaderParam + ", paramEmpty: "
-                + paramEmpty + ", f: " + f + ", m: " + m + ", c: "
-                + c + ", q2: "
-                + q2.orElse("empty") + ", q3: " + q3.orElse(-1);
+                + paramEmpty + ", f: " + f + ", m: " + m
+                + ", c: " + c
+                + ", c2: " + cookie.getValue()
+                + ", q2: " + q2.orElse("empty") + ", q3: " + q3.orElse(-1);
     }
 
     @Blocking

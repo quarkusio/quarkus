@@ -626,7 +626,7 @@ public class RuntimeResourceDeployment {
             case HEADER:
                 return new HeaderParamExtractor(name, single);
             case COOKIE:
-                return new CookieParamExtractor(name);
+                return new CookieParamExtractor(name, javaType);
             case FORM:
                 return new FormParamExtractor(name, single, encoded);
             case PATH:

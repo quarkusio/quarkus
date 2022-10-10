@@ -231,7 +231,10 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                                     "mappings: \n\t%s\n\t%s\n\t%s", method, descriptor, prior));
                         }
                     });
-            collectMethods(indexView.getClassByName(classInfo.superName()));
+            DotName superName = classInfo.superName();
+            if (superName != null) {
+                collectMethods(indexView.getClassByName(superName));
+            }
         }
     }
 

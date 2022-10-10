@@ -1,7 +1,5 @@
 package io.quarkus.it.opentelemetry.vertx;
 
-import static java.util.Comparator.comparingLong;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,7 +33,6 @@ public class ExporterRouter {
                     .stream()
                     .filter(sd -> !sd.getName().contains("export") && !sd.getName().contains("reset")
                             && !sd.getName().contains("bus/messages"))
-                    .sorted(comparingLong(SpanData::getStartEpochNanos).reversed())
                     .collect(Collectors.toList());
 
             rc.response()

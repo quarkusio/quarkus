@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 :project-name: Quarkus
 :quarkus-version: ${project.version}
 

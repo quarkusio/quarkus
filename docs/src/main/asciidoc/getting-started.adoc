@@ -4,7 +4,6 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Creating Your First Application
-
 include::./attributes.adoc[]
 :categories: getting-started
 :summary: Discover how to create your first Quarkus application.
@@ -13,11 +12,9 @@ include::./attributes.adoc[]
 :doctype: book
 :icons: font
 :docinfo1:
-
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-
 
 Learn how to create a Hello World Quarkus app.
 This guide covers:

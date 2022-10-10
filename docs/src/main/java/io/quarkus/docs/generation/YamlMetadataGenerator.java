@@ -4,16 +4,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.Options;
+import org.asciidoctor.SafeMode;
 import org.asciidoctor.ast.Document;
 import org.asciidoctor.ast.StructuralNode;
 
@@ -45,6 +49,67 @@ public class YamlMetadataGenerator {
         return path.resolve("docs");
     }
 
+    enum Category {
+        alt_languages("alt-languages", "Alternative languages"),
+        architecture("architecture", "Architecture"),
+        business_automation("business-automation", "Business Automation"),
+        cloud("cloud", "Cloud"),
+        command_line("command-line", "Command Line Applications"),
+        compatibility("compatibility", "Compatibility"),
+        contributing("contributing", "Contributing"),
+        core("core", "Core"),
+        data("data", "Data"),
+        getting_started("getting-started", "Getting Started"),
+        integration("integration", "Integration"),
+        messaging("messaging", "Messaging"),
+        miscellaneous("miscellaneous", "Miscellaneous"),
+        observability("observability", "Observability"),
+        reactive("reactive", "Reactive"),
+        security("security", "Security"),
+        serialization("serialization", "Serialization"),
+        tooling("tooling", "Tooling"),
+        web("web", "Web"),
+        writing_extensions("writing-extensions", "Writing Extensions");
+
+        final String id;
+        final String name;
+
+        Category(String id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        public static void addAll(Set<Category> set, Object source, Path path) {
+            if (source == null) {
+                return;
+            }
+            for (String c : source.toString().split("\\s*,\\s*")) {
+                try {
+                    Category cat = Category.valueOf(c.toLowerCase().replace("-", "_"));
+                    set.add(cat);
+                } catch (IllegalArgumentException ex) {
+                    errors.record("unknown-category", path, "Unknown category: " + c);
+                }
+            }
+        }
+    }
+
+    enum Type {
+        concepts("concepts", "Concepts"),
+        howto("howto", "How-To Guides"),
+        tutorial("tutorial", "Tutorial"),
+        reference("reference", "Reference"),
+        other("guide", "General Guides");
+
+        final String name;
+        final String id;
+
+        Type(String id, String name) {
+            this.name = name;
+            this.id = id;
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         Path rootDir = args.length >= 1
                 ? Path.of(args[0])
@@ -61,7 +126,11 @@ public class YamlMetadataGenerator {
             return;
         }
 
-        Options options = Options.builder().build();
+        Options options = Options.builder()
+                .docType("book")
+                .sourceDir(rootDir.toFile())
+                .safe(SafeMode.UNSAFE)
+                .build();
         Index index = new Index();
 
         try (Asciidoctor asciidoctor = Asciidoctor.Factory.create()) {
@@ -80,6 +149,7 @@ public class YamlMetadataGenerator {
                                     .filter(b -> "preamble".equals(b.getNodeName()))
                                     .findFirst();
 
+                            final String summaryString;
                             if (preambleNode.isPresent()) {
                                 Optional<String> content = preambleNode.get().getBlocks().stream()
                                         .filter(b -> "paragraph".equals(b.getContext()))
@@ -87,35 +157,41 @@ public class YamlMetadataGenerator {
                                         .filter(s -> !s.contains("attributes.adoc"))
                                         .findFirst();
 
+                                summaryString = getSummary(summary, content);
+
                                 if (content.isPresent()) {
-                                    index.add(new DocMetadata(title, path, getSummary(summary, content), categories, id));
+                                    index.add(new DocMetadata(title, path, summaryString, categories, id));
                                 } else {
-                                    System.err.format("%s (%s) does not have text in the preamble%n", path, title);
                                     errors.record("empty-preamble", path);
-                                    index.add(new DocMetadata(title, path, getSummary(summary, content), categories, id));
+                                    index.add(new DocMetadata(title, path, summaryString, categories, id));
                                 }
                             } else {
-                                System.err.format("[WARN] %s (%s) does not have a preamble%n", path, title);
                                 errors.record("missing-preamble", path);
-                                index.add(new DocMetadata(title, path, getSummary(summary, Optional.empty()), categories, id));
+                                summaryString = getSummary(summary, Optional.empty());
+                                index.add(new DocMetadata(title, path, summaryString, categories, id));
+                            }
+
+                            long spaceCount = summaryString.chars().filter(c -> c == (int) ' ').count();
+                            if (spaceCount > 26) {
+                                errors.record("summary-too-long", path);
                             }
                         });
             }
         }
 
         ObjectMapper om = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
-
         Map<String, DocMetadata> metadata = index.metadataByFile();
+        Map<String, Collection<String>> errorsByFile = errors.errorsByFile(metadata);
+
         om.writeValue(targetDir.resolve("indexByType.yaml").toFile(), index);
         om.writeValue(targetDir.resolve("indexByFile.yaml").toFile(), metadata);
 
-        Map<String, List<String>> errorsByFile = errors.errorsByFile(metadata);
         om.writeValue(targetDir.resolve("errorsByType.yaml").toFile(), errors);
         om.writeValue(targetDir.resolve("errorsByFile.yaml").toFile(), errorsByFile);
     }
 
-    static String getSummary(Object summary, Optional<String> content) {
-        String result = (summary != null ? summary.toString() : content.orElse(""))
+    static String getSummary(Object summary, Optional<String> preamble) {
+        String result = (summary != null ? summary.toString() : preamble.orElse(""))
                 .trim()
                 .replaceAll("\n", " ") // undo semantic line endings
                 .replaceAll("\\s+", " ") // condense whitespace
@@ -127,49 +203,47 @@ public class YamlMetadataGenerator {
         return result;
     }
 
-    enum Type {
-        concepts("Concepts", "concepts"),
-        howto("How-To Guides", "howto"),
-        getstarted("Getting Started", "getting-started"),
-        tutorial("Tutorial", "tutorial"),
-        reference("Reference", "reference"),
-        other("General Guides", "guide");
-
-        final String name;
-        final String id;
-
-        Type(String name, String id) {
-            this.name = name;
-            this.id = id;
-        }
-    }
-
     @JsonTypeInfo(use = JsonTypeInfo.Id.NONE, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "errors")
     static class Errors {
-        Map<String, List<String>> errors = new HashMap<>();
+        Map<String, Collection<String>> errors = new HashMap<>();
+        Map<String, Collection<String>> messagesByFile = new HashMap<>();
 
-        public Map<String, List<String>> getErrors() {
+        void record(String errorKey, Path path) {
+            record(errorKey, path, null);
+        }
+
+        void record(String errorKey, Path path, String message) {
+            errors.computeIfAbsent(errorKey, k -> new HashSet<>()).add(path.getFileName().toString());
+            if (message == null) {
+                message = getMessageforKey(errorKey);
+            }
+            messagesByFile.computeIfAbsent(path.toString(), k -> new ArrayList<>()).add(message);
+        }
+
+        private String getMessageforKey(String errorKey) {
+            switch (errorKey) {
+                case "empty-preamble":
+                    return "Document preamble is empty.";
+                case "missing-preamble":
+                    return "Document does not have a preamble.";
+                case "summary-too-long":
+                    return "Document summary (either summary attribute or the preamble) is longer than 26 words.";
+                case "missing-id":
+                    return "Document does not define an id.";
+                case "missing-categories":
+                    return "Document does not specify associated categories";
+                case "not-diataxis-type":
+                    return "Document does not follow naming conventions (type not recognized).";
+            }
+            return errorKey;
+        }
+
+        public Map<String, Collection<String>> getErrors() {
             return errors;
         }
 
-        void record(String key, Path path) {
-            errors.computeIfAbsent(key, k -> new ArrayList<>()).add(path.getFileName().toString());
-        }
-
-        Map<String, List<String>> errorsByFile(Map<String, DocMetadata> metadata) {
-            Map<String, List<String>> errorsByFile = errors.entrySet().stream()
-                    .flatMap(e -> e.getValue().stream().map(v -> new String[] { v, e.getKey() }))
-                    .collect(Collectors.groupingBy(s -> s[0],
-                            TreeMap::new,
-                            Collectors.mapping(s -> s[1], Collectors.toList())));
-
-            errorsByFile.entrySet().forEach(e -> {
-                DocMetadata dm = metadata.get(e.getKey());
-                if (dm.type == Type.other) {
-                    e.getValue().add("not-diataxis-type");
-                }
-            });
-            return errorsByFile;
+        Map<String, Collection<String>> errorsByFile(Map<String, DocMetadata> metadata) {
+            return messagesByFile;
         }
     }
 
@@ -224,7 +298,7 @@ public class YamlMetadataGenerator {
         String title;
         String filename;
         String summary;
-        String categories;
+        Set<Category> categories = new HashSet<>();
         String id;
         Type type;
 
@@ -232,11 +306,11 @@ public class YamlMetadataGenerator {
             this.id = id;
             this.title = title;
             this.filename = path.getFileName().toString();
-            this.categories = categories == null ? "" : categories.toString();
             this.summary = summary;
+            Category.addAll(this.categories, categories, path);
 
-            if (this.categories.contains("get-started")) {
-                this.type = Type.getstarted;
+            if (this.categories.contains(Category.getting_started)) {
+                this.type = Type.tutorial;
             } else if (filename.endsWith("-concepts.adoc")) {
                 this.type = Type.concepts;
             } else if (filename.endsWith("-howto.adoc")) {
@@ -247,15 +321,17 @@ public class YamlMetadataGenerator {
                 this.type = Type.reference;
             } else {
                 this.type = Type.other;
+                errors.record("not-diataxis-type", path);
             }
 
             if (id == null) {
                 errors.record("missing-id", path);
             } else if (type != Type.other && !id.startsWith(type.id)) {
-                System.err.format("[ERROR] %s id (%s) does not start with the correct prefix, should start with '%s-'%n",
-                        filename, id, type.id);
-                errors.record("incorrect-id", path);
+                errors.record("incorrect-id", path,
+                        String.format("The document id (%s) does not start with the correct prefix, should start with '%s-'%n",
+                                id, type.id));
             }
+
             if (this.categories.isEmpty()) {
                 errors.record("missing-categories", path);
             }
@@ -277,8 +353,10 @@ public class YamlMetadataGenerator {
             return summary;
         }
 
-        public String getCategories() {
-            return categories;
+        public List<String> getCategories() {
+            return categories.stream()
+                    .map(x -> x.id)
+                    .collect(Collectors.toList());
         }
 
         public String getType() {

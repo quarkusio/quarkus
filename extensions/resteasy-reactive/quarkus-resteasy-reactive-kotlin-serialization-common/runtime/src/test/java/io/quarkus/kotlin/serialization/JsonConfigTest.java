@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.resteasy.reactive.kotlin.serialization.common.runtime.JsonConfig;
 import kotlinx.serialization.json.JsonConfiguration;
 
 public class JsonConfigTest {

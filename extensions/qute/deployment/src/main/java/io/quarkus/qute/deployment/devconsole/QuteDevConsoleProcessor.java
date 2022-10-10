@@ -106,6 +106,9 @@ public class QuteDevConsoleProcessor {
 
     private CheckedTemplateBuildItem findCheckedTemplate(String basePath, List<CheckedTemplateBuildItem> checkedTemplates) {
         for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
+            if (checkedTemplate.isFragment()) {
+                continue;
+            }
             if (checkedTemplate.templateId.equals(basePath)) {
                 return checkedTemplate;
             }

@@ -49,6 +49,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.PrimitiveType.Primitive;
@@ -148,6 +149,7 @@ public class QuteProcessor {
 
     private static final String CHECKED_TEMPLATE_REQUIRE_TYPE_SAFE = "requireTypeSafeExpressions";
     private static final String CHECKED_TEMPLATE_BASE_PATH = "basePath";
+    private static final String CHECKED_TEMPLATE_DEFAULT_NAME = "defaultName";
     private static final String BASE_PATH = "templates";
 
     private static final Set<String> ITERATION_METADATA_KEYS = Set.of("count", "index", "indexParity", "hasNext", "odd",
@@ -283,10 +285,7 @@ public class QuteProcessor {
         // template path -> checked template method
         Map<String, MethodInfo> checkedTemplateMethods = new HashMap<>();
 
-        Set<AnnotationInstance> checkedTemplateAnnotations = new HashSet<>();
-        checkedTemplateAnnotations.addAll(index.getIndex().getAnnotations(Names.CHECKED_TEMPLATE));
-
-        for (AnnotationInstance annotation : checkedTemplateAnnotations) {
+        for (AnnotationInstance annotation : index.getIndex().getAnnotations(Names.CHECKED_TEMPLATE)) {
             if (annotation.target().kind() != Kind.CLASS) {
                 continue;
             }
@@ -312,6 +311,10 @@ public class QuteProcessor {
                         throw new TemplateException("Incompatible checked template return type: " + methodInfo.returnType()
                                 + " only " + supportedAdaptors);
                 }
+                String fragmentId = null;
+                if (methodInfo.hasDeclaredAnnotation(Names.CHECKED_FRAGMENT)) {
+                    fragmentId = getCheckedFragmentId(methodInfo, annotation);
+                }
 
                 StringBuilder templatePathBuilder = new StringBuilder();
                 AnnotationValue basePathValue = annotation.value(CHECKED_TEMPLATE_BASE_PATH);
@@ -324,13 +327,15 @@ public class QuteProcessor {
                 if (templatePathBuilder.length() > 0 && templatePathBuilder.charAt(templatePathBuilder.length() - 1) != '/') {
                     templatePathBuilder.append('/');
                 }
-                String templatePath = templatePathBuilder.append(getCheckedTemplateName(methodInfo, annotation)).toString();
-                MethodInfo checkedTemplateMethod = checkedTemplateMethods.putIfAbsent(templatePath, methodInfo);
+                String templatePath = templatePathBuilder
+                        .append(getCheckedTemplateName(methodInfo, annotation, fragmentId != null)).toString();
+                String fullPath = templatePath + (fragmentId != null ? "$" + fragmentId : "");
+                MethodInfo checkedTemplateMethod = checkedTemplateMethods.putIfAbsent(fullPath, methodInfo);
                 if (checkedTemplateMethod != null) {
                     throw new TemplateException(
                             String.format(
                                     "Multiple checked template methods exist for the template path %s:\n\t- %s: %s\n\t- %s: %s",
-                                    templatePath, methodInfo.declaringClass().name(), methodInfo,
+                                    fullPath, methodInfo.declaringClass().name(), methodInfo,
                                     checkedTemplateMethod.declaringClass().name(), checkedTemplateMethod));
                 }
                 if (!filePaths.contains(templatePath)
@@ -367,9 +372,9 @@ public class QuteProcessor {
                     parameterNames.add(name);
                 }
                 AnnotationValue requireTypeSafeExpressions = annotation.value(CHECKED_TEMPLATE_REQUIRE_TYPE_SAFE);
-                ret.add(new CheckedTemplateBuildItem(templatePath, bindings, methodInfo,
+                ret.add(new CheckedTemplateBuildItem(templatePath, fragmentId, bindings, methodInfo,
                         requireTypeSafeExpressions != null ? requireTypeSafeExpressions.asBoolean() : true));
-                enhancer.implement(methodInfo, templatePath, parameterNames, adaptor);
+                enhancer.implement(methodInfo, templatePath, fragmentId, parameterNames, adaptor);
             }
             transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(),
                     enhancer));
@@ -378,28 +383,57 @@ public class QuteProcessor {
         return ret;
     }
 
-    private String getCheckedTemplateName(MethodInfo method, AnnotationInstance checkedTemplateAnnotation) {
-        AnnotationValue nameValue = checkedTemplateAnnotation.value("defaultName");
-        String name;
+    private String getCheckedTemplateName(MethodInfo method, AnnotationInstance checkedTemplateAnnotation,
+            boolean checkedFragment) {
+        AnnotationValue nameValue = checkedTemplateAnnotation.value(CHECKED_TEMPLATE_DEFAULT_NAME);
+        String defaultName;
         if (nameValue == null) {
-            name = CheckedTemplate.ELEMENT_NAME;
+            defaultName = CheckedTemplate.ELEMENT_NAME;
         } else {
-            name = nameValue.asString();
+            defaultName = nameValue.asString();
         }
-        switch (name) {
+        String methodName = method.name();
+        if (checkedFragment) {
+            // the name is the part before the last occurence of a dollar sign
+            methodName = methodName.substring(0, methodName.lastIndexOf('$'));
+        }
+        return defaultedName(defaultName, methodName);
+    }
+
+    private String getCheckedFragmentId(MethodInfo method, AnnotationInstance checkedTemplateAnnotation) {
+        AnnotationValue nameValue = checkedTemplateAnnotation.value(CHECKED_TEMPLATE_DEFAULT_NAME);
+        String defaultName;
+        if (nameValue == null) {
+            defaultName = CheckedTemplate.ELEMENT_NAME;
+        } else {
+            defaultName = nameValue.asString();
+        }
+        String methodName = method.name();
+        // the id is the part after the last occurence of a dollar sign
+        int idx = methodName.lastIndexOf('$');
+        if (idx == -1 || idx == methodName.length()) {
+            throw new TemplateException(
+                    "[" + method.name() + "] is not a valid name of a checked fragment method: "
+                            + method.declaringClass().name().withoutPackagePrefix() + "." + method.name() + "()");
+        }
+        return defaultedName(defaultName, methodName.substring(idx + 1, methodName.length()));
+    }
+
+    private String defaultedName(String defaultNameStrategy, String value) {
+        switch (defaultNameStrategy) {
             case CheckedTemplate.ELEMENT_NAME:
-                return method.name();
+                return value;
             case CheckedTemplate.HYPHENATED_ELEMENT_NAME:
-                return StringUtil.hyphenate(method.name());
+                return StringUtil.hyphenate(value);
             case CheckedTemplate.UNDERSCORED_ELEMENT_NAME:
                 return String.join("_", new Iterable<String>() {
                     @Override
                     public Iterator<String> iterator() {
-                        return StringUtil.lowerCase(StringUtil.camelHumpsIterator(method.name()));
+                        return StringUtil.lowerCase(StringUtil.camelHumpsIterator(value));
                     }
                 });
             default:
-                throw new IllegalArgumentException("Unsupported @CheckedTemplate#defaultName() value: " + name);
+                throw new IllegalArgumentException("Unsupported @CheckedTemplate#defaultName() value: " + defaultNameStrategy);
         }
     }
 
@@ -418,7 +452,8 @@ public class QuteProcessor {
     @BuildStep
     TemplatesAnalysisBuildItem analyzeTemplates(List<TemplatePathBuildItem> templatePaths,
             TemplateFilePathsBuildItem filePaths, List<CheckedTemplateBuildItem> checkedTemplates,
-            List<MessageBundleMethodBuildItem> messageBundleMethods, List<TemplateGlobalBuildItem> globals, QuteConfig config) {
+            List<MessageBundleMethodBuildItem> messageBundleMethods, List<TemplateGlobalBuildItem> globals, QuteConfig config,
+            BuildProducer<CheckedFragmentValidationBuildItem> checkedFragmentValidations) {
         long start = System.nanoTime();
 
         checkDuplicatePaths(templatePaths);
@@ -499,6 +534,9 @@ public class QuteProcessor {
         // Checked Template id -> method parameter declaration
         Map<String, Map<String, MethodParameterDeclaration>> checkedTemplateIdToParamDecl = new HashMap<>();
         for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
+            if (checkedTemplate.isFragment()) {
+                continue;
+            }
             for (Entry<String, String> entry : checkedTemplate.bindings.entrySet()) {
                 checkedTemplateIdToParamDecl
                         .computeIfAbsent(checkedTemplate.templateId, s -> new HashMap<>())
@@ -543,20 +581,40 @@ public class QuteProcessor {
         }).build();
 
         Engine dummyEngine = builder.build();
+        List<CheckedTemplateBuildItem> checkedFragments = checkedTemplates.stream().filter(CheckedTemplateBuildItem::isFragment)
+                .collect(Collectors.toList());
 
         for (TemplatePathBuildItem path : templatePaths) {
             Template template = dummyEngine.getTemplate(path.getPath());
             if (template != null) {
+                String templateIdWithoutSuffix = pathToPathWithoutSuffix.get(template.getId());
 
                 final List<ParameterDeclaration> parameterDeclarations;
                 if (checkedTemplateIdToParamDecl.isEmpty()) {
                     parameterDeclarations = template.getParameterDeclarations();
                 } else {
                     // Add method parameter declarations if they were not overridden in the template
-                    String templateId = pathToPathWithoutSuffix.get(template.getId());
                     parameterDeclarations = mergeParamDeclarations(
                             template.getParameterDeclarations(),
-                            checkedTemplateIdToParamDecl.get(templateId));
+                            checkedTemplateIdToParamDecl.get(templateIdWithoutSuffix));
+                }
+
+                if (!checkedFragments.isEmpty()) {
+                    for (CheckedTemplateBuildItem checkedFragment : checkedFragments) {
+                        if (checkedFragment.templateId.equals(templateIdWithoutSuffix)) {
+                            // Template matches a type-safe fragment
+                            Template.Fragment fragment = template.getFragment(checkedFragment.fragmentId);
+                            if (fragment == null) {
+                                throw new TemplateException(
+                                        "Fragment [" + checkedFragment.fragmentId + "] not defined in template "
+                                                + template.getId());
+                            }
+                            checkedFragmentValidations
+                                    .produce(new CheckedFragmentValidationBuildItem(template.getGeneratedId(),
+                                            checkedFragment.templateId,
+                                            checkedFragment.fragmentId, fragment.getExpressions(), checkedFragment.method));
+                        }
+                    }
                 }
 
                 analysis.add(new TemplateAnalysis(null, template.getGeneratedId(), template.getExpressions(),
@@ -582,6 +640,80 @@ public class QuteProcessor {
         LOGGER.debugf("Finished analysis of %s templates in %s ms", analysis.size(),
                 TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
         return new TemplatesAnalysisBuildItem(analysis);
+    }
+
+    @BuildStep
+    void validateCheckedFragments(List<CheckedFragmentValidationBuildItem> validations,
+            List<TemplateExpressionMatchesBuildItem> expressionMatches,
+            BeanArchiveIndexBuildItem beanArchiveIndex,
+            BuildProducer<ValidationErrorBuildItem> validationErrors) {
+
+        if (validations.isEmpty()) {
+            return;
+        }
+        IndexView index = beanArchiveIndex.getIndex();
+        Map<DotName, AssignableInfo> assignableCache = new HashMap<>();
+        String[] hintPrefixes = { LoopSectionHelper.Factory.HINT_PREFIX, WhenSectionHelper.Factory.HINT_PREFIX,
+                SetSectionHelper.Factory.HINT_PREFIX };
+
+        for (CheckedFragmentValidationBuildItem validation : validations) {
+            Map<String, Type> paramNamesToTypes = new HashMap<>();
+            TemplateExpressionMatchesBuildItem matchResults = null;
+            for (TemplateExpressionMatchesBuildItem m : expressionMatches) {
+                if (m.templateGeneratedId.equals(validation.templateGeneratedId)) {
+                    matchResults = m;
+                }
+            }
+            if (matchResults == null) {
+                throw new IllegalStateException(
+                        "Match results not found for: " + validation.templateId);
+            }
+
+            for (Expression expression : validation.fragmentExpressions) {
+                // Note that we ignore expressions with no type info and expressions with a hint referencing an expression from inside the fragment
+                if (expression.hasTypeInfo()) {
+                    Info info = TypeInfos.create(expression, index, null).get(0);
+                    if (info.isTypeInfo()) {
+                        // |org.acme.Foo|.name
+                        paramNamesToTypes.put(expression.getParts().get(0).getName(), info.asTypeInfo().resolvedType);
+                    } else if (info.hasHints()) {
+                        // foo<set#123>.name
+                        hintLoop: for (String helperHint : info.asHintInfo().hints) {
+                            for (String prefix : hintPrefixes) {
+                                if (helperHint.startsWith(prefix)) {
+                                    int generatedId = parseHintId(helperHint, prefix);
+                                    Expression localExpression = findExpression(generatedId, validation.fragmentExpressions);
+                                    if (localExpression == null) {
+                                        Match match = matchResults.getMatch(generatedId);
+                                        if (match == null) {
+                                            throw new IllegalStateException(
+                                                    "Match result not found for expression [" + expression.toOriginalString()
+                                                            + "] in: "
+                                                            + validation.templateId);
+                                        }
+                                        paramNamesToTypes.put(expression.getParts().get(0).getName(), match.type);
+                                        break hintLoop;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (!paramNamesToTypes.isEmpty()) {
+                for (Entry<String, Type> e : paramNamesToTypes.entrySet()) {
+                    String paramName = e.getKey();
+                    MethodParameterInfo param = validation.method.parameters().stream()
+                            .filter(mp -> mp.name().equals(paramName)).findFirst().orElse(null);
+                    if (param == null || !Types.isAssignableFrom(e.getValue(), param.type(), index, assignableCache)) {
+                        throw new TemplateException(
+                                validation.method.declaringClass().name().withoutPackagePrefix() + "#"
+                                        + validation.method.name() + "() must declare a parameter of name [" + paramName
+                                        + "] and type [" + e.getValue() + "]");
+                    }
+                }
+            }
+        }
     }
 
     private List<ParameterDeclaration> mergeParamDeclarations(List<ParameterDeclaration> parameterDeclarations,
@@ -754,6 +886,9 @@ public class QuteProcessor {
             }
         }
         for (CheckedTemplateBuildItem item : checkedTemplates) {
+            if (item.isFragment()) {
+                continue;
+            }
             if (item.templateId.equals(path)) {
                 return item;
             }
@@ -1939,6 +2074,19 @@ public class QuteProcessor {
     private static Expression findExpression(String helperHint, String hintPrefix, TemplateAnalysis templateAnalysis) {
         return templateAnalysis
                 .findExpression(Integer.parseInt(helperHint.substring(hintPrefix.length(), helperHint.length() - 1)));
+    }
+
+    private static Expression findExpression(int generatedId, Iterable<Expression> expressions) {
+        for (Expression expression : expressions) {
+            if (expression.getGeneratedId() == generatedId) {
+                return expression;
+            }
+        }
+        return null;
+    }
+
+    private static int parseHintId(String helperHint, String hintPrefix) {
+        return Integer.parseInt(helperHint.substring(hintPrefix.length(), helperHint.length() - 1));
     }
 
     static void processLoopElementHint(Match match, IndexView index, Expression expression,

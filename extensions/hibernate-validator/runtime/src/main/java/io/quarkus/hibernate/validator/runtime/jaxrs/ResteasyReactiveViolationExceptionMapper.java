@@ -19,7 +19,9 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
+import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 @Provider
 public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper<ValidationException> {
@@ -75,8 +77,7 @@ public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper
         // Check standard media types.
         MediaType mediaType = ValidatorMediaTypeUtil.getAcceptMediaType(
                 rrContext.getHttpHeaders().getAcceptableMediaTypes(),
-                rrContext.getTarget() != null ? Arrays.asList(rrContext.getTarget().getProduces().getSortedMediaTypes())
-                        : SUPPORTED_MEDIA_TYPES);
+                serverMediaTypes(rrContext));
         if (mediaType == null) {
             mediaType = MediaType.APPLICATION_JSON_TYPE;
         }
@@ -89,6 +90,17 @@ public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper
         builder.type(mediaType);
 
         return builder.build();
+    }
+
+    private List<MediaType> serverMediaTypes(ResteasyReactiveRequestContext context) {
+        if (context.getTarget() == null) {
+            return SUPPORTED_MEDIA_TYPES;
+        }
+        ServerMediaType serverMediaType = context.getTarget().getProduces();
+        if (serverMediaType == null) {
+            return SUPPORTED_MEDIA_TYPES;
+        }
+        return Arrays.asList(serverMediaType.getSortedMediaTypes());
     }
 
 }

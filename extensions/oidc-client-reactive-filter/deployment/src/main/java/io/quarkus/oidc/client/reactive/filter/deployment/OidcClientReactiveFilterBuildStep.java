@@ -16,7 +16,7 @@ import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.oidc.client.deployment.OidcClientBuildStep.IsEnabled;
-import io.quarkus.oidc.client.reactive.filter.OidcClientFilter;
+import io.quarkus.oidc.client.filter.OidcClientFilter;
 import io.quarkus.oidc.client.reactive.filter.OidcClientRequestReactiveFilter;
 import io.quarkus.rest.client.reactive.deployment.DotNames;
 import io.quarkus.rest.client.reactive.deployment.RegisterProviderAnnotationInstanceBuildItem;

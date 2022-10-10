@@ -14,6 +14,7 @@ import io.quarkus.redis.datasource.bloom.BloomCommands;
 import io.quarkus.redis.datasource.countmin.CountMinCommands;
 import io.quarkus.redis.datasource.cuckoo.CuckooCommands;
 import io.quarkus.redis.datasource.geo.GeoCommands;
+import io.quarkus.redis.datasource.graph.GraphCommands;
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.datasource.hyperloglog.HyperLogLogCommands;
 import io.quarkus.redis.datasource.json.JsonCommands;
@@ -249,6 +250,11 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     @Override
     public <K, V> TopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType) {
         return new BlockingTopKCommandsImpl<>(this, reactive.topk(redisKeyType, valueType), timeout);
+    }
+
+    @Override
+    public <K> GraphCommands<K> graph(Class<K> redisKeyType) {
+        return new BlockingGraphCommandsImpl<>(this, reactive.graph(redisKeyType), timeout);
     }
 
     @Override

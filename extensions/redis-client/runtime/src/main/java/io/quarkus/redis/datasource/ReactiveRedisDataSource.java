@@ -8,6 +8,7 @@ import io.quarkus.redis.datasource.bloom.ReactiveBloomCommands;
 import io.quarkus.redis.datasource.countmin.ReactiveCountMinCommands;
 import io.quarkus.redis.datasource.cuckoo.ReactiveCuckooCommands;
 import io.quarkus.redis.datasource.geo.ReactiveGeoCommands;
+import io.quarkus.redis.datasource.graph.ReactiveGraphCommands;
 import io.quarkus.redis.datasource.hash.ReactiveHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveHyperLogLogCommands;
 import io.quarkus.redis.datasource.json.ReactiveJsonCommands;
@@ -23,6 +24,7 @@ import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSo
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.ReactiveValueCommands;
+import io.smallrye.common.annotation.Experimental;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
@@ -493,6 +495,27 @@ public interface ReactiveRedisDataSource {
      * @return the object to manipulate top-k lists.
      */
     <K, V> ReactiveTopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType);
+
+    /**
+     * Gets the object to manipulate graphs.
+     * This group requires the <a href="https://redis.io/docs/stack/graph/">RedisGraph module</a>.
+     *
+     * @return the object to manipulate graphs lists.
+     */
+    @Experimental("The Redis graph support is experimental")
+    default ReactiveGraphCommands<String> graph() {
+        return graph(String.class);
+    }
+
+    /**
+     * Gets the object to manipulate graphs.
+     * This group requires the <a href="https://redis.io/docs/stack/graph/">RedisGraph module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to manipulate graphs lists.
+     */
+    @Experimental("The Redis graph support is experimental")
+    <K> ReactiveGraphCommands<K> graph(Class<K> redisKeyType);
 
     /**
      * Executes a command.

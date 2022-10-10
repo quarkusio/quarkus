@@ -9,6 +9,7 @@ import io.quarkus.redis.datasource.bloom.BloomCommands;
 import io.quarkus.redis.datasource.countmin.CountMinCommands;
 import io.quarkus.redis.datasource.cuckoo.CuckooCommands;
 import io.quarkus.redis.datasource.geo.GeoCommands;
+import io.quarkus.redis.datasource.graph.GraphCommands;
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.datasource.hyperloglog.HyperLogLogCommands;
 import io.quarkus.redis.datasource.json.JsonCommands;
@@ -23,6 +24,7 @@ import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResu
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.ValueCommands;
+import io.smallrye.common.annotation.Experimental;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Response;
 
@@ -484,6 +486,27 @@ public interface RedisDataSource {
     <K, V> TopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType);
 
     /**
+     * Gets the object to manipulate graphs.
+     * This group requires the <a href="https://redis.io/docs/stack/graph/">RedisGraph module</a>.
+     *
+     * @return the object to manipulate graphs lists.
+     */
+    @Experimental("The Redis graph support is experimental")
+    default GraphCommands<String> graph() {
+        return graph(String.class);
+    }
+
+    /**
+     * Gets the object to manipulate graphs.
+     * This group requires the <a href="https://redis.io/docs/stack/graph/">RedisGraph module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to manipulate graphs lists.
+     */
+    @Experimental("The Redis graph support is experimental")
+    <K> GraphCommands<K> graph(Class<K> redisKeyType);
+
+    /**
      * Gets the objects to publish and receive messages.
      *
      * @param messageType the type of message
@@ -526,4 +549,5 @@ public interface RedisDataSource {
      * @return the reactive data source.
      */
     ReactiveRedisDataSource getReactive();
+
 }

@@ -7,14 +7,21 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 
+import javax.annotation.Priority;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Priorities;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerStringMessageBodyHandler;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
@@ -68,29 +75,39 @@ public class ChunkedResponseTest {
     }
 
     @Provider
-    public static class CustomStringMessageBodyWriter extends ServerStringMessageBodyHandler {
+    public static class CustomStringMessageBodyWriter implements ServerMessageBodyWriter<String> {
 
         @Override
-        public void writeResponse(Object o, Type genericType, ServerRequestContext context)
-                throws WebApplicationException {
+        public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+            return true;
+        }
 
-            try (OutputStream stream = context.getOrCreateOutputStream()) {
-                stream.write(((String) o).getBytes());
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+        @Override
+        public void writeResponse(String o, Type genericType, ServerRequestContext context) throws WebApplicationException {
+            context.serverResponse().end(o);
+        }
+
+        public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+            return true;
+        }
+
+        public void writeTo(String o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+                MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+                throws IOException, WebApplicationException {
+            entityStream.write(o.getBytes(StandardCharsets.UTF_8));
         }
     }
 
     @Provider
+    @Priority(Priorities.USER + 1) // the spec says that when it comes to writers, higher number means higher priority...
     public static final class CustomStringMessageBodyWriter2 extends CustomStringMessageBodyWriter {
 
         @Override
-        public void writeResponse(Object o, Type genericType, ServerRequestContext context)
+        public void writeResponse(String o, Type genericType, ServerRequestContext context)
                 throws WebApplicationException {
 
             try (OutputStream stream = context.getOrCreateOutputStream()) {
-                stream.write(((String) o).getBytes());
+                stream.write(o.getBytes());
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

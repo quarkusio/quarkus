@@ -9,14 +9,12 @@ import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.reactive.common.providers.serialisers.DefaultTextPlainBodyHandler;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
-@Provider
 @Consumes("text/plain")
 public class ServerDefaultTextPlainBodyHandler extends DefaultTextPlainBodyHandler implements ServerMessageBodyReader<Object> {
 

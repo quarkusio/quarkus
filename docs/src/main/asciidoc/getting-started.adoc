@@ -4,19 +4,15 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Creating Your First Application
-
 include::./attributes.adoc[]
-
 :toc: macro
 :toclevels: 4
 :doctype: book
 :icons: font
 :docinfo1:
-
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-
 
 Learn how to create a Hello World Quarkus app.
 This guide covers:

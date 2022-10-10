@@ -7,5 +7,7 @@
 :code-examples: ../../../../target/asciidoc/examples
 :doc-guides: ./
 :doc-examples: ./_examples
+:generated-dir: ../../../../target/asciidoc/generated
 :imagesdir: ./images
 :includes: ./includes
+:toc: preamble

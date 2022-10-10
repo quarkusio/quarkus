@@ -85,6 +85,11 @@ public class AnnotationLiteralProcessor {
         Objects.requireNonNull(annotationClass, "Annotation class not available: " + annotationInstance);
         AnnotationLiteralClassInfo literal = cache.getValue(new CacheKey(annotationClass));
 
+        if (literal.annotationMembers().isEmpty()) {
+            return bytecode.readStaticField(FieldDescriptor.of(literal.generatedClassName, "INSTANCE",
+                    literal.generatedClassName));
+        }
+
         ResultHandle[] constructorParameters = new ResultHandle[literal.annotationMembers().size()];
 
         int constructorParameterIndex = 0;
@@ -384,9 +389,9 @@ public class AnnotationLiteralProcessor {
          * Name of the generated annotation literal class.
          */
         final String generatedClassName;
+
         /**
          * Whether the generated annotation literal class is an application class.
-         * Only used when sharing is enabled.
          */
         final boolean isApplicationClass;
 

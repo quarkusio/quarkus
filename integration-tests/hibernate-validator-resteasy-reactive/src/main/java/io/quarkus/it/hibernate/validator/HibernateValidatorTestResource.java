@@ -19,6 +19,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.hibernate.validator.constraints.Length;
 import org.jboss.resteasy.reactive.RestPath;
@@ -86,6 +87,12 @@ public class HibernateValidatorTestResource {
     @Path("/no-produces/{id}/")
     public String testRestEndPointWithNoProduces(@Digits(integer = 5, fraction = 0) @RestPath("id") String id) {
         return id;
+    }
+
+    @GET
+    @Path("/no-produces-with-response/{id}/")
+    public Response testRestEndPointWithNoProducesUsingResponse(@Digits(integer = 5, fraction = 0) @RestPath("id") String id) {
+        return Response.ok(id).build();
     }
 
     @GET

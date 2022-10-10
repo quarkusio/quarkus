@@ -433,7 +433,7 @@ public class SimpleQuarkusRestTestCase {
                 .log().ifError()
                 .body(Matchers
                         .equalTo(
-                                "params: p: pv, q: qv, h: 123, xMyHeader: test, testHeaderParam: test, paramEmpty: empty, f: fv, m: mv, c: cv, q2: empty, q3: 999"));
+                                "params: p: pv, q: qv, h: 123, xMyHeader: test, testHeaderParam: test, paramEmpty: empty, f: fv, m: mv, c: cv, c2: cv, q2: empty, q3: 999"));
         RestAssured.get("/new-params/myklass/myregex/sse")
                 .then()
                 .log().ifError()

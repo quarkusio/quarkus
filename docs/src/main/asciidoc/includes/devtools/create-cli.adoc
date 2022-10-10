@@ -31,10 +31,10 @@ endif::[]
 endif::[]
 ifdef::create-cli-extensions[]
 ifndef::create-cli-code[]
-    --extension={create-cli-extensions} \
+    --extension='{create-cli-extensions}' \
 endif::[]
 ifdef::create-cli-code[]
-    --extension={create-cli-extensions}
+    --extension='{create-cli-extensions}'
 endif::[]
 endif::[]
 ifndef::create-cli-code[]
@@ -72,10 +72,10 @@ ifndef::create-cli-code[]
     -DnoCode \
 endif::[]
 ifdef::create-cli-extensions[]
-    -Dextensions="picocli,{create-cli-extensions}"
+    -Dextensions='picocli,{create-cli-extensions}'
 endif::[]
 ifndef::create-cli-extensions[]
-    -Dextensions="picocli"
+    -Dextensions='picocli'
 endif::[]
 ifdef::create-cli-post-command[]
 {create-cli-post-command}

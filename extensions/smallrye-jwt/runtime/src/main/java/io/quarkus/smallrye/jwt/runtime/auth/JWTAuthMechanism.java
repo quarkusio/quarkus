@@ -37,6 +37,11 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
 
     @Inject
     private JWTAuthContextInfo authContextInfo;
+    private final boolean silent;
+
+    public JWTAuthMechanism(SmallRyeJwtConfig config) {
+        this.silent = config == null ? false : config.silent;
+    }
 
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
@@ -53,6 +58,14 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
 
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
+        if (silent) {
+            //if this is silent we only send a challenge if the request contained auth headers
+            //otherwise we assume another method will send the challenge
+            String authHeader = context.request().headers().get(HttpHeaderNames.AUTHORIZATION);
+            if (authHeader == null) {
+                return Uni.createFrom().optional(Optional.empty());
+            }
+        }
         ChallengeData result = new ChallengeData(
                 HttpResponseStatus.UNAUTHORIZED.code(),
                 HttpHeaderNames.WWW_AUTHENTICATE,

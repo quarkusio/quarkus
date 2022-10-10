@@ -6,7 +6,7 @@ import javax.ws.rs.Produces;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-import io.quarkus.oidc.client.reactive.filter.OidcClientFilter;
+import io.quarkus.oidc.client.filter.OidcClientFilter;
 import io.smallrye.mutiny.Uni;
 
 @RegisterRestClient

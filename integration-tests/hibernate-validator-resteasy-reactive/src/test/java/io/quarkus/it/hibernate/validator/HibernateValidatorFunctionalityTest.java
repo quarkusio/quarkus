@@ -170,6 +170,15 @@ public class HibernateValidatorFunctionalityTest {
     }
 
     @Test
+    public void testNoProducesWithResponse() {
+        RestAssured.given()
+                .get("/hibernate-validator/test/no-produces-with-response/plop/")
+                .then()
+                .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
+                .body(containsString("numeric value out of bounds"));
+    }
+
+    @Test
     public void testRestEndPointReturnValueValidation() {
         // https://github.com/quarkusio/quarkus/issues/9174
         // Constraint validation exceptions thrown by Resteasy and related to return values

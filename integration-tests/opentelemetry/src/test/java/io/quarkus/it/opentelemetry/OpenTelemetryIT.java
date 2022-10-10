@@ -7,7 +7,7 @@ import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 @QuarkusIntegrationTest
-public class OpenTelemetryITCase extends OpenTelemetryTestCase {
+public class OpenTelemetryIT extends OpenTelemetryTest {
     @Override
     protected void buildGlobalTelemetryInstance() {
         // When running native tests the test class is outside the Quarkus application,

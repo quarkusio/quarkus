@@ -39,7 +39,7 @@ import io.quarkus.redis.datasource.ReactiveTransactionalRedisCommands;
 import io.quarkus.redis.datasource.RedisCommands;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.TransactionalRedisCommands;
-import io.quarkus.redis.datasource.topk.ReactiveTopKCommands;
+import io.quarkus.redis.datasource.graph.ReactiveGraphCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 import io.quarkus.redis.runtime.datasource.AbstractRedisCommandGroup;
@@ -63,8 +63,8 @@ public class RedisApiGenerator {
 
     public static void main(String[] args) throws FileNotFoundException {
         // PARAMETERS
-        String reactiveApi = ReactiveTopKCommands.class.getName();
-        String prefix = "topk";
+        String reactiveApi = ReactiveGraphCommands.class.getName();
+        String prefix = "graph";
         // ---------
 
         File out = new File("extensions/redis-client/runtime/target/generation");
@@ -281,7 +281,8 @@ public class RedisApiGenerator {
 
             StringBuilder block = new StringBuilder("{");
             block.append("// Validation\n");
-            boolean keyAsFirstParam = method.getParameter(0).getNameAsString().equalsIgnoreCase("key");
+            boolean keyAsFirstParam = !method.getParameters().isEmpty()
+                    && method.getParameter(0).getNameAsString().equalsIgnoreCase("key");
             if (keyAsFirstParam) {
                 block.append("nonNull(key, \"key\");\n");
             }

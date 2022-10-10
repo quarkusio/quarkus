@@ -5,6 +5,7 @@ import io.quarkus.redis.datasource.bloom.TransactionalBloomCommands;
 import io.quarkus.redis.datasource.countmin.TransactionalCountMinCommands;
 import io.quarkus.redis.datasource.cuckoo.TransactionalCuckooCommands;
 import io.quarkus.redis.datasource.geo.TransactionalGeoCommands;
+import io.quarkus.redis.datasource.graph.TransactionalGraphCommands;
 import io.quarkus.redis.datasource.hash.TransactionalHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.TransactionalHyperLogLogCommands;
 import io.quarkus.redis.datasource.json.TransactionalJsonCommands;
@@ -15,6 +16,7 @@ import io.quarkus.redis.datasource.sortedset.TransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.string.TransactionalStringCommands;
 import io.quarkus.redis.datasource.topk.TransactionalTopKCommands;
 import io.quarkus.redis.datasource.value.TransactionalValueCommands;
+import io.smallrye.common.annotation.Experimental;
 import io.vertx.mutiny.redis.client.Command;
 
 /**
@@ -385,6 +387,27 @@ public interface TransactionalRedisDataSource {
     <K, V> TransactionalTopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType);
 
     /**
+     * Gets the object to manipulate graphs.
+     * This group requires the <a href="https://redis.io/docs/stack/graph/">RedisGraph module</a>.
+     *
+     * @return the object to manipulate graphs lists.
+     */
+    @Experimental("The Redis graph support is experimental")
+    default TransactionalGraphCommands<String> graph() {
+        return graph(String.class);
+    }
+
+    /**
+     * Gets the object to manipulate graphs.
+     * This group requires the <a href="https://redis.io/docs/stack/graph/">RedisGraph module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to manipulate graphs lists.
+     */
+    @Experimental("The Redis graph support is experimental")
+    <K> TransactionalGraphCommands<K> graph(Class<K> redisKeyType);
+
+    /**
      * Executes a command.
      * This method is used to execute commands not offered by the API.
      *
@@ -410,4 +433,5 @@ public interface TransactionalRedisDataSource {
      * @param args the parameters, encoded as String.
      */
     void execute(io.vertx.redis.client.Command command, String... args);
+
 }

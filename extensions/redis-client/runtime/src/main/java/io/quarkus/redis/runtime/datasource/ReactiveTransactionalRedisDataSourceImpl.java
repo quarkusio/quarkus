@@ -10,6 +10,7 @@ import io.quarkus.redis.datasource.bloom.ReactiveTransactionalBloomCommands;
 import io.quarkus.redis.datasource.countmin.ReactiveTransactionalCountMinCommands;
 import io.quarkus.redis.datasource.cuckoo.ReactiveTransactionalCuckooCommands;
 import io.quarkus.redis.datasource.geo.ReactiveTransactionalGeoCommands;
+import io.quarkus.redis.datasource.graph.ReactiveTransactionalGraphCommands;
 import io.quarkus.redis.datasource.hash.ReactiveTransactionalHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveTransactionalHyperLogLogCommands;
 import io.quarkus.redis.datasource.json.ReactiveTransactionalJsonCommands;
@@ -130,6 +131,12 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
     public <K, V> ReactiveTransactionalTopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType) {
         return new ReactiveTransactionalTopKCommandsImpl<>(this,
                 (ReactiveTopKCommandsImpl<K, V>) this.reactive.topk(redisKeyType, valueType), tx);
+    }
+
+    @Override
+    public <K> ReactiveTransactionalGraphCommands<K> graph(Class<K> redisKeyType) {
+        return new ReactiveTransactionalGraphCommandsImpl<>(this,
+                (ReactiveGraphCommandsImpl<K>) this.reactive.graph(redisKeyType), tx);
     }
 
     @Override

@@ -4,7 +4,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
 import org.junit.jupiter.api.extension.TestWatcher;
 
-public class AbstractQuarkusTestWithContextExtension implements LifecycleMethodExecutionExceptionHandler, TestWatcher {
+public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTestWithCallbacksExtension
+        implements LifecycleMethodExecutionExceptionHandler, TestWatcher {
     @Override
     public void handleAfterAllMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
         markTestAsFailed(context, throwable);

@@ -234,6 +234,12 @@ public class TestConfig {
     @ConfigItem
     public Optional<String> excludeModulePattern;
 
+    /**
+     * If the test callbacks should be invoked for the integration tests (tests annotated with {@code @QuarkusIntegrationTest}).
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean enableCallbacksForIntegrationTests;
+
     @ConfigGroup
     public static class Profile {
 

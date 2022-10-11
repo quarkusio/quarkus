@@ -133,7 +133,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         }
 
         CurrentRequestManager
-                .setCurrentRequestInstance(new QuarkusCurrentRequest(beanContainer.instance(CurrentVertxRequest.class)));
+                .setCurrentRequestInstance(new QuarkusCurrentRequest(beanContainer.beanInstance(CurrentVertxRequest.class)));
 
         BlockingOperationSupport.setIoThreadDetector(new BlockingOperationSupport.IOThreadDetector() {
             @Override

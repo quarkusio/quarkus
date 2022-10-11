@@ -12,7 +12,7 @@ public class ArcBeanFactory<T> implements BeanFactory<T> {
 
     public ArcBeanFactory(Class<T> target, BeanContainer beanContainer) {
         targetClassName = target.getName();
-        factory = beanContainer.instanceFactory(target);
+        factory = beanContainer.beanInstanceFactory(target);
     }
 
     @Override

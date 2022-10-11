@@ -7,7 +7,6 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.reactive.FilePart;
 import org.jboss.resteasy.reactive.common.providers.serialisers.FilePartBodyHandler;
@@ -18,7 +17,6 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 // TODO: this is very simplistic at the moment
 
-@Provider
 @Produces("*/*")
 @Consumes("*/*")
 public class ServerFilePartBodyHandler extends FilePartBodyHandler implements ServerMessageBodyWriter<FilePart> {

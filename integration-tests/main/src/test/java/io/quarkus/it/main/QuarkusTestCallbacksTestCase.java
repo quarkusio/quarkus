@@ -119,7 +119,7 @@ public class QuarkusTestCallbacksTestCase {
     public @interface TestAnnotation {
     }
 
-    private static boolean isCustomException(Throwable ex) {
+    public static boolean isCustomException(Throwable ex) {
         try {
             return ex.getClass().getClassLoader().loadClass(CustomException.class.getName()).isInstance(ex);
         } catch (ClassNotFoundException e) {

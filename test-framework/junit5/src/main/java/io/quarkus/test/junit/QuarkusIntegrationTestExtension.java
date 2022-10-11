@@ -26,10 +26,14 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.opentest4j.TestAbortedException;
@@ -39,15 +43,20 @@ import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DevServicesContext;
+import io.quarkus.test.common.LauncherUtil;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestHostLauncher;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
+import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
 
 public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithContextExtension
-        implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, TestInstancePostProcessor {
+        implements BeforeTestExecutionCallback, AfterTestExecutionCallback, BeforeEachCallback, AfterEachCallback,
+        BeforeAllCallback, AfterAllCallback, TestInstancePostProcessor {
+
+    private static final String ENABLED_CALLBACKS_PROPERTY = "quarkus.test.enable-callbacks-for-integration-tests";
 
     private static boolean failedBoot;
 
@@ -64,10 +73,34 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
     private static String containerNetworkId;
 
     @Override
+    public void afterTestExecution(ExtensionContext context) throws Exception {
+        if (!failedBoot && !isAfterTestCallbacksEmpty()) {
+            invokeAfterTestExecutionCallbacks(createQuarkusTestMethodContext(context));
+        }
+    }
+
+    @Override
     public void afterEach(ExtensionContext context) throws Exception {
         if (!failedBoot) {
+            if (!isAfterAllCallbacksEmpty()) {
+                invokeAfterEachCallbacks(createQuarkusTestMethodContext(context));
+            }
+
             RestAssuredURLManager.clearURL();
             TestScopeManager.tearDown(true);
+        }
+    }
+
+    @Override
+    public void beforeTestExecution(ExtensionContext context) throws Exception {
+        if (!failedBoot) {
+            if (!isBeforeTestCallbacksEmpty()) {
+                invokeBeforeTestExecutionCallbacks(createQuarkusTestMethodContext(context));
+            }
+
+        } else {
+            throwBootFailureException();
+            return;
         }
     }
 
@@ -76,14 +109,26 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         if (failedBoot) {
             throwBootFailureException();
         } else {
+            if (!isBeforeEachCallbacksEmpty()) {
+                invokeBeforeEachCallbacks(createQuarkusTestMethodContext(context));
+            }
+
             RestAssuredURLManager.setURL(ssl, QuarkusTestExtension.getEndpointPath(context, testHttpEndpointProviders));
             TestScopeManager.setup(true);
         }
     }
 
     @Override
-    public void beforeAll(ExtensionContext extensionContext) throws Exception {
-        ensureStarted(extensionContext);
+    public void beforeAll(ExtensionContext context) throws Exception {
+        ensureStarted(context);
+        invokeBeforeClassCallbacks(context.getRequiredTestClass());
+    }
+
+    @Override
+    public void afterAll(ExtensionContext context) throws Exception {
+        if (!failedBoot && !isAfterAllCallbacksEmpty()) {
+            invokeAfterAllCallbacks(createQuarkusTestMethodContext(context));
+        }
     }
 
     private QuarkusTestExtensionState ensureStarted(ExtensionContext extensionContext) {
@@ -167,6 +212,9 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                     testProfileAndProperties.testProfile != null ? testProfileAndProperties.testProfile.getClass().getName()
                             : null);
             hasPerTestResources = testResourceManager.hasPerTestResources();
+            if (isCallbacksEnabledForIntegrationTests()) {
+                populateCallbacks(requiredTestClass.getClassLoader());
+            }
 
             Map<String, String> additionalProperties = new HashMap<>(testProfileAndProperties.properties);
             Map<String, String> resourceManagerProps = new HashMap<>(testResourceManager.start());
@@ -293,6 +341,26 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         } else {
             throw new TestAbortedException("Boot failed");
         }
+    }
+
+    private boolean isCallbacksEnabledForIntegrationTests() {
+        return Optional.ofNullable(System.getProperty(ENABLED_CALLBACKS_PROPERTY)).map(Boolean::parseBoolean)
+                .or(() -> LauncherUtil.installAndGetSomeConfig().getOptionalValue(ENABLED_CALLBACKS_PROPERTY, Boolean.class))
+                .orElse(false);
+    }
+
+    private QuarkusTestMethodContext createQuarkusTestMethodContext(ExtensionContext context) {
+        Object testInstance = context.getTestInstance().orElse(null);
+        List<Object> outerInstances = context.getTestInstances()
+                .map(testInstances -> testInstances.getAllInstances().stream()
+                        .filter(instance -> instance != testInstance)
+                        .collect(Collectors.toList()))
+                .orElse(Collections.emptyList());
+        return new QuarkusTestMethodContext(
+                testInstance,
+                outerInstances,
+                context.getTestMethod().orElse(null),
+                getState(context).getTestErrorCause());
     }
 
     private static class DefaultArtifactLauncherCreateContext implements ArtifactLauncherProvider.CreateContext {

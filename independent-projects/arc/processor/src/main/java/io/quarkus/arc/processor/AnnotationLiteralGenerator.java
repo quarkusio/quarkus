@@ -24,6 +24,7 @@ import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.arc.processor.AnnotationLiteralProcessor.AnnotationLiteralClassInfo;
 import io.quarkus.arc.processor.AnnotationLiteralProcessor.CacheKey;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldCreator;
@@ -119,6 +120,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
 
         MethodCreator constructor = annotationLiteral.getMethodCreator(Methods.INIT, "V",
                 literal.annotationMembers().stream().map(m -> m.returnType().name().toString()).toArray());
+
         constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(AnnotationLiteral.class), constructor.getThis());
 
         int constructorParameterIndex = 0;
@@ -141,7 +143,35 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
         }
         constructor.returnValue(null);
 
-        generateStaticFieldsWithDefaultValues(annotationLiteral, literal.annotationMembers());
+        if (literal.annotationMembers().isEmpty()) {
+            constructor.setModifiers(ACC_PRIVATE);
+
+            FieldCreator singleton = annotationLiteral.getFieldCreator("INSTANCE", generatedName);
+            singleton.setModifiers(ACC_PUBLIC | ACC_STATIC | ACC_FINAL);
+
+            MethodCreator staticInit = annotationLiteral.getMethodCreator(Methods.CLINIT, void.class);
+            staticInit.setModifiers(ACC_STATIC);
+            ResultHandle singletonInstance = staticInit.newInstance(constructor.getMethodDescriptor());
+            staticInit.writeStaticField(singleton.getFieldDescriptor(), singletonInstance);
+            staticInit.returnValue(null);
+
+            // only one instance ever exists
+            MethodCreator equals = annotationLiteral.getMethodCreator("equals", boolean.class, Object.class);
+            BranchResult equality = equals.ifReferencesEqual(equals.readStaticField(singleton.getFieldDescriptor()),
+                    equals.getMethodParam(0));
+            equality.trueBranch().returnValue(equality.trueBranch().load(true));
+            equality.falseBranch().returnValue(equality.falseBranch().load(false));
+
+            // consistent with AnnotationLiteral's default `hashCode` implementation
+            MethodCreator hashCode = annotationLiteral.getMethodCreator("hashCode", int.class);
+            hashCode.returnValue(hashCode.load(0));
+
+            // consistent with AnnotationLiteral's default `toString` implementation
+            MethodCreator toString = annotationLiteral.getMethodCreator("toString", String.class);
+            toString.returnValue(toString.load("@" + literal.annotationClass.name() + "()"));
+        } else {
+            generateStaticFieldsWithDefaultValues(annotationLiteral, literal.annotationMembers());
+        }
 
         annotationLiteral.close();
         LOGGER.debugf("Annotation literal class generated: %s", literal.generatedClassName);

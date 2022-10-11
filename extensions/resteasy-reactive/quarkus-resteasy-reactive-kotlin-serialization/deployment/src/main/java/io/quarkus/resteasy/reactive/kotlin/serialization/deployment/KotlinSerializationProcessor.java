@@ -1,4 +1,4 @@
-package io.quarkus.kotlin.serialization.deployment;
+package io.quarkus.resteasy.reactive.kotlin.serialization.deployment;
 
 import static io.quarkus.deployment.Feature.RESTEASY_REACTIVE_KOTLIN_SERIALIZATION;
 import static io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem.json;
@@ -20,9 +20,9 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.kotlin.serialization.KotlinSerializationMessageBodyReader;
-import io.quarkus.kotlin.serialization.KotlinSerializationMessageBodyWriter;
 import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
+import io.quarkus.resteasy.reactive.kotlin.serialization.runtime.KotlinSerializationMessageBodyReader;
+import io.quarkus.resteasy.reactive.kotlin.serialization.runtime.KotlinSerializationMessageBodyWriter;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 

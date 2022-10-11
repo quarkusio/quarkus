@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 
+import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
@@ -33,13 +34,15 @@ class CodeGenWatcher {
             final Collection<FSWatchUtil.Watcher> watchers = new ArrayList<>(codeGens.size());
             final Properties properties = new Properties();
             properties.putAll(context.getBuildSystemProperties());
+            final Config config = CodeGenerator.getConfig(curatedApplication.getApplicationModel(), LaunchMode.DEVELOPMENT,
+                    properties, deploymentClassLoader);
             for (CodeGenData codeGen : codeGens) {
                 watchers.add(new FSWatchUtil.Watcher(codeGen.sourceDir, codeGen.provider.inputExtension(),
                         modifiedPaths -> {
                             try {
                                 CodeGenerator.trigger(deploymentClassLoader,
                                         codeGen,
-                                        curatedApplication.getApplicationModel(), properties, LaunchMode.DEVELOPMENT, false);
+                                        curatedApplication.getApplicationModel(), config, false);
                             } catch (Exception any) {
                                 log.warn("Code generation failed", any);
                             }

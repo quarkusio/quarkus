@@ -11,12 +11,13 @@ public final class SuspendPoint {
 
     private static final CountDownLatch waitForStartup = new CountDownLatch(1);
     private static final CountDownLatch waitForResume = new CountDownLatch(1);
+    private static final CountDownLatch waitForComplete = new CountDownLatch(1);
 
     /**
      * Indicate that startup is complete and that it is safe to suspend the VM.
      * Called from the main thread.
      */
-    public static void startupComplete() {
+    public static void readyToSuspend() {
         waitForStartup.countDown();
         awaitUninterruptibly(waitForResume);
     }
@@ -35,6 +36,14 @@ public final class SuspendPoint {
      */
     public static void resume() {
         waitForResume.countDown();
+        awaitUninterruptibly(waitForComplete);
+    }
+
+    /**
+     * Indicate that the environment is ready to service requests.
+     */
+    public static void readyForRequests() {
+        waitForComplete.countDown();
     }
 
     /**

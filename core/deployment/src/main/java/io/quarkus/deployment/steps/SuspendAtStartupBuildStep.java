@@ -5,6 +5,7 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationStartBuildItem;
 import io.quarkus.deployment.builditem.PostResumeBuildItem;
 import io.quarkus.deployment.builditem.PreSuspendBuildItem;
 import io.quarkus.runtime.suspend.SuspendPointRecorder;
@@ -23,6 +24,18 @@ public class SuspendAtStartupBuildStep {
     @Produce(PostResumeBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     public void suspendResumeStep(SuspendPointRecorder recorder) {
-        recorder.startupComplete();
+        recorder.readyToSuspend();
+    }
+
+    /**
+     * Unblock the resume thread when we're ready for requests.
+     *
+     * @param recorder the suspend point recorder
+     */
+    @Consume(PostResumeBuildItem.class)
+    @Consume(ApplicationStartBuildItem.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void resumeCompleteStep(SuspendPointRecorder recorder) {
+        recorder.readyForRequests();
     }
 }

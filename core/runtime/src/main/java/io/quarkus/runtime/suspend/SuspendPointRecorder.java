@@ -9,8 +9,12 @@ import io.quarkus.runtime.annotations.Recorder;
 public final class SuspendPointRecorder {
     public SuspendPointRecorder() {}
 
-    public void startupComplete() {
-        SuspendPoint.startupComplete();
+    public void readyToSuspend() {
+        SuspendPoint.readyToSuspend();
+    }
+
+    public void readyForRequests() {
+        SuspendPoint.readyForRequests();
     }
 
     public void initialize(String className) {

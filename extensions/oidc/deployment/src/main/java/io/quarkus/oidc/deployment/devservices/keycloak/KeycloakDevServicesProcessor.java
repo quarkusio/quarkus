@@ -375,7 +375,7 @@ public class KeycloakDevServicesProcessor {
     private static boolean isKeycloakX(DockerImageName dockerImageName) {
         return capturedDevServicesConfiguration.keycloakXImage.isPresent()
                 ? capturedDevServicesConfiguration.keycloakXImage.get()
-                : !dockerImageName.getVersionPart().endsWith(KEYCLOAK_LEGACY_IMAGE_VERSION_PART);
+                : dockerImageName.getVersionPart().endsWith(KEYCLOAK_LEGACY_IMAGE_VERSION_PART);
     }
 
     private String getSharedContainerUrl(ContainerAddress containerAddress) {

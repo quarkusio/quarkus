@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Writing JSON REST Services
-
 include::./attributes.adoc[]
+:categories: web, serialization
+:summary: JSON is now the lingua franca between microservices. In this guide, we see how you can get your REST services to consume and produce JSON payloads.
 
 JSON is now the _lingua franca_ between microservices.
 

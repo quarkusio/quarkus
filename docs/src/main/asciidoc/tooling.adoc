@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using our Tooling
-
 include::./attributes.adoc[]
+:categories: getting-started
+:summary: Explore the Quarkus developer toolchain which makes Quarkus development so fast and enjoyable.
 
 Quarkus comes with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application. In addition, there are plugins and extensions to all major IDEs.
 

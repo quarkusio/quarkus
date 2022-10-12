@@ -4,9 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Scheduler Reference Guide
-
 include::./attributes.adoc[]
-
+:categories: miscellaneous
+:summary: Learn more about the Scheduler extension.
 :numbered:
 :sectnums:
 :sectnumlevels: 4

@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus Tools in your favorite IDE
-
 include::./attributes.adoc[]
+:categories: getting-started
+:summary: Learn more about Quarkus integrations in IDEs.
 
 The following IDEs have support for the community developed Quarkus Tools:
 

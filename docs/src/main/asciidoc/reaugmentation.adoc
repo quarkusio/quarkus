@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Re-augment a Quarkus Application
-
 include::./attributes.adoc[]
+:categories: tooling
+:summary: Use mutable jars to rebuild your application with different build time configurations.
 
 == What is augmentation?
 

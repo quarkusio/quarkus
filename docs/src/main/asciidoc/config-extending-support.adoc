@@ -4,9 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Extending Configuration Support
-
 include::./attributes.adoc[]
-
+:categories: core
+:summary: Extend and customize the Configuration.
 :numbered:
 :sectnums:
 :sectnumlevels: 4

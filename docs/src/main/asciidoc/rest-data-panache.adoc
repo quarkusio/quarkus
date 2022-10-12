@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Generating JAX-RS resources with Panache
-
 include::./attributes.adoc[]
+:categories: web
+:summary: Hibernate ORM REST Data with Panache simplifies the creation of CRUD applications based on JAX-RS and Hibernate ORM.
 :extension-status: experimental
 
 A lot of web applications are monotonous CRUD applications with REST APIs that are tedious to write.

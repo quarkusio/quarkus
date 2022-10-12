@@ -870,7 +870,8 @@ public class NativeImageBuildStep {
                         }
                     }
                 }
-                if (enableModules != null && enableModules.size() > 0) {
+                if (!graalVMVersion.isOlderThan(GraalVM.Version.VERSION_22_0_0_2)
+                        && enableModules != null && enableModules.size() > 0) {
                     String modules = enableModules.stream().map(NativeImageEnableModule::getModuleName).distinct().sorted()
                             .collect(Collectors.joining(","));
                     nativeImageArgs.add("--add-modules=" + modules);

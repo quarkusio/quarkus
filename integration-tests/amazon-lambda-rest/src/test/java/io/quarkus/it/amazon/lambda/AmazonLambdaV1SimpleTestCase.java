@@ -4,6 +4,8 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.*;
 
 import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.ws.rs.core.MediaType;
 
@@ -80,6 +82,15 @@ public class AmazonLambdaV1SimpleTestCase {
     }
 
     @Test
+    public void testRoleParse() {
+        Pattern p = Pattern.compile("[^\\[\\] \\t]+");
+        Matcher m = p.matcher("[ hello world ]");
+        while (m.find()) {
+            System.out.println(m.group());
+        }
+    }
+
+    @Test
     public void testJaxrsCognitoSecurityContext() throws Exception {
         AwsProxyRequest request = new AwsProxyRequest();
         request.setHttpMethod("GET");
@@ -97,6 +108,69 @@ public class AmazonLambdaV1SimpleTestCase {
                 .then()
                 .statusCode(200)
                 .body("body", equalTo("Bill"));
+    }
+
+    @Test
+    public void testJaxrsCognitoRole() throws Exception {
+        AwsProxyRequest request = new AwsProxyRequest();
+        request.setHttpMethod("GET");
+        request.setPath("/security/roles");
+        request.setRequestContext(new AwsProxyRequestContext());
+        request.getRequestContext().setAuthorizer(new ApiGatewayAuthorizerContext());
+        request.getRequestContext().getAuthorizer().setClaims(new CognitoAuthorizerClaims());
+        request.getRequestContext().getAuthorizer().getClaims().setUsername("Bill");
+        request.getRequestContext().getAuthorizer().getClaims().setClaim("cognito:groups", "[ admin user ]");
+        given()
+                .contentType("application/json")
+                .accept("application/json")
+                .body(request)
+                .when()
+                .post(AmazonLambdaApi.API_BASE_PATH_TEST)
+                .then()
+                .statusCode(200)
+                .body("statusCode", equalTo(200))
+                .body("body", equalTo("true"));
+    }
+
+    @Test
+    public void testJaxrsCognitoBadRole() throws Exception {
+        AwsProxyRequest request = new AwsProxyRequest();
+        request.setHttpMethod("GET");
+        request.setPath("/security/roles");
+        request.setRequestContext(new AwsProxyRequestContext());
+        request.getRequestContext().setAuthorizer(new ApiGatewayAuthorizerContext());
+        request.getRequestContext().getAuthorizer().setClaims(new CognitoAuthorizerClaims());
+        request.getRequestContext().getAuthorizer().getClaims().setUsername("Bill");
+        request.getRequestContext().getAuthorizer().getClaims().setClaim("cognito:groups", "[ attacker ]");
+        given()
+                .contentType("application/json")
+                .accept("application/json")
+                .body(request)
+                .when()
+                .post(AmazonLambdaApi.API_BASE_PATH_TEST)
+                .then()
+                .statusCode(200)
+                .body("statusCode", equalTo(403));
+    }
+
+    @Test
+    public void testJaxrsCognitoNoRole() throws Exception {
+        AwsProxyRequest request = new AwsProxyRequest();
+        request.setHttpMethod("GET");
+        request.setPath("/security/roles");
+        request.setRequestContext(new AwsProxyRequestContext());
+        request.getRequestContext().setAuthorizer(new ApiGatewayAuthorizerContext());
+        request.getRequestContext().getAuthorizer().setClaims(new CognitoAuthorizerClaims());
+        request.getRequestContext().getAuthorizer().getClaims().setUsername("Bill");
+        given()
+                .contentType("application/json")
+                .accept("application/json")
+                .body(request)
+                .when()
+                .post(AmazonLambdaApi.API_BASE_PATH_TEST)
+                .then()
+                .statusCode(200)
+                .body("statusCode", equalTo(403));
     }
 
     @Test

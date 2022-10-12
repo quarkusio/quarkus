@@ -106,6 +106,7 @@ import io.quarkus.test.junit.callback.QuarkusTestContext;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.internal.DeepClone;
 import io.quarkus.test.junit.internal.SerializationWithXStreamFallbackDeepClone;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 
 public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         implements BeforeEachCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback, AfterEachCallback,
@@ -569,19 +570,25 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     }
 
     private QuarkusTestExtensionState ensureStarted(ExtensionContext extensionContext) {
+        boolean mixedWithQuarkusMainTest = false;
         ExtensionContext.Store store = getStoreFromContext(extensionContext);
         Class<?> testType = store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
         if (testType != null) {
             if (testType != QuarkusTest.class) {
-                throw new IllegalStateException(
-                        "Cannot mix both @QuarkusTest based tests and " + testType.getName() + " based tests in the same run");
+                if (testType.equals(QuarkusMainTest.class)) {
+                    mixedWithQuarkusMainTest = true;
+                } else {
+                    throw new IllegalStateException(
+                            "Cannot mix both @QuarkusTest based tests and " + testType.getName()
+                                    + " based tests in the same run");
+                }
             }
         } else {
             store.put(IO_QUARKUS_TESTING_TYPE, QuarkusTest.class);
         }
         QuarkusTestExtensionState state = getState(extensionContext);
         Class<? extends QuarkusTestProfile> selectedProfile = getQuarkusTestProfile(extensionContext);
-        boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
+        boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile) || mixedWithQuarkusMainTest;
         // we reload the test resources if we changed test class and the new test class is not a nested class, and if we had or will have per-test test resources
         boolean reloadTestResources = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
                 && !isNested(currentJUnitTestClass, extensionContext.getRequiredTestClass())

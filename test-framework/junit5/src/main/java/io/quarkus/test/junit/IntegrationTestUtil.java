@@ -108,6 +108,11 @@ public final class IntegrationTestUtil {
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
         QuarkusTestExtensionState state = store.get(QuarkusTestExtensionState.class.getName(),
                 QuarkusTestExtensionState.class);
+        Object testResourceManager = state.testResourceManager;
+        if (!(testResourceManager instanceof TestResourceManager)) {
+            throw new RuntimeException(
+                    "An unexpected situation occurred while trying to instantiate the testing infrastructure. Have you perhaps mixed @QuarkusTest and @QuarkusIntegrationTest in the same test run?");
+        }
         ((TestResourceManager) state.testResourceManager).inject(testInstance);
     }
 

@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Tips for writing native applications
-
 include::./attributes.adoc[]
+:categories: core, writing-extensions
+:summary: This guide is a collection of tips to help you solve the problems you encounter when compiling applications to native executable.
 
 This guide contains various tips and tricks for getting around problems that might arise when attempting to run Java applications as native executables.
 

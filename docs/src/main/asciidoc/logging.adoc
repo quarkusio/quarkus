@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Configuring Logging
-
 include::./attributes.adoc[]
+:categories: core
+:summary: This guide explains logging and how to configure it.
 
 This guide explains logging and how to configure it.
 

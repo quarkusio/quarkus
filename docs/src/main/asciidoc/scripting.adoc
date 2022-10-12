@@ -5,6 +5,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Scripting with Quarkus
 include::./attributes.adoc[]
+:categories: command-line
+:summary: Easy Quarkus-based scripting with jbang.
 :extension-status: preview
 
 Quarkus provides integration with https://jbang.dev[jbang] which allows you to write Java scripts/applications requiring no Maven nor Gradle to get running.

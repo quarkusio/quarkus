@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus Extension Registry
-
 include::./attributes.adoc[]
+:categories: architecture
+:summary: Learn more about the notion of extension registry and how you can use your own.
 
 The Quarkus dev tools, such as the https://quarkus.io/guides/cli-tooling[Quarkus CLI], the https://quarkus.io/guides/maven-tooling[Maven] and the https://quarkus.io/guides/gradle-tooling[Gradle] plugins, or https://code.quarkus.io[code.quarkus.io] can be used to list and search the Quarkus ecosystem for extensions that match a certain criteria. That includes the https://quarkus.io/guides/platform[Quarkus platform] extensions and various other extensions contributed by the community, many of which are hosted on the https://github.com/quarkiverse[Quarkiverse Hub].
 

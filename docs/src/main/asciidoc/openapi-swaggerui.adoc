@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using OpenAPI and Swagger UI
-
 include::./attributes.adoc[]
+:categories: web
+:summary: This guide explains how to use the OpenAPI extension to generate an OpenAPI descriptor and get a Swagger UI frontend to test your REST endpoints.
 
 This guide explains how your Quarkus application can expose its API description through an OpenAPI specification and
 how you can test it via a user-friendly UI named Swagger UI.

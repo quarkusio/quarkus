@@ -4,9 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Mapping configuration to objects
-
 include::./attributes.adoc[]
-
+:categories: core
+:summary: Group multiple configuration properties into an object.
 :numbered:
 :sectnums:
 :sectnumlevels: 4

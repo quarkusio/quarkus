@@ -181,17 +181,24 @@ public class KeycloakDevServicesProcessor {
         }
         capturedDevServicesConfiguration = currentDevServicesConfiguration;
         StartupLogCompressor compressor = new StartupLogCompressor(
-                (launchMode.isTest() ? "(test) " : "") + "KeyCloak Dev Services Starting:",
+                (launchMode.isTest() ? "(test) " : "") + "Keycloak Dev Services Starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         if (vertxInstance == null) {
             vertxInstance = Vertx.vertx();
         }
         try {
+            List<String> errors = new ArrayList<>();
+
             RunningDevService newDevService = startContainer(dockerStatusBuildItem, keycloakBuildItemBuildProducer,
                     !devServicesSharedNetworkBuildItem.isEmpty(),
-                    devServicesConfig.timeout);
+                    devServicesConfig.timeout,
+                    errors);
             if (newDevService == null) {
-                compressor.close();
+                if (errors.isEmpty()) {
+                    compressor.close();
+                } else {
+                    compressor.closeAndDumpCaptured();
+                }
                 return null;
             }
 
@@ -227,10 +234,10 @@ public class KeycloakDevServicesProcessor {
             }
 
             capturedRealmFileLastModifiedDate = getRealmFileLastModifiedDate(capturedDevServicesConfiguration.realmPath);
-            if (devService == null) {
-                compressor.closeAndDumpCaptured();
-            } else {
+            if (devService != null && errors.isEmpty()) {
                 compressor.close();
+            } else {
+                compressor.closeAndDumpCaptured();
             }
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
@@ -241,14 +248,14 @@ public class KeycloakDevServicesProcessor {
         return devService.toBuildItem();
     }
 
-    private String startURL(String host, Integer port, boolean isKeyCloakX) {
-        return "http://" + host + ":" + port + (isKeyCloakX ? "" : "/auth");
+    private String startURL(String host, Integer port, boolean isKeycloakX) {
+        return "http://" + host + ":" + port + (isKeycloakX ? "" : "/auth");
     }
 
     private Map<String, String> prepareConfiguration(
             BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer, String internalURL,
             String hostURL, RealmRepresentation realmRep,
-            boolean keycloakX) {
+            boolean keycloakX, List<String> errors) {
         final String realmName = realmRep != null ? realmRep.getRealm() : getDefaultRealmName();
         final String authServerInternalUrl = realmsURL(internalURL, realmName);
 
@@ -266,9 +273,10 @@ public class KeycloakDevServicesProcessor {
         try {
             String adminToken = getAdminToken(client, clientAuthServerBaseUrl);
             if (createDefaultRealm) {
-                createDefaultRealm(client, adminToken, clientAuthServerBaseUrl, users, oidcClientId, oidcClientSecret);
+                createDefaultRealm(client, adminToken, clientAuthServerBaseUrl, users, oidcClientId, oidcClientSecret,
+                        errors);
             } else if (realmRep != null && keycloakX) {
-                createRealm(client, adminToken, clientAuthServerBaseUrl, realmRep);
+                createRealm(client, adminToken, clientAuthServerBaseUrl, realmRep, errors);
             }
         } finally {
             client.close();
@@ -300,7 +308,8 @@ public class KeycloakDevServicesProcessor {
 
     private RunningDevService startContainer(DockerStatusBuildItem dockerStatusBuildItem,
             BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
-            boolean useSharedNetwork, Optional<Duration> timeout) {
+            boolean useSharedNetwork, Optional<Duration> timeout,
+            List<String> errors) {
         if (!capturedDevServicesConfiguration.enabled) {
             // explicitly disabled
             LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the config");
@@ -342,7 +351,8 @@ public class KeycloakDevServicesProcessor {
                     capturedDevServicesConfiguration.shared,
                     capturedDevServicesConfiguration.javaOpts,
                     capturedDevServicesConfiguration.startCommand,
-                    capturedDevServicesConfiguration.showLogs);
+                    capturedDevServicesConfiguration.showLogs,
+                    errors);
 
             timeout.ifPresent(oidcContainer::withStartupTimeout);
             oidcContainer.start();
@@ -356,7 +366,8 @@ public class KeycloakDevServicesProcessor {
 
             Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer, internalUrl, hostUrl,
                     oidcContainer.realmRep,
-                    oidcContainer.keycloakX);
+                    oidcContainer.keycloakX,
+                    errors);
             return new RunningDevService(KEYCLOAK_CONTAINER_NAME, oidcContainer.getContainerId(),
                     oidcContainer::close, configs);
         };
@@ -366,7 +377,7 @@ public class KeycloakDevServicesProcessor {
                     // TODO: this probably needs to be addressed
                     Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer,
                             getSharedContainerUrl(containerAddress),
-                            getSharedContainerUrl(containerAddress), null, false);
+                            getSharedContainerUrl(containerAddress), null, false, errors);
                     return new RunningDevService(KEYCLOAK_CONTAINER_NAME, containerAddress.getId(), null, configs);
                 })
                 .orElseGet(defaultKeycloakContainerSupplier);
@@ -395,10 +406,12 @@ public class KeycloakDevServicesProcessor {
         private RealmRepresentation realmRep;
         private final Optional<String> startCommand;
         private final boolean showLogs;
+        private final List<String> errors;
 
         public QuarkusOidcContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
                 Optional<String> realmPath, String containerLabelValue,
-                boolean sharedContainer, Optional<String> javaOpts, Optional<String> startCommand, boolean showLogs) {
+                boolean sharedContainer, Optional<String> javaOpts, Optional<String> startCommand, boolean showLogs,
+                List<String> errors) {
             super(dockerImageName);
 
             this.useSharedNetwork = useSharedNetwork;
@@ -418,6 +431,7 @@ public class KeycloakDevServicesProcessor {
             this.fixedExposedPort = fixedExposedPort;
             this.startCommand = startCommand;
             this.showLogs = showLogs;
+            this.errors = errors;
 
             super.setWaitStrategy(Wait.forLogMessage(".*Keycloak.*started.*", 1));
         }
@@ -468,7 +482,7 @@ public class KeycloakDevServicesProcessor {
             if (realmPath.isPresent()) {
                 URL realmPathUrl = null;
                 if ((realmPathUrl = Thread.currentThread().getContextClassLoader().getResource(realmPath.get())) != null) {
-                    realmRep = readRealmFile(realmPathUrl, realmPath.get());
+                    realmRep = readRealmFile(realmPathUrl, realmPath.get(), errors);
                     if (!keycloakX) {
                         withClasspathResourceMapping(realmPath.get(), KEYCLOAK_DOCKER_REALM_PATH, BindMode.READ_ONLY);
                     }
@@ -478,9 +492,11 @@ public class KeycloakDevServicesProcessor {
                         if (!keycloakX) {
                             withFileSystemBind(realmPath.get(), KEYCLOAK_DOCKER_REALM_PATH, BindMode.READ_ONLY);
                         }
-                        realmRep = readRealmFile(filePath.toUri(), realmPath.get());
+                        realmRep = readRealmFile(filePath.toUri(), realmPath.get(), errors);
                     } else {
-                        LOG.debugf("Realm %s resource is not available", realmPath.get());
+                        errors.add(String.format("Realm %s resource is not available", realmPath.get()));
+
+                        LOG.errorf("Realm %s resource is not available", realmPath.get());
                     }
                 }
 
@@ -507,21 +523,23 @@ public class KeycloakDevServicesProcessor {
             }
         }
 
-        private RealmRepresentation readRealmFile(URI uri, String realmPath) {
+        private RealmRepresentation readRealmFile(URI uri, String realmPath, List<String> errors) {
             try {
-                return readRealmFile(uri.toURL(), realmPath);
+                return readRealmFile(uri.toURL(), realmPath, errors);
             } catch (MalformedURLException ex) {
                 // Will not happen as this method is called only when it is confirmed the file exists
                 throw new RuntimeException(ex);
             }
         }
 
-        private RealmRepresentation readRealmFile(URL url, String realmPath) {
+        private RealmRepresentation readRealmFile(URL url, String realmPath, List<String> errors) {
             try {
                 try (InputStream is = url.openStream()) {
                     return JsonSerialization.readValue(is, RealmRepresentation.class);
                 }
             } catch (IOException ex) {
+                errors.add(String.format("Realm %s resource can not be opened: %s", realmPath, ex.getMessage()));
+
                 LOG.errorf("Realm %s resource can not be opened: %s", realmPath, ex.getMessage());
             }
             return null;
@@ -578,7 +596,8 @@ public class KeycloakDevServicesProcessor {
 
     private void createDefaultRealm(WebClient client, String token, String keycloakUrl, Map<String, String> users,
             String oidcClientId,
-            String oidcClientSecret) {
+            String oidcClientSecret,
+            List<String> errors) {
         RealmRepresentation realm = createDefaultRealmRep();
 
         realm.getClients().add(createClient(oidcClientId, oidcClientSecret));
@@ -586,7 +605,7 @@ public class KeycloakDevServicesProcessor {
             realm.getUsers().add(createUser(entry.getKey(), entry.getValue(), getUserRoles(entry.getKey())));
         }
 
-        createRealm(client, token, keycloakUrl, realm);
+        createRealm(client, token, keycloakUrl, realm, errors);
     }
 
     private String getAdminToken(WebClient client, String keycloakUrl) {
@@ -602,7 +621,8 @@ public class KeycloakDevServicesProcessor {
         return null;
     }
 
-    private void createRealm(WebClient client, String token, String keycloakUrl, RealmRepresentation realm) {
+    private void createRealm(WebClient client, String token, String keycloakUrl, RealmRepresentation realm,
+            List<String> errors) {
         try {
             LOG.tracef("Creating the realm %s", realm.getRealm());
             HttpResponse<Buffer> createRealmResponse = client.postAbs(keycloakUrl + "/admin/realms")
@@ -612,6 +632,10 @@ public class KeycloakDevServicesProcessor {
                     .await().atMost(oidcConfig.devui.webClientTimeout);
 
             if (createRealmResponse.statusCode() > 299) {
+                errors.add(String.format("Realm %s can not be created %d - %s ", realm.getRealm(),
+                        createRealmResponse.statusCode(),
+                        createRealmResponse.statusMessage()));
+
                 LOG.errorf("Realm %s can not be created %d - %s ", realm.getRealm(), createRealmResponse.statusCode(),
                         createRealmResponse.statusMessage());
             }
@@ -635,6 +659,8 @@ public class KeycloakDevServicesProcessor {
                     });
             realmStatusCodeUni.await().atMost(Duration.ofSeconds(10));
         } catch (Throwable t) {
+            errors.add(String.format("Realm %s can not be created: %s", realm.getRealm(), t.getMessage()));
+
             LOG.errorf("Realm %s can not be created: %s", realm.getRealm(), t.getMessage());
         }
     }

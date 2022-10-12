@@ -175,8 +175,8 @@ final class CustomResourceProducersGenerator {
                 ResultHandle quarkusRestContextHandle = m.invokeVirtualMethod(getContextMethodCreator.getMethodDescriptor(),
                         m.getThis());
                 ResultHandle extractorHandle = m.newInstance(
-                        MethodDescriptor.ofConstructor(CookieParamExtractor.class, String.class),
-                        m.getMethodParam(0));
+                        MethodDescriptor.ofConstructor(CookieParamExtractor.class, String.class, String.class),
+                        m.getMethodParam(0), m.loadNull());
                 ResultHandle resultHandle = m.invokeVirtualMethod(MethodDescriptor.ofMethod(CookieParamExtractor.class,
                         "extractParameter", Object.class, ResteasyReactiveRequestContext.class), extractorHandle,
                         quarkusRestContextHandle);

@@ -24,7 +24,7 @@ public class TestContextCheckerBeforeEachCallback implements QuarkusTestBeforeEa
         // make sure that this comes into play only for the test we care about
 
         Method testMethod = context.getTestMethod();
-        if (!testMethod.getDeclaringClass().getName().endsWith("QuarkusTestCallbacksTestCase")) {
+        if (!testMethod.getDeclaringClass().getName().startsWith("io.quarkus.it.main.QuarkusTestCallbacks")) {
             return;
         }
 

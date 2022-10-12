@@ -155,20 +155,22 @@ public class UserResource {
 ----
 quarkus.security.ldap.enabled=true
 
-quarkus.security.ldap.dir-context.principal=uid=tool,ou=accounts,o=YourCompany,c=DE
-quarkus.security.ldap.dir-context.url=ldaps://ldap.server.local
-quarkus.security.ldap.dir-context.password=PASSWORD
+quarkus.security.ldap.dir-context.principal=uid=admin,ou=system
+quarkus.security.ldap.dir-context.url=ldaps://ldap.server.local <1>
+quarkus.security.ldap.dir-context.password=secret
 
 quarkus.security.ldap.identity-mapping.rdn-identifier=uid
-quarkus.security.ldap.identity-mapping.search-base-dn=ou=users,ou=tool,o=YourCompany,c=DE
+quarkus.security.ldap.identity-mapping.search-base-dn=ou=Users,dc=quarkus,dc=io
 
 quarkus.security.ldap.identity-mapping.attribute-mappings."0".from=cn
-quarkus.security.ldap.identity-mapping.attribute-mappings."0".to=groups
-quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter=(member=uid={0})
-quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter-base-dn=ou=roles,ou=tool,o=YourCompany,c=DE
-----
+quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter=(member=uid={0},ou=Users,dc=quarkus,dc=io) <2>
+quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter-base-dn=ou=Roles,dc=quarkus,dc=io
 
-`{0}` is substituted by the `uid`, whereas `{1}` will be substituted by the `dn` of the user entry.
+%test.quarkus.security.ldap.dir-context.url=ldap://127.0.0.1:10389 <3>
+----
+<1> You need to provide the URL to an LDAP server. This example requires the LDAP server to have imported {quarkus-blob-url}/test-framework/ldap/src/main/resources/quarkus-io.ldif[this LDIF file].
+<2> `{0}` is substituted by the `uid`.
+<3> The URL used by our test resource. Tests may leverage `LdapServerTestResource` provided by Quarkus as {quickstarts-blob-url}/security-ldap-quickstart/src/test/java/org/acme/elytron/security/ldap/ElytronLdapExtensionTestResources.java[we do] in the test coverage of the example application.
 
 The `elytron-security-ldap` extension requires a dir-context and an identity-mapping with at least one attribute-mapping to authenticate the user and its identity.
 

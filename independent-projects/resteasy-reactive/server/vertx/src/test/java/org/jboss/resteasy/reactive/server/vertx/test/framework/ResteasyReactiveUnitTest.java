@@ -396,7 +396,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                 new VertxRequestContextFactory(), executor);
         fieldInjectionSupport.runtimeInit(testClassLoader, application.getDeployment());
 
-        ResteasyReactiveVertxHandler handler = new ResteasyReactiveVertxHandler(application.getInitialHandler());
+        ResteasyReactiveVertxHandler handler = new ResteasyReactiveVertxHandler(ev -> {
+        }, application.getInitialHandler());
         String path = application.getPath();
         Route route = router.route(path);
         for (Consumer<Route> customizer : routeCustomisers) {

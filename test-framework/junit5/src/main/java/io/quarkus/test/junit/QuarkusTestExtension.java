@@ -102,17 +102,11 @@ import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.quarkus.test.junit.buildchain.TestBuildChainCustomizerProducer;
-import io.quarkus.test.junit.callback.QuarkusTestAfterAllCallback;
-import io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback;
-import io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback;
-import io.quarkus.test.junit.callback.QuarkusTestAfterTestExecutionCallback;
-import io.quarkus.test.junit.callback.QuarkusTestBeforeClassCallback;
-import io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback;
-import io.quarkus.test.junit.callback.QuarkusTestBeforeTestExecutionCallback;
 import io.quarkus.test.junit.callback.QuarkusTestContext;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.internal.DeepClone;
 import io.quarkus.test.junit.internal.SerializationWithXStreamFallbackDeepClone;
+import io.quarkus.test.junit.main.QuarkusMainTest;
 
 public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         implements BeforeEachCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback, AfterEachCallback,
@@ -134,13 +128,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     private static Pattern clonePattern;
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
 
-    private static List<Object> beforeClassCallbacks;
-    private static List<Object> afterConstructCallbacks;
-    private static List<Object> beforeEachCallbacks;
-    private static List<Object> beforeTestCallbacks;
-    private static List<Object> afterTestCallbacks;
-    private static List<Object> afterEachCallbacks;
-    private static List<Object> afterAllCallbacks;
     private static Class<?> quarkusTestMethodContextClass;
     private static boolean hasPerTestResources;
     private static List<Function<Class<?>, String>> testHttpEndpointProviders;
@@ -254,6 +241,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             hasPerTestResources = (boolean) testResourceManager.getClass().getMethod("hasPerTestResources")
                     .invoke(testResourceManager);
 
+            // make sure that we start over every time we populate the callbacks
+            // otherwise previous runs of QuarkusTest (with different TestProfile values can leak into the new run)
+            quarkusTestMethodContextClass = null;
             populateCallbacks(startupAction.getClassLoader());
             populateTestMethodInvokers(startupAction.getClassLoader());
 
@@ -356,55 +346,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         deepClone = new SerializationWithXStreamFallbackDeepClone(startupAction.getClassLoader());
     }
 
-    private void populateCallbacks(ClassLoader classLoader) throws ClassNotFoundException {
-        // make sure that we start over every time we populate the callbacks
-        // otherwise previous runs of QuarkusTest (with different TestProfile values can leak into the new run)
-        quarkusTestMethodContextClass = null;
-        beforeClassCallbacks = new ArrayList<>();
-        afterConstructCallbacks = new ArrayList<>();
-        beforeEachCallbacks = new ArrayList<>();
-        beforeTestCallbacks = new ArrayList<>();
-        afterTestCallbacks = new ArrayList<>();
-        afterEachCallbacks = new ArrayList<>();
-        afterAllCallbacks = new ArrayList<>();
-
-        ServiceLoader<?> quarkusTestBeforeClassLoader = ServiceLoader
-                .load(Class.forName(QuarkusTestBeforeClassCallback.class.getName(), false, classLoader), classLoader);
-        for (Object quarkusTestBeforeClassCallback : quarkusTestBeforeClassLoader) {
-            beforeClassCallbacks.add(quarkusTestBeforeClassCallback);
-        }
-        ServiceLoader<?> quarkusTestAfterConstructLoader = ServiceLoader
-                .load(Class.forName(QuarkusTestAfterConstructCallback.class.getName(), false, classLoader), classLoader);
-        for (Object quarkusTestAfterConstructCallback : quarkusTestAfterConstructLoader) {
-            afterConstructCallbacks.add(quarkusTestAfterConstructCallback);
-        }
-        ServiceLoader<?> quarkusTestBeforeEachLoader = ServiceLoader
-                .load(Class.forName(QuarkusTestBeforeEachCallback.class.getName(), false, classLoader), classLoader);
-        for (Object quarkusTestBeforeEachCallback : quarkusTestBeforeEachLoader) {
-            beforeEachCallbacks.add(quarkusTestBeforeEachCallback);
-        }
-        ServiceLoader<?> quarkusTestBeforeTestLoader = ServiceLoader
-                .load(Class.forName(QuarkusTestBeforeTestExecutionCallback.class.getName(), false, classLoader), classLoader);
-        for (Object quarkusTestBeforeTestCallback : quarkusTestBeforeTestLoader) {
-            beforeTestCallbacks.add(quarkusTestBeforeTestCallback);
-        }
-        ServiceLoader<?> quarkusTestAfterTestLoader = ServiceLoader
-                .load(Class.forName(QuarkusTestAfterTestExecutionCallback.class.getName(), false, classLoader), classLoader);
-        for (Object quarkusTestAfterTestCallback : quarkusTestAfterTestLoader) {
-            afterTestCallbacks.add(quarkusTestAfterTestCallback);
-        }
-        ServiceLoader<?> quarkusTestAfterEachLoader = ServiceLoader
-                .load(Class.forName(QuarkusTestAfterEachCallback.class.getName(), false, classLoader), classLoader);
-        for (Object quarkusTestAfterEach : quarkusTestAfterEachLoader) {
-            afterEachCallbacks.add(quarkusTestAfterEach);
-        }
-        ServiceLoader<?> quarkusTestAfterAllLoader = ServiceLoader
-                .load(Class.forName(QuarkusTestAfterAllCallback.class.getName(), false, classLoader), classLoader);
-        for (Object quarkusTestAfterAll : quarkusTestAfterAllLoader) {
-            afterAllCallbacks.add(quarkusTestAfterAll);
-        }
-    }
-
     private void populateTestMethodInvokers(ClassLoader quarkusClassLoader) {
         testMethodInvokers = new ArrayList<>();
         try {
@@ -420,19 +361,14 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     @Override
     public void beforeTestExecution(ExtensionContext context) throws Exception {
-        if (isNativeOrIntegrationTest(context.getRequiredTestClass()) || beforeTestCallbacks.isEmpty()) {
+        if (isNativeOrIntegrationTest(context.getRequiredTestClass()) || isBeforeTestCallbacksEmpty()) {
             return;
         }
         if (!failedBoot) {
             ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
             try {
-                for (Object beforeTestCallback : beforeTestCallbacks) {
-                    Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
-                    beforeTestCallback.getClass().getMethod("beforeTestExecution", tuple.getKey())
-                            .invoke(beforeTestCallback, tuple.getValue());
-                }
-            } catch (InvocationTargetException e) {
-                throw e.getCause() instanceof Exception ? (Exception) e.getCause() : e;
+                Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
+                invokeBeforeTestExecutionCallbacks(tuple.getKey(), tuple.getValue());
             } finally {
                 setCCL(original);
             }
@@ -452,11 +388,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
             try {
                 pushMockContext();
-                for (Object beforeEachCallback : beforeEachCallbacks) {
-                    Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
-                    beforeEachCallback.getClass().getMethod("beforeEach", tuple.getKey())
-                            .invoke(beforeEachCallback, tuple.getValue());
-                }
+                Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
+                invokeBeforeEachCallbacks(tuple.getKey(), tuple.getValue());
                 String endpointPath = getEndpointPath(context, testHttpEndpointProviders);
                 if (runningQuarkusApplication != null) {
                     boolean secure = false;
@@ -470,8 +403,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
                             .getDeclaredMethod("setup", boolean.class).invoke(null, false);
                 }
-            } catch (InvocationTargetException e) {
-                throw e.getCause() instanceof Exception ? (Exception) e.getCause() : e;
             } finally {
                 setCCL(original);
             }
@@ -548,19 +479,14 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     @Override
     public void afterTestExecution(ExtensionContext context) throws Exception {
-        if (isNativeOrIntegrationTest(context.getRequiredTestClass()) || afterTestCallbacks.isEmpty()) {
+        if (isNativeOrIntegrationTest(context.getRequiredTestClass()) || isAfterTestCallbacksEmpty()) {
             return;
         }
         if (!failedBoot) {
             ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
             try {
-                for (Object afterTestCallback : afterTestCallbacks) {
-                    Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
-                    afterTestCallback.getClass().getMethod("afterTestExecution", tuple.getKey())
-                            .invoke(afterTestCallback, tuple.getValue());
-                }
-            } catch (InvocationTargetException e) {
-                throw e.getCause() instanceof Exception ? (Exception) e.getCause() : e;
+                Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
+                invokeAfterTestExecutionCallbacks(tuple.getKey(), tuple.getValue());
             } finally {
                 setCCL(original);
             }
@@ -577,17 +503,12 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             popMockContext();
             ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
             try {
-                for (Object afterEachCallback : afterEachCallbacks) {
-                    Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
-                    afterEachCallback.getClass().getMethod("afterEach", tuple.getKey())
-                            .invoke(afterEachCallback, tuple.getValue());
-                }
+                Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
+                invokeAfterEachCallbacks(tuple.getKey(), tuple.getValue());
                 runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
                         .getDeclaredMethod("clearURL").invoke(null);
                 runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
                         .getDeclaredMethod("tearDown", boolean.class).invoke(null, false);
-            } catch (InvocationTargetException e) {
-                throw e.getCause() instanceof Exception ? (Exception) e.getCause() : e;
             } finally {
                 setCCL(original);
             }
@@ -649,19 +570,25 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     }
 
     private QuarkusTestExtensionState ensureStarted(ExtensionContext extensionContext) {
+        boolean mixedWithQuarkusMainTest = false;
         ExtensionContext.Store store = getStoreFromContext(extensionContext);
         Class<?> testType = store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
         if (testType != null) {
             if (testType != QuarkusTest.class) {
-                throw new IllegalStateException(
-                        "Cannot mix both @QuarkusTest based tests and " + testType.getName() + " based tests in the same run");
+                if (testType.equals(QuarkusMainTest.class)) {
+                    mixedWithQuarkusMainTest = true;
+                } else {
+                    throw new IllegalStateException(
+                            "Cannot mix both @QuarkusTest based tests and " + testType.getName()
+                                    + " based tests in the same run");
+                }
             }
         } else {
             store.put(IO_QUARKUS_TESTING_TYPE, QuarkusTest.class);
         }
         QuarkusTestExtensionState state = getState(extensionContext);
         Class<? extends QuarkusTestProfile> selectedProfile = getQuarkusTestProfile(extensionContext);
-        boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
+        boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile) || mixedWithQuarkusMainTest;
         // we reload the test resources if we changed test class and the new test class is not a nested class, and if we had or will have per-test test resources
         boolean reloadTestResources = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
                 && !isNested(currentJUnitTestClass, extensionContext.getRequiredTestClass())
@@ -792,21 +719,14 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         if (runningQuarkusApplication != null) {
             try {
                 Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
-                for (Object beforeClassCallback : beforeClassCallbacks) {
-                    beforeClassCallback.getClass().getMethod("beforeClass", Class.class).invoke(beforeClassCallback,
-                            runningQuarkusApplication.getClassLoader().loadClass(requiredTestClass.getName()));
-                }
-            } catch (InvocationTargetException e) {
-                throw e.getCause();
+                invokeBeforeClassCallbacks(Class.class,
+                        runningQuarkusApplication.getClassLoader().loadClass(requiredTestClass.getName()));
             } finally {
                 Thread.currentThread().setContextClassLoader(old);
             }
         } else {
             // can this ever happen?
-            for (Object beforeClassCallback : beforeClassCallbacks) {
-                beforeClassCallback.getClass().getMethod("beforeClass", Class.class).invoke(beforeClassCallback,
-                        requiredTestClass);
-            }
+            invokeBeforeClassCallbacks(Class.class, requiredTestClass);
         }
 
         try {
@@ -860,15 +780,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 actualTestInstance = createActualTestInstance(actualTestClass, state);
             }
 
-            for (Object afterConstructCallback : afterConstructCallbacks) {
-                afterConstructCallback.getClass().getMethod("afterConstruct", Object.class).invoke(afterConstructCallback,
-                        actualTestInstance);
-            }
+            invokeAfterConstructCallbacks(Object.class, actualTestInstance);
             for (Object outerInstance : outerInstances) {
-                for (Object afterConstructCallback : afterConstructCallbacks) {
-                    afterConstructCallback.getClass().getMethod("afterConstruct", Object.class).invoke(afterConstructCallback,
-                            outerInstance);
-                }
+                invokeAfterConstructCallbacks(Object.class, outerInstance);
             }
         } catch (Exception e) {
             throw new TestInstantiationException("Failed to create test instance",
@@ -1179,7 +1093,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         if (isNativeOrIntegrationTest(context.getRequiredTestClass()) || failedBoot) {
             return;
         }
-        if (afterAllCallbacks.isEmpty()) {
+        if (isAfterAllCallbacksEmpty()) {
             return;
         }
 
@@ -1191,12 +1105,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
         ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
         try {
-            for (Object afterAllCallback : afterAllCallbacks) {
-                afterAllCallback.getClass().getMethod("afterAll", quarkusTestContextClass)
-                        .invoke(afterAllCallback, quarkusTestContextInstance);
-            }
-        } catch (InvocationTargetException e) {
-            throw e.getCause() instanceof Exception ? (Exception) e.getCause() : e;
+            invokeAfterAllCallbacks(quarkusTestContextClass, quarkusTestContextInstance);
         } finally {
             setCCL(original);
         }

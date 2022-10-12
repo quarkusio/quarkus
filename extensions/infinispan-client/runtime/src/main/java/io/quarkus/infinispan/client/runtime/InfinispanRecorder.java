@@ -11,7 +11,7 @@ public class InfinispanRecorder {
 
     public BeanContainerListener configureInfinispan(@RelaxedValidation Properties properties) {
         return container -> {
-            InfinispanClientProducer instance = container.instance(InfinispanClientProducer.class);
+            InfinispanClientProducer instance = container.beanInstance(InfinispanClientProducer.class);
             instance.configure(properties);
         };
     }

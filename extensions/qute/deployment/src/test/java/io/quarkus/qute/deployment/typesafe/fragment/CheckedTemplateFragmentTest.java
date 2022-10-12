@@ -8,6 +8,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.qute.CheckedFragment;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.test.QuarkusUnitTest;
@@ -24,6 +25,7 @@ public class CheckedTemplateFragmentTest {
     @Test
     public void testFragment() {
         assertEquals("Foo", Templates.items(null).getFragment("item").data("it", new Item("Foo")).render());
+        assertEquals("Foo", Templates.items$item(new Item("Foo")).render());
     }
 
     @CheckedTemplate
@@ -31,19 +33,8 @@ public class CheckedTemplateFragmentTest {
 
         static native TemplateInstance items(List<Item> items);
 
-    }
-
-    public static class Item {
-
-        String name;
-
-        public Item(String name) {
-            this.name = name;
-        }
-
-        public String getName() {
-            return name;
-        }
+        @CheckedFragment
+        static native TemplateInstance items$item(Item it);
     }
 
 }

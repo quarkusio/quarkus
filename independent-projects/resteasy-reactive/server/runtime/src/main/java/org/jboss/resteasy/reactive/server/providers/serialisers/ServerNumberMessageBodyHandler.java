@@ -5,14 +5,12 @@ import java.lang.reflect.Type;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.reactive.common.providers.serialisers.NumberMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
-@Provider
 public class ServerNumberMessageBodyHandler extends NumberMessageBodyHandler
         implements ServerMessageBodyReader<Number> {
 

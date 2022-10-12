@@ -22,8 +22,18 @@ public class BeanContainerImpl implements BeanContainer {
     }
 
     @Override
+    public <T> Factory<T> beanInstanceFactory(Class<T> type, Annotation... qualifiers) {
+        Supplier<InstanceHandle<T>> handleSupplier = container.beanInstanceSupplier(type, qualifiers);
+        return createFactory(handleSupplier, type, qualifiers);
+    }
+
+    @Override
     public <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers) {
         Supplier<InstanceHandle<T>> handleSupplier = container.instanceSupplier(type, qualifiers);
+        return createFactory(handleSupplier, type, qualifiers);
+    }
+
+    private <T> Factory<T> createFactory(Supplier<InstanceHandle<T>> handleSupplier, Class<T> type, Annotation... qualifiers) {
         if (handleSupplier == null) {
             LOGGER.debugf(
                     "No matching bean found for type %s and qualifiers %s. The bean might have been marked as unused and removed during build.",

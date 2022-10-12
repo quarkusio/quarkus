@@ -467,6 +467,9 @@ public class MessageBundleProcessor {
                     }
                     CheckedTemplateBuildItem checkedTemplate = null;
                     for (CheckedTemplateBuildItem item : checkedTemplates) {
+                        if (item.isFragment()) {
+                            continue;
+                        }
                         if (item.templateId.equals(path)) {
                             checkedTemplate = item;
                             break;

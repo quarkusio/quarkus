@@ -52,6 +52,8 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -133,7 +135,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         }
 
         CurrentRequestManager
-                .setCurrentRequestInstance(new QuarkusCurrentRequest(beanContainer.instance(CurrentVertxRequest.class)));
+                .setCurrentRequestInstance(new QuarkusCurrentRequest(beanContainer.beanInstance(CurrentVertxRequest.class)));
 
         BlockingOperationSupport.setIoThreadDetector(new BlockingOperationSupport.IOThreadDetector() {
             @Override
@@ -184,7 +186,20 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
     public Handler<RoutingContext> handler(RuntimeValue<Deployment> deploymentRuntimeValue) {
         Deployment deployment = deploymentRuntimeValue.getValue();
         RestInitialHandler initialHandler = new RestInitialHandler(deployment);
-        return new ResteasyReactiveVertxHandler(initialHandler);
+
+        // ensure our ex. mappers are called when security exceptions are thrown and proactive auth is disabled
+        final Consumer<RoutingContext> eventCustomizer = new Consumer<>() {
+
+            @Override
+            public void accept(RoutingContext routingContext) {
+                // remove default auth failure handler
+                if (routingContext.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof DefaultAuthFailureHandler) {
+                    routingContext.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
+                }
+            }
+        };
+
+        return new ResteasyReactiveVertxHandler(eventCustomizer, initialHandler);
     }
 
     /**

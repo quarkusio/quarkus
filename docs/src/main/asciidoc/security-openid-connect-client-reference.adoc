@@ -379,7 +379,28 @@ Note it will also bring `io.quarkus:quarkus-oidc-client`.
 
 It works similarly to the way `OidcClientRequestFilter` does (see <<oidc-client-filter, Use OidcClient in MicroProfile RestClient client filter>>) - it uses `OidcClient` to acquire the access token, refresh it if needed, and set it as an HTTP `Authorization` `Bearer` scheme value. The difference is that it works with xref:rest-client-reactive.adoc[Reactive RestClient] and implements a non-blocking client filter which does not block the current IO thread when acquiring or refreshing the tokens.
 
-`OidcClientRequestReactiveFilter` delays an initial token acquisition until it is executed to avoid blocking an IO thread, and it currently can only be registered with `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotation:
+`OidcClientRequestReactiveFilter` delays an initial token acquisition until it is executed to avoid blocking an IO thread.
+
+You can selectively register `OidcClientRequestReactiveFilter` by using either io.quarkus.oidc.client.reactive.filter.OidcClientFilter or org.eclipse.microprofile.rest.client.annotation.RegisterProvider annotations:
+
+[source,java]
+----
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import io.quarkus.oidc.client.filter.OidcClientFilter;
+import io.smallrye.mutiny.Uni;
+
+@RegisterRestClient
+@OidcClientFilter
+@Path("/")
+public interface ProtectedResourceService {
+
+    @GET
+    Uni<String> getUserName();
+}
+----
+
+or
 
 [source,java]
 ----

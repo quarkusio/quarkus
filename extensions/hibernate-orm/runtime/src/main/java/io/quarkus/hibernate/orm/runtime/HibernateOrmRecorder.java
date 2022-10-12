@@ -92,7 +92,7 @@ public class HibernateOrmRecorder {
     }
 
     public void startAllPersistenceUnits(BeanContainer beanContainer) {
-        beanContainer.instance(JPAConfig.class).startAll();
+        beanContainer.beanInstance(JPAConfig.class).startAll();
     }
 
     public Supplier<SessionFactory> sessionFactorySupplier(String persistenceUnitName) {

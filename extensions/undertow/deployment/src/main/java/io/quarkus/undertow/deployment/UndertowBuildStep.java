@@ -22,6 +22,7 @@ import javax.annotation.security.DeclareRoles;
 import javax.annotation.security.RunAs;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.SessionScoped;
+import javax.enterprise.inject.Typed;
 import javax.inject.Inject;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
@@ -78,12 +79,14 @@ import org.jboss.metadata.web.spec.WebMetaData;
 import org.jboss.metadata.web.spec.WebResourceCollectionMetaData;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.ConfigInjectionStaticInitBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
 import io.quarkus.arc.deployment.CustomScopeBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -142,6 +145,7 @@ public class UndertowBuildStep {
     public static final DotName DECLARE_ROLES = DotName.createSimple(DeclareRoles.class.getName());
     public static final DotName MULTIPART_CONFIG = DotName.createSimple(MultipartConfig.class.getName());
     public static final DotName SERVLET_SECURITY = DotName.createSimple(ServletSecurity.class.getName());
+    public static final DotName TYPED = DotName.createSimple(Typed.class.getName());
     protected static final String SERVLET_CONTAINER_INITIALIZER = "META-INF/services/javax.servlet.ServletContainerInitializer";
     protected static final DotName HANDLES_TYPES = DotName.createSimple(HandlesTypes.class.getName());
 
@@ -333,6 +337,40 @@ public class UndertowBuildStep {
 
     private boolean hasSecurityCapability(final Capabilities capabilities) {
         return capabilities.isCapabilityWithPrefixPresent(Capability.SECURITY);
+    }
+
+    @BuildStep
+    public void addTypedAnnotations(
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
+
+        annotationsTransformer.produce(new io.quarkus.arc.deployment.AnnotationsTransformerBuildItem(
+                new AnnotationsTransformer() {
+
+                    @Override
+                    public boolean appliesTo(AnnotationTarget.Kind kind) {
+                        return kind == AnnotationTarget.Kind.CLASS;
+                    }
+
+                    @Override
+                    public void transform(TransformationContext context) {
+                        ClassInfo clazz = context.getTarget().asClass();
+                        if (clazz.declaredAnnotation(WEB_SERVLET) != null
+                                || clazz.declaredAnnotation(WEB_FILTER) != null
+                                || clazz.declaredAnnotation(WEB_LISTENER) != null) {
+                            if (clazz.declaredAnnotation(TYPED) == null) {
+                                // Add @Typed(MyResource.class)
+                                context.transform().add(createTypedAnnotationInstance(clazz)).done();
+                            }
+                        }
+                    }
+                }));
+    }
+
+    private AnnotationInstance createTypedAnnotationInstance(ClassInfo clazz) {
+        return AnnotationInstance.create(TYPED, clazz,
+                new AnnotationValue[] { AnnotationValue.createArrayValue("value",
+                        new AnnotationValue[] { AnnotationValue.createClassValue("value",
+                                Type.create(clazz.name(), Type.Kind.CLASS)) }) });
     }
 
     @Record(STATIC_INIT)

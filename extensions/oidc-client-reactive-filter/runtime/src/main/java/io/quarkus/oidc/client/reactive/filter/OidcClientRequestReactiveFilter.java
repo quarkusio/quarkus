@@ -4,7 +4,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import javax.annotation.Priority;
-import javax.inject.Inject;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -24,7 +23,6 @@ public class OidcClientRequestReactiveFilter extends AbstractTokensProducer impl
     private static final Logger LOG = Logger.getLogger(OidcClientRequestReactiveFilter.class);
     private static final String BEARER_SCHEME_WITH_SPACE = OidcConstants.BEARER_SCHEME + " ";
 
-    @Inject
     @ConfigProperty(name = "quarkus.oidc-client-reactive-filter.client-name")
     Optional<String> clientName;
 
@@ -38,22 +36,22 @@ public class OidcClientRequestReactiveFilter extends AbstractTokensProducer impl
     public void filter(ResteasyReactiveClientRequestContext requestContext) {
         requestContext.suspend();
 
-        super.getTokens().subscribe().with(new Consumer<Tokens>() {
+        super.getTokens().subscribe().with(new Consumer<>() {
             @Override
             public void accept(Tokens tokens) {
                 requestContext.getHeaders().putSingle(HttpHeaders.AUTHORIZATION,
                         BEARER_SCHEME_WITH_SPACE + tokens.getAccessToken());
                 requestContext.resume();
             }
-        }, new Consumer<Throwable>() {
+        }, new Consumer<>() {
             @Override
             public void accept(Throwable t) {
                 if (t instanceof DisabledOidcClientException) {
                     LOG.debug("Client is disabled");
-                    requestContext.abortWith(Response.status(500).build());
+                    requestContext.abortWith(Response.status(Response.Status.INTERNAL_SERVER_ERROR).build());
                 } else {
                     LOG.debugf("Access token is not available, aborting the request with HTTP 401 error: %s", t.getMessage());
-                    requestContext.abortWith(Response.status(401).build());
+                    requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
                 }
                 requestContext.resume();
             }

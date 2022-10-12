@@ -66,6 +66,47 @@ public class AmazonLambdaSimpleTestCase {
     }
 
     @Test
+    public void testJaxrsCognitoJWTGoodRole() throws Exception {
+        APIGatewayV2HTTPEvent request = request("/security/roles");
+        request.getRequestContext().setAuthorizer(new APIGatewayV2HTTPEvent.RequestContext.Authorizer());
+        request.getRequestContext().getAuthorizer().setJwt(new APIGatewayV2HTTPEvent.RequestContext.Authorizer.JWT());
+        request.getRequestContext().getAuthorizer().getJwt().setClaims(new HashMap<>());
+        request.getRequestContext().getAuthorizer().getJwt().getClaims().put("cognito:username", "Bill");
+        request.getRequestContext().getAuthorizer().getJwt().getClaims().put("cognito:groups", "[ admin user ]");
+
+        given()
+                .contentType("application/json")
+                .accept("text/plain")
+                .body(request)
+                .when()
+                .post(AmazonLambdaApi.API_BASE_PATH_TEST)
+                .then()
+                .statusCode(200)
+                .body("statusCode", equalTo(200))
+                .body("body", equalTo("true"));
+    }
+
+    @Test
+    public void testJaxrsCognitoJWTBadRole() throws Exception {
+        APIGatewayV2HTTPEvent request = request("/security/roles");
+        request.getRequestContext().setAuthorizer(new APIGatewayV2HTTPEvent.RequestContext.Authorizer());
+        request.getRequestContext().getAuthorizer().setJwt(new APIGatewayV2HTTPEvent.RequestContext.Authorizer.JWT());
+        request.getRequestContext().getAuthorizer().getJwt().setClaims(new HashMap<>());
+        request.getRequestContext().getAuthorizer().getJwt().getClaims().put("cognito:username", "Bill");
+        request.getRequestContext().getAuthorizer().getJwt().getClaims().put("cognito:groups", "[ attacker ]");
+
+        given()
+                .contentType("application/json")
+                .accept("text/plain")
+                .body(request)
+                .when()
+                .post(AmazonLambdaApi.API_BASE_PATH_TEST)
+                .then()
+                .statusCode(200)
+                .body("statusCode", equalTo(403));
+    }
+
+    @Test
     public void testJaxrsIAMSecurityContext() throws Exception {
         APIGatewayV2HTTPEvent request = request("/security/username");
         request.getRequestContext().setAuthorizer(new APIGatewayV2HTTPEvent.RequestContext.Authorizer());

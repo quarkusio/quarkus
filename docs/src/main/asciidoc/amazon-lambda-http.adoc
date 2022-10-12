@@ -385,6 +385,29 @@ Here's how its mapped:
 
 |=======================
 
+If the `cognito:groups` claim is present, then Quarkus will extract and map those groups
+to Quarkus roles which can then be used in authorization with annotations like `@RolesAllowed`.
+If you do not want to map `cognito:groups` to Quarkus roles, then you must explicitly disable it
+in configuration:
+
+----
+quarkus.lambda-http.map-cognito-to-roles=false
+----
+
+You can also specify a different Cognito claim to extract roles from:
+
+----
+quarkus.lambda-http.cognito-role-claim=cognito:roles
+----
+
+By default, it expects roles in a space delimited list enclosed in brackets i.e. `[ user admin ]`.
+You can specify the regular expression to use to find individual roles in the claim string too:
+
+----
+quarkus.lambda-http.cognito-claim-matcher=[^\[\] \t]+
+----
+
+
 == Custom Security Integration
 
 The default support for AWS security only maps the principal name to Quarkus security

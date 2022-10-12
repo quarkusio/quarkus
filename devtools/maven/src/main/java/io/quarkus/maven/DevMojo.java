@@ -43,7 +43,6 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.BuildBase;
 import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.Profile;
@@ -120,8 +119,6 @@ import io.smallrye.common.expression.Expression;
  */
 @Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.TEST, threadSafe = true)
 public class DevMojo extends AbstractMojo {
-
-    private static final String EXT_PROPERTIES_PATH = "META-INF/quarkus-extension.properties";
 
     private static final String KOTLIN_MAVEN_PLUGIN_GA = "org.jetbrains.kotlin:kotlin-maven-plugin";
 
@@ -1081,11 +1078,7 @@ public class DevMojo extends AbstractMojo {
                 mvnConfig.setRepositorySystemSession(repoSession).setRepositorySystem(repoSystem);
                 // there could be Maven extensions manipulating the project versions and models
                 // the ones returned from the Maven API could be different from the original pom.xml files
-                final Map<Path, Model> projectModels = new HashMap<>(session.getAllProjects().size());
-                for (MavenProject mp : session.getAllProjects()) {
-                    projectModels.put(mp.getBasedir().toPath(), mp.getOriginalModel());
-                }
-                mvnConfig.setProjectModelProvider(projectModels::get);
+                mvnConfig.setProjectModelProvider(QuarkusBootstrapProvider.getProjectMap(session)::get);
             }
 
             final BootstrapMavenContext mvnCtx = new BootstrapMavenContext(mvnConfig);

@@ -304,7 +304,7 @@ public class MyRedisService {
     }
 
     public Person get(String field) {
-        commands.hget(MY_KEY, field);  // <4>
+        return commands.hget(MY_KEY, field);  // <4>
     }
 }
 ----

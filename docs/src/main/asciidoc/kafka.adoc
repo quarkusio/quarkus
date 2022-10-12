@@ -340,10 +340,18 @@ The Kafka connector supports three strategies:
 This strategy guarantees at-least-once delivery even if the channel performs asynchronous processing.
 The connector tracks the received records and periodically (period specified by `auto.commit.interval.ms`, default: 5000 ms) commits the highest consecutive offset.
 The connector will be marked as unhealthy if a message associated with a record is not acknowledged in `throttled.unprocessed-record-max-age.ms` (default: 60000 ms).
-Indeed, this strategy cannot commit the offset as soon as a single record processing fails (see <<error-handling>> to configure what happens on failing processing).
+Indeed, this strategy cannot commit the offset as soon as a single record processing fails.
 If `throttled.unprocessed-record-max-age.ms` is set to less than or equal to `0`, it does not perform any health check verification.
 Such a setting might lead to running out of memory if there are "poison pill" messages (that are never acked).
 This strategy is the default if `enable.auto.commit` is not explicitly set to true.
+
+- `checkpoint` allows persisting consumer offsets on a **state store**, instead of committing them back to the Kafka broker. 
+Using the `CheckpointMetadata` API, consumer code can persist a _processing state_ with the record offset to mark the progress of a consumer. 
+When the processing continues from a previously persisted offset, it seeks the Kafka consumer to that offset and also restores the persisted state, continuing the stateful processing from where it left off. 
+The checkpoint strategy holds locally the processing state associated with the latest offset, and persists it periodically to the state store (period specified by `auto.commit.interval.ms` (default: 5000)). 
+The connector will be marked as unhealthy if no processing state is persisted to the state store in `checkpoint.unsynced-state-max-age.ms` (default: 10000). 
+If `checkpoint.unsynced-state-max-age.ms` is set to less than or equal to 0, it does not perform any health check verification. 
+For more information, see <<Stateful processing with Checkpointing>>
 
 - `latest` commits the record offset received by the Kafka consumer as soon as the associated message is acknowledged (if the offset is higher than the previously committed offset).
 This strategy provides at-least-once delivery if the channel processes the message without performing any asynchronous processing.
@@ -690,6 +698,169 @@ Conversely, if the processing throws an exception, all messages are _nacked_, ap
 Quarkus autodetects batch types for incoming channels and sets batch configuration automatically.
 You can configure batch mode explicitly with `mp.messaging.incoming.$channel.batch` property.
 ====
+
+=== Stateful processing with Checkpointing
+
+[IMPORTANT]
+====
+The `checkpoint` commit strategy is an experimental feature and can change in the future.
+====
+
+Smallrye Reactive Messaging `checkpoint` commit strategy allows consumer applications to process messages in a stateful manner, while also respecting Kafka consumer scalability.
+An incoming channel with `checkpoint` commit strategy persists consumer offsets on an external 
+<<state-stores, state store>>, such as a relational database or a key-value store.
+As a result of processing consumed records, the consumer application can accumulate an internal state for each topic-partition assigned to the Kafka consumer. 
+This local state will be periodically persisted to the state store and will be associated with the offset of the record that produced it.
+
+This strategy does not commit any offsets to the Kafka broker, so when new partitions get assigned to the consumer, 
+i.e. consumer restarts or consumer group instances scale, 
+the consumer resumes the processing from the latest _checkpointed_ offset with its saved state.
+
+The `@Incoming` channel consumer code can manipulate the processing state through the `CheckpointMetadata` API.
+For example, a consumer calculating the moving average of prices received on a Kafka topic would look the following: 
+
+[source,java]
+----
+package org.acme;
+
+import java.util.concurrent.CompletionStage;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
+
+import io.smallrye.reactive.messaging.kafka.KafkaRecord;
+import io.smallrye.reactive.messaging.kafka.commit.CheckpointMetadata;
+
+@ApplicationScoped
+public class MeanCheckpointConsumer {
+
+    @Incoming("prices")
+    public CompletionStage<Void> consume(Message<Double> record) {
+        // Get the `CheckpointMetadata` from the incoming message
+        CheckpointMetadata<AveragePrice> checkpoint = CheckpointMetadata.fromMessage(record);
+    
+        // `CheckpointMetadata` allows transforming the processing state
+        // Applies the given function, starting from the value `0.0` when no previous state exists
+        checkpoint.transform(new AveragePrice(), average -> average.update(record.getPayload()), /* persistOnAck */ true);
+    
+        // `persistOnAck` flag set to true, ack will persist the processing state
+        // associated with the latest offset (per partition).
+        return record.ack();
+    }
+    
+    static class AveragePrice {
+        long count;
+        double mean;
+    
+        AveragePrice update(double newPrice) {
+            mean += ((newPrice - mean) / ++count);
+            return this;
+        }
+    }
+}
+----
+
+The `transform` method applies the transformation function to the current state, producing a changed state and registering it locally for checkpointing. 
+By default, the local state is persisted to the state store periodically, period specified by `auto.commit.interval.ms`, (default: 5000). 
+If `persistOnAck` flag is given, the latest state is persisted to the state store eagerly on message acknowledgment. 
+The `setNext` method works similarly directly setting the latest state.
+
+The checkpoint commit strategy tracks when a processing state is last persisted for each topic-partition. 
+If an outstanding state change can not be persisted for `checkpoint.unsynced-state-max-age.ms` (default: 10000), the channel is marked unhealthy.
+
+[[state-stores]]
+==== State stores
+
+State store implementations determine where and how the processing states are persisted. 
+This is configured by the `mp.messaging.incoming.[channel-name].checkpoint.state-store` property.
+The serialization of state objects depends on the state store implementation. 
+In order to instruct state stores for serialization can require configuring the class name of state objects using `mp.messaging.incoming.[channel-name].checkpoint.state-type` property.
+
+Quarkus provides following state store implementations:
+
+- `quarkus-redis`: Uses the xref:redis-reference.adoc[`quarkus-redis-client`] extension to persist processing states. 
+Jackson is used to serialize processing state in Json. For complex objects it is required to configure the `checkpoint.state-type` property with the class name of the object.
+By default, the state store uses the default redis client, but if a link:https://quarkus.io/guides/redis-reference#default-and-named-clients[named client] is to be used, the client name can be specified using the `mp.messaging.incoming.[channel-name].checkpoint.quarkus-redis.client-name` property.
+Processing states will be stored in Redis using the key naming scheme `[consumer-group-id]:[topic]:[partition]`.
+
+For example the configuration of the previous code would be the following:
+
+[source, properties]
+----
+mp.messaging.incoming.prices.group.id=prices-checkpoint
+# ...
+mp.messaging.incoming.prices.commit-strategy=checkpoint
+mp.messaging.incoming.prices.checkpoint.state-store=quarkus-redis
+mp.messaging.incoming.prices.checkpoint.state-type=org.acme.MeanCheckpointConsumer.AveragePrice
+# ...
+# if using a named redis client
+mp.messaging.incoming.prices.checkpoint.quarkus-redis.client-name=my-redis
+quarkus.redis.my-redis.hosts=redis://localhost:7000
+quarkus.redis.my-redis.password=<redis-pwd>
+----
+
+- `quarkus-hibernate-reactive`: Uses the xref:hibernate-reactive.adoc[`quarkus-hibernate-reactive`] extension to persist processing states. 
+Processing state objects are required to be a JPA entity and extend the `CheckpointEntity` class, 
+which handles object identifiers composed of the consumer group id, topic and partition.
+Therefore, the class name of the entity needs to be configured using the `checkpoint.state-type` property.
+
+For example the configuration of the previous code would be the following:
+
+[source, properties]
+----
+mp.messaging.incoming.prices.group.id=prices-checkpoint
+# ...
+mp.messaging.incoming.prices.commit-strategy=checkpoint
+mp.messaging.incoming.prices.checkpoint.state-store=quarkus-hibernate-reactive
+mp.messaging.incoming.prices.checkpoint.state-type=org.acme.AveragePriceEntity
+----
+
+With `AveragePriceEntity` being a JPA entity extending `CheckpointEntity`:
+
+[source, java]
+----
+package org.acme;
+
+import javax.persistence.Entity;
+
+import io.quarkus.smallrye.reactivemessaging.kafka.CheckpointEntity;
+
+@Entity
+public class AveragePriceEntity extends CheckpointEntity {
+    public long count;
+    public double mean;
+
+    public AveragePriceEntity update(double newPrice) {
+        mean += ((newPrice - mean) / ++count);
+        return this;
+    }
+}
+----
+
+- `quarkus-hibernate-orm`: Uses the xref:hibernate-orm.adoc[`quarkus-hibernate-orm`] extension to persist processing states.
+It is similar to the previous state store, but it uses Hibernate ORM instead of Hibernate Reactive. 
+
+When configured, it can use a named `persistence-unit` for the checkpointing state store:
+
+[source, properties]
+----
+mp.messaging.incoming.prices.commit-strategy=checkpoint
+mp.messaging.incoming.prices.checkpoint.state-store=quarkus-hibernate-orm
+mp.messaging.incoming.prices.checkpoint.state-type=org.acme.AveragePriceEntity
+mp.messaging.incoming.prices.checkpoint.quarkus-hibernate-orm.persistence-unit=prices
+# ... Setup "prices" persistence unit
+quarkus.datasource."prices".db-kind=postgresql
+quarkus.datasource."prices".username=<your username>
+quarkus.datasource."prices".password=<your password>
+quarkus.datasource."prices".jdbc.url=jdbc:postgresql://localhost:5432/hibernate_orm_test
+quarkus.hibernate-orm."prices".datasource=prices
+quarkus.hibernate-orm."prices".packages=org.acme
+----
+
+For instructions on how to implement custom state stores, 
+see https://smallrye.io/smallrye-reactive-messaging/3.22.0/kafka/receiving-kafka-records/#implementing-state-stores[Implementing State Stores].
 
 == Sending messages to Kafka
 
@@ -1992,6 +2163,9 @@ public class KafkaResource implements QuarkusTestResourceLifecycleManager {
 [[kafka-dev-services]]
 include::kafka-dev-services.adoc[leveloffset=+1]
 
+[[kafka-dev-ui]]
+include::kafka-dev-ui.adoc[leveloffset=+1]
+
 == Kubernetes Service Bindings
 
 Quarkus Kafka extension supports
@@ -2063,7 +2237,7 @@ If not set, `key.deserializer` is set to `org.apache.kafka.common.serialization.
 The consumer `client.id` is configured according to the number of clients to create using `mp.messaging.incoming.[channel].partitions` property.
 
 - If a `client.id` is provided, it is used as-is or suffixed with client index if `partitions` property is set.
-- If a `client.id` is not provided, it is generated as `kafka-consumer-[channel][-index]`.
+- If a `client.id` is not provided, it is generated as `[client-id-prefix][channel-name][-index]`.
 
 
 include::{includes}/smallrye-kafka-incoming.adoc[]
@@ -2099,7 +2273,7 @@ If not set, `reconnect.backoff.max.ms` is set to `10000` to avoid high load on d
 
 If not set, `key.serializer` is set to `org.apache.kafka.common.serialization.StringSerializer`.
 
-If not set, producer `client.id` is generated as `kafka-producer-[channel]`.
+If not set, producer `client.id` is generated as `[client-id-prefix][channel-name]`.
 
 include::{includes}/smallrye-kafka-outgoing.adoc[]
 
@@ -2339,6 +2513,7 @@ To consume `Fruit` instances stored on a Kafka topic, and persist them into a da
 package org.acme;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.control.ActivateRequestContext;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
@@ -2352,20 +2527,24 @@ public class FruitStore {
     Mutiny.Session session;                    // <1>
 
     @Incoming("in")
+    @ActivateRequestContext // <2>
     public Uni<Void> consume(Fruit entity) {
-        return session.withTransaction(t -> {  // <2>
-            return entity.persistAndFlush()    // <3>
-                    .replaceWithVoid();        // <4>
-        }).onTermination().call(() -> session.close()); // <5>
+        return session.withTransaction(t -> {  // <3>
+            return entity.persistAndFlush()    // <4>
+                    .replaceWithVoid();        // <5>
+        }).onTermination().call(() -> session.close()); // <6>
     }
 
 }
 ----
 <1> Inject the Hibernate Reactive `Session`
-<2> Requests a new transaction. The transaction completes when the passed action completes.
-<3> Persist the entity. It returns a `Uni<Fruit>`.
-<4> Switch back to a `Uni<Void>`.
-<5> Close the session - this is close the connection with the database. The connection can then be recycled.
+<2> Hibernate Reactive `Session` and `Panache` APIs require an active CDI Request context. 
+`@ActivateRequestContext` annotation creates a new request context and destroys it when the `Uni` returned from the method completes.
+If `Panache` is not used, `Mutiny.SessionFactory` can be injected and used similarly without the need of activating the request context or closing the session manually. 
+<3> Requests a new transaction. The transaction completes when the passed action completes.
+<4> Persist the entity. It returns a `Uni<Fruit>`.
+<5> Switch back to a `Uni<Void>`.
+<6> Close the session - this is close the connection with the database. The connection can then be recycled.
 
 Unlike with _classic_ Hibernate, you can't use `@Transactional`.
 Instead, we use `session.withTransaction` and persist our entity.

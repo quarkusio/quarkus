@@ -122,7 +122,7 @@ class DefaultSerdeDiscoveryState {
 
     boolean isAvroGenerated(DotName className) {
         ClassInfo clazz = index.getClassByName(className);
-        return clazz != null && clazz.classAnnotation(DotNames.AVRO_GENERATED) != null;
+        return clazz != null && clazz.declaredAnnotation(DotNames.AVRO_GENERATED) != null;
     }
 
     boolean hasConfluent() {

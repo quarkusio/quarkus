@@ -44,6 +44,7 @@ final class Names {
     static final DotName LOCATES = DotName.createSimple(Locates.class.getName());
     static final DotName CHECKED_TEMPLATE = DotName.createSimple(io.quarkus.qute.CheckedTemplate.class.getName());
     static final DotName TEMPLATE_ENUM = DotName.createSimple(TemplateEnum.class.getName());
+    static final DotName CHECKED_FRAGMENT = DotName.createSimple(io.quarkus.qute.CheckedFragment.class.getName());
 
     private Names() {
     }

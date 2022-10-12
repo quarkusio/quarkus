@@ -1162,7 +1162,9 @@ The snippet above should render something like:
 </ol>
 ----
 
-You can also include a template with an `{#include}` section inside another template or the template that defines the fragment.
+TIP: In Quarkus, it is also possible to define a <<type_safe_fragments,type-safe fragment>> via the `@CheckedFragment` annotation.
+
+You can also include a fragment with an `{#include}` section inside another template or the template that defines the fragment.
 
 .Including a Fragment in `user.html`
 [source,html]
@@ -1680,6 +1682,63 @@ public class ItemResource {
 }
 ----
 <1> The template path for this method will be `items/item-and-order`.
+
+[[type_safe_fragments]]
+==== Type-safe Fragments
+
+You can also define a type-safe <<fragments,fragment>> in your Java code.
+A fragment method is annotated with `@io.quarkus.qute.CheckedFragment`.
+The name of the fragment is derived from the annotated method name. 
+The part before the last occurence of a dollar sign `$` is the method name of the related type-safe template.
+The part after the last occurence of a dollar sign is the fragment identifier.
+The strategy defined by the relevant `CheckedTemplate#defaultName()` is honored when constructing the defaulted names.
+
+.Type-safe Fragment Example
+[source,java]
+----
+import io.quarkus.qute.CheckedFragment;
+import io.quarkus.qute.CheckedTemplate;
+import org.acme.Item;
+
+@CheckedTemplate
+class Templates {
+
+  // defines a type-safe template
+  static native TemplateInstance items(List<Item> items);
+
+  // defines a fragment of Templates#items() with identifier "item"
+  @CheckedFragment
+  static native TemplateInstance items$item(Item item); <1>
+}
+----
+<1> Quarkus validates at build time that each template that corresponds to the `Templates#items()` contains a fragment with identifier `item`. Moreover, the parameters of the fragment method are validated too. In general, all type-safe expressions that are found in the fragment and that reference some data from the original/outer template require a specific parameter to be present.
+
+.Fragment Definition in `items.html`
+[source,html]
+----
+<h1>Items</h1>
+<ol>
+    {#for item in items}
+    {#fragment id=item}   <1>
+    <li>{item.name}</li>  <2>
+    {/fragment}
+    {/for}
+</ol>
+----
+<1> Defines a fragment with identifier `item`.
+<2> The `{item.name}` expression implies that the `Templates#items$item()` method must declare a parameter of name `item` and type `org.acme.Item`.
+
+.Type-safe Fragment Call Site Example
+[source,java]
+----
+class ItemService {
+
+  String renderItem(Item item) {
+     // this would return something like "<li>Foo</li>"
+     return Templates.items$item(item).render();
+  }
+}
+----
 
 [[template_extension_methods]]
 === Template Extension Methods

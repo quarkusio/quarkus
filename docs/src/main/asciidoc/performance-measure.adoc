@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Measuring Performance
-
 include::./attributes.adoc[]
+:categories: miscellaneous
+:summary: This guide explains how to best measure the footprint of a Quarkus application.
 
 This guide covers:
 

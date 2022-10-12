@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus Security overview
-
 include::./attributes.adoc[]
+:categories: security
+:summary: This guide is the entry point for everything security in Quarkus.
 
 Quarkus Security is a framework that provides the architecture, multiple authentication and authorization mechanisms, and other tools for you to build secure and production-quality Java applications.
 

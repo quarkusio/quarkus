@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Reactive SQL Clients
-
 include::./attributes.adoc[]
+:categories: data
+:summary: This guide covers how to use the Reactive SQL Clients in Quarkus.
 :config-file: application.properties
 
 The Reactive SQL Clients have a straightforward API focusing on scalability and low-overhead.

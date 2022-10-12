@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Getting Started to SmallRye Reactive Messaging with AMQP 1.0
-
 include::./attributes.adoc[]
+:categories: messaging
+:summary: This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with AMQP.
 
 This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with AMQP 1.0.
 

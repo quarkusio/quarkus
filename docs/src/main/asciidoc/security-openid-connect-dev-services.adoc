@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services and UI for OpenID Connect (OIDC)
-
 include::./attributes.adoc[]
+:categories: security
+:summary: Start Keycloak or other providers automatically in dev and test modes.
 
 This guide covers the Dev Services and UI for OpenID Connect (OIDC) Keycloak provider and explains how to support Dev Services and UI for other OpenID Connect providers.
 It also describes Dev UI for all OpenID Connect providers which have already been started before Quarkus is launched in a dev mode.

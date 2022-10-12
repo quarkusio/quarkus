@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Building a Native Executable
-
 include::./attributes.adoc[]
+:categories: getting-started
+:summary: Build native executables with GraalVM or Mandrel.
 
 This guide covers:
 

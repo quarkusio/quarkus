@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Software Transactional Memory in Quarkus
-
 include::./attributes.adoc[]
+:categories: data
+:summary: This guides covers the usage of Software Transactional Memory (STM).
 :extension-status: preview
 
 Software Transactional Memory (STM) has been around in research environments since the late

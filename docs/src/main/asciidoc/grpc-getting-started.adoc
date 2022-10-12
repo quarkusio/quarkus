@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Getting Started with gRPC
-
 include::./attributes.adoc[]
+:categories: serialization
+:summary: This guide explains how to start using gRPC in your Quarkus application.
 
 This page explains how to start using gRPC in your Quarkus application.
 While this page describes how to configure it with Maven, it is also possible to use Gradle.

@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = gRPC
-
 include::./attributes.adoc[]
+:categories: serialization
+:summary: Entry point for everything gRPC.
 
 https://grpc.io/[gRPC] is a high-performance RPC framework.
 It can efficiently connect services implemented using various languages and frameworks.

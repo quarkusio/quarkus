@@ -72,41 +72,7 @@ public class HttpSecurityRecorder {
                 //register the default auth failure handler
                 //if proactive auth is used this is the only one
                 //if using lazy auth this can be modified downstream, to control authentication behaviour
-                event.put(QuarkusHttpUser.AUTH_FAILURE_HANDLER, new BiConsumer<RoutingContext, Throwable>() {
-                    @Override
-                    public void accept(RoutingContext routingContext, Throwable throwable) {
-                        throwable = extractRootCause(throwable);
-                        //auth failed
-                        if (throwable instanceof AuthenticationFailedException) {
-                            authenticator.sendChallenge(event).subscribe().with(new Consumer<Boolean>() {
-                                @Override
-                                public void accept(Boolean aBoolean) {
-                                    if (!event.response().ended()) {
-                                        event.response().end();
-                                    }
-                                }
-                            }, new Consumer<Throwable>() {
-                                @Override
-                                public void accept(Throwable throwable) {
-                                    event.fail(throwable);
-                                }
-                            });
-                        } else if (throwable instanceof AuthenticationCompletionException) {
-                            log.debug("Authentication has failed, returning HTTP status 401");
-                            event.response().setStatusCode(401);
-                            event.response().end();
-                        } else if (throwable instanceof AuthenticationRedirectException) {
-                            AuthenticationRedirectException redirectEx = (AuthenticationRedirectException) throwable;
-                            event.response().setStatusCode(redirectEx.getCode());
-                            event.response().headers().set(HttpHeaders.LOCATION, redirectEx.getRedirectUri());
-                            event.response().headers().set(HttpHeaders.CACHE_CONTROL, "no-store");
-                            event.response().headers().set("Pragma", "no-cache");
-                            event.response().end();
-                        } else {
-                            event.fail(throwable);
-                        }
-                    }
-                });
+                event.put(QuarkusHttpUser.AUTH_FAILURE_HANDLER, new DefaultAuthFailureHandler());
 
                 if (proactiveAuthentication) {
                     Uni<SecurityIdentity> potentialUser = authenticator.attemptAuthentication(event).memoize().indefinitely();
@@ -208,18 +174,6 @@ public class HttpSecurityRecorder {
                 }
             }
         };
-    }
-
-    private Throwable extractRootCause(Throwable throwable) {
-        while ((throwable instanceof CompletionException && throwable.getCause() != null) ||
-                (throwable instanceof CompositeException)) {
-            if (throwable instanceof CompositeException) {
-                throwable = ((CompositeException) throwable).getCauses().get(0);
-            } else {
-                throwable = throwable.getCause();
-            }
-        }
-        return throwable;
     }
 
     public Handler<RoutingContext> permissionCheckHandler() {
@@ -328,5 +282,61 @@ public class HttpSecurityRecorder {
                 });
             }
         };
+    }
+
+    public static final class DefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {
+
+        private DefaultAuthFailureHandler() {
+        }
+
+        @Override
+        public void accept(RoutingContext event, Throwable throwable) {
+            throwable = extractRootCause(throwable);
+            //auth failed
+            if (throwable instanceof AuthenticationFailedException) {
+                getAuthenticator(event).sendChallenge(event).subscribe().with(new Consumer<Boolean>() {
+                    @Override
+                    public void accept(Boolean aBoolean) {
+                        if (!event.response().ended()) {
+                            event.response().end();
+                        }
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) {
+                        event.fail(throwable);
+                    }
+                });
+            } else if (throwable instanceof AuthenticationCompletionException) {
+                log.debug("Authentication has failed, returning HTTP status 401");
+                event.response().setStatusCode(401);
+                event.response().end();
+            } else if (throwable instanceof AuthenticationRedirectException) {
+                AuthenticationRedirectException redirectEx = (AuthenticationRedirectException) throwable;
+                event.response().setStatusCode(redirectEx.getCode());
+                event.response().headers().set(HttpHeaders.LOCATION, redirectEx.getRedirectUri());
+                event.response().headers().set(HttpHeaders.CACHE_CONTROL, "no-store");
+                event.response().headers().set("Pragma", "no-cache");
+                event.response().end();
+            } else {
+                event.fail(throwable);
+            }
+        }
+
+        private static HttpAuthenticator getAuthenticator(RoutingContext event) {
+            return event.get(HttpAuthenticator.class.getName());
+        }
+
+        private static Throwable extractRootCause(Throwable throwable) {
+            while ((throwable instanceof CompletionException && throwable.getCause() != null) ||
+                    (throwable instanceof CompositeException)) {
+                if (throwable instanceof CompositeException) {
+                    throwable = ((CompositeException) throwable).getCauses().get(0);
+                } else {
+                    throwable = throwable.getCause();
+                }
+            }
+            return throwable;
+        }
     }
 }

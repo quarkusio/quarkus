@@ -206,6 +206,27 @@ class RestClientReactiveProcessor {
         }
     }
 
+    @BuildStep
+    public void registerProvidersInstances(CombinedIndexBuildItem indexBuildItem,
+            BuildProducer<RegisterProviderAnnotationInstanceBuildItem> producer) {
+        IndexView index = indexBuildItem.getIndex();
+
+        for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDER)) {
+            String targetClass = annotation.target().asClass().name().toString();
+            producer.produce(new RegisterProviderAnnotationInstanceBuildItem(targetClass, annotation));
+        }
+
+        for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDERS)) {
+            String targetClass = annotation.target().asClass().name().toString();
+            AnnotationInstance[] nestedArray = annotation.value().asNestedArray();
+            if ((nestedArray != null) && nestedArray.length > 0) {
+                for (AnnotationInstance nestedInstance : nestedArray) {
+                    producer.produce(new RegisterProviderAnnotationInstanceBuildItem(targetClass, nestedInstance));
+                }
+            }
+        }
+    }
+
     /**
      * Creates an implementation of `AnnotationRegisteredProviders` class with a constructor that:
      * <ul>
@@ -221,6 +242,7 @@ class RestClientReactiveProcessor {
      */
     @BuildStep
     void registerProvidersFromAnnotations(CombinedIndexBuildItem indexBuildItem,
+            List<RegisterProviderAnnotationInstanceBuildItem> registerProviderAnnotationInstances,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
@@ -230,16 +252,9 @@ class RestClientReactiveProcessor {
         IndexView index = indexBuildItem.getIndex();
         Map<String, List<AnnotationInstance>> annotationsByClassName = new HashMap<>();
 
-        for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDER)) {
-            String targetClass = annotation.target().asClass().name().toString();
-            annotationsByClassName.computeIfAbsent(targetClass, key -> new ArrayList<>())
-                    .add(annotation);
-        }
-
-        for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDERS)) {
-            String targetClass = annotation.target().asClass().name().toString();
-            annotationsByClassName.computeIfAbsent(targetClass, key -> new ArrayList<>())
-                    .addAll(asList(annotation.value().asNestedArray()));
+        for (RegisterProviderAnnotationInstanceBuildItem bi : registerProviderAnnotationInstances) {
+            annotationsByClassName.computeIfAbsent(bi.getTargetClass(), key -> new ArrayList<>())
+                    .add(bi.getAnnotationInstance());
         }
 
         try (ClassCreator classCreator = ClassCreator.builder()

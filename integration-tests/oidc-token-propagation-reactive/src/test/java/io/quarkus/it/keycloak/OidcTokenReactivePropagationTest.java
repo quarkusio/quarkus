@@ -2,7 +2,6 @@ package io.quarkus.it.keycloak;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
@@ -18,8 +17,6 @@ import io.restassured.RestAssured;
 public class OidcTokenReactivePropagationTest {
 
     @Test
-    // See https://github.com/quarkusio/quarkus/issues/27900
-    @Disabled("flaky")
     public void testGetUserNameWithAccessTokenPropagation() throws Exception {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/frontend/access-token-propagation");
@@ -39,8 +36,6 @@ public class OidcTokenReactivePropagationTest {
     }
 
     @Test
-    // See https://github.com/quarkusio/quarkus/issues/27900
-    @Disabled("flaky")
     public void testNoToken() {
         RestAssured.given().when().redirects().follow(false)
                 .get("/frontend/access-token-propagation")

@@ -431,7 +431,7 @@ function clearResults() {
 {/if}
 
 <div class="container">
-{#if info:oidcApplicationType?? is 'service'}
+{#if info:oidcApplicationType?? is 'service' || info:oidcApplicationType?? is 'hybrid'}
     {#if info:oidcGrantType is 'implicit' || info:oidcGrantType is 'code'}
         
         <div class="card implicitLoggedOut">

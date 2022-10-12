@@ -1,4 +1,4 @@
-package io.quarkus.kotlin.serialization
+package io.quarkus.resteasy.reactive.kotlin.serialization.runtime
 
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
@@ -30,7 +30,7 @@ class KotlinSerializationMessageBodyWriter(private val json: Json) : AllWriteabl
         if (o is String) { // YUK: done in order to avoid adding extra quotes...
             entityStream.write(o.toByteArray(StandardCharsets.UTF_8))
         } else {
-            json.encodeToStream(serializer(o.javaClass), o, entityStream)
+            json.encodeToStream(serializer(genericType), o, entityStream)
         }
     }
 

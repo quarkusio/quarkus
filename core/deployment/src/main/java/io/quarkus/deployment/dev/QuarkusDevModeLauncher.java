@@ -419,7 +419,6 @@ public abstract class QuarkusDevModeLauncher {
         devModeContext.setReleaseJavaVersion(releaseJavaVersion);
         devModeContext.setSourceJavaVersion(sourceJavaVersion);
         devModeContext.setTargetJvmVersion(targetJavaVersion);
-
         devModeContext.getLocalArtifacts().addAll(localArtifacts);
         devModeContext.setApplicationRoot(main);
         devModeContext.getAdditionalModules().addAll(dependencies);

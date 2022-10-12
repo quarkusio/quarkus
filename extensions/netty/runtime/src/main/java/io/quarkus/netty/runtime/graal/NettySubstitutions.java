@@ -5,17 +5,26 @@ import static io.netty.handler.codec.http.HttpHeaderValues.GZIP;
 import static io.netty.handler.codec.http.HttpHeaderValues.X_DEFLATE;
 import static io.netty.handler.codec.http.HttpHeaderValues.X_GZIP;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.function.BooleanSupplier;
 
+import javax.crypto.NoSuchPaddingException;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
@@ -29,6 +38,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 import io.netty.bootstrap.AbstractBootstrapConfig;
 import io.netty.bootstrap.ChannelFactory;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -546,6 +556,72 @@ final class Target_SslHandler {
     @Substitute
     private void setOpensslEngineSocketFd(Channel c) {
         // do nothing.
+    }
+}
+
+@TargetClass(className = "io.netty.handler.ssl.PemReader")
+final class Alias_PemReader {
+
+    @Alias
+    public static ByteBuf readPrivateKey(File keyFile) {
+        return null;
+    }
+
+    @Alias
+    public static ByteBuf readPrivateKey(InputStream in) throws KeyException {
+        return null;
+    }
+}
+
+/**
+ * If BouncyCastle is not on the classpath, we must not try to read the PEM file using the BouncyCatle PEM reader.
+ */
+@TargetClass(className = "io.netty.handler.ssl.SslContext", onlyWith = IsBouncyNotThere.class)
+final class Target_SslContext {
+
+    @Substitute
+    protected static PrivateKey toPrivateKey(File keyFile, String keyPassword) throws NoSuchAlgorithmException,
+            NoSuchPaddingException, InvalidKeySpecException,
+            InvalidAlgorithmParameterException,
+            KeyException, IOException {
+        if (keyFile == null) {
+            return null;
+        }
+
+        return getPrivateKeyFromByteBuffer(Alias_PemReader.readPrivateKey(keyFile), keyPassword);
+    }
+
+    @Substitute
+    protected static PrivateKey toPrivateKey(InputStream keyInputStream, String keyPassword)
+            throws NoSuchAlgorithmException,
+            NoSuchPaddingException, InvalidKeySpecException,
+            InvalidAlgorithmParameterException,
+            KeyException, IOException {
+        if (keyInputStream == null) {
+            return null;
+        }
+
+        return getPrivateKeyFromByteBuffer(Alias_PemReader.readPrivateKey(keyInputStream), keyPassword);
+    }
+
+    @Alias
+    private static PrivateKey getPrivateKeyFromByteBuffer(ByteBuf encodedKeyBuf, String keyPassword)
+            throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeySpecException,
+            InvalidAlgorithmParameterException, KeyException, IOException {
+        return null;
+    }
+}
+
+class IsBouncyNotThere implements BooleanSupplier {
+
+    @Override
+    public boolean getAsBoolean() {
+        try {
+            NettySubstitutions.class.getClassLoader().loadClass("org.bouncycastle.openssl.PEMParser");
+            return false;
+        } catch (Exception e) {
+            return true;
+        }
     }
 }
 

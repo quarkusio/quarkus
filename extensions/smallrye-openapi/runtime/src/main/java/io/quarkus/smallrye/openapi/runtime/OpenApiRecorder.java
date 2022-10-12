@@ -30,7 +30,10 @@ public class OpenApiRecorder {
     public Handler<RoutingContext> handler(OpenApiRuntimeConfig runtimeConfig) {
         if (runtimeConfig.enable) {
             if (!configuration.getValue().corsEnabled && LaunchMode.NORMAL == LaunchMode.current()) {
-                log.info("Default CORS properties will be used, please use 'quarkus.http.cors' properties instead");
+                log.info(
+                        "CORS filtering is disabled and cross-origin resource sharing is allowed without restriction, which is not recommended in production."
+                                + " Please configure the CORS filter through 'quarkus.http.cors.*' properties."
+                                + " For more information, see Quarkus HTTP CORS documentation");
             }
             return new OpenApiHandler(configuration.getValue().corsEnabled);
         } else {

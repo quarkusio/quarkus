@@ -55,3 +55,7 @@ java {
     {/if}
 }
 {/}
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}

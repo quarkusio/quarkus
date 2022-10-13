@@ -34,9 +34,9 @@ The community will fix security bugs for the latest major.minor version publishe
 
 | Version | Supported          |
 | ------- | ------------------ |
-| latest 1.x   | :white_check_mark: |
-| older 1.x | :x:                |
-| < 1.0 | :x:                |
+| latest 2.x   | :white_check_mark: |
+| older 2.x | :x:                |
+| < 2.0 | :x:                |
 
 We may fix the vulnerability to older versions depending on the severity of the issue and the age of the release, but we are only committing to the latest version released.
 

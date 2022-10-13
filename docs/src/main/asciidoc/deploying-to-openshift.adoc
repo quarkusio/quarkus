@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Deploying on OpenShift
-
 include::./attributes.adoc[]
+:categories: cloud
+:summary: This guide covers how to deploy a native application on OpenShift.
 
 This guide covers generating and deploying OpenShift resources based on sane default and user supplied configuration.
 

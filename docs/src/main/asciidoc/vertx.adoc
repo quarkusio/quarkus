@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Eclipse Vert.x API from a Quarkus Application
-
 include::./attributes.adoc[]
+:categories: miscellaneous
+:summary: This guide explains how to use Vert.x in Quarkus to build reactive applications.
 
 https://vertx.io[Vert.x] is a toolkit for building reactive applications.
 As described in the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture], Quarkus uses Vert.x underneath.

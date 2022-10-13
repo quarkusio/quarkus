@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Writing REST Services with RESTEasy Reactive
-
 include::./attributes.adoc[]
+:categories: web
+:summary: Discover how to develop highly scalable reactive REST services with JAX-RS and RESTEasy Reactive.
 :jaxrsapi: https://javadoc.io/doc/javax.ws.rs/javax.ws.rs-api/2.1.1
 :jaxrsspec: /specs/jaxrs/2.1/index.html
 :jdkapi: https://docs.oracle.com/en/java/javase/11/docs/api/java.base

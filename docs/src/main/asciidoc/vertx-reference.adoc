@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Vert.x Reference Guide
-
 include::./attributes.adoc[]
+:categories: miscellaneous
+:summary: This reference guide provides advanced details about the usage and the configuration of the Vert.x instance used by Quarkus.
 
 https://vertx.io[Vert.x] is a toolkit for building reactive applications.
 As described in the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture], Quarkus uses Vert.x underneath.

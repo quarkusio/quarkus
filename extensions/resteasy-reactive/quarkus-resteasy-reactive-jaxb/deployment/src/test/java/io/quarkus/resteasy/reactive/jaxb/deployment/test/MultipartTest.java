@@ -2,7 +2,12 @@ package io.quarkus.resteasy.reactive.jaxb.deployment.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+
 import javax.ws.rs.Consumes;
+import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -12,6 +17,7 @@ import javax.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -36,6 +42,7 @@ public class MultipartTest {
             + "<school>"
             + "<name>Divino Pastor</name>"
             + "</school>";
+    private final File HTML_FILE = new File("./src/test/resources/test.html");
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
@@ -51,7 +58,7 @@ public class MultipartTest {
                 .extract().asString();
 
         assertContains(response, "name", MediaType.TEXT_PLAIN, EXPECTED_RESPONSE_NAME);
-        assertContains(response, "person", MediaType.APPLICATION_XML, EXPECTED_RESPONSE_PERSON);
+        assertContains(response, "person", MediaType.TEXT_XML, EXPECTED_RESPONSE_PERSON);
     }
 
     @Test
@@ -66,6 +73,19 @@ public class MultipartTest {
                 .extract().asString();
 
         assertThat(response).isEqualTo("John-Divino Pastor");
+    }
+
+    @Test
+    public void testInputFile() throws IOException {
+        String response = RestAssured
+                .given()
+                .multiPart("file", HTML_FILE, "text/html")
+                .post("/multipart/input/file")
+                .then()
+                .statusCode(200)
+                .extract().asString();
+
+        assertThat(response).isEqualTo(String.valueOf(Files.readAllBytes(HTML_FILE.toPath()).length));
     }
 
     private void assertContains(String response, String name, String contentType, Object value) {
@@ -97,6 +117,13 @@ public class MultipartTest {
             return input.name + "-" + input.school.name;
         }
 
+        @POST
+        @Path("/input/file")
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        public int inputFile(@MultipartForm FileUploadData data) throws IOException {
+            return Files.readAllBytes(data.fileUpload.filePath()).length;
+        }
+
     }
 
     private static class MultipartOutputResponse {
@@ -105,8 +132,13 @@ public class MultipartTest {
         String name;
 
         @RestForm
-        @PartType(MediaType.APPLICATION_XML)
+        @PartType(MediaType.TEXT_XML)
         Person person;
+    }
+
+    public static class FileUploadData {
+        @FormParam("file")
+        FileUpload fileUpload;
     }
 
     public static class MultipartInput {

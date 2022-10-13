@@ -59,3 +59,7 @@ java {
     {/if}
 }
 {/}
+
+tasks.withType<Test> {
+    systemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager")
+}

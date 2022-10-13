@@ -12,14 +12,157 @@ xref:building-native-image.adoc[Building a Native Executable],
 xref:native-and-ssl.adoc[Using SSL With Native Images],
 and xref:writing-native-applications-tips.adoc[Writing Native Applications],
 guides.
-It provides further details to debugging issues in Quarkus native executables that might arise during development or production.
+It explores advanced topics that help users diagnose issues,
+increase the reliability and improve the runtime performance of native executables.
+These are the high level sections to be found in this guide:
 
-This reference guide takes as input the application developed in the xref:getting-started.adoc[Getting Started Guide].
+* <<native-memory-management,Native Memory Management>>
+* <<inspecting-and-debugging,Inspecting and Debugging Native Executables>>
+* <<native-faq,Frequently Asked Questions>>
+
+[[native-memory-management]]
+== Native Memory Management
+Memory management for Quarkus native executables is enabled by GraalVM’s SubstrateVM runtime system.
+The memory management component in GraalVM is explained in detail
+link:https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/optimizations-and-performance/MemoryManagement[here].
+This guide complements the information available in the GraalVM website with further observations particularly relevant to Quarkus applications.
+
+=== Garbage Collectors
+The garbage collectors available for Quarkus users are currently Serial GC and Epsilon GC.
+
+==== Serial GC
+Serial GC, the default option in GraalVM and Quarkus, is a single-threaded non-concurrent GC, just like HotSpot’s Serial GC.
+The implementation in GraalVM however is different from the HotSpot one,
+and there can be significant differences in the runtime behavior.
+
+One of the key differences between HotSpot’s Serial GC and GraalVM’s Serial GC is the way they perform full GC cycles.
+In HotSpot the algorithm used is mark-sweep-compact whereas in GraalVM it is mark-copy.
+Both need to traverse all live objects,
+but in mark-copy this traversal is also used to copy live objects to a secondary space or semi-space.
+As objects are copied from one semi-space to another they’re also compacted.
+In mark-sweep-compact, the compacting requires a second pass on the live objects.
+This makes full GCs in mark-copy more time efficient (in terms of time spent in each GC cycle) than mark-sweep-compact.
+The tradeoff mark-copy makes in order to make individual full GC cycles shorter is space.
+The use of semi-spaces means that for an application to maintain the same GC performance that mark-sweep achieves (in terms of allocated MB per second),
+it requires double the amount of memory.
+
+===== GC Collection Policy
+
+GraalVM's Serial GC implementation offers a choice between two different collection policies, the default is called "adaptive" and the alternative is called "space/time".
+
+The “adaptive” collection policy is based on HotSpot's ParallelGC adaptive size policy.
+The main difference with HotSpot is GraalVM's focus on memory footprint.
+This means that GraalVM’s adaptive GC policy tries to aggressively trigger GCs in order to keep memory consumption down.
+
+Up to version 2.13, Quarkus used the “space/time” GC collection policy by default,
+but starting with version 2.14, it switched to using the “adaptive” policy instead.
+The reason why Quarkus initially chose to use "space/time" is because at that time it had considerable performance improvements over "adaptive".
+Recent performance experiments, however, indicate that the "space/time" policy can result in worse out-of-the-box experience compared to the "space/time" policy,
+while at the same time the benefits it used to offer have diminished considerably after improvements made to the "adaptive" policy.
+As a result, the "adaptive" policy appears to be the best option for most, if not all, Quarkus applications.
+Full details on this switch can be read in link:https://github.com/quarkusio/quarkus/issues/28267[this issue].
+
+It is still possible to change the GC collection policy using GraalVM’s `-H:InitialCollectionPolicy` flag.
+Switching to the "space/time" policy can be done by passing the following via command line:
+
+[source,bash]
+----
+-Dquarkus.native.additional-build-args=-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy\$BySpaceAndTime
+----
+
+Or adding this to the `application.properties` file:
+
+[source,properties]
+----
+quarkus.native.additional-build-args=-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime
+----
+
+[NOTE]
+====
+Escaping the `$` character is required to configure the "space/time" GC collection policy if passing via command line in Bash.
+Other command line environments might have similar requirements.
+====
+
+==== Epsilon GC
+Epsilon GC is a no-op garbage collector which does not do any memory reclamation.
+From a Quarkus perspective, some of the most relevant use cases for this garbage collector are extremely short-lived jobs, e.g. serverless functions.
+To build Quarkus native with epsilon GC, pass the following argument at build time:
+
+[source,bash]
+----
+-Dquarkus.native.additional-build-args=--gc=epsilon
+----
+
+=== Memory Management Options
+Options to control maximum heap size, young space and other typical use cases found in the JVM can be found in
+https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/optimizations-and-performance/MemoryManagement[the GraalVM memory management guide].
+Setting the maximum heap size, either as a percentage or an explicit value, is generally recommended.
+
+[[gc-logging]]
+=== GC Logging
+Multiple options exist to print information about garbage collection cycles, depending on the level of detail required.
+The minimum detail is provided `-XX:+PrintGC`, which prints a message for each GC cycle that occurs:
+
+[source,bash]
+----
+$ quarkus-project-0.1-SNAPSHOT-runner -XX:+PrintGC -Xmx64m
+...
+[Incremental GC (CollectOnAllocation) 20480K->11264K, 0.0003223 secs]
+[Full GC (CollectOnAllocation) 19456K->5120K, 0.0031067 secs]
+----
+
+When you combine this option with `-XX:+VerboseGC` you still get a message per GC cycle,
+but it contains extra information.
+Also, adding this option shows the sizing decisions made by the GC algorithm at startup:
+
+[source,bash]
+----
+$ quarkus-project-0.1-SNAPSHOT-runner -XX:+PrintGC -XX:+VerboseGC -Xmx64m
+[Heap policy parameters:
+YoungGenerationSize: 25165824
+MaximumHeapSize: 67108864
+MinimumHeapSize: 33554432
+AlignedChunkSize: 1048576
+LargeArrayThreshold: 131072]
+...
+[[5378479783321 GC: before  epoch: 8  cause: CollectOnAllocation]
+[Incremental GC (CollectOnAllocation) 16384K->9216K, 0.0003847 secs]
+[5378480179046 GC: after   epoch: 8  cause: CollectOnAllocation  policy: adaptive  type: incremental
+collection time: 384755 nanoSeconds]]
+[[5379294042918 GC: before  epoch: 9  cause: CollectOnAllocation]
+[Full GC (CollectOnAllocation) 17408K->5120K, 0.0030556 secs]
+[5379297109195 GC: after   epoch: 9  cause: CollectOnAllocation  policy: adaptive  type: complete
+collection time: 3055697 nanoSeconds]]
+----
+
+Beyond these two options, `-XX:+PrintHeapShape` and `-XX:+TraceHeapChunks` provide even lower level details about memory chunks on top of which the different memory regions are constructed.
+
+The most up-to-date information on GC logging flags can be obtained by printing the list of flags that can be passed to native executables:
+
+[source,bash]
+----
+$ quarkus-project-0.1-SNAPSHOT-runner -XX:PrintFlags=
+...
+  -XX:±PrintGC                                 Print summary GC information after each collection. Default: - (disabled).
+  -XX:±PrintGCSummary                          Print summary GC information after application main method returns. Default: - (disabled).
+  -XX:±PrintGCTimeStamps                       Print a time stamp at each collection, if +PrintGC or +VerboseGC. Default: - (disabled).
+  -XX:±PrintGCTimes                            Print the time for each of the phases of each collection, if +VerboseGC. Default: - (disabled).
+  -XX:±PrintHeapShape                          Print the shape of the heap before and after each collection, if +VerboseGC. Default: - (disabled).
+...
+  -XX:±TraceHeapChunks                         Trace heap chunks during collections, if +VerboseGC and +PrintHeapShape. Default: - (disabled).
+  -XX:±VerboseGC                               Print more information about the heap before and after each collection. Default: - (disabled).
+----
+
+[[inspecting-and-debugging]]
+== Inspecting and Debugging Native Executables
+This debugging guide provides further details on debugging issues in Quarkus native executables that might arise during development or production.
+
+It takes as input the application developed in the xref:getting-started.adoc[Getting Started Guide].
 You can find instructions on how to quickly set up this application in this guide.
 
-== Requirements and Assumptions
+=== Requirements and Assumptions
 
-This guide has the following requirements:
+This debugging guide has the following requirements:
 
 * JDK 11 installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
@@ -40,7 +183,7 @@ A minimum of 4 CPUs and 4GB of memory is required.
 Finally, this guide assumes the use of the link:https://github.com/graalvm/mandrel[Mandrel distribution] of GraalVM for building native executables,
 and these are built within a container so there is no need for installing Mandrel on the host.
 
-== Bootstrapping the project
+=== Bootstrapping the project
 
 Start by creating a new Quarkus project.
 Open a terminal and run the following command:
@@ -57,9 +200,9 @@ For Windows users
 - If using cmd , (don't use backward slash `\` and put everything on the same line)
 - If using Powershell , wrap `-D` parameters in double quotes e.g. `"-DprojectArtifactId=debugging-native"`
 
-== Configure Quarkus properties
+=== Configure Quarkus properties
 
-Some Quarkus configuration options will be used constantly throughout this guide,
+Some Quarkus configuration options will be used constantly throughout this debugging guide,
 so to help declutter command line invocations,
 it's recommended to add these options to the `application.properties` file.
 So, go ahead and add the following options to that file:
@@ -72,7 +215,7 @@ quarkus.container-image.build=true
 quarkus.container-image.group=test
 ----
 
-== First Debugging Steps
+=== First Debugging Steps
 
 As a first step, change to the project directory and build the native executable for the application:
 
@@ -190,7 +333,7 @@ Remember that if an argument for `-Dquarkus.native.additional-build-args` includ
 it needs to be escaped to be processed correctly, e.g. `\\,`.
 ====
 
-== Inspecting Native Executables
+=== Inspecting Native Executables
 
 Given a native executable, various Linux tools can be used to inspect it.
 To allow supporting a variety of environments,
@@ -276,7 +419,7 @@ From there, you can either inspect the executable directly or use a tools contai
 ====
 
 [[native-reports]]
-== Native Reports
+=== Native Reports
 
 Optionally, the native build process can generate reports that show what goes into the binary:
 
@@ -289,7 +432,7 @@ Optionally, the native build process can generate reports that show what goes in
 The reports will be created under `target/debugging-native-1.0.0-SNAPSHOT-native-image-source-jar/reports/`.
 These reports are some of the most useful resources when encountering issues with missing methods/classes, or encountering forbidden methods by Mandrel.
 
-=== Call Tree Reports
+==== Call Tree Reports
 
 `call_tree` csv file reports are some of the default reports generated when the `-Dquarkus.native.enable-reports` option is passed in.
 These csv files can be imported into a graph database, such as Neo4j,
@@ -475,12 +618,12 @@ For further information, check out this
 link:https://quarkus.io/blog/quarkus-native-neo4j-call-tree[blog post]
 that explores the Quarkus Hibernate ORM quickstart using the techniques explained above.
 
-=== Used Packages/Classes/Methods Reports
+==== Used Packages/Classes/Methods Reports
 
 `used_packages`, `used_classes` and `used_methods` text file reports come in handy when comparing different versions of the application,
 e.g. why does the image take longer to build? Or why is the image bigger now?
 
-=== Further Reports
+==== Further Reports
 
 Mandrel can produce further reports beyond the ones that are enabled with the `-Dquarkus.native.enable-reports` option.
 These are called expert options and you can learn more about them by running:
@@ -498,7 +641,7 @@ so they might change anytime.
 
 To use these expert options, add them comma separated to the `-Dquarkus.native.additional-build-args` parameter.
 
-== Build-time vs Run-time Initialization
+=== Build-time vs Run-time Initialization
 
 Quarkus instructs Mandrel to initialize as much as possible at build time,
 so that runtime startup can be as fast as possible.
@@ -705,9 +848,9 @@ hellomandrel
 Additional information on which classes are initialized and why can be obtained by passing in the `-H:+PrintClassInitialization` flag via `-Dquarkus.native.additional-build-args`.
 
 [[profiling]]
-== Profile Runtime Behaviour
+=== Profile Runtime Behaviour
 
-=== Single Thread
+==== Single Thread
 
 In this exercise, we profile the runtime behaviour of some Quarkus application that was compiled to a native executable to determine where the bottleneck is.
 Assume that you’re in a scenario where profiling the pure Java version is not possible, maybe because the issue only occurs with the native version of the application.
@@ -901,7 +1044,7 @@ The issue is that 1 million characters need to be shifted in very small incremen
 
 image::native-reference-perf-flamegraph-symbols.svg[Perf flamegraph with symbols]
 
-=== Multi-Thread
+==== Multi-Thread
 
 Multithreaded programs might require special attention when trying to understand their runtime behaviour.
 To demonstrate this, add this `MulticastResource` code to your project
@@ -1036,7 +1179,7 @@ When you open the flamegraph, you will see all threads' work collapsed into a si
 Then, you can clearly see that there's some locking that could affect performance.
 
 [[debug-info]]
-== Debugging Native Crashes
+=== Debugging Native Crashes
 
 One of the drawbacks of using native executables is that they cannot be debugged using the standard Java debuggers,
 instead we need to debug them using `gdb`, the GNU Project debugger.
@@ -1341,6 +1484,7 @@ or walk up the stack using `gdb`’s `up` command to see what part of our code l
 To learn more about using gdb to debug native executables see
 https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/debugging-and-diagnostics/DebugInfo/[here].
 
+[[native-faq]]
 == Frequently Asked Questions
 
 === Why is the process of generating a native executable slow?
@@ -1459,26 +1603,11 @@ com.oracle.svm.core.VM=GraalVM 22.0.0.2-Final Java 11 Mandrel Distribution
 
 === How do I enable GC logging in native executables?
 
-Executing the native executable with `-XX:PrintFlags=` prints a list of flags that can be passed to native executables.
-For various levels of GC logging one may use:
-
-[source,bash]
-----
-$ ./target/debugging-native-1.0.0-SNAPSHOT-runner -XX:PrintFlags=
-...
-  -XX:±PrintGC                                 Print summary GC information after each collection. Default: - (disabled).
-  -XX:±PrintGCSummary                          Print summary GC information after application main method returns. Default: - (disabled).
-  -XX:±PrintGCTimeStamps                       Print a time stamp at each collection, if +PrintGC or +VerboseGC. Default: - (disabled).
-  -XX:±PrintGCTimes                            Print the time for each of the phases of each collection, if +VerboseGC. Default: - (disabled).
-  -XX:±PrintHeapShape                          Print the shape of the heap before and after each collection, if +VerboseGC. Default: - (disabled).
-...
-  -XX:±TraceHeapChunks                         Trace heap chunks during collections, if +VerboseGC and +PrintHeapShape. Default: - (disabled).
-  -XX:±VerboseGC                               Print more information about the heap before and after each collection. Default: - (disabled).
-----
+See <<gc-logging,Native Memory Management GC Logging section>> for details.
 
 === Can I get a heap dump of a native executable? e.g. if it runs out of memory
 
-Starting with GraalVM 22.2.0 it will be possible to heap dumps upon request,
+Starting with GraalVM 22.2.0 it is possible to create heap dumps upon request,
 e.g. `kill -SIGUSR1 <pid>`.
 Support for dumping the heap dump upon an out of memory error will follow up.
 

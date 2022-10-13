@@ -8,6 +8,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -49,12 +50,16 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.security.AuthenticationCompletionException;
+import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Handler;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
@@ -183,23 +188,49 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         return new RuntimeValue<>(deployment);
     }
 
-    public Handler<RoutingContext> handler(RuntimeValue<Deployment> deploymentRuntimeValue) {
+    public RuntimeValue<RestInitialHandler> restInitialHandler(RuntimeValue<Deployment> deploymentRuntimeValue) {
         Deployment deployment = deploymentRuntimeValue.getValue();
-        RestInitialHandler initialHandler = new RestInitialHandler(deployment);
+        return new RuntimeValue<>(new RestInitialHandler(deployment));
+    }
+
+    public Handler<RoutingContext> handler(RuntimeValue<RestInitialHandler> restInitialHandlerRuntimeValue) {
+        RestInitialHandler initialHandler = restInitialHandlerRuntimeValue.getValue();
 
         // ensure our ex. mappers are called when security exceptions are thrown and proactive auth is disabled
         final Consumer<RoutingContext> eventCustomizer = new Consumer<>() {
 
             @Override
             public void accept(RoutingContext routingContext) {
-                // remove default auth failure handler
-                if (routingContext.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof DefaultAuthFailureHandler) {
+                // remove default auth failure handler so that exception is not handled by both failure and abort handlers
+                if (routingContext.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof FailingDefaultAuthFailureHandler) {
                     routingContext.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
                 }
             }
         };
 
         return new ResteasyReactiveVertxHandler(eventCustomizer, initialHandler);
+    }
+
+    public Consumer<Route> addFailureHandler(RuntimeValue<RestInitialHandler> restInitialHandlerRuntimeValue) {
+        final RestInitialHandler restInitialHandler = restInitialHandlerRuntimeValue.getValue();
+        return new Consumer<Route>() {
+            @Override
+            public void accept(Route route) {
+                // process auth failures with abort handlers
+                route.failureHandler(new Handler<RoutingContext>() {
+                    @Override
+                    public void handle(RoutingContext event) {
+                        if (event.failure() instanceof AuthenticationFailedException
+                                || event.failure() instanceof AuthenticationCompletionException
+                                || event.failure() instanceof AuthenticationRedirectException) {
+                            restInitialHandler.beginProcessing(event, event.failure());
+                        } else {
+                            event.next();
+                        }
+                    }
+                });
+            }
+        };
     }
 
     /**
@@ -284,6 +315,27 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
 
     public ServerSerialisers createServerSerialisers() {
         return new ServerSerialisers();
+    }
+
+    public Handler<RoutingContext> defaultAuthFailureHandler() {
+        return new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext event) {
+                if (event.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof DefaultAuthFailureHandler) {
+                    // fail event rather than end it, so it's handled by abort handlers (see #addFailureHandler method)
+                    event.put(QuarkusHttpUser.AUTH_FAILURE_HANDLER, new FailingDefaultAuthFailureHandler());
+                }
+                event.next();
+            }
+        };
+    }
+
+    private static final class FailingDefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {
+
+        @Override
+        public void accept(RoutingContext event, Throwable throwable) {
+            event.fail(throwable);
+        }
     }
 
 }

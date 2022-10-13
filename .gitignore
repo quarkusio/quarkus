@@ -2,6 +2,7 @@
 target
 *.iml
 .idea
+!.idea/runConfigurations
 .settings
 .project
 .classpath

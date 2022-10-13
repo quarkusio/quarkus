@@ -312,9 +312,8 @@ class VertxHttpProcessor {
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
                 listOfFilters, vertx.getVertx(), lrc, mainRouter, httpRouteRouter.getHttpRouter(),
                 httpRouteRouter.getMutinyRouter(), httpRouteRouter.getFrameworkRouter(),
-                nonApplicationRootPathBuildItem.isDedicatedRouterRequired(),
-                nonApplicationRootPathBuildItem.isAttachedToMainRouter(),
                 httpRootPathBuildItem.getRootPath(),
+                nonApplicationRootPathBuildItem.getNonApplicationRootPath(),
                 launchMode.getLaunchMode(),
                 !requireBodyHandlerBuildItems.isEmpty(), bodyHandler, gracefulShutdownFilter,
                 shutdownConfig, executorBuildItem.getExecutorProxy());

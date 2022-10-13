@@ -167,7 +167,7 @@ Then add the following:
 Finally, run 
 
 ```shell
-sudo launchctl load -w /Library/LaunchDaemons/github.runner.startup.plist
+sudo launchctl load -w /Library/LaunchDaemons/actions.runner.quarkusio-quarkus.macstadium-m1.plist
 ```
 
 You can check the logs in `/tmp/github.runner.plist.stdout` to confirm everything is working.

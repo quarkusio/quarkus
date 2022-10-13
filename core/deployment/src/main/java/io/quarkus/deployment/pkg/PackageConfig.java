@@ -11,27 +11,82 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot
 public class PackageConfig {
 
-    public static final String JAR = "jar";
-    public static final String UBER_JAR = "uber-jar";
-    public static final String FAST_JAR = "fast-jar";
-    public static final String MUTABLE_JAR = "mutable-jar";
+    /**
+     * @deprecated Use {@link Type#JAR} instead
+     */
+    @Deprecated
+    public static final String JAR = BuiltInType.JAR.name;
+    /**
+     * @deprecated Use {@link Type#UBER_JAR} instead
+     */
+    @Deprecated
+    public static final String UBER_JAR = BuiltInType.UBER_JAR.name;
+    /**
+     * @deprecated Use {@link Type#FAST_JAR} instead
+     */
+    @Deprecated
+    public static final String FAST_JAR = BuiltInType.FAST_JAR.name;
+    /**
+     * @deprecated Use {@link Type#MUTABLE_JAR} instead
+     */
+    @Deprecated
+    public static final String MUTABLE_JAR = BuiltInType.MUTABLE_JAR.name;
     /**
      * @deprecated use 'legacy-jar' instead
      */
     @Deprecated
-    public static final String LEGACY = "legacy";
-    public static final String LEGACY_JAR = "legacy-jar";
-    public static final String NATIVE = "native";
+    public static final String LEGACY = BuiltInType.LEGACY.name;
+    /**
+     * @deprecated Use {@link Type#LEGACY_JAR} instead
+     */
+    @Deprecated
+    public static final String LEGACY_JAR = BuiltInType.LEGACY_JAR.name;
+    /**
+     * @deprecated Use {@link Type#NATIVE} instead
+     */
+    @Deprecated
+    public static final String NATIVE = BuiltInType.NATIVE.name;
+    /**
+     * @deprecated Use {@link Type#NATIVE_SOURCES} instead
+     */
+    @Deprecated
     // does everything 'native' but stops short of actually executing the 'native-image' command
-    public static final String NATIVE_SOURCES = "native-sources";
+    public static final String NATIVE_SOURCES = BuiltInType.NATIVE_SOURCES.name;
+
+    public enum BuiltInType {
+        JAR("jar"),
+        UBER_JAR("uber-jar"),
+        FAST_JAR("fast-jar"),
+        MUTABLE_JAR("mutable-jar"),
+        /**
+         * @deprecated use {@link #LEGACY_JAR} instead
+         */
+        @Deprecated
+        LEGACY("legacy"),
+        LEGACY_JAR("legacy-jar"),
+        NATIVE("native"),
+        // does everything 'native' but stops short of actually executing the 'native-image' command
+        NATIVE_SOURCES("native-sources");
+
+        private final String name;
+
+        private BuiltInType(final String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
 
     /**
      * The requested output type.
      * <p>
      * The default built in types are 'jar' (which will use 'fast-jar'), 'legacy-jar' for the pre-1.12 default jar
-     * packaging, 'uber-jar', 'native' and 'native-sources'.
+     * packaging, 'uber-jar', 'mutable-jar' (for remote development mode), 'native' and 'native-sources'.
      */
-    @ConfigItem(defaultValue = JAR)
+    @ConfigItem(defaultValue = "jar")
     public String type;
 
     /**

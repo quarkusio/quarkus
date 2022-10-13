@@ -79,6 +79,12 @@ public class CacheConfig {
              * value to {@code true} will enable the accumulation of cache stats inside Caffeine.
              */
             boolean metricsEnabled;
+
+            /**
+             * Whether or not null values are put to cache
+             */
+            @ConfigItem
+            boolean cacheNullValues = true;
         }
     }
 }

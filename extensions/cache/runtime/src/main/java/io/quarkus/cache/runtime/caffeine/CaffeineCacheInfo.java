@@ -17,6 +17,8 @@ public class CaffeineCacheInfo {
 
     public boolean metricsEnabled;
 
+    public boolean cacheNullValues = true;
+
     @Override
     public int hashCode() {
         return Objects.hash(name);

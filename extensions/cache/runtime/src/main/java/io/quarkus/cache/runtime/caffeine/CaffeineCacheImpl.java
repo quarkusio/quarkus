@@ -135,7 +135,9 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
             statsCounter.recordMisses(1);
             try {
                 Object value = valueLoader.apply(key);
-                newCacheValue.complete(NullValueConverter.toCacheValue(value));
+                if (value == null && cacheInfo.cacheNullValues) {
+                    newCacheValue.complete(NullValueConverter.toCacheValue(value));
+                }
             } catch (Throwable t) {
                 cache.asMap().remove(key, newCacheValue);
                 newCacheValue.complete(new CaffeineComputationThrowable(t));
@@ -201,11 +203,16 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                             @Override
                             public CompletableFuture<Object> apply(Object k, CompletableFuture<Object> currentValue) {
                                 LOGGER.debugf("Replacing Uni value entry with key [%s] into cache [%s]", key, cacheInfo.name);
-                                /*
-                                 * The following computed value will always replace the current cache value (whether it is an
-                                 * UnresolvedUniValue or not) if this method is called multiple times with the same key.
-                                 */
-                                return CompletableFuture.completedFuture(NullValueConverter.toCacheValue(emittedValue));
+                                if (emittedValue == null && cacheInfo.cacheNullValues) {
+                                    /*
+                                     * The following computed value will always replace the current cache value (whether it is
+                                     * an
+                                     * UnresolvedUniValue or not) if this method is called multiple times with the same key.
+                                     */
+                                    return CompletableFuture.completedFuture(NullValueConverter.toCacheValue(emittedValue));
+                                } else {
+                                    return null;
+                                }
                             }
                         });
                 return null;

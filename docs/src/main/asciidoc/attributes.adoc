@@ -1,11 +1,52 @@
-// for rendering the final website the attributes are set in the appropriate
-// location based on source versions in https://github.com/quarkusio/quarkusio.github.io/
-// they are duplicated here to ease the preview when editing in the IDE
-:idprefix:
-:idseparator: -
-:icons: font
-:code-examples: ../../../../target/asciidoc/examples
-:doc-guides: ./
-:doc-examples: ./_examples
-:imagesdir: ./images
-:includes: ./includes
+:project-name: Quarkus
+:quarkus-version: ${project.version}
+
+:maven-version: ${proposed-maven-version}
+:graalvm-version: ${graal-sdk.version-for-documentation}
+:graalvm-flavor: ${graal-sdk.version-for-documentation}-java11
+:mandrel-version: ${mandrel.version-for-documentation}
+:mandrel-flavor: ${mandrel.version-for-documentation}-java11
+:surefire-version: ${version.surefire.plugin}
+:gradle-version: ${gradle-wrapper.version}
+:elasticsearch-version: ${elasticsearch-server.version}
+:elasticsearch-image: ${elasticsearch.image}
+:logstash-image: ${logstash.image}
+:kibana-image: ${kibana.image}
+:keycloak-docker-image: ${keycloak.docker.image}
+:jandex-version: ${jandex.version}
+:jandex-gradle-plugin.version: ${jandex-gradle-plugin.version}
+:kotlin-version: ${kotlin.version}
+:grpc-version: ${grpc.version}
+:protoc-version: ${protoc.version}
+:gcf-invoker-version: ${gcf-invoker.version}
+
+:quarkus-home-url: ${quarkus-home-url}
+:quarkus-org-url: https://github.com/quarkusio
+:quarkus-site-getting-started: /get-started
+:quarkus-writing-extensions-guide: /guides/writing-extensions
+:quarkus-site-publications: /publications
+:quarkus-base-url: ${quarkus-base-url}
+:quarkus-clone-url: ${quarkus-base-url}.git
+:quarkus-archive-url: ${quarkus-base-url}/archive/main.zip
+:quarkus-blob-url: ${quarkus-base-url}/blob/main
+:quarkus-tree-url: ${quarkus-base-url}/tree/main
+:quarkus-issues-url: ${quarkus-base-url}/issues
+:quarkus-images-url: https://github.com/quarkusio/quarkus-images/tree
+:quarkus-chat-url: https://quarkusio.zulipchat.com
+:quarkus-mailing-list-subscription-email: quarkus-dev+subscribe@googlegroups.com
+:quarkus-mailing-list-index: https://groups.google.com/d/forum/quarkus-dev
+:quickstarts-base-url: ${quickstarts-base-url}
+:quickstarts-clone-url: ${quickstarts-base-url}.git
+:quickstarts-archive-url: ${quickstarts-base-url}/archive/main.zip
+:quickstarts-blob-url: ${quickstarts-base-url}/blob/main
+:quickstarts-tree-url: ${quickstarts-base-url}/tree/main
+
+:amazon-services-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-amazon-services/dev/index.html
+:config-consul-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-config-extensions/dev/consul.html
+:hibernate-search-orm-elasticsearch-aws-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-hibernate-search-extras/dev/index.html
+:neo4j-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-neo4j/dev/index.html
+:vault-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/index.html
+:vault-datasource-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/vault-datasource.html
+:micrometer-registry-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-micrometer-registry/dev/index.html
+
+include::./attributes-local.adoc[]

@@ -26,3 +26,6 @@ dependencies {
     implementation 'javax.json.bind:javax.json.bind-api'
 }
 
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}

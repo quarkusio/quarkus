@@ -23,3 +23,7 @@ version '1.0-SNAPSHOT'
 compileTestJava {
     options.encoding = 'UTF-8'
 }
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}

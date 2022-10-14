@@ -25,3 +25,7 @@ dependencies {
 compileJava {
     options.compilerArgs << '-parameters'
 }
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}

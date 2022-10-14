@@ -41,7 +41,7 @@ public abstract class ResourcePropertiesProvider {
         String halCollectionName = getHalCollectionName(annotation, ResourceName.fromClass(interfaceName));
 
         return new ResourceProperties(isExposed(annotation), resourcePath, paged, true, halCollectionName,
-                getMethodProperties(repositoryInterfaceName));
+                new String[0], getMethodProperties(repositoryInterfaceName));
     }
 
     private Map<String, MethodProperties> getMethodProperties(DotName interfaceName) {
@@ -56,7 +56,7 @@ public abstract class ResourcePropertiesProvider {
     }
 
     private MethodProperties getMethodProperties(AnnotationInstance annotation) {
-        return new MethodProperties(isExposed(annotation), getPath(annotation, ""));
+        return new MethodProperties(isExposed(annotation), getPath(annotation, ""), new String[0]);
     }
 
     private AnnotationInstance findClassAnnotation(DotName interfaceName) {

@@ -30,4 +30,11 @@ public @interface MethodProperties {
      * Default: ""
      */
     String path() default "";
+
+    /**
+     * List of the security roles permitted to access this operation.
+     * <p>
+     * Default: ""
+     */
+    String[] rolesAllowed() default {};
 }

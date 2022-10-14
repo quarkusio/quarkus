@@ -245,8 +245,6 @@ quarkus.datasource.db-kind=postgresql
 quarkus.datasource.jdbc.url=jdbc:otel:postgresql://localhost:5432/mydatabase
 # use the 'OpenTelemetryDriver' instead of the one for your database
 quarkus.datasource.jdbc.driver=io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver
-# configure Hibernate ORM dialect
-quarkus.hibernate-orm.dialect=org.hibernate.dialect.PostgreSQLDialect
 ----
 
 == Additional configuration

@@ -38,7 +38,8 @@ class OpenApiIntegrationTest {
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-smallrye-openapi", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-jdbc-h2-deployment", Version.getVersion()),
-                    Dependency.of("io.quarkus", "quarkus-resteasy-jsonb-deployment", Version.getVersion())))
+                    Dependency.of("io.quarkus", "quarkus-resteasy-jsonb-deployment", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-security-deployment", Version.getVersion())))
             .setRun(true);
 
     @Test
@@ -52,9 +53,13 @@ class OpenApiIntegrationTest {
                 .body("paths.'/collections'.get.tags", Matchers.hasItem("CollectionsResource"))
                 .body("paths.'/collections'", Matchers.hasKey("post"))
                 .body("paths.'/collections'.post.tags", Matchers.hasItem("CollectionsResource"))
+                .body("paths.'/collections'.post.security[0].SecurityScheme", Matchers.hasItem("user"))
                 .body("paths.'/collections/{id}'", Matchers.hasKey("get"))
+                .body("paths.'/collections/{id}'.get.security[0].SecurityScheme", Matchers.hasItem("user"))
                 .body("paths.'/collections/{id}'", Matchers.hasKey("put"))
+                .body("paths.'/collections/{id}'.put.security[0].SecurityScheme", Matchers.hasItem("user"))
                 .body("paths.'/collections/{id}'", Matchers.hasKey("delete"))
+                .body("paths.'/collections/{id}'.delete.security[0].SecurityScheme", Matchers.hasItem("admin"))
                 .body("paths.'/empty-list-items'", Matchers.hasKey("get"))
                 .body("paths.'/empty-list-items'.get.tags", Matchers.hasItem("EmptyListItemsResource"))
                 .body("paths.'/empty-list-items'", Matchers.hasKey("post"))

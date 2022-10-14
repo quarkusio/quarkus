@@ -8,6 +8,7 @@ import java.util.Collection;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -26,8 +27,8 @@ import io.quarkus.resteasy.reactive.links.runtime.hal.ResteasyReactiveHalService
  */
 abstract class HalMethodImplementor extends StandardMethodImplementor {
 
-    HalMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
-        super(isResteasyClassic, isReactivePanache);
+    HalMethodImplementor(Capabilities capabilities) {
+        super(capabilities);
     }
 
     /**

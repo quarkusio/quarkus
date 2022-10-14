@@ -13,6 +13,8 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -22,10 +24,10 @@ import io.quarkus.resteasy.reactive.links.runtime.hal.ResteasyReactiveHalService
 
 public final class ResponseImplementor {
 
-    private final boolean isResteasyClassic;
+    private final Capabilities capabilities;
 
-    public ResponseImplementor(boolean isResteasyClassic) {
-        this.isResteasyClassic = isResteasyClassic;
+    public ResponseImplementor(Capabilities capabilities) {
+        this.capabilities = capabilities;
     }
 
     public ResultHandle ok(BytecodeCreator creator, ResultHandle entity) {
@@ -62,7 +64,7 @@ public final class ResponseImplementor {
                 MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                         Annotation[].class),
                 arcContainer,
-                creator.loadClassFromTCCL(isResteasyClassic ? ResteasyHalService.class : ResteasyReactiveHalService.class),
+                creator.loadClassFromTCCL(isResteasyClassic() ? ResteasyHalService.class : ResteasyReactiveHalService.class),
                 creator.loadNull());
         ResultHandle halService = creator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
@@ -95,5 +97,9 @@ public final class ResponseImplementor {
     private ResultHandle getResponseBuilder(BytecodeCreator creator, int status) {
         return creator.invokeStaticMethod(
                 ofMethod(Response.class, "status", ResponseBuilder.class, int.class), creator.load(status));
+    }
+
+    private boolean isResteasyClassic() {
+        return capabilities.isPresent(Capability.RESTEASY);
     }
 }

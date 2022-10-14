@@ -14,15 +14,18 @@ public class ResourceProperties {
 
     private final String halCollectionName;
 
+    private final String[] rolesAllowed;
+
     private final Map<String, MethodProperties> methodProperties;
 
     public ResourceProperties(boolean exposed, String path, boolean paged, boolean hal, String halCollectionName,
-            Map<String, MethodProperties> methodProperties) {
+            String[] rolesAllowed, Map<String, MethodProperties> methodProperties) {
         this.exposed = exposed;
         this.path = path;
         this.paged = paged;
         this.hal = hal;
         this.halCollectionName = halCollectionName;
+        this.rolesAllowed = rolesAllowed;
         this.methodProperties = methodProperties;
     }
 
@@ -67,5 +70,13 @@ public class ResourceProperties {
 
     public String getHalCollectionName() {
         return halCollectionName;
+    }
+
+    public String[] getRolesAllowed(String methodName) {
+        if (methodProperties.containsKey(methodName)) {
+            return methodProperties.get(methodName).getRolesAllowed();
+        }
+
+        return rolesAllowed;
     }
 }

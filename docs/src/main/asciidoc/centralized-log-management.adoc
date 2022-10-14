@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Centralized log management (Graylog, Logstash, Fluentd)
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: observability
 :summary: This guide explains how to centralize your logs with Logstash or Fluentd using the Graylog Extended Log Format (GELF).
 

@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Getting Started with SmallRye Stork
 :extension-status: preview
 
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 
 The essence of distributed systems resides in the interaction between services.
 In modern architecture, you often have multiple instances of your service to share the load or improve the resilience by redundancy.

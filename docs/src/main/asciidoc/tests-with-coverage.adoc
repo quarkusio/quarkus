@@ -5,7 +5,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Measuring the coverage of your tests
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: tooling
 :summary: This guide explains how to measure the test coverage of your Quarkus application.
 :toc: macro

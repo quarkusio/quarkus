@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for AMQP
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: messaging
 :summary: Start AMQP automatically in dev and test modes.
 

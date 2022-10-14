@@ -5,7 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for Kogito
 
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 
 If any Kogito process-related extension is present (e.g. `kogito-quarkus` or `kogito-quarkus-processes`), Dev Services for Kogito automatically starts a Data Index in dev mode.
 So, you don't have to start it manually or have any other service set-up manually.

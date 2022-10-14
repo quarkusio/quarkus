@@ -47,7 +47,7 @@ echo "Copying from target/asciidoc/sources/* to $TARGET_GUIDES"
 rsync -vr --delete \
     --exclude='**/*.html' \
     --exclude='**/index.adoc' \
-    --exclude='**/attributes-local.adoc' \
+    --exclude='**/_attributes-local.adoc' \
     --exclude='**/guides.md' \
     --exclude='**/_templates' \
     target/asciidoc/sources/* \
@@ -57,7 +57,7 @@ echo "\nCopying from ../target/asciidoc/generated/ to $TARGET_CONFIG"
 rsync -vr --delete \
     --exclude='**/*.html' \
     --exclude='**/index.adoc' \
-    --exclude='**/attributes.adoc' \
+    --exclude='**/_attributes.adoc' \
     ../target/asciidoc/generated/ \
     $TARGET_CONFIG
 

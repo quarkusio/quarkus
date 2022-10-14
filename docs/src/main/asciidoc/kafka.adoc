@@ -4,9 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Apache Kafka Reference Guide
-
 include::./attributes.adoc[]
-
+:categories: messaging
+:summary: This reference guide provides an in-depth look on Apache Kafka and Smallrye Reactive Messaging framework.
 :numbered:
 :sectnums:
 :sectnumlevels: 4

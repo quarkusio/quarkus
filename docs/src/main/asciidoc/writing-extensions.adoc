@@ -4,7 +4,8 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Writing Your Own Extension
-
+:categories: writing-extensions
+:summary: Quarkus extensions optimize your applications by pushing as much work as possible to the build operation. This guide explains the rationale of Quarkus extensions and guides you through authoring your own extensions.
 :numbered:
 :sectnums:
 :sectnumlevels: 4

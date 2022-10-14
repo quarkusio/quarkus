@@ -350,6 +350,7 @@ public final class JandexUtil {
         return isSubclassOf(index, superClass, parentName);
     }
 
+    @Deprecated(forRemoval = true, since = "2.13.3.Final")
     @SuppressWarnings("incomplete-switch")
     public static String getBoxedTypeName(Type type) {
         switch (type.kind()) {

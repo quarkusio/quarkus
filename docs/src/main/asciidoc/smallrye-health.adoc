@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = SmallRye Health
-
 include::./attributes.adoc[]
+:categories: observability
+:summary: This guide demonstrates how your Quarkus application can utilize the SmallRye Health extension.
 
 This guide demonstrates how your Quarkus application can use https://github.com/smallrye/smallrye-health/[SmallRye Health]
 an implementation of the https://github.com/eclipse/microprofile-health/[MicroProfile Health] specification.

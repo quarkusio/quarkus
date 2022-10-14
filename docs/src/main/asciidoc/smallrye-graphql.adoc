@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = SmallRye GraphQL
-
 include::./attributes.adoc[]
+:categories: web
+:summary: This guide explains how to leverage SmallRye GraphQL to implement GraphQL services.
 
 This guide demonstrates how your Quarkus application can use https://github.com/smallrye/smallrye-graphql/[SmallRye GraphQL],
 an implementation of the https://github.com/eclipse/microprofile-graphql/[MicroProfile GraphQL] specification.

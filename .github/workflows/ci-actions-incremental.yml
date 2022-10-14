@@ -119,7 +119,7 @@ jobs:
           fetch-depth: 0
       - name: Add quarkusio remote
         shell: bash
-        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
+        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - uses: n1hility/cancel-previous-runs@v2
         # quarkus-bot will handle this much more efficiently, but it's not active in/for forks
         if: github.repository != 'quarkusio/quarkus'

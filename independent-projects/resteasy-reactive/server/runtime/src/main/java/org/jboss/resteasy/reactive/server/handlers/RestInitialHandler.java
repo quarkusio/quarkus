@@ -41,10 +41,18 @@ public class RestInitialHandler implements ServerRestHandler {
         this.requestContextFactory = deployment.getRequestContextFactory();
     }
 
-    public void beginProcessing(Object extenalHttpContext) {
-        ResteasyReactiveRequestContext rq = requestContextFactory.createContext(deployment, extenalHttpContext,
+    public void beginProcessing(Object externalHttpContext) {
+        ResteasyReactiveRequestContext rq = requestContextFactory.createContext(deployment, externalHttpContext,
                 requestContext,
                 initialChain, deployment.getAbortHandlerChain());
+        rq.run();
+    }
+
+    public void beginProcessing(Object externalHttpContext, Throwable throwable) {
+        ResteasyReactiveRequestContext rq = requestContextFactory.createContext(deployment, externalHttpContext,
+                requestContext,
+                initialChain, deployment.getAbortHandlerChain());
+        rq.handleException(throwable);
         rq.run();
     }
 

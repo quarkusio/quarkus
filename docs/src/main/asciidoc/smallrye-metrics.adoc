@@ -6,8 +6,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 = SmallRye Metrics
 :extension-status: deprecated
-
 include::./attributes.adoc[]
+:categories: observability
+:summary: This guide demonstrates how your Quarkus application can utilize the SmallRye Metrics extension.
 
 The following guide demonstrates how a Quarkus application can use link:https://github.com/smallrye/smallrye-metrics/[SmallRye Metrics],
 an implementation of the link:https://github.com/eclipse/microprofile-metrics/[MicroProfile Metrics] specification.

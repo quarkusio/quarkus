@@ -146,6 +146,19 @@ public final class RouteBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * @param route A normalized path used to define a basic route
+         *        (e.g. use HttpRootPathBuildItem to construct/resolve the path value). This path this is also
+         *        used on the "Not Found" page in dev mode.
+         * @param order Priority ordering of the route
+         * @param routeCustomizer Route customizer.
+         */
+        public Builder orderedRoute(String route, Integer order, Consumer<Route> routeCustomizer) {
+            this.routeFunction = new BasicRoute(route, order, routeCustomizer);
+            this.notFoundPagePath = this.routePath = route;
+            return this;
+        }
+
         public Builder handler(Handler<RoutingContext> handler) {
             this.handler = handler;
             return this;

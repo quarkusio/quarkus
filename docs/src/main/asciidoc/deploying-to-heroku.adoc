@@ -5,6 +5,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Deploying to Heroku
 include::./attributes.adoc[]
+:categories: cloud
+:summary: Deploy your Quarkus applications on Heroku.
 
 In this guide you will learn how to deploy a Quarkus based web application as a web-dyno to Heroku.
 

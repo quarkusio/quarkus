@@ -104,9 +104,9 @@
                 </executions>
                 <dependencies>
                     <dependency>
-                        <groupId>org.codehaus.groovy</groupId>
+                        <groupId>org.apache.groovy</groupId>
                         <artifactId>groovy</artifactId>
-                        <version>3.0.12</version>
+                        <version>4.0.5</version>
                     </dependency>
                 </dependencies>
             </plugin>

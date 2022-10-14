@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Blaze-Persistence
-
 include::./attributes.adoc[]
+:categories: data
+:summary: This guide explains how to use Blaze-Persistence to simplify your data and DTO layers.
 :config-file: application.properties
 
 Blaze-Persistence offers a fluent query builder API on top of JPA with a deep Hibernate ORM integration that enables the

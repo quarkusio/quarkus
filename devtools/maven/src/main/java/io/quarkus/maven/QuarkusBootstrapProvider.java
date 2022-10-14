@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
@@ -61,6 +62,16 @@ public class QuarkusBootstrapProvider implements Closeable {
 
     static ArtifactKey getProjectId(MavenProject project) {
         return ArtifactKey.ga(project.getGroupId(), project.getArtifactId());
+    }
+
+    static Map<Path, Model> getProjectMap(MavenSession session) {
+        final List<MavenProject> allProjects = session.getAllProjects();
+        final Map<Path, Model> projectModels = new HashMap<>(allProjects.size());
+        for (MavenProject mp : allProjects) {
+            mp.getOriginalModel().setPomFile(mp.getFile());
+            projectModels.put(mp.getBasedir().toPath(), mp.getOriginalModel());
+        }
+        return projectModels;
     }
 
     public RepositorySystem repositorySystem() {
@@ -143,11 +154,7 @@ public class QuarkusBootstrapProvider implements Closeable {
                         .setRemoteRepositories(mojo.remoteRepositories())
                         .setRemoteRepositoryManager(remoteRepoManager);
                 if (mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST || isWorkspaceDiscovery(mojo)) {
-                    final Map<Path, Model> projectModels = new HashMap<>(mojo.mavenSession().getAllProjects().size());
-                    for (MavenProject mp : mojo.mavenSession().getAllProjects()) {
-                        projectModels.put(mp.getBasedir().toPath(), mp.getOriginalModel());
-                    }
-                    builder.setWorkspaceDiscovery(true).setProjectModelProvider(projectModels::get);
+                    builder.setWorkspaceDiscovery(true).setProjectModelProvider(getProjectMap(mojo.mavenSession())::get);
                 }
                 return builder.build();
             } catch (BootstrapMavenException e) {

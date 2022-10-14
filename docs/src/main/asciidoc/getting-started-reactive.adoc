@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Getting Started With Reactive
-
 include::./attributes.adoc[]
+:categories: getting-started
+:summary: Learn more about developing reactive applications with Quarkus.
 
 _Reactive_ is a set of principles to build robust, efficient, and concurrent applications and systems.
 These principles let you handle more load than traditional approaches while using the resources (CPU and memory) more efficiently while also reacting to failures gracefully.

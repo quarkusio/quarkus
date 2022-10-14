@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -82,7 +83,7 @@ public class MongoDnsClient implements DnsClient {
 
     private static List<String> nameServers() {
         Path conf = Paths.get("/etc/resolv.conf");
-        List<String> nameServers = null;
+        List<String> nameServers = Collections.emptyList();
         if (Files.exists(conf)) {
             try (Stream<String> lines = Files.lines(conf)) {
                 nameServers = lines
@@ -91,7 +92,6 @@ public class MongoDnsClient implements DnsClient {
                         .collect(Collectors.toList());
             } catch (IOException | ArrayIndexOutOfBoundsException e) {
                 Logger.getLogger(MongoDnsClientProvider.class).info("Unable to read the /etc/resolv.conf file", e);
-                nameServers = new ArrayList<>();
             }
         }
         return nameServers;

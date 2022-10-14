@@ -26,3 +26,6 @@ dependencies {
     testImplementation 'org.apache.commons:commons-collections4::tests'
 }
 
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}

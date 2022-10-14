@@ -1,11 +1,7 @@
 package io.quarkus.csrf.reactive.runtime;
 
-import java.io.ByteArrayInputStream;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -29,7 +25,6 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.mutiny.core.buffer.Buffer;
 
 public class CsrfRequestResponseReactiveFilter {
     private static final Logger LOG = Logger.getLogger(CsrfRequestResponseReactiveFilter.class);
@@ -100,9 +95,8 @@ public class CsrfRequestResponseReactiveFilter {
         } else if (config.verifyToken) {
             // unsafe HTTP method, token is required
 
-            if (!requestContext.getMediaType().getType().equals(MediaType.APPLICATION_FORM_URLENCODED_TYPE.getType())
-                    || !requestContext.getMediaType().getSubtype()
-                            .equals(MediaType.APPLICATION_FORM_URLENCODED_TYPE.getSubtype())) {
+            if (!isMatchingMediaType(requestContext.getMediaType(), MediaType.APPLICATION_FORM_URLENCODED_TYPE)
+                    && !isMatchingMediaType(requestContext.getMediaType(), MediaType.MULTIPART_FORM_DATA_TYPE)) {
                 if (config.requireFormUrlEncoded) {
                     LOG.debugf("Request has the wrong media type: %s", requestContext.getMediaType().toString());
                     return Uni.createFrom().item(badClientRequest());
@@ -137,7 +131,6 @@ public class CsrfRequestResponseReactiveFilter {
                                 return Uni.createFrom().item(badClientRequest());
                             } else {
                                 routing.put(CSRF_TOKEN_VERIFIED, true);
-                                requestContext.setEntityStream(new ByteArrayInputStream(encodeForm(form).getBytes()));
                             }
                             return Uni.createFrom().nullItem();
                         }
@@ -148,6 +141,11 @@ public class CsrfRequestResponseReactiveFilter {
         }
 
         return null;
+    }
+
+    private static boolean isMatchingMediaType(MediaType contentType, MediaType expectedType) {
+        return contentType.getType().equals(expectedType.getType())
+                && contentType.getSubtype().equals(expectedType.getSubtype());
     }
 
     private static Response badClientRequest() {
@@ -199,7 +197,7 @@ public class CsrfRequestResponseReactiveFilter {
     }
 
     private boolean isCsrfTokenRequired(RoutingContext routing, CsrfReactiveConfig config) {
-        return config.createTokenPath.isPresent() ? config.createTokenPath.get().equals(routing.request().path()) : true;
+        return config.createTokenPath.isPresent() ? config.createTokenPath.get().contains(routing.request().path()) : true;
     }
 
     private void createCookie(String csrfToken, RoutingContext routing, CsrfReactiveConfig config) {
@@ -241,24 +239,4 @@ public class CsrfRequestResponseReactiveFilter {
         });
     }
 
-    private static Buffer encodeForm(MultiMap form) {
-        Buffer buffer = Buffer.buffer();
-        for (Map.Entry<String, String> entry : form) {
-            if (buffer.length() != 0) {
-                buffer.appendByte((byte) '&');
-            }
-            buffer.appendString(entry.getKey());
-            buffer.appendByte((byte) '=');
-            buffer.appendString(urlEncode(entry.getValue()));
-        }
-        return buffer;
-    }
-
-    private static String urlEncode(String value) {
-        try {
-            return URLEncoder.encode(value, StandardCharsets.UTF_8.name());
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
 }

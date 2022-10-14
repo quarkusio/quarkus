@@ -3,12 +3,14 @@ package io.quarkus.jackson.deployment;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -28,6 +30,8 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
@@ -38,6 +42,7 @@ import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.impl.Reflections;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -56,6 +61,9 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.jackson.JacksonMixin;
 import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.runtime.JacksonBuildTimeConfig;
+import io.quarkus.jackson.runtime.JacksonSupport;
+import io.quarkus.jackson.runtime.JacksonSupportRecorder;
 import io.quarkus.jackson.runtime.MixinsRecorder;
 import io.quarkus.jackson.runtime.ObjectMapperProducer;
 import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
@@ -394,5 +402,60 @@ public class JacksonProcessor {
                 .scope(Singleton.class)
                 .supplier(recorder.customizerSupplier(mixinsMap))
                 .done());
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    public SyntheticBeanBuildItem jacksonSupport(JacksonSupportRecorder recorder,
+            JacksonBuildTimeConfig jacksonBuildTimeConfig) {
+        return SyntheticBeanBuildItem
+                .configure(JacksonSupport.class)
+                .scope(Singleton.class)
+                .supplier(recorder.supplier(determinePropertyNamingStrategyClassName(jacksonBuildTimeConfig)))
+                .done();
+    }
+
+    private Optional<String> determinePropertyNamingStrategyClassName(JacksonBuildTimeConfig jacksonBuildTimeConfig) {
+        if (jacksonBuildTimeConfig.propertyNamingStrategy.isEmpty()) {
+            return Optional.empty();
+        }
+        var propertyNamingStrategy = jacksonBuildTimeConfig.propertyNamingStrategy.get();
+        Field field;
+
+        try {
+            // let's first try and see if the value is a constant defined in PropertyNamingStrategies
+            field = Reflections.findField(PropertyNamingStrategies.class, propertyNamingStrategy);
+        } catch (Exception e) {
+            // the provided value does not correspond to any of the defined constants, so let's see if it's actually a class name
+            try {
+                var clazz = Thread.currentThread().getContextClassLoader().loadClass(propertyNamingStrategy);
+                if (PropertyNamingStrategy.class.isAssignableFrom(clazz)) {
+                    return Optional.of(propertyNamingStrategy);
+
+                }
+                throw new RuntimeException(invalidPropertyNameStrategyValueMessage(propertyNamingStrategy));
+            } catch (ClassNotFoundException ex) {
+                throw new RuntimeException(invalidPropertyNameStrategyValueMessage(propertyNamingStrategy));
+            }
+        }
+
+        try {
+            // we have a matching field, so let's see if the type is correct
+            Class<?> clazz = field.get(null).getClass();
+            if (PropertyNamingStrategy.class.isAssignableFrom(clazz)) {
+                return Optional.of(clazz.getName());
+            }
+            throw new RuntimeException(invalidPropertyNameStrategyValueMessage(propertyNamingStrategy));
+        } catch (IllegalAccessException e) {
+            // shouldn't ever happen
+            throw new RuntimeException(invalidPropertyNameStrategyValueMessage(propertyNamingStrategy));
+        }
+    }
+
+    private static String invalidPropertyNameStrategyValueMessage(String propertyNamingStrategy) {
+        return "Unable to determine the property naming strategy for value '" + propertyNamingStrategy
+                + "'. Make sure that the value is either a fully qualified class name of a subclass of '"
+                + PropertyNamingStrategy.class.getName()
+                + "' or one of the constants defined in '" + PropertyNamingStrategies.class.getName() + "'.";
     }
 }

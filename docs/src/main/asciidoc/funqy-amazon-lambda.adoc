@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Funqy Amazon Lambda Binding
 :extension-status: preview
 :devtools-no-gradle:
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains Funqy's Amazon Lambda binding.
 

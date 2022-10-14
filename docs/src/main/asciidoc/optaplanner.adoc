@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = OptaPlanner - Using AI to optimize a schedule with OptaPlanner
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: business-automation
 :summary: This guide walks you through the process of creating a Quarkus application with OptaPlanner's constraint solving Artificial Intelligence (AI).
 :config-file: application.properties

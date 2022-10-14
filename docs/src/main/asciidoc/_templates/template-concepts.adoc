@@ -9,7 +9,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 TODO: If this is a concept related to an experimental or tech-preview extension, uncomment the following and set the appropriate status (otherwise delete)
 :extension-status: preview
 ////
-include::attributes.adoc[]
+include::_attributes.adoc[]
 
 A short introduction that summarizes or frames the concept.
 This summary should help a reader determine whether or not this document is what they want to read.

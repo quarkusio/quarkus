@@ -5,7 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Hibernate Search guide
 :hibernate-search-doc-prefix: https://docs.jboss.org/hibernate/search/6.1/reference/en-US/html_single/
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: data
 :summary: Hibernate Search allows you to index your entities in an Elasticsearch cluster and easily offer full text search in all your Hibernate ORM-based applications.
 

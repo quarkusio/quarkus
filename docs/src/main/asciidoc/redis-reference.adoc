@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Redis Extension Reference Guide
 
 :extension-status: preview
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :numbered:
 :sectnums:
 

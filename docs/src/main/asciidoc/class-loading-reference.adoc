@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Class Loading Reference
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: architecture
 :summary: Learn more about Quarkus class loading infrastructure.
 

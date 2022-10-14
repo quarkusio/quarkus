@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Stork Reference Guide
 :extension-status: preview
 
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 
 This guide is the companion from the xref:stork.adoc[Stork Getting Started Guide].
 It explains the configuration and usage of SmallRye Stork integration in Quarkus.

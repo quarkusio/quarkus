@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Creating Your First Application
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: getting-started
 :summary: Discover how to create your first Quarkus application.
 :toc: macro

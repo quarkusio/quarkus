@@ -9,5 +9,5 @@
 :doc-examples: ./_examples
 :generated-dir: ../../../../target/asciidoc/generated
 :imagesdir: ./images
-:includes: ./includes
+:includes: ./_includes
 :toc: preamble

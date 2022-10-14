@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = OpenID Connect (OIDC) authorization code flow mechanism
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: security
 :summary: This guide demonstrates how to use the OpenID Connect Extension to protect your web application based on the Authorization Code Flow using Quarkus.
 :toc:

@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Extension for Spring Data REST
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: compatibility
 :summary: Spring Data REST simplifies the creation of CRUD applications based on our Spring Data compatibility layer.
 :extension-status: preview

@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = CDI Integration Guide
 :categories: writing-extensions
 :summary: Learn how to integrate your extension with Quarkus' CDI container.
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :numbered:
 :toc:
 :toclevels: 2

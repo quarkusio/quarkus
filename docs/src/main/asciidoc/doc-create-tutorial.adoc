@@ -5,7 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="tutorial-doc-create-tutorial"]
 = Creating a tutorial
-include::attributes.adoc[]
+include::_attributes.adoc[]
 :categories: contributing
 
 Create a new tutorial that guides users through creating, running, and testing a Quarkus application that uses annotations from an imaginary extension.
@@ -42,7 +42,7 @@ Copy `docs/src/main/diataxis/_templates/template-tutorial.adoc` from the Quarkus
 [id="tutorial-acme-serve-http-requests"] // <1>
 = Serve Http requests using the Acme extension // <2>
 :extension-status: experimental // <3>
-include::attributes.adoc[] // <4>
+include::_attributes.adoc[] // <4>
 ----
 
 <1> Specify a unique id for the section in lower-kebab-case.

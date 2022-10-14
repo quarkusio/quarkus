@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Simplified Hibernate ORM with Panache and Kotlin
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: data, alt-languages
 :summary: This explains the specifics of using Hibernate ORM with Panache in a Kotlin project.
 :config-file: application.properties

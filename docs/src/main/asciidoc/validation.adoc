@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Validation with Hibernate Validator
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: web, data
 :summary: This guide covers how to use Hibernate Validator/Bean Validation in your REST services.
 

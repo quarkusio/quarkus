@@ -6,9 +6,12 @@ public class MethodProperties {
 
     private final String path;
 
-    public MethodProperties(boolean exposed, String path) {
+    private final String[] rolesAllowed;
+
+    public MethodProperties(boolean exposed, String path, String[] rolesAllowed) {
         this.exposed = exposed;
         this.path = path;
+        this.rolesAllowed = rolesAllowed;
     }
 
     public boolean isExposed() {
@@ -17,5 +20,9 @@ public class MethodProperties {
 
     public String getPath() {
         return path;
+    }
+
+    public String[] getRolesAllowed() {
+        return rolesAllowed;
     }
 }

@@ -29,10 +29,12 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoop;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
@@ -105,6 +107,16 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     public ServerHttpResponse serverResponse() {
         return this;
+    }
+
+    @Override
+    protected void setQueryParamsFrom(String uri) {
+        MultiMap map = context.queryParams();
+        map.clear();
+        Map<String, List<String>> decodedParams = new QueryStringDecoder(uri).parameters();
+        for (Map.Entry<String, List<String>> entry : decodedParams.entrySet()) {
+            map.add(entry.getKey(), entry.getValue());
+        }
     }
 
     @Override

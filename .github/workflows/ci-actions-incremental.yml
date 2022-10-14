@@ -712,10 +712,13 @@ jobs:
         if: startsWith(matrix.os-name, 'windows')
       - name: Setup GraalVM
         id: setup-graalvm
-        uses: DeLaGuardo/setup-graalvm@master
+        uses: graalvm/setup-graalvm@v1
         if: startsWith(matrix.os-name, 'windows')
         with:
-          graalvm-version: '21.3.0.java11'
+          version: 'latest'
+          java-version: '17'
+          components: 'native-image'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install native-image component
         if: startsWith(matrix.os-name, 'windows')
         run: |

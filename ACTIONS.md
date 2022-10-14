@@ -96,8 +96,8 @@ To create cleanup and setup scripts and hooks, run:
 echo "rm -rf /Users/githubactions/actions-runner/_work" > /Users/githubactions/runner-cleanup.sh
 echo "podman machine info | grep Running || podman machine start" >> /Users/githubactions/podman-start.sh
 chmod a+x /Users/githubactions/runner-cleanup.sh
-echo ACTIONS_RUNNER_HOOK_JOB_STARTED=/Users/githubactions/runner-cleanup.sh >> .env
-echo ACTIONS_RUNNER_HOOK_JOB_COMPLETED=/Users/githubactions/podman-start.sh >> .env
+echo ACTIONS_RUNNER_HOOK_JOB_COMPLETED=/Users/githubactions/runner-cleanup.sh >> .env
+echo ACTIONS_RUNNER_HOOK_JOB_STARTED=/Users/githubactions/podman-start.sh >> .env
 ```
 
 

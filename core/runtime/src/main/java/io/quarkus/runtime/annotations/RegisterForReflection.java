@@ -47,7 +47,8 @@ public @interface RegisterForReflection {
     boolean serialization() default false;
 
     /**
-     * The lambda capturing types performing serialization in the native image
+     * The lambda capturing types performing serialization in the native image. This parameter is only supported when
+     * using GraalVM / Mandrel >= 22.1.0
      */
     String[] lambdaCapturingTypes() default {};
 }

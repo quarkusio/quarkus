@@ -19,6 +19,7 @@ import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
+import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -173,41 +174,65 @@ public class NativeImageFeatureStep {
         // Register Lambda Capturing Types
         if (!lambdaCapturingTypeBuildItems.isEmpty()) {
 
-            BranchResult graalVm22_3Test = duringSetup
-                    .ifGreaterEqualZero(duringSetup.invokeVirtualMethod(VERSION_COMPARE_TO,
-                            duringSetup.invokeStaticMethod(VERSION_CURRENT),
-                            duringSetup.marshalAsArray(int.class, duringSetup.load(22), duringSetup.load(3))));
-            /* GraalVM >= 22.3 */
-            try (BytecodeCreator greaterThan22_2 = graalVm22_3Test.trueBranch()) {
-                MethodDescriptor registerLambdaCapturingClass = ofMethod(RUNTIME_SERIALIZATION, "registerLambdaCapturingClass",
-                        void.class, Class.class);
-                for (LambdaCapturingTypeBuildItem i : lambdaCapturingTypeBuildItems) {
-                    TryBlock tryBlock = greaterThan22_2.tryBlock();
+            ResultHandle currentVersionHandle = duringSetup.invokeStaticMethod(VERSION_CURRENT);
+            BranchResult graalVm22_1Test = duringSetup
+                    .ifLessThanZero(duringSetup.invokeVirtualMethod(VERSION_COMPARE_TO,
+                            currentVersionHandle,
+                            duringSetup.marshalAsArray(int.class, duringSetup.load(22), duringSetup.load(1))));
 
-                    tryBlock.invokeStaticMethod(registerLambdaCapturingClass,
-                            tryBlock.loadClassFromTCCL(i.getClassName()));
-
-                    CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
-                    catchBlock.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class),
-                            catchBlock.getCaughtException());
-                }
+            /* GraalVM < 22.1 */
+            try (BytecodeCreator smallerThan22_1 = graalVm22_1Test.trueBranch()) {
+                //     private static final Logger log = Logger.getLogger(NativeImageBuildStep.class);
+                ResultHandle logHandle = smallerThan22_1.invokeStaticMethod(
+                        ofMethod(Logger.class, "getLogger", Logger.class, Class.class),
+                        smallerThan22_1.loadClassFromTCCL(GRAAL_FEATURE));
+                smallerThan22_1.invokeVirtualMethod(ofMethod(Logger.class, "warn", void.class, Object.class), logHandle,
+                        smallerThan22_1.load(
+                                "The \"lambdaCapturingTypes\" parameter of annotation \"RegisterForReflection\" is not supported when using GraalVM < 22.1.0. "
+                                        +
+                                        "It will thus be ignored in this build, please use a newer version of GraalVM if your application relies on it."));
             }
-            /* GraalVM < 22.3 */
-            try (BytecodeCreator smallerThan22_3 = graalVm22_3Test.falseBranch()) {
-                ResultHandle runtimeSerializationSupportSingleton = smallerThan22_3.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
-                        smallerThan22_3.loadClassFromTCCL("org.graalvm.nativeimage.impl.RuntimeSerializationSupport"));
-                ResultHandle configAlwaysTrue = smallerThan22_3.invokeStaticMethod(CONFIGURATION_ALWAYS_TRUE);
 
-                for (LambdaCapturingTypeBuildItem i : lambdaCapturingTypeBuildItems) {
-                    TryBlock tryBlock = smallerThan22_3.tryBlock();
+            /* GraalVM >= 22.1 */
+            try (BytecodeCreator greaterThan22_1 = graalVm22_1Test.falseBranch()) {
+                BranchResult graalVm22_3Test = greaterThan22_1
+                        .ifGreaterEqualZero(greaterThan22_1.invokeVirtualMethod(VERSION_COMPARE_TO,
+                                currentVersionHandle,
+                                greaterThan22_1.marshalAsArray(int.class, greaterThan22_1.load(22), greaterThan22_1.load(3))));
+                /* GraalVM >= 22.3 */
+                try (BytecodeCreator greaterThan22_2 = graalVm22_3Test.trueBranch()) {
+                    MethodDescriptor registerLambdaCapturingClass = ofMethod(RUNTIME_SERIALIZATION,
+                            "registerLambdaCapturingClass",
+                            void.class, Class.class);
+                    for (LambdaCapturingTypeBuildItem i : lambdaCapturingTypeBuildItems) {
+                        TryBlock tryBlock = greaterThan22_2.tryBlock();
 
-                    tryBlock.invokeInterfaceMethod(REGISTER_LAMBDA_CAPTURING_CLASS, runtimeSerializationSupportSingleton,
-                            configAlwaysTrue,
-                            tryBlock.load(i.getClassName()));
+                        tryBlock.invokeStaticMethod(registerLambdaCapturingClass,
+                                tryBlock.loadClassFromTCCL(i.getClassName()));
 
-                    CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
-                    catchBlock.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class),
-                            catchBlock.getCaughtException());
+                        CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
+                        catchBlock.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class),
+                                catchBlock.getCaughtException());
+                    }
+                }
+                /* GraalVM < 22.3 */
+                try (BytecodeCreator smallerThan22_3 = graalVm22_3Test.falseBranch()) {
+                    ResultHandle runtimeSerializationSupportSingleton = smallerThan22_3.invokeStaticMethod(
+                            IMAGE_SINGLETONS_LOOKUP,
+                            smallerThan22_3.loadClassFromTCCL("org.graalvm.nativeimage.impl.RuntimeSerializationSupport"));
+                    ResultHandle configAlwaysTrue = smallerThan22_3.invokeStaticMethod(CONFIGURATION_ALWAYS_TRUE);
+
+                    for (LambdaCapturingTypeBuildItem i : lambdaCapturingTypeBuildItems) {
+                        TryBlock tryBlock = smallerThan22_3.tryBlock();
+
+                        tryBlock.invokeInterfaceMethod(REGISTER_LAMBDA_CAPTURING_CLASS, runtimeSerializationSupportSingleton,
+                                configAlwaysTrue,
+                                tryBlock.load(i.getClassName()));
+
+                        CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
+                        catchBlock.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class),
+                                catchBlock.getCaughtException());
+                    }
                 }
             }
         }

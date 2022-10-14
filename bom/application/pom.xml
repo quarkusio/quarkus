@@ -150,7 +150,7 @@
         <azure-functions-java-library.version>1.4.2</azure-functions-java-library.version>
         <kotlin.version>1.7.20</kotlin.version>
         <kotlin.coroutine.version>1.6.4</kotlin.coroutine.version>
-        <kotlin-serialization.version>1.4.0</kotlin-serialization.version>
+        <kotlin-serialization.version>1.4.1</kotlin-serialization.version>
         <kubernetes-client.version>6.1.1</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <dekorate.version>3.0.0</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>

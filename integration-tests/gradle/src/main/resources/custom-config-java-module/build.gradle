@@ -41,3 +41,7 @@ quarkusBuild {
         attributes(['framework': 'quarkus'], 'org.acme')
     }
 }
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}

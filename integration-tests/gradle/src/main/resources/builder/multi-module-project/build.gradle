@@ -15,6 +15,9 @@ subprojects {
         implementation enforcedPlatform("io.quarkus:quarkus-bom:${quarkusPlatformVersion}")
     }
 
+    test {
+        systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+    }
 }
 
 group 'org.acme'

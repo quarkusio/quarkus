@@ -51,4 +51,9 @@ task functionalTest(type: Test, description: 'Functional tests', dependsOn: [pro
         showStandardStreams = true
     }
     systemProperty 'quarkus.http.host', 'localhost'
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
 }

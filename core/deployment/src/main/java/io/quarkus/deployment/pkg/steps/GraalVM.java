@@ -23,14 +23,10 @@ public final class GraalVM {
         static final Version UNVERSIONED = new Version("Undefined", "snapshot", Distribution.ORACLE);
         static final Version VERSION_21_3 = new Version("GraalVM 21.3", "21.3", Distribution.ORACLE);
         static final Version VERSION_21_3_0 = new Version("GraalVM 21.3.0", "21.3.0", Distribution.ORACLE);
-        static final Version VERSION_21_3_2 = new Version("GraalVM 21.3.2", "21.3.2", Distribution.ORACLE);
-        static final Version VERSION_22_0_0_2 = new Version("GraalVM 22.0.0.2", "22.0.0.2", Distribution.ORACLE);
         public static final Version VERSION_22_3_0 = new Version("GraalVM 22.3.0", "22.3.0", Distribution.ORACLE);
+        public static final Version VERSION_22_2_0 = new Version("GraalVM 22.2.0", "22.2.0", Distribution.ORACLE);
 
-        public static final Version VERSION_22_1_0 = new Version("GraalVM 22.1.0", "22.1.0", Distribution.ORACLE);
-        static final Version VERSION_22_2_0 = new Version("GraalVM 22.2.0", "22.2.0", Distribution.ORACLE);
-
-        public static final Version MINIMUM = VERSION_21_3;
+        public static final Version MINIMUM = VERSION_22_2_0;
         public static final Version CURRENT = VERSION_22_2_0;
         public static final int UNDEFINED = -1;
 

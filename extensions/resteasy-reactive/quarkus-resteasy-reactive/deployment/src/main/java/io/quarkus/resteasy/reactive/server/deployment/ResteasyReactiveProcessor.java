@@ -86,6 +86,7 @@ import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
+import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
 import org.jboss.resteasy.reactive.server.model.Features;
@@ -185,12 +186,14 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 public class ResteasyReactiveProcessor {
@@ -1147,11 +1150,13 @@ public class ResteasyReactiveProcessor {
                 .produce(new ResteasyReactiveDeploymentBuildItem(deployment, deploymentPath));
 
         if (!requestContextFactoryBuildItem.isPresent()) {
-            Handler<RoutingContext> handler = recorder.handler(deployment);
+            RuntimeValue<RestInitialHandler> restInitialHandler = recorder.restInitialHandler(deployment);
+            Handler<RoutingContext> handler = recorder.handler(restInitialHandler);
+            Consumer<Route> addFailureHandler = recorder.addFailureHandler(restInitialHandler);
 
             // Exact match for resources matched to the root path
             routes.produce(RouteBuildItem.builder()
-                    .orderedRoute(deploymentPath, order).handler(handler).build());
+                    .orderedRoute(deploymentPath, order, addFailureHandler).handler(handler).build());
             String matchPath = deploymentPath;
             if (matchPath.endsWith("/")) {
                 matchPath += "*";
@@ -1160,9 +1165,16 @@ public class ResteasyReactiveProcessor {
             }
             // Match paths that begin with the deployment path
             routes.produce(
-                    RouteBuildItem.builder().orderedRoute(matchPath, order)
+                    RouteBuildItem.builder().orderedRoute(matchPath, order, addFailureHandler)
                             .handler(handler).build());
         }
+    }
+
+    @BuildStep
+    @Record(value = ExecutionTime.STATIC_INIT)
+    public FilterBuildItem addDefaultAuthFailureHandler(ResteasyReactiveRecorder recorder) {
+        // replace default auth failure handler added by vertx-http so that our exception mappers can customize response
+        return new FilterBuildItem(recorder.defaultAuthFailureHandler(), FilterBuildItem.AUTHENTICATION - 1);
     }
 
     private void checkForDuplicateEndpoint(ResteasyReactiveConfig config, Map<String, List<EndpointConfig>> allMethods) {

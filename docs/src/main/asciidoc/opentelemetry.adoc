@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using OpenTelemetry
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: observability
 :summary: This guide explains how your Quarkus application can utilize OpenTelemetry to provide distributed tracing for interactive web applications.
 

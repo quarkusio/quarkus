@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Funqy
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains basics of the Funqy framework, a simple portable cross-provider cloud function API.
 :extension-status: preview

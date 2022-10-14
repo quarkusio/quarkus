@@ -5,7 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Authorization of Web Endpoints
 
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 
 Quarkus has an integrated pluggable web security layer. If security is enabled all HTTP requests will have a permission
 check performed to make sure they are allowed to continue.

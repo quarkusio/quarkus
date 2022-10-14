@@ -5,7 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using OpenTracing
 :extension-status: deprecated
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: observability
 :summary: This guide explains how your Quarkus application can utilize OpenTracing to provide distributed tracing for interactive web applications.
 

@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Blaze-Persistence
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: data
 :summary: This guide explains how to use Blaze-Persistence to simplify your data and DTO layers.
 :config-file: application.properties
@@ -17,7 +17,7 @@ queries which are then transformed to optimized queries that only fetch the data
 The same DTO definitions can further be used for applying database updates, leading to a great reduction in boilerplate
 code and removing the need for object mapping tools.
 
-include::./platform-include.adoc[]
+include::{includes}/platform-include.adoc[]
 
 == Setting up and configuring Blaze-Persistence
 
@@ -223,7 +223,7 @@ When no property is set, the Blaze-Persistence defaults apply.
 
 The configuration properties listed here allow you to override such defaults, and customize and tune various aspects.
 
-include::quarkus-blaze-persistence.adoc[opts=optional, leveloffset=+2]
+include::{includes}/quarkus-blaze-persistence.adoc[opts=optional, leveloffset=+2]
 
 Apart from these configuration options, further configuration and customization can be applied by observing a `CriteriaBuilderConfiguration` or `EntityViewConfiguration` events and applying customizations on these objects. The various customization use cases can be found in the link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#quarkus-customization[Quarkus section of the entity-view documentation].
 

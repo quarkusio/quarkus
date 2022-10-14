@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using OpenID Connect (OIDC) and Keycloak to Centralize Authorization
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: security
 :summary: This guide demonstrates how your Quarkus application can authorize access to protected resources using Keycloak Authorization Services.
 

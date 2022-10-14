@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = How dev mode differs from a production application
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: architecture
 :summary: How dev mode differs from a production application
 

@@ -5,7 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Security Testing
 
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 
 This document describes how to test Quarkus Security.
 

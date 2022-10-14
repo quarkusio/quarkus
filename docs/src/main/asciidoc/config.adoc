@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Configuring Your Application
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: core
 :summary: Hardcoded values in your code is a no go (even if we all did it at some point ;-)). In this guide, we learn how to configure your application.
 

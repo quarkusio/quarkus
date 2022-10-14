@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using SSL With Native Executables
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: core
 :summary: In this guide, we will discuss how you can get your native images to support SSL, as native images don't support it out of the box.
 :devtools-no-gradle:

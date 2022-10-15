@@ -372,9 +372,9 @@ public abstract class QuarkusDevModeLauncher {
             throw new Exception("The specified debug port must be greater than 0");
         }
 
-        if (debug != null && debug.toLowerCase().equals("client")) {
+        if (debug != null && debug.equalsIgnoreCase("client")) {
             args.add("-agentlib:jdwp=transport=dt_socket,address=" + debugHost + ":" + port + ",server=n,suspend=" + suspend);
-        } else if (debug == null || !debug.toLowerCase().equals("false")) {
+        } else if (debug == null || !debug.equalsIgnoreCase("false")) {
             // make sure the debug port is not used, we don't want to just fail if something else is using it
             // we don't check this on restarts, as the previous process is still running
             if (debugPortOk == null) {

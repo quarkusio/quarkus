@@ -28,6 +28,7 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 
+import org.jboss.resteasy.reactive.common.NotImplementedYet;
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
@@ -470,11 +471,15 @@ public abstract class ResteasyReactiveRequestContext
         this.path = requestURI.getPath();
         this.authority = requestURI.getRawAuthority();
         this.scheme = requestURI.getScheme();
-        // FIXME: it's possible we may have to also update the query part
+        setQueryParamsFrom(requestURI.toString());
         // invalidate those
         this.uriInfo = null;
         this.absoluteUri = null;
         return this;
+    }
+
+    protected void setQueryParamsFrom(String uri) {
+        throw new NotImplementedYet();
     }
 
     /**

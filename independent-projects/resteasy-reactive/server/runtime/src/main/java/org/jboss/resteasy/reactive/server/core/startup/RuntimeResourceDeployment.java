@@ -312,8 +312,8 @@ public class RuntimeResourceDeployment {
                 // we only need to parse the signature and create generic type when the declared type differs from the type
                 genericType = TypeSignatureParser.parse(bodyParameter.signature);
             }
-            handlers.add(new RequestDeserializeHandler(typeClass, genericType,
-                    consumesMediaTypes.isEmpty() ? null : consumesMediaTypes.get(0), serialisers, bodyParameterIndex));
+            handlers.add(new RequestDeserializeHandler(typeClass, genericType, consumesMediaTypes, serialisers,
+                    bodyParameterIndex));
         }
 
         // given that we may inject form params in the endpoint we need to make sure we read the body before

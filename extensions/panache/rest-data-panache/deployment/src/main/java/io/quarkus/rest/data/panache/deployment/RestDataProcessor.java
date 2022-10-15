@@ -65,8 +65,7 @@ public class RestDataProcessor {
 
         ClassOutput classOutput = isResteasyClassic ? new GeneratedBeanGizmoAdaptor(resteasyClassicImplementationsProducer)
                 : new GeneratedJaxRsResourceGizmoAdaptor(resteasyReactiveImplementationsProducer);
-        JaxRsResourceImplementor jaxRsResourceImplementor = new JaxRsResourceImplementor(hasValidatorCapability(capabilities),
-                isResteasyClassic, isReactivePanache);
+        JaxRsResourceImplementor jaxRsResourceImplementor = new JaxRsResourceImplementor(capabilities);
         ResourcePropertiesProvider resourcePropertiesProvider = new ResourcePropertiesProvider(index.getIndex());
 
         for (RestDataResourceBuildItem resourceBuildItem : resourceBuildItems) {
@@ -98,10 +97,6 @@ public class RestDataProcessor {
             }
         }
         return resourcePropertiesProvider.getForInterface(resourceMetadata.getResourceInterface());
-    }
-
-    private boolean hasValidatorCapability(Capabilities capabilities) {
-        return capabilities.isPresent(Capability.HIBERNATE_VALIDATOR);
     }
 
     private boolean hasAnyJsonCapabilityForResteasyClassic(Capabilities capabilities) {

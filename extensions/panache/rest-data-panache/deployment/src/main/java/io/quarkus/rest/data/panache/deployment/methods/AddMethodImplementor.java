@@ -6,6 +6,7 @@ import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreat
 import javax.validation.Valid;
 import javax.ws.rs.core.Response;
 
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
@@ -28,11 +29,8 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
 
     private static final String REL = "add";
 
-    private final boolean withValidation;
-
-    public AddMethodImplementor(boolean withValidation, boolean isResteasyClassic, boolean isReactivePanache) {
-        super(isResteasyClassic, isReactivePanache);
-        this.withValidation = withValidation;
+    public AddMethodImplementor(Capabilities capabilities) {
+        super(capabilities);
     }
 
     /**
@@ -112,8 +110,9 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
         addProducesJsonAnnotation(methodCreator, resourceProperties);
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addSecurityAnnotations(methodCreator, resourceProperties);
         // Add parameter annotations
-        if (withValidation) {
+        if (hasValidatorCapability()) {
             methodCreator.getParameterAnnotations(0).addAnnotation(Valid.class);
         }
 

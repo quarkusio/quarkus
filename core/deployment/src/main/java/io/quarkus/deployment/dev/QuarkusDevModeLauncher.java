@@ -494,6 +494,10 @@ public abstract class QuarkusDevModeLauncher {
         return args;
     }
 
+    public Boolean getDebugPortOk() {
+        return debugPortOk;
+    }
+
     protected abstract boolean isDebugEnabled();
 
     protected void debug(Object msg, Object... args) {

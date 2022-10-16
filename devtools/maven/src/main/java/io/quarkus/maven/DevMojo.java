@@ -438,7 +438,7 @@ public class DevMojo extends AbstractMojo {
                         try {
                             triggerCompile(false, false);
                             triggerCompile(true, false);
-                            newRunner = new DevModeRunner();
+                            newRunner = new DevModeRunner(runner.launcher.getDebugPortOk());
                         } catch (Exception e) {
                             getLog().info("Could not load changed pom.xml file, changes not applied", e);
                             continue;
@@ -889,7 +889,11 @@ public class DevMojo extends AbstractMojo {
         private Process process;
 
         private DevModeRunner() throws Exception {
-            launcher = newLauncher();
+            launcher = newLauncher(null);
+        }
+
+        private DevModeRunner(Boolean debugPortOk) throws Exception {
+            launcher = newLauncher(debugPortOk);
         }
 
         Collection<Path> pomFiles() {
@@ -943,7 +947,7 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
-    private QuarkusDevModeLauncher newLauncher() throws Exception {
+    private QuarkusDevModeLauncher newLauncher(Boolean debugPortOk) throws Exception {
         String java = null;
         // See if a toolchain is configured
         if (toolchainManager != null) {
@@ -962,6 +966,7 @@ public class DevMojo extends AbstractMojo {
                 .debug(debug)
                 .debugHost(debugHost)
                 .debugPort(debugPort)
+                .debugPortOk(debugPortOk)
                 .deleteDevJar(deleteDevJar);
 
         setJvmArgs(builder);

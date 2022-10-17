@@ -5,6 +5,7 @@ import io.quarkus.redis.datasource.bloom.ReactiveTransactionalBloomCommands;
 import io.quarkus.redis.datasource.countmin.ReactiveTransactionalCountMinCommands;
 import io.quarkus.redis.datasource.cuckoo.ReactiveTransactionalCuckooCommands;
 import io.quarkus.redis.datasource.geo.ReactiveTransactionalGeoCommands;
+import io.quarkus.redis.datasource.graph.ReactiveTransactionalGraphCommands;
 import io.quarkus.redis.datasource.hash.ReactiveTransactionalHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveTransactionalHyperLogLogCommands;
 import io.quarkus.redis.datasource.json.ReactiveTransactionalJsonCommands;
@@ -15,6 +16,7 @@ import io.quarkus.redis.datasource.sortedset.ReactiveTransactionalSortedSetComma
 import io.quarkus.redis.datasource.string.ReactiveTransactionalStringCommands;
 import io.quarkus.redis.datasource.topk.ReactiveTransactionalTopKCommands;
 import io.quarkus.redis.datasource.value.ReactiveTransactionalValueCommands;
+import io.smallrye.common.annotation.Experimental;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Command;
 
@@ -385,6 +387,27 @@ public interface ReactiveTransactionalRedisDataSource {
      * @return the object to manipulate top-k lists.
      */
     <K, V> ReactiveTransactionalTopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType);
+
+    /**
+     * Gets the object to manipulate graphs.
+     * This group requires the <a href="https://redis.io/docs/stack/graph/">RedisGraph module</a>.
+     *
+     * @return the object to manipulate graphs lists.
+     */
+    @Experimental("The Redis graph support is experimental")
+    default ReactiveTransactionalGraphCommands<String> graph() {
+        return graph(String.class);
+    }
+
+    /**
+     * Gets the object to manipulate graphs.
+     * This group requires the <a href="https://redis.io/docs/stack/graph/">RedisGraph module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to manipulate graphs lists.
+     */
+    @Experimental("The Redis graph support is experimental")
+    <K> ReactiveTransactionalGraphCommands<K> graph(Class<K> redisKeyType);
 
     /**
      * Executes a command.

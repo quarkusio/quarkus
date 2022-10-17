@@ -15,6 +15,7 @@ import io.quarkus.redis.datasource.bloom.ReactiveBloomCommands;
 import io.quarkus.redis.datasource.countmin.ReactiveCountMinCommands;
 import io.quarkus.redis.datasource.cuckoo.ReactiveCuckooCommands;
 import io.quarkus.redis.datasource.geo.ReactiveGeoCommands;
+import io.quarkus.redis.datasource.graph.ReactiveGraphCommands;
 import io.quarkus.redis.datasource.hash.ReactiveHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveHyperLogLogCommands;
 import io.quarkus.redis.datasource.json.ReactiveJsonCommands;
@@ -305,6 +306,11 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     @Override
     public <K, V> ReactiveTopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType) {
         return new ReactiveTopKCommandsImpl<>(this, redisKeyType, valueType);
+    }
+
+    @Override
+    public <K> ReactiveGraphCommands<K> graph(Class<K> redisKeyType) {
+        return new ReactiveGraphCommandsImpl<>(this, redisKeyType);
     }
 
     @Override

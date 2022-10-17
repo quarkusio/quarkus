@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using the MongoDB Client
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: data
 :summary: This guide covers how to use MongoDB in Quarkus.
 

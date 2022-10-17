@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Redis Extension Reference Guide
 
 :extension-status: preview
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :numbered:
 :sectnums:
 
@@ -282,6 +282,8 @@ As mentioned above, the API is divided into groups:
 - cuckoo - `.cuckoo()` (requires the https://redis.com/modules/redis-bloom/[redis-bloom] module on the server side, which also provides the cuckoo filter commands)
 - count-min - `.countmin()` (requires the https://redis.com/modules/redis-bloom/[redis-bloom] module on the server side, which also provides the count-min filter commands)
 - top-k - `.topk()` (requires the https://redis.com/modules/redis-bloom/[redis-bloom] module on the server side, which also provides the top-k filter commands)
+- graph - `.graph()` (requires the https://redis.com/modules/redis-graph/[redis-graph] module on the server side, which also provides the graph commands)
+These commands are marked as experimental, as we would need feedback before making them stable.
 
 Each of these methods returns an object that lets you execute the commands related to the group.
 The following snippet demonstrates how to use the _hash_ group:

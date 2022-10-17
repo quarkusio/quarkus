@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Apache Kafka Reference Guide
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: messaging
 :summary: This reference guide provides an in-depth look on Apache Kafka and Smallrye Reactive Messaging framework.
 :numbered:
@@ -2066,7 +2066,7 @@ The consumer `client.id` is configured according to the number of clients to cre
 - If a `client.id` is not provided, it is generated as `kafka-consumer-[channel][-index]`.
 
 
-include::smallrye-kafka-incoming.adoc[]
+include::{includes}/smallrye-kafka-incoming.adoc[]
 
 === Outgoing channel configuration (writing to Kafka)
 
@@ -2101,7 +2101,7 @@ If not set, `key.serializer` is set to `org.apache.kafka.common.serialization.St
 
 If not set, producer `client.id` is generated as `kafka-producer-[channel]`.
 
-include::smallrye-kafka-outgoing.adoc[]
+include::{includes}/smallrye-kafka-outgoing.adoc[]
 
 [[kafka-configuration-resolution]]
 === Kafka Configuration Resolution

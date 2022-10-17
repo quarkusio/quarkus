@@ -4,18 +4,15 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Generating JAX-RS resources with Panache
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: web
 :summary: Hibernate ORM REST Data with Panache simplifies the creation of CRUD applications based on JAX-RS and Hibernate ORM.
-:extension-status: experimental
 
 A lot of web applications are monotonous CRUD applications with REST APIs that are tedious to write.
 To streamline this task, REST Data with Panache extension can generate the basic CRUD endpoints for your entities and repositories.
 
 While this extension is still experimental and provides a limited feature set, we hope to get an early feedback for it.
 Currently, this extension supports Hibernate ORM and MongoDB with Panache and can generate CRUD resources that work with `application/json` and `application/hal+json` content.
-
-include::{includes}/extension-status.adoc[]
 
 == Setting up REST Data with Panache
 
@@ -310,6 +307,7 @@ public interface PeopleResource extends PanacheEntityResource<Person, Long> {
 
 * `exposed` - whether resource could be exposed. A global resource property that can be overridden for each method. Default is `true`.
 * `path` - resource base path. Default path is a hyphenated lowercase resource name without a suffix of `resource` or `controller`.
+* `rolesAllowed` - List of the security roles permitted to access the resources. It needs a Quarkus security extension to be present, otherwise it will be ignored. Default is empty.
 * `paged` - whether collection responses should be paged or not.
 First, last, previous and next page URIs are included in the response headers if they exist.
 Request page index and size are taken from the `page` and `size` query parameters that default to `0` and `20` respectively.
@@ -322,6 +320,7 @@ Default is `false`.
 
 * `exposed` - does not expose a particular HTTP verb when set to `false`. Default is `true`.
 * `path` - operation path (this is appended to the resource base path). Default is an empty string.
+* `rolesAllowed` - List of the security roles permitted to access this operation. It needs a Quarkus security extension to be present, otherwise it will be ignored. Default is empty.
 
 == Query parameters
 

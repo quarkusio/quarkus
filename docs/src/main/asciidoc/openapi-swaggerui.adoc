@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using OpenAPI and Swagger UI
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: web
 :summary: This guide explains how to use the OpenAPI extension to generate an OpenAPI descriptor and get a Swagger UI frontend to test your REST endpoints.
 

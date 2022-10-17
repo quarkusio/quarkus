@@ -1,5 +1,6 @@
 [id="security-basic-auth-concept"]
 = Basic Authentication
+include::_attributes.adoc[]
 
 HTTP Basic Authentication is one of the least resource-demanding techniques that enforce access controls to the Web resources.
 It uses fields in the HTTP header and does not require HTTP cookies, session identifiers, or login pages. 

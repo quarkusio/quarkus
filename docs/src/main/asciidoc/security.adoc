@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus Security overview
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: security
 :summary: This guide is the entry point for everything security in Quarkus.
 

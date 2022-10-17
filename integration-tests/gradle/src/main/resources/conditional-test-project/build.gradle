@@ -12,3 +12,7 @@ repositories {
     }
     mavenCentral()
 }
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}

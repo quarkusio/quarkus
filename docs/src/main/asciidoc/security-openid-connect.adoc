@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using OpenID Connect (OIDC) to Protect Service Applications using Bearer Token Authorization
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: security
 :summary: This guide demonstrates how your Quarkus application can use Keycloak to protect your JAX-RS applications using bearer token authorization, where these tokens are issued by a Keycloak server.
 :toc:

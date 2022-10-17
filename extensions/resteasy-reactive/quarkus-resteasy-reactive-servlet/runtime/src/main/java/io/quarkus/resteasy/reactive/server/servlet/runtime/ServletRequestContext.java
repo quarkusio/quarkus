@@ -34,6 +34,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 import io.netty.channel.EventLoop;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.impl.LazyValue;
@@ -44,6 +45,7 @@ import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ResponseCommitListener;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.net.impl.ConnectionBase;
@@ -110,6 +112,16 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     @Override
     public ServerHttpResponse serverResponse() {
         return this;
+    }
+
+    @Override
+    protected void setQueryParamsFrom(String uri) {
+        MultiMap map = context.queryParams();
+        map.clear();
+        Map<String, List<String>> decodedParams = new QueryStringDecoder(uri).parameters();
+        for (Map.Entry<String, List<String>> entry : decodedParams.entrySet()) {
+            map.add(entry.getKey(), entry.getValue());
+        }
     }
 
     protected void handleRequestScopeActivation() {

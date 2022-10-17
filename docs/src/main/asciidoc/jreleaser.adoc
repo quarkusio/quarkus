@@ -5,7 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Packaging And Releasing With JReleaser
 
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :jreleaser-version: 0.9.1
 
 :numbered:

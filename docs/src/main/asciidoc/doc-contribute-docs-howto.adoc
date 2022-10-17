@@ -5,7 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="howto-contribute-docs"]
 = How to contribute documentation
-include::attributes.adoc[]
+include::_attributes.adoc[]
 :categories: contributing
 :asciidoc: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/
 :quarkus-docs: {quarkus-base-url}/tree/main/docs

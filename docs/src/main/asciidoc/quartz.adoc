@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Scheduling Periodic Tasks with Quartz
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: miscellaneous
 :summary: You need clustering support for your scheduled tasks? This guide explains how to use the Quartz extension for that.
 :extension-status: preview

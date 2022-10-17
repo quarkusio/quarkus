@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = OpenID Connect Client and Token Propagation Quickstart
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: security
 :summary: This guide explains how to use OpenID Connect and OAuth2 Client and Filters to acquire, refresh and propagate access tokens.
 :toc:

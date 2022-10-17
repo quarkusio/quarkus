@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus Extension for Spring Web API
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: compatibility
 :summary: While you are encouraged to use JAX-RS annotations for defining REST endpoints, Quarkus provides a compatibility layer for Spring Web in the form of the spring-web extension.
 

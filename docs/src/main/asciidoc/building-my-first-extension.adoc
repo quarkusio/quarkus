@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Building my first extension
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: writing-extensions
 :summary: Learn step by step how to build a simple extension.
 

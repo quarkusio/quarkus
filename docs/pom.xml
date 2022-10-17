@@ -1616,32 +1616,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-opentelemetry-exporter-jaeger-deployment</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-opentelemetry-exporter-otlp-deployment</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-picocli-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -2818,14 +2792,14 @@
                                     <directory>src/main/asciidoc</directory>
                                     <filtering>false</filtering>
                                     <excludes>
-                                        <exclude>**/attributes.adoc</exclude>
+                                        <exclude>**/_attributes.adoc</exclude>
                                     </excludes>
                                 </resource>
                                 <resource>
                                     <directory>src/main/asciidoc</directory>
                                     <filtering>true</filtering>
                                     <includes>
-                                        <include>**/attributes.adoc</include>
+                                        <include>**/_attributes.adoc</include>
                                     </includes>
                                 </resource>
                             </resources>
@@ -2959,8 +2933,8 @@
                         <skip-front-matter>true</skip-front-matter>
                         <!--
                         Attributes are now maintained in:
-                        - src/main/asciidoc-filtered/attributes.adoc for attributes that are actually used in the doc content e.g. versions, urls.
-                        - src/main/asciidoc/attributes-local.adoc for technical attributes that have to be overridden in the website.
+                        - src/main/asciidoc/_attributes.adoc for attributes that are actually used in the doc content e.g. versions, urls.
+                        - src/main/asciidoc/_attributes-local.adoc for technical attributes that have to be overridden in the website.
                         -->
                     </attributes>
                 </configuration>

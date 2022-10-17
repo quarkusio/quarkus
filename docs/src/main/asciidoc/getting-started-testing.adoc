@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Testing Your Application
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: core
 :summary: This guide covers testing in JVM mode, native mode, and injection of resources into tests
 :toc: macro

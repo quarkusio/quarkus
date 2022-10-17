@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Simplified MongoDB with Panache and Kotlin
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: data, alt-languages
 :summary: This guide covers the usage of MongoDB using active records and repositories in a Kotlin project.
 :config-file: application.properties

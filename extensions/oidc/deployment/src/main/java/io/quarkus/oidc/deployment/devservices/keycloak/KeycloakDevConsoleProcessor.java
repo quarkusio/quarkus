@@ -36,6 +36,9 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
             devConsoleInfo.produce(
                     new DevConsoleTemplateInfoBuildItem("keycloakUsers",
                             configProps.get().getProperties().get("oidc.users")));
+            devConsoleInfo.produce(
+                    new DevConsoleTemplateInfoBuildItem("keycloakRealms",
+                            configProps.get().getProperties().get("keycloak.realms")));
 
             String realmUrl = configProps.get().getConfig().get("quarkus.oidc.auth-server-url");
             produceDevConsoleTemplateItems(capabilities,

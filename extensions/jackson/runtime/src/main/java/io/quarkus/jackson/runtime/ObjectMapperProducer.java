@@ -41,6 +41,10 @@ public class ObjectMapperProducer {
             // this feature is enabled by default, so we disable it
             objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         }
+        if (!jacksonBuildTimeConfig.writeDurationsAsTimestamps) {
+            // this feature is enabled by default, so we disable it
+            objectMapper.disable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS);
+        }
         if (jacksonBuildTimeConfig.acceptCaseInsensitiveEnums) {
             objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
         }

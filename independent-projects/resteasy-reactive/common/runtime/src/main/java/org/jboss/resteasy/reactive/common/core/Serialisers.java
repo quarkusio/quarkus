@@ -151,7 +151,11 @@ public abstract class Serialisers {
             }
 
         }
-        return toMessageBodyWriters(findResourceWriters(writers, klass, produces, runtimeType));
+
+        var resourceWriters = findResourceWriters(writers, klass, produces, runtimeType);
+        // we must NOT sort here because the spec mentions that the writers closer to the requested java type are tried first
+        // and the list has already been built up in this way
+        return toMessageBodyWriters(resourceWriters);
     }
 
     protected List<ResourceWriter> findResourceWriters(QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers, Class<?> klass,

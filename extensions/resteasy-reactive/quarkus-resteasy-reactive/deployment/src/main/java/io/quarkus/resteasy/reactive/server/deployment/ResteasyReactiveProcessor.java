@@ -42,6 +42,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Providers;
+import javax.ws.rs.ext.ReaderInterceptor;
+import javax.ws.rs.ext.WriterInterceptor;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -57,6 +59,8 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.InjectableBean;
+import org.jboss.resteasy.reactive.common.model.InterceptorContainer;
+import org.jboss.resteasy.reactive.common.model.PreMatchInterceptorContainer;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;
 import org.jboss.resteasy.reactive.common.model.ResourceFeature;
@@ -82,6 +86,7 @@ import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
+import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
 import org.jboss.resteasy.reactive.server.model.Features;
@@ -181,12 +186,14 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 public class ResteasyReactiveProcessor {
@@ -718,6 +725,75 @@ public class ResteasyReactiveProcessor {
         return ab.get();
     }
 
+    // We want to add @Typed to resources and providers so that they can be resolved as CDI bean using purely their
+    // class as a bean type. This removes any ambiguity that potential subclasses may have.
+    @BuildStep
+    public void transformEndpoints(
+            ResourceScanningResultBuildItem resourceScanningResultBuildItem,
+            ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
+            BuildProducer<io.quarkus.arc.deployment.AnnotationsTransformerBuildItem> annotationsTransformer) {
+
+        // all found resources and sub-resources
+        Set<DotName> allResources = new HashSet<>();
+        allResources.addAll(resourceScanningResultBuildItem.getResult().getScannedResources().keySet());
+        allResources.addAll(resourceScanningResultBuildItem.getResult().getPossibleSubResources().keySet());
+
+        // discovered filters and interceptors
+        Set<String> filtersAndInterceptors = new HashSet<>();
+        InterceptorContainer<ReaderInterceptor> readerInterceptors = resourceInterceptorsBuildItem.getResourceInterceptors()
+                .getReaderInterceptors();
+        readerInterceptors.getNameResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+        readerInterceptors.getGlobalResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+        InterceptorContainer<WriterInterceptor> writerInterceptors = resourceInterceptorsBuildItem.getResourceInterceptors()
+                .getWriterInterceptors();
+        writerInterceptors.getNameResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+        writerInterceptors.getGlobalResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+        PreMatchInterceptorContainer<ContainerRequestFilter> containerRequestFilters = resourceInterceptorsBuildItem
+                .getResourceInterceptors().getContainerRequestFilters();
+        containerRequestFilters.getPreMatchInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+        containerRequestFilters.getNameResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+        containerRequestFilters.getGlobalResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+        InterceptorContainer<ContainerResponseFilter> containerResponseFilters = resourceInterceptorsBuildItem
+                .getResourceInterceptors().getContainerResponseFilters();
+        containerResponseFilters.getGlobalResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+        containerResponseFilters.getNameResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
+
+        annotationsTransformer.produce(new io.quarkus.arc.deployment.AnnotationsTransformerBuildItem(
+                new io.quarkus.arc.processor.AnnotationsTransformer() {
+
+                    @Override
+                    public boolean appliesTo(AnnotationTarget.Kind kind) {
+                        return kind == AnnotationTarget.Kind.CLASS;
+                    }
+
+                    @Override
+                    public void transform(TransformationContext context) {
+                        ClassInfo clazz = context.getTarget().asClass();
+                        // check if the class is one of resources/sub-resources
+                        if (allResources.contains(clazz.name())
+                                && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
+                            context.transform().add(createTypedAnnotationInstance(clazz)).done();
+                            return;
+                        }
+                        // check if the class is one of providers, either explicitly declaring the annotation
+                        // or discovered as resource interceptor or filter
+                        if ((clazz.declaredAnnotation(ResteasyReactiveDotNames.PROVIDER) != null
+                                || filtersAndInterceptors.contains(clazz.name().toString()))
+                                && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
+                            // Add @Typed(MyResource.class)
+                            context.transform().add(createTypedAnnotationInstance(clazz)).done();
+                        }
+                    }
+                }));
+    }
+
+    private AnnotationInstance createTypedAnnotationInstance(ClassInfo clazz) {
+        return AnnotationInstance.create(ResteasyReactiveDotNames.TYPED, clazz,
+                new AnnotationValue[] { AnnotationValue.createArrayValue("value",
+                        new AnnotationValue[] { AnnotationValue.createClassValue("value",
+                                Type.create(clazz.name(), Type.Kind.CLASS)) }) });
+    }
+
     private Collection<DotName> additionalContextTypes(List<ContextTypeBuildItem> contextTypeBuildItems) {
         if (contextTypeBuildItems.isEmpty()) {
             return CONTEXT_TYPES;
@@ -921,11 +997,9 @@ public class ResteasyReactiveProcessor {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT, useIdentityComparisonForParameters = false)
-    public void setupDeployment(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            BeanContainerBuildItem beanContainerBuildItem,
+    public void setupDeployment(BeanContainerBuildItem beanContainerBuildItem,
             Capabilities capabilities,
             ResteasyReactiveConfig config,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
@@ -961,8 +1035,6 @@ public class ResteasyReactiveProcessor {
                 MediaType.class.getDeclaredConstructor(String.class, String.class, String.class),
                 mediaType -> Stream.of(mediaType.getType(), mediaType.getSubtype(), mediaType.getParameters())
                         .collect(toList()));
-
-        IndexView index = beanArchiveIndexBuildItem.getIndex();
 
         ApplicationScanningResult appResult = applicationResultBuildItem.getResult();
         Set<String> singletonClasses = appResult.getSingletonClasses();
@@ -1074,11 +1146,13 @@ public class ResteasyReactiveProcessor {
                 .produce(new ResteasyReactiveDeploymentBuildItem(deployment, deploymentPath));
 
         if (!requestContextFactoryBuildItem.isPresent()) {
-            Handler<RoutingContext> handler = recorder.handler(deployment);
+            RuntimeValue<RestInitialHandler> restInitialHandler = recorder.restInitialHandler(deployment);
+            Handler<RoutingContext> handler = recorder.handler(restInitialHandler);
+            Consumer<Route> addFailureHandler = recorder.addFailureHandler(restInitialHandler);
 
             // Exact match for resources matched to the root path
             routes.produce(RouteBuildItem.builder()
-                    .orderedRoute(deploymentPath, order).handler(handler).build());
+                    .orderedRoute(deploymentPath, order, addFailureHandler).handler(handler).build());
             String matchPath = deploymentPath;
             if (matchPath.endsWith("/")) {
                 matchPath += "*";
@@ -1087,9 +1161,16 @@ public class ResteasyReactiveProcessor {
             }
             // Match paths that begin with the deployment path
             routes.produce(
-                    RouteBuildItem.builder().orderedRoute(matchPath, order)
+                    RouteBuildItem.builder().orderedRoute(matchPath, order, addFailureHandler)
                             .handler(handler).build());
         }
+    }
+
+    @BuildStep
+    @Record(value = ExecutionTime.STATIC_INIT)
+    public FilterBuildItem addDefaultAuthFailureHandler(ResteasyReactiveRecorder recorder) {
+        // replace default auth failure handler added by vertx-http so that our exception mappers can customize response
+        return new FilterBuildItem(recorder.defaultAuthFailureHandler(), FilterBuildItem.AUTHENTICATION - 1);
     }
 
     private void checkForDuplicateEndpoint(ResteasyReactiveConfig config, Map<String, List<EndpointConfig>> allMethods) {

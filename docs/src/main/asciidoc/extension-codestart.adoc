@@ -4,7 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Extension codestart
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: writing-extensions
+:summary: Provide users with initial code for extensions when generating Quarkus applications on code.quarkus.io and all the Quarkus tooling. This guide explains how to create and configure a Codestart for an extension.
 
 This guide explains how to create and configure a Quarkus Codestart for an extension.
 

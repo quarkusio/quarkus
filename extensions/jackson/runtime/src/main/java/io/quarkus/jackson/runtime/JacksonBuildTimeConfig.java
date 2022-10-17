@@ -29,9 +29,18 @@ public class JacksonBuildTimeConfig {
 
     /**
      * If enabled, Jackson will serialize dates as numeric value(s).
+     * When disabled, they are serialized in ISO 8601 format.
      */
     @ConfigItem(defaultValue = "false")
     public boolean writeDatesAsTimestamps;
+
+    /**
+     * If enabled, Jackson will serialize durations as numeric value(s).
+     * When disabled, they are serialized in ISO 8601 format.
+     * This is enabled by default to match the default Jackson behavior.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean writeDurationsAsTimestamps;
 
     /**
      * If enabled, Jackson will ignore case during Enum deserialization.

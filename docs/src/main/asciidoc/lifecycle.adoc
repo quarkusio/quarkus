@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Application Initialization and Termination
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: core
+:summary: You often need to execute custom actions when the application starts and clean up everything when the application stops. This guide explains how to be notified when an application stops or starts.
 
 You often need to execute custom actions when the application starts and clean up everything when the application stops.
 This guide explains how to:

@@ -4,9 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Qute Reference Guide
-
-include::./attributes.adoc[]
-
+include::_attributes.adoc[]
+:categories: miscellaneous
+:summary: Learn everything you need to know about the Qute template engine.
 :numbered:
 :sectnums:
 :sectnumlevels: 4
@@ -521,6 +521,8 @@ Objects that implement `java.util.concurrent.CompletionStage` and `io.smallrye.m
 If a part of an expression resolves to a `CompletionStage`, the resolution continues once this stage is completed and the next part of the expression (if any) is evaluated against the result of the completed stage.
 For example, if there is an expression `{foo.size}` and `foo` resolves to `CompletionStage<List<String>>` then `size` is resolved against the completed result, i.e. `List<String>`.
 If a part of an expression resolves to a `Uni`, a `CompletionStage` is first created from `Uni` using `Uni#subscribeAsCompletionStage()` and then evaluated as described above.
+
+IMPORTANT: Note that each `Uni#subscribeAsCompletionStage()` results in a new subscription. You might need to configure memoization of the `Uni` item or failure before it's used as template data, i.e. `myUni.memoize().indefinitely()`.
 
 It can happen that a `CompletionStage` never completes or a `Uni` emits no item/failure. 
 In this case, the rendering methods (such as `TemplateInstance#render()` and `TemplateInstance#createUni()`) fail after a specific timeout.
@@ -1162,7 +1164,9 @@ The snippet above should render something like:
 </ol>
 ----
 
-You can also include a template with an `{#include}` section inside another template or the template that defines the fragment.
+TIP: In Quarkus, it is also possible to define a <<type_safe_fragments,type-safe fragment>> via the `@CheckedFragment` annotation.
+
+You can also include a fragment with an `{#include}` section inside another template or the template that defines the fragment.
 
 .Including a Fragment in `user.html`
 [source,html]
@@ -1680,6 +1684,63 @@ public class ItemResource {
 }
 ----
 <1> The template path for this method will be `items/item-and-order`.
+
+[[type_safe_fragments]]
+==== Type-safe Fragments
+
+You can also define a type-safe <<fragments,fragment>> in your Java code.
+A fragment method is annotated with `@io.quarkus.qute.CheckedFragment`.
+The name of the fragment is derived from the annotated method name. 
+The part before the last occurence of a dollar sign `$` is the method name of the related type-safe template.
+The part after the last occurence of a dollar sign is the fragment identifier.
+The strategy defined by the relevant `CheckedTemplate#defaultName()` is honored when constructing the defaulted names.
+
+.Type-safe Fragment Example
+[source,java]
+----
+import io.quarkus.qute.CheckedFragment;
+import io.quarkus.qute.CheckedTemplate;
+import org.acme.Item;
+
+@CheckedTemplate
+class Templates {
+
+  // defines a type-safe template
+  static native TemplateInstance items(List<Item> items);
+
+  // defines a fragment of Templates#items() with identifier "item"
+  @CheckedFragment
+  static native TemplateInstance items$item(Item item); <1>
+}
+----
+<1> Quarkus validates at build time that each template that corresponds to the `Templates#items()` contains a fragment with identifier `item`. Moreover, the parameters of the fragment method are validated too. In general, all type-safe expressions that are found in the fragment and that reference some data from the original/outer template require a specific parameter to be present.
+
+.Fragment Definition in `items.html`
+[source,html]
+----
+<h1>Items</h1>
+<ol>
+    {#for item in items}
+    {#fragment id=item}   <1>
+    <li>{item.name}</li>  <2>
+    {/fragment}
+    {/for}
+</ol>
+----
+<1> Defines a fragment with identifier `item`.
+<2> The `{item.name}` expression implies that the `Templates#items$item()` method must declare a parameter of name `item` and type `org.acme.Item`.
+
+.Type-safe Fragment Call Site Example
+[source,java]
+----
+class ItemService {
+
+  String renderItem(Item item) {
+     // this would return something like "<li>Foo</li>"
+     return Templates.items$item(item).render();
+  }
+}
+----
 
 [[template_extension_methods]]
 === Template Extension Methods

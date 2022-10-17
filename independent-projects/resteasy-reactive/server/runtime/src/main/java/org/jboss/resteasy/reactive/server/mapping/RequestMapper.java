@@ -91,6 +91,9 @@ public class RequestMapper<T> {
                             break;
                         }
                     }
+                    if (!matched) {
+                        break;
+                    }
                 } else if (segment.type == URITemplate.Type.DEFAULT_REGEX) {
                     if (matchPos == pathLength) {
                         matched = false;
@@ -103,6 +106,9 @@ public class RequestMapper<T> {
                     params[paramCount++] = URIDecoder.decodeURIComponent(path.substring(start, matchPos), false);
                 }
             }
+            if (!matched) {
+                continue;
+            }
             if (paramCount < params.length) {
                 params[paramCount] = null;
             }
@@ -113,7 +119,7 @@ public class RequestMapper<T> {
                 doPrefixMatch = (matchPos == 1 || path.charAt(matchPos) == '/') //matchPos == 1 corresponds to '/' as a root level match
                         && (prefixAllowed || matchPos == pathLength - 1); //if prefix is allowed, or the remainder is only a trailing /
             }
-            if (matched && (fullMatch || doPrefixMatch)) {
+            if (fullMatch || doPrefixMatch) {
                 String remaining;
                 if (fullMatch) {
                     remaining = "";

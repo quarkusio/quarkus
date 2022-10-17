@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using the event bus
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: messaging
+:summary: This guide explains how different beans can interact using the event bus.
 
 Quarkus allows different beans to interact using asynchronous events, thus promoting loose-coupling.
 The messages are sent to _virtual addresses_.

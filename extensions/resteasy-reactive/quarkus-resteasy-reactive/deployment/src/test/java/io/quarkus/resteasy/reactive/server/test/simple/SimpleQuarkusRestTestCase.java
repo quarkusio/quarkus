@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.emptyString;
 
 import java.util.function.Supplier;
 
+import org.apache.http.HttpStatus;
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 import io.restassured.http.Headers;
 
 public class SimpleQuarkusRestTestCase {
@@ -107,6 +109,12 @@ public class SimpleQuarkusRestTestCase {
                 .then().body(Matchers.equalTo("otherSub"));
         RestAssured.get("/simple/sub")
                 .then().body(Matchers.equalTo("sub"));
+
+        RestAssured.with()
+                .contentType(ContentType.JSON)
+                .body("{\"test\": true}")
+                .patch("/simple/sub/patch/text")
+                .then().statusCode(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE);
     }
 
     @Test

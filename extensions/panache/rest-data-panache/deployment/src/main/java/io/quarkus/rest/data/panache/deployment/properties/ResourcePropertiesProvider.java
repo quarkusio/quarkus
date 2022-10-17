@@ -41,6 +41,7 @@ public class ResourcePropertiesProvider {
                 isPaged(annotation),
                 isHal(annotation),
                 getHalCollectionName(annotation, resourceInterface),
+                getRolesAllowed(annotation),
                 methodProperties);
     }
 
@@ -74,7 +75,7 @@ public class ResourcePropertiesProvider {
     }
 
     private MethodProperties getMethodProperties(AnnotationInstance annotation) {
-        return new MethodProperties(isExposed(annotation), getPath(annotation));
+        return new MethodProperties(isExposed(annotation), getPath(annotation), getRolesAllowed(annotation));
     }
 
     private boolean isHal(AnnotationInstance annotation) {
@@ -114,5 +115,13 @@ public class ResourcePropertiesProvider {
             return annotation.value("halCollectionName").asString();
         }
         return ResourceName.fromClass(resourceInterface);
+    }
+
+    private String[] getRolesAllowed(AnnotationInstance annotation) {
+        if (annotation != null && annotation.value("rolesAllowed") != null) {
+            return annotation.value("rolesAllowed").asStringArray();
+        }
+
+        return new String[0];
     }
 }

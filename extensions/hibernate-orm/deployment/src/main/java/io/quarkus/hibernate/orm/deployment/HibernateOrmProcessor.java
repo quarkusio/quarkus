@@ -1230,7 +1230,7 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    private static Map<String, Set<String>> getModelClassesAndPackagesPerPersistenceUnits(HibernateOrmConfig hibernateOrmConfig,
+    public static Map<String, Set<String>> getModelClassesAndPackagesPerPersistenceUnits(HibernateOrmConfig hibernateOrmConfig,
             JpaModelBuildItem jpaModel, IndexView index, boolean enableDefaultPersistenceUnit) {
         Map<String, Set<String>> modelClassesAndPackagesPerPersistenceUnits = new HashMap<>();
 

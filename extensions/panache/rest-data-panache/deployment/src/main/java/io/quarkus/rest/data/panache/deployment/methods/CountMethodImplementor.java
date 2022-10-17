@@ -5,6 +5,7 @@ import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreat
 
 import javax.ws.rs.core.Response;
 
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
@@ -27,8 +28,8 @@ public final class CountMethodImplementor extends StandardMethodImplementor {
 
     private static final String REL = "count";
 
-    public CountMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
-        super(isResteasyClassic, isReactivePanache);
+    public CountMethodImplementor(Capabilities capabilities) {
+        super(capabilities);
     }
 
     /**
@@ -79,6 +80,7 @@ public final class CountMethodImplementor extends StandardMethodImplementor {
         addGetAnnotation(methodCreator);
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
         addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_METHOD_NAME), RESOURCE_METHOD_NAME));
+        addSecurityAnnotations(methodCreator, resourceProperties);
         if (!isResteasyClassic()) {
             // We only add the Links annotation in Resteasy Reactive because Resteasy Classic ignores the REL parameter:
             // it always uses "list" for GET methods, so it interferes with the list implementation.

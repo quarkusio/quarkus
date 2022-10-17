@@ -4,7 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using JMS
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: messaging
+:summary: This guide demonstrates how your Quarkus application can use JMS messaging with AMQP 1.0 using Apache Qpid JMS, or using Apache ActiveMQ Artemis JMS.
 :extension-status: preview
 
 

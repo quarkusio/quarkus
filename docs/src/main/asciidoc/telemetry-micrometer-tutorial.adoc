@@ -5,7 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="tutorial-micrometer"]
 = Collect metrics using Micrometer
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 
 Create an application that uses the Micrometer metrics library to collect runtime, extension and application metrics and expose them as a Prometheus (OpenMetrics) endpoint.
 

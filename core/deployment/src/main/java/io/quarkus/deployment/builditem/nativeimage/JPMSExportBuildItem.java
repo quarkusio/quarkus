@@ -16,7 +16,7 @@ public final class JPMSExportBuildItem extends MultiBuildItem {
     private final GraalVM.Version exportBefore;
 
     public JPMSExportBuildItem(String moduleName, String packageName) {
-        this(moduleName, packageName, GraalVM.Version.MINIMUM, null);
+        this(moduleName, packageName, null, null);
     }
 
     public JPMSExportBuildItem(String moduleName, String packageName, GraalVM.Version exportAfter) {
@@ -62,5 +62,10 @@ public final class JPMSExportBuildItem extends MultiBuildItem {
 
     public GraalVM.Version getExportBefore() {
         return exportBefore;
+    }
+
+    public boolean isRequired(GraalVM.Version current) {
+        return (exportAfter == null || current.compareTo(exportAfter) > 0) &&
+                (exportBefore == null || current.compareTo(exportBefore) < 0);
     }
 }

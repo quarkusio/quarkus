@@ -5,8 +5,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Building Quarkus apps with Quarkus Command Line Interface (CLI)
 :extension-status: preview
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: tooling
+:summary: Use the Quarkus CLI to create, build, run, and manage extensions for Quarkus projects.
 
 The `quarkus` command lets you create projects, manage extensions and
 do essential build and dev commands using the underlying project build tool.

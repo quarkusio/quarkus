@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.server.handlers;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.List;
 
 import javax.ws.rs.BadRequestException;
@@ -17,6 +18,7 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.ReaderInterceptor;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.jaxrs.ReaderInterceptorContextImpl;
@@ -29,30 +31,40 @@ public class RequestDeserializeHandler implements ServerRestHandler {
 
     private final Class<?> type;
     private final Type genericType;
-    private final MediaType mediaType;
+    private final List<MediaType> acceptableMediaTypes;
     private final ServerSerialisers serialisers;
     private final int parameterIndex;
 
-    public RequestDeserializeHandler(Class<?> type, Type genericType, MediaType mediaType, ServerSerialisers serialisers,
+    public RequestDeserializeHandler(Class<?> type, Type genericType, List<MediaType> acceptableMediaTypes,
+            ServerSerialisers serialisers,
             int parameterIndex) {
         this.type = type;
         this.genericType = genericType;
-        this.mediaType = mediaType;
+        this.acceptableMediaTypes = acceptableMediaTypes;
         this.serialisers = serialisers;
         this.parameterIndex = parameterIndex;
     }
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        MediaType effectiveRequestType = mediaType;
-        String requestTypeString = requestContext.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
-        if (requestTypeString != null) {
+        MediaType effectiveRequestType = null;
+        Object requestType = requestContext.getHeader(HttpHeaders.CONTENT_TYPE, true);
+        if (requestType != null) {
             try {
-                effectiveRequestType = MediaType.valueOf(requestTypeString);
+                effectiveRequestType = MediaType.valueOf((String) requestType);
             } catch (Exception e) {
                 throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
             }
-        } else if (effectiveRequestType == null) {
+
+            // We need to verify media type for sub-resources, this mimics what is done in {@code ClassRoutingHandler}
+            if (MediaTypeHelper.getFirstMatch(
+                    acceptableMediaTypes,
+                    Collections.singletonList(effectiveRequestType)) == null) {
+                throw new NotSupportedException("The content-type header value did not match the value in @Consumes");
+            }
+        } else if (!acceptableMediaTypes.isEmpty()) {
+            effectiveRequestType = acceptableMediaTypes.get(0);
+        } else {
             effectiveRequestType = MediaType.APPLICATION_OCTET_STREAM_TYPE;
         }
         List<MessageBodyReader<?>> readers = serialisers.findReaders(null, type, effectiveRequestType, RuntimeType.SERVER);

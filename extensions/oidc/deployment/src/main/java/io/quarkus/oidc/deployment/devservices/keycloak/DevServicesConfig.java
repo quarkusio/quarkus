@@ -78,10 +78,11 @@ public class DevServicesConfig {
     public String serviceName;
 
     /**
-     * The class or file system path to a Keycloak realm file which will be used to initialize Keycloak.
+     * The comma-separated list of class or file system paths to Keycloak realm files which will be used to initialize Keycloak.
+     * The first value in this list will be used to initialize default tenant connection properties.
      */
     @ConfigItem
-    public Optional<String> realmPath;
+    public Optional<List<String>> realmPath;
 
     /**
      * The JAVA_OPTS passed to the keycloak JVM

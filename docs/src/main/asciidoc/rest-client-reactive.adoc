@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using the REST Client Reactive
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: web
+:summary: This guide explains how to use the RESTEasy Reactive REST Client.
 
 This guide explains how to use the REST Client Reactive in order to interact with REST APIs.
 REST Client Reactive is the REST Client implementation compatible with RESTEasy Reactive.

@@ -5,6 +5,7 @@ import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreat
 
 import javax.ws.rs.core.Response;
 
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -28,8 +29,8 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
 
     private static final String REL = "self";
 
-    public GetMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
-        super(isResteasyClassic, isReactivePanache);
+    public GetMethodImplementor(Capabilities capabilities) {
+        super(capabilities);
     }
 
     /**
@@ -90,6 +91,7 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
         addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_METHOD_NAME), "{id}"));
         addGetAnnotation(methodCreator);
         addProducesJsonAnnotation(methodCreator, resourceProperties);
+        addSecurityAnnotations(methodCreator, resourceProperties);
 
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);

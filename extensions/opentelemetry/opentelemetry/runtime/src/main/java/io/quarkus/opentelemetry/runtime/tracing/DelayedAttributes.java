@@ -83,6 +83,15 @@ public class DelayedAttributes implements Attributes {
         return delegate.toBuilder();
     }
 
+    @Override
+    public String toString() {
+        if (delegate == null) {
+            logDelegateNotFound();
+            return "{}";
+        }
+        return delegate.toString();
+    }
+
     /**
      * If we haven't previously logged an error,
      * log an error about a missing {@code delegate} and set {@code warningLogged=true}

@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Reactive Routes
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: web
+:summary: This guide demonstrates how to use reactive routes.
 
 Reactive routes propose an alternative approach to implement HTTP endpoints where you declare and chain _routes_.
 This approach became very popular in the JavaScript world, with frameworks like Express.Js or Hapi.

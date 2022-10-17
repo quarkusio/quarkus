@@ -5,7 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus Base Runtime Image
 
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 
 To ease the containerization of native executables, Quarkus provides a base image providing the requirements to run these executables.
 The `quarkus-micro-image:2.0` image is:

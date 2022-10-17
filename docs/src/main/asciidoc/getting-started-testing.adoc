@@ -4,9 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Testing Your Application
-
-include::./attributes.adoc[]
-
+include::_attributes.adoc[]
+:categories: core
+:summary: This guide covers testing in JVM mode, native mode, and injection of resources into tests
 :toc: macro
 :toclevels: 4
 :doctype: book
@@ -430,6 +430,8 @@ Alternatively or additionally to an interceptor, you can enrich *all* your `@Qua
 * `io.quarkus.test.junit.callback.QuarkusTestBeforeTestExecutionCallback`
 * `io.quarkus.test.junit.callback.QuarkusTestAfterTestExecutionCallback`
 * `io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback`
+
+Optionally, you can enable these callbacks also for the `@QuarkusIntegrationTest` tests if the property `quarkus.test.enable-callbacks-for-integration-tests` is `true`. 
 
 Such a callback implementation has to be registered as a "service provider" as defined by `java.util.ServiceLoader`.
 

@@ -7,6 +7,7 @@ import io.quarkus.redis.datasource.bloom.TransactionalBloomCommands;
 import io.quarkus.redis.datasource.countmin.TransactionalCountMinCommands;
 import io.quarkus.redis.datasource.cuckoo.TransactionalCuckooCommands;
 import io.quarkus.redis.datasource.geo.TransactionalGeoCommands;
+import io.quarkus.redis.datasource.graph.TransactionalGraphCommands;
 import io.quarkus.redis.datasource.hash.TransactionalHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.TransactionalHyperLogLogCommands;
 import io.quarkus.redis.datasource.json.TransactionalJsonCommands;
@@ -117,6 +118,11 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
     @Override
     public <K, V> TransactionalTopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType) {
         return new BlockingTransactionalTopKCommandsImpl<>(this, reactive.topk(redisKeyType, valueType), timeout);
+    }
+
+    @Override
+    public <K> TransactionalGraphCommands<K> graph(Class<K> redisKeyType) {
+        return new BlockingTransactionalGraphCommandsImpl<>(this, reactive.graph(redisKeyType), timeout);
     }
 
     @Override

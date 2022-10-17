@@ -7,10 +7,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
 
+import org.eclipse.microprofile.config.Config;
+
+import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.FilteredClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.codegen.CodeGenData;
@@ -19,8 +25,11 @@ import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.KeyMap;
+import io.smallrye.config.KeyMapBackedConfigSource;
+import io.smallrye.config.NameIterator;
 import io.smallrye.config.PropertiesConfigSource;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SysPropConfigSource;
 
 /**
@@ -28,16 +37,23 @@ import io.smallrye.config.SysPropConfigSource;
  */
 public class CodeGenerator {
 
+    private static final String MP_CONFIG_SPI_CONFIG_SOURCE_PROVIDER = "META-INF/services/org.eclipse.microprofile.config.spi.ConfigSourceProvider";
+
     // used by Gradle and Maven
-    public static void initAndRun(ClassLoader classLoader,
+    public static void initAndRun(QuarkusClassLoader classLoader,
             PathCollection sourceParentDirs, Path generatedSourcesDir, Path buildDir,
             Consumer<Path> sourceRegistrar, ApplicationModel appModel, Properties properties,
             String launchMode, boolean test) throws CodeGenException {
         final List<CodeGenData> generators = init(classLoader, sourceParentDirs, generatedSourcesDir, buildDir,
                 sourceRegistrar);
+        if (generators.isEmpty()) {
+            return;
+        }
+        final LaunchMode mode = LaunchMode.valueOf(launchMode);
+        final Config config = getConfig(appModel, mode, properties, classLoader);
         for (CodeGenData generator : generators) {
             generator.setRedirectIO(true);
-            trigger(classLoader, generator, appModel, properties, LaunchMode.valueOf(launchMode), test);
+            trigger(classLoader, generator, appModel, config, test);
         }
     }
 
@@ -51,7 +67,7 @@ public class CodeGenerator {
             if (codeGenProviders.isEmpty()) {
                 return List.of();
             }
-            List<CodeGenData> result = new ArrayList<>();
+            final List<CodeGenData> result = new ArrayList<>(codeGenProviders.size());
             for (CodeGenProvider provider : codeGenProviders) {
                 Path outputDir = codeGenOutDir(generatedSourcesDir, provider, sourceRegistrar);
                 for (Path sourceParentDir : sourceParentDirs) {
@@ -144,29 +160,56 @@ public class CodeGenerator {
     public static boolean trigger(ClassLoader deploymentClassLoader,
             CodeGenData data,
             ApplicationModel appModel,
-            Properties properties,
-            LaunchMode launchMode,
+            Config config,
             boolean test) throws CodeGenException {
         return callWithClassloader(deploymentClassLoader, () -> {
-
-            final PropertiesConfigSource pcs = new PropertiesConfigSource(properties, "Build system");
-            final SysPropConfigSource spcs = new SysPropConfigSource();
-
-            // Discovered Config classes may cause issues here, because this goal runs before compile
-            final SmallRyeConfig config = ConfigUtils.configBuilder(false, false, launchMode)
-                    .setAddDiscoveredSources(false)
-                    .setAddDiscoveredInterceptors(false)
-                    .setAddDiscoveredConverters(false)
-                    .withProfile(launchMode.getDefaultProfile())
-                    .withSources(pcs, spcs)
-                    .build();
-
             CodeGenProvider provider = data.provider;
             return provider.shouldRun(data.sourceDir, config)
                     && provider.trigger(
                             new CodeGenContext(appModel, data.outPath, data.buildDir, data.sourceDir, data.redirectIO, config,
                                     test));
         });
+    }
+
+    public static Config getConfig(ApplicationModel appModel, LaunchMode launchMode, Properties buildSystemProps,
+            QuarkusClassLoader deploymentClassLoader) throws CodeGenException {
+        // Config instance that is returned by this method should be as close to the one built in the ExtensionLoader as possible
+        if (appModel.getAppArtifact().getContentTree()
+                .contains(MP_CONFIG_SPI_CONFIG_SOURCE_PROVIDER)) {
+            final List<ClassPathElement> allElements = ((QuarkusClassLoader) deploymentClassLoader).getAllElements(false);
+            // we don't want to load config sources from the current module because they haven't been compiled yet
+            final QuarkusClassLoader.Builder configClBuilder = QuarkusClassLoader
+                    .builder("CodeGenerator Config ClassLoader", QuarkusClassLoader.getSystemClassLoader(), false);
+            final Collection<Path> appRoots = appModel.getAppArtifact().getContentTree().getRoots();
+            for (ClassPathElement e : allElements) {
+                if (appRoots.contains(e.getRoot())) {
+                    configClBuilder.addElement(new FilteredClassPathElement(e, List.of(MP_CONFIG_SPI_CONFIG_SOURCE_PROVIDER)));
+                } else {
+                    configClBuilder.addElement(e);
+                }
+            }
+            deploymentClassLoader = configClBuilder.build();
+        }
+        final SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, launchMode)
+                .forClassLoader(deploymentClassLoader);
+        final PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
+        final SysPropConfigSource spcs = new SysPropConfigSource();
+
+        final Map<String, String> platformProperties = appModel.getPlatformProperties();
+        if (platformProperties.isEmpty()) {
+            builder.withSources(pcs, spcs);
+        } else {
+            final KeyMap<String> props = new KeyMap<>(platformProperties.size());
+            for (Map.Entry<String, String> prop : platformProperties.entrySet()) {
+                props.findOrAdd(new NameIterator(prop.getKey())).putRootValue(prop.getValue());
+            }
+            final KeyMapBackedConfigSource platformConfigSource = new KeyMapBackedConfigSource("Quarkus platform",
+                    // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
+                    // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
+                    Integer.MIN_VALUE + 1000, props);
+            builder.withSources(platformConfigSource, pcs, spcs);
+        }
+        return builder.build();
     }
 
     private static Path codeGenOutDir(Path generatedSourcesDir,

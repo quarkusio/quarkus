@@ -9,7 +9,9 @@ import io.quarkus.amazon.lambda.deployment.ProvidedAmazonLambdaHandlerBuildItem;
 import io.quarkus.amazon.lambda.http.AwsHttpContextProducers;
 import io.quarkus.amazon.lambda.http.DefaultLambdaIdentityProvider;
 import io.quarkus.amazon.lambda.http.LambdaHttpAuthenticationMechanism;
+import io.quarkus.amazon.lambda.http.LambdaHttpConfig;
 import io.quarkus.amazon.lambda.http.LambdaHttpHandler;
+import io.quarkus.amazon.lambda.http.LambdaHttpRecorder;
 import io.quarkus.amazon.lambda.http.model.AlbContext;
 import io.quarkus.amazon.lambda.http.model.ApiGatewayAuthorizerContext;
 import io.quarkus.amazon.lambda.http.model.ApiGatewayRequestIdentity;
@@ -23,6 +25,8 @@ import io.quarkus.amazon.lambda.http.model.MultiValuedTreeMap;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -50,6 +54,12 @@ public class AmazonLambdaHttpProcessor {
         builder.addBeanClass(LambdaHttpAuthenticationMechanism.class)
                 .addBeanClass(DefaultLambdaIdentityProvider.class);
         additionalBeans.produce(builder.build());
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void setupConfig(LambdaHttpConfig config, LambdaHttpRecorder recorder) {
+        recorder.setConfig(config);
     }
 
     @BuildStep

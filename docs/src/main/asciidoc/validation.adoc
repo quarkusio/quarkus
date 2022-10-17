@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Validation with Hibernate Validator
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: web, data
+:summary: This guide covers how to use Hibernate Validator/Bean Validation in your REST services.
 
 This guide covers how to use Hibernate Validator/Bean Validation for:
 
@@ -384,7 +385,8 @@ You can configure this behavior by adding the following configuration in your `a
 quarkus.default-locale=fr-FR
 ----
 
-If you are using RESTEasy Reactive, in the context of a JAX-RS endpoint, Hibernate Validator will automatically resolve the optimal locale to use from the `Accept-Language` HTTP header,
+If you are using RESTEasy (Classic or Reactive), in the context of a JAX-RS endpoint,
+Hibernate Validator will automatically resolve the optimal locale to use from the `Accept-Language` HTTP header,
 provided the supported locales have been properly specified in the `application.properties`:
 
 [source, properties]

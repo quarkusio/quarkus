@@ -1,5 +1,6 @@
 [id="security-enabling-basic-auth-tutorial"]
 = Enable Basic Authentication
+include::_attributes.adoc[]
 
 Enable the Basic Authentication for your Quarkus project and allow users to authenticate with a username and password.
  

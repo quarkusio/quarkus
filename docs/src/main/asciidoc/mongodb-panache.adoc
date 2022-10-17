@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Simplified MongoDB with Panache
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: data
+:summary: This guide covers the usage of MongoDB using active records and repositories.
 :config-file: application.properties
 :mongodb-doc-root-url: https://www.mongodb.com/docs/drivers/java/sync/current
 

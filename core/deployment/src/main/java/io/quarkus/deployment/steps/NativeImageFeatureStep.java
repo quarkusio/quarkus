@@ -131,12 +131,11 @@ public class NativeImageFeatureStep {
             List<LambdaCapturingTypeBuildItem> lambdaCapturingTypeBuildItems,
             List<NativeImageResourcePatternsBuildItem> resourcePatterns) {
         // required in order to access org.graalvm.nativeimage.impl.RuntimeSerializationSupport and org.graalvm.nativeimage.impl.ConfigurationCondition
-        features.produce(
-                new JPMSExportBuildItem("org.graalvm.sdk", "org.graalvm.nativeimage.impl", GraalVM.Version.VERSION_22_1_0));
+        features.produce(new JPMSExportBuildItem("org.graalvm.sdk", "org.graalvm.nativeimage.impl"));
         // required in order to access com.oracle.svm.core.jni.JNIRuntimeAccess in GraalVM 22.2.x
         if (jniRuntimeAccessibleClasses != null && !jniRuntimeAccessibleClasses.isEmpty()) {
             features.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jni",
-                    GraalVM.Version.VERSION_22_1_0, GraalVM.Version.VERSION_22_3_0));
+                    null, GraalVM.Version.VERSION_22_3_0));
         }
     }
 
@@ -290,7 +289,7 @@ public class NativeImageFeatureStep {
         if (!proxies.isEmpty()) {
             // Needed to access DYNAMIC_PROXY_REGISTRY in GraalVM 22.2
             exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk.proxy",
-                    GraalVM.Version.VERSION_22_1_0, GraalVM.Version.VERSION_22_3_0));
+                    null, GraalVM.Version.VERSION_22_3_0));
 
             ResultHandle versionCompareto22_3Result = overallCatch.invokeVirtualMethod(VERSION_COMPARE_TO,
                     overallCatch.invokeStaticMethod(VERSION_CURRENT),
@@ -332,7 +331,7 @@ public class NativeImageFeatureStep {
         if (!resourcePatterns.isEmpty()) {
             // Needed to access com.oracle.svm.core.configure.ResourcesRegistry.* in GraalVM 22.2
             exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.configure",
-                    GraalVM.Version.VERSION_22_1_0, GraalVM.Version.VERSION_22_3_0));
+                    null, GraalVM.Version.VERSION_22_3_0));
 
             TryBlock tc = overallCatch.tryBlock();
 
@@ -402,7 +401,7 @@ public class NativeImageFeatureStep {
             // Needed to access LOCALIZATION_FEATURE
             exports.produce(
                     new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk.localization",
-                            GraalVM.Version.VERSION_22_1_0, GraalVM.Version.VERSION_22_3_0));
+                            null, GraalVM.Version.VERSION_22_3_0));
 
             BranchResult graalVm22_3Test = overallCatch.ifGreaterEqualZero(overallCatch.invokeVirtualMethod(VERSION_COMPARE_TO,
                     overallCatch.invokeStaticMethod(VERSION_CURRENT),

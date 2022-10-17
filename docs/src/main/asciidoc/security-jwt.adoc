@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using JWT RBAC
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: security
+:summary: This guide explains how your application can utilize SmallRye JWT to provide secured access to the JAX-RS endpoints.
 :extension-name: SmallRye JWT
 :mp-jwt: MicroProfile JWT RBAC
 

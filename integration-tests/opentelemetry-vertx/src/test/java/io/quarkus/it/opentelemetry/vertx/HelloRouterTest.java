@@ -15,11 +15,12 @@ import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.MESSA
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -29,12 +30,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
-import io.restassured.filter.log.RequestLoggingFilter;
-import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.vertx.core.http.HttpMethod;
 
@@ -123,40 +122,31 @@ class HelloRouterTest {
         assertEquals("hello to bus", messages.get(0));
 
         await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 3);
-        RestAssured.filters(new RequestLoggingFilter(), new ResponseLoggingFilter());
         List<Map<String, Object>> spans = getSpans();
-        RestAssured.replaceFiltersWith(Collections.emptyList());
         assertEquals(3, spans.size());
+        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
 
-        assertEquals(spans.get(0).get("traceId"), spans.get(1).get("traceId"));
-        assertEquals(spans.get(1).get("traceId"), spans.get(2).get("traceId"));
+        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
+        assertEquals(SERVER.toString(), server.get("kind"));
+        assertEquals(HTTP_OK, ((Map<?, ?>) server.get("attributes")).get(HTTP_STATUS_CODE.toString()));
+        assertEquals(HttpMethod.GET.toString(), ((Map<?, ?>) server.get("attributes")).get(HTTP_METHOD.toString()));
+        assertEquals("/bus", ((Map<?, ?>) server.get("attributes")).get(HTTP_ROUTE.toString()));
 
-        Map<String, Object> consumerSpan = spans.stream()
-                .filter(s -> CONSUMER.toString().equals(s.get("kind")))
-                .findFirst().orElseThrow(() -> new IllegalStateException("Unable to find CONSUMER span"));
+        Map<String, Object> producer = getSpanByKindAndParentId(spans, PRODUCER, server.get("spanId"));
+        assertEquals(PRODUCER.toString(), producer.get("kind"));
+        assertEquals("vert.x", ((Map<?, ?>) producer.get("attributes")).get(MESSAGING_SYSTEM.toString()));
+        assertEquals("topic", ((Map<?, ?>) producer.get("attributes")).get(MESSAGING_DESTINATION_KIND.toString()));
+        assertEquals("bus", ((Map<?, ?>) producer.get("attributes")).get(MESSAGING_DESTINATION.toString()));
+        assertEquals(producer.get("parentSpanId"), server.get("spanId"));
 
-        assertEquals("vert.x", ((Map<?, ?>) consumerSpan.get("attributes")).get(MESSAGING_SYSTEM.toString()));
-        assertEquals("topic", ((Map<?, ?>) consumerSpan.get("attributes")).get(MESSAGING_DESTINATION_KIND.toString()));
-        assertEquals("bus", ((Map<?, ?>) consumerSpan.get("attributes")).get(MESSAGING_DESTINATION.toString()));
+        Map<String, Object> consumer = getSpanByKindAndParentId(spans, CONSUMER, producer.get("spanId"));
+        assertEquals(CONSUMER.toString(), consumer.get("kind"));
+        assertEquals("vert.x", ((Map<?, ?>) consumer.get("attributes")).get(MESSAGING_SYSTEM.toString()));
+        assertEquals("topic", ((Map<?, ?>) consumer.get("attributes")).get(MESSAGING_DESTINATION_KIND.toString()));
+        assertEquals("bus", ((Map<?, ?>) consumer.get("attributes")).get(MESSAGING_DESTINATION.toString()));
         assertEquals(MessageOperation.RECEIVE.toString().toLowerCase(Locale.ROOT),
-                ((Map<?, ?>) consumerSpan.get("attributes")).get(MESSAGING_OPERATION.toString()));
-
-        Map<String, Object> producerSpan = spans.stream()
-                .filter(s -> PRODUCER.toString().equals(s.get("kind")))
-                .findFirst().orElseThrow(() -> new IllegalStateException("Unable to find PRODUCER span"));
-
-        assertEquals("vert.x", ((Map<?, ?>) producerSpan.get("attributes")).get(MESSAGING_SYSTEM.toString()));
-        assertEquals("topic", ((Map<?, ?>) producerSpan.get("attributes")).get(MESSAGING_DESTINATION_KIND.toString()));
-        assertEquals("bus", ((Map<?, ?>) producerSpan.get("attributes")).get(MESSAGING_DESTINATION.toString()));
-
-        Map<String, Object> serverSpan = spans.stream()
-                .filter(s -> SERVER.toString().equals(s.get("kind")))
-                .findFirst().orElseThrow(() -> new IllegalStateException("Unable to find SERVER span"));
-
-        assertEquals("/bus", serverSpan.get("name"));
-        assertEquals(HTTP_OK, ((Map<?, ?>) serverSpan.get("attributes")).get(HTTP_STATUS_CODE.toString()));
-        assertEquals(HttpMethod.GET.toString(), ((Map<?, ?>) serverSpan.get("attributes")).get(HTTP_METHOD.toString()));
-        assertEquals("/bus", ((Map<?, ?>) serverSpan.get("attributes")).get(HTTP_ROUTE.toString()));
+                ((Map<?, ?>) consumer.get("attributes")).get(MESSAGING_OPERATION.toString()));
+        assertEquals(consumer.get("parentSpanId"), producer.get("spanId"));
     }
 
     private static List<Map<String, Object>> getSpans() {
@@ -167,5 +157,19 @@ class HelloRouterTest {
     private static List<String> getMessages() {
         return given().get("/bus/messages").body().as(new TypeRef<>() {
         });
+    }
+
+    private static List<Map<String, Object>> getSpansByKindAndParentId(List<Map<String, Object>> spans, SpanKind kind,
+            Object parentSpanId) {
+        return spans.stream()
+                .filter(map -> map.get("kind").equals(kind.toString()))
+                .filter(map -> map.get("parentSpanId").equals(parentSpanId)).collect(toList());
+    }
+
+    private static Map<String, Object> getSpanByKindAndParentId(List<Map<String, Object>> spans, SpanKind kind,
+            Object parentSpanId) {
+        List<Map<String, Object>> span = getSpansByKindAndParentId(spans, kind, parentSpanId);
+        assertEquals(1, span.size());
+        return span.get(0);
     }
 }

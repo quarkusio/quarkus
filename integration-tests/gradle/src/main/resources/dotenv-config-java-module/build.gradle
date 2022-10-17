@@ -32,3 +32,7 @@ compileTestJava {
 quarkusDev {
     workingDir = System.getProperty("java.io.tmpdir")
 }
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}

@@ -32,7 +32,7 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
     }
 
     /**
-     * Get an access token using a password grant with a provided user name.
+     * Get an access token from the default tenant realm using a password grant with a provided user name.
      * User secret will be the same as the user name, client id will be set to 'quarkus-app' and client secret to 'secret'.
      */
     public String getAccessToken(String userName) {
@@ -40,7 +40,7 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
     }
 
     /**
-     * Get an access token using a password grant with the provided user name and client id.
+     * Get an access token from the default tenant realm using a password grant with the provided user name and client id.
      * User secret will be the same as the user name, client secret will be set to 'secret'.
      */
     public String getAccessToken(String userName, String clientId) {
@@ -48,7 +48,8 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
     }
 
     /**
-     * Get an access token using a password grant with the provided user name, user secret and client id.
+     * Get an access token from the default tenant realm using a password grant with the provided user name, user secret and
+     * client id.
      * Client secret will be set to 'secret'.
      */
     public String getAccessToken(String userName, String userSecret, String clientId) {
@@ -56,11 +57,45 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
     }
 
     /**
-     * Get an access token using a password grant with the provided user name, user secret, client id and secret.
+     * Get an access token from the default tenant realm using a password grant with the provided user name, user secret, client
+     * id and secret.
      * Set the client secret to an empty string or null if it is not required.
      */
     public String getAccessToken(String userName, String userSecret, String clientId, String clientSecret) {
         return getAccessTokenInternal(userName, userSecret, clientId, clientSecret, getAuthServerUrl());
+    }
+
+    /**
+     * Get a realm access token using a password grant with a provided user name.
+     * User secret will be the same as the user name, client id will be set to 'quarkus-app' and client secret to 'secret'.
+     */
+    public String getRealmAccessToken(String realm, String userName) {
+        return getRealmAccessToken(realm, userName, getClientId());
+    }
+
+    /**
+     * Get a realm access token using a password grant with the provided user name and client id.
+     * User secret will be the same as the user name, client secret will be set to 'secret'.
+     */
+    public String getRealmAccessToken(String realm, String userName, String clientId) {
+        return getRealmAccessToken(realm, userName, userName, clientId);
+    }
+
+    /**
+     * Get a realm access token using a password grant with the provided user name, user secret and client id.
+     * Client secret will be set to 'secret'.
+     */
+    public String getRealmAccessToken(String realm, String userName, String userSecret, String clientId) {
+        return getRealmAccessToken(realm, userName, userSecret, clientId, getClientSecret());
+    }
+
+    /**
+     * Get a realm access token using a password grant with the provided user name, user secret, client id and secret.
+     * Set the client secret to an empty string or null if it is not required.
+     */
+    public String getRealmAccessToken(String realm, String userName, String userSecret, String clientId, String clientSecret) {
+        return getAccessTokenInternal(userName, userSecret, clientId, clientSecret,
+                getAuthServerBaseUrl() + "/realms/" + realm);
     }
 
     private String getAccessTokenInternal(String userName, String userSecret, String clientId, String clientSecret,

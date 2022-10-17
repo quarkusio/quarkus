@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Simplified Hibernate ORM with Panache
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: data
+:summary: Hibernate ORM is the de facto JPA implementation and offers you the full breadth of an Object Relational Mapper. It makes complex mappings possible, but it does not make simple and common mappings trivial. Panache focuses on making your entities trivial and fun to write.
 :config-file: application.properties
 
 Hibernate ORM is the de facto JPA implementation and offers you the full breadth of an Object Relational Mapper.

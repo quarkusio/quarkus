@@ -26,7 +26,7 @@ import io.vertx.ext.web.RoutingContext;
 public class SmallRyeGraphQLRecorder {
 
     public RuntimeValue<Boolean> createExecutionService(BeanContainer beanContainer, Schema schema) {
-        GraphQLProducer graphQLProducer = beanContainer.instance(GraphQLProducer.class);
+        GraphQLProducer graphQLProducer = beanContainer.beanInstance(GraphQLProducer.class);
         GraphQLSchema graphQLSchema = graphQLProducer.initialize(schema);
         return new RuntimeValue<>(graphQLSchema != null);
     }

@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Security with JDBC
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: security
+:summary: This guide demonstrates how your Quarkus application can use a database to store your user identities.
 
 This guide demonstrates how your Quarkus application can use a database to store your user identities.
 

@@ -72,7 +72,7 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
             Thread.currentThread().setContextClassLoader(deploymentClassLoader);
 
             final Class<?> codeGenerator = deploymentClassLoader.loadClass("io.quarkus.deployment.CodeGenerator");
-            final Method initAndRun = codeGenerator.getMethod("initAndRun", ClassLoader.class, PathCollection.class,
+            final Method initAndRun = codeGenerator.getMethod("initAndRun", QuarkusClassLoader.class, PathCollection.class,
                     Path.class, Path.class,
                     Consumer.class, ApplicationModel.class, Properties.class, String.class,
                     boolean.class);

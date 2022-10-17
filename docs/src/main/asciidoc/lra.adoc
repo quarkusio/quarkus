@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Narayana LRA Participant Support
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: data
+:summary: This guides covers the usage of LRA to coordinate activities across services.
 
 == Introduction
 

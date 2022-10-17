@@ -5,12 +5,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class DisabledProactiveAuthFailedExceptionMappingTest extends AbstractAuthFailedExceptionMappingTest {
+public class EnabledProactiveAuthFailedExceptionMappingTest extends AbstractAuthFailedExceptionMappingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(classes)
-                    .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n"), "application.properties"));
+                    .addAsResource(new StringAsset("quarkus.http.auth.proactive=true\n"), "application.properties"));
 
 }

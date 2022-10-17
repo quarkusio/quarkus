@@ -3,6 +3,8 @@ package io.quarkus.vertx.http.deployment;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import javax.inject.Singleton;
@@ -33,6 +35,7 @@ import io.quarkus.vertx.http.runtime.security.PermitSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.RolesAllowedHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.SupplierImpl;
 import io.vertx.core.http.ClientAuth;
+import io.vertx.ext.web.RoutingContext;
 
 public class HttpSecurityProcessor {
 
@@ -130,6 +133,7 @@ public class HttpSecurityProcessor {
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListenerBuildItemBuildProducer,
             HttpBuildTimeConfig buildTimeConfig,
             List<HttpSecurityPolicyBuildItem> httpSecurityPolicyBuildItemList,
+            Optional<DefaultAuthFailureHandlerBuildItem> defaultAuthFailureHandlerBuildItem,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
         Map<String, Supplier<HttpSecurityPolicy>> policyMap = new HashMap<>();
         for (HttpSecurityPolicyBuildItem e : httpSecurityPolicyBuildItemList) {
@@ -144,12 +148,17 @@ public class HttpSecurityProcessor {
         }
 
         if (capabilities.isPresent(Capability.SECURITY)) {
+
+            final BiConsumer<RoutingContext, Throwable> defaultAuthFailureHandler = defaultAuthFailureHandlerBuildItem
+                    .map(DefaultAuthFailureHandlerBuildItem::getDefaultAuthFailureHandler)
+                    .orElseGet(recorder::createDefaultAuthFailureHandler);
+
             beanProducer
                     .produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(HttpAuthenticator.class)
                             .addBeanClass(HttpAuthorizer.class).build());
             filterBuildItemBuildProducer
                     .produce(new FilterBuildItem(
-                            recorder.authenticationMechanismHandler(buildTimeConfig.auth.proactive),
+                            recorder.authenticationMechanismHandler(buildTimeConfig.auth.proactive, defaultAuthFailureHandler),
                             FilterBuildItem.AUTHENTICATION));
             filterBuildItemBuildProducer
                     .produce(new FilterBuildItem(recorder.permissionCheckHandler(), FilterBuildItem.AUTHORIZATION));

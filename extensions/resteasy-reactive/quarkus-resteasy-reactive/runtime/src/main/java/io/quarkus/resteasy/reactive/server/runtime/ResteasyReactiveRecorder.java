@@ -56,7 +56,6 @@ import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Route;
@@ -317,17 +316,8 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         return new ServerSerialisers();
     }
 
-    public Handler<RoutingContext> defaultAuthFailureHandler() {
-        return new Handler<RoutingContext>() {
-            @Override
-            public void handle(RoutingContext event) {
-                if (event.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof DefaultAuthFailureHandler) {
-                    // fail event rather than end it, so it's handled by abort handlers (see #addFailureHandler method)
-                    event.put(QuarkusHttpUser.AUTH_FAILURE_HANDLER, new FailingDefaultAuthFailureHandler());
-                }
-                event.next();
-            }
-        };
+    public BiConsumer<RoutingContext, Throwable> defaultAuthFailureHandler() {
+        return new FailingDefaultAuthFailureHandler();
     }
 
     private static final class FailingDefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {

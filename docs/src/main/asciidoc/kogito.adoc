@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Kogito to add business automation capabilities to an application
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: business-automation
 :summary: This guide demonstrates how your Quarkus application can use Kogito to add business automation to power it up with business processes and rules.
 

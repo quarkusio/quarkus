@@ -49,4 +49,4 @@
 :vault-datasource-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/vault-datasource.html
 :micrometer-registry-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-micrometer-registry/dev/index.html
 
-include::./attributes-local.adoc[]
+include::_attributes-local.adoc[]

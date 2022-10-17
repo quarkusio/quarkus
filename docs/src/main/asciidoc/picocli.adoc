@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Command Mode with Picocli
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: command-line
 :summary: Simplify command line applications creation with the Picocli extension.
 

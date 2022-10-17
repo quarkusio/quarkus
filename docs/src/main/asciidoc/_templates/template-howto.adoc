@@ -12,7 +12,7 @@ TODO: Title should have an implied "How to.." in front. See
 TODO: If this is a reference for an experimental or tech-preview extension, uncomment the following and set the appropriate status (otherwise delete)
 :extension-status: preview
 ////
-include::attributes.adoc[]
+include::_attributes.adoc[]
 
 How-to guides are goal-oriented, and should help the reader accomplish a task (where there may be forks in the path).
 

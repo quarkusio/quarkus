@@ -5,7 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Keycloak Admin Client
 
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 
 The Quarkus Keycloak Admin Client and its reactive twin support Keycloak Admin Client which can be used to configure a running Keycloak server.
 

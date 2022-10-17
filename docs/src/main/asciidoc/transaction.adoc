@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Transactions in Quarkus
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: data
 :summary: Quarkus comes with a Transaction Manager and uses it to coordinate and expose transactions to your applications. Each extension dealing with persistence will integrate with it for you, and you will explicitly interact with transactions via CDI. This guide will walk you through all that.
 
@@ -280,7 +280,7 @@ You cannot use `UserTransaction` in a method having a transaction started by a `
 == Configuring the transaction timeout
 You can configure the default transaction timeout, the timeout that applies to all transactions managed by the transaction manager, via the property `quarkus.transaction-manager.default-transaction-timeout`, specified as a duration.
 
-include::duration-format-note.adoc[]
+include::{includes}/duration-format-note.adoc[]
 
 The default value is 60 seconds.
 

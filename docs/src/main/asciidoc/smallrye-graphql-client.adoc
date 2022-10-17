@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = SmallRye GraphQL Client
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 :categories: web
 :summary: This guide explains how to leverage SmallRye GraphQL Client to consume GraphQL services.
 

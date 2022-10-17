@@ -81,6 +81,7 @@ import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.LaunchModeProducer;
 import io.quarkus.arc.runtime.LoggerProducer;
+import io.quarkus.arc.runtime.appcds.AppCDSRecorder;
 import io.quarkus.arc.runtime.context.ArcContextProvider;
 import io.quarkus.arc.runtime.test.PreloadedTestApplicationClassPredicate;
 import io.quarkus.bootstrap.BootstrapDebug;
@@ -108,6 +109,8 @@ import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.pkg.builditem.AppCDSControlPointBuildItem;
+import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.LaunchMode;
@@ -524,7 +527,8 @@ public class ArcProcessor {
     // PHASE 5 - generate resources and initialize the container
     @BuildStep
     @Record(STATIC_INIT)
-    public BeanContainerBuildItem generateResources(ArcConfig config, ArcRecorder recorder, ShutdownContextBuildItem shutdown,
+    public PreBeanContainerBuildItem generateResources(ArcConfig config, ArcRecorder recorder,
+            ShutdownContextBuildItem shutdown,
             ValidationPhaseBuildItem validationPhase,
             List<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
             List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
@@ -630,7 +634,20 @@ public class ArcProcessor {
                 beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener)
                         .collect(Collectors.toList()));
 
-        return new BeanContainerBuildItem(beanContainer);
+        return new PreBeanContainerBuildItem(beanContainer);
+    }
+
+    @Record(RUNTIME_INIT)
+    @BuildStep
+    public void signalBeanContainerReady(AppCDSRecorder recorder, PreBeanContainerBuildItem bi,
+            Optional<AppCDSRequestedBuildItem> appCDSRequested,
+            BuildProducer<AppCDSControlPointBuildItem> appCDSControlPointProducer,
+            BuildProducer<BeanContainerBuildItem> beanContainerProducer) {
+        if (appCDSRequested.isPresent()) {
+            recorder.controlGenerationAndExit();
+            appCDSControlPointProducer.produce(new AppCDSControlPointBuildItem());
+        }
+        beanContainerProducer.produce(new BeanContainerBuildItem(bi.getValue()));
     }
 
     @BuildStep(onlyIf = IsTest.class)

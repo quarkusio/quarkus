@@ -18,6 +18,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Properties;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.persistence.SharedCacheMode;
@@ -111,7 +112,7 @@ public final class HibernateReactiveProcessor {
 
     @BuildStep
     public void buildReactivePersistenceUnit(
-            HibernateOrmConfig hibernateOrmConfig,
+            HibernateOrmConfig hibernateOrmConfig, CombinedIndexBuildItem index,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
@@ -154,7 +155,7 @@ public final class HibernateReactiveProcessor {
             final String dbKind = dbKindOptional.get();
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit;
             ParsedPersistenceXmlDescriptor reactivePU = generateReactivePersistenceUnit(
-                    hibernateOrmConfig, persistenceUnitConfig, jpaModel,
+                    hibernateOrmConfig, index, persistenceUnitConfig, jpaModel,
                     dbKind, applicationArchivesBuildItem, launchMode.getLaunchMode(),
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems);
 
@@ -202,8 +203,16 @@ public final class HibernateReactiveProcessor {
      * - Any JDBC-only configuration settings are removed
      * - If we ever add any Reactive-only config settings, they can be set here
      */
+    // TODO this whole method is really just a hack that duplicates
+    //  io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor.handleHibernateORMWithNoPersistenceXml
+    //  and customizes it for Hibernate Reactive.
+    //  we should work on a way to merge the two methods while still having some behavior specific to
+    //  HR/ORM, because it's likely the HR implementation is missing some features,
+    //  and we've seen in the past that features we add to handleHibernateORMWithNoPersistenceXml
+    //  tend not to be added here.
+    //  See https://github.com/quarkusio/quarkus/issues/28629.
     private static ParsedPersistenceXmlDescriptor generateReactivePersistenceUnit(
-            HibernateOrmConfig hibernateOrmConfig,
+            HibernateOrmConfig hibernateOrmConfig, CombinedIndexBuildItem index,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
             JpaModelBuildItem jpaModel,
             String dbKind,
@@ -230,7 +239,26 @@ public final class HibernateReactiveProcessor {
         desc.setTransactionType(PersistenceUnitTransactionType.RESOURCE_LOCAL);
         desc.getProperties().setProperty(AvailableSettings.DIALECT, dialect);
         desc.setExcludeUnlistedClasses(true);
-        desc.addClasses(new ArrayList<>(jpaModel.getAllModelClassNames()));
+
+        Map<String, Set<String>> modelClassesAndPackagesPerPersistencesUnits = HibernateOrmProcessor
+                .getModelClassesAndPackagesPerPersistenceUnits(hibernateOrmConfig, jpaModel, index.getIndex(), true);
+        Set<String> nonDefaultPUWithModelClassesOrPackages = modelClassesAndPackagesPerPersistencesUnits.entrySet().stream()
+                .filter(e -> !PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME.equals(e.getKey()) && !e.getValue().isEmpty())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+        if (!nonDefaultPUWithModelClassesOrPackages.isEmpty()) {
+            // Not supported yet; see https://github.com/quarkusio/quarkus/issues/21110
+            LOG.warnf("Entities are affected to non-default Hibernate Reactive persistence units %s."
+                    + " Since Hibernate Reactive only works with the default persistence unit, those entities will be ignored.",
+                    nonDefaultPUWithModelClassesOrPackages);
+        }
+        Set<String> modelClassesAndPackages = modelClassesAndPackagesPerPersistencesUnits
+                .getOrDefault(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, Collections.emptySet());
+        if (modelClassesAndPackages.isEmpty()) {
+            LOG.warnf("Could not find any entities affected to the Hibernate Reactive persistence unit.");
+        } else {
+            desc.addClasses(new ArrayList<>(modelClassesAndPackages));
+        }
 
         // The storage engine has to be set as a system property.
         if (persistenceUnitConfig.dialect.storageEngine.isPresent()) {

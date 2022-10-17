@@ -522,6 +522,8 @@ If a part of an expression resolves to a `CompletionStage`, the resolution conti
 For example, if there is an expression `{foo.size}` and `foo` resolves to `CompletionStage<List<String>>` then `size` is resolved against the completed result, i.e. `List<String>`.
 If a part of an expression resolves to a `Uni`, a `CompletionStage` is first created from `Uni` using `Uni#subscribeAsCompletionStage()` and then evaluated as described above.
 
+IMPORTANT: Note that each `Uni#subscribeAsCompletionStage()` results in a new subscription. You might need to configure memoization of the `Uni` item or failure before it's used as template data, i.e. `myUni.memoize().indefinitely()`.
+
 It can happen that a `CompletionStage` never completes or a `Uni` emits no item/failure. 
 In this case, the rendering methods (such as `TemplateInstance#render()` and `TemplateInstance#createUni()`) fail after a specific timeout.
 The timeout can be specified as a template instance `timeout` attribute.

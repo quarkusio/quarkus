@@ -26,7 +26,7 @@ public class FlywayExtensionRepairAtStartTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(FlywayResource.class)
                     .addAsResource("db/migration/V1.0.0__Quarkus.sql")
-                    .addAsResource("migrate-at-start-config.properties", "application.properties"))
+                    .addAsResource("repair-at-start-config.properties", "application.properties"))
             .setLogRecordPredicate(r -> true)
             .setAllowFailedStart(true);
 

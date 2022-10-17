@@ -997,11 +997,9 @@ public class ResteasyReactiveProcessor {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT, useIdentityComparisonForParameters = false)
-    public void setupDeployment(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            BeanContainerBuildItem beanContainerBuildItem,
+    public void setupDeployment(BeanContainerBuildItem beanContainerBuildItem,
             Capabilities capabilities,
             ResteasyReactiveConfig config,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
@@ -1037,8 +1035,6 @@ public class ResteasyReactiveProcessor {
                 MediaType.class.getDeclaredConstructor(String.class, String.class, String.class),
                 mediaType -> Stream.of(mediaType.getType(), mediaType.getSubtype(), mediaType.getParameters())
                         .collect(toList()));
-
-        IndexView index = beanArchiveIndexBuildItem.getIndex();
 
         ApplicationScanningResult appResult = applicationResultBuildItem.getResult();
         Set<String> singletonClasses = appResult.getSingletonClasses();

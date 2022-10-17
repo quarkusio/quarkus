@@ -76,6 +76,7 @@
         <dependency>
             <groupId>org.graalvm.sdk</groupId>
             <artifactId>graal-sdk</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>

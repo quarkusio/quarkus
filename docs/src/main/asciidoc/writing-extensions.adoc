@@ -1227,7 +1227,7 @@ Each configuration property, requires a Javadoc explaining its purpose.
 The first sentence should be meaningful and self-contained as it is included in the summary table.
 ====
 
-While standard Javadoc comments are perfectly fine for simple documentation (recommended even), Asciidoc is more
+While standard Javadoc comments are perfectly fine for simple documentation (recommended even), AsciiDoc is more
 suitable for tips, source code extracts, lists and more:
 
 [source,java]
@@ -1235,7 +1235,7 @@ suitable for tips, source code extracts, lists and more:
 /**
  * Class name of the Hibernate ORM dialect. The complete list of bundled dialects is available in the
  * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/dialect/package-summary.html[Hibernate ORM JavaDoc].
- * <br>
+ *
  * [NOTE]
  * ====
  * Not all the dialects are supported in GraalVM native executables: we currently provide driver extensions for
@@ -1247,7 +1247,7 @@ suitable for tips, source code extracts, lists and more:
 Optional<String> dialect();
 ----
 
-To use Asciidoc, the Javadoc comment must be annotated with `@asciidoclet` tag. This tag serves two purposes: it is
+To use AsciiDoc, the Javadoc comment must be annotated with `@asciidoclet` tag. This tag serves two purposes: it is
 used as a marker for Quarkus generation tool, but it is also used by the `javadoc` process for the Javadoc generation.
 
 A more detailed example:
@@ -1297,7 +1297,7 @@ with the markers `// @formatter:off`/`// @formatter:on`. These require separate 
 
 [WARNING]
 ====
-Open blocks (`--`) are not supported in the Asciidoctor documentation. All the other types of blocks
+Open blocks (`--`) are not supported in the AsciiDoc documentation. All the other types of blocks
 (source, admonitions...) are supported.
 ====
 
@@ -1343,7 +1343,7 @@ is considered as the section title and the remaining sentences used as section i
 
 To generate the documentation:
 
-* Execute `./mvnw clean install -DskipTests -DskipITs`
+* Execute `./mvnw -DquicklyDocs`
 * Can be executed globally or in a specific extension directory (e.g. `extensions/mailer`).
 
 The documentation is generated in the global `target/asciidoc/generated/config/` located at the root of the project.

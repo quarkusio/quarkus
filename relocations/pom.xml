@@ -57,6 +57,10 @@
         <module>quarkus-logging-sentry-deployment</module>
         <module>quarkus-neo4j</module>
         <module>quarkus-neo4j-deployment</module>
+        <module>quarkus-opentelemetry-exporter-jaeger</module>
+        <module>quarkus-opentelemetry-exporter-jaeger-deployment</module>
+        <module>quarkus-opentelemetry-exporter-otlp</module>
+        <module>quarkus-opentelemetry-exporter-otlp-deployment</module>
         <module>quarkus-vault</module>
         <module>quarkus-vault-deployment</module>
         <module>quarkus-reactive-messaging-http</module>

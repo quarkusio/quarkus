@@ -90,7 +90,7 @@
         <classmate.version>1.5.1</classmate.version>
         <hibernate-orm.version>5.6.12.Final</hibernate-orm.version> <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below): -->
         <bytebuddy.version>1.12.9</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
-        <hibernate-reactive.version>1.1.8.Final</hibernate-reactive.version>
+        <hibernate-reactive.version>1.1.9.Final</hibernate-reactive.version>
         <hibernate-validator.version>6.2.5.Final</hibernate-validator.version>
         <hibernate-search.version>6.1.7.Final</hibernate-search.version>
         <narayana.version>5.13.1.Alpha1</narayana.version>
@@ -187,6 +187,7 @@
         <picocli.version>4.6.3</picocli.version>
         <google-cloud-functions.version>1.0.4</google-cloud-functions.version>
         <commons-compress.version>1.21</commons-compress.version>
+        <commons-text.version>1.10.0</commons-text.version>
         <gson.version>2.9.1</gson.version>
         <log4j2-jboss-logmanager.version>1.1.1.Final</log4j2-jboss-logmanager.version>
         <log4j2-api.version>2.19.0</log4j2-api.version>
@@ -2781,26 +2782,6 @@
                 <artifactId>quarkus-opentelemetry</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-opentelemetry-exporter-jaeger-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-opentelemetry-exporter-jaeger</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-opentelemetry-exporter-otlp-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-opentelemetry-exporter-otlp</artifactId>
-                <version>${project.version}</version>
-            </dependency>
 
             <!-- Quarkus test dependencies -->
             <dependency>
@@ -3140,6 +3121,11 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>${commons-lang3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-text</artifactId>
+                <version>${commons-text.version}</version>
             </dependency>
             <dependency>
                 <groupId>commons-codec</groupId>
@@ -5859,6 +5845,26 @@
             </dependency>
 
             <!-- Relocations -->
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-opentelemetry-exporter-jaeger-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-opentelemetry-exporter-jaeger</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-opentelemetry-exporter-otlp-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-opentelemetry-exporter-otlp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-vertx-web</artifactId>

@@ -598,6 +598,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             Type methodContextReturnTypeOrReturnType = methodContext.containsKey(METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)
                     ? (Type) methodContext.get(METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)
                     : currentMethodInfo.returnType();
+            if (REST_RESPONSE.equals(methodContextReturnTypeOrReturnType.name())
+                    && (methodContextReturnTypeOrReturnType.kind() == Kind.CLASS)) {
+                log.warn("Method '" + currentMethodInfo.name() + " of Resource class '"
+                        + currentMethodInfo.declaringClass().name()
+                        + "' returns RestResponse but does not declare a generic type. It is strongly advised to define the generic type otherwise the behavior could be unpredictable");
+            }
             Type nonAsyncReturnType = getNonAsyncReturnType(methodContextReturnTypeOrReturnType);
             addWriterForType(additionalWriters, nonAsyncReturnType);
 

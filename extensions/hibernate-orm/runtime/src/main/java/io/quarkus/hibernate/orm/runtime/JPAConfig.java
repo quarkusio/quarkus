@@ -51,11 +51,13 @@ public class JPAConfig {
 
     void startAll() {
         List<CompletableFuture<?>> start = new ArrayList<>();
-        //start PU's in parallel, for faster startup
-        //also works around https://github.com/quarkusio/quarkus/issues/17304 to some extent
+        //by using a dedicated thread for starting up the PR,
+        //we work around https://github.com/quarkusio/quarkus/issues/17304 to some extent
         //as the main thread is now no longer polluted with ThreadLocals by default
         //this is not a complete fix, but will help as long as the test methods
         //don't access the datasource directly, but only over HTTP calls
+        boolean moreThanOneThread = persistenceUnits.size() > 1;
+        //start PUs in parallel, for faster startup
         for (Map.Entry<String, LazyPersistenceUnit> i : persistenceUnits.entrySet()) {
             CompletableFuture<Object> future = new CompletableFuture<>();
             start.add(future);
@@ -69,7 +71,7 @@ public class JPAConfig {
                         future.completeExceptionally(t);
                     }
                 }
-            }, "JPA Startup Thread: " + i.getKey()).start();
+            }, moreThanOneThread ? "JPA Startup Thread: " + i.getKey() : "JPA Startup Thread").start();
         }
         for (CompletableFuture<?> i : start) {
             try {

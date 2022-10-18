@@ -2,7 +2,6 @@ package io.quarkus.opentelemetry.runtime.tracing;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Instance;
@@ -21,31 +20,12 @@ import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import io.quarkus.arc.Arc;
 import io.quarkus.opentelemetry.runtime.config.TracerRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.OpenTelemetryVertxMetricsFactory;
-import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.OpenTelemetryVertxTracingFactory;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
-import io.vertx.core.VertxOptions;
-import io.vertx.core.metrics.MetricsOptions;
-import io.vertx.core.tracing.TracingOptions;
 
 @Recorder
 public class TracerRecorder {
-    /* STATIC INIT */
-    public Consumer<VertxOptions> getVertxTracingOptions() {
-        TracingOptions tracingOptions = new TracingOptions()
-                .setFactory(new OpenTelemetryVertxTracingFactory());
-        return vertxOptions -> vertxOptions.setTracingOptions(tracingOptions);
-    }
-
-    public Consumer<VertxOptions> getVertxTracingMetricsOptions() {
-        MetricsOptions metricsOptions = new MetricsOptions()
-                .setEnabled(true)
-                .setFactory(new OpenTelemetryVertxMetricsFactory());
-        return vertxOptions -> vertxOptions.setMetricsOptions(metricsOptions);
-    }
-
     /* STATIC INIT */
     public RuntimeValue<SdkTracerProvider> createTracerProvider(
             String quarkusVersion,

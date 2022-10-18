@@ -276,16 +276,16 @@ curl http://localhost:8080/graphql/schema.graphql
 The server will return the complete schema of the GraphQL API.
 
 [[ui]]
-== GraphiQL UI
+== GraphQL UI
 
 NOTE: Experimental - not included in the MicroProfile specification
 
-GraphiQL UI is a great tool permitting easy interaction with your GraphQL APIs.
+GraphQL UI is a great tool permitting easy interaction with your GraphQL APIs.
 
-The Quarkus `smallrye-graphql` extension ships with `GraphiQL` and enables it by default in `dev` and `test` modes,
+The Quarkus `smallrye-graphql` extension ships with https://github.com/graphql/graphiql/blob/main/packages/graphiql/README.md[GraphiQL] and enables it by default in `dev` and `test` modes,
 but it can also be explicitly configured for `production` mode as well, by setting the `quarkus.smallrye-graphql.ui.always-include` configuration property to `true`.
 
-GraphiQL can be accessed from http://localhost:8080/q/graphql-ui/ .
+The GraphQL UI can be accessed from http://localhost:8080/q/graphql-ui/ .
 
 image:graphql-ui-screenshot01.png[alt=GraphQL UI]
 
@@ -293,9 +293,9 @@ Have a look at the link:security-authorization[Authorization of Web Endpoints] G
 
 == Query the GraphQL API
 
-Now visit the GraphiQL page that has been deployed in `dev` mode.
+Now visit the GraphQL UI page that has been deployed in `dev` mode.
 
-Enter the following query to GraphiQL and press the `play` button:
+Enter the following query to the GraphQL UI and press the `play` button:
 
 [source, graphql]
 ----
@@ -318,7 +318,7 @@ Let's assume that our client only requires `title` and `releaseDate`
 making the previous call to the API `Over-fetching` of unnecessary
 data.
 
-Enter the following query into GraphiQL and hit the `play` button:
+Enter the following query into the GraphQL UI and hit the `play` button:
 
 [source, graphql]
 ----
@@ -352,7 +352,7 @@ excluding the `get`.
 This query will allow the client to retrieve the film by id, and the `@Name` annotation on the parameter
 changes the parameter name to `filmId` rather than the default `id` that it would be if you omit the `@Name` annotation.
 
-Enter the following into `GraphiQL` and make a request.
+Enter the following into the `GraphQL UI` and make a request.
 
 [source, graphql]
 ----
@@ -376,7 +376,7 @@ Therefore, the client would be `Under-fetching`.
 
 In GraphQL, it is possible to make multiple queries at once.
 
-Enter the following into GraphiQL to retrieve two films:
+Enter the following into the `GraphQL UI` to retrieve two films:
 
 [source, graphql]
 ----
@@ -418,7 +418,7 @@ By adding this method we have effectively changed the schema of the GraphQL API.
 Although the schema has changed the previous queries will still work.
 Since we only expanded the API to be able to retrieve the `Hero` data of the `Film`.
 
-Enter the following into GraphiQL to retrieve the film and hero data.
+Enter the following into the `GraphQL UI` to retrieve the film and hero data.
 
 [source,graphql]
 ----
@@ -553,7 +553,7 @@ Let's also update `FilmResource` to allow clients to query for all allies:
     }
 ----
 
-Enter the following into `GraphiQL` and make a request.
+Enter the following into the `GraphQL UI` and make a request.
 
 [source,graphql]
 ----
@@ -672,7 +672,7 @@ Add the following to our `FilmResource` class:
     }
 ----
 
-Enter the following into `GraphiQL` and make a request.
+Enter the following into the `GraphQL UI` and make a request.
 
 [source,graphql]
 ----
@@ -762,7 +762,7 @@ Add the following to our `FilmResource` class:
     }
 ----
 
-Enter the following into `GraphiQL` and make a request.
+Enter the following into the `GraphQL UI` and make a request.
 
 [source,graphql]
 ----
@@ -804,7 +804,7 @@ Add the following to our `FilmResource` class:
     }
 ----
 
-Enter the following into `GraphiQL` to insert a `Hero`:
+Enter the following into the `GraphQL UI` to insert a `Hero`:
 
 [source,graphql]
 ----
@@ -910,7 +910,7 @@ Add the following to our `FilmResource` class:
 By using the `@DefaultValue` annotation we have determined that the surname value
 will be `Skywalker` when the parameter is not provided.
 
-Test the following queries with GraphiQL:
+Test the following queries with the `GraphQL UI`:
 
 [source,graphql]
 ----

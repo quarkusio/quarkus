@@ -8,7 +8,12 @@ import io.quarkus.mongodb.panache.common.exception.OptimisticLockException
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheMongoRepositoryBase
 import io.quarkus.test.junit.QuarkusTest
 import io.smallrye.mutiny.CompositeException
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.*

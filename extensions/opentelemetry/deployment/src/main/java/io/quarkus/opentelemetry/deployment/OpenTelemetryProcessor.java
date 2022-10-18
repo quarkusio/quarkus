@@ -19,14 +19,11 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
-import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -36,8 +33,7 @@ import io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.quarkus.opentelemetry.runtime.config.OpenTelemetryConfig;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
-import io.quarkus.opentelemetry.runtime.tracing.intrumentation.reactivemessaging.ReactiveMessagingTracingDecorator;
-import io.quarkus.opentelemetry.runtime.tracing.intrumentation.restclient.OpenTelemetryClientFilter;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.InstrumentationRecorder;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
@@ -131,30 +127,11 @@ public class OpenTelemetryProcessor {
     }
 
     @BuildStep
-    void registerRestClientClassicProvider(
-            Capabilities capabilities,
-            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexed,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        if (capabilities.isPresent(Capability.REST_CLIENT) && capabilities.isMissing(Capability.REST_CLIENT_REACTIVE)) {
-            additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(OpenTelemetryClientFilter.class.getName()));
-            additionalBeans.produce(new AdditionalBeanBuildItem(OpenTelemetryClientFilter.class));
-        }
-    }
-
-    @BuildStep
-    void registerReactiveMessagingMessageDecorator(
-            Capabilities capabilities,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        if (capabilities.isPresent(Capability.SMALLRYE_REACTIVE_MESSAGING)) {
-            additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingDecorator.class));
-        }
-    }
-
-    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void createOpenTelemetry(
             OpenTelemetryConfig openTelemetryConfig,
             OpenTelemetryRecorder recorder,
+            InstrumentationRecorder instrumentationRecorder,
             Optional<TracerProviderBuildItem> tracerProviderBuildItem,
             LaunchModeBuildItem launchMode) {
 
@@ -166,6 +143,11 @@ public class OpenTelemetryProcessor {
                 .orElse(null);
         recorder.createOpenTelemetry(tracerProvider, openTelemetryConfig);
         recorder.eagerlyCreateContextStorage();
+
+        // just checking for live reload would bypass the OpenTelemetryDevModeTest
+        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
+            instrumentationRecorder.setTracerDevMode(instrumentationRecorder.createTracers());
+        }
     }
 
     @BuildStep

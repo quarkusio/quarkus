@@ -6,10 +6,8 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -29,6 +27,7 @@ import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.CodeGenerator;
+import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 
@@ -125,14 +124,17 @@ public class QuarkusGenerateCode extends QuarkusTask {
             QuarkusClassLoader deploymentClassLoader = appCreationContext.createDeploymentClassLoader();
             Class<?> codeGenerator = deploymentClassLoader.loadClass(CodeGenerator.class.getName());
 
-            Optional<Method> initAndRun = Arrays.stream(codeGenerator.getMethods())
-                    .filter(m -> m.getName().equals(INIT_AND_RUN))
-                    .findAny();
-            if (initAndRun.isEmpty()) {
-                throw new GradleException("Failed to find " + INIT_AND_RUN + " method in " + CodeGenerator.class.getName());
+            Method initAndRun;
+            try {
+                initAndRun = codeGenerator.getMethod(INIT_AND_RUN, QuarkusClassLoader.class, PathCollection.class,
+                        Path.class, Path.class,
+                        Consumer.class, ApplicationModel.class, Properties.class, String.class,
+                        boolean.class);
+            } catch (Exception e) {
+                throw new GradleException("Quarkus code generation phase has failed", e);
             }
 
-            initAndRun.get().invoke(null, deploymentClassLoader,
+            initAndRun.invoke(null, deploymentClassLoader,
                     PathList.from(sourcesDirectories),
                     paths.get(0),
                     buildDir,

@@ -43,21 +43,21 @@ else
   TARGET_CONFIG=${TARGET_DIR}/_generated-config/${BRANCH}
 fi
 
-echo "Copying from src/main/asciidoc/* to $TARGET_GUIDES"
+echo "Copying from target/asciidoc/sources/* to $TARGET_GUIDES"
 rsync -vr --delete \
     --exclude='**/*.html' \
     --exclude='**/index.adoc' \
-    --exclude='**/attributes.adoc' \
+    --exclude='**/_attributes-local.adoc' \
     --exclude='**/guides.md' \
     --exclude='**/_templates' \
-    src/main/asciidoc/* \
+    target/asciidoc/sources/* \
     $TARGET_GUIDES
 
 echo "\nCopying from ../target/asciidoc/generated/ to $TARGET_CONFIG"
 rsync -vr --delete \
     --exclude='**/*.html' \
     --exclude='**/index.adoc' \
-    --exclude='**/attributes.adoc' \
+    --exclude='**/_attributes.adoc' \
     ../target/asciidoc/generated/ \
     $TARGET_CONFIG
 

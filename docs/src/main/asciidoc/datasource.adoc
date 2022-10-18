@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Datasources
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: data
+:summary: With Quarkus, you can easily configure a datasource, or several if need be.
 
 Many projects that use data require connections to a relational database.
 

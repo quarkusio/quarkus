@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Mailer Reference Guide
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: miscellaneous
+:summary: This reference guide explains in more details the configuration and usage of the Quarkus Mailer.
 
 This guide is the companion from the xref:mailer.adoc[Mailer Getting Started Guide].
 It explains in more details the configuration and usage of the Quarkus Mailer.

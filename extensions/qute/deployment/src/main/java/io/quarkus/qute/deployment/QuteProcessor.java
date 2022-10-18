@@ -84,7 +84,6 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.maven.dependency.Dependency;
@@ -363,7 +362,7 @@ public class QuteProcessor {
                         throw new TemplateException("Parameter names not recorded for " + classInfo.name()
                                 + ": compile the class with -parameters");
                     }
-                    bindings.put(name, JandexUtil.getBoxedTypeName(type));
+                    bindings.put(name, getCheckedTemplateParameterTypeName(type));
                     parameterNames.add(name);
                 }
                 AnnotationValue requireTypeSafeExpressions = annotation.value(CHECKED_TEMPLATE_REQUIRE_TYPE_SAFE);
@@ -515,7 +514,7 @@ public class QuteProcessor {
                 String name = MessageBundleProcessor.getParameterName(method, it.previousIndex());
                 msgBundleTemplateIdToParamDecl
                         .computeIfAbsent(messageBundleMethod.getTemplateId(), s -> new HashMap<>())
-                        .put(name, new MethodParameterDeclaration(JandexUtil.getBoxedTypeName(paramType), name));
+                        .put(name, new MethodParameterDeclaration(getCheckedTemplateParameterTypeName(paramType), name));
             }
         }
 
@@ -530,7 +529,7 @@ public class QuteProcessor {
                     // Set the bindings for globals first so that type-safe templates can override them
                     for (TemplateGlobalBuildItem global : globals) {
                         parserHelper.addParameter(global.getName(),
-                                JandexUtil.getBoxedTypeName(global.getVariableType()).toString());
+                                getCheckedTemplateParameterTypeName(global.getVariableType()).toString());
                     }
 
                     addMethodParamsToParserHelper(parserHelper, pathToPathWithoutSuffix.get(templateId),
@@ -582,6 +581,43 @@ public class QuteProcessor {
         LOGGER.debugf("Finished analysis of %s templates in %s ms", analysis.size(),
                 TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
         return new TemplatesAnalysisBuildItem(analysis);
+    }
+
+    @SuppressWarnings("incomplete-switch")
+    private static String getCheckedTemplateParameterTypeName(Type type) {
+        switch (type.kind()) {
+            case PARAMETERIZED_TYPE:
+                return getCheckedTemplateParameterParameterizedTypeName((ParameterizedType) type);
+            case ARRAY:
+                // in the case of an array, we get back to using Type#toString()
+                // otherwise, we end up with java.lang.[I] for int[]
+                return type.toString();
+        }
+        return type.name().toString();
+    }
+
+    private static String getCheckedTemplateParameterParameterizedTypeName(ParameterizedType parameterizedType) {
+        StringBuilder builder = new StringBuilder();
+
+        if (parameterizedType.owner() != null) {
+            builder.append(parameterizedType.owner().name());
+            builder.append('.');
+            builder.append(parameterizedType.name().local());
+        } else {
+            builder.append(parameterizedType.name());
+        }
+
+        List<Type> arguments = parameterizedType.arguments();
+        if (arguments.size() > 0) {
+            builder.append('<');
+            builder.append(getCheckedTemplateParameterTypeName(arguments.get(0)));
+            for (int i = 1; i < arguments.size(); i++) {
+                builder.append(", ").append(getCheckedTemplateParameterTypeName(arguments.get(i)));
+            }
+            builder.append('>');
+        }
+
+        return builder.toString();
     }
 
     private List<ParameterDeclaration> mergeParamDeclarations(List<ParameterDeclaration> parameterDeclarations,

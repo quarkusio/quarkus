@@ -5,8 +5,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="reference-doc-quarkus-documentation"]
 = About Quarkus documentation
-include::attributes.adoc[]
-:toc: preamble
+include::_attributes.adoc[]
+:categories: contributing
 
 A detailed reference for the structure and composition of Quarkus documentation.
 
@@ -134,7 +134,7 @@ For example, this document has the following in its header:
 ----
 [id="reference-doc-quarkus-documentation"]
 = Quarkus documentation reference
-\include::attributes.adoc[]
+\include::_attributes.adoc[]
 :toc: preamble
 ----
 
@@ -278,7 +278,6 @@ The complete list of externalized variables for use is given in the following ta
 |Property Name|Value|Description
 |\{quarkus-version}|{quarkus-version}|The current version of the project.
 |\{quarkus-home-url}|{quarkus-home-url}| The location of the project home page.
-|\{quarkus-site-getting-started}|{quarkus-site-getting-started}| The location of the getting started page.
 
 |\{quarkus-org-url}|{quarkus-org-url}| The location of the project GitHub organization.
 |\{quarkus-base-url}|{quarkus-base-url}| Quarkus GitHub URL common base prefix.

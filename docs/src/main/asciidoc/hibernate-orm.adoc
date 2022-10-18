@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Hibernate ORM and JPA
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: data
+:summary: Hibernate ORM is the de facto JPA implementation and offers you the full breath of an Object Relational Mapper. It works beautifully in Quarkus.
 :config-file: application.properties
 :orm-doc-url-prefix: https://docs.jboss.org/hibernate/orm/5.6/userguide/html_single/Hibernate_User_Guide.html
 
@@ -658,7 +659,7 @@ quarkus.hibernate-orm.cache."org.acme.MyEntity".memory.object-count=1000
 ====
 
 
-include::duration-format-note.adoc[]
+include::{includes}/duration-format-note.adoc[]
 
 === Limitations of Caching
 

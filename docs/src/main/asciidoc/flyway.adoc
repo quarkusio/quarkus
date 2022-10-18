@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Flyway
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: data
+:summary: This guide covers how to use the Flyway extension to manage your schema migrations.
 :migrations-path: src/main/resources/db/migration
 :config-file: application.properties
 

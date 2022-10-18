@@ -24,6 +24,7 @@ subprojects {
         dependsOn 'cleanTest'
         useJUnitPlatform()
         forkEvery 1
+        systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
     }
 
     repositories {

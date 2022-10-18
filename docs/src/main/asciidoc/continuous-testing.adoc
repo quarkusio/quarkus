@@ -4,9 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Continuous Testing
-
-include::./attributes.adoc[]
-
+include::_attributes.adoc[]
+:categories: core
+:summary: Get early test feedback with Continuous Testing.
 :toc: macro
 :toclevels: 4
 :doctype: book

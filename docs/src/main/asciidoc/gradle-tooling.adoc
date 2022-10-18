@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Building Quarkus apps with Gradle
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: tooling
+:summary: This guide covers: Gradle configuration, creating a new project, dealing with extensions, development mode, debugging, import in your IDE, building a native image, and build a container friendly executable
 :devtools-no-maven:
 
 [[project-creation]]

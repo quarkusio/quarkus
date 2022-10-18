@@ -5,8 +5,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="concepts-quarkus-documentation"]
 = Quarkus documentation concepts
-include::attributes.adoc[]
-:keywords: contributing, docs
+include::_attributes.adoc[]
+:categories: contributing
 :fn-diataxis: footnote:diataxis[Procida, D. Diátaxis documentation framework. https://diataxis.fr/]
 
 Overview of concepts underlying the structure and composition of Quarkus docs.

@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using the Cassandra Client
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: data
+:summary: This guide covers how to use the Apache Cassandra NoSQL database in Quarkus.
 
 Apache Cassandra® is a free and open-source, distributed, wide column store, NoSQL database
 management system designed to handle large amounts of data across many commodity servers, providing
@@ -13,7 +14,7 @@ high availability with no single point of failure.
 
 In this guide, we will see how you can get your REST services to use a Cassandra database.
 
-include::./platform-include.adoc[]
+include::{includes}/platform-include.adoc[]
 
 == Prerequisites
 

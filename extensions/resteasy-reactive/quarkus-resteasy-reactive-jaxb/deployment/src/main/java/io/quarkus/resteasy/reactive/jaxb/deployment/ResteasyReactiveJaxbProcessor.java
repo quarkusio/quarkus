@@ -39,6 +39,8 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 
 public class ResteasyReactiveJaxbProcessor {
 
+    private static final List<String> XML_TYPES = List.of(MediaType.APPLICATION_XML, MediaType.TEXT_XML);
+
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(Feature.RESTEASY_REACTIVE_JAXB));
@@ -56,10 +58,10 @@ public class ResteasyReactiveJaxbProcessor {
 
         additionalReaders
                 .produce(new MessageBodyReaderBuildItem(ServerJaxbMessageBodyReader.class.getName(), Object.class.getName(),
-                        List.of(MediaType.APPLICATION_XML, MediaType.TEXT_XML), RuntimeType.SERVER, true, Priorities.USER));
+                        XML_TYPES, RuntimeType.SERVER, true, Priorities.USER));
         additionalWriters
                 .produce(new MessageBodyWriterBuildItem(ServerJaxbMessageBodyWriter.class.getName(), Object.class.getName(),
-                        List.of(MediaType.APPLICATION_XML, MediaType.TEXT_XML), RuntimeType.SERVER, true, Priorities.USER));
+                        XML_TYPES, RuntimeType.SERVER, true, Priorities.USER));
     }
 
     @BuildStep
@@ -87,11 +89,17 @@ public class ResteasyReactiveJaxbProcessor {
             }
 
             // If consumes "application/xml" or "multipart/form-data", we register all the classes of the parameters
-            if (consumesXml(resourceInfo) || consumesMultipart(resourceInfo)) {
+            boolean consumesXml = consumesXml(resourceInfo);
+            boolean consumesMultipart = consumesMultipart(resourceInfo);
+            if (consumesXml || consumesMultipart) {
                 for (Type parameter : methodInfo.parameterTypes()) {
                     ClassInfo effectiveParameter = getEffectiveClassInfo(parameter, indexView);
                     if (effectiveParameter != null) {
-                        classesInfo.add(effectiveParameter);
+                        if (consumesXml) {
+                            classesInfo.add(effectiveParameter);
+                        } else if (consumesMultipart) {
+                            classesInfo.addAll(getEffectivePartsUsingXml(effectiveParameter, indexView));
+                        }
                     }
                 }
             }
@@ -112,16 +120,24 @@ public class ResteasyReactiveJaxbProcessor {
     private List<ClassInfo> getEffectivePartsUsingXml(ClassInfo returnType, IndexView indexView) {
         List<ClassInfo> classInfos = new ArrayList<>();
         for (FieldInfo field : returnType.fields()) {
-            AnnotationInstance partTypeInstance = field.annotation(ResteasyReactiveDotNames.PART_TYPE_NAME);
-            if (partTypeInstance != null) {
-                AnnotationValue partTypeValue = partTypeInstance.value();
-                if (partTypeValue != null && MediaType.APPLICATION_XML.equals(partTypeValue.asString())) {
-                    classInfos.add(getEffectiveClassInfo(field.type(), indexView));
-                }
+            if (isPartTypeXml(field)) {
+                classInfos.add(getEffectiveClassInfo(field.type(), indexView));
             }
         }
 
         return classInfos;
+    }
+
+    private boolean isPartTypeXml(FieldInfo field) {
+        AnnotationInstance partType = field.annotation(ResteasyReactiveDotNames.PART_TYPE_NAME);
+        if (partType != null) {
+            AnnotationValue partTypeValue = partType.value();
+            if (containsMediaType(new String[] { partTypeValue.asString() }, XML_TYPES)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private ClassInfo getEffectiveClassInfo(Type type, IndexView indexView) {
@@ -158,26 +174,28 @@ public class ResteasyReactiveJaxbProcessor {
     }
 
     private boolean consumesXml(ResourceMethod resourceInfo) {
-        return containsMediaType(resourceInfo.getConsumes(), MediaType.APPLICATION_XML);
+        return containsMediaType(resourceInfo.getConsumes(), XML_TYPES);
     }
 
     private boolean consumesMultipart(ResourceMethod resourceInfo) {
-        return containsMediaType(resourceInfo.getConsumes(), MediaType.MULTIPART_FORM_DATA);
+        return containsMediaType(resourceInfo.getConsumes(), List.of(MediaType.MULTIPART_FORM_DATA));
     }
 
     private boolean producesXml(ResourceMethod resourceInfo) {
-        return containsMediaType(resourceInfo.getProduces(), MediaType.APPLICATION_XML);
+        return containsMediaType(resourceInfo.getProduces(), XML_TYPES);
     }
 
     private boolean producesMultipart(ResourceMethod resourceInfo) {
-        return containsMediaType(resourceInfo.getProduces(), MediaType.MULTIPART_FORM_DATA);
+        return containsMediaType(resourceInfo.getProduces(), List.of(MediaType.MULTIPART_FORM_DATA));
     }
 
-    private boolean containsMediaType(String[] types, String mediaType) {
+    private boolean containsMediaType(String[] types, List<String> mediaTypes) {
         if (types != null) {
             for (String type : types) {
-                if (type.toLowerCase(Locale.ROOT).contains(mediaType)) {
-                    return true;
+                for (String mediaType : mediaTypes) {
+                    if (type.toLowerCase(Locale.ROOT).contains(mediaType)) {
+                        return true;
+                    }
                 }
             }
         }

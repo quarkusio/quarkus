@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Micrometer Metrics
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: observability
+:summary: This guide demonstrates how your Quarkus application can collect metrics using the Micrometer extension.
 
 This guide demonstrates how your Quarkus application can utilize the Micrometer metrics library for runtime and
 application metrics.

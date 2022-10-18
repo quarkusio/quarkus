@@ -5,7 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for Elasticsearch
 
-include::./attributes.adoc[]
+include::_attributes.adoc[]
 
 If any Elasticsearch-related extension is present (e.g. `quarkus-elasticsearch-rest-client` or `quarkus-hibernate-search-orm-elasticsearch`),
 Dev Services for Elasticsearch automatically starts an Elasticsearch server in dev mode and when running tests.

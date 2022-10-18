@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Conditional Extension Dependencies
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: writing-extensions
+:summary: Trigger the inclusion on additional extensions based on certain conditions.
 
 Quarkus extension dependencies are usually configured in the same way as any other project dependencies in the project's build file, e.g. the Maven `pom.xml` or the Gradle build scripts. However, there are dependency types that aren't yet supported out-of-the-box by Maven and Gradle. What we refer here to as "conditional dependencies" is one example.
 

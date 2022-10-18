@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Deploying to Google Cloud Platform (GCP)
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: cloud
+:summary: This guide explains how to deploy a Quarkus application to Google Cloud.
 
 This guide covers:
 

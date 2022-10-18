@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = HTTP Reference
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: web
+:summary: Learn more about configuring Quarkus' Vert.x based HTTP layer - and Undertow if you are using servlets.
 :numbered:
 :sectnums:
 :sectnumlevels: 4

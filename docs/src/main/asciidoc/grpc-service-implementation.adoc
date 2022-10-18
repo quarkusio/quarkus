@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Implementing a gRPC Service
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: serialization
+:summary: This guide explains how to implement gRPC services in your Quarkus application.
 
 gRPC service implementations exposed as CDI beans are automatically registered and served by quarkus-grpc.
 

@@ -4,7 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Connecting to an Elasticsearch cluster
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: data
+:summary: This guide covers how to use an Elasticsearch cluster using the low level or high level REST clients.
 
 Elasticsearch is a well known full text search engine and NoSQL datastore.
 

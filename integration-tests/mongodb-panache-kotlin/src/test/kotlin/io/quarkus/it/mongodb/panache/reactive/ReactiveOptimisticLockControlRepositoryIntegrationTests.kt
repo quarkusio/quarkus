@@ -8,12 +8,11 @@ import io.quarkus.mongodb.panache.common.exception.OptimisticLockException
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheMongoRepositoryBase
 import io.quarkus.test.junit.QuarkusTest
 import io.smallrye.mutiny.CompositeException
-import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.*
@@ -384,13 +383,13 @@ class ReactiveOptimisticLockControlRepositoryIntegrationTests {
             assertEquals(0, carV.version) // inserted
             assertEquals(0L, carV4.version) // failed
 
-            //since there is no order guaranteed because the combine() we check which one was updated
+            // since there is no order guaranteed because the combine() we check which one was updated
             if (1L == carV2.version) {
-                assertEquals(1L, carV2.version) //updated
-                assertEquals(5L, carV3.version) //failed
+                assertEquals(1L, carV2.version) // updated
+                assertEquals(5L, carV3.version) // failed
             } else {
-                assertEquals(null, carV2.version) //failed
-                assertEquals(6L, carV3.version) //updated
+                assertEquals(null, carV2.version) // failed
+                assertEquals(6L, carV3.version) // updated
             }
 
             try {
@@ -401,11 +400,11 @@ class ReactiveOptimisticLockControlRepositoryIntegrationTests {
             assertEquals(1L, carV.version) // updated in catch
             assertEquals(0L, carV4.version) // failed
             if (2L == carV2.version) {
-                assertEquals(2L, carV2.version) //updated
-                assertEquals(5L, carV3.version) //failed
+                assertEquals(2L, carV2.version) // updated
+                assertEquals(5L, carV3.version) // failed
             } else {
-                assertEquals(null, carV2.version) //failed
-                assertEquals(7L, carV3.version) //updated
+                assertEquals(null, carV2.version) // failed
+                assertEquals(7L, carV3.version) // updated
             }
         }
     }

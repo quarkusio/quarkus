@@ -1,6 +1,23 @@
 package io.quarkus.it.mongodb.panache.reactive;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import com.mongodb.MongoWriteException;
+
 import io.quarkus.it.mongodb.panache.model.BikeV;
 import io.quarkus.it.mongodb.panache.model.CarEntity;
 import io.quarkus.it.mongodb.panache.model.CarV;
@@ -12,21 +29,6 @@ import io.quarkus.mongodb.panache.common.exception.OptimisticLockException;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntityBase;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.CompositeException;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 public class ReactiveOptimisticLockControlEntityIntegrationTests {

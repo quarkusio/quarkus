@@ -456,6 +456,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         setBuiltWithQuarkusCoreVersion(extObject);
         addCapabilities(extObject);
+        addSource(extObject);
         addExtensionDependencies(extObject);
 
         completeCodestartArtifact(mapper, extObject);
@@ -573,6 +574,22 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         return originalArtifact.replace("${project.version}", projectVersion);
     }
 
+    static Map<String, String> getSourceRepo() {
+        // We could try and parse the .git/config file, but that will be fragile
+        // Let's assume we only care about the repo for official-ish builds produced via github actions
+        String repo = System.getenv("GITHUB_REPOSITORY");
+        if (repo != null) {
+            Map info = new HashMap();
+            String qualifiedRepo = "https://github.com/" + repo;
+            // Don't try and guess where slashes will be, just deal with any double slashes by brute force
+            qualifiedRepo = qualifiedRepo.replace("github.com//", "github.com/");
+
+            info.put("url", qualifiedRepo);
+            return info;
+        }
+        return null;
+    }
+
     private static JsonNode getJsonElement(ObjectNode extObject, String... elements) {
         JsonNode mvalue = extObject.get(elements[0]);
         int i = 1;
@@ -669,6 +686,17 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         };
         final DependencyNode rootNode = resolveRuntimeDeps().getRoot();
         rootNode.accept(capabilityCollector);
+    }
+
+    private void addSource(ObjectNode extObject) throws MojoExecutionException {
+        Map<String, String> repo = getSourceRepo();
+        if (repo != null) {
+            ObjectNode scm = extObject.putObject("scm");
+            for (Map.Entry<String, String> e : repo.entrySet()) {
+                scm.put(e.getKey(), e.getValue());
+
+            }
+        }
     }
 
     private void addCapabilities(ObjectNode extObject) throws MojoExecutionException {

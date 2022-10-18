@@ -361,7 +361,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         if (name.endsWith(".class") && !endsWithTrailingSlash) {
             ClassPathElement[] providers = state.loadableResources.get(name);
             if (providers != null) {
-                return providers[0].getResource(name).getUrl();
+                ClassPathResource resource = providers[0].getResource(name);
+                if (resource != null) {
+                    return resource.getUrl();
+                }
             }
         } else {
             for (ClassPathElement i : elements) {

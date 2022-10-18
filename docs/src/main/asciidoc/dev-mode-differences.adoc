@@ -64,7 +64,7 @@ The `quarkus-smallrye-openapi` extension will expose the Swagger UI when Quarkus
 
 === GraphQL UI
 
-The `quarkus-smallrye-graphql` extension will expose the GraphiQL UI when Quarkus is running in dev mode. More details can be found xref:smallrye-graphql.adoc#ui[here].
+The `quarkus-smallrye-graphql` extension will expose the GraphQL UI when Quarkus is running in dev mode. More details can be found xref:smallrye-graphql.adoc#ui[here].
 
 === Health UI
 

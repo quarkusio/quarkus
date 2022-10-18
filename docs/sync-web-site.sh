@@ -37,10 +37,10 @@ fi
 
 if [ $BRANCH == "main" ] && [ "$QUARKUS_RELEASE" == "true" ]; then
   TARGET_GUIDES=${TARGET_DIR}/_guides
-  TARGET_CONFIG=${TARGET_DIR}/_generated-config/latest
+  TARGET_CONFIG=${TARGET_DIR}/_generated-doc/latest
 else
   TARGET_GUIDES=${TARGET_DIR}/_versions/${BRANCH}/guides
-  TARGET_CONFIG=${TARGET_DIR}/_generated-config/${BRANCH}
+  TARGET_CONFIG=${TARGET_DIR}/_generated-doc/${BRANCH}
 fi
 
 echo "Copying from target/asciidoc/sources/* to $TARGET_GUIDES"

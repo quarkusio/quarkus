@@ -3,6 +3,9 @@ package org.jboss.resteasy.reactive.client.impl;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -34,7 +37,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
-import org.jboss.resteasy.reactive.common.NotImplementedYet;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -52,6 +54,7 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
     private final RestClientRequestContext restClientRequestContext;
     private final ClientRequestHeadersMap headersMap;
     private final Context context;
+
 
     public ClientRequestContextImpl(RestClientRequestContext restClientRequestContext, ClientImpl client,
             ConfigurationImpl configuration) {
@@ -248,12 +251,24 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
 
     @Override
     public OutputStream getEntityStream() {
-        throw new NotImplementedYet();
+        if (!hasEntity())
+            return null;
+
+        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+            objectOutputStream.writeObject(getEntity());
+            objectOutputStream.close();
+            return byteArrayOutputStream;
+
+        } catch (IOException exception) {
+            return null;
+            //FIXME: handle exception properly.
+        }
     }
 
     @Override
     public void setEntityStream(OutputStream outputStream) {
-        throw new NotImplementedYet();
+        restClientRequestContext.entityStream = outputStream;
     }
 
     @Override

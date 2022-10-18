@@ -351,14 +351,23 @@ public class ReactiveOptimisticLockControlRepositoryIntegrationTests {
             //try to insert two with same id
             carVRepository.persist(List.of(carV, carV2)).await().indefinitely();
         } catch (Exception ex) {
-            assertEquals(0L, carV.version); //inserted
-            assertNull(carV2.version); //failed
+            //just one is inserted
+            assertPersistManyWithNullVersionAndSameId(carV, carV2);
             try {
                 carVRepository.persist(List.of(carV, carV2)).await().indefinitely();
             } catch (Exception ignored) {
-                assertEquals(0L, carV.version); //didn't change
-                assertNull(carV2.version); //failed
+                assertPersistManyWithNullVersionAndSameId(carV, carV2);
             }
+        }
+    }
+
+    private void assertPersistManyWithNullVersionAndSameId(CarV carV, CarV carV2) {
+        if (carV.version != null) {
+            assertEquals(0L, carV.version); //inserted
+            assertNull(carV2.version); //failed
+        } else {
+            assertEquals(0L, carV2.version); //inserted
+            assertNull(carV.version); //failed
         }
     }
 
@@ -404,8 +413,15 @@ public class ReactiveOptimisticLockControlRepositoryIntegrationTests {
             carVRepository.persistOrUpdate(List.of(carV, carV2, carV3, carV4)).await().indefinitely();
         } catch (Exception ex) {
             assertEquals(0, carV.version); //inserted
-            assertEquals(1L, carV2.version); //updated
-            assertEquals(5L, carV3.version); //failed
+            //since there is no order guaranteed because the combine() we check which one was updated
+            if (1L == carV2.version) {
+                assertEquals(1L, carV2.version); //updated
+                assertEquals(5L, carV3.version); //failed
+            } else {
+                assertEquals(null, carV2.version); //failed
+                assertEquals(6L, carV3.version); //updated
+            }
+
             assertEquals(0L, carV4.version); //failed
             try {
                 carVRepository.persistOrUpdate(List.of(carV, carV2, carV3, carV4)).await().indefinitely();
@@ -413,8 +429,14 @@ public class ReactiveOptimisticLockControlRepositoryIntegrationTests {
             }
         } finally {
             assertEquals(1L, carV.version); //updated in catch
-            assertEquals(2L, carV2.version); //updated in catch
-            assertEquals(5L, carV3.version); //failed
+
+            if (2L == carV2.version) {
+                assertEquals(2L, carV2.version); //updated
+                assertEquals(5L, carV3.version); //failed
+            } else {
+                assertEquals(null, carV2.version); //failed
+                assertEquals(7L, carV3.version); //updated
+            }
             assertEquals(0L, carV4.version); //failed
         }
     }

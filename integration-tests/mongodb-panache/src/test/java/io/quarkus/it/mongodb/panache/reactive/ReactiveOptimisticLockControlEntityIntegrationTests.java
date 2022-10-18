@@ -1,23 +1,6 @@
 package io.quarkus.it.mongodb.panache.reactive;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import com.mongodb.MongoWriteException;
-
 import io.quarkus.it.mongodb.panache.model.BikeV;
 import io.quarkus.it.mongodb.panache.model.CarEntity;
 import io.quarkus.it.mongodb.panache.model.CarV;
@@ -29,6 +12,21 @@ import io.quarkus.mongodb.panache.common.exception.OptimisticLockException;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntityBase;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.CompositeException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 public class ReactiveOptimisticLockControlEntityIntegrationTests {
@@ -460,8 +458,14 @@ public class ReactiveOptimisticLockControlEntityIntegrationTests {
             ReactiveCarVEntity.persistOrUpdate(List.of(carV, carV2, carV3, carV4)).await().indefinitely();
         } catch (Exception ex) {
             assertEquals(0, carV.version); //inserted
-            assertEquals(1L, carV2.version); //updated
-            assertEquals(5L, carV3.version); //failed
+            //since there is no order guaranteed because the combine() we check which one was updated
+            if (1L == carV2.version) {
+                assertEquals(1L, carV2.version); //updated
+                assertEquals(5L, carV3.version); //failed
+            } else {
+                assertEquals(null, carV2.version); //failed
+                assertEquals(6L, carV3.version); //updated
+            }
             assertEquals(0L, carV4.version); //failed
             try {
                 ReactiveCarVEntity.persistOrUpdate(List.of(carV, carV2, carV3, carV4)).await().indefinitely();
@@ -469,9 +473,15 @@ public class ReactiveOptimisticLockControlEntityIntegrationTests {
             }
         } finally {
             assertEquals(1L, carV.version); //updated in catch
-            assertEquals(2L, carV2.version); //updated in catch
-            assertEquals(5L, carV3.version); //failed
             assertEquals(0L, carV4.version); //failed
+
+            if (2L == carV2.version) {
+                assertEquals(2L, carV2.version); //updated
+                assertEquals(5L, carV3.version); //failed
+            } else {
+                assertEquals(null, carV2.version); //failed
+                assertEquals(7L, carV3.version); //updated
+            }
         }
     }
 

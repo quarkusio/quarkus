@@ -50,35 +50,58 @@ public class JPAConfig {
     }
 
     void startAll() {
-        List<CompletableFuture<?>> start = new ArrayList<>();
-        //start PU's in parallel, for faster startup
-        //also works around https://github.com/quarkusio/quarkus/issues/17304 to some extent
+        //by using a dedicated thread for starting up the PR,
+        //we work around https://github.com/quarkusio/quarkus/issues/17304 to some extent
         //as the main thread is now no longer polluted with ThreadLocals by default
         //this is not a complete fix, but will help as long as the test methods
         //don't access the datasource directly, but only over HTTP calls
-        for (Map.Entry<String, LazyPersistenceUnit> i : persistenceUnits.entrySet()) {
-            CompletableFuture<Object> future = new CompletableFuture<>();
-            start.add(future);
+
+        // optimize for the common case
+        if (persistenceUnits.size() == 1) {
+            CompletableFuture<?> future = new CompletableFuture<>();
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    try {
-                        i.getValue().get();
-                        future.complete(null);
-                    } catch (Throwable t) {
-                        future.completeExceptionally(t);
-                    }
+                    completeFuture(persistenceUnits.values().iterator().next(), future);
                 }
-            }, "JPA Startup Thread: " + i.getKey()).start();
-        }
-        for (CompletableFuture<?> i : start) {
-            try {
-                i.get();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            } catch (ExecutionException e) {
-                throw new RuntimeException(e.getCause());
+            }, "JPA Startup Thread").start();
+            waitForFuture(future);
+        } else {
+            List<CompletableFuture<?>> start = new ArrayList<>();
+            //start PU's in parallel, for faster startup
+            for (Map.Entry<String, LazyPersistenceUnit> i : persistenceUnits.entrySet()) {
+                CompletableFuture<Object> future = new CompletableFuture<>();
+                start.add(future);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        completeFuture(i.getValue(), future);
+                    }
+                }, "JPA Startup Thread: " + i.getKey()).start();
             }
+            for (CompletableFuture<?> i : start) {
+                waitForFuture(i);
+            }
+        }
+
+    }
+
+    private void completeFuture(LazyPersistenceUnit lazyPersistenceUnit, CompletableFuture<?> future) {
+        try {
+            lazyPersistenceUnit.get();
+            future.complete(null);
+        } catch (Throwable t) {
+            future.completeExceptionally(t);
+        }
+    }
+
+    private void waitForFuture(CompletableFuture<?> future) {
+        try {
+            future.get();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e.getCause());
         }
     }
 

@@ -181,4 +181,30 @@ public class ExtensionDescriptorTaskTest {
         assertThat(extensionProperty).containsEntry("requires-capabilities",
                 "sunshine?org.acme:ext-b:0.1.0");
     }
+
+    /*
+     * This test will fail if run in an IDE without extra config - it needs an environment variable, and
+     * that is increasingly hard to do on Java 17+; see https://github.com/junit-pioneer/junit-pioneer/issues/509
+     */
+    @Test
+    public void shouldGenerateSourcePointer() throws IOException {
+        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
+        File metaInfDir = new File(testProjectDir, "src/main/resources/META-INF");
+        metaInfDir.mkdirs();
+        String description = "name: extension-name\n" +
+                "description: this is a sample extension\n";
+        TestUtils.writeFile(new File(metaInfDir, "quarkus-extension.yaml"), description);
+
+        TestUtils.runExtensionDescriptorTask(testProjectDir);
+
+        File extensionDescriptorFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.yaml");
+        assertThat(extensionDescriptorFile).exists();
+        ObjectNode extensionDescriptor = TestUtils.readExtensionFile(extensionDescriptorFile.toPath());
+        assertThat(extensionDescriptor.get("scm")).isNotNull();
+        assertThat(extensionDescriptor.get("scm").get("url")).isNotNull();
+        assertThat(extensionDescriptor.get("scm").get("url").asText())
+                .as("Check source location %s", extensionDescriptor.get("scm"))
+                .isEqualTo("https://github.com/some/repo");
+    }
+
 }

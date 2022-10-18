@@ -1,6 +1,7 @@
 package io.quarkus.maven;
 
 import static io.quarkus.maven.ExtensionDescriptorMojo.getCodestartArtifact;
+import static io.quarkus.maven.ExtensionDescriptorMojo.getSourceRepo;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Map;
 
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
@@ -97,6 +99,14 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
         assertYamlContains(fileContents, "name", "an arbitrary name");
         assertYamlContains(fileContents, "artifact", "io.quackiverse:test-artifact::jar:1.4.2-SNAPSHOT");
 
+        // From maven this property should be set, running in an IDE it won't be unless specially configured
+        if (System.getenv("GITHUB_REPOSITORY") != null) {
+            // Lazily test that the scm is there but is an object
+            assertYamlContainsObject(fileContents, "scm");
+            assertYamlContains(fileContents, "url", "https://github.com/some/repo");
+
+        }
+
     }
 
     @Test
@@ -163,10 +173,20 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
     }
 
     // Naive yaml processing; we do it this way for readability, and simplicity, and because it's how a human would check it by eye.
+    // If we wanted to be less naive, we could do `ObjectNode extensionDescriptor = TestUtils.readExtensionFile`
     private void assertYamlContains(String fileContents, String key, String value) {
         // ... we should probably cache the file read
         assertTrue("Missing key '" + key + "' in \n" + fileContents, fileContents.contains(key));
         assertTrue("Missing value '" + value + "' in \n" + fileContents, fileContents.contains(key + ": \"" + value + "\""));
+
+    }
+
+    // Naive yaml processing; we do it this way for readability, and simplicity, and because it's how a human would check it by eye.
+    // If we wanted to be less naive, we could do `ObjectNode extensionDescriptor = TestUtils.readExtensionFile`
+    private void assertYamlContainsObject(String fileContents, String key) {
+        // ... we should probably cache the file read
+        assertTrue("Missing key '" + key + "' in \n" + fileContents, fileContents.contains(key));
+        assertTrue("No children? in \n" + fileContents, fileContents.contains(key + ":\n"));
 
     }
 
@@ -184,6 +204,18 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
                 getCodestartArtifact("io.quarkus:my-ext:codestarts:jar:1.0", "999-SN"));
         assertEquals("io.quarkus:my-ext:999-SN",
                 getCodestartArtifact("io.quarkus:my-ext:${project.version}", "999-SN"));
+    }
+
+    @Test
+    void testGetSourceControlCoordinates() {
+        // From maven this property should be set, running in an IDE it won't be unless specially configured
+        if (System.getenv("GITHUB_REPOSITORY") != null) {
+            Map repo = getSourceRepo();
+            assertNotNull(repo);
+            assertTrue(repo.get("url").toString().matches("https://github.com/some/repo"));
+        } else {
+            assertNull(getSourceRepo());
+        }
     }
 
     private ExtensionDescriptorMojo makeMojo(String dirName) throws Exception {

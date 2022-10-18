@@ -10,6 +10,7 @@ dependencies {
     implementation "io.quarkus:quarkus-bootstrap-gradle-resolver"
     implementation "com.fasterxml.jackson.core:jackson-databind"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"
+    testImplementation "org.assertj:assertj-core"
 }
 
 group = "io.quarkus.extension"
@@ -29,4 +30,8 @@ pluginBundle {
     website = 'https://quarkus.io/'
     vcsUrl = 'https://github.com/quarkusio/quarkus'
     tags = ['quarkus', 'quarkusio', 'graalvm']
+}
+
+tasks.withType(Test) {
+    environment 'GITHUB_REPOSITORY','some/repo'
 }

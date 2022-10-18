@@ -7,14 +7,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+
+import javax.enterprise.util.AnnotationLiteral;
 
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Type;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Opcodes;
 
@@ -33,6 +32,19 @@ public class AnnotationLiteralProcessorTest {
     @Retention(RetentionPolicy.RUNTIME)
     public @interface SimpleAnnotation {
         String value();
+
+        class Literal extends AnnotationLiteral<SimpleAnnotation> implements SimpleAnnotation {
+            private final String value;
+
+            public Literal(String value) {
+                this.value = value;
+            }
+
+            @Override
+            public String value() {
+                return value;
+            }
+        }
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -84,6 +96,184 @@ public class AnnotationLiteralProcessorTest {
         Class<?>[] clsArray();
 
         SimpleAnnotation[] nestedArray();
+
+        class Literal extends AnnotationLiteral<ComplexAnnotation> implements ComplexAnnotation {
+            private final boolean bool;
+            private final byte b;
+            private final short s;
+            private final int i;
+            private final long l;
+            private final float f;
+            private final double d;
+            private final char ch;
+            private final String str;
+            private final SimpleEnum en;
+            private final Class<?> cls;
+            private final SimpleAnnotation nested;
+
+            private final boolean[] boolArray;
+            private final byte[] bArray;
+            private final short[] sArray;
+            private final int[] iArray;
+            private final long[] lArray;
+            private final float[] fArray;
+            private final double[] dArray;
+            private final char[] chArray;
+            private final String[] strArray;
+            private final SimpleEnum[] enArray;
+            private final Class<?>[] clsArray;
+            private final SimpleAnnotation[] nestedArray;
+
+            public Literal(boolean bool, byte b, short s, int i, long l, float f, double d, char ch, String str, SimpleEnum en,
+                    Class<?> cls, SimpleAnnotation nested, boolean[] boolArray, byte[] bArray, short[] sArray, int[] iArray,
+                    long[] lArray, float[] fArray, double[] dArray, char[] chArray, String[] strArray, SimpleEnum[] enArray,
+                    Class<?>[] clsArray, SimpleAnnotation[] nestedArray) {
+                this.bool = bool;
+                this.b = b;
+                this.s = s;
+                this.i = i;
+                this.l = l;
+                this.f = f;
+                this.d = d;
+                this.ch = ch;
+                this.str = str;
+                this.en = en;
+                this.cls = cls;
+                this.nested = nested;
+                this.boolArray = boolArray;
+                this.bArray = bArray;
+                this.sArray = sArray;
+                this.iArray = iArray;
+                this.lArray = lArray;
+                this.fArray = fArray;
+                this.dArray = dArray;
+                this.chArray = chArray;
+                this.strArray = strArray;
+                this.enArray = enArray;
+                this.clsArray = clsArray;
+                this.nestedArray = nestedArray;
+            }
+
+            @Override
+            public boolean bool() {
+                return bool;
+            }
+
+            @Override
+            public byte b() {
+                return b;
+            }
+
+            @Override
+            public short s() {
+                return s;
+            }
+
+            @Override
+            public int i() {
+                return i;
+            }
+
+            @Override
+            public long l() {
+                return l;
+            }
+
+            @Override
+            public float f() {
+                return f;
+            }
+
+            @Override
+            public double d() {
+                return d;
+            }
+
+            @Override
+            public char ch() {
+                return ch;
+            }
+
+            @Override
+            public String str() {
+                return str;
+            }
+
+            @Override
+            public SimpleEnum en() {
+                return en;
+            }
+
+            @Override
+            public Class<?> cls() {
+                return cls;
+            }
+
+            @Override
+            public SimpleAnnotation nested() {
+                return nested;
+            }
+
+            @Override
+            public boolean[] boolArray() {
+                return boolArray;
+            }
+
+            @Override
+            public byte[] bArray() {
+                return bArray;
+            }
+
+            @Override
+            public short[] sArray() {
+                return sArray;
+            }
+
+            @Override
+            public int[] iArray() {
+                return iArray;
+            }
+
+            @Override
+            public long[] lArray() {
+                return lArray;
+            }
+
+            @Override
+            public float[] fArray() {
+                return fArray;
+            }
+
+            @Override
+            public double[] dArray() {
+                return dArray;
+            }
+
+            @Override
+            public char[] chArray() {
+                return chArray;
+            }
+
+            @Override
+            public String[] strArray() {
+                return strArray;
+            }
+
+            @Override
+            public SimpleEnum[] enArray() {
+                return enArray;
+            }
+
+            @Override
+            public Class<?>[] clsArray() {
+                return clsArray;
+            }
+
+            @Override
+            public SimpleAnnotation[] nestedArray() {
+                return nestedArray;
+            }
+        }
     }
 
     private final String generatedClass = "io.quarkus.arc.processor.test.GeneratedClass";
@@ -102,7 +292,7 @@ public class AnnotationLiteralProcessorTest {
             MethodCreator method = creator.getMethodCreator("get", ComplexAnnotation.class)
                     .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
             ResultHandle annotation = literals.create(method,
-                    index.getClassByName(DotName.createSimple(ComplexAnnotation.class.getName())), complexAnnotation());
+                    index.getClassByName(DotName.createSimple(ComplexAnnotation.class.getName())), complexAnnotationJandex());
             method.returnValue(annotation);
         }
 
@@ -119,6 +309,16 @@ public class AnnotationLiteralProcessorTest {
         Class<?> clazz = cl.loadClass(generatedClass);
         ComplexAnnotation annotation = (ComplexAnnotation) clazz.getMethod("get").invoke(null);
         verify(annotation);
+
+        // verify both ways, to ensure our generated classes interop correctly with `AnnotationLiteral`
+        assertEquals(complexAnnotationRuntime(), annotation);
+        assertEquals(annotation, complexAnnotationRuntime());
+
+        assertEquals(complexAnnotationRuntime().hashCode(), annotation.hashCode());
+
+        assertEquals(
+                "@io.quarkus.arc.processor.AnnotationLiteralProcessorTest$ComplexAnnotation(bool=true, b=1, s=2, i=3, l=4, f=5.0, d=6.0, ch=a, str=bc, en=FOO, cls=class java.lang.Object, nested=@io.quarkus.arc.processor.AnnotationLiteralProcessorTest$SimpleAnnotation(value=one), boolArray=[true, false], bArray=[7, 8], sArray=[9, 10], iArray=[11, 12], lArray=[13, 14], fArray=[15.0, 16.0], dArray=[17.0, 18.0], chArray=[d, e], strArray=[fg, hi], enArray=[BAR, BAZ], clsArray=[class java.lang.String, class java.lang.Number], nestedArray=[@io.quarkus.arc.processor.AnnotationLiteralProcessorTest$SimpleAnnotation(value=two), @io.quarkus.arc.processor.AnnotationLiteralProcessorTest$SimpleAnnotation(value=three)])",
+                annotation.toString());
     }
 
     private static void verify(ComplexAnnotation ann) {
@@ -173,75 +373,70 @@ public class AnnotationLiteralProcessorTest {
         assertEquals("three", ann.nestedArray()[1].value());
     }
 
-    private static AnnotationInstance complexAnnotation() {
-        return AnnotationInstance.create(DotName.createSimple(ComplexAnnotation.class.getName()), null, List.of(
-                AnnotationValue.createBooleanValue("bool", true),
-                AnnotationValue.createByteValue("b", (byte) 1),
-                AnnotationValue.createShortValue("s", (short) 2),
-                AnnotationValue.createIntegerValue("i", 3),
-                AnnotationValue.createLongValue("l", 4L),
-                AnnotationValue.createFloatValue("f", 5.0F),
-                AnnotationValue.createDoubleValue("d", 6.0),
-                AnnotationValue.createCharacterValue("ch", 'a'),
-                AnnotationValue.createStringValue("str", "bc"),
-                AnnotationValue.createEnumValue("en", DotName.createSimple(SimpleEnum.class.getName()), "FOO"),
-                AnnotationValue.createClassValue("cls", Type.create(DotName.createSimple("java.lang.Object"), Type.Kind.CLASS)),
-                AnnotationValue.createNestedAnnotationValue("nested", simpleAnnotation("one")),
-
-                AnnotationValue.createArrayValue("boolArray", new AnnotationValue[] {
-                        AnnotationValue.createBooleanValue("", true),
-                        AnnotationValue.createBooleanValue("", false),
-                }),
-                AnnotationValue.createArrayValue("bArray", new AnnotationValue[] {
-                        AnnotationValue.createByteValue("", (byte) 7),
-                        AnnotationValue.createByteValue("", (byte) 8),
-                }),
-                AnnotationValue.createArrayValue("sArray", new AnnotationValue[] {
-                        AnnotationValue.createShortValue("", (short) 9),
-                        AnnotationValue.createShortValue("", (short) 10),
-                }),
-                AnnotationValue.createArrayValue("iArray", new AnnotationValue[] {
-                        AnnotationValue.createIntegerValue("", 11),
-                        AnnotationValue.createIntegerValue("", 12),
-                }),
-                AnnotationValue.createArrayValue("lArray", new AnnotationValue[] {
-                        AnnotationValue.createLongValue("", 13L),
-                        AnnotationValue.createLongValue("", 14L),
-                }),
-                AnnotationValue.createArrayValue("fArray", new AnnotationValue[] {
-                        AnnotationValue.createFloatValue("", 15.0F),
-                        AnnotationValue.createFloatValue("", 16.0F),
-                }),
-                AnnotationValue.createArrayValue("dArray", new AnnotationValue[] {
-                        AnnotationValue.createDoubleValue("", 17.0),
-                        AnnotationValue.createDoubleValue("", 18.0),
-                }),
-                AnnotationValue.createArrayValue("chArray", new AnnotationValue[] {
-                        AnnotationValue.createCharacterValue("", 'd'),
-                        AnnotationValue.createCharacterValue("", 'e'),
-                }),
-                AnnotationValue.createArrayValue("strArray", new AnnotationValue[] {
-                        AnnotationValue.createStringValue("", "fg"),
-                        AnnotationValue.createStringValue("", "hi"),
-                }),
-                AnnotationValue.createArrayValue("enArray", new AnnotationValue[] {
-                        AnnotationValue.createEnumValue("", DotName.createSimple(SimpleEnum.class.getName()), "BAR"),
-                        AnnotationValue.createEnumValue("", DotName.createSimple(SimpleEnum.class.getName()), "BAZ"),
-                }),
-                AnnotationValue.createArrayValue("clsArray", new AnnotationValue[] {
-                        AnnotationValue.createClassValue("",
-                                Type.create(DotName.createSimple("java.lang.String"), Type.Kind.CLASS)),
-                        AnnotationValue.createClassValue("",
-                                Type.create(DotName.createSimple("java.lang.Number"), Type.Kind.CLASS)),
-                }),
-                AnnotationValue.createArrayValue("nestedArray", new AnnotationValue[] {
-                        AnnotationValue.createNestedAnnotationValue("", simpleAnnotation("two")),
-                        AnnotationValue.createNestedAnnotationValue("", simpleAnnotation("three")),
-                })));
+    private static AnnotationInstance complexAnnotationJandex() {
+        return AnnotationInstance.builder(ComplexAnnotation.class)
+                .add("bool", true)
+                .add("b", (byte) 1)
+                .add("s", (short) 2)
+                .add("i", 3)
+                .add("l", 4L)
+                .add("f", 5.0F)
+                .add("d", 6.0)
+                .add("ch", 'a')
+                .add("str", "bc")
+                .add("en", SimpleEnum.FOO)
+                .add("cls", Object.class)
+                .add("nested", simpleAnnotationJandex("one"))
+                .add("boolArray", new boolean[] { true, false })
+                .add("bArray", new byte[] { (byte) 7, (byte) 8 })
+                .add("sArray", new short[] { (short) 9, (short) 10 })
+                .add("iArray", new int[] { 11, 12 })
+                .add("lArray", new long[] { 13L, 14L })
+                .add("fArray", new float[] { 15.0F, 16.0F })
+                .add("dArray", new double[] { 17.0, 18.0 })
+                .add("chArray", new char[] { 'd', 'e' })
+                .add("strArray", new String[] { "fg", "hi" })
+                .add("enArray", new SimpleEnum[] { SimpleEnum.BAR, SimpleEnum.BAZ })
+                .add("clsArray", new Class[] { String.class, Number.class })
+                .add("nestedArray", new AnnotationInstance[] { simpleAnnotationJandex("two"), simpleAnnotationJandex("three") })
+                .build();
     }
 
-    private static AnnotationInstance simpleAnnotation(String value) {
-        return AnnotationInstance.create(DotName.createSimple(SimpleAnnotation.class.getName()), null,
-                List.of(AnnotationValue.createStringValue("value", value)));
+    private static AnnotationInstance simpleAnnotationJandex(String value) {
+        return AnnotationInstance.builder(SimpleAnnotation.class)
+                .add("value", value)
+                .build();
+    }
+
+    private static ComplexAnnotation complexAnnotationRuntime() {
+        return new ComplexAnnotation.Literal(
+                true,
+                (byte) 1,
+                (short) 2,
+                3,
+                4L,
+                5.0F,
+                6.0,
+                'a',
+                "bc",
+                SimpleEnum.FOO,
+                Object.class,
+                simpleAnnotationRuntime("one"),
+                new boolean[] { true, false },
+                new byte[] { (byte) 7, (byte) 8 },
+                new short[] { (short) 9, (short) 10 },
+                new int[] { 11, 12 },
+                new long[] { 13L, 14L },
+                new float[] { 15.0F, 16.0F },
+                new double[] { 17.0, 18.0 },
+                new char[] { 'd', 'e' },
+                new String[] { "fg", "hi" },
+                new SimpleEnum[] { SimpleEnum.BAR, SimpleEnum.BAZ },
+                new Class[] { String.class, Number.class },
+                new SimpleAnnotation[] { simpleAnnotationRuntime("two"), simpleAnnotationRuntime("three") });
+    }
+
+    private static SimpleAnnotation simpleAnnotationRuntime(String value) {
+        return new SimpleAnnotation.Literal(value);
     }
 }

@@ -50,7 +50,7 @@ rsync -vr --delete \
     --exclude='**/_attributes-local.adoc' \
     --exclude='**/guides.md' \
     --exclude='**/_templates' \
-    target/asciidoc/sources/* \
+    target/asciidoc/sources/ \
     $TARGET_GUIDES
 
 echo "\nCopying from ../target/asciidoc/generated/ to $TARGET_CONFIG"

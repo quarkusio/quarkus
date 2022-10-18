@@ -6,14 +6,13 @@ import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-
-import javax.enterprise.util.AnnotationLiteral;
 
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.MethodInfo;
@@ -24,11 +23,12 @@ import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.arc.processor.AnnotationLiteralProcessor.AnnotationLiteralClassInfo;
 import io.quarkus.arc.processor.AnnotationLiteralProcessor.CacheKey;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
-import io.quarkus.gizmo.BranchResult;
+import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -100,10 +100,6 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
      */
     private void createAnnotationLiteralClass(ClassOutput classOutput, AnnotationLiteralClassInfo literal,
             Set<String> existingClasses) {
-        // Ljavax/enterprise/util/AnnotationLiteral<Lcom/foo/MyQualifier;>;Lcom/foo/MyQualifier;
-        String signature = String.format("L%1$s<L%2$s;>;L%2$s;",
-                AnnotationLiteral.class.getName().replace('.', '/'),
-                literal.annotationClass.toString().replace('.', '/'));
 
         String generatedName = literal.generatedClassName.replace('.', '/');
         if (existingClasses.contains(generatedName)) {
@@ -113,35 +109,37 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
         ClassCreator annotationLiteral = ClassCreator.builder()
                 .classOutput(classOutput)
                 .className(generatedName)
-                .superClass(AnnotationLiteral.class)
                 .interfaces(literal.annotationName().toString())
-                .signature(signature)
                 .build();
 
         MethodCreator constructor = annotationLiteral.getMethodCreator(Methods.INIT, "V",
                 literal.annotationMembers().stream().map(m -> m.returnType().name().toString()).toArray());
 
-        constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(AnnotationLiteral.class), constructor.getThis());
+        constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), constructor.getThis());
 
         int constructorParameterIndex = 0;
         for (MethodInfo annotationMember : literal.annotationMembers()) {
             String type = annotationMember.returnType().name().toString();
+            FieldDescriptor field = FieldDescriptor.of(annotationLiteral.getClassName(), annotationMember.name(), type);
+
             // field
-            annotationLiteral.getFieldCreator(annotationMember.name(), type).setModifiers(ACC_PRIVATE | ACC_FINAL);
+            annotationLiteral.getFieldCreator(field).setModifiers(ACC_PRIVATE | ACC_FINAL);
 
             // constructor: param -> field
-            constructor.writeInstanceField(
-                    FieldDescriptor.of(annotationLiteral.getClassName(), annotationMember.name(), type),
-                    constructor.getThis(), constructor.getMethodParam(constructorParameterIndex));
+            constructor.writeInstanceField(field, constructor.getThis(),
+                    constructor.getMethodParam(constructorParameterIndex));
 
             // annotation member method implementation
             MethodCreator value = annotationLiteral.getMethodCreator(annotationMember.name(), type).setModifiers(ACC_PUBLIC);
-            value.returnValue(value.readInstanceField(
-                    FieldDescriptor.of(annotationLiteral.getClassName(), annotationMember.name(), type), value.getThis()));
+            value.returnValue(value.readInstanceField(field, value.getThis()));
 
             constructorParameterIndex++;
         }
-        constructor.returnValue(null);
+        constructor.returnVoid();
+
+        MethodCreator annotationType = annotationLiteral.getMethodCreator("annotationType", Class.class)
+                .setModifiers(ACC_PUBLIC);
+        annotationType.returnValue(annotationType.loadClass(literal.annotationClass));
 
         if (literal.annotationMembers().isEmpty()) {
             constructor.setModifiers(ACC_PRIVATE);
@@ -153,25 +151,14 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
             staticInit.setModifiers(ACC_STATIC);
             ResultHandle singletonInstance = staticInit.newInstance(constructor.getMethodDescriptor());
             staticInit.writeStaticField(singleton.getFieldDescriptor(), singletonInstance);
-            staticInit.returnValue(null);
-
-            // only one instance ever exists
-            MethodCreator equals = annotationLiteral.getMethodCreator("equals", boolean.class, Object.class);
-            BranchResult equality = equals.ifReferencesEqual(equals.readStaticField(singleton.getFieldDescriptor()),
-                    equals.getMethodParam(0));
-            equality.trueBranch().returnValue(equality.trueBranch().load(true));
-            equality.falseBranch().returnValue(equality.falseBranch().load(false));
-
-            // consistent with AnnotationLiteral's default `hashCode` implementation
-            MethodCreator hashCode = annotationLiteral.getMethodCreator("hashCode", int.class);
-            hashCode.returnValue(hashCode.load(0));
-
-            // consistent with AnnotationLiteral's default `toString` implementation
-            MethodCreator toString = annotationLiteral.getMethodCreator("toString", String.class);
-            toString.returnValue(toString.load("@" + literal.annotationClass.name() + "()"));
+            staticInit.returnVoid();
         } else {
             generateStaticFieldsWithDefaultValues(annotationLiteral, literal.annotationMembers());
         }
+
+        generateEquals(annotationLiteral, literal);
+        generateHashCode(annotationLiteral, literal);
+        generateToString(annotationLiteral, literal);
 
         annotationLiteral.close();
         LOGGER.debugf("Annotation literal class generated: %s", literal.generatedClassName);
@@ -234,6 +221,358 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
             }
         }
 
-        staticConstructor.returnValue(null);
+        staticConstructor.returnVoid();
+    }
+
+    // ---
+    // note that `java.lang.annotation.Annotation` specifies exactly how `equals` and `hashCode` should work
+    // (and there's also a recommendation for `toString`)
+
+    private static final MethodDescriptor FLOAT_TO_INT_BITS = MethodDescriptor.ofMethod(Float.class, "floatToIntBits",
+            int.class, float.class);
+    private static final MethodDescriptor DOUBLE_TO_LONG_BITS = MethodDescriptor.ofMethod(Double.class, "doubleToLongBits",
+            long.class, double.class);
+
+    private static final MethodDescriptor BOOLEAN_ARRAY_EQUALS = MethodDescriptor.ofMethod(Arrays.class, "equals",
+            boolean.class, boolean[].class, boolean[].class);
+    private static final MethodDescriptor BYTE_ARRAY_EQUALS = MethodDescriptor.ofMethod(Arrays.class, "equals", boolean.class,
+            byte[].class, byte[].class);
+    private static final MethodDescriptor SHORT_ARRAY_EQUALS = MethodDescriptor.ofMethod(Arrays.class, "equals", boolean.class,
+            short[].class, short[].class);
+    private static final MethodDescriptor INT_ARRAY_EQUALS = MethodDescriptor.ofMethod(Arrays.class, "equals", boolean.class,
+            int[].class, int[].class);
+    private static final MethodDescriptor LONG_ARRAY_EQUALS = MethodDescriptor.ofMethod(Arrays.class, "equals", boolean.class,
+            long[].class, long[].class);
+    private static final MethodDescriptor FLOAT_ARRAY_EQUALS = MethodDescriptor.ofMethod(Arrays.class, "equals", boolean.class,
+            float[].class, float[].class);
+    private static final MethodDescriptor DOUBLE_ARRAY_EQUALS = MethodDescriptor.ofMethod(Arrays.class, "equals", boolean.class,
+            double[].class, double[].class);
+    private static final MethodDescriptor CHAR_ARRAY_EQUALS = MethodDescriptor.ofMethod(Arrays.class, "equals", boolean.class,
+            char[].class, char[].class);
+    private static final MethodDescriptor OBJECT_ARRAY_EQUALS = MethodDescriptor.ofMethod(Arrays.class, "equals", boolean.class,
+            Object[].class, Object[].class);
+
+    private static final MethodDescriptor BOOLEAN_HASH_CODE = MethodDescriptor.ofMethod(Boolean.class, "hashCode", int.class,
+            boolean.class);
+    private static final MethodDescriptor BOOLEAN_ARRAY_HASH_CODE = MethodDescriptor.ofMethod(Arrays.class, "hashCode",
+            int.class, boolean[].class);
+    private static final MethodDescriptor BYTE_HASH_CODE = MethodDescriptor.ofMethod(Byte.class, "hashCode", int.class,
+            byte.class);
+    private static final MethodDescriptor BYTE_ARRAY_HASH_CODE = MethodDescriptor.ofMethod(Arrays.class, "hashCode", int.class,
+            byte[].class);
+    private static final MethodDescriptor SHORT_HASH_CODE = MethodDescriptor.ofMethod(Short.class, "hashCode", int.class,
+            short.class);
+    private static final MethodDescriptor SHORT_ARRAY_HASH_CODE = MethodDescriptor.ofMethod(Arrays.class, "hashCode", int.class,
+            short[].class);
+    private static final MethodDescriptor INT_HASH_CODE = MethodDescriptor.ofMethod(Integer.class, "hashCode", int.class,
+            int.class);
+    private static final MethodDescriptor INT_ARRAY_HASH_CODE = MethodDescriptor.ofMethod(Arrays.class, "hashCode", int.class,
+            int[].class);
+    private static final MethodDescriptor LONG_HASH_CODE = MethodDescriptor.ofMethod(Long.class, "hashCode", int.class,
+            long.class);
+    private static final MethodDescriptor LONG_ARRAY_HASH_CODE = MethodDescriptor.ofMethod(Arrays.class, "hashCode", int.class,
+            long[].class);
+    private static final MethodDescriptor FLOAT_ARRAY_HASH_CODE = MethodDescriptor.ofMethod(Arrays.class, "hashCode", int.class,
+            float[].class);
+    private static final MethodDescriptor FLOAT_HASH_CODE = MethodDescriptor.ofMethod(Float.class, "hashCode", int.class,
+            float.class);
+    private static final MethodDescriptor DOUBLE_HASH_CODE = MethodDescriptor.ofMethod(Double.class, "hashCode", int.class,
+            double.class);
+    private static final MethodDescriptor DOUBLE_ARRAY_HASH_CODE = MethodDescriptor.ofMethod(Arrays.class, "hashCode",
+            int.class, double[].class);
+    private static final MethodDescriptor CHAR_HASH_CODE = MethodDescriptor.ofMethod(Character.class, "hashCode", int.class,
+            char.class);
+    private static final MethodDescriptor CHAR_ARRAY_HASH_CODE = MethodDescriptor.ofMethod(Arrays.class, "hashCode", int.class,
+            char[].class);
+    private static final MethodDescriptor OBJECT_ARRAY_HASH_CODE = MethodDescriptor.ofMethod(Arrays.class, "hashCode",
+            int.class, Object[].class);
+
+    private static final MethodDescriptor BOOLEAN_ARRAY_TO_STRING = MethodDescriptor.ofMethod(Arrays.class, "toString",
+            String.class, boolean[].class);
+    private static final MethodDescriptor BYTE_ARRAY_TO_STRING = MethodDescriptor.ofMethod(Arrays.class, "toString",
+            String.class, byte[].class);
+    private static final MethodDescriptor SHORT_ARRAY_TO_STRING = MethodDescriptor.ofMethod(Arrays.class, "toString",
+            String.class, short[].class);
+    private static final MethodDescriptor INT_ARRAY_TO_STRING = MethodDescriptor.ofMethod(Arrays.class, "toString",
+            String.class, int[].class);
+    private static final MethodDescriptor LONG_ARRAY_TO_STRING = MethodDescriptor.ofMethod(Arrays.class, "toString",
+            String.class, long[].class);
+    private static final MethodDescriptor FLOAT_ARRAY_TO_STRING = MethodDescriptor.ofMethod(Arrays.class, "toString",
+            String.class, float[].class);
+    private static final MethodDescriptor DOUBLE_ARRAY_TO_STRING = MethodDescriptor.ofMethod(Arrays.class, "toString",
+            String.class, double[].class);
+    private static final MethodDescriptor CHAR_ARRAY_TO_STRING = MethodDescriptor.ofMethod(Arrays.class, "toString",
+            String.class, char[].class);
+    private static final MethodDescriptor OBJECT_ARRAY_TO_STRING = MethodDescriptor.ofMethod(Arrays.class, "toString",
+            String.class, Object[].class);
+
+    private static void generateEquals(ClassCreator clazz, AnnotationLiteralClassInfo literal) {
+        MethodCreator equals = clazz.getMethodCreator("equals", boolean.class, Object.class);
+
+        // this looks weird, but makes decompiled code look nicer
+        equals.ifReferencesNotEqual(equals.getThis(), equals.getMethodParam(0))
+                .falseBranch().returnBoolean(true);
+
+        equals.ifTrue(equals.instanceOf(equals.getMethodParam(0), literal.annotationClass.name().toString()))
+                .falseBranch().returnBoolean(false);
+
+        if (literal.annotationMembers().isEmpty()) {
+            // short-circuit for memberless annotations
+            equals.returnBoolean(true);
+        }
+
+        ResultHandle other = equals.checkCast(equals.getMethodParam(0), literal.annotationClass.name().toString());
+
+        for (MethodInfo annotationMember : literal.annotationMembers()) {
+            String type = annotationMember.returnType().name().toString();
+
+            // for `this` object, can read directly from the field, that's what the method also does
+            FieldDescriptor field = FieldDescriptor.of(clazz.getClassName(), annotationMember.name(), type);
+            ResultHandle thisValue = equals.readInstanceField(field, equals.getThis());
+
+            // for the other object, must invoke the method
+            ResultHandle thatValue = equals.invokeInterfaceMethod(annotationMember, other);
+
+            // type of the field (in this class) is the same as return type of the method (in both classes)
+            switch (field.getType()) {
+                case "Z": // boolean
+                case "B": // byte
+                case "S": // short
+                case "I": // int
+                case "C": // char
+                    equals.ifIntegerEqual(thisValue, thatValue)
+                            .falseBranch().returnBoolean(false);
+                    break;
+                case "J": // long
+                    equals.ifZero(equals.compareLong(thisValue, thatValue))
+                            .falseBranch().returnBoolean(false);
+                    break;
+                case "F": // float
+                    equals.ifIntegerEqual(equals.invokeStaticMethod(FLOAT_TO_INT_BITS, thisValue),
+                            equals.invokeStaticMethod(FLOAT_TO_INT_BITS, thatValue))
+                            .falseBranch().returnBoolean(false);
+                    break;
+                case "D": // double
+                    equals.ifZero(equals.compareLong(equals.invokeStaticMethod(DOUBLE_TO_LONG_BITS, thisValue),
+                            equals.invokeStaticMethod(DOUBLE_TO_LONG_BITS, thatValue)))
+                            .falseBranch().returnBoolean(false);
+                    break;
+                case "[Z": // boolean[]
+                    equals.ifTrue(equals.invokeStaticMethod(BOOLEAN_ARRAY_EQUALS, thisValue, thatValue))
+                            .falseBranch().returnBoolean(false);
+                    break;
+                case "[B": // byte[]
+                    equals.ifTrue(equals.invokeStaticMethod(BYTE_ARRAY_EQUALS, thisValue, thatValue))
+                            .falseBranch().returnBoolean(false);
+                    break;
+                case "[S": // short[]
+                    equals.ifTrue(equals.invokeStaticMethod(SHORT_ARRAY_EQUALS, thisValue, thatValue))
+                            .falseBranch().returnBoolean(false);
+                    break;
+                case "[I": // int[]
+                    equals.ifTrue(equals.invokeStaticMethod(INT_ARRAY_EQUALS, thisValue, thatValue))
+                            .falseBranch().returnBoolean(false);
+                    break;
+                case "[J": // long[]
+                    equals.ifTrue(equals.invokeStaticMethod(LONG_ARRAY_EQUALS, thisValue, thatValue))
+                            .falseBranch().returnBoolean(false);
+                    break;
+                case "[F": // float[]
+                    equals.ifTrue(equals.invokeStaticMethod(FLOAT_ARRAY_EQUALS, thisValue, thatValue))
+                            .falseBranch().returnBoolean(false);
+                    break;
+                case "[D": // double[]
+                    equals.ifTrue(equals.invokeStaticMethod(DOUBLE_ARRAY_EQUALS, thisValue, thatValue))
+                            .falseBranch().returnBoolean(false);
+                    break;
+                case "[C": // char[]
+                    equals.ifTrue(equals.invokeStaticMethod(CHAR_ARRAY_EQUALS, thisValue, thatValue))
+                            .falseBranch().returnBoolean(false);
+                    break;
+                default:
+                    if (field.getType().startsWith("L")) {
+                        // Object (String, Class, enum, nested annotation)
+                        equals.ifTrue(equals.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS, thisValue, thatValue))
+                                .falseBranch().returnBoolean(false);
+                    } else if (field.getType().startsWith("[L")) {
+                        // Object[]
+                        equals.ifTrue(equals.invokeStaticMethod(OBJECT_ARRAY_EQUALS, thisValue, thatValue))
+                                .falseBranch().returnBoolean(false);
+                    } else {
+                        // multidimensional array is not a valid annotation member
+                        throw new IllegalArgumentException("Invalid annotation member: " + field);
+                    }
+                    break;
+            }
+        }
+
+        equals.returnBoolean(true);
+    }
+
+    private static void generateHashCode(ClassCreator clazz, AnnotationLiteralClassInfo literal) {
+        MethodCreator hashCode = clazz.getMethodCreator("hashCode", int.class);
+
+        if (literal.annotationMembers().isEmpty()) {
+            // short-circuit for memberless annotations
+            hashCode.returnInt(0);
+        }
+
+        AssignableResultHandle result = hashCode.createVariable(int.class);
+        hashCode.assign(result, hashCode.load(0));
+
+        for (MethodInfo annotationMember : literal.annotationMembers()) {
+            // we could even precompute the member name hash code statically...
+            ResultHandle memberName = hashCode.load(annotationMember.name());
+            ResultHandle memberNameHash = hashCode.multiply(
+                    hashCode.load(127),
+                    hashCode.invokeVirtualMethod(MethodDescriptors.OBJECT_HASH_CODE, memberName));
+
+            String type = annotationMember.returnType().name().toString();
+
+            // can read directly from the field, that's what the method also does
+            FieldDescriptor field = FieldDescriptor.of(clazz.getClassName(), annotationMember.name(), type);
+            ResultHandle value = hashCode.readInstanceField(field, hashCode.getThis());
+
+            ResultHandle memberValueHash;
+            switch (field.getType()) {
+                case "Z": // boolean
+                    memberValueHash = hashCode.invokeStaticMethod(BOOLEAN_HASH_CODE, value);
+                    break;
+                case "B": // byte
+                    memberValueHash = hashCode.invokeStaticMethod(BYTE_HASH_CODE, value);
+                    break;
+                case "S": // short
+                    memberValueHash = hashCode.invokeStaticMethod(SHORT_HASH_CODE, value);
+                    break;
+                case "I": // int
+                    memberValueHash = hashCode.invokeStaticMethod(INT_HASH_CODE, value);
+                    break;
+                case "J": // long
+                    memberValueHash = hashCode.invokeStaticMethod(LONG_HASH_CODE, value);
+                    break;
+                case "F": // float
+                    memberValueHash = hashCode.invokeStaticMethod(FLOAT_HASH_CODE, value);
+                    break;
+                case "D": // double
+                    memberValueHash = hashCode.invokeStaticMethod(DOUBLE_HASH_CODE, value);
+                    break;
+                case "C": // char
+                    memberValueHash = hashCode.invokeStaticMethod(CHAR_HASH_CODE, value);
+                    break;
+                case "[Z": // boolean[]
+                    memberValueHash = hashCode.invokeStaticMethod(BOOLEAN_ARRAY_HASH_CODE, value);
+                    break;
+                case "[B": // byte[]
+                    memberValueHash = hashCode.invokeStaticMethod(BYTE_ARRAY_HASH_CODE, value);
+                    break;
+                case "[S": // short[]
+                    memberValueHash = hashCode.invokeStaticMethod(SHORT_ARRAY_HASH_CODE, value);
+                    break;
+                case "[I": // int[]
+                    memberValueHash = hashCode.invokeStaticMethod(INT_ARRAY_HASH_CODE, value);
+                    break;
+                case "[J": // long[]
+                    memberValueHash = hashCode.invokeStaticMethod(LONG_ARRAY_HASH_CODE, value);
+                    break;
+                case "[F": // float[]
+                    memberValueHash = hashCode.invokeStaticMethod(FLOAT_ARRAY_HASH_CODE, value);
+                    break;
+                case "[D": // double[]
+                    memberValueHash = hashCode.invokeStaticMethod(DOUBLE_ARRAY_HASH_CODE, value);
+                    break;
+                case "[C": // char[]
+                    memberValueHash = hashCode.invokeStaticMethod(CHAR_ARRAY_HASH_CODE, value);
+                    break;
+                default:
+                    if (field.getType().startsWith("L")) {
+                        // Object (String, Class, enum, nested annotation)
+                        memberValueHash = hashCode.invokeVirtualMethod(MethodDescriptors.OBJECT_HASH_CODE, value);
+                    } else if (field.getType().startsWith("[L")) {
+                        // Object[]
+                        memberValueHash = hashCode.invokeStaticMethod(OBJECT_ARRAY_HASH_CODE, value);
+                    } else {
+                        // multidimensional array is not a valid annotation member
+                        throw new IllegalArgumentException("Invalid annotation member: " + field);
+                    }
+                    break;
+            }
+
+            ResultHandle xor = hashCode.bitwiseXor(memberNameHash, memberValueHash);
+            hashCode.assign(result, hashCode.add(result, xor));
+        }
+
+        hashCode.returnValue(result);
+    }
+
+    // CDI's `AnnotationLiteral` has special cases for `String` and `Class` values
+    // and wraps arrays into "{...}" instead of "[...]", but that's not necessary
+    private static void generateToString(ClassCreator clazz, AnnotationLiteralClassInfo literal) {
+        MethodCreator toString = clazz.getMethodCreator("toString", String.class);
+
+        if (literal.annotationMembers().isEmpty()) {
+            // short-circuit for memberless annotations
+            toString.returnValue(toString.load("@" + literal.annotationClass.name().toString() + "()"));
+        }
+
+        Gizmo.StringBuilderGenerator str = Gizmo.newStringBuilder(toString);
+
+        str.append('@' + literal.annotationClass.name().toString() + '(');
+
+        boolean first = true;
+        for (MethodInfo annotationMember : literal.annotationMembers()) {
+            if (first) {
+                str.append(annotationMember.name() + "=");
+            } else {
+                str.append(", " + annotationMember.name() + "=");
+            }
+
+            String type = annotationMember.returnType().name().toString();
+            FieldDescriptor field = FieldDescriptor.of(clazz.getClassName(), annotationMember.name(), type);
+
+            ResultHandle value = toString.readInstanceField(field, toString.getThis());
+            switch (field.getType()) {
+                case "[Z": // boolean[]
+                    str.append(toString.invokeStaticMethod(BOOLEAN_ARRAY_TO_STRING, value));
+                    break;
+                case "[B": // byte[]
+                    str.append(toString.invokeStaticMethod(BYTE_ARRAY_TO_STRING, value));
+                    break;
+                case "[S": // short[]
+                    str.append(toString.invokeStaticMethod(SHORT_ARRAY_TO_STRING, value));
+                    break;
+                case "[I": // int[]
+                    str.append(toString.invokeStaticMethod(INT_ARRAY_TO_STRING, value));
+                    break;
+                case "[J": // long[]
+                    str.append(toString.invokeStaticMethod(LONG_ARRAY_TO_STRING, value));
+                    break;
+                case "[F": // float[]
+                    str.append(toString.invokeStaticMethod(FLOAT_ARRAY_TO_STRING, value));
+                    break;
+                case "[D": // double[]
+                    str.append(toString.invokeStaticMethod(DOUBLE_ARRAY_TO_STRING, value));
+                    break;
+                case "[C": // char[]
+                    str.append(toString.invokeStaticMethod(CHAR_ARRAY_TO_STRING, value));
+                    break;
+                default:
+                    if (field.getType().startsWith("[L")) {
+                        // Object[]
+                        str.append(toString.invokeStaticMethod(OBJECT_ARRAY_TO_STRING, value));
+                    } else if (field.getType().startsWith("[[")) {
+                        // multidimensional array is not a valid annotation member
+                        throw new IllegalArgumentException("Invalid annotation member: " + field);
+                    } else {
+                        // not an array, that is, any primitive or Object
+                        str.append(value);
+                    }
+                    break;
+            }
+
+            first = false;
+        }
+
+        str.append(')');
+        toString.returnValue(str.callToString());
     }
 }

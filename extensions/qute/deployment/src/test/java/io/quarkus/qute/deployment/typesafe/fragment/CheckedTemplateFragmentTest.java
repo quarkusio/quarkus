@@ -19,13 +19,15 @@ public class CheckedTemplateFragmentTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot(root -> root
                     .addClasses(Templates.class, Item.class)
-                    .addAsResource(new StringAsset("{#each items}{#fragment id='item'}{it.name}{/fragment}{/each}"),
+                    .addAsResource(new StringAsset(
+                            "{#each items}{#fragment id='item'}{it.name}{#if it.name.length > 5} is a long name{/if}{/fragment}{/each}"),
                             "templates/CheckedTemplateFragmentTest/items.html"));
 
     @Test
     public void testFragment() {
         assertEquals("Foo", Templates.items(null).getFragment("item").data("it", new Item("Foo")).render());
         assertEquals("Foo", Templates.items$item(new Item("Foo")).render());
+        assertEquals("FooAndBar is a long name", Templates.items$item(new Item("FooAndBar")).render());
     }
 
     @CheckedTemplate

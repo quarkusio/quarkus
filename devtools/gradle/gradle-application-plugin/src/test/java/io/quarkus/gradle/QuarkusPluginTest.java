@@ -1,15 +1,10 @@
 package io.quarkus.gradle;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -21,17 +16,11 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.testfixtures.ProjectBuilder;
-import org.gradle.testkit.runner.BuildResult;
-import org.gradle.testkit.runner.GradleRunner;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 
 public class QuarkusPluginTest {
-
-    @TempDir
-    Path testProjectDir;
 
     @Test
     public void shouldCreateTasks() {
@@ -78,7 +67,7 @@ public class QuarkusPluginTest {
     }
 
     @Test
-    public void shouldReturnMultipleOutputSourceDirectories() {
+    public void shouldReturnMutlipleOutputSourceDirectories() {
         Project project = ProjectBuilder.builder().build();
         project.getPluginManager().apply(QuarkusPlugin.ID);
         project.getPluginManager().apply("java");
@@ -95,68 +84,7 @@ public class QuarkusPluginTest {
 
     }
 
-    @Test
-    public void shouldNotFailOnProjectDependenciesWithoutMain() throws IOException {
-        var kotlinVersion = System.getProperty("kotlin_version", "1.7.20");
-        var settingFile = testProjectDir.resolve("settings.gradle.kts");
-        var mppProjectDir = testProjectDir.resolve("mpp");
-        var quarkusProjectDir = testProjectDir.resolve("quarkus");
-        var mppBuild = mppProjectDir.resolve("build.gradle.kts");
-        var quarkusBuild = quarkusProjectDir.resolve("build.gradle.kts");
-        Files.createDirectory(mppProjectDir);
-        Files.createDirectory(quarkusProjectDir);
-        Files.writeString(settingFile,
-                "rootProject.name = \"quarkus-mpp-sample\"\n" +
-                        "\n" +
-                        "include(\n" +
-                        "    \"mpp\",\n" +
-                        "    \"quarkus\"\n" +
-                        ")");
-
-        Files.writeString(mppBuild,
-                "buildscript {\n" +
-                        "    repositories {\n" +
-                        "        mavenLocal()\n" +
-                        "        mavenCentral()\n" +
-                        "    }\n" +
-                        "    dependencies {\n" +
-                        "        classpath(\"org.jetbrains.kotlin:kotlin-gradle-plugin:" + kotlinVersion + "\")\n" +
-                        "    }\n" +
-                        "}\n" +
-                        "\n" +
-                        "apply(plugin = \"org.jetbrains.kotlin.multiplatform\")\n" +
-                        "\n" +
-                        "repositories {\n" +
-                        "    mavenCentral()\n" +
-                        "}\n" +
-                        "\n" +
-                        "configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension>{\n" +
-                        "    jvm()\n" +
-                        "}");
-
-        Files.writeString(quarkusBuild,
-                "plugins {\n" +
-                        "    id(\"io.quarkus\")\n" +
-                        "}\n" +
-                        "\n" +
-                        "repositories {\n" +
-                        "    mavenCentral()\n" +
-                        "}\n" +
-                        "\n" +
-                        "dependencies {\n" +
-                        "    implementation(project(\":mpp\"))\n" +
-                        "}");
-
-        BuildResult result = GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir.toFile())
-                .withArguments("quarkusGenerateCode")
-                .build();
-
-        assertEquals(SUCCESS, result.task(":quarkus:quarkusGenerateCode").getOutcome());
-    }
-
-    private static List<String> getDependantProvidedTaskName(Task task) {
+    private static final List<String> getDependantProvidedTaskName(Task task) {
         List<String> dependantTaskNames = new ArrayList<>();
         for (Object t : task.getDependsOn()) {
             try {

@@ -235,28 +235,5 @@
                 </plugins>
             </build>
         </profile>
-        <profile>
-            <id>jdk18-workarounds</id>
-            <activation>
-                <jdk>[18,)</jdk>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <executions>
-                            <!-- "unbind" the JDK16-17 workaround which is based on jdk.net.usePlainSocketImpl
-                                  because that property has been removed in Java 18: https://bugs.openjdk.java.net/browse/JDK-8253119
-                                  see also: https://github.com/quarkusio/quarkus/pull/19559#issuecomment-932987301 -->
-                            <execution>
-                                <id>jdk16-plain-socket-workaround</id>
-                                <phase>none</phase>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
 </project>

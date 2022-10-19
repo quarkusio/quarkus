@@ -27,7 +27,7 @@ public class ObjectMapperProducer {
     @Singleton
     @Produces
     public ObjectMapper objectMapper(@All List<ObjectMapperCustomizer> customizers,
-            JacksonBuildTimeConfig jacksonBuildTimeConfig) {
+            JacksonBuildTimeConfig jacksonBuildTimeConfig, JacksonSupport jacksonSupport) {
         ObjectMapper objectMapper = new ObjectMapper();
         if (!jacksonBuildTimeConfig.failOnUnknownProperties) {
             // this feature is enabled by default, so we disable it
@@ -55,6 +55,9 @@ public class ObjectMapperProducer {
         ZoneId zoneId = jacksonBuildTimeConfig.timezone.orElse(null);
         if ((zoneId != null) && !zoneId.getId().equals("UTC")) { // Jackson uses UTC as the default, so let's not reset it
             objectMapper.setTimeZone(TimeZone.getTimeZone(zoneId));
+        }
+        if (jacksonSupport.configuredNamingStrategy().isPresent()) {
+            objectMapper.setPropertyNamingStrategy(jacksonSupport.configuredNamingStrategy().get());
         }
         List<ObjectMapperCustomizer> sortedCustomizers = sortCustomizersInDescendingPriorityOrder(customizers);
         for (ObjectMapperCustomizer customizer : sortedCustomizers) {

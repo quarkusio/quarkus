@@ -1201,13 +1201,199 @@ quarkus.log.file.level=DEBUG
 quarkus.log.file.path=/tmp/debug.log
 ----
 
-Since `format` is not defined in these properties, the default value from `@ConfigItem` will be used instead.
+Since `format` is not defined in these properties, the default value from `@WithDefault` will be used instead.
 
 A configuration mapping name can contain an extra suffix segment for the case where there are configuration
 mappings for multiple <<Config Phases>>. Classes which correspond to the `BUILD_TIME` and `BUILD_AND_RUN_TIME_FIXED`
 may end with `BuildTimeConfig` or `BuildTimeConfiguration`, classes which correspond to the `RUN_TIME` phase
 may end with `RuntimeConfig`, `RunTimeConfig`, `RuntimeConfiguration` or `RunTimeConfiguration` while classes which
 correspond to the `BOOTSTRAP` configuration may end with `BootstrapConfig` or `BootstrapConfiguration`.
+
+==== Configuration Reference Documentation
+
+The configuration is an important part of each extension and therefore needs to be properly documented. Each
+configuration property should have a proper Javadoc comment.
+
+While it is handy to have the documentation available when coding, the configuration documentation must also be
+available in the extension guides. The Quarkus build automatically generates the configuration documentation based on
+the Javadoc comments, but it needs to be explicitly included in each guide.
+
+===== Writing the documentation
+
+Each configuration property, requires a Javadoc explaining its purpose.
+
+[TIP]
+====
+The first sentence should be meaningful and self-contained as it is included in the summary table.
+====
+
+While standard Javadoc comments are perfectly fine for simple documentation (recommended even), AsciiDoc is more
+suitable for tips, source code extracts, lists and more:
+
+[source,java]
+----
+/**
+ * Class name of the Hibernate ORM dialect. The complete list of bundled dialects is available in the
+ * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/dialect/package-summary.html[Hibernate ORM JavaDoc].
+ *
+ * [NOTE]
+ * ====
+ * Not all the dialects are supported in GraalVM native executables: we currently provide driver extensions for
+ * PostgreSQL, MariaDB, Microsoft SQL Server and H2.
+ * ====
+ *
+ * @asciidoclet
+ */
+Optional<String> dialect();
+----
+
+To use AsciiDoc, the Javadoc comment must be annotated with `@asciidoclet` tag. This tag serves two purposes: it is
+used as a marker for Quarkus generation tool, but it is also used by the `javadoc` process for the Javadoc generation.
+
+A more detailed example:
+
+[source,java]
+----
+// @formatter:off
+/**
+ * Name of the file containing the SQL statements to execute when Hibernate ORM starts.
+ * Its default value differs depending on the Quarkus launch mode:
+ *
+ * * In dev and test modes, it defaults to `import.sql`.
+ *   Simply add an `import.sql` file in the root of your resources directory
+ *   and it will be picked up without having to set this property.
+ *   Pass `no-file` to force Hibernate ORM to ignore the SQL import file.
+ * * In production mode, it defaults to `no-file`.
+ *   It means Hibernate ORM won't try to execute any SQL import file by default.
+ *   Pass an explicit value to force Hibernate ORM to execute the SQL import file.
+ *
+ * If you need different SQL statements between dev mode, test (`@QuarkusTest`) and in production, use Quarkus
+ * https://quarkus.io/guides/config#configuration-profiles[configuration profiles facility].
+ *
+ * [source,property]
+ * .application.properties
+ * ----
+ * %dev.quarkus.hibernate-orm.sql-load-script = import-dev.sql
+ * %test.quarkus.hibernate-orm.sql-load-script = import-test.sql
+ * %prod.quarkus.hibernate-orm.sql-load-script = no-file
+ * ----
+ *
+ * [NOTE]
+ * ====
+ * Quarkus supports `.sql` file with SQL statements or comments spread over multiple lines.
+ * Each SQL statement must be terminated by a semicolon.
+ * ====
+ *
+ * @asciidoclet
+ */
+// @formatter:on
+Optional<String> sqlLoadScript();
+----
+
+For indentation to be respected in the Javadoc comment (list items spread on multiple lines or indented
+source code), the automatic Eclipse formatter must be disabled (the formatter is automatically included in the build),
+with the markers `// @formatter:off`/`// @formatter:on`. These require separate comments and a mandatory space after the
+`//` marker.
+
+[WARNING]
+====
+Open blocks (`--`) are not supported in the AsciiDoc documentation. All the other types of blocks
+(source, admonitions...) are supported.
+====
+
+[TIP]
+====
+By default, the documentation generator will use the hyphenated field name as the key of a `java.util.Map`. Use the
+`io.quarkus.runtime.annotations.ConfigDocMapKey` annotation to override the behaviour.
+
+[source,java]
+----
+@ConfigMapping(prefix = "quarkus.some")
+@ConfigRoot
+public interface SomeConfig {
+    /**
+     * Namespace configuration.
+     */
+    @WithParentName
+    @ConfigDocMapKey("cache-name") // <1>
+    Map<String, Name> namespace();
+}
+----
+<1> This will generate a configuration map key named `quarkus.some."cache-name"` instead of `quarkus.some."namespace"`.
+====
+
+===== Writing section documentation
+
+To generate a configuration section of a given group, use the `@ConfigDocSection` annotation:
+
+[source,java]
+----
+/**
+* Config group related configuration.
+* Amazing introduction here
+*/
+@ConfigDocSection // <1>
+ConfigGroupConfig configGroup();
+----
+<1> This will add a section documentation for the `configGroup` config item in the generated documentation. The section
+title and introduction will be derived from the javadoc of the configuration item. The first sentence from the javadoc
+is considered as the section title and the remaining sentences used as section introduction.
+
+===== Generating the documentation
+
+To generate the documentation:
+
+* Execute `./mvnw -DquicklyDocs`
+* Can be executed globally or in a specific extension directory (e.g. `extensions/mailer`).
+
+The documentation is generated in the global `target/asciidoc/generated/config/` located at the root of the project.
+
+===== Including the documentation in the extension guide
+
+To include the generated configuration reference documentation in a guide, use:
+
+[source,asciidoc]
+----
+\include::{generated-dir}/config/quarkus-your-extension.adoc[opts=optional, leveloffset=+1]
+----
+
+To include only a specific config group:
+[source,asciidoc]
+----
+\include::{generated-dir}/config/hyphenated-config-group-class-name-with-runtime-or-deployment-namespace-replaced-by-config-group-namespace.adoc[opts=optional, leveloffset=+1]
+----
+
+For example, the `io.quarkus.vertx.http.runtime.FormAuthConfig` configuration group will be generated in a file named
+`quarkus-vertx-http-config-group-form-auth-config.adoc`.
+
+A few recommendations:
+
+* `opts=optional` is mandatory to not fail the build if only part of the configuration documentation has been generated.
+* The documentation is generated with a title level of 2 (i.e. `==`). It may need an adjustment with `leveloffset=+N`.
+* The whole configuration documentation should not be included in the middle of the guide.
+
+If the guide includes an `application.properties` example, a tip must be included just below the code snippet:
+
+[source, asciidoc]
+----
+[TIP]
+For more information about the extension configuration please refer to the <<configuration-reference, Configuration Reference>>.
+----
+
+And at the end of the guide, the extensive configuration documentation:
+
+[source, asciidoc]
+----
+[[configuration-reference]]
+== Configuration Reference
+
+\include::{generated-dir}/config/quarkus-your-extension.adoc[opts=optional, leveloffset=+1]
+----
+
+[WARNING]
+====
+All documentation should be generated and validated before being commited.
+====
 
 === Conditional Step Inclusion
 
@@ -2796,207 +2982,6 @@ public final class Target_XmlData {
     }
 }
 ----
-
-== Configuration reference documentation
-
-The configuration is an important part of each extension and therefore needs to be properly documented.
-Each configuration property should have a proper Javadoc comment.
-
-While it is handy to have the documentation available when coding, this configuration documentation must also be available in the extension guides.
-The Quarkus build automatically generates the configuration documentation for you based on the Javadoc comments, but you need to explicitly include it in your guide.
-
-In this section, we will explain everything you need to know about the configuration reference documentation.
-
-=== Writing the documentation
-
-For each configuration property, you need to write some Javadoc explaining its purpose.
-
-[TIP]
-====
-Always make the first sentence meaningful and self-contained as it is included in the summary table.
-====
-
-You can either use standard Javadoc comments or Asciidoc directly as a Javadoc comment.
-
-We assume you are familiar with writing Javadoc comments so let's focus on our Asciidoc support.
-While standard Javadoc comments are perfectly fine for simple documentation (recommended even),
-if you want to include tips, source code extracts, lists... Asciidoc comes in handy.
-
-Here is a typical configuration property commented with Asciidoc:
-
-[source,java]
-----
-/**
- * Class name of the Hibernate ORM dialect. The complete list of bundled dialects is available in the
- * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/dialect/package-summary.html[Hibernate ORM JavaDoc].
- *
- * [NOTE]
- * ====
- * Not all the dialects are supported in GraalVM native executables: we currently provide driver extensions for PostgreSQL,
- * MariaDB, Microsoft SQL Server and H2.
- * ====
- *
- * @asciidoclet
- */
-@ConfigItem
-public Optional<String> dialect;
-----
-
-This is the simple case: you just have to write Asciidoc and mark the comment with the `@asciidoclet` tag.
-This tag has two purposes: it is used as a marker for our generation tool, but it is also used by the `javadoc` process for proper Javadoc generation.
-
-Now let's consider a more complicated example:
-
-[source,java]
-----
-// @formatter:off
-/**
- * Name of the file containing the SQL statements to execute when Hibernate ORM starts.
- * Its default value differs depending on the Quarkus launch mode:
- *
- * * In dev and test modes, it defaults to `import.sql`.
- *   Simply add an `import.sql` file in the root of your resources directory
- *   and it will be picked up without having to set this property.
- *   Pass `no-file` to force Hibernate ORM to ignore the SQL import file.
- * * In production mode, it defaults to `no-file`.
- *   It means Hibernate ORM won't try to execute any SQL import file by default.
- *   Pass an explicit value to force Hibernate ORM to execute the SQL import file.
- *
- * If you need different SQL statements between dev mode, test (`@QuarkusTest`) and in production, use Quarkus
- * https://quarkus.io/guides/config#configuration-profiles[configuration profiles facility].
- *
- * [source,property]
- * .application.properties
- * ----
- * %dev.quarkus.hibernate-orm.sql-load-script = import-dev.sql
- * %test.quarkus.hibernate-orm.sql-load-script = import-test.sql
- * %prod.quarkus.hibernate-orm.sql-load-script = no-file
- * ----
- *
- * [NOTE]
- * ====
- * Quarkus supports `.sql` file with SQL statements or comments spread over multiple lines.
- * Each SQL statement must be terminated by a semicolon.
- * ====
- *
- * @asciidoclet
- */
-// @formatter:on
-@ConfigItem
-public Optional<String> sqlLoadScript;
-----
-
-A few comments on this one:
-
- * Every time you will need the indentation to be respected in the Javadoc comment (think list items spread on multiple lines or indented source code),
-   you will need to disable temporarily the automatic Eclipse formatter
-   (this, even if you don't use Eclipse as the formatter is included in our build).
-   To do so, use the `// @formatter:off`/`// @formatter:on` markers.
-   Note the fact that they are separate comments and there is a space after the `//` marker. This is required.
- * As you can see, you can use the full power of Asciidoctor (except for the limitation below)
-
-[WARNING]
-====
-You cannot use open blocks (`--`) in your Asciidoctor documentation.
-All the other types of blocks (source, admonitions...) are supported.
-====
-
-[TIP]
-====
-By default, the doc generator will use the hyphenated field name as the key of a `java.util.Map` configuration item.
-To override this default and have a user-friendly key (independent of implementation details), you may use the `io.quarkus.runtime.annotations.ConfigDocMapKey` annotation.
-See the following example,
-[source,java]
-----
-@ConfigRoot
-public class SomeConfig {
-    /**
-     * Namespace configuration.
-     */
-    @ConfigItem(name = ConfigItem.PARENT)
-    @ConfigDocMapKey("cache-name") <1>
-    Map<String, CaffeineNamespaceConfig> namespace;
-}
-----
-<1> This will generate a configuration map key named `quarkus.some."cache-name"` instead of `quarkus.some."namespace"`.
-====
-
-=== Writing section documentation
-
-If you wish to generate configuration section of a given `@ConfigGroup`, Quarkus has got you covered with the `@ConfigDocSection` annotation.
-See the code  example below:
-[source,java]
-----
-/**
-* Config group related configuration.
-* Amazing introduction here
-*/
-@ConfigItem
-@ConfigDocSection <1>
-public ConfigGroupConfig configGroup;
-----
-<1> This will add a section documentation for the `configGroup` config item in the generated documentation.
-Section's title and introduction will be derived from the javadoc of the configuration item. The first sentence from the javadoc is considered as the section title and the remaining sentences used as section introduction.
-You can also use the `@asciidoclet` tag as shown above.
-
-=== Generating the documentation
-
-Generating the documentation is easy:
-
- * Running `./mvnw clean install -DskipTests -DskipITs` will do.
- * You  can either do it globally or in a specific extension directory (e.g. `extensions/mailer`).
-
-The documentation is generated in the global `target/asciidoc/generated/config/` located at the root of the project.
-
-=== Including the documentation in the extension guide
-
-Now that you have generated the configuration reference documentation for your extension, you need to include it in your guide (and review it).
-
-This is simple, include the generated documentation in your guide:
-
-[source,asciidoc]
-----
-\include::{generated-dir}/config/quarkus-your-extension.adoc[opts=optional, leveloffset=+1]
-----
-
-If you are interested in including the generated documentation for the config group, you can use the include statement below
-[source,asciidoc]
-----
-\include::{generated-dir}/config/hyphenated-config-group-class-name-with-runtime-or-deployment-namespace-replaced-by-config-group-namespace.adoc[opts=optional, leveloffset=+1]
-----
-
-For example, the `io.quarkus.vertx.http.runtime.FormAuthConfig` configuration group will be generated in a file named `quarkus-vertx-http-config-group-form-auth-config.adoc`.
-
-
-A few recommendations:
-
- * `opts=optional` is mandatory as we don't want the build to fail if only part of the configuration documentation has been generated
- * The documentation is generated with a title level of 2 (i.e. `==`).
-   You usually need to adjust it.
-   It can be done with `leveloffset=+N`.
-
-It is not recommended to include the whole configuration documentation in the middle of your guide as it's heavy.
-If you have an `application.properties` extract with your configuration, just do as follows.
-
-First, include a tip just below your `application.properties` extract:
-
-[source, asciidoc]
-----
-[TIP]
-For more information about the extension configuration please refer to the <<configuration-reference, Configuration Reference>>.
-----
-
-Then, at the end of your documentation, include the extensive documentation:
-
-[source, asciidoc]
-----
-[[configuration-reference]]
-== Configuration Reference
-
-\include::{generated-dir}/config/quarkus-your-extension.adoc[opts=optional, leveloffset=+1]
-----
-
-Finally, generate the documentation and check it out.
 
 [[ecosystem]]
 == Ecosystem integration

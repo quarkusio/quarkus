@@ -1,0 +1,158 @@
+---
+extends: substitution
+ignorecase: false
+level: suggestion
+link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-reference.adoc
+message: Use '%s' rather than '%s'.
+source: Quarkus contributor guide
+action:
+  name: replace
+swap:
+  asciidoc|Asciidoc: AsciiDoc
+  asciidoctor|AsciiDoctor: Asciidoctor
+  '[nN]odejs|[nN]ode\.JS|node\.js': Node.js
+  # Bind: BIND
+  Bios: BIOS
+  btrfs: Btrfs
+  Capex|capex|capEx: CapEx
+  CD 1: CD #1
+  CDS|Cds: CDs
+  CGroup|c group: cgroup
+  configmap: config map
+  configuration map: config map
+  classic mode: GNOME Classic
+  control key|ctrl: Ctrl
+  csv: CSV
+  CygMon|cygmon|CYGMON: Cygmon
+  Denial of Service: denial of service
+  Denial-of-Service: denial-of-service
+  devops|Devops|Dev-Ops|Dev Ops: DevOps
+  Dev services|DevServices: Dev Services
+  Disk druid|disk druid|diskdruid: Disk Druid
+  dns: DNS
+  DVD burner|burner: DVD writer
+  Exec Shield: Exec-Shield
+  EXIF|exif: Exif
+  Faq|faq|F.A.Q: FAQ
+  fedora project: Fedora™ Project
+  fortran: Fortran
+  Fqdn|fqdn: FQDN
+  gb|Gb: GB
+  gbps|GBPS: Gbps
+  GDBTK: Insight
+  gid|Gid: GID
+  Gimp|gimp: GIMP
+  git|GIT: Git
+  Gnome|gnome: GNOME
+  Gnu|gnu: GNU
+  Gpl|gpl: GPL
+  gradle: Gradle
+  Graalvm|graalVM: GraalVM
+  Grub: GRUB
+  GTK|Gtk|gtk: GTK+
+  HP Proliant: HP ProLiant
+  hiberbate ORM: Hibernate ORM
+  hyperthreading|hyper-threading: Hyper-Threading
+  HyperVisor|Hyperviser: hypervisor
+  IA64|ia64: Itanium
+  IBM z Systems: IBM Z
+  ignition config: Ignition config
+  Iops|IOPs: IOPS
+  Ip: IP
+  IPSec: IPsec
+  iSeries: ISeries
+  iso image: ISO image
+  iso: ISO
+  Itanium2: Itanium 2
+  JBoss.org: JBoss Community
+  Junit|junit: JUnit
+  Jvm|jvm: JVM
+  kernel-based virtual machine: Kernel-based Virtual Machine
+  kickstart: Kickstart
+  kvm: KVM
+  Lan|lan: LAN
+  LINUX|linux: Linux
+  Maven failsafe|Maven FailSafe: Maven Failsafe
+  Microprofile|micro-profile: MicroProfile
+  Mongo\sDB|mongoDB|Mongodb|Mongo-db: MongoDB
+  MS-dos|Ms-Dos|ms-dos|MSDOS|msdos: MS-DOS
+  MS(?!-DOS?)|MSFT|MicroSoft: Microsoft
+  mutual tls|Mutual tls|Mutual TLS: mutual TLS
+  MYSQL|mySQL: MySQL
+  Objective-C: Objective C
+  openid connect|Openid Connect: OpenID Connect
+  Open InfiniBand|Infiniband: InfiniBand
+  Open JDK|openjdk|JDK: OpenJDK
+  Operating Environment: operating environment
+  Operator Hub|Operator hub|Operatorhub|operatorhub: OperatorHub
+  Opex|Opex|OPEX|opEx: OpEx
+  OS|Operating System: operating system
+  podman: Podman
+  popup|Pop-up: pop-up
+  Posix|posix: POSIX
+  Postscript: PostScript
+  PPC|P-PC|PPC64: PowerPC
+  Ppp|ppp: PPP
+  prom|Prom: PROM
+  prometheus: Prometheus
+  proof key for code exchange: Proof Key for Code Exchange
+  pSeries: IBM eServer System p
+  q & a|q&a|Q & A|Q&A: Q and A
+  qcow2|Qcow2: QCOW2
+  Qeth|QETH: qeth
+  Ram|ram: RAM
+  RAMdisk|ramdisk|RAM-disk: RAM disk
+  RAW: raw
+  Red Hat Proxy: Red Hat Network Proxy Server
+  Red Hat satellite: Red Hat Satellite
+  Red Hat Satellite server: Red Hat Satellite Server
+  Red Hat Satellite Capsule server: Red Hat Satellite Capsule Server
+  Red Hat Network Satellite server: Red Hat Network Satellite Server
+  Redboot|Red Boot: RedBoot
+  RESTEASY|resteasy|Resteasy: RESTEasy
+  Rom|rom: ROM
+  rpm: RPM
+  s-record|S-Record|s-Record|SREC: S-record
+  S90: IBM S 390
+  samba|SAMBA: Samba
+  SE-Linux|S-E Linux|SE Linux|selinux: SELinux
+  Shadow Man|ShadowMan: Shadowman
+  Shadow passwords: shadow passwords
+  Shadow utilities: shadow utilities
+  Smallrye: SmallRye
+  socks: SOCKS
+  software collection|Software collection: Software Collection
+  Spring boot: Spring Boot
+  SR IOV: SR-IOV
+  Ssh|ssh: SSH
+  SSL(?!/TLS): SSL/TLS
+  Staroffice|Star Office: StarOffice
+  StartX: startx
+  SU: su
+  Sys V|System V: SysV
+  system D|system D|SystemD|system d: systemd
+  Tolapai|Intel Tolapai: Intel(R) EP80579 Integrated Processor
+  ttl: TTL
+  uid: UID
+  ULTRASPARC|UltraSparc: UltraSPARC
+  Unix|unix|UNIX-like: UNIX
+  url: URL
+  "(?<!/)var": VAR
+  VI: vi
+  VIM|vim: Vim
+  Virtual Desktop Server Management: VDSM
+  virtual-console|Virtual Console: virtual console
+  vlan|vLAN: VLAN
+  vnic|VNIC|Virtual Network Interface Card: vNIC
+  vnuma|VNUMA: vNUMA node
+  vpn: VPN
+  VS Code|VSCode|VisualStudioCode|VisualStudio Code: Visual Studio Code
+  VT-i|VT: Intel Virtualization Technology
+  wan: WAN
+  wca: WCA
+  web-UI|webUI: web UI
+  Webauthn|webAuthn|WebAuthN: WebAuthn
+  Window-Maker|WindowMaker: Window Maker
+  Xemacs: XEmacs
+  Xterm: xterm
+  '(?<!\.)yaml|Yaml': YAML

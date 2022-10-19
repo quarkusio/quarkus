@@ -7,51 +7,109 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = How to contribute documentation
 include::_attributes.adoc[]
 :categories: contributing
-:asciidoc: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/
-:quarkus-docs: {quarkus-base-url}/tree/main/docs
 :fn-diataxis: footnote:diataxis[Procida, D. Diátaxis documentation framework. https://diataxis.fr/]
 
 Outline the recommended steps for making successful contributions to Quarkus documentation.
 
 == Prerequisites
 
-Quarkus docs are built from source written using {asciidoc}[Asciidoc], a lightweight markup language.
+Quarkus docs use AsciiDoc, a lightweight markup language.
 
 We suggest you have the following materials nearby:
 
-- An editor or IDE that provides syntax highlighting and previews for asciidoc, either natively or using a plugin.
-- An https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[Asciidoc syntax reference]
+- An editor or IDE that provides syntax highlighting and previews for AsciiDoc, either natively or with a plugin.
+- The https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc syntax reference]
 - The xref:{doc-guides}/doc-reference.adoc[Quarkus documentation reference] for required syntax and other conventions.
 
 == Sources
 
-- Documentation for Quarkus core and most extensions is in the `docs` directory of the {quarkus-docs}[Quarkus GitHub repository].
-- Docs for Quarkiverse or other third-party extensions are pulled from those repositories.
+- AsciiDoc files are in the `src/main/asciidoc` directory within the `docs` module of the {quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
+- Configuration documentation is generated from JavaDoc comments in Java source files.
+- Java, YAML, and other source files can also be xref:doc-reference.adoc#reference-source-code[referenced] by AsciiDoc files.
 
-== Building and previewing Quarkus documentation
+== Preview and build Quarkus documentation
 
-Asciidoc syntax highlighting and the preview provided by an IDE may be enough for minor documentation changes.
-For significant changes or any changes related to Quarkus configuration documentation,
-we recommend that you run the build and view the resulting output before submitting your changes for review.
+AsciiDoc syntax highlighting and the preview provided by an IDE may be enough for minor documentation changes.
+For significant changes or updates to generated configuration documentation,
+you should build the `docs` module and view resulting output before submitting your changes for review.
 
 include::{includes}/compile-quarkus-quickly.adoc[tag=quickly-install-docs]
 
 This will produce:
 
-- Generated Asciidoc files describing configuration properties in the  `target/asciidoc/generated/config/` directory.
-- Asciidoc output (html files) in the `docs/target/generated-docs/` directory.
+- Generated AsciiDoc (`adoc` files) describing configuration properties in the `target/asciidoc/generated/config/` directory.
+- AsciiDoc output (`html` files) in the `docs/target/generated-docs/` directory.
+- YAML files containing metadata for all documents individually (`docs/target/indexByFile.yaml`) and grouped by document type (`target/indexByType.yaml`). 
+- YAML files that list metadata errors by file (`docs/target/errorsByFile.yaml`) and by error type (`docs/target/errorsByType.yaml`)
 
 As you make changes, you can rebuild the `docs` module specifically to update the generated HTML:
 
 [source,shell]
 ----
-#
-$ ./mvnw -f docs clean install
+./mvnw -f docs clean install
 ----
 
-If you change the configuration properties of an extension,
-rebuild that extension first (to regenerate the associated config docs in `target/asciidoc/generated/config/`),
-and then rebuild the `docs` module.
+[NOTE]
+====
+When updating extension configuration:
+
+. Revise the Javadoc in the extension
+. Build the extension to regenerate content in `target/asciidoc/generated/config/`
+. Build the `docs` module to view the rendered results.
+====
+
+== Lint documentation changes with Vale
+
+Our builds use https://vale.sh[Vale] to check grammar, style, and word usage in the English versions of our documents.
+The configuration for vale is in the `docs/.vale` directory.
+
+NOTE: The Vale configuration file is `docs/.vale/vale.ini`.
+
+=== Containerized Vale
+
+This approach requires a working container runtime (Docker or xref:podman.adoc[Podman]). 
+
+The `docs` module has a JUnit 5 test that will run the Vale linter in a container (using https://www.testcontainers.org/[Testcontainers]). 
+It verifies both Quarkus document metadata and Vale style rules. 
+
+Run the test in one of the following ways:
+
+[source,shell]
+----
+./mvnw -f docs test -Dvale -DvaleLevel=suggestion # <1>
+./mvnw -f docs test -Dvale=git -DvaleLevel=warning # <2>
+./mvnw -f docs test -Dvale='doc-.*' -DvaleLevel=error # <3>
+----
+<1> Run the Vale linter for all `*.adoc` files in the `src/main/asciidoc` directory of the `docs` module.
+Include suggestions, warnings, and errors in the results.
+<2> Run the Vale linter for any modified `*.adoc` files in the `docs` module (`git status`).
+Include warnings and errors in the results.
+<3> Run the Vale linter for `*.adoc` files that match the regular expression (Java Pattern syntax).
+Include errors in the results.
+
+
+=== Use the Vale CLI
+
+If you install the https://vale.sh/docs/vale-cli/installation/[install the Vale CLI], you must specify the configuration file along with the directory or list of files to scan:
+
+[source,shell]
+----
+vale --config=docs/.vale/vale.ini --minAlertLevel=warning docs/src/main/asciidoc
+----
+
+See the https://vale.sh/manual/[Vale CLI Manual] for details.
+
+=== Vale IDE plugins
+
+https://vale.sh/docs/integrations/guide/[Vale IDE integrations] rely on installation the Vale CLI.
+
+Each has it's own configuration requirements. The Visual Studio Code IDE extension, for example, requires two workspace settings:
+
+[source,json]
+----
+"vale.valeCLI.config": "/path/to/quarkus/docs/.vale/vale.ini",
+"vale.valeCLI.path": "/path/to/vale"
+----
 
 == Creating pull requests for doc updates
 
@@ -65,9 +123,9 @@ To simplify collaborative review, either isolate changes to docs in their own PR
 or ensure that the PR has a single, focused purpose For example:
 
 - Create a single PR that adds a configuration option for an extension and updates related materials (how-to, reference) to explain the change.
-- Create a single PR for related changes to multiple documents,
-e.g. updates to ensure a term is used consistently, correcting a recurring error, or moving repeated content into a shared file.
-- If there are extensive code changes as well as documentation changes,
-make a separate PR for the documentation changes and indicate the relationship in the issue description.
+- Create a single PR for related changes to a group of documents, some examples:
+correcting the usage of a term, correcting a recurring error, or moving common content into a shared file.
+- If there are extensive code changes and documentation changes,
+create a separate PR for the documentation changes and include the relationship in the issue description.
 
-Once created, the PR will be tagged automatically as something containing documentation changes.
+Pull requests that contain changes to documentation will have the `area/documentation` label added automatically.

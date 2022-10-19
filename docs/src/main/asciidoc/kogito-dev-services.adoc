@@ -12,11 +12,11 @@ So, you don't have to start it manually or have any other service set-up manuall
 The application is configured automatically, meaning that will replicate any
 Kogito messaging events related to Process Instances and User Tasks into the provisioned Data Index instance.
 
-Additionally, xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[/q/dev] complements this feature with a Dev UI page which helps to Query Data Index via its GraphiQL UI.
+Additionally, xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[/q/dev] complements this feature with a Dev UI page which helps to Query Data Index via its GraphQL UI.
 
 image::dev-ui-kogito-data-index-card.png[alt=Dev UI Kogito,role="center"]
 
-image::dev-ui-kogito-data-index.png[alt=Dev UI Kogito Data Index GraphiQL,role="center"]
+image::dev-ui-kogito-data-index.png[alt=Dev UI Kogito Data Index GraphQL,role="center"]
 
 For more details about how to query data about processes and user tasks, please visit https://docs.kogito.kie.org/latest/html_single/#ref-data-index-service-queries_kogito-configuring[Kogito Data Index documentation].
 

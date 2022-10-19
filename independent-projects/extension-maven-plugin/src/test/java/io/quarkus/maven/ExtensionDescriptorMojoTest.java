@@ -1,7 +1,6 @@
 package io.quarkus.maven;
 
 import static io.quarkus.maven.ExtensionDescriptorMojo.getCodestartArtifact;
-import static io.quarkus.maven.ExtensionDescriptorMojo.getSourceRepo;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Map;
 
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
@@ -104,7 +102,6 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
             // Lazily test that the scm is there but is an object
             assertYamlContainsObject(fileContents, "scm");
             assertYamlContains(fileContents, "url", "https://github.com/some/repo");
-
         }
 
     }
@@ -204,18 +201,6 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
                 getCodestartArtifact("io.quarkus:my-ext:codestarts:jar:1.0", "999-SN"));
         assertEquals("io.quarkus:my-ext:999-SN",
                 getCodestartArtifact("io.quarkus:my-ext:${project.version}", "999-SN"));
-    }
-
-    @Test
-    void testGetSourceControlCoordinates() {
-        // From maven this property should be set, running in an IDE it won't be unless specially configured
-        if (System.getenv("GITHUB_REPOSITORY") != null) {
-            Map repo = getSourceRepo();
-            assertNotNull(repo);
-            assertTrue(repo.get("url").toString().matches("https://github.com/some/repo"));
-        } else {
-            assertNull(getSourceRepo());
-        }
     }
 
     private ExtensionDescriptorMojo makeMojo(String dirName) throws Exception {

@@ -1181,6 +1181,24 @@ The provided replicas <1>, labels <2> and environment variables <3>  were retain
 * When the name of the container does not match the application name (or the overridden name), container specific configuration will be ignored.
 ====
 
+=== Using common resources
+
+When generating the manifests for multiple deployment targets like Kubernetes, OpenShift or Knative, we can place the common resources in `src/main/kubernetes/common.yml`, so these resources will be integrated into the generated `kubernetes.json`/`kubernetes.yml`, and `openshift.json`/`openshift.yml` files (if you configure the Kubernetes and Openshift extensions at the same time).
+
+For example, we can write a ConfigMap resource only once in the file `src/main/kubernetes/common.yml`:
+
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: common-configmap
+data:
+  hello: world
+----
+
+And this config map resource will be integrated into the generated `kubernetes.json`/`kubernetes.yml`, and `openshift.json`/`openshift.yml` files.
+
 == Service Binding [[service_binding]]
 
 Quarkus supports the link:https://github.com/servicebinding/spec[Service Binding Specification for Kubernetes] to bind services to applications.

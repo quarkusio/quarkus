@@ -27,4 +27,22 @@ public class WithDuplicateAttributeFilter {
                 .collect(Collectors.joining(";"));
     }
 
+    @Funq
+    @CloudEventMapping(trigger = "toDashSeparated", attributes = { @EventAttribute(name = "source", value = "test") })
+    public String toDashSeparated(List<Identity> identityList) {
+        return identityList
+                .stream()
+                .map(Identity::getName)
+                .collect(Collectors.joining("-"));
+    }
+
+    @Funq
+    @CloudEventMapping(trigger = "toDashSeparated", attributes = { @EventAttribute(name = "source", value = "test") })
+    public String toColonSeparated(List<Identity> identityList) {
+        return identityList
+                .stream()
+                .map(Identity::getName)
+                .collect(Collectors.joining(":"));
+    }
+
 }

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class WithDuplicateAttributeFilterTest {
+public class WithConflictingAttributeFilterAndTriggerAsFuncNameTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().assertException(t -> {
@@ -25,7 +25,7 @@ public class WithDuplicateAttributeFilterTest {
         assertTrue(found, "Build failed with wrong exception, expected IllegalStateException but got " + t);
     })
             .withApplicationRoot((jar) -> jar
-                    .addClasses(WithDuplicateAttributeFilter.class, Identity.class));
+                    .addClasses(WithConflictingAttributeFilterAndTriggerAsFuncName.class, Identity.class));
 
     @Test
     public void testAttributeFilterMatch() {
@@ -33,18 +33,6 @@ public class WithDuplicateAttributeFilterTest {
                 .body("[{\"name\": \"Bill\"}, {\"name\": \"Matej\"}]")
                 .header("ce-id", "42")
                 .header("ce-type", "listOfStrings")
-                .header("ce-source", "test")
-                .header("ce-specversion", "1.0")
-                .post("/")
-                .then().statusCode(404);
-    }
-
-    @Test
-    public void testAttributeFilterMatchAndTriggerAsFuncName() {
-        RestAssured.given().contentType("application/json")
-                .body("[{\"name\": \"Bill\"}, {\"name\": \"Matej\"}]")
-                .header("ce-id", "42")
-                .header("ce-type", "toDashSeparated")
                 .header("ce-source", "test")
                 .header("ce-specversion", "1.0")
                 .post("/")

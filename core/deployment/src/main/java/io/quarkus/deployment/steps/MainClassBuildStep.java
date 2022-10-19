@@ -53,6 +53,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.deployment.naming.NamingConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.AppCDSControlPointBuildItem;
 import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
@@ -117,6 +118,7 @@ public class MainClassBuildStep {
             ApplicationInfoBuildItem applicationInfo,
             List<AllowJNDIBuildItem> allowJNDIBuildItems,
             Optional<AppCDSRequestedBuildItem> appCDSRequested,
+            Optional<AppCDSControlPointBuildItem> appCDSControlPoint,
             NamingConfig namingConfig) {
 
         appClassNameProducer.produce(new ApplicationClassNameBuildItem(Application.APP_CLASS_NAME));
@@ -191,8 +193,9 @@ public class MainClassBuildStep {
         mv = file.getMethodCreator("doStart", void.class, String[].class);
         mv.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
 
-        // if AppCDS generation was requested, we ensure that the application simply loads some classes from a file and terminates
-        if (appCDSRequested.isPresent()) {
+        // if AppCDS generation was requested and no other code has requested handling of the process,
+        // we ensure that the application simply loads some classes from a file and terminates
+        if (appCDSRequested.isPresent() && appCDSControlPoint.isEmpty()) {
             ResultHandle createAppCDsSysProp = mv.invokeStaticMethod(
                     ofMethod(System.class, "getProperty", String.class, String.class, String.class),
                     mv.load(GENERATE_APP_CDS_SYSTEM_PROPERTY), mv.load("false"));

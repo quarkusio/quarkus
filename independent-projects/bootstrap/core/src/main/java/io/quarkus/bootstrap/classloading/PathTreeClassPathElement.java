@@ -13,6 +13,7 @@ import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -180,6 +181,26 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
         } finally {
             lock.writeLock().unlock();
         }
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append(getClass().getName()).append("[");
+        if (getDependencyKey() != null) {
+            sb.append(getDependencyKey().toGacString()).append(" ");
+        }
+        final Iterator<Path> i = pathTree.getRoots().iterator();
+        if (i.hasNext()) {
+            sb.append(i.next());
+            while (i.hasNext()) {
+                sb.append(",").append(i.next());
+            }
+        }
+        sb.append(" runtime=").append(isRuntime());
+        final Set<String> resources = this.resources;
+        sb.append(" resources=").append(resources == null ? "null" : resources.size());
+        return sb.append(']').toString();
     }
 
     private class Resource implements ClassPathResource {

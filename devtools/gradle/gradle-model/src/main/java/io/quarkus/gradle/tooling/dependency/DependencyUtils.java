@@ -83,7 +83,10 @@ public class DependencyUtils {
             SourceSetContainer sourceSets = projectDep == null ? null
                     : projectDep.getExtensions().findByType(SourceSetContainer.class);
             if (sourceSets != null) {
-                SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+                SourceSet mainSourceSet = sourceSets.findByName(SourceSet.MAIN_SOURCE_SET_NAME);
+                if (mainSourceSet == null) {
+                    return null;
+                }
                 File resourcesDir = mainSourceSet.getOutput().getResourcesDir();
                 Path descriptorPath = resourcesDir.toPath().resolve(BootstrapConstants.DESCRIPTOR_PATH);
                 if (Files.exists(descriptorPath)) {

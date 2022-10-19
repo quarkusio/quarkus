@@ -7,6 +7,7 @@ dependencies {
     implementation platform("io.quarkus:quarkus-bom:${version}")
     implementation project(":gradle-model")
     implementation "io.quarkus:quarkus-core-deployment"
+    implementation "io.quarkus:quarkus-devtools-common"
     implementation "io.quarkus:quarkus-bootstrap-gradle-resolver"
     implementation "com.fasterxml.jackson.core:jackson-databind"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"

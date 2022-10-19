@@ -8,7 +8,6 @@ import io.quarkus.panache.common.impl.GenerateBridge
 import java.util.stream.Stream
 import javax.persistence.EntityManager
 import javax.persistence.LockModeType
-import kotlin.reflect.KClass
 
 /**
  * Represents a Repository for a specific type of entity `Entity`, with an ID type of `Id`. Implementing this interface
@@ -26,18 +25,6 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @GenerateBridge
     fun getEntityManager(): EntityManager = throw implementationInjectionMissing()
-
-    /**
-     * Returns the [EntityManager] tied to the given class for extra operations (eg. CriteriaQueries)
-     *
-     * @return the [EntityManager] tied to the given class
-     */
-    @GenerateBridge
-    @Deprecated(
-        message = "use Panache.getEntityManager() instead to access an entity manager for any entity class",
-        replaceWith = ReplaceWith("Panache.getEntityManager()")
-    )
-    fun getEntityManager(clazz: KClass<Any>): EntityManager = throw implementationInjectionMissing()
 
     /**
      * Persist the given entity in the database, if not already persisted.

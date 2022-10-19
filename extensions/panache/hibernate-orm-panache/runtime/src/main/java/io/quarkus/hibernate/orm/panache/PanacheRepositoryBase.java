@@ -42,19 +42,6 @@ public interface PanacheRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Returns the {@link EntityManager} tied to the given class for extra operations (eg. CriteriaQueries)
-     *
-     * @return the {@link EntityManager} tied to the given class
-     *
-     * @deprecated use {@link Panache#getEntityManager(Class)} instead to access an entity manager for any entity class
-     */
-    @GenerateBridge(ignoreEntityTypeParam = true)
-    @Deprecated
-    default EntityManager getEntityManager(Class<?> clazz) {
-        throw implementationInjectionMissing();
-    }
-
-    /**
      * Persist the given entity in the database, if not already persisted.
      *
      * @param entity the entity to persist.

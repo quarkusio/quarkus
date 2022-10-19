@@ -385,7 +385,7 @@ You can configure this behavior by adding the following configuration in your `a
 quarkus.default-locale=fr-FR
 ----
 
-If you are using RESTEasy (Classic or Reactive), in the context of a JAX-RS endpoint,
+If you are using RESTEasy Reactive or RESTEasy Classic, in the context of a JAX-RS endpoint,
 Hibernate Validator will automatically resolve the optimal locale to use from the `Accept-Language` HTTP header,
 provided the supported locales have been properly specified in the `application.properties`:
 
@@ -394,6 +394,15 @@ provided the supported locales have been properly specified in the `application.
 # The list of all the supported locales
 quarkus.locales=en-US,es-ES,fr-FR
 ----
+
+A similar mechanism exists for GraphQL services based on the `quarkus-smallrye-graphql` extension.
+
+If this default mechanism is not sufficient and you need a custom locale resolution, you can add additional ``org.hibernate.validator.spi.messageinterpolation.LocaleResolver``s:
+
+* Any CDI bean implementing `org.hibernate.validator.spi.messageinterpolation.LocaleResolver` will be taken into account.
+* The ``LocaleResolver``s are consulted in the order of `@Priority` (higher priority goes first).
+* A `LocaleResolver` may return null if it cannot resolve the locale, it will then be ignored.
+* The first non-null locale returned by a `LocaleResolver` is the one resolved.
 
 === Validation groups for REST endpoint or service method validation
 

@@ -18,7 +18,7 @@ public class MongoTracingCommandListener implements CommandListener {
 
     private static final Logger LOGGER = Logger.getLogger(MongoTracingCommandListener.class);
 
-    private TracingCommandListener delegate;
+    private final TracingCommandListener delegate;
 
     public MongoTracingCommandListener() {
         this.delegate = new TracingCommandListener.Builder(GlobalTracer.get()).build();

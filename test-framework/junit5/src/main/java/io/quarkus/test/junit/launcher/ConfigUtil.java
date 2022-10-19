@@ -21,14 +21,18 @@ public final class ConfigUtil {
         if (strValue == null) {
             return Collections.emptyList();
         }
-        String[] parts = strValue.split("\\s+");
+        return splitArgs(strValue);
+    }
+
+    static List<String> splitArgs(String strValue) {
+        String[] parts = strValue.split("-");
         List<String> result = new ArrayList<>(parts.length);
         for (String s : parts) {
             String trimmed = s.trim();
             if (trimmed.isEmpty()) {
                 continue;
             }
-            result.add(trimmed);
+            result.add('-' + trimmed);
         }
         return result;
     }

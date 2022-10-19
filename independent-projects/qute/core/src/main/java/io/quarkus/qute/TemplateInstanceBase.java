@@ -18,11 +18,10 @@ public abstract class TemplateInstanceBase implements TemplateInstance {
     protected Object data;
     protected Map<String, Object> dataMap;
     protected final Map<String, Object> attributes;
-    protected final List<Runnable> renderedActions;
+    protected List<Runnable> renderedActions;
 
     public TemplateInstanceBase() {
         this.attributes = new HashMap<>();
-        this.renderedActions = new ArrayList<>();
     }
 
     @Override
@@ -56,21 +55,26 @@ public abstract class TemplateInstanceBase implements TemplateInstance {
 
     @Override
     public TemplateInstance onRendered(Runnable action) {
+        if (renderedActions == null) {
+            renderedActions = new ArrayList<>();
+        }
         renderedActions.add(action);
         return this;
     }
 
     @Override
     public long getTimeout() {
-        Object t = getAttribute(TemplateInstance.TIMEOUT);
-        if (t != null) {
-            if (t instanceof Long) {
-                return ((Long) t).longValue();
-            } else {
-                try {
-                    return Long.parseLong(t.toString());
-                } catch (NumberFormatException e) {
-                    LOG.warnf("Invalid timeout value set for " + toString() + ": " + t);
+        if (!attributes.isEmpty()) {
+            Object t = getAttribute(TemplateInstance.TIMEOUT);
+            if (t != null) {
+                if (t instanceof Long) {
+                    return ((Long) t).longValue();
+                } else {
+                    try {
+                        return Long.parseLong(t.toString());
+                    } catch (NumberFormatException e) {
+                        LOG.warnf("Invalid timeout value set for " + toString() + ": " + t);
+                    }
                 }
             }
         }

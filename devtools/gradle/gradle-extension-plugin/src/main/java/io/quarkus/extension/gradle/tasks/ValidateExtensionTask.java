@@ -2,9 +2,7 @@ package io.quarkus.extension.gradle.tasks;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -20,6 +18,7 @@ import org.gradle.api.tasks.TaskAction;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.extension.gradle.QuarkusExtensionConfiguration;
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
+import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
 
 public class ValidateExtensionTask extends DefaultTask {
 
@@ -63,7 +62,13 @@ public class ValidateExtensionTask extends DefaultTask {
                 deploymentModuleKeys);
         deploymentModuleKeys.removeAll(existingDeploymentModuleKeys);
 
-        boolean hasErrors = !invalidRuntimeArtifacts.isEmpty() || !deploymentModuleKeys.isEmpty();
+        boolean hasErrors = false;
+        if (!invalidRuntimeArtifacts.isEmpty()) {
+            hasErrors = true;
+        }
+        if (!deploymentModuleKeys.isEmpty()) {
+            hasErrors = true;
+        }
 
         if (hasErrors) {
             printValidationErrors(invalidRuntimeArtifacts, deploymentModuleKeys);
@@ -71,13 +76,15 @@ public class ValidateExtensionTask extends DefaultTask {
     }
 
     private List<AppArtifactKey> collectRuntimeExtensionsDeploymentKeys(Set<ResolvedArtifact> runtimeArtifacts) {
-        return runtimeArtifacts.stream()
-                .map(resolvedArtifact -> DependencyUtils.getOptionalExtensionInfo(getProject(), resolvedArtifact))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(extension -> new AppArtifactKey(extension.getDeploymentModule().getGroupId(),
-                        extension.getDeploymentModule().getArtifactId()))
-                .collect(Collectors.toList());
+        List<AppArtifactKey> runtimeExtensions = new ArrayList<>();
+        for (ResolvedArtifact resolvedArtifact : runtimeArtifacts) {
+            ExtensionDependency extension = DependencyUtils.getExtensionInfoOrNull(getProject(), resolvedArtifact);
+            if (extension != null) {
+                runtimeExtensions.add(new AppArtifactKey(extension.getDeploymentModule().getGroupId(),
+                        extension.getDeploymentModule().getArtifactId()));
+            }
+        }
+        return runtimeExtensions;
     }
 
     private List<AppArtifactKey> findExtensionInConfiguration(Set<ResolvedArtifact> deploymentArtifacts,

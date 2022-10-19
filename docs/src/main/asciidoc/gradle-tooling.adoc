@@ -512,7 +512,7 @@ Those tests can be placed in a `src/integrationTest/java` directory and executed
 ./gradlew quarkusIntTest
 ----
 
-This task depends on both `check` and `quarkusBuild` tasks. The final artifact will be produced before running tests.
+This task depends on both `test` and `quarkusBuild` tasks. The final artifact will be produced before running tests.
 
 == Using fast-jar
 

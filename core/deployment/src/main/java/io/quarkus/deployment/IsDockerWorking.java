@@ -4,6 +4,7 @@ package io.quarkus.deployment;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URI;
@@ -80,11 +81,25 @@ public class IsDockerWorking implements BooleanSupplier {
                 Class<?> dockerClientFactoryClass = Thread.currentThread().getContextClassLoader()
                         .loadClass("org.testcontainers.DockerClientFactory");
                 Object dockerClientFactoryInstance = dockerClientFactoryClass.getMethod("instance").invoke(null);
+
+                Class<?> configurationClass = Thread.currentThread().getContextClassLoader()
+                        .loadClass("org.testcontainers.utility.TestcontainersConfiguration");
+                Object configurationInstance = configurationClass.getMethod("instance").invoke(null);
+                String oldReusePropertyValue = (String) configurationClass
+                        .getMethod("getUserProperty", String.class, String.class)
+                        .invoke(configurationInstance, "testcontainers.reuse.enable", "false"); // use the default provided in TestcontainersConfiguration#environmentSupportsReuse
+                Method updateUserConfigMethod = configurationClass.getMethod("updateUserConfig", String.class, String.class);
+                // this will ensure that testcontainers does not start ryuk - see https://github.com/quarkusio/quarkus/issues/25852 for why this is important
+                updateUserConfigMethod.invoke(configurationInstance, "testcontainers.reuse.enable", "true");
+
                 boolean isAvailable = (boolean) dockerClientFactoryClass.getMethod("isDockerAvailable")
                         .invoke(dockerClientFactoryInstance);
                 if (!isAvailable) {
                     compressor.closeAndDumpCaptured();
                 }
+
+                // restore the previous value
+                updateUserConfigMethod.invoke(configurationInstance, "testcontainers.reuse.enable", oldReusePropertyValue);
                 return isAvailable ? Result.AVAILABLE : Result.UNAVAILABLE;
             } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
                 if (!silent) {

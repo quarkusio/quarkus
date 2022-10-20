@@ -46,7 +46,7 @@ public class OpenshiftWithDeploymentWithoutSelectorsTest {
 
         assertThat(openshiftList).filteredOn(i -> "Route".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Route.class, r -> {
-                assertThat(r.getSpec().getPort().getTargetPort().getIntVal()).isEqualTo(9090);
+                assertThat(r.getSpec().getPort().getTargetPort().getStrVal()).isEqualTo("http");
             });
         });
     }

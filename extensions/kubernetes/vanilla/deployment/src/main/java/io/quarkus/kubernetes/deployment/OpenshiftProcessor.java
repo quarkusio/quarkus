@@ -133,7 +133,8 @@ public class OpenshiftProcessor {
         KubernetesCommonHelper.combinePorts(ports, config).values().forEach(value -> {
             result.add(new ConfiguratorBuildItem(new AddPortToOpenshiftConfig(value)));
         });
-        result.add(new ConfiguratorBuildItem(new ApplyOpenshiftRouteConfigurator(config.route)));
+
+        result.add(new ConfiguratorBuildItem(new ApplyOpenshiftRouteConfigurator(config.route, config.expose)));
 
         // Handle remote debug configuration for container ports
         if (config.remoteDebug.enabled) {

@@ -12,11 +12,11 @@ Just scroll to the bottom for the latest.
 To test the Jakarta work, there are two approaches:
 
 - Use the snapshots we publish nightly
-- Build the `jakarta-rewrite` branch yourself
+- Build the `3.0` branch yourself
 
 ### Using snapshots
 
-Snapshots of the `jakarta-rewrite` branch containing the transformed artifacts are published nightly on https://s01.oss.sonatype.org/content/repositories/snapshots/ .
+Snapshots of the `3.0` branch containing the transformed artifacts are published nightly on https://s01.oss.sonatype.org/content/repositories/snapshots/ .
 
 Add the following snippet to your `pom.xml` to enable the s01 OSSRH snapshots repository:
 
@@ -45,10 +45,10 @@ The published artifacts have the `999-jakarta-SNAPSHOT` version so make sure to 
 
 ### Build locally
 
-Then you can build the `jakarta-rewrite` branch locally:
+Then you can build the `3.0` branch locally:
 
 ```
-git checkout jakarta-rewrite
+git checkout 3.0
 ./mvnw -Dquickly
 ```
 
@@ -56,7 +56,9 @@ The installed artifacts have the `999-jakarta-SNAPSHOT` version so make sure to 
 
 ## Transforming
 
-This directory contains scripts and configuration files to automate the migration to Jakarta EE 9 (for now) and hopefully Jakarta EE 10 soon.
+This directory contains scripts and configuration files to automate the migration to Jakarta EE 10 soon.
+
+This is a work in progress and some pieces are still missing (JPA 3.1 and Hibernate ORM 6 for instance).
 
 ### jakarta/transform.sh
 

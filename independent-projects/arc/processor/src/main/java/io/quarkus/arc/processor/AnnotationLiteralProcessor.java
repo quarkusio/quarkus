@@ -30,14 +30,14 @@ import io.quarkus.gizmo.ResultHandle;
  * to generate a bytecode sequence for instantiating an annotation literal.
  * <p>
  * Behind the scenes, for each annotation literal, its class is also generated. This class
- * is a subclass of {@link AnnotationLiteral} and hence can be used at runtime. The generated
- * annotation literal classes are shared. That is, one class is generated for each annotation
- * type and the constructor of that class accepts values of all annotation members.
+ * is supposed to be used at runtime. The generated annotation literal classes are shared.
+ * That is, one class is generated for each annotation type and the constructor of that class
+ * accepts values of all annotation members.
  * <p>
  * This construct is thread-safe.
  */
 public class AnnotationLiteralProcessor {
-    private static final String ANNOTATION_LITERAL_SUFFIX = "_Shared_AnnotationLiteral";
+    private static final String ANNOTATION_LITERAL_SUFFIX = "_AnnotationLiteral";
 
     private final ComputingCache<CacheKey, AnnotationLiteralClassInfo> cache;
     private final IndexView beanArchiveIndex;
@@ -353,7 +353,7 @@ public class AnnotationLiteralProcessor {
                 ? AbstractGenerator.DEFAULT_PACKAGE + annotationName.withoutPackagePrefix()
                 : annotationName.toString();
 
-        // com.foo.MyQualifier -> com.foo.MyQualifier_Shared_AnnotationLiteral
+        // com.foo.MyQualifier -> com.foo.MyQualifier_AnnotationLiteral
         return nameToUse + ANNOTATION_LITERAL_SUFFIX;
     }
 
@@ -396,9 +396,9 @@ public class AnnotationLiteralProcessor {
         final boolean isApplicationClass;
 
         /**
-         * The annotation type. The generated annotation literal class will implement this interface
-         * (and extend {@code AnnotationLiteral<this interface>}). The process that generates
-         * the annotation literal class may consult this, for example, to know the set of annotation members.
+         * The annotation type. The generated annotation literal class will implement this interface.
+         * The process that generates the annotation literal class may consult this, for example,
+         * to know the set of annotation members.
          */
         final ClassInfo annotationClass;
 
@@ -414,7 +414,7 @@ public class AnnotationLiteralProcessor {
 
         List<MethodInfo> annotationMembers() {
             List<MethodInfo> result = new ArrayList<>();
-            for (MethodInfo method : annotationClass.methods()) {
+            for (MethodInfo method : annotationClass.unsortedMethods()) {
                 if (!method.name().equals(Methods.CLINIT) && !method.name().equals(Methods.INIT)) {
                     result.add(method);
                 }

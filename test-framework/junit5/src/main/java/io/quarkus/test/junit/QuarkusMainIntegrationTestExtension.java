@@ -18,6 +18,7 @@ import java.util.Properties;
 import java.util.ServiceLoader;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -35,7 +36,7 @@ import io.quarkus.test.junit.main.QuarkusMainLauncher;
 import io.quarkus.test.junit.util.CloseAdaptor;
 
 public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWithContextExtension
-        implements BeforeEachCallback, AfterEachCallback, ParameterResolver {
+        implements BeforeEachCallback, AfterEachCallback, AfterAllCallback, ParameterResolver {
 
     public static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace
             .create("io.quarkus.test.main.integration");
@@ -88,6 +89,11 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         result = null;
+    }
+
+    @Override
+    public void afterAll(ExtensionContext context) throws Exception {
+        clearState(context);
     }
 
     private void prepare(ExtensionContext extensionContext) throws Exception {

@@ -1085,6 +1085,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             currentTestClassStack.pop();
             if (!outerInstances.isEmpty()) {
                 actualTestInstance = outerInstances.pop();
+            } else {
+                clearState(context);
             }
         }
     }

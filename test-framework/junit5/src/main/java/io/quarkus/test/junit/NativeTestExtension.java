@@ -19,6 +19,7 @@ import java.util.OptionalInt;
 import java.util.function.Function;
 
 import org.eclipse.microprofile.config.Config;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -38,7 +39,7 @@ import io.quarkus.test.junit.launcher.ConfigUtil;
 import io.quarkus.test.junit.launcher.NativeImageLauncherProvider;
 
 public class NativeTestExtension extends AbstractQuarkusTestWithContextExtension
-        implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, TestInstancePostProcessor {
+        implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, AfterAllCallback, TestInstancePostProcessor {
 
     private static boolean failedBoot;
 
@@ -73,6 +74,11 @@ public class NativeTestExtension extends AbstractQuarkusTestWithContextExtension
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
         ensureStarted(extensionContext);
+    }
+
+    @Override
+    public void afterAll(ExtensionContext extensionContext) throws Exception {
+        clearState(extensionContext);
     }
 
     private QuarkusTestExtensionState ensureStarted(ExtensionContext extensionContext) {

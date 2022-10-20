@@ -339,6 +339,9 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
     @Override
     public void afterAll(ExtensionContext context) throws Exception {
         currentTestClassStack.pop();
+        if (currentTestClassStack.isEmpty()) {
+            clearState(context);
+        }
     }
 
     @Override

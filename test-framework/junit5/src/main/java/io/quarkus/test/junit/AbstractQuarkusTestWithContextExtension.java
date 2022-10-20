@@ -1,5 +1,7 @@
 package io.quarkus.test.junit;
 
+import java.io.IOException;
+
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
 import org.junit.jupiter.api.extension.TestWatcher;
@@ -45,6 +47,19 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
 
     protected void setState(ExtensionContext context, QuarkusTestExtensionState state) {
         getStoreFromContext(context).put(QuarkusTestExtensionState.class.getName(), state);
+    }
+
+    protected void clearState(ExtensionContext context) {
+        QuarkusTestExtensionState state = getState(context);
+        if (state != null) {
+            try {
+                state.close();
+            } catch (IOException ignored) {
+                // ignore errors when clearing out the context.
+            } finally {
+                getStoreFromContext(context).remove(QuarkusTestExtensionState.class.getName());
+            }
+        }
     }
 
     protected ExtensionContext.Store getStoreFromContext(ExtensionContext context) {

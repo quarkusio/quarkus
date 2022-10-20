@@ -129,6 +129,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         if (!failedBoot && !isAfterAllCallbacksEmpty()) {
             invokeAfterAllCallbacks(createQuarkusTestMethodContext(context));
         }
+
+        clearState(context);
     }
 
     private QuarkusTestExtensionState ensureStarted(ExtensionContext extensionContext) {

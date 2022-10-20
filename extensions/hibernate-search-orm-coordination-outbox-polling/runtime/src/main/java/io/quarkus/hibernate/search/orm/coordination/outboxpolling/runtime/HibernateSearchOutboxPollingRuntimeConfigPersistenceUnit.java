@@ -163,7 +163,7 @@ class HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          *
          * Higher values will reduce the number of transactions opened by the background process
          * and may increase performance thanks to the first-level cache (persistence context),
-         * but will increase memory usage and in extreme cases may lead to `OutOfMemoryErrors`.
+         * but will increase memory usage and in extreme cases may lead to ``OutOfMemoryError``s.
          *
          * See
          * link:{hibernate-search-doc-prefix}#coordination-outbox-polling-event-processor[this section of the reference documentation]
@@ -246,7 +246,7 @@ class HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * you must configure static sharding and then setting this property as well as the total shard count
          * is necessary.
          *
-         * Shards are referred to by an index in the range [0, total_count - 1] (see `shards.total-count`).
+         * Shards are referred to by an index in the range `[0, total_count - 1]` (see `shards.total-count`).
          * A given application node must be assigned at least one shard but may be assigned multiple shards
          * by setting `shards.assigned` to a comma-separated list, e.g. `0,3`.
          *

@@ -139,9 +139,11 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
 
         /**
          * The timeout when executing a request to an Elasticsearch server.
-         * <p>
+         *
          * This includes the time needed to wait for a connection to be available,
          * send the request and read the response.
+         *
+         * @asciidoclet
          */
         @ConfigItem
         Optional<Duration> requestTimeout;
@@ -172,8 +174,10 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
 
         /**
          * Whether Hibernate Search should check the version of the Elasticsearch cluster on startup.
-         * <p>
-         * Set to {@code false} if the Elasticsearch cluster may not be available on startup.
+         *
+         * Set to `false` if the Elasticsearch cluster may not be available on startup.
+         *
+         * @asciidoclet
          */
         @ConfigItem(name = "version-check.enabled", defaultValue = "true")
         public boolean versionCheck;
@@ -269,9 +273,11 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
 
         /**
          * Whether to check if dirty properties are relevant to indexing before actually reindexing an entity.
-         * <p>
+         *
          * When enabled, re-indexing of an entity is skipped if the only changes are on properties that are not used when
          * indexing.
+         *
+         * @asciidoclet
          */
         @ConfigItem(defaultValue = "true")
         boolean enableDirtyCheck;
@@ -454,10 +460,10 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     public static class ThreadPoolConfig {
         /**
          * The size of the thread pool assigned to the backend.
-         * <p>
-         * Note that number is <em>per backend</em>, not per index.
+         *
+         * Note that number is **per backend**, not per index.
          * Adding more indexes will not add more threads.
-         * <p>
+         *
          * As all operations happening in this thread-pool are non-blocking,
          * raising its size above the number of processor cores available to the JVM will not bring noticeable performance
          * benefit.
@@ -465,8 +471,10 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * for example, in an application with a single index with a single indexing queue,
          * running on a machine with 64 processor cores,
          * you might want to bring down the number of threads.
-         * <p>
+         *
          * Defaults to the number of processor cores available to the JVM on startup.
+         *
+         * @asciidoclet
          */
         // We can't set an actual default value here: see comment on this class.
         @ConfigItem
@@ -478,7 +486,10 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     @ConfigGroup
     public static class ElasticsearchIndexSchemaManagementConfig {
         /**
-         * The minimal cluster status required.
+         * The minimal https://www.elastic.co/guide/en/elasticsearch/reference/7.17/cluster-health.html[Elasticsearch cluster
+         * status] required on startup.
+         *
+         * @asciidoclet
          */
         // We can't set an actual default value here: see comment on this class.
         @ConfigItem(defaultValueDocumentation = "yellow")
@@ -498,13 +509,15 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     public static class ElasticsearchIndexIndexingConfig {
         /**
          * The number of indexing queues assigned to each index.
-         * <p>
+         *
          * Higher values will lead to more connections being used in parallel,
          * which may lead to higher indexing throughput,
          * but incurs a risk of overloading Elasticsearch,
          * i.e. of overflowing its HTTP request buffers and tripping
-         * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.9/circuit-breaker.html">circuit breakers</a>,
+         * https://www.elastic.co/guide/en/elasticsearch/reference/7.9/circuit-breaker.html[circuit breakers],
          * leading to Elasticsearch giving up on some request and resulting in indexing failures.
+         *
+         * @asciidoclet
          */
         // We can't set an actual default value here: see comment on this class.
         @ConfigItem(defaultValueDocumentation = "10")
@@ -512,11 +525,13 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
 
         /**
          * The size of indexing queues.
-         * <p>
+         *
          * Lower values may lead to lower memory usage, especially if there are many queues,
          * but values that are too low will reduce the likeliness of reaching the max bulk size
          * and increase the likeliness of application threads blocking because the queue is full,
          * which may lead to lower indexing throughput.
+         *
+         * @asciidoclet
          */
         // We can't set an actual default value here: see comment on this class.
         @ConfigItem(defaultValueDocumentation = "1000")
@@ -524,16 +539,18 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
 
         /**
          * The maximum size of bulk requests created when processing indexing queues.
-         * <p>
+         *
          * Higher values will lead to more documents being sent in each HTTP request sent to Elasticsearch,
          * which may lead to higher indexing throughput,
          * but incurs a risk of overloading Elasticsearch,
          * i.e. of overflowing its HTTP request buffers and tripping
-         * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.9/circuit-breaker.html">circuit breakers</a>,
+         * https://www.elastic.co/guide/en/elasticsearch/reference/7.9/circuit-breaker.html[circuit breakers],
          * leading to Elasticsearch giving up on some request and resulting in indexing failures.
-         * <p>
+         *
          * Note that raising this number above the queue size has no effect,
          * as bulks cannot include more requests than are contained in the queue.
+         *
+         * @asciidoclet
          */
         // We can't set an actual default value here: see comment on this class.
         @ConfigItem(defaultValueDocumentation = "100")
@@ -545,9 +562,11 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
 
         /**
          * An exhaustive list of all tenant identifiers that may be used by the application when multi-tenancy is enabled.
-         * <p>
+         *
          * Mainly useful when using the {@code outbox-polling} coordination strategy,
          * since it involves setting up one background processor per tenant.
+         *
+         * @asciidoclet
          */
         @ConfigItem
         Optional<List<String>> tenantIds;

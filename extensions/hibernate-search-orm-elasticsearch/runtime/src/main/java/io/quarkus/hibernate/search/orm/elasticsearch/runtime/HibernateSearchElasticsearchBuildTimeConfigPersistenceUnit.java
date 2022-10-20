@@ -80,15 +80,17 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     public static class ElasticsearchBackendBuildTimeConfig {
         /**
          * The version of Elasticsearch used in the cluster.
-         * <p>
+         *
          * As the schema is generated without a connection to the server, this item is mandatory.
-         * <p>
-         * It doesn't have to be the exact version (it can be 7 or 7.1 for instance) but it has to be sufficiently precise to
-         * choose a model dialect (the one used to generate the schema) compatible with the protocol dialect (the one used to
-         * communicate with Elasticsearch).
-         * <p>
+         *
+         * It doesn't have to be the exact version (it can be `7` or `7.1` for instance) but it has to be sufficiently precise
+         * to choose a model dialect (the one used to generate the schema) compatible with the protocol dialect (the one used
+         * to communicate with Elasticsearch).
+         *
          * There's no rule of thumb here as it depends on the schema incompatibilities introduced by Elasticsearch versions. In
          * any case, if there is a problem, you will have an error when Hibernate Search tries to connect to the cluster.
+         *
+         * @asciidoclet
          */
         @ConfigItem
         public Optional<ElasticsearchVersion> version;

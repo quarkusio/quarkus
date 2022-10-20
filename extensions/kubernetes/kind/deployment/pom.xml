@@ -21,6 +21,21 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kubernetes-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.dekorate</groupId>
+            <artifactId>kind-annotations</artifactId>
+            <classifier>noapt</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.sundr</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun</groupId>
+                    <artifactId>tools</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>

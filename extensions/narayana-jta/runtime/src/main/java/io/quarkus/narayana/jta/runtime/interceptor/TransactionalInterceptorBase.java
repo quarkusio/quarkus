@@ -27,7 +27,7 @@ import org.reactivestreams.Publisher;
 import com.arjuna.ats.jta.logging.jtaLogger;
 
 import io.quarkus.arc.runtime.InterceptorBindings;
-import io.quarkus.narayana.jta.runtime.CDIDelegatingTransactionManager;
+import io.quarkus.narayana.jta.runtime.NotifyingTransactionManager;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import io.quarkus.transaction.annotations.Rollback;
 import io.smallrye.mutiny.Multi;
@@ -110,7 +110,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
         int timeoutConfiguredForMethod = getTransactionTimeoutFromAnnotation(ic);
 
-        int currentTmTimeout = ((CDIDelegatingTransactionManager) transactionManager).getTransactionTimeout();
+        int currentTmTimeout = ((NotifyingTransactionManager) transactionManager).getTransactionTimeout();
 
         if (timeoutConfiguredForMethod > 0) {
             tm.setTransactionTimeout(timeoutConfiguredForMethod);

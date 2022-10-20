@@ -6,8 +6,6 @@ import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Destroyed;
 import javax.enterprise.context.Initialized;
 import javax.enterprise.event.Event;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.InvalidTransactionException;
@@ -20,51 +18,22 @@ import javax.transaction.TransactionScoped;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Unremovable;
+import io.quarkus.narayana.jta.runtime.TransactionScopedNotifier.TransactionId;
 
 /**
  * A delegating transaction manager which receives an instance of Narayana transaction manager
  * and delegates all calls to it.
  * On top of it the implementation adds the CDI events processing for {@link TransactionScoped}.
  */
-@Singleton
-@Unremovable // used by Arc for transactional observers
-public class CDIDelegatingTransactionManager implements TransactionManager, Serializable {
-
-    private static final Logger log = Logger.getLogger(CDIDelegatingTransactionManager.class);
+public class NotifyingTransactionManager extends TransactionScopedNotifier implements TransactionManager, Serializable {
 
     private static final long serialVersionUID = 1598L;
 
-    private final transient com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple delegate;
+    private static final Logger LOG = Logger.getLogger(NotifyingTransactionManager.class);
 
-    /**
-     * An {@link Event} that can {@linkplain Event#fire(Object) fire}
-     * {@link Transaction}s when the {@linkplain TransactionScoped transaction scope} is initialized.
-     */
-    @Inject
-    @Initialized(TransactionScoped.class)
-    Event<Transaction> transactionScopeInitialized;
+    private transient com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple delegate;
 
-    /**
-     * An {@link Event} that can {@linkplain Event#fire(Object) fire}
-     * {@link Object}s before the {@linkplain TransactionScoped transaction scope} is destroyed.
-     */
-    @Inject
-    @BeforeDestroyed(TransactionScoped.class)
-    Event<Object> transactionScopeBeforeDestroyed;
-
-    /**
-     * An {@link Event} that can {@linkplain Event#fire(Object) fire}
-     * {@link Object}s when the {@linkplain TransactionScoped transaction scope} is destroyed.
-     */
-    @Inject
-    @Destroyed(TransactionScoped.class)
-    Event<Object> transactionScopeDestroyed;
-
-    /**
-     * Delegating transaction manager call to com.arjuna.ats.jta.{@link com.arjuna.ats.jta.TransactionManager}
-     */
-    public CDIDelegatingTransactionManager() {
+    NotifyingTransactionManager() {
         delegate = (com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple) com.arjuna.ats.jta.TransactionManager
                 .transactionManager();
     }
@@ -80,9 +49,7 @@ public class CDIDelegatingTransactionManager implements TransactionManager, Seri
     @Override
     public void begin() throws NotSupportedException, SystemException {
         delegate.begin();
-        if (this.transactionScopeInitialized != null) {
-            this.transactionScopeInitialized.fire(this.getTransaction());
-        }
+        initialized(getTransactionId());
     }
 
     /**
@@ -97,16 +64,12 @@ public class CDIDelegatingTransactionManager implements TransactionManager, Seri
     @Override
     public void commit() throws RollbackException, HeuristicMixedException, HeuristicRollbackException, SecurityException,
             IllegalStateException, SystemException {
-        if (this.transactionScopeBeforeDestroyed != null) {
-            this.transactionScopeBeforeDestroyed.fire(this.getTransaction());
-        }
-
+        TransactionId id = getTransactionId();
+        beforeDestroyed(id);
         try {
             delegate.commit();
         } finally {
-            if (this.transactionScopeDestroyed != null) {
-                this.transactionScopeDestroyed.fire(this.toString());
-            }
+            destroyed(id);
         }
     }
 
@@ -121,21 +84,17 @@ public class CDIDelegatingTransactionManager implements TransactionManager, Seri
      */
     @Override
     public void rollback() throws IllegalStateException, SecurityException, SystemException {
+        TransactionId id = getTransactionId();
         try {
-            if (this.transactionScopeBeforeDestroyed != null) {
-                this.transactionScopeBeforeDestroyed.fire(this.getTransaction());
-            }
+            beforeDestroyed(id);
         } catch (Throwable t) {
-            log.error("Failed to fire @BeforeDestroyed(TransactionScoped.class)", t);
+            LOG.error("Failed to fire @BeforeDestroyed(TransactionScoped.class)", t);
         }
-
         try {
             delegate.rollback();
         } finally {
             //we don't need a catch block here, if this one fails we just let the exception propagate
-            if (this.transactionScopeDestroyed != null) {
-                this.transactionScopeDestroyed.fire(this.toString());
-            }
+            destroyed(id);
         }
     }
 

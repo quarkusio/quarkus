@@ -5,6 +5,7 @@ on:
     branches-ignore:
       - 'dependabot/**'
       - 'jakarta-rewrite'
+      - '3.0'
     paths:
       - 'docs/src/main/asciidoc/**'
       - '.github/workflows/doc-build.yml'

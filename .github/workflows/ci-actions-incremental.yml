@@ -72,7 +72,7 @@ jobs:
   attach-report-issue-number:
     runs-on: ubuntu-latest
     name: Attach report issue number
-    if: github.ref_name == 'jakarta-rewrite'
+    if: github.ref_name == 'jakarta-rewrite' || github.ref_name == '3.0'
     steps:
       - name: Create file
         shell: bash
@@ -145,7 +145,7 @@ jobs:
           # refresh cache every month to avoid unlimited growth
           key: q2maven-${{ steps.get-date.outputs.date }}
       - name: Prepare Jakarta artifacts
-        if: github.ref_name == 'jakarta-rewrite'
+        if: github.ref_name == 'jakarta-rewrite' || github.ref_name == '3.0'
         shell: bash
         run: ./jakarta/prepare.sh
       - name: Build

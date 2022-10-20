@@ -76,7 +76,7 @@
         <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
         <asm.version>9.4</asm.version>
         <commons-io.version>2.11.0</commons-io.version>
-        <jboss-metadata-web.version>15.1.0.Final</jboss-metadata-web.version>
+        <jboss-metadata-web.version>15.2.0.Final</jboss-metadata-web.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <plexus-utils.version>3.3.0</plexus-utils.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>

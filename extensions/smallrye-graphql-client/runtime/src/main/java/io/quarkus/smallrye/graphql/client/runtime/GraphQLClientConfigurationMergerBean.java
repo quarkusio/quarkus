@@ -1,7 +1,9 @@
 package io.quarkus.smallrye.graphql.client.runtime;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -94,6 +96,8 @@ public class GraphQLClientConfigurationMergerBean {
     private GraphQLClientConfiguration toSmallRyeNativeConfiguration(GraphQLClientConfig quarkusConfig) {
         GraphQLClientConfiguration transformed = new GraphQLClientConfiguration();
         transformed.setHeaders(quarkusConfig.headers);
+        transformed.setInitPayload(Optional.ofNullable(quarkusConfig.initPayload)
+                .map(m -> new HashMap<String, Object>(m)).orElse(null));
         quarkusConfig.url.ifPresent(transformed::setUrl);
         transformed.setWebsocketSubprotocols(quarkusConfig.subprotocols.orElse(new ArrayList<>()));
         quarkusConfig.keyStore.ifPresent(transformed::setKeyStore);

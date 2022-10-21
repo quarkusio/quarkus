@@ -114,4 +114,9 @@ public class GraphQLClientConfig {
     @ConfigItem
     public OptionalInt maxRedirects;
 
+    /**
+     * Additional payload sent on websocket initialization.
+     */
+    @ConfigItem(name = "init-payload")
+    public Map<String, String> initPayload;
 }

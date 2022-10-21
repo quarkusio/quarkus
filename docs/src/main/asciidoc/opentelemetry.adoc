@@ -423,6 +423,38 @@ class SpanBean {
 }
 ----
 
+=== Available OpenTelemetry CDI injections
+
+As per MicroProfile Telemetry Tracing specification, Quarkus supports the CDI injections of the
+following classes:
+
+* `io.opentelemetry.api.OpenTelemetry`
+* `io.opentelemetry.api.trace.Tracer`
+* `io.opentelemetry.api.trace.Span`
+* `io.opentelemetry.api.baggage.Baggage`
+
+You can inject these classes in any CDI enabled bean. For instance, the `Tracer` is particularly useful to start custom spans:
+
+[source,java]
+----
+@Inject
+Tracer tracer;
+
+...
+
+public void tracedWork() {
+    Span span = tracer.spanBuilder("My custom span")
+        .setAttribute("attr", "attr.value")
+        .setParent(Context.current().with(Span.current()))
+        .setSpanKind(SpanKind.INTERNAL)
+        .startSpan();
+
+    // traced work
+
+    span.end();
+}
+----
+
 === SmallRye Reactive Messaging - Kafka
 
 When using the SmallRye Reactive Messaging extension for Kafka,

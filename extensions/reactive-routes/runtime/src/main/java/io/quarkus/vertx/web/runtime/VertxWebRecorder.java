@@ -121,6 +121,8 @@ public class VertxWebRecorder {
                                             }
                                         }
                                     });
+                        } else {
+                            routingContext.next();
                         }
                     });
                 }

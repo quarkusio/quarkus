@@ -7,15 +7,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.cli.transfer.BatchModeMavenTransferListener;
 import org.apache.maven.cli.transfer.ConsoleMavenTransferListener;
 import org.apache.maven.cli.transfer.QuietMavenTransferListener;
@@ -176,7 +176,11 @@ public class BootstrapMavenContext {
                 if (config.repoSession == null && repoSession != null && repoSession.getWorkspaceReader() == null) {
                     repoSession = new DefaultRepositorySystemSession(repoSession).setWorkspaceReader(workspace);
                     if (config.remoteRepos == null && remoteRepos != null) {
-                        remoteRepos = resolveCurrentProjectRepos(remoteRepos);
+                        final List<RemoteRepository> rawProjectRepos = resolveRawProjectRepos(remoteRepos);
+                        if (!rawProjectRepos.isEmpty()) {
+                            remoteRepos = getRemoteRepositoryManager().aggregateRepositories(repoSession, remoteRepos,
+                                    rawProjectRepos, true);
+                        }
                     }
                 }
             }
@@ -514,31 +518,53 @@ public class BootstrapMavenContext {
     private List<RemoteRepository> resolveRemoteRepos() throws BootstrapMavenException {
         final List<RemoteRepository> rawRepos = new ArrayList<>();
         readMavenReposFromEnv(rawRepos, System.getenv());
+        addReposFromProfiles(rawRepos);
 
-        getActiveSettingsProfiles().forEach(p -> addProfileRepos(p.getRepositories(), rawRepos));
-
-        // central must be there
-        if (rawRepos.isEmpty() || !includesDefaultRepo(rawRepos)) {
+        final boolean centralConfiguredInSettings = includesDefaultRepo(rawRepos);
+        if (!centralConfiguredInSettings) {
             rawRepos.add(newDefaultRepository());
         }
-        final List<RemoteRepository> repos = getRepositorySystem().newResolutionRepositories(getRepositorySystemSession(),
-                rawRepos);
 
-        return workspace == null ? repos : resolveCurrentProjectRepos(repos);
+        if (workspace == null) {
+            return newResolutionRepos(rawRepos);
+        }
+
+        final List<RemoteRepository> rawProjectRepos = resolveRawProjectRepos(newResolutionRepos(rawRepos));
+        if (!rawProjectRepos.isEmpty()) {
+            if (!centralConfiguredInSettings) {
+                // if the default repo was added here, we are removing it to add it last
+                rawRepos.remove(rawRepos.size() - 1);
+            }
+            rawRepos.addAll(rawProjectRepos);
+            if (!centralConfiguredInSettings && !includesDefaultRepo(rawProjectRepos)) {
+                rawRepos.add(newDefaultRepository());
+            }
+        }
+
+        return newResolutionRepos(rawRepos);
     }
 
     private List<RemoteRepository> resolveRemotePluginRepos() throws BootstrapMavenException {
         final List<RemoteRepository> rawRepos = new ArrayList<>();
-
-        getActiveSettingsProfiles().forEach(p -> addProfileRepos(p.getPluginRepositories(), rawRepos));
-
+        addReposFromProfiles(rawRepos);
         // central must be there
-        if (rawRepos.isEmpty() || !includesDefaultRepo(rawRepos)) {
+        if (!includesDefaultRepo(rawRepos)) {
             rawRepos.add(newDefaultRepository());
         }
-        final List<RemoteRepository> repos = getRepositorySystem().newResolutionRepositories(getRepositorySystemSession(),
-                rawRepos);
-        return repos;
+        return newResolutionRepos(rawRepos);
+    }
+
+    private List<RemoteRepository> newResolutionRepos(final List<RemoteRepository> rawRepos)
+            throws BootstrapMavenException {
+        return getRepositorySystem().newResolutionRepositories(getRepositorySystemSession(), rawRepos);
+    }
+
+    private void addReposFromProfiles(final List<RemoteRepository> rawRepos) throws BootstrapMavenException {
+        // reverse the order of the profiles to match the order in which the repos appear in Maven mojos
+        final List<org.apache.maven.model.Profile> profiles = getActiveSettingsProfiles();
+        for (int i = profiles.size() - 1; i >= 0; --i) {
+            addProfileRepos(profiles.get(i).getRepositories(), rawRepos);
+        }
     }
 
     public static RemoteRepository newDefaultRepository() {
@@ -562,13 +588,13 @@ public class BootstrapMavenContext {
         }
     }
 
-    private List<RemoteRepository> resolveCurrentProjectRepos(List<RemoteRepository> repos)
+    private List<RemoteRepository> resolveRawProjectRepos(List<RemoteRepository> repos)
             throws BootstrapMavenException {
         final Artifact projectArtifact;
         if (currentProject == null) {
             final Model model = loadCurrentProjectModel();
             if (model == null) {
-                return repos;
+                return List.of();
             }
             projectArtifact = new DefaultArtifact(ModelUtils.getGroupId(model), model.getArtifactId(),
                     ArtifactCoords.DEFAULT_CLASSIFIER, ArtifactCoords.TYPE_POM, ModelUtils.getVersion(model));
@@ -577,18 +603,17 @@ public class BootstrapMavenContext {
                     ArtifactCoords.DEFAULT_CLASSIFIER, ArtifactCoords.TYPE_POM, currentProject.getVersion());
         }
 
-        final List<RemoteRepository> rawRepos;
+        final RepositorySystem repoSystem = getRepositorySystem();
+        final RepositorySystemSession repoSession = getRepositorySystemSession();
         try {
-            rawRepos = getRepositorySystem()
-                    .readArtifactDescriptor(getRepositorySystemSession(), new ArtifactDescriptorRequest()
+            return repoSystem
+                    .readArtifactDescriptor(repoSession, new ArtifactDescriptorRequest()
                             .setArtifact(projectArtifact)
                             .setRepositories(repos))
                     .getRepositories();
         } catch (ArtifactDescriptorException e) {
             throw new BootstrapMavenException("Failed to read artifact descriptor for " + projectArtifact, e);
         }
-
-        return getRepositorySystem().newResolutionRepositories(getRepositorySystemSession(), rawRepos);
     }
 
     public List<org.apache.maven.model.Profile> getActiveSettingsProfiles()
@@ -598,23 +623,16 @@ public class BootstrapMavenContext {
         }
 
         final Settings settings = getEffectiveSettings();
-        final int profilesTotal = settings.getProfiles().size();
-        if (profilesTotal == 0) {
-            return Collections.emptyList();
-        }
-        List<org.apache.maven.model.Profile> modelProfiles = new ArrayList<>(profilesTotal);
-        for (Profile profile : settings.getProfiles()) {
-            modelProfiles.add(SettingsUtils.convertFromSettingsProfile(profile));
+        final List<Profile> allSettingsProfiles = settings.getProfiles();
+        if (allSettingsProfiles.isEmpty()) {
+            return activeSettingsProfiles = List.of();
         }
 
         final BootstrapMavenOptions mvnArgs = getCliOptions();
-        List<String> activeProfiles = mvnArgs.getActiveProfileIds();
-        final List<String> inactiveProfiles = mvnArgs.getInactiveProfileIds();
-
         final Path currentPom = getCurrentProjectPomOrNull();
         final DefaultProfileActivationContext context = new DefaultProfileActivationContext()
-                .setActiveProfileIds(activeProfiles)
-                .setInactiveProfileIds(inactiveProfiles)
+                .setActiveProfileIds(mvnArgs.getActiveProfileIds())
+                .setInactiveProfileIds(mvnArgs.getInactiveProfileIds())
                 .setSystemProperties(System.getProperties())
                 .setProjectDirectory(
                         currentPom == null ? getCurrentProjectBaseDir().toFile() : currentPom.getParent().toFile());
@@ -623,43 +641,44 @@ public class BootstrapMavenContext {
                 .addProfileActivator(new JdkVersionProfileActivator())
                 .addProfileActivator(new OperatingSystemProfileActivator())
                 .addProfileActivator(createFileProfileActivator());
-        modelProfiles = profileSelector.getActiveProfiles(modelProfiles, context, new ModelProblemCollector() {
-            public void add(ModelProblemCollectorRequest req) {
-                log.error("Failed to activate a Maven profile: " + req.getMessage());
-            }
-        });
+        List<org.apache.maven.model.Profile> selectedProfiles = profileSelector
+                .getActiveProfiles(toModelProfiles(allSettingsProfiles), context, new ModelProblemCollector() {
+                    public void add(ModelProblemCollectorRequest req) {
+                        log.error("Failed to activate a Maven profile: " + req.getMessage());
+                    }
+                });
 
-        activeProfiles = settings.getActiveProfiles();
-        if (!activeProfiles.isEmpty()) {
-            for (String profileName : activeProfiles) {
-                final Profile profile = getProfile(profileName, settings);
-                if (profile != null) {
-                    modelProfiles.add(SettingsUtils.convertFromSettingsProfile(profile));
+        if (!settings.getActiveProfiles().isEmpty()) {
+            final Set<String> activeProfiles = new HashSet<>(settings.getActiveProfiles());
+            // remove already activated to avoid duplicates
+            selectedProfiles.forEach(p -> activeProfiles.remove(p.getId()));
+            if (!activeProfiles.isEmpty()) {
+                final List<org.apache.maven.model.Profile> allActiveProfiles = new ArrayList<>(
+                        selectedProfiles.size() + activeProfiles.size());
+                allActiveProfiles.addAll(selectedProfiles);
+                for (Profile profile : allSettingsProfiles) {
+                    if (activeProfiles.contains(profile.getId())) {
+                        allActiveProfiles.add(SettingsUtils.convertFromSettingsProfile(profile));
+                    }
                 }
+                selectedProfiles = allActiveProfiles;
             }
         }
-        return activeSettingsProfiles = modelProfiles;
+        return activeSettingsProfiles = selectedProfiles;
     }
 
-    private static Profile getProfile(String name, Settings settings) throws BootstrapMavenException {
-        final Profile profile = settings.getProfilesAsMap().get(name);
-        if (profile == null) {
-            unrecognizedProfile(name, true);
+    private static List<org.apache.maven.model.Profile> toModelProfiles(List<Profile> profiles) {
+        final List<org.apache.maven.model.Profile> result = new ArrayList<>(profiles.size());
+        for (Profile p : profiles) {
+            result.add(SettingsUtils.convertFromSettingsProfile(p));
         }
-        return profile;
-    }
-
-    private static void unrecognizedProfile(String name, boolean activate) {
-        final StringBuilder buf = new StringBuilder();
-        buf.append("The requested Maven profile \"").append(name).append("\" could not be ");
-        if (!activate) {
-            buf.append("de");
-        }
-        buf.append("activated because it does not exist.");
-        log.warn(buf.toString());
+        return result;
     }
 
     private static boolean includesDefaultRepo(List<RemoteRepository> repositories) {
+        if (repositories.isEmpty()) {
+            return false;
+        }
         for (ArtifactRepository repository : repositories) {
             if (repository.getId().equals(DEFAULT_REMOTE_REPO_ID)) {
                 return true;
@@ -687,10 +706,14 @@ public class BootstrapMavenContext {
 
     private static RepositoryPolicy toAetherRepoPolicy(org.apache.maven.model.RepositoryPolicy modelPolicy) {
         return new RepositoryPolicy(modelPolicy.isEnabled(),
-                StringUtils.isEmpty(modelPolicy.getUpdatePolicy()) ? RepositoryPolicy.UPDATE_POLICY_DAILY
+                isEmpty(modelPolicy.getUpdatePolicy()) ? RepositoryPolicy.UPDATE_POLICY_DAILY
                         : modelPolicy.getUpdatePolicy(),
-                StringUtils.isEmpty(modelPolicy.getChecksumPolicy()) ? RepositoryPolicy.CHECKSUM_POLICY_WARN
+                isEmpty(modelPolicy.getChecksumPolicy()) ? RepositoryPolicy.CHECKSUM_POLICY_WARN
                         : modelPolicy.getChecksumPolicy());
+    }
+
+    private static boolean isEmpty(final CharSequence cs) {
+        return cs == null || cs.length() == 0;
     }
 
     /**

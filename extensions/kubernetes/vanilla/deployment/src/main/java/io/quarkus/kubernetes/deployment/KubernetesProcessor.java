@@ -63,7 +63,6 @@ class KubernetesProcessor {
     private static final Logger log = Logger.getLogger(KubernetesProcessor.class);
 
     private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
-    public static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
 
     @BuildStep
     FeatureBuildItem produceFeature() {

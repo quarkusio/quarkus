@@ -77,14 +77,12 @@ public class KubernetesServiceMappingTest {
                 assertThat(serviceSpec.getPorts().size()).isEqualTo(2);
                 assertTrue(serviceSpec.getPorts().stream().anyMatch(port -> "http".equals(port.getName())
                         && port.getTargetPort().getIntVal() == 8080
-                // Dekorate issue: https://github.com/dekorateio/dekorate/issues/1068
-                // && "TCP".equals(port.getProtocol())
+                        && "TCP".equals(port.getProtocol())
                         && port.getPort() == 8080),
                         () -> "http port not found in the service!");
                 assertTrue(serviceSpec.getPorts().stream().anyMatch(port -> "debug".equals(port.getName())
                         && port.getTargetPort().getIntVal() == 5005
-                // Dekorate issue: https://github.com/dekorateio/dekorate/issues/1068
-                // && "UDP".equals(port.getProtocol())
+                        && "UDP".equals(port.getProtocol())
                         && port.getPort() == 5005),
                         () -> "debug port not found in the service!");
             });

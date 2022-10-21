@@ -669,7 +669,10 @@ public class QuteProcessor {
             }
 
             for (Expression expression : validation.fragmentExpressions) {
-                // Note that we ignore expressions with no type info and expressions with a hint referencing an expression from inside the fragment
+                // Note that we ignore literals and expressions with no type info and expressions with a hint referencing an expression from inside the fragment
+                if (expression.isLiteral()) {
+                    continue;
+                }
                 if (expression.hasTypeInfo()) {
                     Info info = TypeInfos.create(expression, index, null).get(0);
                     if (info.isTypeInfo()) {

@@ -19,6 +19,7 @@ import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.http.HttpClient;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -184,6 +185,8 @@ public class KubernetesClientProcessor {
                 .toArray(String[]::new);
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, serializerClasses));
 
+        reflectiveClasses
+                .produce(new ReflectiveClassBuildItem(true, true, DefaultKubernetesClient.class.getName()));
         reflectiveClasses
                 .produce(new ReflectiveClassBuildItem(true, false, "io.fabric8.kubernetes.api.model.IntOrString"));
         reflectiveClasses

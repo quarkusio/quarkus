@@ -16,6 +16,19 @@ public class WithAttributeFilterTest {
                     .addClasses(WithAttributeFilter.class, Identity.class));
 
     @Test
+    public void testTriggerAsFuncNameFilterMatch() {
+        RestAssured.given().contentType("application/json")
+                .body("[{\"name\": \"Bill\"}, {\"name\": \"Matej\"}]")
+                .header("ce-id", "42")
+                .header("ce-type", "listOfStrings")
+                .header("ce-source", "mytestvalue")
+                .header("ce-specversion", "1.0")
+                .post("/")
+                .then().statusCode(200)
+                .body(equalTo("\"Bill:Matej\""));
+    }
+
+    @Test
     public void testAttributeFilterMatch() {
         RestAssured.given().contentType("application/json")
                 .body("[{\"name\": \"Bill\"}, {\"name\": \"Matej\"}]")

@@ -12,16 +12,13 @@ A detailed reference for the structure and composition of Quarkus documentation.
 
 == Source locations
 
-Quarkus doc sources are built and synced to the https://quarkus.io/guides/[Quarkus.io website] at release time.
-
-- Documentation for Quarkus core and most extensions is located in the `docs` module of the https://github.com/quarkusio/quarkus/tree/main/docs[Quarkus GitHub repository].
-- Docs for Quarkiverse or other third-party extensions are pulled directly from those repositories.
-
-The Asciidoc files can be found in the `src/main/asciidoc` directory within the docs module.
+- AsciiDoc files are in the `src/main/asciidoc` directory within the `docs` module of the {quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
+- Configuration documentation is generated from JavaDoc comments in Java source files.
+- Java, YAML, and other source files can also be referenced by AsciiDoc files.
 
 == Templates
 
-Create new documentation files using the appropriate template for the content type: 
+Create new documentation files with the appropriate template for the content type: 
 
 Concepts:: Use `docs/src/main/asciidoc/_templates/template-concepts.adoc`
 How-To Guides:: Use `docs/src/main/asciidoc/_templates/template-howto.adoc`
@@ -30,10 +27,17 @@ Tutorials:: Use `docs/src/main/asciidoc/_templates/template-tutorial.adoc`
 
 == Output locations
 
-Configuration references:: Javadoc comments discovered in MicroProfile Config source files are used to generate config reference documentation.
-These generated files are found in `target/asciidoc/generated/config/` (from the project root).
+Configuration references:: Configuration reference documentation is generated from Javadoc comments discovered in MicroProfile Config source files.
+These generated files are in `target/asciidoc/generated/config/` (from the project root).
 
-Asciidoc output as HTML:: A locally-rendered result of asciidoc processing (which is similar, but not identical, to that used to generate website documentation) is found in `docs/target/generated-docs/`
+AsciiDoc output to HTML:: AsciiDoc processing creates HTML files in `docs/target/generated-docs/`.
+
+=== Website publication
+
+Content from this repository is published to the https://quarkus.io/guides/[Quarkus.io website].
+
+- Documentation built from the main branch is published nightly (main-SNAPSHOT).
+- Documentation for other branches is published at release time.
 
 == Titles and headings
 
@@ -54,14 +58,14 @@ Your titles and headings must also follow the specific guidance for the Quarkus 
 |Concept
 |* Start with a noun that names the concept or topic
 * Never start with an active verb, for example, an action word like configure, install, or start
-* Finish the implied sentence: "Understanding … "
+* Finish the implied sentence: "Understanding ..."
 |Security and authentication mechanisms in Quarkus
 |Discovering Reactive SQL Clients In Quarkus
 
 |How-To Guide
-|* Start with an active verb in the imperative verb form, for example, ‘Create a ...’ or ‘Secure a ...’
+|* Start with an active verb in the imperative verb form, for example, "Create a ..." or "Secure a ..."
 * Be action-oriented or task-oriented, rather than feature-oriented
-* Finish the implied sentence: "How to.."
+* Finish the implied sentence: "How to ..."
 |Secure your Quarkus application with WebAuthn authentication
 |Applying WebAuthn Authentication In Quarkus
 
@@ -73,24 +77,25 @@ Your titles and headings must also follow the specific guidance for the Quarkus 
 |Reference guide for Configuring Hibernate Reactive API Configuration Properties
 
 |Tutorial
-|* Start with an active verb in the imperative verb form, for example, ‘Create a ...’ or ‘Secure a ...’
+|* Start with an active verb in the imperative verb form, for example, "Create a ..." or "Secure a ..."
 * State what task the user will complete, with emphasis on the key topic or demonstrated activity
 * Be action-oriented or task-oriented, rather than feature-oriented
 * Be led by the needs of the user in learning mode.
-* Finish the implied sentence: "In this tutorial, you will… " 
+* Finish the implied sentence: "In this tutorial, you will ..." 
 |Create a Quarkus application in JVM mode by using the quick start example
 |Creating an App
 |===
 
 == File naming conventions
 
-To make things easier to discover, Quarkus docs are stored in a fairly flat structure.
+Quarkus documentation uses a flat hierarchy.
+
 The bulk of the file name should be some representation of its title.
-Use all lowercase letters, separate words with hyphens, and don't use symbols or special characters.
+Use all lowercase letters, separate words with hyphens, and avoid symbols and special characters.
 
-Prefix:: Use a common prefix to group related documents, e.g. all of the documents related to writing Quarkus docs are prefixed with `doc-`.
+Prefix:: Use a common prefix to group related documents. Documents related to writing and contributing to Quarkus docs share the `doc-` prefix, for example.
 
-Suffix:: The file name should reflect the type of document:
+Suffix:: The file name should reflect the document type:
 
 - Concept documents should end in `-concepts.adoc`
 - How-to guides should end in `-howto.adoc`
@@ -128,13 +133,13 @@ Try to write the abstract by using the following guidelines:
 The first sentence of the abstract must explain the value and some benefit of the content in less than 27 words because this automatically displays on the link:https://quarkus.io/guides/[Quarkus guides homepage].
 ====
 
-== Asciidoc syntax
+== AsciiDoc syntax
 
-Quarkus docs use Asciidoc syntax.
-The following links provide background on Asciidoc syntax and general conventions.
+Quarkus docs use AsciiDoc syntax.
+The following links provide background on AsciiDoc syntax and general conventions.
 
 * https://redhat-documentation.github.io/asciidoc-markup-conventions/[AsciiDoc Mark-up Quick Reference for Documentation]
-* https://docs.asciidoctor.org/asciidoc/latest/[Asciidoctor User Manual]
+* https://docs.asciidoctor.org/asciidoc/latest/[AsciiDoctor User Manual]
 * https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc Syntax Quick Reference]
 
 
@@ -163,7 +168,7 @@ For example, this document has the following in its header:
 Section titles should be written in sentence case, rather than title case.
 
 All documents should start with a Title (a `= Level 0` heading), and should 
-be broken into subsections as appropriate
+be broken into subsections where appropriate
 (`== Level 1` to `====== Level 5`)
 without skipping any levels.
 
@@ -182,7 +187,7 @@ See xref:{doc-guides}/doc-concepts.adoc[Quarkus documentation concepts] for more
 
 === Links
 
-In general, prefer using https://docs.asciidoctor.org/asciidoc/latest/macros/url-macro/[url macros] to using bare or automatic links.
+In general, prefer https://docs.asciidoctor.org/asciidoc/latest/macros/url-macro/[url macros] to bare or automatic links.
 Provide human-readable text for the link, especially if it is included in the middle of other text.
 
 .A URL Macro link with attributes
@@ -192,10 +197,10 @@ The URL macro also supports https://docs.asciidoctor.org/asciidoc/latest/macros/
 
 [source,asciidoc]
 ----
-https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[Asciidoc Syntax Quick Reference,window=_blank,opts=nofollow]
+https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc Syntax Quick Reference,window=_blank,opts=nofollow]
 ----
 
-The above source produces this link: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[Asciidoc Syntax Quick Reference,window=_blank,opts=nofollow].
+The above source produces this link: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc Syntax Quick Reference,window=_blank,opts=nofollow].
 =====
 
 === Cross-references
@@ -208,11 +213,11 @@ We use attributes in our cross-references to ensure our docs can be built across
 |===
 |Attribute|Description
 |\{code-examples}|Relative path to directory containing collected example source files
-|\{doc-guides}|Relative path to documentation adoc files (e.g. doc-concepts.adoc)
 |\{doc-examples}|Relative path to source examples for documentation guides
+|\{doc-guides}|Relative path to documentation adoc files
 |\{generated-dir}|Relative path to generated configuration `*.adoc` files
 |\{imagesdir}|Relative path to directory containing images
-|\{includes}|Relative path to directory containing partial/reusable content (`*.adoc` files)
+|\{includes}|Relative path to directory containing partial/reusable content
 |===
 
 When cross-referencing content, always use the inter-document `xref:` syntax and supply a human-readable label to your link.
@@ -239,7 +244,7 @@ System.out.println("Hello, World!");
 -----
 
 In documents like tutorials, you may want to reference source code that is built and tested regularly.
-The Quarkus documentation module build will copy source files enumerated in `*-examples/yaml` files into a flattened structure in the `target/asciidoc/examples` directory (from the project root).
+The Quarkus documentation build will copy source files enumerated in `*-examples/yaml` files into a flattened structure in the `target/asciidoc/examples` directory (from the project root).
 
 [source,yaml]
 ----
@@ -249,9 +254,9 @@ examples:
 ----
 
 <1> define the path of source to be copied
-<2> define the simplified target file name to use when copying the file into the `target/asciidoc/examples` directory. We recommend using the same prefix as the related/consuming documentation in the file name.
+<2> define the simplified target file name to use when copying the file into the `target/asciidoc/examples` directory.
 
-Content copied in this way is referenced using the `\{code-examples}` source attribute. If a copied file contains the literal string `{{source}}`, that literal value is replaced with the path of the source file.
+Content copied in this way is referenced by the `\{code-examples}` source attribute. The literal string `{{source}}` in the source file, if present, will be replaced with the path of the source file in the copy.
 
 .Micrometer example
 * The source file to be copied is:
@@ -271,7 +276,7 @@ examples:
   target: telemetry-micrometer-tutorial-example-resource.java
 ----
 
-* Snippets from this source file are then included using the following path:
+* Snippets from this source file are then referenced with the following path:
 +
 `\{code-examples}/telemetry-micrometer-tutorial-example-resource.java`.
 * The source file contains the following comment: 
@@ -301,7 +306,7 @@ The complete list of externalized variables for use is given in the following ta
 
 |\{quarkus-org-url}|{quarkus-org-url}| The location of the project GitHub organization.
 |\{quarkus-base-url}|{quarkus-base-url}| Quarkus GitHub URL common base prefix.
-|\{quarkus-clone-url}|{quarkus-clone-url}| Quarkus URL for git clone referenced by the documentation.
+|\{quarkus-clone-url}|{quarkus-clone-url}| Quarkus URL for `git clone` referenced by the documentation.
 |\{quarkus-archive-url}|{quarkus-archive-url}| Quarkus URL to main source archive.
 |\{quarkus-blob-url}|{quarkus-blob-url}| Quarkus URL to main blob source tree; used for referencing source files.
 |\{quarkus-tree-url}|{quarkus-tree-url}| Quarkus URL to main source tree root; used for referencing directories.
@@ -313,12 +318,12 @@ The complete list of externalized variables for use is given in the following ta
 |\{quarkus-mailing-list-index}|{quarkus-mailing-list-index} | Mailing list index page.
 
 |\{quickstarts-base-url}|{quickstarts-base-url}| Quickstarts URL common base prefix.
-|\{quickstarts-clone-url}|{quickstarts-clone-url}| Quickstarts URL for git clone referenced by the documentation.
+|\{quickstarts-clone-url}|{quickstarts-clone-url}| Quickstarts URL for `git clone` referenced by the documentation.
 |\{quickstarts-archive-url}|{quickstarts-archive-url}| Quickstarts URL to main source archive.
 |\{quickstarts-blob-url}|{quickstarts-blob-url}| Quickstarts URL to main blob source tree; used for referencing source files.
 |\{quickstarts-tree-url}|{quickstarts-tree-url}| Quickstarts URL to main source tree root; used for referencing directories.
 
 |\{graalvm-version}|{graalvm-version}| Recommended GraalVM version to use.
-|\{graalvm-flavor}|{graalvm-flavor}| The full flavor of GraalVM to use e.g. `19.3.1-java11`. Make sure to use a `java11` version.
+|\{graalvm-flavor}|{graalvm-flavor}| The full version of GraalVM to use e.g. `19.3.1-java11`. Use a `java11` version.
 |===
 

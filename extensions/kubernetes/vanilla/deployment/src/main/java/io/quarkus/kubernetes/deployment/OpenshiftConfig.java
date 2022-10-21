@@ -496,11 +496,6 @@ public class OpenshiftConfig implements PlatformConfiguration {
     }
 
     @Override
-    public boolean isExpose() {
-        return false;
-    }
-
-    @Override
     public String getTargetPlatformName() {
         return Constants.OPENSHIFT;
     }

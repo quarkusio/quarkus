@@ -235,7 +235,7 @@ class TemplateImpl implements Template {
                     } catch (Throwable e) {
                         result.completeExceptionally(e);
                     } finally {
-                        if (!renderedActions.isEmpty()) {
+                        if (renderedActions != null) {
                             for (Runnable action : renderedActions) {
                                 try {
                                     action.run();

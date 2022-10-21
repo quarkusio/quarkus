@@ -274,6 +274,7 @@ update_scope_in_test_properties "extensions/resteasy-reactive/rest-client-reacti
 update_scope_in_test_properties "extensions/resteasy-reactive/rest-client-reactive/deployment/src/test/resources/mp-classname-scope-test-application.properties"
 update_scope_in_test_properties "extensions/resteasy-reactive/rest-client-reactive/deployment/src/test/resources/mp-global-scope-test-application.properties"
 transform_kotlin_module "extensions/panache/hibernate-orm-panache-kotlin"
+transform_kotlin_module "extensions/panache/hibernate-reactive-panache-kotlin"
 transform_kotlin_module "extensions/panache/mongodb-panache-kotlin"
 sed -i "s@javax/xml/bind/annotation/@jakarta/xml/bind/annotation/@g" ./extensions/panache/panache-common/deployment/src/main/java/io/quarkus/panache/common/deployment/PanacheConstants.java
 transform_kotlin_module "extensions/scheduler/kotlin"

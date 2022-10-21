@@ -126,6 +126,13 @@ quarkus.http.access-log.pattern="...traceId=%{X,traceId} spanId=%{X,spanId}" // 
 
 The first step is to configure and start the https://opentelemetry.io/docs/collector/[OpenTelemetry Collector] to receive, process and export telemetry data to https://www.jaegertracing.io/[Jaeger] that will display the captured traces.
 
+[NOTE]
+====
+Jaeger supports the OTel protocols out of the box since version 1.35.
+In this case you do not need to install the collector but can directly send the trace data to Jaeger (after enabling OTLP receivers there, see e.g. this
+https://medium.com/jaegertracing/introducing-native-support-for-opentelemetry-in-jaeger-eb661be8183c[blog entry]).
+====
+
 Configure the OpenTelemetry Collector by creating an `otel-collector-config.yaml` file:
 
 [source,yaml,subs="attributes"]

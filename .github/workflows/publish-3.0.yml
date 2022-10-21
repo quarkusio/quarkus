@@ -33,6 +33,7 @@ jobs:
       - name: Transform sources
         run: |
           export PATH="$HOME/.jbang/bin:$PATH"
+          git fetch --tags origin
           git checkout -b temp-jakarta-rewrite ${{ inputs.baseVersion }}
           REWRITE_NO_TESTS=true ./jakarta/transform.sh
           git push --force origin temp-jakarta-rewrite:3.0

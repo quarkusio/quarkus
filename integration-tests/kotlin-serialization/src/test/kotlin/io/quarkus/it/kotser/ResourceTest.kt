@@ -33,6 +33,16 @@ open class ResourceTest {
     }
 
     @Test
+    fun testGetUnknownType() {
+        When {
+            get("/unknownType")
+        } Then {
+            statusCode(200)
+            body(`is`("""{"name":"Foo Bar","defaulted":"hey"}"""))
+        }
+    }
+
+    @Test
     fun testSuspendGet() {
         When {
             get("/suspend")

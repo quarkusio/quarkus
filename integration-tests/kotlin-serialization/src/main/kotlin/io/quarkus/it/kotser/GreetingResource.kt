@@ -1,6 +1,7 @@
 package io.quarkus.it.kotser
 
 import io.quarkus.it.kotser.model.Person
+import io.quarkus.it.kotser.model.Person2
 import io.quarkus.runtime.annotations.RegisterForReflection
 import kotlinx.coroutines.flow.flowOf
 import java.lang.reflect.Method
@@ -25,6 +26,13 @@ class GreetingResource {
     @Produces(MediaType.APPLICATION_JSON)
     fun hello(): Person {
         return Person("Jim Halpert")
+    }
+
+    @Path("unknownType")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    fun helloUnknownType(): Response {
+        return Response.ok(Person2("Foo Bar")).build()
     }
 
     @Path("suspend")

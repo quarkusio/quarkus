@@ -386,7 +386,7 @@ public class MessageBundleProcessor {
     void validateMessageBundleMethodsInTemplates(TemplatesAnalysisBuildItem analysis,
             BeanArchiveIndexBuildItem beanArchiveIndex,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
-            List<TypeCheckExcludeBuildItem> excludes,
+            List<TypeCheckExcludeBuildItem> typeCheckExcludeBuildItems,
             List<MessageBundleBuildItem> messageBundles,
             List<MessageBundleMethodBuildItem> messageBundleMethods,
             List<TemplateExpressionMatchesBuildItem> expressionMatches,
@@ -528,10 +528,22 @@ public class MessageBundleProcessor {
                             for (Expression param : params) {
                                 if (param.hasTypeInfo()) {
                                     Map<String, Match> results = new HashMap<>();
+
+                                    final List<Predicate<TypeCheckExcludeBuildItem.TypeCheck>> excludes = new ArrayList<>();
+                                    // subset of excludes specific for extension methods
+                                    final List<Predicate<TypeCheckExcludeBuildItem.TypeCheck>> extensionMethodExcludes = new ArrayList<>();
+                                    for (TypeCheckExcludeBuildItem exclude : typeCheckExcludeBuildItems) {
+                                        excludes.add(exclude.getPredicate());
+                                        if (exclude.isExtensionMethodPredicate()) {
+                                            extensionMethodExcludes.add(exclude.getPredicate());
+                                        }
+                                    }
+
                                     QuteProcessor.validateNestedExpressions(config, exprEntry.getKey(), defaultBundleInterface,
                                             results, excludes, incorrectExpressions, expression, index,
                                             implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches,
-                                            checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData,
+                                            extensionMethodExcludes, checkedTemplate, lookupConfig, namedBeans,
+                                            namespaceTemplateData,
                                             regularExtensionMethods, namespaceExtensionMethods, assignableCache);
                                     Match match = results.get(param.toOriginalString());
                                     if (match != null && !match.isEmpty() && !Types.isAssignableFrom(match.type(),

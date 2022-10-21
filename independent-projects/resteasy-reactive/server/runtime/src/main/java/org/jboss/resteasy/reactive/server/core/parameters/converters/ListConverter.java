@@ -58,6 +58,7 @@ public class ListConverter implements ParameterConverter {
         public ListSupplier() {
         }
 
+        // invoked by reflection for BeanParam in ClassInjectorTransformer
         public ListSupplier(ParameterConverterSupplier delegate) {
             this.delegate = delegate;
         }

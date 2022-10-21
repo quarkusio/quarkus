@@ -44,6 +44,14 @@ public class RuntimeResolvedConverter implements ParameterConverter {
 
         private ParameterConverterSupplier delegate;
 
+        public Supplier() {
+        }
+
+        // invoked by reflection for BeanParam in ClassInjectorTransformer
+        public Supplier(ParameterConverterSupplier delegate) {
+            this.delegate = delegate;
+        }
+
         @Override
         public String getClassName() {
             return RuntimeResolvedConverter.class.getName();

@@ -55,6 +55,7 @@ public class SetConverter implements ParameterConverter {
         public SetSupplier() {
         }
 
+        // invoked by reflection for BeanParam in ClassInjectorTransformer
         public SetSupplier(ParameterConverterSupplier delegate) {
             this.delegate = delegate;
         }

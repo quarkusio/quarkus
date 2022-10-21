@@ -306,12 +306,13 @@ public class Endpoint {
                             @RestHeader("X-Cheese-Secret-Handshake")
                             String secretHandshake,
                             @RestForm String smell) {
-        return type + "/" + variant + "/" + age + "/" + level + "/" + secretHandshake + "/" + smell;
+        return type + "/" + variant + "/" + age + "/" + level + "/"
+            + secretHandshake + "/" + smell;
     }
 }
 ----
 
-NOTE: the link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestPath.html[`@RestPath`]
+NOTE: The link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestPath.html[`@RestPath`]
 annotation is optional: any parameter whose name matches an existing URI
 template variable will be automatically assumed to have link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestPath.html[`@RestPath`].
 
@@ -336,6 +337,58 @@ In such cases, users are encouraged to set the logging level for the `org.jboss.
 quarkus.log.category."org.jboss.resteasy.reactive.server.handlers.ParameterHandler".level=DEBUG
 ----
 ====
+
+==== Grouping parameters in a custom class
+[[parameter-grouping]]
+
+You can group your request parameters in a container class instead of declaring them as method parameters to you endpoint,
+so we can rewrite the previous example like this:
+
+[source,java]
+----
+package org.acme.rest;
+
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+
+import org.jboss.resteasy.reactive.RestCookie;
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.RestHeader;
+import org.jboss.resteasy.reactive.RestMatrix;
+import org.jboss.resteasy.reactive.RestPath;
+import org.jboss.resteasy.reactive.RestQuery;
+
+@Path("/cheeses/{type}")
+public class Endpoint {
+
+    public static class Parameters {
+        @RestPath
+        String type;
+        
+        @RestMatrix
+        String variant;
+        
+        @RestQuery
+        String age;
+        
+        @RestCookie
+        String level;
+        
+        @RestHeader("X-Cheese-Secret-Handshake")
+        String secretHandshake;
+        
+        @RestForm
+        String smell;
+    }
+
+    @POST
+    public String allParams(Parameters parameters) {
+        return parameters.type + "/" + parameters.variant + "/" + parameters.age 
+            + "/" + parameters.level + "/" + parameters.secretHandshake
+            + "/" + parameters.smell;
+    }
+}
+----
 
 === Declaring URI parameters
 
@@ -424,35 +477,44 @@ NOTE: You can add support for more <<readers-writers,body parameter types>>.
 [[multipart]]
 === Handling Multipart Form data
 
-To handle HTTP requests that have `multipart/form-data` as their content type, RESTEasy Reactive introduces the
-link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/MultipartForm.html[`@MultipartForm`] annotation.
+To handle HTTP requests that have `multipart/form-data` as their content type, you can use the regular
+link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestForm.html[`@RestForm`] annotation, but we have special types
+that allow you to access the parts as files or as entities.
 Let us look at an example of its use.
 
-Assuming an HTTP request containing a file upload and a form value containing a string description need to be handled, we could write a POJO
-that will hold this information like so:
+Assuming an HTTP request containing a file upload, a JSON entity and a form value containing a string description, we could write 
+the following endpoint:
 
 [source,java]
 ----
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
-public class FormData {
-
-    @RestForm
-    @PartType(MediaType.TEXT_PLAIN)
-    public String description;
-
-    @RestForm("image")
-    public FileUpload file;
+@Path("multipart")
+public class MultipartResource {
+    public static class Person {
+        public String firstName;
+        public String lastName;
+    }
+    
+    @POST
+    public void multipart(@RestForm String description,
+            @RestForm("image") FileUpload file,
+            @RestForm @PartType(MediaType.APPLICATION_JSON) Person person) {
+        // do something
+    }
 }
 ----
 
-The `name` field will contain the data contained in the part of HTTP request called `description` (because
+The `description` parameter will contain the data contained in the part of HTTP request called `description` (because
 link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestForm.html[`@RestForm`] does not define a value, the field name is used),
-while the `file` field will contain data about the uploaded file in the `image` part of HTTP request.
+while the `file` parameter will contain data about the uploaded file in the `image` part of HTTP request, and
+the `person` parameter will read the `Person` entity using the `JSON` <<json,body reader>>.
 
 The size of every part in a multipart request must conform to the value of `quarkus.http.limits.max-form-attribute-size`, for which the default is 2048 bytes.
 Any request with a part size exceeding this configuration will result in HTTP status code 413.
@@ -460,41 +522,13 @@ Any request with a part size exceeding this configuration will result in HTTP st
 NOTE: link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/multipart/FileUpload.html[`FileUpload`]
 provides access to various metadata of the uploaded file. If however all you need is a handle to the uploaded file, `java.nio.file.Path` or `java.io.File` could be used.
 
-NOTE: When access to all uploaded files without specifying the form names is needed, RESTEasy Reactive allows the use of `@RestForm List<FileUpload>`, where it is important to **not** set a name for the link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestForm.html[`@RestForm`] annotation.
+If you need access to all uploaded files for all parts regardless of their names, you can do it with `@RestForm(FileUpload.ALL) List<FileUpload>`.
 
 NOTE: link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/PartType.html[`@PartType`] is used to aid
-in deserialization of the corresponding part of the request into the desired Java type. It is very useful when
-for example the corresponding body part is JSON and needs to be converted to a POJO.
+in deserialization of the corresponding part of the request into the desired Java type. It is only required if
+you need to use <<readers-writers,a special body parameter type>> for that particular parameter.
 
-This POJO could be used in a Resource method like so:
-
-[source,java]
-----
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-import org.jboss.resteasy.reactive.MultipartForm;
-
-@Path("multipart")
-public class Endpoint {
-
-    @POST
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @Path("form")
-    public String form(@MultipartForm FormData formData) {
-        // return something
-    }
-}
-----
-
-The use of link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/MultipartForm.html[`@MultipartForm`] as
-method parameter makes RESTEasy Reactive handle the request as a multipart form request.
-
-TIP: The use of `@MultipartForm` is actually unnecessary as RESTEasy Reactive can infer this information from the use of `@Consumes(MediaType.MULTIPART_FORM_DATA)`
+NOTE: Just like for any other request parameter type, you can also group them into a <<parameter-grouping,container class>>.
 
 WARNING: When handling file uploads, it is very important to move the file to permanent storage (like a database, a dedicated file system or a cloud storage) in your code that handles the POJO.
 Otherwise, the file will no longer be accessible when the request terminates.

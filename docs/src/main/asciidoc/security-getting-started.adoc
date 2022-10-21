@@ -133,6 +133,7 @@ public class AdminResource {
 ----
 * Finally, implement the `/api/users/me` endpoint. As you can see from the source code example below, we are trusting only users with the `user` role.
 We are also using `SecurityContext` to get access to the currently authenticated `Principal`, and we return the user name, all of which is loaded from the database.
++
 [source,java]
 ----
 package org.acme.security.jpa;

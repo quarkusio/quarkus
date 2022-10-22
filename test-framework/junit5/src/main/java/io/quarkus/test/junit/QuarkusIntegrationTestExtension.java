@@ -136,10 +136,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         ensureNoInjectAnnotationIsUsed(testClass);
         Properties quarkusArtifactProperties = readQuarkusArtifactProperties(extensionContext);
 
-        ExtensionContext root = extensionContext.getRoot();
-        ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
-        QuarkusTestExtensionState state = store.get(QuarkusTestExtensionState.class.getName(),
-                QuarkusTestExtensionState.class);
+        QuarkusTestExtensionState state = getState(extensionContext);
         Class<? extends QuarkusTestProfile> selectedProfile = findProfile(testClass);
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
@@ -157,7 +154,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             }
             try {
                 state = doProcessStart(quarkusArtifactProperties, selectedProfile, extensionContext);
-                store.put(QuarkusTestExtensionState.class.getName(), state);
+                setState(extensionContext, state);
             } catch (Throwable e) {
                 try {
                     Path appLogPath = PropertyTestUtil.getLogFilePath();

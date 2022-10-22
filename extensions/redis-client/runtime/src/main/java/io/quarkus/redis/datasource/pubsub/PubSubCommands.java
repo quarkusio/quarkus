@@ -66,6 +66,70 @@ public interface PubSubCommands<V> extends RedisCommands {
     RedisSubscriber subscribe(List<String> channels, Consumer<V> onMessage);
 
     /**
+     * Subscribes to a given channel.
+     *
+     * @param channel the channel
+     * @param onMessage the message consumer. Be aware that this callback is invoked for each message sent to the given
+     *        channel, and is invoked on the <strong>I/O thread</strong>. So, you must not block. Offload to
+     *        a separate thread if needed.
+     * @param onEnd the end handler. Be aware that this callback is invoked on the <strong>I/O thread</strong>.
+     *        So, you must not block. Offload to a separate thread if needed.
+     * @param onException the exception handler. Be aware that this callback is invoked on the <strong>I/O thread</strong>.
+     *        So, you must not block. Offload to a separate thread if needed.
+     * @return the subscriber object that lets you unsubscribe
+     */
+    RedisSubscriber subscribe(String channel, Consumer<V> onMessage, Runnable onEnd,
+            Consumer<Throwable> onException);
+
+    /**
+     * Subscribes to a given pattern like {@code chan*l}.
+     *
+     * @param pattern the pattern
+     * @param onMessage the message consumer. Be aware that this callback is invoked for each message sent to the
+     *        channels matching the pattern, and is invoked on the <strong>I/O thread</strong>. So, you must
+     *        not block. Offload to a separate thread if needed.
+     * @param onEnd the end handler. Be aware that this callback is invoked on the <strong>I/O thread</strong>.
+     *        So, you must not block. Offload to a separate thread if needed.
+     * @param onException the exception handler. Be aware that this callback is invoked on the <strong>I/O thread</strong>.
+     *        So, you must not block. Offload to a separate thread if needed.
+     * @return the subscriber object that lets you unsubscribe
+     */
+    RedisSubscriber subscribeToPattern(String pattern, Consumer<V> onMessage, Runnable onEnd,
+            Consumer<Throwable> onException);
+
+    /**
+     * Subscribes to the given patterns like {@code chan*l}.
+     *
+     * @param patterns the patterns
+     * @param onMessage the message consumer. Be aware that this callback is invoked for each message sent to the
+     *        channels matching the pattern, and is invoked on the <strong>I/O thread</strong>. So, you must
+     *        not block. Offload to a separate thread if needed.
+     * @param onEnd the end handler. Be aware that this callback is invoked on the <strong>I/O thread</strong>.
+     *        So, you must not block. Offload to a separate thread if needed.
+     * @param onException the exception handler. Be aware that this callback is invoked on the <strong>I/O thread</strong>.
+     *        So, you must not block. Offload to a separate thread if needed.
+     * @return the subscriber object that lets you unsubscribe
+     */
+    RedisSubscriber subscribeToPatterns(List<String> patterns, Consumer<V> onMessage, Runnable onEnd,
+            Consumer<Throwable> onException);
+
+    /**
+     * Subscribes to the given channels.
+     *
+     * @param channels the channels
+     * @param onMessage the message consumer. Be aware that this callback is invoked for each message sent to the given
+     *        channels, and is invoked on the <strong>I/O thread</strong>. So, you must not block. Offload to
+     *        a separate thread if needed.
+     * @param onEnd the end handler. Be aware that this callback is invoked on the <strong>I/O thread</strong>.
+     *        So, you must not block. Offload to a separate thread if needed.
+     * @param onException the exception handler. Be aware that this callback is invoked on the <strong>I/O thread</strong>.
+     *        So, you must not block. Offload to a separate thread if needed.
+     * @return the subscriber object that lets you unsubscribe
+     */
+    RedisSubscriber subscribe(List<String> channels, Consumer<V> onMessage, Runnable onEnd,
+            Consumer<Throwable> onException);
+
+    /**
      * A redis subscriber
      */
     interface RedisSubscriber {

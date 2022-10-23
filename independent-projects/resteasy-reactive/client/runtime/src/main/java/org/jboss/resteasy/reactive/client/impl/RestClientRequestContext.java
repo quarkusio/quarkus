@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.client.impl;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -65,6 +66,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     URI uri;
     // Changeable by the request filter
     Entity<?> entity;
+    OutputStream entityStream;
     GenericType<?> responseType;
     private boolean responseTypeSpecified;
     private final ClientImpl restClient;

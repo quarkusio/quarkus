@@ -122,7 +122,7 @@ public final class EngineBuilder {
      * @see #addSectionHelper(SectionHelperFactory)
      */
     public EngineBuilder addDefaults() {
-        return addDefaultSectionHelpers().addDefaultValueResolvers();
+        return addDefaultSectionHelpers().addDefaultValueResolvers().addDefaultResultMappers();
     }
 
     /**
@@ -177,6 +177,23 @@ public final class EngineBuilder {
     public EngineBuilder addResultMapper(ResultMapper mapper) {
         this.resultMappers.add(mapper);
         return this;
+    }
+
+    public EngineBuilder addResultMappers(ResultMapper... mappers) {
+        for (ResultMapper mapper : mappers) {
+            addResultMapper(mapper);
+        }
+        return this;
+    }
+
+    /**
+     * Add the default set of result mappers.
+     *
+     * @return self
+     * @see #addResultMapper(ResultMapper)
+     */
+    public EngineBuilder addDefaultResultMappers() {
+        return addResultMappers(ResultMappers.templateInstanceMapper());
     }
 
     /**

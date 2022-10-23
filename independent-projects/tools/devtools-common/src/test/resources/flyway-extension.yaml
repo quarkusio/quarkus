@@ -1,0 +1,30 @@
+---
+artifact: "io.quarkus:quarkus-flyway:999-SNAPSHOT"
+name: "Flyway"
+metadata:
+  keywords:
+  - "flyway"
+  - "database"
+  - "data"
+  guide: "https://quarkus.io/guides/flyway"
+  categories:
+  - "data"
+  status: "stable"
+  supported-by: 
+  - "xyz"
+  - "abc"
+  config:
+  - "quarkus.flyway."
+  built-with-quarkus-core: "999-SNAPSHOT"
+  capabilities:
+    provides:
+    - "io.quarkus.flyway"
+  extension-dependencies:
+  - "io.quarkus:quarkus-core"
+  - "io.quarkus:quarkus-agroal"
+  - "io.quarkus:quarkus-arc"
+  - "io.quarkus:quarkus-datasource"
+  - "io.quarkus:quarkus-narayana-jta"
+  - "io.quarkus:quarkus-mutiny"
+  - "io.quarkus:quarkus-smallrye-context-propagation"
+description: "Handle your database schema migrations"

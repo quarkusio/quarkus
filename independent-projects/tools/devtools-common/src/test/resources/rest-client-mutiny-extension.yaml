@@ -1,0 +1,31 @@
+---
+artifact: "io.quarkus:quarkus-rest-client-mutiny:999-SNAPSHOT"
+name: "REST Client Classic Mutiny support"
+metadata:
+  keywords:
+  - "rest-client-mutiny"
+  - "rest-client"
+  - "web-client"
+  - "microprofile-rest-client"
+  - "mutiny"
+  categories:
+  - "web"
+  - "reactive"
+  status: "deprecated"
+  supported-by: 
+      - "xyz"
+  xyz-support:
+      - "techpreview"
+      - "deprecated"
+  built-with-quarkus-core: "999-SNAPSHOT"
+  extension-dependencies:
+  - "io.quarkus:quarkus-rest-client"
+  - "io.quarkus:quarkus-core"
+  - "io.quarkus:quarkus-arc"
+  - "io.quarkus:quarkus-resteasy-common"
+  - "io.quarkus:quarkus-apache-httpclient"
+  - "io.quarkus:quarkus-rest-client-config"
+  - "io.quarkus:quarkus-resteasy-mutiny-common"
+  - "io.quarkus:quarkus-mutiny"
+  - "io.quarkus:quarkus-smallrye-context-propagation"
+description: "Enable Mutiny for the REST client"

@@ -1,0 +1,23 @@
+---
+artifact: "io.quarkus:quarkus-datasource:999-SNAPSHOT"
+name: "Datasources"
+metadata:
+  keywords:
+  - "datasource"
+  guide: "https://quarkus.io/guides/datasource"
+  categories:
+  - "data"
+  status: "stable"
+  supported-by: 
+      - "Red Hat"
+  Red Hat-support:
+      - "stable"
+      - "awesome"
+  xyz-support:
+      - "none"
+  unlisted: true
+  built-with-quarkus-core: "999-SNAPSHOT"
+  extension-dependencies:
+  - "io.quarkus:quarkus-core"
+  - "io.quarkus:quarkus-arc"
+description: "Configure your datasources"

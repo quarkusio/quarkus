@@ -1,0 +1,28 @@
+---
+name: "Agroal - Database connection pool"
+artifact: "io.quarkus:quarkus-agroal:999-SNAPSHOT"
+metadata:
+  keywords:
+  - "agroal"
+  - "database-connection-pool"
+  - "datasource"
+  - "jdbc"
+  guide: "https://quarkus.io/guides/datasource"
+  categories:
+  - "data"
+  status: "stable"
+  redhat-support: "stable"
+  config:
+  - "quarkus.datasource."
+  built-with-quarkus-core: "999-SNAPSHOT"
+  capabilities:
+    provides:
+    - "io.quarkus.agroal"
+  extension-dependencies:
+  - "io.quarkus:quarkus-core"
+  - "io.quarkus:quarkus-arc"
+  - "io.quarkus:quarkus-datasource"
+  - "io.quarkus:quarkus-narayana-jta"
+  - "io.quarkus:quarkus-mutiny"
+  - "io.quarkus:quarkus-smallrye-context-propagation"
+description: "Pool JDBC database connections (included in Hibernate ORM)"

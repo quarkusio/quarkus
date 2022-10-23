@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.Extension;
@@ -144,6 +145,31 @@ public final class ExtensionProcessor {
         if (getMetadataValue(extension, "status").isEmpty()) {
             extendedMetadata.put("status", "stable");
         }
+        @SuppressWarnings("unchecked")
+        final Collection<String> supporters = (Collection<String>) extendedMetadata.getOrDefault("supported-by",
+                new ArrayList<String>());
+        final Map<String, Object> supportStatuses = extendedMetadata.entrySet().stream()
+                .filter(e -> e.getKey().endsWith("-support"))
+                .collect(Collectors.toMap(
+                        k -> k.getKey(),
+                        v -> v.getValue()));
+
+        supportStatuses.entrySet().forEach((e) -> {
+            String supporter = e.getKey().replace("-support", "");
+
+            if (!supporters.contains(supporter)) {
+                supporters.add(supporter);
+            }
+        });
+        extendedMetadata.put("supported-by", supporters);
+
+        for (String s : supporters) {
+            if (!supportStatuses.keySet().contains(s + "-support")) {
+                supportStatuses.put(s + "-support", "stable");
+            }
+        }
+        extendedMetadata.putAll(supportStatuses);
+
         return extendedMetadata.entrySet().stream()
                 .map(e -> new AbstractMap.SimpleImmutableEntry<>(e.getKey(), (new MetadataValue(e.getValue()).asStringList())))
                 .filter(e -> !e.getValue().isEmpty())

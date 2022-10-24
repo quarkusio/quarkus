@@ -1095,7 +1095,7 @@ This is {#insert title}my title{/title}! <1>
 ----
 <p>
   {#myTag}
-    {title}my custom title{/title} <1>
+    {#title}my custom title{/title} <1>
   {/myTag}
 </p>
 ----

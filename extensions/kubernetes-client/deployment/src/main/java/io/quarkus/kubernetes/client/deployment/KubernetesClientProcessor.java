@@ -19,8 +19,19 @@ import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import io.fabric8.kubernetes.api.builder.VisitableBuilder;
+import io.fabric8.kubernetes.api.model.AnyType;
+import io.fabric8.kubernetes.api.model.IntOrString;
+import io.fabric8.kubernetes.api.model.KubeSchema;
+import io.fabric8.kubernetes.api.model.KubernetesResource;
+import io.fabric8.kubernetes.api.model.KubernetesResourceList;
+import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
+import io.fabric8.kubernetes.client.VersionInfo;
+import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.http.HttpClient;
+import io.fabric8.kubernetes.client.impl.KubernetesClientImpl;
+import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -44,19 +55,16 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 
 public class KubernetesClientProcessor {
 
-    private static final DotName WATCHER = DotName.createSimple("io.fabric8.kubernetes.client.Watcher");
-    private static final DotName RESOURCE_EVENT_HANDLER = DotName
-            .createSimple("io.fabric8.kubernetes.client.informers.ResourceEventHandler");
-    private static final DotName KUBERNETES_RESOURCE = DotName
-            .createSimple("io.fabric8.kubernetes.api.model.KubernetesResource");
-    private static final DotName KUBERNETES_RESOURCE_LIST = DotName
-            .createSimple("io.fabric8.kubernetes.api.model.KubernetesResourceList");
-
-    private static final DotName VISITABLE_BUILDER = DotName
-            .createSimple("io.fabric8.kubernetes.api.builder.VisitableBuilder");
-    private static final DotName CUSTOM_RESOURCE = DotName.createSimple("io.fabric8.kubernetes.client.CustomResource");
-
     private static final Logger log = Logger.getLogger(KubernetesClientProcessor.class.getName());
+    private static final DotName WATCHER = DotName.createSimple(Watcher.class.getName());
+    private static final DotName RESOURCE_EVENT_HANDLER = DotName
+            .createSimple(io.fabric8.kubernetes.client.informers.ResourceEventHandler.class.getName());
+    private static final DotName KUBERNETES_RESOURCE = DotName.createSimple(KubernetesResource.class.getName());
+    private static final DotName KUBERNETES_RESOURCE_LIST = DotName
+            .createSimple(KubernetesResourceList.class.getName());
+    private static final DotName KUBE_SCHEMA = DotName.createSimple(KubeSchema.class.getName());
+    private static final DotName VISITABLE_BUILDER = DotName.createSimple(VisitableBuilder.class.getName());
+    private static final DotName CUSTOM_RESOURCE = DotName.createSimple(CustomResource.class.getName());
 
     private static final Predicate<DotName> IS_OKHTTP_CLASS = d -> d.toString().startsWith("okhttp3");
     private static final DotName JSON_FORMAT = DotName.createSimple(JsonFormat.class.getName());
@@ -77,7 +85,7 @@ public class KubernetesClientProcessor {
     @BuildStep
     public void nativeImageSupport(BuildProducer<RuntimeReinitializedClassBuildItem> runtimeInitializedClassProducer) {
         runtimeInitializedClassProducer
-                .produce(new RuntimeReinitializedClassBuildItem("io.fabric8.kubernetes.client.utils.Utils"));
+                .produce(new RuntimeReinitializedClassBuildItem(io.fabric8.kubernetes.client.utils.Utils.class.getName()));
     }
 
     @BuildStep
@@ -163,10 +171,9 @@ public class KubernetesClientProcessor {
 
         // we also ignore some classes that are annotated with @JsonDeserialize that would force the registration of the entire model
         ignoredJsonDeserializationClasses.produce(
-                new IgnoreJsonDeserializeClassBuildItem(DotName.createSimple("io.fabric8.kubernetes.api.model.KubeSchema")));
+                new IgnoreJsonDeserializeClassBuildItem(KUBE_SCHEMA));
         ignoredJsonDeserializationClasses.produce(
-                new IgnoreJsonDeserializeClassBuildItem(
-                        DotName.createSimple("io.fabric8.kubernetes.api.model.KubernetesResourceList")));
+                new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE_LIST));
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE));
 
         final String[] deserializerClasses = combinedIndexBuildItem.getIndex()
@@ -186,13 +193,18 @@ public class KubernetesClientProcessor {
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, serializerClasses));
 
         reflectiveClasses
+                .produce(new ReflectiveClassBuildItem(true, true, KubernetesClientImpl.class.getName()));
+        reflectiveClasses
                 .produce(new ReflectiveClassBuildItem(true, true, DefaultKubernetesClient.class.getName()));
         reflectiveClasses
-                .produce(new ReflectiveClassBuildItem(true, false, "io.fabric8.kubernetes.api.model.IntOrString"));
+                .produce(new ReflectiveClassBuildItem(true, false, AnyType.class.getName()));
         reflectiveClasses
-                .produce(new ReflectiveClassBuildItem(true, false, "io.fabric8.kubernetes.internal.KubernetesDeserializer"));
+                .produce(new ReflectiveClassBuildItem(true, false, IntOrString.class.getName()));
+
         reflectiveClasses
-                .produce(new ReflectiveClassBuildItem(true, true, "io.fabric8.kubernetes.client.VersionInfo"));
+                .produce(new ReflectiveClassBuildItem(true, false, KubernetesDeserializer.class.getName()));
+        reflectiveClasses
+                .produce(new ReflectiveClassBuildItem(true, true, VersionInfo.class.getName()));
 
         if (log.isDebugEnabled()) {
             final String watchedClassNames = watchedClasses

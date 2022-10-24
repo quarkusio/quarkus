@@ -851,10 +851,10 @@ displayName: Adjust Infinispan version and dependencies
 recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: infinispan.version
-      newValue: 14.0.0.CR2
+      newValue: 14.0.0.Final
   - org.openrewrite.maven.ChangePropertyValue:
       key: infinispan.protostream.version
-      newValue: 14.0.0.CR2
+      newValue: 4.5.0.Final
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.infinispan
       oldArtifactId: infinispan-core

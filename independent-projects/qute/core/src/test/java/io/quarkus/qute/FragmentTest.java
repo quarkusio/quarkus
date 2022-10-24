@@ -48,7 +48,7 @@ public class FragmentTest {
     public void testInvisibleFragment() {
         Engine engine = Engine.builder().addDefaults().build();
         Template foo = engine.parse(
-                "PREFIX::{#fragment foo rendered=false}FOO{/fragment}::{#include [foo] /}::{#include [foo] /}", null, "foo");
+                "PREFIX::{#fragment foo rendered=false}FOO{/fragment}::{#include $foo /}::{#include $foo /}", null, "foo");
         assertEquals("PREFIX::::FOO::FOO", foo.render());
         assertEquals("FOO", foo.getFragment("foo").render());
     }

@@ -10,7 +10,6 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.qute.CheckedFragment;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateInstance;
@@ -50,7 +49,6 @@ public class MissingParamCheckedTemplateFragmentTest {
 
         static native TemplateInstance items(List<Item> items);
 
-        @CheckedFragment
         static native TemplateInstance items$item();
     }
 

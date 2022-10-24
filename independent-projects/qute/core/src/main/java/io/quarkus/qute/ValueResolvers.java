@@ -19,10 +19,9 @@ import java.util.function.Function;
 public final class ValueResolvers {
 
     static final String THIS = "this";
-
     static final String ELVIS = "?:";
-    static final String OR = "or";
     static final String COLON = ":";
+    public static final String OR = "or";
 
     public static ValueResolver rawResolver() {
         return new ValueResolver() {

@@ -157,7 +157,7 @@
         <!-- Skip the API checks by default. Let the modules opt in. -->
         <revapi.skip>true</revapi.skip>
         <!-- By default don't check dependencies -->
-        <revapi.checkdeps>false</revapi.checkdeps>
+        <revapi.checkdeps>true</revapi.checkdeps>
         <!-- The message that is appended to the end of the plugin error output when the API problems fail the build -->
         <revapi.buildFailureMessage>Run "jbang revapi-update" to update api-changes.xml file and also add the justification for those changes in that file.</revapi.buildFailureMessage>
 

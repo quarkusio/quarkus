@@ -795,13 +795,17 @@ public final class Beans {
     private static void collectCallbacks(ClassInfo clazz, List<MethodInfo> callbacks, DotName annotation, IndexView index,
             Set<String> knownMethods) {
         for (MethodInfo method : clazz.methods()) {
-            if (method.returnType().kind() == Kind.VOID && method.parameterTypes().isEmpty()) {
-                if (method.hasAnnotation(annotation) && !knownMethods.contains(method.name())) {
+            if (method.hasAnnotation(annotation) && !knownMethods.contains(method.name())) {
+                if (method.returnType().kind() == Kind.VOID && method.parameterTypes().isEmpty()) {
                     callbacks.add(method);
+                } else {
+                    // invalid signature - build a meaningful message.
+                    throw new DefinitionException("Invalid signature for the method `" + method + "` from class `"
+                            + method.declaringClass() + "`. Methods annotated with `" + annotation + "` must return" +
+                            " `void` and cannot have parameters.");
                 }
-                knownMethods.add(method.name());
             }
-
+            knownMethods.add(method.name());
         }
         if (clazz.superName() != null) {
             ClassInfo superClass = getClassByName(index, clazz.superName());
@@ -866,7 +870,7 @@ public final class Beans {
         if (computedPriority != null) {
             if (alternativePriority != null) {
                 LOGGER.infof(
-                        "Computed priority [%s] overrides the priority [%s] declared via @Priority or @AlernativePriority",
+                        "Computed priority [%s] overrides the priority [%s] declared via @Priority or @AlternativePriority",
                         computedPriority, alternativePriority);
             }
             alternativePriority = computedPriority;

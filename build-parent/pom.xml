@@ -51,7 +51,7 @@
 
         <!-- Dev tools -->
         <freemarker.version>2.3.31</freemarker.version>
-        <commonmark.version>0.19.0</commonmark.version>
+        <commonmark.version>0.20.0</commonmark.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.7.0.Alpha10</arquillian.version>

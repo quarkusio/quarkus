@@ -3,6 +3,7 @@ package io.quarkus.arc.deployment.devconsole;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 public class DependencyGraph {
 
@@ -17,12 +18,16 @@ public class DependencyGraph {
     }
 
     DependencyGraph forLevel(int level) {
+        return filterLinks(link -> link.level <= level);
+    }
+
+    DependencyGraph filterLinks(Predicate<Link> predicate) {
         // Filter out links first
         Set<Link> newLinks = new HashSet<>();
         Set<DevBeanInfo> newNodes = new HashSet<>();
         Set<String> usedIds = new HashSet<>();
         for (Link link : links) {
-            if (link.level <= level) {
+            if (predicate.test(link)) {
                 newLinks.add(link);
                 usedIds.add(link.source);
                 usedIds.add(link.target);

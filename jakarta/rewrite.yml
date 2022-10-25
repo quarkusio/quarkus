@@ -754,7 +754,7 @@ recipeList:
       oldArtifactId: jboss-ejb-api_3.1_spec
       newGroupId: jakarta.ejb
       newArtifactId: jakarta.ejb-api
-      newVersion: 4.0.0
+      newVersion: 4.0.1
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.bom.resteasy-microprofile

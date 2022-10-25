@@ -6,8 +6,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.function.Function;
 
+import org.jboss.logging.Logger;
+
 public class OutputFilter implements Function<InputStream, Runnable> {
     private final StringBuilder builder = new StringBuilder();
+    private static final Logger log = Logger.getLogger(OutputFilter.class);
 
     @Override
     public Runnable apply(InputStream is) {
@@ -20,7 +23,11 @@ public class OutputFilter implements Function<InputStream, Runnable> {
                     builder.append(line);
                 }
             } catch (IOException e) {
-                throw new RuntimeException("Error reading stream.", e);
+                if (e.getMessage().contains("Stream closed")) {
+                    log.warn("Stream is closed, ignoring and trying to continue");
+                } else {
+                    throw new RuntimeException("Error reading stream.", e);
+                }
             }
         };
     }

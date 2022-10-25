@@ -1,7 +1,7 @@
 package io.quarkus.logging;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("/logging")
 public class LoggingEndpoint {

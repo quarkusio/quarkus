@@ -1,6 +1,6 @@
 package io.quarkus.it.resteasy.mutiny.regression.bug25818;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;

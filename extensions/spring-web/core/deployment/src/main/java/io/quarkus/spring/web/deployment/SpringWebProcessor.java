@@ -7,8 +7,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.ws.rs.Priorities;
-import javax.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.HttpHeaders;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;

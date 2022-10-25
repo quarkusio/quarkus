@@ -3,9 +3,9 @@ package io.quarkus.arc.impl;
 import java.lang.reflect.Type;
 import java.util.Set;
 
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.event.Event;
-import javax.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.inject.spi.InjectionPoint;
 
 public class EventBean extends BuiltInBean<Event<?>> {
 

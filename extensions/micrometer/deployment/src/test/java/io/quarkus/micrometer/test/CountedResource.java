@@ -4,7 +4,7 @@ import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 import java.util.concurrent.CompletableFuture;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.micrometer.core.annotation.Counted;
 import io.smallrye.mutiny.Uni;

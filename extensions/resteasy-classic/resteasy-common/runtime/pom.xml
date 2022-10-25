@@ -5,7 +5,7 @@
     <parent>
         <artifactId>quarkus-resteasy-common-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>999-jakarta-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -41,8 +41,8 @@
             <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.sun.activation</groupId>
-            <artifactId>jakarta.activation</artifactId>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>angus-activation</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -78,6 +78,10 @@
             <optional>true</optional>
         </dependency>
         <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-json-binding-provider</artifactId>
             <optional>true</optional>
@@ -88,6 +92,10 @@
                     <artifactId>jakarta.json</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy.microprofile</groupId>
+            <artifactId>microprofile-config</artifactId>
         </dependency>
     </dependencies>
 
@@ -101,7 +109,8 @@
                         <excludedArtifact>javax.ws.rs:javax.ws.rs-api</excludedArtifact>
                         <excludedArtifact>javax.activation:javax.activation-api</excludedArtifact>
                         <excludedArtifact>javax.activation:activation</excludedArtifact>
-                        <excludedArtifact>jakarta.ws.rs:jakarta.ws.rs-api</excludedArtifact>
+                        <excludedArtifact>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_3.0_spec</excludedArtifact>
+                        <excludedArtifact>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</excludedArtifact>
                         <excludedArtifact>org.jboss.resteasy:resteasy-context-propagation</excludedArtifact>
                     </excludedArtifacts>
                 </configuration>

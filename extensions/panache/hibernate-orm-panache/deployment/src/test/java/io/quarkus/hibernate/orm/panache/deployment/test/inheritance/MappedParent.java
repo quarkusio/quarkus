@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.panache.deployment.test.inheritance;
 
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.MappedSuperclass;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 

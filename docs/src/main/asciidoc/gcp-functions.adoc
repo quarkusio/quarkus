@@ -94,9 +94,9 @@ public class TestHttpFunction implements HttpFunction {
 [source,java]
 ----
 import java.io.Writer;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.HttpRequest;
 import com.google.cloud.functions.HttpResponse;
@@ -126,9 +126,9 @@ This `BackgroundFunction` is triggered by a Storage event, you can use any event
 
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.Context;
 import io.quarkus.gcp.function.test.service.GreetingService;
@@ -164,9 +164,9 @@ This `RawBackgroundFunction` is triggered by a PubSub event, you can use any eve
 
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import com.google.cloud.functions.Context;
 import com.google.cloud.functions.RawBackgroundFunction;
 import io.quarkus.gcp.function.test.service.GreetingService;
@@ -197,9 +197,9 @@ This `CloudEventsFunction` is triggered by a Cloud Events Storage event, you can
 
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import com.google.cloud.functions.CloudEventsFunction;
 

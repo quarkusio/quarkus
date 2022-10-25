@@ -2,8 +2,8 @@ package io.quarkus.vertx.deployment;
 
 import java.util.concurrent.CountDownLatch;
 
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

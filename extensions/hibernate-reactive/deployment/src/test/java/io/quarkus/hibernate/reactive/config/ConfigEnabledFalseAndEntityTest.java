@@ -2,8 +2,8 @@ package io.quarkus.hibernate.reactive.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.enterprise.context.control.ActivateRequestContext;
-import javax.persistence.EntityManagerFactory;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+import jakarta.persistence.EntityManagerFactory;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.reactive.mutiny.Mutiny;

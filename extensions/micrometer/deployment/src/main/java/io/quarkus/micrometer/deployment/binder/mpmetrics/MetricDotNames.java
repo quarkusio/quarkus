@@ -47,7 +47,7 @@ public class MetricDotNames {
             .createSimple("org.eclipse.microprofile.metrics.Metric");
 
     // these are needed for determining whether a class is a REST endpoint or JAX-RS provider
-    static final DotName JAXRS_PATH = DotName.createSimple("javax.ws.rs.Path");
+    static final DotName JAXRS_PATH = DotName.createSimple("jakarta.ws.rs.Path");
     static final DotName REST_CONTROLLER = DotName
             .createSimple("org.springframework.web.bind.annotation.RestController");
 

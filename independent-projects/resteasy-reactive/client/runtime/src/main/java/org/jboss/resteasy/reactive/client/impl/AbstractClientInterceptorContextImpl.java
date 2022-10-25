@@ -7,8 +7,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.InterceptorContext;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.InterceptorContext;
 
 public abstract class AbstractClientInterceptorContextImpl implements InterceptorContext {
 

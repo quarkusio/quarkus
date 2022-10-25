@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-tck-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>999-jakarta-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -14,7 +14,7 @@
     <name>Quarkus - TCK - MicroProfile Reactive Messaging</name>
 
     <properties>
-        <microprofile-reactive-messaging-tck.version>2.0.1</microprofile-reactive-messaging-tck.version>
+        <microprofile-reactive-messaging-tck.version>3.0</microprofile-reactive-messaging-tck.version>
     </properties>
 
     <build>

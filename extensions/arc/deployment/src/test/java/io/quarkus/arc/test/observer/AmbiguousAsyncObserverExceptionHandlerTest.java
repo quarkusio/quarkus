@@ -3,10 +3,10 @@ package io.quarkus.arc.test.observer;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import javax.enterprise.inject.AmbiguousResolutionException;
-import javax.enterprise.inject.spi.EventContext;
-import javax.enterprise.inject.spi.ObserverMethod;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.AmbiguousResolutionException;
+import jakarta.enterprise.inject.spi.EventContext;
+import jakarta.enterprise.inject.spi.ObserverMethod;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

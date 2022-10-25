@@ -3,9 +3,9 @@ package io.quarkus.arc.test.alternatives.priority;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Alternative;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.enterprise.inject.Produces;
 
 import org.jboss.jandex.AnnotationTarget;
 import org.junit.jupiter.api.Test;

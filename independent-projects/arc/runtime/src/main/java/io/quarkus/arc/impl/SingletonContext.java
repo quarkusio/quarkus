@@ -2,7 +2,7 @@ package io.quarkus.arc.impl;
 
 import java.lang.annotation.Annotation;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.quarkus.arc.ContextInstanceHandle;
 import io.quarkus.arc.InstanceHandle;

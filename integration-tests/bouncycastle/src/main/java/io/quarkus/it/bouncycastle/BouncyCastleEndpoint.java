@@ -11,8 +11,9 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import javax.crypto.Cipher;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPrivateKey;

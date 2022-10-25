@@ -1,6 +1,6 @@
 package io.quarkus.it.opentelemetry;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.opentelemetry.extension.annotations.WithSpan;
 

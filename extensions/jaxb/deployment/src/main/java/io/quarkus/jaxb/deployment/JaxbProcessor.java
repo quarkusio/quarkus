@@ -9,39 +9,39 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.annotation.XmlAccessOrder;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAnyAttribute;
-import javax.xml.bind.annotation.XmlAnyElement;
-import javax.xml.bind.annotation.XmlAttachmentRef;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementDecl;
-import javax.xml.bind.annotation.XmlElementRef;
-import javax.xml.bind.annotation.XmlElementRefs;
-import javax.xml.bind.annotation.XmlElementWrapper;
-import javax.xml.bind.annotation.XmlElements;
-import javax.xml.bind.annotation.XmlEnum;
-import javax.xml.bind.annotation.XmlEnumValue;
-import javax.xml.bind.annotation.XmlID;
-import javax.xml.bind.annotation.XmlIDREF;
-import javax.xml.bind.annotation.XmlInlineBinaryData;
-import javax.xml.bind.annotation.XmlList;
-import javax.xml.bind.annotation.XmlMimeType;
-import javax.xml.bind.annotation.XmlMixed;
-import javax.xml.bind.annotation.XmlNs;
-import javax.xml.bind.annotation.XmlRegistry;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlSchema;
-import javax.xml.bind.annotation.XmlSchemaType;
-import javax.xml.bind.annotation.XmlSchemaTypes;
-import javax.xml.bind.annotation.XmlSeeAlso;
-import javax.xml.bind.annotation.XmlTransient;
-import javax.xml.bind.annotation.XmlType;
-import javax.xml.bind.annotation.XmlValue;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapters;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.annotation.XmlAccessOrder;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlAnyAttribute;
+import jakarta.xml.bind.annotation.XmlAnyElement;
+import jakarta.xml.bind.annotation.XmlAttachmentRef;
+import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlElementDecl;
+import jakarta.xml.bind.annotation.XmlElementRef;
+import jakarta.xml.bind.annotation.XmlElementRefs;
+import jakarta.xml.bind.annotation.XmlElementWrapper;
+import jakarta.xml.bind.annotation.XmlElements;
+import jakarta.xml.bind.annotation.XmlEnum;
+import jakarta.xml.bind.annotation.XmlEnumValue;
+import jakarta.xml.bind.annotation.XmlID;
+import jakarta.xml.bind.annotation.XmlIDREF;
+import jakarta.xml.bind.annotation.XmlInlineBinaryData;
+import jakarta.xml.bind.annotation.XmlList;
+import jakarta.xml.bind.annotation.XmlMimeType;
+import jakarta.xml.bind.annotation.XmlMixed;
+import jakarta.xml.bind.annotation.XmlNs;
+import jakarta.xml.bind.annotation.XmlRegistry;
+import jakarta.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlSchema;
+import jakarta.xml.bind.annotation.XmlSchemaType;
+import jakarta.xml.bind.annotation.XmlSchemaTypes;
+import jakarta.xml.bind.annotation.XmlSeeAlso;
+import jakarta.xml.bind.annotation.XmlTransient;
+import jakarta.xml.bind.annotation.XmlType;
+import jakarta.xml.bind.annotation.XmlValue;
+import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapters;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -119,54 +119,54 @@ class JaxbProcessor {
     private static final List<DotName> IGNORE_TYPES = List.of(DotName.createSimple("javax.xml.datatype.XMLGregorianCalendar"));
 
     private static final List<String> NATIVE_PROXY_DEFINITIONS = List.of(
-            "com.sun.xml.bind.marshaller.CharacterEscapeHandler",
+            "org.glassfish.jaxb.core.marshaller.CharacterEscapeHandler",
             "com.sun.xml.txw2.output.CharacterEscapeHandler",
-            "com.sun.xml.bind.v2.schemagen.episode.Bindings",
-            "com.sun.xml.bind.v2.schemagen.episode.SchemaBindings",
-            "com.sun.xml.bind.v2.schemagen.episode.Klass",
-            "com.sun.xml.bind.v2.schemagen.episode.Package",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.Annotated",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.Annotation",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.Any",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.Appinfo",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.AttrDecls",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.AttributeType",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.ComplexContent",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.ComplexExtension",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.ComplexRestriction",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.ComplexType",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.ComplexTypeHost",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.ComplexTypeModel",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.ContentModelContainer",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.Documentation",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.Element",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.ExplicitGroup",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.ExtensionType",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.FixedOrDefault",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.Import",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.List",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.LocalAttribute",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.LocalElement",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.NestedParticle",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.NoFixedFacet",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.Occurs",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.Particle",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.Redefinable",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.Schema",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.SchemaTop",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.SimpleContent",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.SimpleDerivation",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.SimpleExtension",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.SimpleRestriction",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.SimpleRestrictionModel",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.SimpleType",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.SimpleTypeHost",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.TopLevelAttribute",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.TopLevelElement",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.TypeDefParticle",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.TypeHost",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.Union",
-            "com.sun.xml.bind.v2.schemagen.xmlschema.Wildcard",
+            "org.glassfish.jaxb.core.v2.schemagen.episode.Bindings",
+            "org.glassfish.jaxb.core.v2.schemagen.episode.SchemaBindings",
+            "org.glassfish.jaxb.core.v2.schemagen.episode.Klass",
+            "org.glassfish.jaxb.core.v2.schemagen.episode.Package",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Annotated",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Annotation",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Any",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Appinfo",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.AttrDecls",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.AttributeType",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.ComplexContent",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.ComplexExtension",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.ComplexRestriction",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.ComplexType",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.ComplexTypeHost",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.ComplexTypeModel",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.ContentModelContainer",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Documentation",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Element",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.ExplicitGroup",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.ExtensionType",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.FixedOrDefault",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Import",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.List",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.LocalAttribute",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.LocalElement",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.NestedParticle",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.NoFixedFacet",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Occurs",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Particle",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Redefinable",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Schema",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.SchemaTop",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.SimpleContent",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.SimpleDerivation",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.SimpleExtension",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.SimpleRestriction",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.SimpleRestrictionModel",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.SimpleType",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.SimpleTypeHost",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.TopLevelAttribute",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.TopLevelElement",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.TypeDefParticle",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.TypeHost",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Union",
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Wildcard",
             "com.sun.xml.txw2.TypedXmlWriter");
 
     @BuildStep
@@ -221,7 +221,7 @@ class JaxbProcessor {
         }
 
         if (!index.getAnnotations(XML_ANY_ELEMENT).isEmpty()) {
-            addReflectiveClass(reflectiveClass, false, false, "javax.xml.bind.annotation.W3CDomHandler");
+            addReflectiveClass(reflectiveClass, false, false, "jakarta.xml.bind.annotation.W3CDomHandler");
         }
 
         JAXB_ANNOTATIONS.stream()
@@ -232,7 +232,7 @@ class JaxbProcessor {
 
         // Register @XmlSeeAlso
         proxyDefinitions.produce(new NativeImageProxyDefinitionBuildItem(XmlSeeAlso.class.getName(),
-                "com.sun.xml.bind.v2.model.annotation.Locatable"));
+                "org.glassfish.jaxb.core.v2.model.annotation.Locatable"));
         for (AnnotationInstance xmlSeeAlsoAnn : index.getAnnotations(XML_SEE_ALSO)) {
             AnnotationValue value = xmlSeeAlsoAnn.value();
             Type[] types = value.asClassArray();
@@ -265,16 +265,15 @@ class JaxbProcessor {
             BuildProducer<ServiceProviderBuildItem> providerItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
-        addReflectiveClass(reflectiveClass, true, false, "com.sun.xml.bind.v2.ContextFactory");
-        addReflectiveClass(reflectiveClass, true, false, "com.sun.xml.internal.bind.v2.ContextFactory");
+        addReflectiveClass(reflectiveClass, true, false, "org.glassfish.jaxb.runtime.v2.ContextFactory");
 
         addReflectiveClass(reflectiveClass, true, false, "com.sun.xml.internal.stream.XMLInputFactoryImpl");
         addReflectiveClass(reflectiveClass, true, false, "com.sun.xml.internal.stream.XMLOutputFactoryImpl");
         addReflectiveClass(reflectiveClass, true, false, "com.sun.org.apache.xpath.internal.functions.FuncNot");
         addReflectiveClass(reflectiveClass, true, false, "com.sun.org.apache.xerces.internal.impl.dv.xs.SchemaDVFactoryImpl");
 
-        addResourceBundle(resourceBundle, "javax.xml.bind.Messages");
-        addResourceBundle(resourceBundle, "javax.xml.bind.helpers.Messages");
+        addResourceBundle(resourceBundle, "jakarta.xml.bind.Messages");
+        addResourceBundle(resourceBundle, "jakarta.xml.bind.helpers.Messages");
 
         nativeImageProps
                 .produce(new NativeImageSystemPropertyBuildItem("com.sun.xml.bind.v2.bytecode.ClassTailor.noOptimize", "true"));
@@ -284,7 +283,8 @@ class JaxbProcessor {
                 .forEach(className -> addReflectiveClass(reflectiveClass, true, false, className));
 
         providerItem
-                .produce(new ServiceProviderBuildItem(JAXBContext.class.getName(), "com.sun.xml.bind.v2.ContextFactory"));
+                .produce(new ServiceProviderBuildItem(JAXBContext.class.getName(),
+                        "org.glassfish.jaxb.runtime.v2.ContextFactory"));
     }
 
     @BuildStep

@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.enterprise.inject.spi.DefinitionException;
+import jakarta.enterprise.inject.spi.DefinitionException;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
@@ -73,7 +73,8 @@ public class SpringDIProcessor {
     private static final DotName CDI_SINGLETON_ANNOTATION = BuiltinScope.SINGLETON.getInfo().getDotName();
     private static final DotName CDI_DEPENDENT_ANNOTATION = BuiltinScope.DEPENDENT.getInfo().getDotName();
     private static final DotName CDI_REQUEST_SCOPED_ANNOTATION = BuiltinScope.REQUEST.getInfo().getDotName();
-    private static final DotName CDI_SESSION_SCOPED_ANNOTATION = DotName.createSimple("javax.enterprise.context.SessionScoped");
+    private static final DotName CDI_SESSION_SCOPED_ANNOTATION = DotName
+            .createSimple("jakarta.enterprise.context.SessionScoped");
     private static final DotName CDI_APP_SCOPED_ANNOTATION = BuiltinScope.APPLICATION.getInfo().getDotName();
     private static final DotName CDI_NAMED_ANNOTATION = DotNames.NAMED;
     private static final DotName CDI_INJECT_ANNOTATION = DotNames.INJECT;

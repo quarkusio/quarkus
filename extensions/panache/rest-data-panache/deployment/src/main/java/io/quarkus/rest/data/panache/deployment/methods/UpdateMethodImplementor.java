@@ -6,8 +6,8 @@ import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreat
 import java.lang.annotation.Annotation;
 import java.util.function.Supplier;
 
-import javax.validation.Valid;
-import javax.ws.rs.core.Response;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.core.Response;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;

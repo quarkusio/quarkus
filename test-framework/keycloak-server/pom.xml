@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-test-framework</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>999-jakarta-SNAPSHOT</version>
     </parent>
 
     <artifactId>quarkus-test-keycloak-server</artifactId>
@@ -20,6 +20,12 @@
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.sun.activation</groupId>
+                    <artifactId>jakarta.activation</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
@@ -34,6 +40,10 @@
                     <artifactId>xml-path</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>angus-activation</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

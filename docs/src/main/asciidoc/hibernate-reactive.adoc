@@ -231,7 +231,7 @@ Here's a list of things to pay attention when using Hibernate Reactive in Quarku
 * it's not possible to configure multiple persistence units at the moment
 * it's not configurable via a `persistence.xml` file
 * integration with the Envers extension is not supported
-* transaction demarcation cannot be done using `javax.transaction.Transactional`
+* transaction demarcation cannot be done using `jakarta.transaction.Transactional`
 
 == Simplifying Hibernate Reactive with Panache
 

@@ -3,9 +3,9 @@ package io.quarkus.arc;
 import java.lang.annotation.Annotation;
 import java.util.Iterator;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.util.TypeLiteral;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.util.TypeLiteral;
 
 /**
  * Enhanced version of {@link Instance}.

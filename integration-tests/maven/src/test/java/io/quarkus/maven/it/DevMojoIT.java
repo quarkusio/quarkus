@@ -678,10 +678,10 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         File source = new File(testDir, "src/main/java/org/acme/MyNewResource.java");
         String myNewResource = "package org.acme;\n" +
                 "\n" +
-                "import javax.ws.rs.GET;\n" +
-                "import javax.ws.rs.Path;\n" +
-                "import javax.ws.rs.Produces;\n" +
-                "import javax.ws.rs.core.MediaType;\n" +
+                "import jakarta.ws.rs.GET;\n" +
+                "import jakarta.ws.rs.Path;\n" +
+                "import jakarta.ws.rs.Produces;\n" +
+                "import jakarta.ws.rs.core.MediaType;\n" +
                 "\n" +
                 "@Path(\"/foo\")\n" +
                 "public class MyNewResource {\n" +
@@ -707,10 +707,10 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         File source = new File(testDir, "src/main/java/org/acme/ClassDeletionResource.java");
         String classDeletionResource = "package org.acme;\n" +
                 "\n" +
-                "import javax.ws.rs.GET;\n" +
-                "import javax.ws.rs.Path;\n" +
-                "import javax.ws.rs.Produces;\n" +
-                "import javax.ws.rs.core.MediaType;\n" +
+                "import jakarta.ws.rs.GET;\n" +
+                "import jakarta.ws.rs.Path;\n" +
+                "import jakarta.ws.rs.Produces;\n" +
+                "import jakarta.ws.rs.core.MediaType;\n" +
                 "\n" +
                 "@Path(\"/deletion\")\n" +
                 "public class ClassDeletionResource {\n" +
@@ -1050,7 +1050,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         File source = new File(testDir, "src/main/java/org/acme/MyBean.java");
         String content = "package org.acme;\n" +
                 "\n" +
-                "import javax.enterprise.context.ApplicationScoped;\n" +
+                "import jakarta.enterprise.context.ApplicationScoped;\n" +
                 "\n" +
                 "@ApplicationScoped\n" +
                 "public class MyBean {\n" +

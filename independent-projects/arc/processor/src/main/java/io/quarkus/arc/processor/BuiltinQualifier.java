@@ -2,8 +2,8 @@ package io.quarkus.arc.processor;
 
 import java.util.Collections;
 
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Default;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Default;
 
 import org.jboss.jandex.AnnotationInstance;
 

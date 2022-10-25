@@ -1,9 +1,9 @@
 package io.quarkus.resteasy.reactive.server.test.security;
 
-import javax.annotation.security.PermitAll;
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 
 import io.smallrye.common.annotation.Blocking;
 

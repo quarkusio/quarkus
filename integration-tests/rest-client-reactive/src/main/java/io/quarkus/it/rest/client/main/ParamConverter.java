@@ -3,13 +3,13 @@ package io.quarkus.it.rest.client.main;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.ext.ParamConverterProvider;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.ext.ParamConverterProvider;
 
 public class ParamConverter implements ParamConverterProvider {
     @SuppressWarnings("unchecked")
     @Override
-    public <T> javax.ws.rs.ext.ParamConverter<T> getConverter(Class<T> rawType, Type genericType,
+    public <T> jakarta.ws.rs.ext.ParamConverter<T> getConverter(Class<T> rawType, Type genericType,
             Annotation[] annotations) {
         if (genericType == null || !genericType.equals(Param.class)) {
             throw new RuntimeException("Wrong generic type in ParamConverter!");
@@ -20,7 +20,7 @@ public class ParamConverter implements ParamConverterProvider {
         }
 
         if (rawType == Param.class) {
-            return (javax.ws.rs.ext.ParamConverter<T>) new javax.ws.rs.ext.ParamConverter<Param>() {
+            return (jakarta.ws.rs.ext.ParamConverter<T>) new jakarta.ws.rs.ext.ParamConverter<Param>() {
                 @Override
                 public Param fromString(String value) {
                     return null;

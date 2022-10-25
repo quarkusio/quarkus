@@ -45,8 +45,8 @@ The first step is to initialize a `JwtClaimsBuilder` using one of the options be
 [source, java]
 ----
 import java.util.Collections;
-import javax.json.Json;
-import javax.json.JsonObject;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
 import org.eclipse.microprofile.jwt.JsonWebToken;

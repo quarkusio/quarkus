@@ -2,8 +2,8 @@ package io.quarkus.arc.test.contexts.application;
 
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

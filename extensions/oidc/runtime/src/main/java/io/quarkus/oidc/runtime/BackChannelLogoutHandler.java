@@ -2,8 +2,8 @@ package io.quarkus.oidc.runtime;
 
 import java.util.function.Consumer;
 
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;

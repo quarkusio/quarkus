@@ -5,7 +5,7 @@ import static org.hamcrest.CoreMatchers.*;
 
 import java.util.Arrays;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.codec.binary.Base64;
 import org.junit.jupiter.api.Assertions;

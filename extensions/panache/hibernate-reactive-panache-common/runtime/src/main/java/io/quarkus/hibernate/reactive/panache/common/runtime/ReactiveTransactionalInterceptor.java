@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
-import javax.annotation.Priority;
-import javax.interceptor.Interceptor;
+import jakarta.annotation.Priority;
+import jakarta.interceptor.Interceptor;
 
 @Interceptor
 @ReactiveTransactional

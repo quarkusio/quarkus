@@ -3,10 +3,10 @@ package org.jboss.resteasy.reactive.client.impl;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import javax.annotation.Priority;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.ext.Provider;
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;

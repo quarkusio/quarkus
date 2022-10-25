@@ -1,12 +1,12 @@
 package io.quarkus.jdbc.postgresql.deployment;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.transaction.Transactional;
-import javax.ws.rs.GET;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 
 import io.agroal.api.AgroalDataSource;
 import io.smallrye.common.annotation.Blocking;

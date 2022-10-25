@@ -156,7 +156,7 @@ String suffix;
 @ConfigProperty(name = "greeting.name")
 Optional<String> name; <3>
 ----
-<1> If you do not provide a value for this property, the application startup fails with `javax.enterprise.inject.spi.DeploymentException: No config value of type [class java.lang.String] exists for: greeting.message`.
+<1> If you do not provide a value for this property, the application startup fails with `jakarta.enterprise.inject.spi.DeploymentException: No config value of type [class java.lang.String] exists for: greeting.message`.
 <2> The default value is injected if the configuration does not provide a value for `greeting.suffix`.
 <3> This property is optional - an empty `Optional` is injected if the configuration does not provide a value for `greeting.name`.
 
@@ -165,7 +165,7 @@ TIP: Use xref:config-mappings.adoc#config-mappings[Config Mappings] to group sim
 === Default Values
 
 If a property is associated with a default value (by way of the `defaultValue` attribute), and no configuration value
-is supplied for the property, then rather than throwing a `javax.enterprise.inject.spi.DeploymentException`, the
+is supplied for the property, then rather than throwing a `jakarta.enterprise.inject.spi.DeploymentException`, the
 default value will be used. The `defaultValue` value is expressed as a `String`, and uses the same conversion mechanism
 used to process configuration values. Several Built-in Converters already exist for primitives, boxed primitives, and
 other classes; for example:

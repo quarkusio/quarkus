@@ -8,8 +8,8 @@ import static io.quarkus.security.test.utils.SecurityTestUtils.assertSuccess;
 
 import java.util.concurrent.ExecutionException;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

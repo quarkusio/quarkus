@@ -8,8 +8,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import javax.enterprise.inject.Instance;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Singleton;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.security.identity.IdentityProvider;

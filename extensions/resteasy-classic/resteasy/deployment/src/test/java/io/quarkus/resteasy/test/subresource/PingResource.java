@@ -1,7 +1,7 @@
 package io.quarkus.resteasy.test.subresource;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
 
 public class PingResource {
 

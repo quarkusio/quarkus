@@ -3,9 +3,9 @@ package io.quarkus.it.jpa.h2.generics;
 import java.io.Serializable;
 import java.util.Objects;
 
-import javax.persistence.Id;
-import javax.persistence.IdClass;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.MappedSuperclass;
 
 @MappedSuperclass
 @IdClass(IntermediateAbstractMapped.PK.class)

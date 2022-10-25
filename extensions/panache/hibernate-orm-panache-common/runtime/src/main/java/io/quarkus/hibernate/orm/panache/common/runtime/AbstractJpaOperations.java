@@ -9,11 +9,11 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import javax.persistence.EntityManager;
-import javax.persistence.LockModeType;
-import javax.persistence.Query;
-import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.Query;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.TransactionManager;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;

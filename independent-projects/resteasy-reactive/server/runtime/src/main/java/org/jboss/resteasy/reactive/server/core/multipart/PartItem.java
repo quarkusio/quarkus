@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.core.multipart;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 public final class PartItem {
     private final String name;

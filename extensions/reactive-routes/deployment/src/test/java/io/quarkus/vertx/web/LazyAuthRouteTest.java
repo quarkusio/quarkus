@@ -3,9 +3,9 @@ package io.quarkus.vertx.web;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;
 
-import javax.annotation.security.DenyAll;
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
+import jakarta.annotation.security.DenyAll;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.BeforeAll;

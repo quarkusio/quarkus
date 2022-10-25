@@ -410,9 +410,9 @@ difference is that you would specify your Hibernate ORM configuration in `META-I
                 Optimistically create the tables;
                 will cause background errors being logged if they already exist,
                 but is practical to retain existing data across runs (or create as needed) -->
-            <property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
+            <property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create"/>
 
-            <property name="javax.persistence.validation.mode" value="NONE"/>
+            <property name="jakarta.persistence.validation.mode" value="NONE"/>
         </properties>
 
     </persistence-unit>
@@ -567,7 +567,7 @@ Applications that frequently read the same entities can see their performance im
 
 === Caching of entities
 
-To enable second-level cache, mark the entities that you want cached with `@javax.persistence.Cacheable`:
+To enable second-level cache, mark the entities that you want cached with `@jakarta.persistence.Cacheable`:
 
 [source,java]
 ----
@@ -824,11 +824,11 @@ Let's start by implementing the `/{tenant}` endpoint. As you can see from the so
 
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @ApplicationScoped
 @Path("/{tenant}")
@@ -851,7 +851,7 @@ In order to resolve the tenant from incoming requests and map it to a specific t
 
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.vertx.ext.web.RoutingContext;

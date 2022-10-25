@@ -6,8 +6,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.core.MediaType;
 
 /**
  * @author Pascal S. de Kloe

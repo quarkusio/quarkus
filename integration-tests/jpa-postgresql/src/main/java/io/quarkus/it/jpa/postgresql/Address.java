@@ -1,6 +1,6 @@
 package io.quarkus.it.jpa.postgresql;
 
-import javax.persistence.Embeddable;
+import jakarta.persistence.Embeddable;
 
 /**
  * This is an enmarked @Embeddable class.

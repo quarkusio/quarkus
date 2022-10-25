@@ -99,10 +99,10 @@ Let's write a simple JAX-RS resource which has all the tokens returned in the au
 ----
 package org.acme.security.openid.connect.web.authentication;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -277,7 +277,7 @@ One can access ID Token claims by injecting `JsonWebToken` with an `IdToken` qua
 
 [source, java]
 ----
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import io.quarkus.oidc.IdToken;
 import io.quarkus.security.Authenticated;
@@ -301,7 +301,7 @@ Access Token is usually used by the OIDC `web-app` application to access other e
 
 [source, java]
 ----
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.security.Authenticated;
@@ -340,7 +340,7 @@ RefreshToken is only used to refresh the current ID and access tokens as part of
 
 If IdToken does not provide enough information about the currently authenticated user then you can set a `quarkus.oidc.authentication.user-info-required=true` property for a https://openid.net/specs/openid-connect-core-1_0.html#UserInfo[UserInfo] JSON object from the OIDC userinfo endpoint to be requested.
 
-A request will be sent to the OpenID Provider UserInfo endpoint using the access token returned with the authorization code grant response and an `io.quarkus.oidc.UserInfo` (a simple `javax.json.JsonObject` wrapper) object will be created. `io.quarkus.oidc.UserInfo` can be either injected or accessed as a SecurityIdentity `userinfo` attribute.
+A request will be sent to the OpenID Provider UserInfo endpoint using the access token returned with the authorization code grant response and an `io.quarkus.oidc.UserInfo` (a simple `jakarta.json.JsonObject` wrapper) object will be created. `io.quarkus.oidc.UserInfo` can be either injected or accessed as a SecurityIdentity `userinfo` attribute.
 
 [[config-metadata]]
 === Configuration Metadata
@@ -514,9 +514,9 @@ If you work with a social provider such as Google and are concerned that the use
 
 [source,java]
 ----
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import io.quarkus.oidc.OidcSession;
 
@@ -596,8 +596,8 @@ Here is a simple example:
 ----
 package io.quarkus.oidc.test;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import io.quarkus.arc.AlternativePriority;
 import io.quarkus.oidc.AuthorizationCodeTokens;
@@ -667,8 +667,8 @@ One can register `@ApplicationScoped` bean which will observe important OIDC aut
 
 [source, java]
 ----
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.SecurityEvent;
@@ -767,10 +767,10 @@ This is all what is needed for an endpoint like this one to return the currently
 
 [source,java]
 ----
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.security.Authenticated;
@@ -799,7 +799,7 @@ package io.quarkus.it.keycloak;
 
 import java.security.Principal;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -838,10 +838,10 @@ Now, the following code will work when the user is signing in into your applicat
  
 [source,java]
 ----
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;

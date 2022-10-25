@@ -4,7 +4,7 @@
     <parent>
         <artifactId>quarkus-hibernate-orm-panache-kotlin-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>999-jakarta-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -76,7 +76,7 @@
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-jpamodelgen</artifactId>
+            <artifactId>hibernate-jpamodelgen-jakarta</artifactId>
             <scope>provided</scope>
             <!-- Exclude these dependencies, since they are banned -->
             <exclusions>

@@ -2,7 +2,7 @@ package io.quarkus.restclient.runtime;
 
 import java.util.Set;
 
-import javax.ws.rs.RuntimeType;
+import jakarta.ws.rs.RuntimeType;
 
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;

@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import javax.ws.rs.RuntimeType;
+import jakarta.ws.rs.RuntimeType;
 
 import org.jboss.resteasy.reactive.client.spi.ClientContext;
 import org.jboss.resteasy.reactive.client.spi.ClientContextResolver;

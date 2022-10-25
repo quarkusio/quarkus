@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Default;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Default;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;

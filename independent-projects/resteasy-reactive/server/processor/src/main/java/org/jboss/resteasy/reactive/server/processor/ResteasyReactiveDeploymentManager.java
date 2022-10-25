@@ -17,7 +17,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import javax.ws.rs.core.Application;
+import jakarta.ws.rs.core.Application;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;

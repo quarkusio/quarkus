@@ -1,8 +1,8 @@
 package io.quarkus.resteasy.reactive.server.runtime;
 
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 

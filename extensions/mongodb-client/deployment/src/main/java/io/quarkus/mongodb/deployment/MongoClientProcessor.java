@@ -12,9 +12,9 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Default;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Default;
+import jakarta.inject.Singleton;
 
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.pojo.PropertyCodecProvider;

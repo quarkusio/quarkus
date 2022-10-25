@@ -39,7 +39,7 @@ public class ArcConfig {
      * <li>does not have a name,</li>
      * <li>does not declare an observer,</li>
      * <li>does not declare any producer which is eligible for injection to any injection point,</li>
-     * <li>is not directly eligible for injection into any {@link javax.enterprise.inject.Instance} injection point</li>
+     * <li>is not directly eligible for injection into any {@link jakarta.enterprise.inject.Instance} injection point</li>
      * </ul>
      *
      * @see UnremovableBeanBuildItem
@@ -98,14 +98,14 @@ public class ArcConfig {
      * </ul>
      * Each element value is used to match an alternative bean class, an alternative stereotype annotation type or a bean class
      * that declares an alternative producer. If any value matches then the priority of {@link Integer#MAX_VALUE} is used for
-     * the relevant bean. The priority declared via {@link javax.annotation.Priority} or
+     * the relevant bean. The priority declared via {@link jakarta.annotation.Priority} or
      * {@link io.quarkus.arc.AlternativePriority} is overridden.
      */
     @ConfigItem
     public Optional<List<String>> selectedAlternatives;
 
     /**
-     * If set to true then {@code javax.enterprise.inject.Produces} is automatically added to all non-void methods that are
+     * If set to true then {@code jakarta.enterprise.inject.Produces} is automatically added to all non-void methods that are
      * annotated with a scope annotation, a stereotype or a qualifier, and are not annotated with {@code Inject} or
      * {@code Produces}, and no parameter is annotated with {@code Disposes}, {@code Observes} or {@code ObservesAsync}.
      */
@@ -172,8 +172,8 @@ public class ArcConfig {
      * If set to true then the container attempts to detect <i>wrong</i> usages of annotations and eventually fails the build to
      * prevent unexpected behavior of a Quarkus application.
      * <p>
-     * A typical example is {@code @javax.ejb.Singleton} which is often confused with {@code @javax.inject.Singleton}. As a
-     * result a component annotated with {@code @javax.ejb.Singleton} would be completely ignored. Another example is an inner
+     * A typical example is {@code @jakarta.ejb.Singleton} which is often confused with {@code @jakarta.inject.Singleton}. As a
+     * result a component annotated with {@code @jakarta.ejb.Singleton} would be completely ignored. Another example is an inner
      * class annotated with a scope annotation - this component would be again completely ignored.
      */
     @ConfigItem(defaultValue = "true")

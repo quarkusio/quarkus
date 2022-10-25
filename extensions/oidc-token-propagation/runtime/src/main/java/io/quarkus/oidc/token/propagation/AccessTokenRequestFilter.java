@@ -4,10 +4,10 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
-import javax.ws.rs.client.ClientRequestContext;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.client.ClientRequestContext;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 

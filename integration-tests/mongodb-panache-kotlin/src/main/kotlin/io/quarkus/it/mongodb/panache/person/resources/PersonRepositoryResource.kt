@@ -7,17 +7,17 @@ import io.quarkus.it.mongodb.panache.person.PersonName
 import io.quarkus.it.mongodb.panache.person.PersonRepository
 import io.quarkus.it.mongodb.panache.person.Status
 import io.quarkus.panache.common.Sort
+import jakarta.inject.Inject
+import jakarta.ws.rs.DELETE
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.PATCH
+import jakarta.ws.rs.POST
+import jakarta.ws.rs.PUT
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.PathParam
+import jakarta.ws.rs.QueryParam
+import jakarta.ws.rs.core.Response
 import java.net.URI
-import javax.inject.Inject
-import javax.ws.rs.DELETE
-import javax.ws.rs.GET
-import javax.ws.rs.PATCH
-import javax.ws.rs.POST
-import javax.ws.rs.PUT
-import javax.ws.rs.Path
-import javax.ws.rs.PathParam
-import javax.ws.rs.QueryParam
-import javax.ws.rs.core.Response
 
 @Path("/persons/repository")
 class PersonRepositoryResource {

@@ -12,10 +12,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Default;
-import javax.enterprise.util.Nonbinding;
-import javax.inject.Qualifier;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.util.Nonbinding;
+import jakarta.inject.Qualifier;
 
 public final class Qualifiers {
 

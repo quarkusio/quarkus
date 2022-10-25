@@ -7,12 +7,12 @@ import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheQuery
 import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
+import jakarta.inject.Inject
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.core.Response
 import org.bson.Document
 import org.junit.jupiter.api.Assertions
-import javax.inject.Inject
-import javax.ws.rs.GET
-import javax.ws.rs.Path
-import javax.ws.rs.core.Response
 
 @Path("/test")
 class TestResource {

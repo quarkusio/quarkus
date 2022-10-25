@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.annotation.Annotation;
 
-import javax.enterprise.util.AnnotationLiteral;
+import jakarta.enterprise.util.AnnotationLiteral;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

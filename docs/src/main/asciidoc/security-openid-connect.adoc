@@ -115,10 +115,10 @@ Let's start by implementing the `/api/users/me` endpoint. As you can see from th
 ----
 package org.acme.security.openid.connect;
 
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.NoCache;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -158,11 +158,11 @@ The source code for the `/api/admin` endpoint is also very simple. The main diff
 ----
 package org.acme.security.openid.connect;
 
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/api/admin")
 public class AdminResource {
@@ -346,12 +346,12 @@ If you need to access JWT token claims then you can inject `JsonWebToken`:
 package org.acme.security.openid.connect;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
-import javax.inject.Inject;
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/api/admin")
 public class AdminResource {
@@ -374,7 +374,7 @@ Injection of `JsonWebToken` is supported in `@ApplicationScoped`, `@Singleton` a
 === User Info
 
 Set `quarkus.oidc.authentication.user-info-required=true` if a UserInfo JSON object from the OIDC userinfo endpoint has to be requested.
-A request will be sent to the OpenID Provider UserInfo endpoint and  an `io.quarkus.oidc.UserInfo` (a simple `javax.json.JsonObject` wrapper) object will be created.
+A request will be sent to the OpenID Provider UserInfo endpoint and  an `io.quarkus.oidc.UserInfo` (a simple `jakarta.json.JsonObject` wrapper) object will be created.
 `io.quarkus.oidc.UserInfo` can be either injected or accessed as a SecurityIdentity `userinfo` attribute.
 
 [[config-metadata]]
@@ -439,7 +439,7 @@ quarkus.oidc.token.require-jwt-introspection-only=true
 
 An advantage of this approach is that the configuration is simple and easy to understand, while its disavantage is that a remote OIDC metadata discovery call is required to discover an introspection endpoint address (though the verification keys will also not be fetched).
 
-Note that `io.quarkus.oidc.TokenIntrospection` (a simple `javax.json.JsonObject` wrapper) object will be created and can be either injected or accessed as a SecurityIdentity `introspection` attribute if either JWT or opaque token has been successfully introspected.
+Note that `io.quarkus.oidc.TokenIntrospection` (a simple `jakarta.json.JsonObject` wrapper) object will be created and can be either injected or accessed as a SecurityIdentity `introspection` attribute if either JWT or opaque token has been successfully introspected.
 
 [[token-introspection-userinfo-cache]]
 === Token Introspection and UserInfo Cache
@@ -498,10 +498,10 @@ In such cases you may want to consider skipping the issuer verification by setti
 
 [source, java]
 ----
-import javax.inject.Inject;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.ext.Provider;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.ext.Provider;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import io.quarkus.oidc.OidcConfigurationMetadata;

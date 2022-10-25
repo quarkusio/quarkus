@@ -9,7 +9,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
 
-import javax.persistence.LockModeType;
+import jakarta.persistence.LockModeType;
 
 import org.hibernate.Filter;
 import org.hibernate.internal.util.LockModeConverter;

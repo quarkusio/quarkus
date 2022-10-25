@@ -1,6 +1,6 @@
 package io.quarkus.grpc.auth;
 
-import javax.enterprise.inject.spi.Prioritized;
+import jakarta.enterprise.inject.spi.Prioritized;
 
 import io.grpc.ForwardingServerCallListener;
 import io.grpc.Metadata;

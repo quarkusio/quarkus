@@ -1,6 +1,6 @@
 package io.quarkus.keycloak.adminclient.deployment;
 
-import javax.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.RequestScoped;
 
 import org.jboss.jandex.DotName;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;

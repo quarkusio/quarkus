@@ -2,7 +2,7 @@ package org.jboss.resteasy.reactive.server.handlers;
 
 import java.util.List;
 
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.NotFoundException;
 
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;

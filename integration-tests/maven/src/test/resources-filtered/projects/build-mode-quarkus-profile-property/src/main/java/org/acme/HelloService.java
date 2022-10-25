@@ -3,7 +3,7 @@ package org.acme;
 import io.quarkus.arc.profile.IfBuildProfile;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @IfBuildProfile("foo")
 @ApplicationScoped

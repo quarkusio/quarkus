@@ -4,7 +4,7 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;

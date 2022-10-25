@@ -149,9 +149,9 @@ One can use `OidcClient` directly as follows:
 
 [source,java]
 ----
-import javax.inject.PostConstruct;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
+import jakarta.inject.PostConstruct;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
 
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.Tokens;
@@ -189,9 +189,9 @@ You can inject `Tokens` which uses `OidcClient` internally. `Tokens` can be used
 
 [source,java]
 ----
-import javax.inject.PostConstruct;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
+import jakarta.inject.PostConstruct;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
 
 import io.quarkus.oidc.client.Tokens;
 
@@ -226,9 +226,9 @@ Note in this case the default client is disabled with a `client-enabled=false` p
 
 [source,java]
 ----
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClients;
@@ -253,9 +253,9 @@ If you also use xref:security-openid-connect-multitenancy.adoc[OIDC multitenancy
 
 [source,java]
 ----
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClients;
@@ -284,9 +284,9 @@ If you need you can also create new `OidcClient` programmatically like this:
 
 [source,java]
 ----
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClients;
@@ -322,9 +322,9 @@ In case of multiple configured ``OidcClient``s you can specify the `OidcClient` 
 ----
 package io.quarkus.oidc.client;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("/clients")
 public class OidcClientResource {
@@ -826,7 +826,7 @@ quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".min-lev
 [[token-propagation]]
 == Token Propagation
 
-The `quarkus-oidc-token-propagation` extension provides two JAX-RS `javax.ws.rs.client.ClientRequestFilter` class implementations that simplify the propagation of authentication information.
+The `quarkus-oidc-token-propagation` extension provides two JAX-RS `jakarta.ws.rs.client.ClientRequestFilter` class implementations that simplify the propagation of authentication information.
 `io.quarkus.oidc.token.propagation.AccessTokenRequestFilter` propagates the xref:security-openid-connect.adoc[Bearer] token present in the current active request or the token acquired from the xref:security-openid-connect-web-authentication.adoc[Authorization Code Flow], as the HTTP `Authorization` header's `Bearer` scheme value.
 The `io.quarkus.oidc.token.propagation.JsonWebTokenRequestFilter` provides the same functionality, but in addition provides support for JWT tokens.
 

@@ -3,8 +3,8 @@ package io.quarkus.opentelemetry.exporter.otlp.runtime;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.spi.CDI;
 
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporterBuilder;

@@ -3,7 +3,7 @@ package org.jboss.resteasy.reactive.common.model;
 import java.util.Collections;
 import java.util.Set;
 
-import javax.ws.rs.Priorities;
+import jakarta.ws.rs.Priorities;
 
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 

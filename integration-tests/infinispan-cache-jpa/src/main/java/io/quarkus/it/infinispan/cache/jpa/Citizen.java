@@ -8,7 +8,7 @@
 //$Id$
 package io.quarkus.it.infinispan.cache.jpa;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;

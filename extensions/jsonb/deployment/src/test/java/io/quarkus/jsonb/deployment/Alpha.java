@@ -1,6 +1,6 @@
 package io.quarkus.jsonb.deployment;
 
-import javax.json.bind.annotation.JsonbTypeAdapter;
+import jakarta.json.bind.annotation.JsonbTypeAdapter;
 
 @JsonbTypeAdapter(AlphaAdapter.class)
 public class Alpha {

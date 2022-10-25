@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.logmanager.formatters.PatternFormatter;

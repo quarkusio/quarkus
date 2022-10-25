@@ -40,12 +40,12 @@ public class WrongAnnotationUsageProcessor {
 
             @Override
             public String apply(AnnotationInstance annotationInstance) {
-                return String.format("%s declared on %s, use @javax.inject.Singleton instead",
+                return String.format("%s declared on %s, use @jakarta.inject.Singleton instead",
                         annotationInstance.toString(false), getTargetInfo(annotationInstance));
             }
         };
         unsupported.add(new UnsupportedAnnotation(DotName.createSimple("com.google.inject.Singleton"), singletonFun));
-        unsupported.add(new UnsupportedAnnotation(DotName.createSimple("javax.ejb.Singleton"), singletonFun));
+        unsupported.add(new UnsupportedAnnotation(DotName.createSimple("jakarta.ejb.Singleton"), singletonFun));
         unsupported.add(new UnsupportedAnnotation(DotName.createSimple("groovy.lang.Singleton"), singletonFun));
         unsupported.add(new UnsupportedAnnotation(DotName.createSimple("jakarta.ejb.Singleton"), singletonFun));
 

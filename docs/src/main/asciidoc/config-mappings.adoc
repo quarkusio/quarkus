@@ -643,7 +643,7 @@ corresponds does not follow the getter method naming conventions.
 naming conventions (`greeting.name` being the corresponding property) and no default value is required.
 
 When using `@ConfigProperties` on a class or an interface, if the value of one of its fields is not provided, the
-application startup will fail, and a `javax.enterprise.inject.spi.DeploymentException` will be thrown. This does not
+application startup will fail, and a `jakarta.enterprise.inject.spi.DeploymentException` will be thrown. This does not
 apply to `Optional` fields and fields with a default value.
 
 === Additional notes on @ConfigProperties

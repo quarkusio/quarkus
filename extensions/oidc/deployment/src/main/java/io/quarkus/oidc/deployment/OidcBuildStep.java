@@ -2,7 +2,7 @@ package io.quarkus.oidc.deployment;
 
 import java.util.function.BooleanSupplier;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.jwt.Claim;
 import org.jboss.jandex.DotName;

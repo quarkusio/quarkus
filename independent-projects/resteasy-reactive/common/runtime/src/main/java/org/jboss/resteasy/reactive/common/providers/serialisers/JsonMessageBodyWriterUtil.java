@@ -1,8 +1,8 @@
 package org.jboss.resteasy.reactive.common.providers.serialisers;
 
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 public class JsonMessageBodyWriterUtil {
     public static void setContentTypeIfNecessary(MultivaluedMap<String, Object> httpHeaders) {

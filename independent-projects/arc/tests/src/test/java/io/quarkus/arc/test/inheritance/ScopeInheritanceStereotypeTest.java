@@ -2,8 +2,8 @@ package io.quarkus.arc.test.inheritance;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Model;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Model;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

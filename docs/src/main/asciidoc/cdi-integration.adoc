@@ -161,7 +161,7 @@ _Solution_: Use the `AdditionalBeanBuildItem` as described in <<additional_bean_
 == Use Case - I Need To Transform Metadata
 
 In some cases, it's useful to be able to modify the metadata.
-Quarkus provides a powerful alternative to https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#process_annotated_type[`javax.enterprise.inject.spi.ProcessAnnotatedType`, window="_blank"].
+Quarkus provides a powerful alternative to https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#process_annotated_type[`jakarta.enterprise.inject.spi.ProcessAnnotatedType`, window="_blank"].
 With an `AnnotationsTransformerBuildItem` it's possible to override the annotations that exist on bean classes.
 
 For example, you might want to add an interceptor binding to a specific bean class.
@@ -267,7 +267,7 @@ SyntheticBeanBuildItem syntheticBean() {
              .done();
 }
 ----
-<1> Generate the bytecode of the `javax.enterprise.context.spi.Contextual#create(CreationalContext<T>)` implementation.
+<1> Generate the bytecode of the `jakarta.enterprise.context.spi.Contextual#create(CreationalContext<T>)` implementation.
 
 The output of a bean configurator is recorded as bytecode. 
 Therefore, there are some limitations in how a synthetic bean instance is created at runtime. 
@@ -440,7 +440,7 @@ _Solution_: You can inject the `CustomScopeAnnotationsBuildItem` in a build step
 [[additional_interceptor_bindings]]
 == Use Case - Additional Interceptor Bindings
 
-In rare cases it might be handy to programmatically register an existing annotation that is not annotated with `@javax.interceptor.InterceptorBinding` as an interceptor binding.
+In rare cases it might be handy to programmatically register an existing annotation that is not annotated with `@jakarta.interceptor.InterceptorBinding` as an interceptor binding.
 This is similar to what CDI achieves through `BeforeBeanDiscovery#addInterceptorBinding()`.
 We are going to use `InterceptorBindingRegistrarBuildItem` to get it done.
 
@@ -460,7 +460,7 @@ InterceptorBindingRegistrarBuildItem addInterceptorBindings() {
 
 == Use Case - Additional Qualifiers
 
-Sometimes it might be useful to register an existing annotation that is not annotated with `@javax.inject.Qualifier` as a CDI qualifier.
+Sometimes it might be useful to register an existing annotation that is not annotated with `@jakarta.inject.Qualifier` as a CDI qualifier.
 This is similar to what CDI achieves through `BeforeBeanDiscovery#addQualifier()`.
 We are going to use `QualifierRegistrarBuildItem` to get it done.
 
@@ -481,7 +481,7 @@ QualifierRegistrarBuildItem addQualifiers() {
 
 == Use Case - Additional Stereotypes
 
-It is sometimes useful to register an existing annotation that is not annotated with `@javax.enterprise.inject.Stereotype` as a CDI stereotype.
+It is sometimes useful to register an existing annotation that is not annotated with `@jakarta.enterprise.inject.Stereotype` as a CDI stereotype.
 This is similar to what CDI achieves through `BeforeBeanDiscovery#addStereotype()`.
 We are going to use `StereotypeRegistrarBuildItem` to get it done.
 

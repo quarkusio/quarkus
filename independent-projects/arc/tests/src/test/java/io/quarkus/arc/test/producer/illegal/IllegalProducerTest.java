@@ -5,10 +5,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.Serializable;
 import java.time.temporal.Temporal;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.IllegalProductException;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.IllegalProductException;
+import jakarta.enterprise.inject.Produces;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

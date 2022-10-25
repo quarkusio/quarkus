@@ -31,10 +31,10 @@ import io.vertx.core.net.SocketAddress;
 public abstract class AbstractRequestWrapper
         implements HttpServerRequest, HttpServerRequestInternal {
 
-    protected final HttpServerRequestInternal delegate;
+    protected final HttpServerRequest delegate;
 
     protected AbstractRequestWrapper(HttpServerRequest request) {
-        delegate = (HttpServerRequestInternal) request;
+        delegate = request;
     }
 
     @Override
@@ -322,12 +322,12 @@ public abstract class AbstractRequestWrapper
 
     @Override
     public Context context() {
-        return delegate.context();
+        return ((HttpServerRequestInternal) delegate).context();
     }
 
     @Override
     public Object metric() {
-        return delegate.metric();
+        return ((HttpServerRequestInternal) delegate).metric();
     }
 
     @Override

@@ -70,7 +70,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
      * Indicates if a given resource is present at runtime.
      * Can also be used to check if a class is present as a class is just a regular resource.
      *
-     * @param resourceName the path of the resource, for instance {@code path/to/my-resources.properties} for a properties file
+     * @param resourcePath the path of the resource, for instance {@code path/to/my-resources.properties} for a properties file
      *        or {@code my/package/MyClass.class} for a class.
      */
     public static boolean isResourcePresentAtRuntime(String resourcePath) {
@@ -211,13 +211,11 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         for (ClassLoaderEventListener l : classLoaderEventListeners) {
             l.enumeratingResourceURLs(unsanitisedName, this.name);
         }
-        boolean endsWithTrailingSlash = unsanitisedName.endsWith("/");
         ClassLoaderState state = getState();
         String name = sanitizeName(unsanitisedName);
         //for resources banned means that we don't delegate to the parent, as there can be multiple resources
         //for single resources we still respect this
         boolean banned = state.bannedResources.contains(name);
-        Set<URL> resources = new LinkedHashSet<>();
 
         //this is a big of a hack, but is necessary to prevent service leakage
         //in some situations (looking at you gradle) the parent can contain the same
@@ -241,8 +239,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         }
         //TODO: in theory resources could have been added in dev mode
         //but I don't thing this really matters for this code path
+        Set<URL> resources = new LinkedHashSet<>();
         ClassPathElement[] providers = state.loadableResources.get(name);
         if (providers != null) {
+            boolean endsWithTrailingSlash = unsanitisedName.endsWith("/");
             for (ClassPathElement element : providers) {
                 ClassPathResource res = element.getResource(name);
                 //if the requested name ends with a trailing / we make sure
@@ -349,7 +349,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         for (ClassLoaderEventListener l : classLoaderEventListeners) {
             l.gettingURLFromResource(unsanitisedName, this.name);
         }
-        boolean endsWithTrailingSlash = unsanitisedName.endsWith("/");
         String name = sanitizeName(unsanitisedName);
         ClassLoaderState state = getState();
         if (state.bannedResources.contains(name)) {
@@ -358,6 +357,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         //TODO: because of dev mode we iterate, to see if any resources were added
         //not for .class files though, adding them causes a restart
         //this is very important for bytebuddy performance
+        boolean endsWithTrailingSlash = unsanitisedName.endsWith("/");
         if (name.endsWith(".class") && !endsWithTrailingSlash) {
             ClassPathElement[] providers = state.loadableResources.get(name);
             if (providers != null) {
@@ -449,9 +449,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
-        for (ClassLoaderEventListener l : classLoaderEventListeners) {
-            l.loadClass(name, this.name);
-        }
         return loadClass(name, false);
     }
 
@@ -474,10 +471,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                     return c;
                 }
                 String resourceName = sanitizeName(name).replace('.', '/') + ".class";
-                boolean parentFirst = parentFirst(resourceName, state);
                 if (state.bannedResources.contains(resourceName)) {
                     throw new ClassNotFoundException(name);
                 }
+                boolean parentFirst = parentFirst(resourceName, state);
                 if (parentFirst) {
                     try {
                         return parent.loadClass(name);

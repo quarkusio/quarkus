@@ -163,7 +163,6 @@
                         <configuration>
                             <activeRecipes>
                                 <recipe>io.quarkus.infinispan</recipe>
-                                <recipe>io.quarkus.fix-infinispan-commons</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>

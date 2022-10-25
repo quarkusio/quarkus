@@ -183,7 +183,7 @@ recipeList:
   # WildFly Security
   - org.openrewrite.maven.ChangePropertyValue:
       key: wildfly-elytron.version
-      newValue: 2.0.0.Beta3
+      newValue: 2.0.0.Final
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-jaxrs-jaxb
@@ -314,6 +314,31 @@ recipeList:
   - org.openrewrite.maven.RemoveExclusion:
       groupId: org.jboss.resteasy
       artifactId: resteasy-json-p-provider
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.apache.activemq
+      artifactId: artemis-server
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.apache.activemq
+      artifactId: artemis-amqp-protocol
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.eclipse
+      artifactId: yasson
+      exclusionGroupId: jakarta.json
+      exclusionArtifactId: jakarta.json-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.eclipse
+      artifactId: yasson
+      exclusionGroupId: org.glassfish
+      exclusionArtifactId: jakarta.json
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: jakarta.json.bind
+      artifactId: jakarta.json.bind-api
       exclusionGroupId: jakarta.json
       exclusionArtifactId: jakarta.json-api
 ---
@@ -652,7 +677,7 @@ recipeList:
       newValue: 3.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy-reactive-testsuite.repo.ref
-      newValue: c5785f3465fa87395574fde1274c1712b3aa728b
+      newValue: 4116f1a0c5605ad00d7779367dac8002af8c6882
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.maven.javax.managed
@@ -826,10 +851,10 @@ displayName: Adjust Infinispan version and dependencies
 recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: infinispan.version
-      newValue: 14.0.0.Dev04
+      newValue: 14.0.0.Final
   - org.openrewrite.maven.ChangePropertyValue:
       key: infinispan.protostream.version
-      newValue: 14.0.0.CR2
+      newValue: 4.5.0.Final
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.infinispan
       oldArtifactId: infinispan-core
@@ -840,41 +865,24 @@ recipeList:
       oldGroupId: org.infinispan
       oldArtifactId: infinispan-client-hotrod
       newGroupId: org.infinispan
-      newArtifactId: infinispan-client-hotrod
-      newClassifier: jakarta
+      newArtifactId: infinispan-client-hotrod-jakarta
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.infinispan
       oldArtifactId: infinispan-commons
       newGroupId: org.infinispan
-      newArtifactId: infinispan-commons
-      newClassifier: jakarta
+      newArtifactId: infinispan-commons-jakarta
   - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
       oldGroupId: org.infinispan
       oldArtifactId: infinispan-core
       newGroupId: org.infinispan
-      newArtifactId: infinispan-core
-      newClassifier: jakarta
+      newArtifactId: infinispan-core-jakarta
   - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
       oldGroupId: org.infinispan
       oldArtifactId: infinispan-client-hotrod
       newGroupId: org.infinispan
-      newArtifactId: infinispan-client-hotrod
-      newClassifier: jakarta
+      newArtifactId: infinispan-client-hotrod-jakarta
   - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
       oldGroupId: org.infinispan
       oldArtifactId: infinispan-commons
       newGroupId: org.infinispan
-      newArtifactId: infinispan-commons
-      newClassifier: jakarta
----
-type: specs.openrewrite.org/v1beta/recipe
-name: io.quarkus.fix-infinispan-commons
-displayName: Adjust Infinispan version and dependencies
-recipeList:
-  - org.openrewrite.maven.ExcludeDependency:
-      groupId: org.infinispan
-      artifactId: infinispan-commons
-  - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
-      groupId: org.infinispan
-      artifactId: infinispan-commons
-      classifier: jakarta
+      newArtifactId: infinispan-commons-jakarta

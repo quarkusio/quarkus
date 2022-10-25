@@ -11,6 +11,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.deployment.ArcConfig;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
+import io.quarkus.arc.deployment.devconsole.ArcDevConsoleProcessor;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.DecoratorInfo;
@@ -71,7 +72,7 @@ public class ArcDevProcessor {
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route(beansPath)
                 .displayOnNotFoundPage("Active CDI Beans")
-                .handler(recorder.createBeansHandler()).build());
+                .handler(recorder.createBeansHandler(ArcDevConsoleProcessor.BEAN_DEPENDENCIES)).build());
 
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route(removedBeansPath)

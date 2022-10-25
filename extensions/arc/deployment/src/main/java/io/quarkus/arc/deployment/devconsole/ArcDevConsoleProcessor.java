@@ -155,11 +155,22 @@ public class ArcDevConsoleProcessor {
                 }
             }
         }
+
+        Map<String, List<String>> beanDependenciesMap = new HashMap<>();
+
         for (BeanInfo bean : beans) {
-            beanInfos.addDependencyGraph(bean.getIdentifier(),
-                    buildDependencyGraph(bean, validationContext, resolver, beanInfos, allInjectionPoints, declaringToProducers,
-                            directDependents));
+            DependencyGraph dependencyGraph = buildDependencyGraph(bean, validationContext, resolver, beanInfos,
+                    allInjectionPoints, declaringToProducers,
+                    directDependents);
+            beanInfos.addDependencyGraph(bean.getIdentifier(), dependencyGraph);
+            // id -> [dep1Id, dep2Id]
+            beanDependenciesMap.put(bean.getIdentifier(),
+                    dependencyGraph.filterLinks(link -> link.type.equals("directDependency")).nodes.stream()
+                            .map(DevBeanInfo::getId).filter(id -> !id.equals(bean.getIdentifier()))
+                            .collect(Collectors.toList()));
         }
+        // Set the global that could be used at runtime when generating the json payload for /q/arc/beans
+        DevConsoleManager.setGlobal(BEAN_DEPENDENCIES, beanDependenciesMap);
 
         beanInfos.sort();
         templates.produce(new DevConsoleTemplateInfoBuildItem("devBeanInfos", beanInfos));
@@ -207,6 +218,8 @@ public class ArcDevConsoleProcessor {
 
     static final String BEAN_DESCRIPTION = "io.quarkus.arc.beanDescription";
     static final String MAX_DEPENDENCY_LEVEL = "io.quarkus.arc.maxDependencyLevel";
+    public static final String BEAN_DEPENDENCIES = "io.quarkus.arc.beanDependencies";
+
     static final int DEFAULT_MAX_DEPENDENCY_LEVEL = 10;
 
     private boolean isAdditionalBeanDefiningAnnotationOn(ClassInfo beanClass,

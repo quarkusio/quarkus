@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.runtime.devmode;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import io.quarkus.arc.RemovedBean;
 import io.quarkus.arc.impl.ArcContainerImpl;
 import io.quarkus.arc.runtime.devconsole.EventsMonitor;
 import io.quarkus.arc.runtime.devconsole.InvocationsMonitor;
+import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.devmode.Json.JsonArrayBuilder;
@@ -64,7 +66,7 @@ public class ArcDevRecorder {
         };
     }
 
-    public Handler<RoutingContext> createBeansHandler() {
+    public Handler<RoutingContext> createBeansHandler(String beanDependenciesGlobalKey) {
         return new Handler<RoutingContext>() {
 
             @Override
@@ -96,9 +98,11 @@ public class ArcDevRecorder {
                     }
                 }
 
+                Map<String, List<String>> beanDependenciesMap = DevConsoleManager.getGlobal(beanDependenciesGlobalKey);
+
                 JsonArrayBuilder array = Json.array();
                 for (InjectableBean<?> injectableBean : beans) {
-                    JsonObjectBuilder bean = Json.object();
+                    JsonObjectBuilder bean = Json.object(true);
                     bean.put("id", injectableBean.getIdentifier());
                     bean.put("kind", injectableBean.getKind().toString());
                     bean.put("generatedClass", injectableBean.getClass().getName());
@@ -131,6 +135,18 @@ public class ArcDevRecorder {
                     if (injectableBean.isDefaultBean()) {
                         bean.put("isDefault", true);
                     }
+
+                    List<String> beanDependencies = Collections.emptyList();
+                    if (beanDependenciesMap != null) {
+                        beanDependencies = beanDependenciesMap.getOrDefault(injectableBean.getIdentifier(),
+                                Collections.emptyList());
+                    }
+                    JsonArrayBuilder dependencies = Json.array();
+                    for (String beanId : beanDependencies) {
+                        dependencies.add(beanId);
+                    }
+                    bean.put("dependencies", dependencies);
+
                     array.add(bean);
                 }
                 ctx.response().end(array.build());

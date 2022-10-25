@@ -58,7 +58,7 @@ public class WiringProcessor {
     @BuildStep
     void discoverConnectors(BeanDiscoveryFinishedBuildItem beans, CombinedIndexBuildItem index,
             BuildProducer<ConnectorBuildItem> builder) {
-        beans.geBeans().stream()
+        beans.getBeans().stream()
                 .filter(bi -> bi.getQualifier(ReactiveMessagingDotNames.CONNECTOR).isPresent())
                 .forEach(bi -> {
                     if (isInboundConnector(bi.getImplClazz())) {

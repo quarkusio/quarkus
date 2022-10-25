@@ -212,7 +212,7 @@ class CacheProcessor {
     // Key generators must have a default constructor if they are not managed by Arc.
     private List<Throwable> validateKeyGeneratorsDefaultConstructor(CombinedIndexBuildItem combinedIndex,
             BeanDiscoveryFinishedBuildItem beanDiscoveryFinished, Set<DotName> keyGenerators) {
-        List<DotName> managedBeans = beanDiscoveryFinished.geBeans()
+        List<DotName> managedBeans = beanDiscoveryFinished.getBeans()
                 .stream()
                 .filter(BeanInfo::isClassBean)
                 .map(BeanInfo::getBeanClass)

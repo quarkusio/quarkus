@@ -125,6 +125,12 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>uk.org.webcompere</groupId>
+            <artifactId>system-stubs-jupiter</artifactId>
+            <scope>test</scope>
+            <version>2.0.1</version>
+        </dependency>
     </dependencies>
 
     <profiles>

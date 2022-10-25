@@ -625,7 +625,7 @@ containers:
       memory: 64Mi
 ----
 
-=== Exposing with Secured Ingress
+=== Exposing your application in Kubernetes
 
 Kubernetes exposes applications using https://kubernetes.io/docs/concepts/services-networking/ingress[Ingress resources]. To generate the Ingress resource, just apply the following configuration:
 
@@ -661,7 +661,109 @@ spec:
             pathType: Prefix
 ----
 
-After deploying these resources to Kubernetes, the Ingress resource will allow unsecured connections to reach out your application. 
+After deploying these resources to Kubernetes, the Ingress resource will allow unsecured connections to reach out your application.
+
+==== Adding Ingress rules
+
+To customize the default `host` and `path` properties of the generated Ingress resources, you need to apply the following configuration:
+
+[source]
+----
+quarkus.kubernetes.ingress.expose=true
+# To change the Ingress host. By default, it's empty.
+quarkus.kubernetes.ingress.host=prod.svc.url
+# To change the Ingress path of the generated Ingress rule. By default, it's "/".
+quarkus.kubernetes.ports.http.path=/prod
+----
+
+This would generate the following Ingress resource:
+
+[source, yaml]
+----
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    app.kubernetes.io/name: kubernetes-with-ingress
+    app.kubernetes.io/version: 0.1-SNAPSHOT
+  name: kubernetes-with-ingress
+spec:
+  rules:
+    - host: prod.svc.url
+      http:
+        paths:
+          - backend:
+              service:
+                name: kubernetes-with-ingress
+                port:
+                  name: http
+            path: /prod
+            pathType: Prefix
+----
+
+Additionally, you can also add new Ingress rules by adding the following configuration:
+
+[source]
+----
+# Example to add a new rule
+quarkus.kubernetes.ingress.rules.1.host=dev.svc.url
+quarkus.kubernetes.ingress.rules.1.path=/dev
+quarkus.kubernetes.ingress.rules.1.path-type=ImplementationSpecific
+# by default, path type is Prefix
+
+# Exmple to add a new rule that use another service binding
+quarkus.kubernetes.ingress.rules.2.host=alt.svc.url
+quarkus.kubernetes.ingress.rules.2.path=/ea
+quarkus.kubernetes.ingress.rules.2.service-name=updated-service
+quarkus.kubernetes.ingress.rules.2.service-port-name=tcpurl
+----
+
+This would generate the following Ingress resource:
+
+[source, yaml]
+----
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    app.kubernetes.io/name: kubernetes-with-ingress
+    app.kubernetes.io/version: 0.1-SNAPSHOT
+  name: kubernetes-with-ingress
+spec:
+  rules:
+    - host: prod.svc.url
+      http:
+        paths:
+          - backend:
+              service:
+                name: kubernetes-with-ingress
+                port:
+                  name: http
+            path: /prod
+            pathType: Prefix
+    - host: dev.svc.url
+      http:
+        paths:
+          - backend:
+              service:
+                name: kubernetes-with-ingress
+                port:
+                  name: http
+            path: /dev
+            pathType: ImplementationSpecific
+    - host: alt.svc.url
+      http:
+        paths:
+          - backend:
+              service:
+                name: updated-service
+                port:
+                  name: tcpurl
+            path: /ea
+            pathType: Prefix
+----
+
+==== Securing the Ingress resource
 
 To secure the incoming connections, Kubernetes allows enabling https://kubernetes.io/docs/concepts/services-networking/ingress/#tls[TLS] within the Ingress resource by specifying a Secret that contains a TLS private key and certificate. You can generate a secured Ingress resource by simply adding the "tls.secret-name" properties:
 

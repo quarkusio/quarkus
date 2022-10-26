@@ -45,15 +45,6 @@ recipeList:
       key: expressly.version
       newValue: 5.0.0
       addIfMissing: true
-  # TODO once ArC is aligned, we can remove this one
-  - org.openrewrite.maven.AddManagedDependency:
-      groupId: jakarta.el
-      artifactId: jakarta.el-api
-      version: "${jakarta.el-api.version}"
-  - org.openrewrite.maven.ChangePropertyValue:
-      key: jakarta.el-api.version
-      newValue: 5.0.1
-      addIfMissing: true
   # CDI
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.cdi
@@ -184,6 +175,19 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: wildfly-elytron.version
       newValue: 2.0.0.Final
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.jakarta-el
+displayName: Add Jakarta EL management
+recipeList:
+  - org.openrewrite.maven.AddManagedDependency:
+      groupId: jakarta.el
+      artifactId: jakarta.el-api
+      version: "${jakarta.el-api.version}"
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: jakarta.el-api.version
+      newValue: 5.0.1
+      addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-jaxrs-jaxb

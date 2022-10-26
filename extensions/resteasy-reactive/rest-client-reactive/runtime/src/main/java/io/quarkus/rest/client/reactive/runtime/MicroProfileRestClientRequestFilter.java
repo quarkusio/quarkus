@@ -10,7 +10,6 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
-import org.eclipse.microprofile.rest.client.ext.DefaultClientHeadersFactoryImpl;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestFilter;
 
@@ -55,12 +54,9 @@ public class MicroProfileRestClientRequestFilter implements ResteasyReactiveClie
             }
         }
 
-        if (clientHeadersFactory instanceof DefaultClientHeadersFactoryImpl) {
-            // When using the default factory, pass the proposed outgoing headers onto the request context.
-            // Propagation with the default factory will then overwrite any values if required.
-            for (Map.Entry<String, List<String>> headerEntry : headers.entrySet()) {
-                requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
-            }
+        // Propagation with the default factory will then overwrite any values if required.
+        for (Map.Entry<String, List<String>> headerEntry : headers.entrySet()) {
+            requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
         }
 
         if (clientHeadersFactory != null) {
@@ -81,10 +77,6 @@ public class MicroProfileRestClientRequestFilter implements ResteasyReactiveClie
                 for (Map.Entry<String, List<String>> headerEntry : incomingHeaders.entrySet()) {
                     requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
                 }
-            }
-        } else {
-            for (Map.Entry<String, List<String>> headerEntry : headers.entrySet()) {
-                requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
             }
         }
     }

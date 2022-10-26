@@ -14,6 +14,7 @@ import io.quarkus.redis.datasource.cuckoo.CfReserveArgs;
 import io.quarkus.redis.datasource.cuckoo.CuckooCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
+@RequiresCommand("cf.add")
 public class CuckooCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource ds;

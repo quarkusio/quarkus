@@ -8,11 +8,11 @@ import java.lang.annotation.Target;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@Target({ ElementType.METHOD, ElementType.TYPE })
+@Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
-@ExtendWith(RedisCommandCondition.class)
-@interface RequiresCommand {
+@ExtendWith(Redis6OrHigherCondition.class)
+@interface RequiresRedis6OrHigher {
 
-    String[] value();
+    // Important the class must extend DatasourceTestBase.
 }

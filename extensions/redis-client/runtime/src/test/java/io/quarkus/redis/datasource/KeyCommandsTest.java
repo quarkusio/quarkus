@@ -75,6 +75,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void copy() {
         values.set(key, Person.person7);
         assertThat(keys.copy(key, key + "2")).isTrue();
@@ -83,6 +84,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void copyWithReplace() {
         values.set(key, Person.person7);
         values.set(key + 2, Person.person1);
@@ -91,6 +93,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void copyWithDestinationDb() {
         ds.withConnection(connection -> {
             connection.value(String.class, Person.class).set(key, Person.person7);
@@ -398,6 +401,7 @@ public class KeyCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void scanWithType() {
         values.set("key1", Person.person7);
         ds.list(Person.class).lpush("key2", Person.person7);

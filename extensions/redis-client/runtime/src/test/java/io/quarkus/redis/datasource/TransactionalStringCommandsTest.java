@@ -16,6 +16,7 @@ import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 
 @SuppressWarnings("deprecation")
+@RequiresRedis6OrHigher
 public class TransactionalStringCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource blocking;

@@ -12,6 +12,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import com.google.common.collect.Lists;
+
 import io.quarkus.test.junit.QuarkusTest;
 
 /**
@@ -136,6 +138,27 @@ public class ParamsTest {
 
     static Stream<Map.Entry<String, String>> testStreamOfMapEntryArguments() {
         return Map.of("a", "b").entrySet().stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("testSublistArgumentsList")
+    public void sublistArgumentsList(List<Integer> ignore) {
+    }
+
+    static Stream<Arguments> testSublistArgumentsList() {
+        return Stream.of(
+                Arguments.of(List.of(1, 2).subList(0, 1)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testReverseArgumentsList")
+    public void reverseArgumentsList(List<Integer> ignore) {
+    }
+
+    static Stream<Arguments> testReverseArgumentsList() {
+        return Stream.of(
+                Arguments.of(
+                        Lists.reverse(List.of(1, 2, 3))));
     }
 
     @SuppressWarnings("unused")

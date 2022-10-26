@@ -8,8 +8,11 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import org.jboss.resteasy.reactive.RestHeader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -27,13 +30,14 @@ public class HeaderTest {
     @Test
     void testHeadersWithSubresource() {
         Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
-        assertThat(client.cookieSub("bar", "bar2").send("bar3", "bar4")).isEqualTo("bar:bar2:bar3:bar4");
+        assertThat(client.cookieSub("bar", "bar2").send("bar3", "bar4", "dummy"))
+                .isEqualTo("bar:bar2:bar3:bar4:X-My-Header/dummy");
     }
 
     @Test
     void testNullHeaders() {
         Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
-        assertThat(client.cookieSub("bar", null).send(null, "bar4")).isEqualTo("bar:null:null:bar4");
+        assertThat(client.cookieSub("bar", null).send(null, "bar4", "dummy")).isEqualTo("bar:null:null:bar4:X-My-Header/dummy");
     }
 
     @Path("/")
@@ -41,8 +45,11 @@ public class HeaderTest {
     public static class Resource {
         @GET
         public String returnHeaders(@HeaderParam("foo") String header, @HeaderParam("foo2") String header2,
-                @HeaderParam("foo3") String header3, @HeaderParam("foo4") String header4) {
-            return header + ":" + header2 + ":" + header3 + ":" + header4;
+                @HeaderParam("foo3") String header3, @HeaderParam("foo4") String header4, @Context HttpHeaders headers) {
+            String myHeaderName = headers.getRequestHeaders().keySet().stream().filter(s -> s.equalsIgnoreCase("X-My-Header"))
+                    .findFirst().orElse("");
+            return header + ":" + header2 + ":" + header3 + ":" + header4 + ":" + myHeaderName + "/"
+                    + headers.getHeaderString("X-My-Header");
         }
     }
 
@@ -55,7 +62,7 @@ public class HeaderTest {
     public interface SubClient {
 
         @GET
-        String send(@HeaderParam("foo3") String cookie3, @HeaderParam("foo4") String cookie4);
+        String send(@HeaderParam("foo3") String cookie3, @HeaderParam("foo4") String cookie4, @RestHeader String xMyHeader);
     }
 
 }

@@ -101,7 +101,8 @@
         <!-- for the now proprietary components of Elasticsearch, we use the last Open Source version -->
         <elasticsearch-proprietary-components-keeping-old-opensource-version.version>7.10.2</elasticsearch-proprietary-components-keeping-old-opensource-version.version>
         <rxjava.version>2.2.21</rxjava.version>
-        <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
+        <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
+        <wildfly.openssl-linux.version>2.2.2.Final</wildfly.openssl-linux.version>
         <jboss-logging-annotations.version>2.2.1.Final</jboss-logging-annotations.version>
         <slf4j.version>1.7.36</slf4j.version>
         <slf4j-jboss-logmanager.version>1.2.0.Final</slf4j-jboss-logmanager.version>
@@ -4609,12 +4610,12 @@
             <dependency>
                 <groupId>org.wildfly.openssl</groupId>
                 <artifactId>wildfly-openssl-java</artifactId>
-                <version>${wildfly.openssl.version}</version>
+                <version>${wildfly.openssl-java.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.wildfly.openssl</groupId>
                 <artifactId>wildfly-openssl-linux-x86_64</artifactId>
-                <version>${wildfly.openssl.version}</version>
+                <version>${wildfly.openssl-linux.version}</version>
             </dependency>
 
             <dependency>

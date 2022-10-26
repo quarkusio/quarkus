@@ -1,3 +1,6 @@
+AssertJ
+AsciiDoc
+Asciidoctor
 /var
 BIND
 bind
@@ -7,6 +10,7 @@ CapEx
 CD #1
 CDs
 cgroup
+ConfigMap
 CSV
 Ctrl
 Cygmon
@@ -43,6 +47,7 @@ IBM eServer System p
 IBM S 390
 IBM S 390
 IBM Z
+Ignition config
 InfiniBand
 Insight
 Intel Virtualization Technology
@@ -56,9 +61,11 @@ ISO image
 Itanium
 Itanium 2
 JBoss Community
+JetBrains
 JUnit
 JVM
 Kernel-based Virtual Machine
+Knowledgebase
 Kickstart
 KVM
 LAN
@@ -84,9 +91,11 @@ pop-up
 POSIX
 PostScript
 PowerPC
+PowerShell
 PPP
 PROM
 Prometheus
+Proof Key for Code Exchange
 Q and A
 QCOW2
 qeth
@@ -94,6 +103,9 @@ RAM
 RAM disk
 raw
 Red Hat Network Proxy Server
+Red Hat Satellite
+Red Hat Satellite Server
+Red Hat Satellite Capsule Server
 Red Hat Network Satellite Server
 RedBoot
 RESTEasy
@@ -135,6 +147,7 @@ WAN
 WCA
 web UI
 WebAuthn
+WebSocket
 Window Maker
 XEmacs
 xterm

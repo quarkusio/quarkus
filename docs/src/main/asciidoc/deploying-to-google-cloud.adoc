@@ -53,8 +53,6 @@ follow the specific guides for more information on how to develop, package and d
 
 == Deploying to Google App Engine Standard
 
-We will only cover the Java 11 runtime as the Java 8 runtime uses its own Servlet engine which is not compatible with Quarkus.
-
 First, make sure to have an App Engine environment initialized for your Google Cloud project, if not, initialize one via `gcloud app create --project=[YOUR_PROJECT_ID]`.
 
 Then, you will need to create a `src/main/appengine/app.yaml` file, let's keep it minimalistic with only the selected engine:

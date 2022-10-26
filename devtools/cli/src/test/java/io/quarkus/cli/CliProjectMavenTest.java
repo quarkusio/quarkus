@@ -183,7 +183,7 @@ public class CliProjectMavenTest {
     }
 
     @Test
-    public void testDevOptions() throws Exception {
+    public void testDevTestOptions() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
@@ -225,10 +225,10 @@ public class CliProjectMavenTest {
         Assertions.assertFalse(result.stdout.contains(" clean"),
                 "mvn command should not specify 'clean'\n" + result);
 
-        Assertions.assertTrue(result.stdout.contains("-DskipTests"),
-                "mvn command should specify -DskipTests\n" + result);
-        Assertions.assertTrue(result.stdout.contains("-Dmaven.test.skip=true"),
-                "mvn command should specify -Dmaven.test.skip=true\n" + result);
+        Assertions.assertFalse(result.stdout.contains("-DskipTests"),
+                "mvn command should not specify -DskipTests (ignored)\n" + result);
+        Assertions.assertFalse(result.stdout.contains("-Dmaven.test.skip=true"),
+                "mvn command should not specify -Dmaven.test.skip=true (ignored)\n" + result);
 
         Assertions.assertTrue(result.stdout.contains("-Ddebug=false"),
                 "mvn command should specify '-Ddebug=false'\n" + result);
@@ -254,6 +254,12 @@ public class CliProjectMavenTest {
 
         Assertions.assertTrue(result.stdout.contains("-Dquarkus.args='arg1 arg2'"),
                 "mvn command should not specify -Dquarkus.args='arg1 arg2'\n" + result);
+
+        // 4 TEST MODE: test --clean --debug --suspend --offline
+        result = CliDriver.execute(project, "test", "-e", "--dry-run",
+                "--clean", "--debug", "--suspend", "--debug-mode=listen", "--offline");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
     }
 
     @Test

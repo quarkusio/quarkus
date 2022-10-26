@@ -15,11 +15,11 @@ import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 import picocli.CommandLine.Parameters;
 
-@CommandLine.Command(name = "dev", showEndOfOptionsDelimiterInUsageHelp = true, header = "Run the current project in dev (live coding) mode.")
-public class Dev extends BaseBuildCommand implements Callable<Integer> {
+@CommandLine.Command(name = "test", showEndOfOptionsDelimiterInUsageHelp = true, header = "Run the current project in continuous testing mode.")
+public class Test extends BaseBuildCommand implements Callable<Integer> {
 
-    @CommandLine.ArgGroup(order = 1, exclusive = false, heading = "%nDev Mode options:%n")
-    DevOptions devOptions = new DevOptions();
+    @CommandLine.ArgGroup(order = 1, exclusive = false, heading = "%nContinuous Test Mode options:%n")
+    DevOptions testOptions = new DevOptions();
 
     @CommandLine.ArgGroup(order = 3, exclusive = false, validate = true, heading = "%nDebug options:%n")
     DebugOptions debugOptions = new DebugOptions();
@@ -30,18 +30,18 @@ public class Dev extends BaseBuildCommand implements Callable<Integer> {
     @Override
     public Integer call() {
         try {
-            output.debug("Run project in dev mode with initial parameters: %s", this);
+            output.debug("Run project in test mode with initial parameters: %s", this);
             output.throwIfUnmatchedArguments(spec.commandLine());
 
             BuildSystemRunner runner = getRunner();
             List<Supplier<BuildSystemRunner.BuildCommandArgs>> commandArgs = runner.prepareDevTestMode(
-                    true, devOptions, debugOptions, params);
+                    false, testOptions, debugOptions, params);
 
-            if (devOptions.isDryRun()) {
-                dryRunDev(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs.iterator().next().get());
+            if (testOptions.isDryRun()) {
+                dryRunTest(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs.iterator().next().get());
                 return CommandLine.ExitCode.OK;
             }
-            Integer ret = 1;
+            int ret = 1;
             for (Supplier<BuildSystemRunner.BuildCommandArgs> i : commandArgs) {
                 ret = runner.run(i.get());
                 if (ret != 0) {
@@ -51,29 +51,25 @@ public class Dev extends BaseBuildCommand implements Callable<Integer> {
             return ret;
         } catch (Exception e) {
             return output.handleCommandException(e,
-                    "Unable to launch project in dev mode: " + e.getMessage());
+                    "Unable to launch project in test mode: " + e.getMessage());
         }
     }
 
-    void dryRunDev(CommandLine.Help help, BuildTool buildTool, BuildSystemRunner.BuildCommandArgs args) {
-        output.printText(new String[] {
-                "\nRun current project in dev mode\n",
-                "\t" + projectRoot().toString()
-        });
+    void dryRunTest(CommandLine.Help help, BuildTool buildTool, BuildSystemRunner.BuildCommandArgs args) {
+        output.printText("\nRun current project in test mode\n",
+                "\t" + projectRoot().toString());
         Map<String, String> dryRunOutput = new TreeMap<>();
         dryRunOutput.put("Build tool", buildTool.name());
         output.info(help.createTextTable(dryRunOutput).toString());
 
-        output.printText(new String[] {
-                "\nCommand line:\n",
-                args.showCommand()
-        });
+        output.printText("\nCommand line:\n",
+                args.showCommand());
     }
 
     @Override
     public String toString() {
-        return "Dev [debugOptions=" + debugOptions
-                + ", devOptions=" + devOptions
+        return "Test [debugOptions=" + debugOptions
+                + ", testOptions=" + testOptions
                 + ", properties=" + propertiesOptions.properties
                 + ", output=" + output
                 + ", params=" + params + "]";

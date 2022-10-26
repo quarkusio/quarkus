@@ -23,16 +23,19 @@ import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
 import io.quarkus.hibernate.orm.deployment.JpaModelBuildItem;
 import io.quarkus.hibernate.reactive.panache.common.runtime.PanacheHibernateRecorder;
 import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactionalInterceptor;
 import io.quarkus.hibernate.reactive.panache.common.runtime.TestReactiveTransactionalInterceptor;
 
+@BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public final class PanacheJpaCommonResourceProcessor {
 
     private static final DotName DOTNAME_NAMED_QUERY = DotName.createSimple(NamedQuery.class.getName());

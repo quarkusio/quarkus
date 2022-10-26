@@ -2933,6 +2933,7 @@
                         <quarkus-version>${project.version}</quarkus-version>
                         <surefire-version>${version.surefire.plugin}</surefire-version>
                         <graalvm-version>${graal-sdk.version-for-documentation}</graalvm-version>
+                        <graalvm-major-minor-version>${graal-sdk.major-minor.version-for-documentation}</graalvm-major-minor-version>
                         <graalvm-flavor>${graal-sdk.version-for-documentation}-java11</graalvm-flavor>
                         <mandrel-version>${mandrel.version-for-documentation}</mandrel-version>
                         <mandrel-flavor>${mandrel.version-for-documentation}-java11</mandrel-flavor>

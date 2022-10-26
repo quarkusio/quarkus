@@ -1746,7 +1746,7 @@ Once the image is compiled, enable and start JFR via runtime flags: `-XX:+Flight
     -XX:StartFlightRecording="filename=recording.jfr"
 ----
 
-For more details on using JFR, see https://www.graalvm.org/22.2/reference-manual/native-image/debugging-and-diagnostics/JFR/[here].
+For more details on using JFR, see https://www.graalvm.org/{graalvm-major-minor-version}/reference-manual/native-image/debugging-and-diagnostics/JFR/[here].
 
 === How can we troubleshoot performance problems only reproducible in production?
 

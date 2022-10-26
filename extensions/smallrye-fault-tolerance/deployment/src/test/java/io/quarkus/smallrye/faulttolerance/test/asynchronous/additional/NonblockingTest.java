@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.faulttolerance.test.asynchronous.noncompat;
+package io.quarkus.smallrye.faulttolerance.test.asynchronous.additional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -11,13 +11,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class NoncompatAsyncTest {
+public class NonblockingTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(NoncompatHelloService.class));
+            .withApplicationRoot((jar) -> jar.addClasses(NonblockingService.class));
 
     @Inject
-    NoncompatHelloService service;
+    NonblockingService service;
 
     @Test
     public void noThreadOffloadAndFallback() throws Exception {

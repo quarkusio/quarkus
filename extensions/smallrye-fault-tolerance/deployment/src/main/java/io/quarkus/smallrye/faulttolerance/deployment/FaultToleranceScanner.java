@@ -25,10 +25,12 @@ import io.quarkus.gizmo.ClassOutput;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.faulttolerance.api.ApplyFaultTolerance;
+import io.smallrye.faulttolerance.api.AsynchronousNonBlocking;
 import io.smallrye.faulttolerance.api.CircuitBreakerName;
 import io.smallrye.faulttolerance.api.CustomBackoff;
 import io.smallrye.faulttolerance.api.ExponentialBackoff;
 import io.smallrye.faulttolerance.api.FibonacciBackoff;
+import io.smallrye.faulttolerance.api.RateLimit;
 import io.smallrye.faulttolerance.autoconfig.FaultToleranceMethod;
 import io.smallrye.faulttolerance.autoconfig.MethodDescriptor;
 
@@ -113,21 +115,25 @@ final class FaultToleranceScanner {
         result.beanClass = getClassProxy(beanClass);
         result.method = createMethodDescriptor(method);
 
+        result.applyFaultTolerance = getAnnotation(ApplyFaultTolerance.class, method, beanClass, annotationsPresentDirectly);
+
         result.asynchronous = getAnnotation(Asynchronous.class, method, beanClass, annotationsPresentDirectly);
+        result.asynchronousNonBlocking = getAnnotation(AsynchronousNonBlocking.class, method, beanClass,
+                annotationsPresentDirectly);
+        result.blocking = getAnnotation(Blocking.class, method, beanClass, annotationsPresentDirectly);
+        result.nonBlocking = getAnnotation(NonBlocking.class, method, beanClass, annotationsPresentDirectly);
+
         result.bulkhead = getAnnotation(Bulkhead.class, method, beanClass, annotationsPresentDirectly);
         result.circuitBreaker = getAnnotation(CircuitBreaker.class, method, beanClass, annotationsPresentDirectly);
+        result.circuitBreakerName = getAnnotation(CircuitBreakerName.class, method, beanClass, annotationsPresentDirectly);
         result.fallback = getAnnotation(Fallback.class, method, beanClass, annotationsPresentDirectly);
+        result.rateLimit = getAnnotation(RateLimit.class, method, beanClass, annotationsPresentDirectly);
         result.retry = getAnnotation(Retry.class, method, beanClass, annotationsPresentDirectly);
         result.timeout = getAnnotation(Timeout.class, method, beanClass, annotationsPresentDirectly);
 
-        result.applyFaultTolerance = getAnnotation(ApplyFaultTolerance.class, method, beanClass, annotationsPresentDirectly);
-        result.circuitBreakerName = getAnnotation(CircuitBreakerName.class, method, beanClass, annotationsPresentDirectly);
         result.customBackoff = getAnnotation(CustomBackoff.class, method, beanClass, annotationsPresentDirectly);
         result.exponentialBackoff = getAnnotation(ExponentialBackoff.class, method, beanClass, annotationsPresentDirectly);
         result.fibonacciBackoff = getAnnotation(FibonacciBackoff.class, method, beanClass, annotationsPresentDirectly);
-
-        result.blocking = getAnnotation(Blocking.class, method, beanClass, annotationsPresentDirectly);
-        result.nonBlocking = getAnnotation(NonBlocking.class, method, beanClass, annotationsPresentDirectly);
 
         result.annotationsPresentDirectly = annotationsPresentDirectly;
 
@@ -149,7 +155,7 @@ final class FaultToleranceScanner {
     private <A extends Annotation> A getAnnotation(Class<A> annotationType, MethodInfo method,
             ClassInfo beanClass, Set<Class<? extends Annotation>> directlyPresent) {
 
-        DotName annotationName = DotName.createSimple(annotationType.getName());
+        DotName annotationName = DotName.createSimple(annotationType);
         if (annotationStore.hasAnnotation(method, annotationName)) {
             directlyPresent.add(annotationType);
             AnnotationInstance annotation = annotationStore.getAnnotation(method, annotationName);
@@ -160,7 +166,7 @@ final class FaultToleranceScanner {
     }
 
     private <A extends Annotation> A getAnnotationFromClass(Class<A> annotationType, ClassInfo clazz) {
-        DotName annotationName = DotName.createSimple(annotationType.getName());
+        DotName annotationName = DotName.createSimple(annotationType);
         if (annotationStore.hasAnnotation(clazz, annotationName)) {
             AnnotationInstance annotation = annotationStore.getAnnotation(clazz, annotationName);
             return createAnnotation(annotationType, annotation);

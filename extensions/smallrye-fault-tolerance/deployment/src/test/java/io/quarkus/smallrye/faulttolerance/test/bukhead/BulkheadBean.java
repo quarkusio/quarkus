@@ -11,10 +11,10 @@ public class BulkheadBean {
     private AtomicInteger integer = new AtomicInteger();
 
     @Bulkhead(5)
-    public int bulkhead() {
+    public int hello() {
         int i = integer.incrementAndGet();
         try {
-            Thread.sleep(10);//artificially generates contention
+            Thread.sleep(100); // artificially generate contention
             return i;
         } catch (InterruptedException e) {
             throw new RuntimeException(e);

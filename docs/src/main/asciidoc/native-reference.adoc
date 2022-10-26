@@ -47,7 +47,6 @@ The use of semi-spaces means that for an application to maintain the same GC per
 it requires double the amount of memory.
 
 ===== GC Collection Policy
-===== GC Collection Policy
 
 GraalVM's Serial GC implementation offers a choice between two different collection policies, the default is called "adaptive" and the alternative is called "space/time".
 

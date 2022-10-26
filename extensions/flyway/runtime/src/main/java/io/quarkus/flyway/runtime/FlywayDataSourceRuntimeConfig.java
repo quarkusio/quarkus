@@ -113,6 +113,13 @@ public final class FlywayDataSourceRuntimeConfig {
     public boolean repairAtStart;
 
     /**
+     * true to execute a Flyway validate command when the application starts, false otherwise.
+     *
+     */
+    @ConfigItem
+    public boolean validateAtStart;
+
+    /**
      * Enable the creation of the history table if it does not exist already.
      */
     @ConfigItem

@@ -11,6 +11,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.server.core.multipart.MultipartFormDataOutput;
 
 @Path("/multipart/output")
 public class MultipartOutputResource {
@@ -49,6 +50,20 @@ public class MultipartOutputResource {
         response.setValues(RESPONSE_VALUES);
         response.active = RESPONSE_ACTIVE;
         return RestResponse.ResponseBuilder.ok(response).header("foo", "bar").build();
+    }
+
+    @GET
+    @Path("/with-form-data")
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    public RestResponse<MultipartFormDataOutput> withFormDataOutput() {
+        MultipartFormDataOutput form = new MultipartFormDataOutput();
+        form.addFormData("name", RESPONSE_NAME, MediaType.TEXT_PLAIN_TYPE);
+        form.addFormData("custom-surname", RESPONSE_SURNAME, MediaType.TEXT_PLAIN_TYPE);
+        form.addFormData("custom-status", RESPONSE_STATUS, MediaType.TEXT_PLAIN_TYPE)
+                .getHeaders().putSingle("extra-header", "extra-value");
+        form.addFormData("values", RESPONSE_VALUES, MediaType.TEXT_PLAIN_TYPE);
+        form.addFormData("active", RESPONSE_ACTIVE, MediaType.TEXT_PLAIN_TYPE);
+        return RestResponse.ResponseBuilder.ok(form).header("foo", "bar").build();
     }
 
     @GET

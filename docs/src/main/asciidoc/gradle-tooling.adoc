@@ -385,7 +385,7 @@ Once executed, you will be able to safely run quarkus task with `--offline` flag
 
 Native executables make Quarkus applications ideal for containers and serverless workloads.
 
-Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version} (Make sure to use a Java 11 version of GraalVM).
+Make sure to have `GRAALVM_HOME` configured and pointing to the latest release of GraalVM version {graalvm-version} (Make sure to use a Java 11 version of GraalVM).
 
 Create a native executable using:
 

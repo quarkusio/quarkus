@@ -15,6 +15,7 @@ import io.quarkus.redis.datasource.graph.GraphQueryResponseItem;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.vertx.core.json.JsonObject;
 
+@RequiresCommand("graph.query")
 public class GraphCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource ds;

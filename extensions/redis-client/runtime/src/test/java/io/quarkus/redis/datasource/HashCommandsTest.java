@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -97,6 +98,22 @@ public class HashCommandsTest extends DatasourceTestBase {
         assertThat(hash.hgetall("missing")).isEmpty();
     }
 
+    /**
+     * Reproducer for <a href="https://github.com/quarkusio/quarkus/issues/28837">#28837</a>.
+     */
+    @Test
+    public void hgetallUsingIntegers() {
+        var cmd = ds.hash(Integer.class);
+        String key = UUID.randomUUID().toString();
+        assertThat(cmd.hgetall(key).isEmpty()).isTrue();
+
+        cmd.hset(key, Map.of("a", 1, "b", 2, "c", 3));
+
+        Map<String, Integer> map = cmd.hgetall(key);
+
+        assertThat(map).hasSize(3);
+    }
+
     @Test
     void hincrby() {
         assertThat(hash.hincrby(key, "one", 1)).isEqualTo(1);
@@ -171,6 +188,7 @@ public class HashCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void hrandfield() {
         hash.hset(key, Map.of("one", Person.person1, "two", Person.person2, "three", Person.person3));
 
@@ -179,6 +197,7 @@ public class HashCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void hrandfieldWithValues() {
         Map<String, Person> map = Map.of("one", Person.person1, "two", Person.person2, "three", Person.person3);
         hash.hset(key, map);

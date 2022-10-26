@@ -72,6 +72,9 @@ public class FlywayRecorder {
             if (flywayContainer.isCleanAtStart()) {
                 flywayContainer.getFlyway().clean();
             }
+            if (flywayContainer.isValidateAtStart()) {
+                flywayContainer.getFlyway().validate();
+            }
             if (flywayContainer.isRepairAtStart()) {
                 flywayContainer.getFlyway().repair();
             }

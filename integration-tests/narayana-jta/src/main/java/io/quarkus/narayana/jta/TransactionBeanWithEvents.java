@@ -16,8 +16,11 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.TransactionScoped;
 import javax.transaction.Transactional;
+import javax.transaction.UserTransaction;
 
 import org.jboss.logging.Logger;
+
+import io.quarkus.narayana.jta.runtime.TransactionScopedNotifier;
 
 @ApplicationScoped
 public class TransactionBeanWithEvents {
@@ -110,10 +113,15 @@ public class TransactionBeanWithEvents {
             log.error("Context on @Initialized has to be active");
             throw new IllegalStateException("Context on @Initialized has to be active");
         }
-        if (!(event instanceof Transaction)) {
-            log.error("@Initialized scope expects event payload being the " + Transaction.class.getName());
+        if (!(event instanceof TransactionScopedNotifier.TransactionId)) {
+            log.error(
+                    "@Initialized scope expects event payload being the "
+                            + TransactionScopedNotifier.TransactionId.class.getName() + " or "
+                            + UserTransaction.class.getName());
             throw new IllegalStateException(
-                    "@Initialized scope expects event payload being the " + Transaction.class.getName());
+                    "@Initialized scope expects event payload being the "
+                            + TransactionScopedNotifier.TransactionId.class.getName() + " or "
+                            + UserTransaction.class.getName());
         }
 
         initializedCount++;
@@ -130,19 +138,23 @@ public class TransactionBeanWithEvents {
         try {
             ctx = beanManager.getContext(TransactionScoped.class);
         } catch (Exception e) {
-            log.error("Context on @Initialized is not available");
+            log.error("Context on @BeforeDestroyed is not available");
             throw e;
         }
         if (!ctx.isActive()) {
             log.error("Context on @BeforeDestroyed has to be active");
             throw new IllegalStateException("Context on @BeforeDestroyed has to be active");
         }
-        if (!(event instanceof Transaction)) {
-            log.error("@Initialized scope expects event payload being the " + Transaction.class.getName());
+        if (!(event instanceof TransactionScopedNotifier.TransactionId)) {
+            log.error(
+                    "@BeforeDestroyed scope expects event payload being the "
+                            + TransactionScopedNotifier.TransactionId.class.getName() + " or "
+                            + UserTransaction.class.getName());
             throw new IllegalStateException(
-                    "@Initialized scope expects event payload being the " + Transaction.class.getName());
+                    "@BeforeDestroyed scope expects event payload being the "
+                            + TransactionScopedNotifier.TransactionId.class.getName() + " or "
+                            + UserTransaction.class.getName());
         }
-
         beforeDestroyedCount++;
     }
 

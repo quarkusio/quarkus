@@ -80,7 +80,7 @@
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <plexus-utils.version>3.3.0</plexus-utils.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
-        <graal-sdk.version>22.2.0</graal-sdk.version>
+        <graal-sdk.version>22.3.0</graal-sdk.version>
         <graal-svm.version>${graal-sdk.version}</graal-svm.version>
         <gizmo.version>1.4.0.Final</gizmo.version>
         <jackson-bom.version>2.13.4.20221013</jackson-bom.version>

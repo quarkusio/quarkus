@@ -16,7 +16,7 @@ import io.quarkus.runtime.util.ContainerRuntimeUtil;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class NativeConfig {
 
-    public static final String DEFAULT_GRAALVM_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.2-java17";
+    public static final String DEFAULT_GRAALVM_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3-java17";
     public static final String DEFAULT_MANDREL_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.2-java17";
 
     /**
@@ -211,7 +211,7 @@ public class NativeConfig {
 
     /**
      * The docker image to use to do the image build. It can be one of `graalvm`, `mandrel`, or the full image path, e.g.
-     * {@code quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.2-java17}.
+     * {@code quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17}.
      */
     @ConfigItem(defaultValue = "${platform.quarkus.native.builder-image}")
     public String builderImage;

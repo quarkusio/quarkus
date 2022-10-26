@@ -18,11 +18,11 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.processor.JavaBeanUtil;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.server.core.multipart.MultipartMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.core.multipart.MultipartOutputInjectionTarget;
 import org.jboss.resteasy.reactive.server.core.multipart.PartItem;
-import org.jboss.resteasy.reactive.server.processor.util.JavaBeanUtil;
 
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.ClassCreator;

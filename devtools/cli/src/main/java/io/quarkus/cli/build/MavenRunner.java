@@ -191,23 +191,19 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     @Override
-    public List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, DebugOptions debugOptions,
-            List<String> params) {
+    public List<Supplier<BuildCommandArgs>> prepareDevTestMode(boolean devMode, DevOptions commonOptions,
+            DebugOptions debugOptions, List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         List<String> jvmArgs = new ArrayList<>();
 
         setMavenProperties(args, false);
 
-        if (devOptions.clean) {
+        if (commonOptions.clean) {
             args.add("clean");
         }
-        args.add("quarkus:dev");
+        args.add(devMode ? "quarkus:dev" : "quarkus:test");
 
-        if (devOptions.skipTests()) { // TODO: does this make sense?
-            setSkipTests(args);
-        }
-
-        if (devOptions.offline) {
+        if (commonOptions.offline) {
             args.add("--offline");
         }
 
@@ -218,12 +214,7 @@ public class MavenRunner implements BuildSystemRunner {
         paramsToQuarkusArgs(params, args);
 
         BuildCommandArgs buildCommandArgs = prependExecutable(args);
-        return Collections.singletonList(new Supplier<BuildCommandArgs>() {
-            @Override
-            public BuildCommandArgs get() {
-                return buildCommandArgs;
-            }
-        });
+        return Collections.singletonList(() -> buildCommandArgs);
     }
 
     void setSkipTests(ArrayDeque<String> args) {

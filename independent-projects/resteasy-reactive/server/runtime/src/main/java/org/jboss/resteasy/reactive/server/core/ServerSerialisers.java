@@ -43,6 +43,8 @@ import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedMap;
+import org.jboss.resteasy.reactive.server.core.multipart.MultipartFormDataOutput;
+import org.jboss.resteasy.reactive.server.core.multipart.MultipartMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
 import org.jboss.resteasy.reactive.server.core.serialization.FixedEntityWriterArray;
 import org.jboss.resteasy.reactive.server.jaxrs.WriterInterceptorContextImpl;
@@ -134,6 +136,8 @@ public class ServerSerialisers extends Serialisers {
                     MediaType.WILDCARD),
             new Serialisers.BuiltinWriter(FilePart.class, ServerFilePartBodyHandler.class,
                     MediaType.WILDCARD),
+            new Serialisers.BuiltinWriter(MultipartFormDataOutput.class, MultipartMessageBodyWriter.class,
+                    MediaType.MULTIPART_FORM_DATA),
             new Serialisers.BuiltinWriter(java.nio.file.Path.class, ServerPathBodyHandler.class,
                     MediaType.WILDCARD),
             new Serialisers.BuiltinWriter(PathPart.class, ServerPathPartBodyHandler.class,

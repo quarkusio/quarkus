@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.server.core.multipart;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -9,7 +10,9 @@ import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
@@ -56,33 +59,39 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
 
         String boundary = generateBoundary();
         appendBoundaryIntoMediaType(requestContext, boundary, mediaType);
-        List<PartItem> formData = toFormData(o);
+        MultipartFormDataOutput formData;
+        if (o instanceof MultipartFormDataOutput) {
+            formData = (MultipartFormDataOutput) o;
+        } else {
+            formData = toFormData(o);
+        }
         write(formData, boundary, outputStream, requestContext);
     }
 
-    private List<PartItem> toFormData(Object o) {
+    private MultipartFormDataOutput toFormData(Object o) {
         String transformer = getGeneratedMapperClassNameFor(o.getClass().getName());
         BeanFactory.BeanInstance instance = new ReflectionBeanFactoryCreator().apply(transformer).createInstance();
         return ((MultipartOutputInjectionTarget) instance.getInstance()).mapFrom(o);
     }
 
-    private void write(List<PartItem> parts, String boundary, OutputStream outputStream,
+    private void write(MultipartFormDataOutput formDataOutput, String boundary, OutputStream outputStream,
             ResteasyReactiveRequestContext requestContext)
             throws IOException {
         Charset charset = requestContext.getDeployment().getRuntimeConfiguration().body().defaultCharset();
         String boundaryLine = "--" + boundary;
-        for (PartItem part : parts) {
-            Object partValue = part.getValue();
+        Map<String, PartItem> parts = formDataOutput.getFormData();
+        for (Map.Entry<String, PartItem> entry : parts.entrySet()) {
+            String partName = entry.getKey();
+            PartItem part = entry.getValue();
+            Object partValue = part.getEntity();
             if (partValue != null) {
                 if (isListOf(part, File.class) || isListOf(part, FileDownload.class)) {
-                    List<Object> list = (List<Object>) part.getValue();
+                    List<Object> list = (List<Object>) partValue;
                     for (int i = 0; i < list.size(); i++) {
-                        writePart(part.getName(), list.get(i), part.getType(),
-                                boundaryLine, charset, outputStream, requestContext);
+                        writePart(partName, list.get(i), part, boundaryLine, charset, outputStream, requestContext);
                     }
                 } else {
-                    writePart(part.getName(), part.getValue(), part.getType(),
-                            boundaryLine, charset, outputStream, requestContext);
+                    writePart(partName, partValue, part, boundaryLine, charset, outputStream, requestContext);
                 }
             }
         }
@@ -93,12 +102,13 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
 
     private void writePart(String partName,
             Object partValue,
-            MediaType partType,
+            PartItem part,
             String boundaryLine,
             Charset charset,
             OutputStream outputStream,
             ResteasyReactiveRequestContext requestContext) throws IOException {
 
+        MediaType partType = part.getMediaType();
         if (partValue instanceof FileDownload) {
             FileDownload fileDownload = (FileDownload) partValue;
             partValue = fileDownload.filePath().toFile();
@@ -110,11 +120,9 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
 
         // write boundary: --...
         writeLine(outputStream, boundaryLine, charset);
-        // write content disposition header
-        writeLine(outputStream, HttpHeaders.CONTENT_DISPOSITION + ": form-data; name=\"" + partName + "\""
-                + getFileNameIfFile(partValue), charset);
-        // write content content type
-        writeLine(outputStream, HttpHeaders.CONTENT_TYPE + ": " + partType, charset);
+        // write headers
+        writeHeaders(partName, partValue, part, charset, outputStream);
+
         // extra line
         writeLine(outputStream, charset);
 
@@ -124,11 +132,24 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
         writeLine(outputStream, charset);
     }
 
-    private String getFileNameIfFile(Object value) {
+    private void writeHeaders(String partName, Object partValue, PartItem part, Charset charset, OutputStream outputStream)
+            throws IOException {
+        part.getHeaders().put(HttpHeaders.CONTENT_DISPOSITION, List.of("form-data; name=\"" + partName + "\""
+                + getFileNameIfFile(partValue, part.getFilename())));
+        part.getHeaders().put(HttpHeaders.CONTENT_TYPE, List.of(part.getMediaType()));
+        for (Map.Entry<String, List<Object>> entry : part.getHeaders().entrySet()) {
+            writeLine(outputStream, entry.getKey() + ": " + entry.getValue().stream().map(String::valueOf)
+                    .collect(Collectors.joining("; ")), charset);
+        }
+    }
+
+    private String getFileNameIfFile(Object value, String partFileName) {
         if (value instanceof File) {
             return "; filename=\"" + ((File) value).getName() + "\"";
         } else if (value instanceof FileDownload) {
             return "; filename=\"" + ((FileDownload) value).fileName() + "\"";
+        } else if (partFileName != null) {
+            return partFileName;
         }
 
         return "";
@@ -163,10 +184,14 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
         boolean wrote = false;
         for (MessageBodyWriter<Object> writer : writers) {
             if (writer.isWriteable(entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType)) {
-                // FIXME: spec doesn't really say what headers we should use here
-                writer.writeTo(entity, entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType,
-                        Serialisers.EMPTY_MULTI_MAP, os);
-                wrote = true;
+                try (ByteArrayOutputStream writerOutput = new ByteArrayOutputStream()) {
+                    // FIXME: spec doesn't really say what headers we should use here
+                    writer.writeTo(entity, entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType,
+                            Serialisers.EMPTY_MULTI_MAP, writerOutput);
+                    writerOutput.writeTo(os);
+                    wrote = true;
+                }
+
                 break;
             }
         }
@@ -191,10 +216,10 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
     }
 
     private boolean isListOf(PartItem part, Class<?> paramType) {
-        if (!(part.getValue() instanceof Collection)) {
+        if (!(part.getEntity() instanceof Collection)) {
             return false;
         }
 
-        return paramType.getName().equals(part.getFirstParamType());
+        return paramType.getName().equals(part.getGenericType());
     }
 }

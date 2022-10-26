@@ -8,6 +8,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.jboss.resteasy.reactive.server.core.multipart.MultipartFormDataOutput;
+
 @Path("/multipart/output")
 public class MultipartOutputResource {
 
@@ -47,6 +49,20 @@ public class MultipartOutputResource {
         response.name = RESPONSE_NAME;
         response.file = TXT_FILE;
         return response;
+    }
+
+    @GET
+    @Path("/with-form-data")
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    public MultipartFormDataOutput withFormDataOutput() {
+        MultipartFormDataOutput form = new MultipartFormDataOutput();
+        form.addFormData("name", RESPONSE_NAME, MediaType.TEXT_PLAIN_TYPE);
+        form.addFormData("custom-surname", RESPONSE_SURNAME, MediaType.TEXT_PLAIN_TYPE);
+        form.addFormData("custom-status", RESPONSE_STATUS, MediaType.TEXT_PLAIN_TYPE)
+                .getHeaders().putSingle("extra-header", "extra-value");
+        form.addFormData("values", RESPONSE_VALUES, MediaType.TEXT_PLAIN_TYPE);
+        form.addFormData("active", RESPONSE_ACTIVE, MediaType.TEXT_PLAIN_TYPE);
+        return form;
     }
 
 }

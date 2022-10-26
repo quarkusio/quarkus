@@ -1180,7 +1180,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             convertible = true;
         } else if (restHeaderParam != null) {
             if (restHeaderParam.value() == null || restHeaderParam.value().asString().isEmpty()) {
-                builder.setName(StringUtil.hyphenate(sourceName));
+                builder.setName(StringUtil.hyphenateWithCapitalFirstLetter(sourceName));
             } else {
                 builder.setName(restHeaderParam.value().asString());
             }

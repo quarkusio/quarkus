@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.common.processor;
 
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 
 public class StringUtil {
@@ -81,5 +82,26 @@ public class StringUtil {
 
     public static String hyphenate(final String orig) {
         return String.join("-", (Iterable<String>) () -> camelHumpsIterator(orig));
+    }
+
+    /**
+     * Hyphenates every part of the original string, but also converts the first letter
+     * of every part into a capital letter
+     */
+    public static String hyphenateWithCapitalFirstLetter(final String orig) {
+        StringBuilder sb = new StringBuilder();
+        boolean isFirst = true;
+        Iterator<String> it = StringUtil.camelHumpsIterator(orig);
+        while (it.hasNext()) {
+            String part = it.next();
+            part = part.substring(0, 1).toUpperCase(Locale.ROOT) + part.substring(1);
+            if (isFirst) {
+                isFirst = false;
+            } else {
+                sb.append("-");
+            }
+            sb.append(part);
+        }
+        return sb.toString();
     }
 }

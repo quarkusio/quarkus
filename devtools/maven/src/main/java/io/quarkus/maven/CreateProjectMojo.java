@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.maven.execution.MavenSession;
@@ -55,6 +56,8 @@ import io.quarkus.registry.catalog.ExtensionCatalog;
  */
 @Mojo(name = "create", requiresProject = false)
 public class CreateProjectMojo extends AbstractMojo {
+    static final String BAD_IDENTIFIER = "The specified %s identifier (%s) contains invalid characters. Valid characters are alphanumeric (A-Za-z), underscore, dash and dot.";
+    static final Pattern OK_ID = Pattern.compile("[0-9A-Za-z_.-]+");
 
     private static final String DEFAULT_GROUP_ID = "org.acme";
     private static final String DEFAULT_ARTIFACT_ID = "code-with-quarkus";
@@ -262,6 +265,13 @@ public class CreateProjectMojo extends AbstractMojo {
         }
 
         askTheUserForMissingValues();
+        if (projectArtifactId != DEFAULT_ARTIFACT_ID && !OK_ID.matcher(projectArtifactId).matches()) {
+            throw new MojoExecutionException(String.format(BAD_IDENTIFIER, "artifactId", projectArtifactId));
+        }
+        if (projectGroupId != DEFAULT_GROUP_ID && !OK_ID.matcher(projectGroupId).matches()) {
+            throw new MojoExecutionException(String.format(BAD_IDENTIFIER, "groupId", projectGroupId));
+        }
+
         projectRoot = new File(outputDirectory, projectArtifactId);
         if (projectRoot.exists()) {
             throw new MojoExecutionException("Unable to create the project, " +

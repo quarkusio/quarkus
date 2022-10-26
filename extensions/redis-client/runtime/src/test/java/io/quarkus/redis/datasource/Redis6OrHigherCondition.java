@@ -10,26 +10,26 @@ import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.util.AnnotationUtils;
 
-class Redis7OrHigherCondition implements ExecutionCondition {
+class Redis6OrHigherCondition implements ExecutionCondition {
 
-    private static final ConditionEvaluationResult ENABLED_BY_DEFAULT = enabled("@RequiresRedis7OrHigher is not present");
+    private static final ConditionEvaluationResult ENABLED_BY_DEFAULT = enabled("@RequiresRedis6OrHigher is not present");
 
     @Override
     public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
-        Optional<RequiresRedis7OrHigher> optional = AnnotationUtils.findAnnotation(context.getElement(),
-                RequiresRedis7OrHigher.class);
+        Optional<RequiresRedis6OrHigher> optional = AnnotationUtils.findAnnotation(context.getElement(),
+                RequiresRedis6OrHigher.class);
 
         if (optional.isPresent()) {
             String version = RedisServerExtension.getRedisVersion();
 
-            return isRedis7orHigher(version) ? enabled("Redis " + version + " >= 7")
-                    : disabled("Disabled, Redis " + version + " < 7");
+            return isRedis6orHigher(version) ? enabled("Redis " + version + " >= 6")
+                    : disabled("Disabled, Redis " + version + " < 6");
         }
 
         return ENABLED_BY_DEFAULT;
     }
 
-    public static boolean isRedis7orHigher(String version) {
-        return Integer.parseInt(version.split("\\.")[0]) >= 7;
+    public static boolean isRedis6orHigher(String version) {
+        return Integer.parseInt(version.split("\\.")[0]) >= 6;
     }
 }

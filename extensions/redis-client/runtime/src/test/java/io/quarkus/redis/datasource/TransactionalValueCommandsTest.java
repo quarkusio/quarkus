@@ -15,6 +15,7 @@ import io.quarkus.redis.datasource.value.TransactionalValueCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 
+@RequiresRedis6OrHigher
 public class TransactionalValueCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource blocking;

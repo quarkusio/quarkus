@@ -19,6 +19,7 @@ import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
+@RequiresCommand("json.get")
 public class JsonCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource ds;

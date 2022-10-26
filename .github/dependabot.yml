@@ -42,6 +42,7 @@ updates:
       # Elytron
       - dependency-name: org.wildfly.security:wildfly-elytron
       - dependency-name: org.wildfly.security:wildfly-elytron-*
+      - dependency-name: org.wildfly.openssl:*
       # JDBC Drivers
       - dependency-name: org.postgresql:postgresql
       - dependency-name: org.mariadb.jdbc:mariadb-java-client

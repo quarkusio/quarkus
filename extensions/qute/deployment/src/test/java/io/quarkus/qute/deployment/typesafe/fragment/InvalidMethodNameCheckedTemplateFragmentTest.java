@@ -10,7 +10,6 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.qute.CheckedFragment;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateInstance;
@@ -36,7 +35,7 @@ public class InvalidMethodNameCheckedTemplateFragmentTest {
                 }
                 assertNotNull(te, t.getMessage());
                 assertEquals(
-                        "[item] is not a valid name of a checked fragment method: InvalidMethodNameCheckedTemplateFragmentTest$Templates.item()",
+                        "No template matching the path InvalidMethodNameCheckedTemplateFragmentTest/item could be found for: io.quarkus.qute.deployment.typesafe.fragment.InvalidMethodNameCheckedTemplateFragmentTest$Templates.item",
                         te.getMessage());
             });;
 
@@ -50,7 +49,6 @@ public class InvalidMethodNameCheckedTemplateFragmentTest {
 
         static native TemplateInstance items(List<Item> items);
 
-        @CheckedFragment
         static native TemplateInstance item(Item it);
     }
 

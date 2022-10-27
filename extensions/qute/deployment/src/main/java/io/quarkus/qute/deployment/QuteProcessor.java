@@ -151,6 +151,7 @@ public class QuteProcessor {
     private static final String CHECKED_TEMPLATE_REQUIRE_TYPE_SAFE = "requireTypeSafeExpressions";
     private static final String CHECKED_TEMPLATE_BASE_PATH = "basePath";
     private static final String CHECKED_TEMPLATE_DEFAULT_NAME = "defaultName";
+    private static final String IGNORE_FRAGMENTS = "ignoreFragments";
     private static final String BASE_PATH = "templates";
 
     private static final Set<String> ITERATION_METADATA_KEYS = Set.of("count", "index", "indexParity", "hasNext", "odd",
@@ -312,11 +313,7 @@ public class QuteProcessor {
                         throw new TemplateException("Incompatible checked template return type: " + methodInfo.returnType()
                                 + " only " + supportedAdaptors);
                 }
-                String fragmentId = null;
-                if (methodInfo.hasDeclaredAnnotation(Names.CHECKED_FRAGMENT)) {
-                    fragmentId = getCheckedFragmentId(methodInfo, annotation);
-                }
-
+                String fragmentId = getCheckedFragmentId(methodInfo, annotation);
                 StringBuilder templatePathBuilder = new StringBuilder();
                 AnnotationValue basePathValue = annotation.value(CHECKED_TEMPLATE_BASE_PATH);
                 if (basePathValue != null && !basePathValue.asString().equals(CheckedTemplate.DEFAULTED)) {
@@ -344,7 +341,8 @@ public class QuteProcessor {
                                 templatePath)) {
                     List<String> startsWith = new ArrayList<>();
                     for (String filePath : filePaths.getFilePaths()) {
-                        if (filePath.startsWith(templatePath)) {
+                        if (filePath.startsWith(templatePath)
+                                && filePath.charAt(templatePath.length()) == '.') {
                             startsWith.add(filePath);
                         }
                     }
@@ -402,20 +400,22 @@ public class QuteProcessor {
     }
 
     private String getCheckedFragmentId(MethodInfo method, AnnotationInstance checkedTemplateAnnotation) {
+        AnnotationValue ignoreFragmentsValue = checkedTemplateAnnotation.value(IGNORE_FRAGMENTS);
+        if (ignoreFragmentsValue != null && ignoreFragmentsValue.asBoolean()) {
+            return null;
+        }
+        String methodName = method.name();
+        // the id is the part after the last occurence of a dollar sign
+        int idx = methodName.lastIndexOf('$');
+        if (idx == -1 || idx == methodName.length()) {
+            return null;
+        }
         AnnotationValue nameValue = checkedTemplateAnnotation.value(CHECKED_TEMPLATE_DEFAULT_NAME);
         String defaultName;
         if (nameValue == null) {
             defaultName = CheckedTemplate.ELEMENT_NAME;
         } else {
             defaultName = nameValue.asString();
-        }
-        String methodName = method.name();
-        // the id is the part after the last occurence of a dollar sign
-        int idx = methodName.lastIndexOf('$');
-        if (idx == -1 || idx == methodName.length()) {
-            throw new TemplateException(
-                    "[" + method.name() + "] is not a valid name of a checked fragment method: "
-                            + method.declaringClass().name().withoutPackagePrefix() + "." + method.name() + "()");
         }
         return defaultedName(defaultName, methodName.substring(idx + 1, methodName.length()));
     }

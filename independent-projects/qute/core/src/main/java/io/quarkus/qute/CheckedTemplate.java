@@ -49,6 +49,33 @@ import java.lang.annotation.Target;
  *     }
  * }
  * </pre>
+ *
+ * <h2>Type-safe Fragments</h2>
+ *
+ * By default, a <code>native static</code> method with the name that contains a dollar sign {@code $} denotes a method that
+ * represents a fragment of a type-safe template. It's possible to ignore the fragments and effectively disable this
+ * feature via {@link CheckedTemplate#ignoreFragments()}.
+ * <p>
+ * The name of the fragment is derived from the annotated method name. The part before the last occurence of a dollar sign
+ * {@code $} is the method name of the related type-safe template. The part after the last occurence of a dollar sign is the
+ * fragment identifier - the strategy defined by the relevant {@link CheckedTemplate#defaultName()} is used.
+ * <p>
+ * Parameters of the annotated method are validated. The required names and types are derived from the relevant fragment
+ * template.
+ *
+ * <pre>
+ * &#64;CheckedTemplate
+ * class Templates {
+ *
+ *     // defines a type-safe template
+ *     static native TemplateInstance items(List&#60;Item&#62; items);
+ *
+ *     // defines a fragment of Templates#items() with identifier "item"
+ *     &#64;CheckedFragment
+ *     static native TemplateInstance items$item(Item item);
+ * }
+ * </pre>
+ *
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
@@ -112,5 +139,15 @@ public @interface CheckedTemplate {
      * @return the default name
      */
     String defaultName() default ELEMENT_NAME;
+
+    /**
+     * By default, a <code>native static</code> method with the name that contains a dollar sign {@code $} denotes a method that
+     * represents a fragment of a type-safe template. It's possible to ignore the fragments and effectively disable this
+     * feature.
+     *
+     * @return {@code true} if no method should be interpreted as a fragment, {@code false} otherwise
+     * @see Template#getFragment(String)
+     */
+    boolean ignoreFragments() default false;
 
 }

@@ -12,24 +12,25 @@ import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class CheckedTemplateFragmentTest {
+public class CheckedTemplateIgnoreFragmentsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot(root -> root
                     .addClasses(Templates.class, Item.class)
                     .addAsResource(new StringAsset(
-                            "{#each items}{#fragment id='item'}{it.name}{#if it.name.length > 5} is a long name{/if}{/fragment}{/each}"),
-                            "templates/CheckedTemplateFragmentTest/items.html"));
+                            "{#each items}{it.name}{/each}"),
+                            "templates/CheckedTemplateIgnoreFragmentsTest/items.html")
+                    .addAsResource(new StringAsset("{it.name}"),
+                            "templates/CheckedTemplateIgnoreFragmentsTest/items$item.html"));
 
     @Test
     public void testFragment() {
-        assertEquals("Foo", Templates.items(null).getFragment("item").data("it", new Item("Foo")).render());
+        assertEquals("Foo", Templates.items(List.of(new Item("Foo"))).render());
         assertEquals("Foo", Templates.items$item(new Item("Foo")).render());
-        assertEquals("FooAndBar is a long name", Templates.items$item(new Item("FooAndBar")).render());
     }
 
-    @CheckedTemplate
+    @CheckedTemplate(ignoreFragments = true)
     public static class Templates {
 
         static native TemplateInstance items(List<Item> items);

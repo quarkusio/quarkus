@@ -19,6 +19,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.AbstractAnnotationLiteral;
 import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.arc.processor.AnnotationLiteralProcessor.AnnotationLiteralClassInfo;
 import io.quarkus.arc.processor.AnnotationLiteralProcessor.CacheKey;
@@ -109,13 +110,14 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
         ClassCreator annotationLiteral = ClassCreator.builder()
                 .classOutput(classOutput)
                 .className(generatedName)
+                .superClass(AbstractAnnotationLiteral.class)
                 .interfaces(literal.annotationName().toString())
                 .build();
 
         MethodCreator constructor = annotationLiteral.getMethodCreator(Methods.INIT, "V",
                 literal.annotationMembers().stream().map(m -> m.returnType().name().toString()).toArray());
 
-        constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), constructor.getThis());
+        constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(AbstractAnnotationLiteral.class), constructor.getThis());
 
         int constructorParameterIndex = 0;
         for (MethodInfo annotationMember : literal.annotationMembers()) {

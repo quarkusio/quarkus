@@ -56,7 +56,7 @@
         <jboss-jaxrs-api_2.1_spec.version>2.0.1.Final</jboss-jaxrs-api_2.1_spec.version>
         <jakarta.json.version>1.1.6</jakarta.json.version>
         <mutiny.version>1.7.0</mutiny.version>
-        <smallrye-common.version>1.13.1</smallrye-common.version>
+        <smallrye-common.version>1.13.2</smallrye-common.version>
         <vertx.version>4.3.4</vertx.version>
         <rest-assured.version>4.5.1</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>

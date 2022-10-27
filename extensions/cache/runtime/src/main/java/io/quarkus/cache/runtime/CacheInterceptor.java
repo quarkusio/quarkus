@@ -62,13 +62,13 @@ public abstract class CacheInterceptor {
     private <T extends Annotation> Optional<CacheInterceptionContext<T>> getArcCacheInterceptionContext(
             InvocationContext invocationContext, Class<T> interceptorBindingClass) {
         Set<Annotation> bindings = InterceptorBindings.getInterceptorBindings(invocationContext);
-        if (bindings == null) {
+        if ((bindings == null) || bindings.isEmpty()) {
             LOGGER.trace("Interceptor bindings not found in ArC");
             // This should only happen when the interception is not managed by Arc.
             return Optional.empty();
         }
-        List<T> interceptorBindings = new ArrayList<>();
-        List<Short> cacheKeyParameterPositions = new ArrayList<>();
+        List<T> interceptorBindings = new ArrayList<>(bindings.size() / 2); // initial capacity is a heuristic here...
+        List<Short> cacheKeyParameterPositions = new ArrayList<>(bindings.size() / 2);
         for (Annotation binding : bindings) {
             if (binding instanceof CacheKeyParameterPositions) {
                 for (short position : ((CacheKeyParameterPositions) binding).value()) {

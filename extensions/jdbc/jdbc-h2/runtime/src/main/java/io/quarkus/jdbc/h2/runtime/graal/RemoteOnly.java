@@ -2,8 +2,8 @@ package io.quarkus.jdbc.h2.runtime.graal;
 
 import org.h2.engine.ConnectionInfo;
 
+import com.oracle.svm.core.AlwaysInline;
 import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.AlwaysInline;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 

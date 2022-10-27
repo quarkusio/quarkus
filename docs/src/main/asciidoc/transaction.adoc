@@ -300,6 +300,63 @@ And the node identifier needs to be stable over the transaction manager restarts
 
 The node name identifier may be configured via the property `quarkus.transaction-manager.node-name`.
 
+[[transaction-scope]]
+== Using `@TransactionScoped` to bind CDI beans to the transaction lifecycle
+
+You can define beans that live for as long as a transaction,
+and through CDI lifecycle events perform actions when a transaction starts and ends.
+
+Just assign the transaction xref:cdi.adoc#bean-scope[scope] to such beans using the `@TransactionScoped` annotation:
+
+[source,java]
+----
+@TransactionScoped
+public class MyTransactionScopedBean {
+
+    // The bean's state is bound to a specific transaction,
+    // and restored even after suspending then resuming the transaction.
+    int myData;
+
+    @PostConstruct
+    void onBeginTransaction() {
+        // This gets invoked after a transaction begins.
+    }
+
+    @PreDestroy
+    void onBeforeEndTransaction() {
+        // This gets invoked before a transaction ends (commit or rollback).
+    }
+}
+----
+
+Alternatively, if you don't necessarily need to hold state during the transaction,
+and just want to react to transaction start/end events,
+you can simply declare event listeners in a differently scoped bean:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyTransactionEventListeningBean {
+
+    void onBeginTransaction(@Observes @Initialized(TransactionScoped.class) Object event) {
+        // This gets invoked when a transaction begins.
+    }
+
+    void onBeforeEndTransaction(@Observes @BeforeDestroyed(TransactionScoped.class) Object event) {
+        // This gets invoked before a transaction ends (commit or rollback).
+    }
+
+    void onAfterEndTransaction(@Observes @Destroyed(TransactionScoped.class) Object event) {
+        // This gets invoked after a transaction ends (commit or rollback).
+    }
+}
+----
+
+NOTE: The `event` object represents the transaction ID, and defines `toString()`/`equals()`/`hashCode()` accordingly.
+
+TIP: In listener methods, you can access more information about the transaction in progress by accessing the `TransactionManager`,
+which is a CDI bean and can be ``@Inject``ed.
+
 == Why always having a transaction manager?
 
 Does it work everywhere I want to?::

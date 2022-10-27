@@ -167,13 +167,15 @@ This bean would be assignable to `@Inject @Superior Translator` and `@Inject @Su
 The reason is that `@Inject Translator` is automatically transformed to `@Inject @Default Translator` during typesafe resolution.
 And since our `SuperiorTranslator` does not declare `@Default` only the original `Translator` bean is assignable.
 
-== Looks good. What is the bean scope?
+[[bean-scope]]
+== [[looks-good-what-is-the-bean-scope]] Looks good. What is the bean scope?
 
 The scope of a bean determines the lifecycle of its instances, i.e. when and where an instance should be created and destroyed.
 
 NOTE: Every bean has exactly one scope.
 
-== What scopes can I actually use in my Quarkus application?
+[[bean-scope-available]]
+== [[what-scopes-can-i-actually-use-in-my-quarkus-application]] What scopes can I actually use in my Quarkus application?
 
 You can use all the built-in scopes mentioned by the specification except for `javax.enterprise.context.ConversationScoped`.
 
@@ -188,7 +190,7 @@ You can use all the built-in scopes mentioned by the specification except for `j
 |`@javax.enterprise.context.SessionScoped`   | This scope is backed by a `javax.servlet.http.HttpSession` object. It's only available if the `quarkus-undertow` extension is used.
 |===
 
-NOTE: There can be other custom scopes provided by Quarkus extensions. For example, `quarkus-narayana-jta` provides `javax.transaction.TransactionScoped`.
+NOTE: There can be other custom scopes provided by Quarkus extensions. For example, xref:transaction.adoc[`quarkus-narayana-jta`] provides xref:transaction.adoc#transaction-scope[`javax.transaction.TransactionScoped`].
 
 == `@ApplicationScoped` and `@Singleton` look very similar. Which one should I choose for my Quarkus application?
 

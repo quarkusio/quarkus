@@ -3,6 +3,11 @@ package io.quarkus.resteasy.test.security;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 
+import javax.annotation.security.RolesAllowed;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -19,7 +24,7 @@ public class DefaultRolesAllowedJaxRsTest {
                     .addClasses(PermitAllResource.class, UnsecuredResource.class,
                             TestIdentityProvider.class,
                             TestIdentityController.class,
-                            UnsecuredSubResource.class)
+                            UnsecuredSubResource.class, HelloResource.class)
                     .addAsResource(new StringAsset("quarkus.security.jaxrs.default-roles-allowed = admin\n"),
                             "application.properties"));
 
@@ -65,6 +70,17 @@ public class DefaultRolesAllowedJaxRsTest {
         assertStatus(path, 200, 200, 200);
     }
 
+    @Test
+    public void testNonEndpointMethodAreNotDenied() {
+        // ensure io.quarkus.resteasy.test.security.DefaultRolesAllowedJaxRsTest.HelloResource.getHello is not secured with RolesAllowedInterceptor
+        given().auth().preemptive()
+                .basic("user", "user")
+                .get("/hello")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("hello"));
+    }
+
     private void assertStatus(String path, int adminStatus, int userStatus, int anonStatus) {
         given().auth().preemptive()
                 .basic("admin", "admin").get(path)
@@ -77,6 +93,21 @@ public class DefaultRolesAllowedJaxRsTest {
         when().get(path)
                 .then()
                 .statusCode(anonStatus);
+
+    }
+
+    @Path("/hello")
+    public static class HelloResource {
+
+        @RolesAllowed("**")
+        @GET
+        public String hello() {
+            return getHello();
+        }
+
+        public String getHello() {
+            return "hello";
+        }
 
     }
 

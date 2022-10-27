@@ -1,6 +1,8 @@
 package io.quarkus.security.deployment;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
+import static io.quarkus.security.deployment.DotNames.DENY_ALL;
+import static io.quarkus.security.deployment.DotNames.ROLES_ALLOWED;
 import static io.quarkus.security.runtime.SecurityProviderUtils.findProviderIndex;
 
 import java.io.IOException;
@@ -77,8 +79,10 @@ import io.quarkus.security.runtime.interceptor.SecurityCheckStorageBuilder;
 import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.SecurityHandler;
 import io.quarkus.security.spi.AdditionalSecuredClassesBuildItem;
+import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
 import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.DevModeDisabledAuthorizationController;
+import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityCheckStorage;
 
@@ -415,6 +419,26 @@ public class SecurityProcessor {
         beans.produce(new AdditionalBeanBuildItem(SecurityHandler.class, SecurityConstrainer.class));
     }
 
+    /**
+     * Transform deprecated {@link AdditionalSecuredClassesBuildItem} to {@link AdditionalSecuredMethodsBuildItem}.
+     */
+    @BuildStep
+    void transformAdditionalSecuredClassesToMethods(List<AdditionalSecuredClassesBuildItem> additionalSecuredClassesBuildItems,
+            BuildProducer<AdditionalSecuredMethodsBuildItem> additionalSecuredMethodsBuildItemBuildProducer) {
+        for (AdditionalSecuredClassesBuildItem additionalSecuredClassesBuildItem : additionalSecuredClassesBuildItems) {
+            final Collection<MethodInfo> securedMethods = new ArrayList<>();
+            for (ClassInfo additionalSecuredClass : additionalSecuredClassesBuildItem.additionalSecuredClasses) {
+                for (MethodInfo method : additionalSecuredClass.methods()) {
+                    if (isPublicNonStaticNonConstructor(method)) {
+                        securedMethods.add(method);
+                    }
+                }
+            }
+            additionalSecuredMethodsBuildItemBuildProducer.produce(
+                    new AdditionalSecuredMethodsBuildItem(securedMethods, additionalSecuredClassesBuildItem.rolesAllowed));
+        }
+    }
+
     /*
      * The annotation store is not meant to be generally supported for security annotation.
      * It is only used here in order to be able to register the DenyAllInterceptor for
@@ -422,21 +446,21 @@ public class SecurityProcessor {
      */
     @BuildStep
     void transformSecurityAnnotations(BuildProducer<AnnotationsTransformerBuildItem> transformers,
-            List<AdditionalSecuredClassesBuildItem> additionalSecuredClasses,
+            List<AdditionalSecuredMethodsBuildItem> additionalSecuredMethods,
             SecurityBuildTimeConfig config) {
         if (config.denyUnannotated) {
             transformers.produce(new AnnotationsTransformerBuildItem(new DenyingUnannotatedTransformer()));
         }
-        if (!additionalSecuredClasses.isEmpty()) {
-            for (AdditionalSecuredClassesBuildItem securedClasses : additionalSecuredClasses) {
-                Set<String> additionalSecured = new HashSet<>();
-                for (ClassInfo additionalSecuredClass : securedClasses.additionalSecuredClasses) {
-                    additionalSecured.add(additionalSecuredClass.name().toString());
+        if (!additionalSecuredMethods.isEmpty()) {
+            for (AdditionalSecuredMethodsBuildItem securedMethods : additionalSecuredMethods) {
+                Collection<MethodDescription> additionalSecured = new HashSet<>();
+                for (MethodInfo additionalSecuredMethod : securedMethods.additionalSecuredMethods) {
+                    additionalSecured.add(createMethodDescription(additionalSecuredMethod));
                 }
-                if (securedClasses.rolesAllowed.isPresent()) {
+                if (securedMethods.rolesAllowed.isPresent()) {
                     transformers.produce(
                             new AnnotationsTransformerBuildItem(new AdditionalRolesAllowedTransformer(additionalSecured,
-                                    securedClasses.rolesAllowed.get())));
+                                    securedMethods.rolesAllowed.get())));
                 } else {
                     transformers.produce(
                             new AnnotationsTransformerBuildItem(
@@ -451,23 +475,22 @@ public class SecurityProcessor {
     void gatherSecurityChecks(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BeanArchiveIndexBuildItem beanArchiveBuildItem,
             BuildProducer<ApplicationClassPredicateBuildItem> classPredicate,
-            List<AdditionalSecuredClassesBuildItem> additionalSecuredClasses,
+            List<AdditionalSecuredMethodsBuildItem> additionalSecuredMethods,
             SecurityCheckRecorder recorder,
             List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config) {
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorageAppPredicate()));
 
-        final Map<DotName, AdditionalSecured> additionalSecured = new HashMap<>();
-        for (AdditionalSecuredClassesBuildItem securedClasses : additionalSecuredClasses) {
-            securedClasses.additionalSecuredClasses.forEach(c -> {
-                if (!additionalSecured.containsKey(c.name())) {
-                    additionalSecured.put(c.name(), new AdditionalSecured(c, securedClasses.rolesAllowed));
-                }
-            });
+        final Map<MethodDescription, AdditionalSecured> additionalSecured = new HashMap<>();
+        for (AdditionalSecuredMethodsBuildItem securedMethods : additionalSecuredMethods) {
+            for (MethodInfo m : securedMethods.additionalSecuredMethods) {
+                additionalSecured.putIfAbsent(createMethodDescription(m),
+                        new AdditionalSecured(m, securedMethods.rolesAllowed));
+            }
         }
 
         IndexView index = beanArchiveBuildItem.getIndex();
         Map<MethodInfo, SecurityCheck> securityChecks = gatherSecurityAnnotations(
-                index, additionalSecured, config.denyUnannotated, recorder);
+                index, additionalSecured.values(), config.denyUnannotated, recorder);
         for (AdditionalSecurityCheckBuildItem additionalSecurityCheck : additionalSecurityChecks) {
             securityChecks.put(additionalSecurityCheck.getMethodInfo(),
                     additionalSecurityCheck.getSecurityCheck());
@@ -499,41 +522,48 @@ public class SecurityProcessor {
 
     private Map<MethodInfo, SecurityCheck> gatherSecurityAnnotations(
             IndexView index,
-            Map<DotName, AdditionalSecured> additionalSecuredClasses, boolean denyUnannotated, SecurityCheckRecorder recorder) {
+            Collection<AdditionalSecured> additionalSecuredMethods, boolean denyUnannotated, SecurityCheckRecorder recorder) {
 
         Map<MethodInfo, AnnotationInstance> methodToInstanceCollector = new HashMap<>();
         Map<ClassInfo, AnnotationInstance> classAnnotations = new HashMap<>();
         Map<MethodInfo, SecurityCheck> result = new HashMap<>(gatherSecurityAnnotations(
-                index, DotNames.ROLES_ALLOWED, methodToInstanceCollector, classAnnotations,
+                index, ROLES_ALLOWED, methodToInstanceCollector, classAnnotations,
                 (instance -> recorder.rolesAllowed(instance.value().asStringArray()))));
         result.putAll(gatherSecurityAnnotations(index, DotNames.PERMIT_ALL, methodToInstanceCollector, classAnnotations,
                 (instance -> recorder.permitAll())));
         result.putAll(gatherSecurityAnnotations(index, DotNames.AUTHENTICATED, methodToInstanceCollector, classAnnotations,
                 (instance -> recorder.authenticated())));
 
-        result.putAll(gatherSecurityAnnotations(index, DotNames.DENY_ALL, methodToInstanceCollector, classAnnotations,
+        result.putAll(gatherSecurityAnnotations(index, DENY_ALL, methodToInstanceCollector, classAnnotations,
                 (instance -> recorder.denyAll())));
 
         /*
-         * Handle additional secured classes by adding the denyAll check to all public non-static methods
-         * that don't have security annotations
+         * Handle additional secured methods by adding the denyAll/rolesAllowed check to all public non-static methods
+         * that don't have same security annotations
          */
-        for (Map.Entry<DotName, AdditionalSecured> additionalSecureClassInfo : additionalSecuredClasses.entrySet()) {
-            for (MethodInfo methodInfo : additionalSecureClassInfo.getValue().classInfo.methods()) {
-                if (!isPublicNonStaticNonConstructor(methodInfo)) {
-                    continue;
+        for (AdditionalSecured additionalSecuredMethod : additionalSecuredMethods) {
+            if (!isPublicNonStaticNonConstructor(additionalSecuredMethod.methodInfo)) {
+                continue;
+            }
+            AnnotationInstance alreadyExistingInstance = methodToInstanceCollector.get(additionalSecuredMethod.methodInfo);
+            if (additionalSecuredMethod.rolesAllowed.isPresent()) {
+                if (alreadyExistingInstance == null) {
+                    result.put(additionalSecuredMethod.methodInfo, recorder
+                            .rolesAllowed(additionalSecuredMethod.rolesAllowed.get().toArray(String[]::new)));
+                } else if (alreadyHasAnnotation(alreadyExistingInstance, ROLES_ALLOWED)) {
+                    // we should not try to add second @RolesAllowed
+                    throw new IllegalStateException("Method " + additionalSecuredMethod.methodInfo.declaringClass() + "#"
+                            + additionalSecuredMethod.methodInfo.name() + " should not have been added as an additional "
+                            + "secured method as it's already annotated with @RolesAllowed.");
                 }
-                AnnotationInstance alreadyExistingInstance = methodToInstanceCollector.get(methodInfo);
-                if ((alreadyExistingInstance == null)) {
-                    if (additionalSecureClassInfo.getValue().rolesAllowed.isPresent()) {
-                        result.put(methodInfo, recorder
-                                .rolesAllowed(additionalSecureClassInfo.getValue().rolesAllowed.get().toArray(String[]::new)));
-                    } else {
-                        result.put(methodInfo, recorder.denyAll());
-                    }
-                } else if (alreadyExistingInstance.target().kind() == AnnotationTarget.Kind.CLASS) {
-                    throw new IllegalStateException("Class " + methodInfo.declaringClass()
-                            + " should not have been added as an additional secured class");
+            } else {
+                if (alreadyExistingInstance == null) {
+                    result.put(additionalSecuredMethod.methodInfo, recorder.denyAll());
+                } else if (alreadyHasAnnotation(alreadyExistingInstance, DENY_ALL)) {
+                    // we should not try to add second @DenyAll
+                    throw new IllegalStateException("Method " + additionalSecuredMethod.methodInfo.declaringClass() + "#"
+                            + additionalSecuredMethod.methodInfo.name() + " should not have been added as an additional "
+                            + "secured method as it's already annotated with @DenyAll.");
                 }
             }
         }
@@ -561,6 +591,11 @@ public class SecurityProcessor {
         }
 
         return result;
+    }
+
+    private boolean alreadyHasAnnotation(AnnotationInstance alreadyExistingInstance, DotName annotationName) {
+        return alreadyExistingInstance.target().kind() == AnnotationTarget.Kind.METHOD
+                && alreadyExistingInstance.name().equals(annotationName);
     }
 
     private boolean isPublicNonStaticNonConstructor(MethodInfo methodInfo) {
@@ -638,13 +673,22 @@ public class SecurityProcessor {
         return AdditionalBeanBuildItem.builder().addBeanClass(controllerClass).build();
     }
 
+    static MethodDescription createMethodDescription(MethodInfo additionalSecuredMethod) {
+        String[] paramTypes = new String[additionalSecuredMethod.parametersCount()];
+        for (int i = 0; i < additionalSecuredMethod.parametersCount(); i++) {
+            paramTypes[i] = additionalSecuredMethod.parameterTypes().get(i).name().toString();
+        }
+        return new MethodDescription(additionalSecuredMethod.declaringClass().name().toString(), additionalSecuredMethod.name(),
+                paramTypes);
+    }
+
     static class AdditionalSecured {
 
-        final ClassInfo classInfo;
+        final MethodInfo methodInfo;
         final Optional<List<String>> rolesAllowed;
 
-        AdditionalSecured(ClassInfo classInfo, Optional<List<String>> rolesAllowed) {
-            this.classInfo = classInfo;
+        AdditionalSecured(MethodInfo methodInfo, Optional<List<String>> rolesAllowed) {
+            this.methodInfo = methodInfo;
             this.rolesAllowed = rolesAllowed;
         }
     }

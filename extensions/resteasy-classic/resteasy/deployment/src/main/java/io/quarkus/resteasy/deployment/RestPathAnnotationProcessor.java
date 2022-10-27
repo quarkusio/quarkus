@@ -1,6 +1,5 @@
 package io.quarkus.resteasy.deployment;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -81,18 +80,15 @@ public class RestPathAnnotationProcessor {
                 MethodInfo methodInfo = target.asMethod();
                 ClassInfo classInfo = methodInfo.declaringClass();
 
-                AnnotationInstance annotation = methodInfo.annotation(REST_PATH);
-                if (annotation == null) {
-                    // Check for @Path on class and not method
-                    if (!isRestEndpointMethod(methodInfo.annotations())) {
-                        return;
-                    }
+                if (!isRestEndpointMethod(methodInfo)) {
+                    return;
                 }
                 // Don't create annotations for rest clients
                 if (classInfo.classAnnotation(REGISTER_REST_CLIENT) != null) {
                     return;
                 }
 
+                AnnotationInstance annotation = methodInfo.annotation(REST_PATH);
                 StringBuilder stringBuilder;
                 if (annotation != null) {
                     stringBuilder = new StringBuilder(slashify(annotation.value().asString()));
@@ -138,17 +134,18 @@ public class RestPathAnnotationProcessor {
         return '/' + path;
     }
 
-    boolean isRestEndpointMethod(List<AnnotationInstance> annotations) {
-        boolean isRestEndpointMethod = false;
+    static boolean isRestEndpointMethod(MethodInfo methodInfo) {
 
-        for (AnnotationInstance annotation : annotations) {
-            if (ResteasyDotNames.JAXRS_METHOD_ANNOTATIONS.contains(annotation.name())) {
-                isRestEndpointMethod = true;
-                break;
+        if (!methodInfo.hasAnnotation(REST_PATH)) {
+            // Check for @Path on class and not method
+            for (AnnotationInstance annotation : methodInfo.annotations()) {
+                if (ResteasyDotNames.JAXRS_METHOD_ANNOTATIONS.contains(annotation.name())) {
+                    return true;
+                }
             }
+            return false;
         }
-
-        return isRestEndpointMethod;
+        return true;
     }
 
     private boolean notRequired(Capabilities capabilities,

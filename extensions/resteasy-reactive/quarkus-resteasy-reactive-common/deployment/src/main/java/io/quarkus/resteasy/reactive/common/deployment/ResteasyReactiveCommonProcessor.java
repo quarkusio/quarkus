@@ -1,10 +1,13 @@
 package io.quarkus.resteasy.reactive.common.deployment;
 
+import static io.quarkus.security.spi.SecurityTransformerUtils.hasSecurityAnnotation;
 import static org.jboss.resteasy.reactive.common.model.ResourceInterceptor.FILTER_SOURCE_METHOD_METADATA_KEY;
+import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.collectClassEndpoints;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +21,6 @@ import javax.ws.rs.Priorities;
 import javax.ws.rs.ext.RuntimeDelegate;
 
 import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
@@ -61,8 +63,7 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.ReaderInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.WriterInterceptorBuildItem;
-import io.quarkus.security.spi.AdditionalSecuredClassesBuildItem;
-import io.quarkus.security.spi.SecurityTransformerUtils;
+import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
 
 public class ResteasyReactiveCommonProcessor {
 
@@ -72,33 +73,42 @@ public class ResteasyReactiveCommonProcessor {
     @BuildStep
     void setUpDenyAllJaxRs(
             CombinedIndexBuildItem index,
-            ResteasyReactiveConfig rrConfig,
             JaxRsSecurityConfig securityConfig,
             Optional<ResourceScanningResultBuildItem> resteasyDeployment,
-            BuildProducer<AdditionalSecuredClassesBuildItem> additionalSecuredClasses) {
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem,
+            BuildProducer<AdditionalSecuredMethodsBuildItem> additionalSecuredClasses) {
 
-        if (securityConfig.denyJaxRs() && resteasyDeployment.isPresent()) {
-            List<ClassInfo> classes = new ArrayList<>();
+        if (resteasyDeployment.isPresent()
+                && (securityConfig.denyJaxRs() || securityConfig.defaultRolesAllowed().isPresent())) {
+            final List<MethodInfo> methods = new ArrayList<>();
+            Map<DotName, String> httpAnnotationToMethod = resteasyDeployment.get().getResult().getHttpAnnotationToMethod();
             Set<DotName> resourceClasses = resteasyDeployment.get().getResult().getScannedResourcePaths().keySet();
+
             for (DotName className : resourceClasses) {
                 ClassInfo classInfo = index.getIndex().getClassByName(className);
-                if (!SecurityTransformerUtils.hasSecurityAnnotation(classInfo)) {
-                    classes.add(classInfo);
+                if (!hasSecurityAnnotation(classInfo)) {
+                    // collect class endpoints
+                    Collection<MethodInfo> classEndpoints = collectClassEndpoints(classInfo, httpAnnotationToMethod,
+                            beanArchiveIndexBuildItem.getIndex(), applicationResultBuildItem.getResult());
+
+                    // add endpoints
+                    for (MethodInfo classEndpoint : classEndpoints) {
+                        if (!hasSecurityAnnotation(classEndpoint)) {
+                            methods.add(classEndpoint);
+                        }
+                    }
                 }
             }
 
-            additionalSecuredClasses.produce(new AdditionalSecuredClassesBuildItem(classes));
-        } else if (securityConfig.defaultRolesAllowed().isPresent() && resteasyDeployment.isPresent()) {
-            List<ClassInfo> classes = new ArrayList<>();
-            Set<DotName> resourceClasses = resteasyDeployment.get().getResult().getScannedResourcePaths().keySet();
-            for (DotName className : resourceClasses) {
-                ClassInfo classInfo = index.getIndex().getClassByName(className);
-                if (!SecurityTransformerUtils.hasSecurityAnnotation(classInfo)) {
-                    classes.add(classInfo);
+            if (!methods.isEmpty()) {
+                if (securityConfig.denyJaxRs()) {
+                    additionalSecuredClasses.produce(new AdditionalSecuredMethodsBuildItem(methods));
+                } else {
+                    additionalSecuredClasses
+                            .produce(new AdditionalSecuredMethodsBuildItem(methods, securityConfig.defaultRolesAllowed()));
                 }
             }
-            additionalSecuredClasses
-                    .produce(new AdditionalSecuredClassesBuildItem(classes, securityConfig.defaultRolesAllowed()));
         }
     }
 

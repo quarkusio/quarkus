@@ -3,6 +3,7 @@ package io.quarkus.resteasy.reactive.server.test.security;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 
+import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,7 @@ public class DenyAllJaxRsTest {
                     .addClasses(PermitAllResource.class, UnsecuredResource.class,
                             TestIdentityProvider.class,
                             TestIdentityController.class,
-                            UnsecuredSubResource.class)
+                            UnsecuredSubResource.class, HelloResource.class)
                     .addAsResource(new StringAsset("quarkus.security.jaxrs.deny-unannotated-endpoints = true\n"),
                             "application.properties"));
 
@@ -78,6 +79,15 @@ public class DenyAllJaxRsTest {
     public void shouldAllowPermitAllClass() {
         String path = "/permitAll/sub/subMethod";
         assertStatus(path, 200, 200);
+    }
+
+    @Test
+    public void testServerExceptionMapper() {
+        given()
+                .get("/hello")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("unauthorizedExceptionMapper"));
     }
 
     private void assertStatus(String path, int status, int anonStatus) {

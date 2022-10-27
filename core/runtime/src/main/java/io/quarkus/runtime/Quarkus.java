@@ -4,6 +4,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.function.BiConsumer;
 
+import org.crac.Context;
+import org.crac.Core;
+import org.crac.Resource;
 import org.jboss.logging.Logger;
 
 import io.quarkus.launcher.QuarkusLauncher;
@@ -185,4 +188,105 @@ public class Quarkus {
             app.awaitShutdown();
         }
     }
+
+    private static class QuarkusCracBootstrapResource implements Resource {
+        @Override
+        public void beforeCheckpoint(Context<? extends Resource> context) throws Exception {
+
+        }
+
+        @Override
+        public void afterRestore(Context<? extends Resource> context) throws Exception {
+            manualStart();
+            Logger.getLogger(Quarkus.class).info("Started Quarkus via CRAC afterRestore()");
+        }
+    }
+
+    private static Application manualApp;
+    private static final int MANUAL_BEGIN = 0;
+    private static final int MANUAL_BEGIN_INITIALIZATION = 1;
+    private static final int MANUAL_INITALIZED = 2;
+    private static final int MANUAL_STARTING = 3;
+    private static final int MANUAL_STARTED = 4;
+    private static final int MANUAL_FAILURE = 5;
+    private static volatile int manualState = MANUAL_BEGIN;
+    private static final Object manualLock = new Object();
+
+    /**
+     * Manual initialization of Quarkus runtime in cases where
+     * Quarkus does not have control over main() i.e. Lambda or Azure Functions.
+     *
+     * This method will trigger static initialization for
+     * Quarkus and register a handler for CRAC.
+     *
+     */
+    public static void manualInitialize() {
+        int tmpState = manualState;
+        if (tmpState == MANUAL_FAILURE)
+            throw new RuntimeException("Quarkus manual bootstrap failed");
+        if (tmpState > MANUAL_BEGIN)
+            return;
+        synchronized (manualLock) {
+            tmpState = manualState;
+            if (tmpState > MANUAL_BEGIN)
+                return;
+            if (tmpState == MANUAL_FAILURE)
+                throw new RuntimeException("Quarkus manual bootstrap failed");
+            manualState = tmpState = MANUAL_BEGIN_INITIALIZATION;
+        }
+
+        try {
+            // if Application instantiation is removed from manualInit()
+            // then Class.forName() should for class static initialization of ApplicationImpl
+            Class appClass = Class.forName("io.quarkus.runner.ApplicationImpl");
+            manualApp = (Application) appClass.getDeclaredConstructor().newInstance();
+            manualState = MANUAL_INITALIZED;
+            Core.getGlobalContext().register(new QuarkusCracBootstrapResource());
+        } catch (Exception e) {
+            manualState = MANUAL_FAILURE;
+            throw new RuntimeException("Quarkus manual initialization failed", e);
+        }
+    }
+
+    /**
+     * Manual startup of Quarkus runtime in cases where
+     * Quarkus does not have control over main() i.e. Lambda or Azure Functions.
+     *
+     * This method will call Application.start() and register shutdown hook
+     * It will fail if Quarkus.manualInitialize() has not been called.
+     *
+     *
+     */
+    public static void manualStart() {
+        int tmpState = manualState;
+        if (tmpState == MANUAL_FAILURE)
+            throw new IllegalStateException("Quarkus failed to start up");
+        if (tmpState >= MANUAL_STARTING)
+            return;
+        synchronized (manualLock) {
+            tmpState = manualState;
+            if (tmpState == MANUAL_FAILURE)
+                throw new RuntimeException("Quarkus manual bootstrap failed");
+            if (tmpState >= MANUAL_STARTING)
+                return;
+            if (tmpState != MANUAL_INITALIZED)
+                throw new IllegalStateException("Quarkus manual start cannot proceed as manual initialization did not run");
+            manualState = tmpState = MANUAL_STARTING;
+        }
+        try {
+            String[] args = {};
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                @Override
+                public void run() {
+                    manualApp.stop();
+                }
+            });
+            manualApp.start(args);
+        } catch (RuntimeException e) {
+            manualState = MANUAL_FAILURE;
+            throw e;
+        }
+        manualState = MANUAL_STARTED;
+    }
+
 }

@@ -21,16 +21,15 @@ public class EnversConfigurationPerPUTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(MyAuditedEntity.class)
-                    .addAsResource("application-multiple-pu.properties", "application.properties"));
-    //            .withConfigurationResource("application-multiple-pu.properties");
+                    .addClasses(MyAuditedEntity.class))
+            .withConfigurationResource("application-multiple-pu.properties");
 
     @Inject
     EntityManagerFactory emf;
 
     @Inject
     @PersistenceUnit("db1")
-    EntityManager em;
+    EntityManager em1;
 
     @Inject
     @PersistenceUnit("db2")

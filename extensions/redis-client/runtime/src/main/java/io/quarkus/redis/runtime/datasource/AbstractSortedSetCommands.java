@@ -28,6 +28,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.ParameterValidation;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.ResponseType;
 
 class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
 
@@ -733,22 +734,37 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
 
     final List<ScoredValue<V>> decodeAsListOfScoredValues(Response response) {
         List<ScoredValue<V>> list = new ArrayList<>();
-
-        for (Response r : response) {
-            list.add(decodeAsScoredValue(r));
+        if (response.iterator().next().type() == ResponseType.BULK) {
+            // Redis 5
+            V current = null;
+            for (Response nested : response) {
+                if (current == null) {
+                    current = decodeV(nested);
+                } else {
+                    list.add(ScoredValue.of(current, nested.toDouble()));
+                    current = null;
+                }
+            }
+            return list;
+        } else {
+            for (Response r : response) {
+                list.add(decodeAsScoredValue(r));
+            }
+            return list;
         }
 
-        return list;
     }
 
     ScoredValue<V> decodeAsScoredValue(Response r) {
         if (r == null || r.getDelegate() == null) {
             return null;
         }
+
         if (r.size() == 0) {
             return ScoredValue.empty();
         }
         return ScoredValue.of(decodeV(r.get(0)), r.get(1).toDouble());
+
     }
 
     Double decodeAsDouble(Response r) {

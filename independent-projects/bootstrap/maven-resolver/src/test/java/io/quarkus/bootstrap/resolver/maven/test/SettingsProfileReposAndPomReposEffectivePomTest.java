@@ -17,6 +17,7 @@ public class SettingsProfileReposAndPomReposEffectivePomTest extends BootstrapMa
         Files.createDirectories(mvn.getCurrentProjectBaseDir().resolve("target"));
         assertEquals(
                 Arrays.asList(
+                        newRepo("common-repo", "https://common.settings"),
                         newRepo("settings-central", "https://settings.central"),
                         newRepo("central", "https://pom.central"),
                         newRepo("other-pom-repo", "https://pom.other")),

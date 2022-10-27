@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.BuildOptions;
 import io.quarkus.cli.common.CategoryListFormatOptions;
@@ -178,23 +177,20 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, DebugOptions debugOptions,
-            List<String> params) {
+    public List<Supplier<BuildCommandArgs>> prepareDevTestMode(boolean devMode, DevOptions commonOptions,
+            DebugOptions debugOptions, List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         List<String> jvmArgs = new ArrayList<>();
 
         setGradleProperties(args, false);
 
-        if (devOptions.clean) {
+        if (commonOptions.clean) {
             args.add("clean");
         }
-        args.add("quarkusDev");
 
-        if (devOptions.skipTests()) { // TODO: does this make sense for dev mode?
-            setSkipTests(args);
-        }
+        args.add(devMode ? "quarkusDev" : "quarkusTest");
 
-        if (devOptions.offline) {
+        if (commonOptions.offline) {
             args.add("--offline");
         }
 
@@ -206,27 +202,19 @@ public class GradleRunner implements BuildSystemRunner {
 
         try {
             Path outputFile = Files.createTempFile("quarkus-dev", ".txt");
-            args.add("-Dio.quarkus.devmode-args=" + outputFile.toAbsolutePath().toString());
+            if (devMode) {
+                args.add("-Dio.quarkus.devmode-args=" + outputFile.toAbsolutePath());
+            }
 
             BuildCommandArgs buildCommandArgs = prependExecutable(args);
-            return Arrays.asList(new Supplier<BuildCommandArgs>() {
-                @Override
-                public BuildCommandArgs get() {
-                    return buildCommandArgs;
-                }
-            }, new Supplier<BuildCommandArgs>() {
-                @Override
-                public BuildCommandArgs get() {
-                    try {
-                        List<String> lines = Files.readAllLines(outputFile).stream().filter(s -> !s.isBlank())
-                                .collect(Collectors.toList());
-                        BuildCommandArgs cmd = new BuildCommandArgs();
-                        cmd.arguments = lines.toArray(new String[0]);
-                        cmd.targetDirectory = buildCommandArgs.targetDirectory;
-                        return cmd;
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+            return Arrays.asList(() -> buildCommandArgs, () -> {
+                try {
+                    BuildCommandArgs cmd = new BuildCommandArgs();
+                    cmd.arguments = Files.readAllLines(outputFile).stream().filter(s -> !s.isBlank()).toArray(String[]::new);
+                    cmd.targetDirectory = buildCommandArgs.targetDirectory;
+                    return cmd;
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
             });
         } catch (IOException e) {

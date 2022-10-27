@@ -292,7 +292,7 @@ jobs:
           fetch-depth: 0
       - name: Add quarkusio remote
         shell: bash
-        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
+        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
 
       - name: apt clean
         if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
@@ -632,7 +632,7 @@ jobs:
           fetch-depth: 0
       - name: Add quarkusio remote
         shell: bash
-        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
+        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11

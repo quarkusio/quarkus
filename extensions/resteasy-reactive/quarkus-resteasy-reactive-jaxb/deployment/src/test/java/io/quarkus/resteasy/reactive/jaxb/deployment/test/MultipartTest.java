@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
@@ -14,7 +15,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
@@ -76,6 +76,20 @@ public class MultipartTest {
     }
 
     @Test
+    public void testInputParam() {
+        String response = RestAssured
+                .given()
+                .multiPart("name", "John")
+                .multiPart("school", SCHOOL, MediaType.APPLICATION_XML)
+                .post("/multipart/param/input")
+                .then()
+                .statusCode(200)
+                .extract().asString();
+
+        assertThat(response).isEqualTo("John-Divino Pastor");
+    }
+
+    @Test
     public void testInputFile() throws IOException {
         String response = RestAssured
                 .given()
@@ -113,14 +127,22 @@ public class MultipartTest {
         @POST
         @Path("/input")
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        public String input(@MultipartForm MultipartInput input) {
+        public String input(@BeanParam MultipartInput input) {
             return input.name + "-" + input.school.name;
+        }
+
+        @POST
+        @Path("/param/input")
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        public String input(@RestForm String name,
+                @RestForm @PartType(MediaType.APPLICATION_XML) School school) {
+            return name + "-" + school.name;
         }
 
         @POST
         @Path("/input/file")
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        public int inputFile(@MultipartForm FileUploadData data) throws IOException {
+        public int inputFile(@BeanParam FileUploadData data) throws IOException {
             return Files.readAllBytes(data.fileUpload.filePath()).length;
         }
 

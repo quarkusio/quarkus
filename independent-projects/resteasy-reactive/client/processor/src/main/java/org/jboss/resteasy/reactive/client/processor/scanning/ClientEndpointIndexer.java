@@ -137,10 +137,21 @@ public class ClientEndpointIndexer
             Type paramType, ClientIndexedParam parameterResult, String name, String defaultValue, ParameterType type,
             String elementType, boolean single, String signature) {
         DeclaredTypes declaredTypes = getDeclaredTypes(paramType, currentClassInfo, actualEndpointInfo);
+        String mimePart = getPartMime(parameterResult.getAnns());
+        String partFileName = getPartFileName(parameterResult.getAnns());
         return new MethodParameter(name,
                 elementType, declaredTypes.getDeclaredType(), declaredTypes.getDeclaredUnresolvedType(), signature, type,
                 single,
-                defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded);
+                defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
+                mimePart, partFileName);
+    }
+
+    private String getPartFileName(Map<DotName, AnnotationInstance> annotations) {
+        AnnotationInstance partFileName = annotations.get(ResteasyReactiveDotNames.PART_FILE_NAME);
+        if (partFileName != null && partFileName.value() != null) {
+            return partFileName.value().asString();
+        }
+        return null;
     }
 
     @Override

@@ -1,6 +1,7 @@
 
 package io.quarkus.kubernetes.deployment;
 
+import static io.dekorate.kubernetes.decorator.AddServiceResourceDecorator.distinct;
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
@@ -19,6 +20,8 @@ import java.util.stream.Stream;
 import io.dekorate.kubernetes.annotation.ServiceType;
 import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.config.IngressBuilder;
+import io.dekorate.kubernetes.config.IngressRuleBuilder;
+import io.dekorate.kubernetes.config.Port;
 import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddIngressTlsDecorator;
@@ -172,6 +175,25 @@ public class VanillaKubernetesProcessor {
             for (Map.Entry<String, String> annotation : config.ingress.annotations.entrySet()) {
                 result.add(new DecoratorBuildItem(KUBERNETES,
                         new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), INGRESS)));
+            }
+            // TODO: Workaround for https://github.com/quarkusio/quarkus/issues/28812
+            // We need to remove the duplicate paths of the generated Ingress. The following logic can be removed after
+            // bumping the next Dekorate version that includes the fix: https://github.com/dekorateio/dekorate/pull/1092.
+            result.add(new DecoratorBuildItem(KUBERNETES, new RemoveDuplicateIngressRuleDecorator(name)));
+            Optional<Port> defaultHostPort = KubernetesCommonHelper.combinePorts(ports, config).values().stream()
+                    .filter(distinct(p -> p.getName()))
+                    .findFirst();
+
+            for (IngressRuleConfig rule : config.ingress.rules.values()) {
+                result.add(new DecoratorBuildItem(KUBERNETES, new ChangeIngressRuleDecorator(name, defaultHostPort,
+                        new IngressRuleBuilder()
+                                .withHost(rule.host)
+                                .withPath(rule.path)
+                                .withPathType(rule.pathType)
+                                .withServiceName(rule.serviceName.orElse(null))
+                                .withServicePortName(rule.servicePortName.orElse(null))
+                                .withServicePortNumber(rule.servicePortNumber.orElse(-1))
+                                .build())));
             }
         }
 

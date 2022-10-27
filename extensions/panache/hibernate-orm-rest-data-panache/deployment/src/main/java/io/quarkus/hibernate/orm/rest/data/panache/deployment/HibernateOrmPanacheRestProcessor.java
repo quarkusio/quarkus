@@ -67,11 +67,11 @@ class HibernateOrmPanacheRestProcessor {
     void findEntityResources(CombinedIndexBuildItem index,
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer) {
-        ResourceImplementor resourceImplementor = new ResourceImplementor(new EntityClassHelper(index.getIndex()));
+        ResourceImplementor resourceImplementor = new ResourceImplementor(new EntityClassHelper(index.getComputingIndex()));
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
-        for (ClassInfo classInfo : index.getIndex().getKnownDirectImplementors(PANACHE_ENTITY_RESOURCE_INTERFACE)) {
-            validateResource(index.getIndex(), classInfo);
+        for (ClassInfo classInfo : index.getComputingIndex().getKnownDirectImplementors(PANACHE_ENTITY_RESOURCE_INTERFACE)) {
+            validateResource(index.getComputingIndex(), classInfo);
 
             List<Type> generics = getGenericTypes(classInfo);
             String resourceInterface = classInfo.name().toString();
@@ -95,11 +95,12 @@ class HibernateOrmPanacheRestProcessor {
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer) {
-        ResourceImplementor resourceImplementor = new ResourceImplementor(new EntityClassHelper(index.getIndex()));
+        ResourceImplementor resourceImplementor = new ResourceImplementor(new EntityClassHelper(index.getComputingIndex()));
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
-        for (ClassInfo classInfo : index.getIndex().getKnownDirectImplementors(PANACHE_REPOSITORY_RESOURCE_INTERFACE)) {
-            validateResource(index.getIndex(), classInfo);
+        for (ClassInfo classInfo : index.getComputingIndex()
+                .getKnownDirectImplementors(PANACHE_REPOSITORY_RESOURCE_INTERFACE)) {
+            validateResource(index.getComputingIndex(), classInfo);
 
             List<Type> generics = getGenericTypes(classInfo);
             String resourceInterface = classInfo.name().toString();

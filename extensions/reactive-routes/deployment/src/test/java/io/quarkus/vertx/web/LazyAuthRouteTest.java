@@ -24,7 +24,9 @@ public class LazyAuthRouteTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n"), "application.properties")
+                    .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n" +
+                            "quarkus.http.auth.permission.secured.paths=/hello-auth-app-properties\n" +
+                            "quarkus.http.auth.permission.secured.policy=authenticated\n"), "application.properties")
                     .addClasses(TestIdentityProvider.class, TestIdentityController.class, HelloWorldBean.class));
 
     @BeforeAll
@@ -55,6 +57,12 @@ public class LazyAuthRouteTest {
     }
 
     @Test
+    public void testAuthenticatedApplicationProperties() {
+        // Authenticated HTTP policy is set in application.properties
+        given().auth().basic("admin", "admin").when().get("/hello-auth-app-properties").then().statusCode(200);
+    }
+
+    @Test
     public void testDenyAll() {
         given().auth().basic("user", "user").when().get("/hello-deny").then().statusCode(403);
     }
@@ -67,6 +75,12 @@ public class LazyAuthRouteTest {
         @Authenticated
         @Route(path = "/hello-auth", methods = Route.HttpMethod.GET)
         public void greetingsAuth(RoutingContext rc) {
+            respond(rc);
+        }
+
+        @RolesAllowed("admin")
+        @Route(path = "/hello-auth-app-properties", methods = Route.HttpMethod.GET)
+        public void greetingsAuthAppProperties(RoutingContext rc) {
             respond(rc);
         }
 

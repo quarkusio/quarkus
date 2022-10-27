@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,6 +63,7 @@ class KubernetesProcessor {
 
     private static final Logger log = Logger.getLogger(KubernetesProcessor.class);
 
+    private static final String COMMON = "common";
     private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
 
     @BuildStep
@@ -137,13 +139,16 @@ class KubernetesProcessor {
             Optional<Project> optionalProject = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot,
                     artifactPath);
             optionalProject.ifPresent(project -> {
-
+                Set<String> targets = new HashSet<>();
+                targets.add(COMMON);
+                targets.addAll(kubernetesDeploymentTargets.getEntriesSortedByPriority()
+                        .stream()
+                        .map(DeploymentTargetEntry::getName)
+                        .collect(Collectors.toSet()));
                 final Map<String, String> generatedResourcesMap;
                 final SessionWriter sessionWriter = new SimpleFileWriter(project, false);
                 final SessionReader sessionReader = new SimpleFileReader(
-                        project.getRoot().resolve("src").resolve("main").resolve("kubernetes"), kubernetesDeploymentTargets
-                                .getEntriesSortedByPriority().stream()
-                                .map(DeploymentTargetEntry::getName).collect(Collectors.toSet()));
+                        project.getRoot().resolve("src").resolve("main").resolve("kubernetes"), targets);
                 sessionWriter.setProject(project);
 
                 if (launchMode.getLaunchMode() != LaunchMode.NORMAL) {

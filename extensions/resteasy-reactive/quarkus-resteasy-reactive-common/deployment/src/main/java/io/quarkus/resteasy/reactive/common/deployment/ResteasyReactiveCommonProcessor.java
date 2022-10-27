@@ -18,6 +18,7 @@ import javax.ws.rs.Priorities;
 import javax.ws.rs.ext.RuntimeDelegate;
 
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
@@ -32,6 +33,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveInterceptorScanner;
+import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveParameterContainerScanner;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner;
 import org.jboss.resteasy.reactive.common.processor.scanning.SerializerScanningResult;
 
@@ -338,5 +340,15 @@ public class ResteasyReactiveCommonProcessor {
                 .filter(target -> target.kind() == AnnotationTarget.Kind.CLASS)
                 .map(target -> target.asClass().toString())
                 .collect(Collectors.toSet());
+    }
+
+    @BuildStep
+    public void scanForParameterContainers(CombinedIndexBuildItem combinedIndexBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem,
+            BuildProducer<ParameterContainersBuildItem> parameterContainersBuildItemBuildProducer) {
+        IndexView index = combinedIndexBuildItem.getComputingIndex();
+        Set<DotName> res = ResteasyReactiveParameterContainerScanner.scanParameterContainers(index,
+                applicationResultBuildItem.getResult());
+        parameterContainersBuildItemBuildProducer.produce(new ParameterContainersBuildItem(res));
     }
 }

@@ -107,12 +107,18 @@
                     <name>test-containers</name>
                 </property>
             </activation>
+            <properties>
+                <redis.base.image>redis/redis-stack:7.0.2-RC2</redis.base.image>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <systemProperties>
+                                <redis.base.image>${redis.base.image}</redis.base.image>
+                            </systemProperties>
                         </configuration>
                     </plugin>
                     <plugin>
@@ -123,6 +129,20 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>redis-5</id>
+            <properties>
+                <redis.base.image>redis:5</redis.base.image>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>redis-6</id>
+            <properties>
+                <redis.base.image>redis:6</redis.base.image>
+            </properties>
         </profile>
     </profiles>
 </project>

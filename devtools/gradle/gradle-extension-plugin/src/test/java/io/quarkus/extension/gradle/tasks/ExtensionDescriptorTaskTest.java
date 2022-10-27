@@ -187,7 +187,7 @@ public class ExtensionDescriptorTaskTest {
      * that is increasingly hard to do on Java 17+; see https://github.com/junit-pioneer/junit-pioneer/issues/509
      */
     @Test
-    public void shouldGenerateSourcePointer() throws IOException {
+    public void shouldGenerateScmInformation() throws IOException {
         TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
         File metaInfDir = new File(testProjectDir, "src/main/resources/META-INF");
         metaInfDir.mkdirs();

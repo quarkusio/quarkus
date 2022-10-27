@@ -221,6 +221,9 @@ triage:
       directories:
         - extensions/panache/
         - integration-tests/hibernate-orm-panache/
+    - labels: [area/panache]
+      title: "(panache.*resource|rest.data.panache)"
+      notify: [Sgitario]
     - labels: [area/qute]
       title: "qute"
       notify: [mkouba]

@@ -4,11 +4,22 @@ public class FormParamItem extends Item {
 
     private final String formParamName;
     private final String paramType;
+    private final String paramSignature;
+    private final String mimeType;
+    private final String fileName;
+    private final String sourceName;
 
-    public FormParamItem(String formParamName, String paramType, ValueExtractor valueExtractor) {
+    public FormParamItem(String formParamName, String paramType, String paramSignature,
+            String sourceName,
+            String mimeType, String fileName,
+            ValueExtractor valueExtractor) {
         super(ItemType.FORM_PARAM, valueExtractor);
         this.formParamName = formParamName;
         this.paramType = paramType;
+        this.paramSignature = paramSignature;
+        this.mimeType = mimeType;
+        this.fileName = fileName;
+        this.sourceName = sourceName;
     }
 
     public String getFormParamName() {
@@ -17,5 +28,21 @@ public class FormParamItem extends Item {
 
     public String getParamType() {
         return paramType;
+    }
+
+    public String getParamSignature() {
+        return paramSignature;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public String getMimeType() {
+        return mimeType;
+    }
+
+    public String getSourceName() {
+        return sourceName;
     }
 }

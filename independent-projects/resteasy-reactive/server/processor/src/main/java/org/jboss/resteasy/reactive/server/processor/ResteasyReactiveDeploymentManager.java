@@ -36,6 +36,7 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveInterceptorScanner;
+import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveParameterContainerScanner;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner;
 import org.jboss.resteasy.reactive.common.processor.scanning.SerializerScanningResult;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
@@ -194,6 +195,8 @@ public class ResteasyReactiveDeploymentManager {
                     additionalResourcePaths);
             SerializerScanningResult serializerScanningResult = ResteasyReactiveScanner.scanForSerializers(index,
                     applicationScanningResult);
+            Set<DotName> parameterContainers = ResteasyReactiveParameterContainerScanner.scanParameterContainers(index,
+                    applicationScanningResult);
 
             AdditionalReaders readers = new AdditionalReaders();
             AdditionalWriters writers = new AdditionalWriters();
@@ -207,6 +210,7 @@ public class ResteasyReactiveDeploymentManager {
                     .addContextTypes(contextTypes)
                     .setAnnotationsTransformers(annotationsTransformers)
                     .setScannedResourcePaths(resources.getScannedResourcePaths())
+                    .addParameterContainerTypes(parameterContainers)
                     .setClassLevelExceptionMappers(new HashMap<>())
                     .setAdditionalReaders(readers)
                     .setAdditionalWriters(writers)

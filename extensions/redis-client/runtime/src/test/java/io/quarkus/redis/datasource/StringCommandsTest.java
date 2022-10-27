@@ -22,6 +22,7 @@ import io.quarkus.redis.datasource.string.StringCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
 @SuppressWarnings("deprecation")
+@RequiresRedis6OrHigher // The ValueCommandsTest verify the behavior with Redis 5
 public class StringCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource ds;

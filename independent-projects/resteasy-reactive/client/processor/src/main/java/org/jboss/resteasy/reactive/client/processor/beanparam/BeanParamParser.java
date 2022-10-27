@@ -15,6 +15,8 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import javax.ws.rs.core.MediaType;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -23,7 +25,9 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.common.processor.AsmUtil;
 import org.jboss.resteasy.reactive.common.processor.JandexUtil;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 public class BeanParamParser {
 
@@ -60,9 +64,10 @@ public class BeanParamParser {
                     (annotationValue, fieldInfo) -> {
                         Type type = fieldInfo.type();
                         if (type.kind() == Type.Kind.CLASS) {
-                            List<Item> subBeanParamItems = parseInternal(index.getClassByName(type.asClassType().name()), index,
+                            DotName beanParamClassName = type.asClassType().name();
+                            List<Item> subBeanParamItems = parseInternal(index.getClassByName(beanParamClassName), index,
                                     processedBeanParamClasses);
-                            return new BeanParamItem(subBeanParamItems,
+                            return new BeanParamItem(subBeanParamItems, beanParamClassName.toString(),
                                     new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString()));
                         } else {
                             throw new IllegalArgumentException("BeanParam annotation used on a field that is not an object: "
@@ -73,7 +78,7 @@ public class BeanParamParser {
                         Type returnType = getterMethod.returnType();
                         List<Item> items = parseInternal(index.getClassByName(returnType.name()), index,
                                 processedBeanParamClasses);
-                        return new BeanParamItem(items, new GetterExtractor(getterMethod));
+                        return new BeanParamItem(items, beanParamClass.name().toString(), new GetterExtractor(getterMethod));
                     }));
 
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, COOKIE_PARAM,
@@ -100,10 +105,15 @@ public class BeanParamParser {
 
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, FORM_PARAM,
                     (annotationValue, fieldInfo) -> new FormParamItem(annotationValue,
-                            fieldInfo.type().name().toString(),
+                            fieldInfo.type().name().toString(), AsmUtil.getSignature(fieldInfo.type(), arg -> arg),
+                            fieldInfo.name(),
+                            partType(fieldInfo), fileName(fieldInfo),
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString())),
                     (annotationValue, getterMethod) -> new FormParamItem(annotationValue,
                             getterMethod.returnType().name().toString(),
+                            AsmUtil.getSignature(getterMethod.returnType(), arg -> arg),
+                            getterMethod.name(),
+                            partType(getterMethod), fileName(getterMethod),
                             new GetterExtractor(getterMethod))));
 
             return resultList;
@@ -111,6 +121,38 @@ public class BeanParamParser {
         } finally {
             processedBeanParamClasses.remove(beanParamClass);
         }
+    }
+
+    private static String partType(FieldInfo annotated) {
+        return partType(annotated.annotation(ResteasyReactiveDotNames.PART_TYPE_NAME));
+    }
+
+    private static String partType(MethodInfo annotated) {
+        return partType(annotated.annotation(ResteasyReactiveDotNames.PART_TYPE_NAME));
+    }
+
+    private static String partType(AnnotationInstance annotation) {
+        if (annotation == null || annotation.value() == null)
+            return null;
+        String mimeType = annotation.value().asString();
+        // nullify default value
+        if (!mimeType.equals(MediaType.TEXT_PLAIN))
+            return mimeType;
+        return null;
+    }
+
+    private static String fileName(FieldInfo annotated) {
+        return fileName(annotated.annotation(ResteasyReactiveDotNames.PART_FILE_NAME));
+    }
+
+    private static String fileName(MethodInfo annotated) {
+        return fileName(annotated.annotation(ResteasyReactiveDotNames.PART_FILE_NAME));
+    }
+
+    private static String fileName(AnnotationInstance annotation) {
+        if (annotation == null || annotation.value() == null)
+            return null;
+        return annotation.value().asString();
     }
 
     private static MethodInfo getGetterMethod(ClassInfo beanParamClass, MethodInfo methodInfo) {

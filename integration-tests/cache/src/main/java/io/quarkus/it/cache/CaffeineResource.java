@@ -3,6 +3,7 @@ package io.quarkus.it.cache;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.GET;
@@ -21,8 +22,8 @@ public class CaffeineResource {
      */
     public static boolean hasLoadAll(CacheLoader<String, String> cl) {
         try {
-            Method classLoadAll = cl.getClass().getMethod("loadAll", Iterable.class);
-            Method defaultLoadAll = CacheLoader.class.getMethod("loadAll", Iterable.class);
+            Method classLoadAll = cl.getClass().getMethod("loadAll", Set.class);
+            Method defaultLoadAll = CacheLoader.class.getMethod("loadAll", Set.class);
             return !classLoadAll.equals(defaultLoadAll);
         } catch (NoSuchMethodException | SecurityException e) {
             return false;
@@ -69,7 +70,7 @@ public class CaffeineResource {
         }
 
         @Override
-        public Map<String, String> loadAll(Iterable<? extends String> unused) throws Exception {
+        public Map<String, String> loadAll(Set<? extends String> unused) throws Exception {
             return Collections.emptyMap();
         }
     }

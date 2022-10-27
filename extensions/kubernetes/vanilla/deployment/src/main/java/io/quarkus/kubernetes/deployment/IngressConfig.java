@@ -33,4 +33,10 @@ public class IngressConfig {
     @ConfigItem
     Map<String, IngressTlsConfig> tls;
 
+    /**
+     * Custom rules for the current ingress resource.
+     */
+    @ConfigItem
+    Map<String, IngressRuleConfig> rules;
+
 }

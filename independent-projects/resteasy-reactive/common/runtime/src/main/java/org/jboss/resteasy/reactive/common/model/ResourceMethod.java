@@ -68,7 +68,6 @@ public class ResourceMethod {
 
     private boolean isFormParamRequired;
 
-    private boolean isMultipart;
     private List<ResourceMethod> subResourceMethods;
 
     public ResourceMethod() {
@@ -76,7 +75,7 @@ public class ResourceMethod {
 
     public ResourceMethod(String httpMethod, String path, String[] produces, String streamElementType, String[] consumes,
             Set<String> nameBindingNames, String name, String returnType, String simpleReturnType, MethodParameter[] parameters,
-            boolean blocking, boolean suspended, boolean isSse, boolean isFormParamRequired, boolean isMultipart,
+            boolean blocking, boolean suspended, boolean isSse, boolean isFormParamRequired,
             List<ResourceMethod> subResourceMethods) {
         this.httpMethod = httpMethod;
         this.path = path;
@@ -92,7 +91,6 @@ public class ResourceMethod {
         this.suspended = suspended;
         this.isSse = isSse;
         this.isFormParamRequired = isFormParamRequired;
-        this.isMultipart = isMultipart;
         this.subResourceMethods = subResourceMethods;
     }
 
@@ -223,15 +221,6 @@ public class ResourceMethod {
 
     public ResourceMethod setFormParamRequired(boolean isFormParamRequired) {
         this.isFormParamRequired = isFormParamRequired;
-        return this;
-    }
-
-    public boolean isMultipart() {
-        return isMultipart;
-    }
-
-    public ResourceMethod setMultipart(boolean isMultipart) {
-        this.isMultipart = isMultipart;
         return this;
     }
 

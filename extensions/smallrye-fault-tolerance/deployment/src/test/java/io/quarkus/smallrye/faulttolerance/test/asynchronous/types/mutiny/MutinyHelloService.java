@@ -10,6 +10,7 @@ import org.eclipse.microprofile.faulttolerance.Retry;
 
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
+import io.smallrye.faulttolerance.api.AsynchronousNonBlocking;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
@@ -33,18 +34,26 @@ public class MutinyHelloService {
     }
 
     @Asynchronous
-    @NonBlocking
     @Retry(jitter = 50)
     @Fallback(fallbackMethod = "fallback")
-    public Uni<String> helloAsynchronousNonblocking() {
+    public Uni<String> helloAsynchronous() {
+        COUNTER.incrementAndGet();
+        return Uni.createFrom().failure(IllegalArgumentException::new);
+    }
+
+    @AsynchronousNonBlocking
+    @Retry(jitter = 50)
+    @Fallback(fallbackMethod = "fallback")
+    public Uni<String> helloAsynchronousNonBlocking() {
         COUNTER.incrementAndGet();
         return Uni.createFrom().failure(IllegalArgumentException::new);
     }
 
     @Asynchronous
+    @NonBlocking
     @Retry(jitter = 50)
     @Fallback(fallbackMethod = "fallback")
-    public Uni<String> helloAsynchronous() {
+    public Uni<String> helloAsynchronousNonblockingCombined() {
         COUNTER.incrementAndGet();
         return Uni.createFrom().failure(IllegalArgumentException::new);
     }
@@ -53,7 +62,7 @@ public class MutinyHelloService {
     @Blocking
     @Retry(jitter = 50)
     @Fallback(fallbackMethod = "fallback")
-    public Uni<String> helloAsynchronousBlocking() {
+    public Uni<String> helloAsynchronousBlockingCombined() {
         COUNTER.incrementAndGet();
         return Uni.createFrom().failure(IllegalArgumentException::new);
     }

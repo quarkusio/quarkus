@@ -46,6 +46,7 @@ public class OptionalConverter implements ParameterConverter {
         public OptionalSupplier() {
         }
 
+        // invoked by reflection for BeanParam in ClassInjectorTransformer
         public OptionalSupplier(ParameterConverterSupplier delegate) {
             this.delegate = delegate;
         }

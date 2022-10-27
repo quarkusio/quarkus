@@ -19,8 +19,8 @@ public class MyHeadersFactory implements ClientHeadersFactory {
     public MultivaluedMap<String, String> update(MultivaluedMap<String, String> incomingHeaders,
             MultivaluedMap<String, String> clientOutgoingHeaders) {
         assertNotNull(beanManager);
-        incomingHeaders.add("foo", "bar");
-        return incomingHeaders;
+        clientOutgoingHeaders.add("foo", "bar");
+        return clientOutgoingHeaders;
     }
 
 }

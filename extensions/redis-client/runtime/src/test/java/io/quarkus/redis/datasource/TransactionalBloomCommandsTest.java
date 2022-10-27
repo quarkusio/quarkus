@@ -17,6 +17,7 @@ import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 
 @SuppressWarnings("unchecked")
+@RequiresCommand("bf.add")
 public class TransactionalBloomCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource blocking;

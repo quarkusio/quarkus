@@ -81,7 +81,7 @@ public final class Json {
 
     abstract static class JsonBuilder<T> {
 
-        protected boolean ignoreEmptyBuilders = false;
+        protected final boolean ignoreEmptyBuilders;
 
         /**
          *

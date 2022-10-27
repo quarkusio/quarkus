@@ -98,7 +98,6 @@ import org.jboss.resteasy.reactive.server.processor.generation.converters.Genera
 import org.jboss.resteasy.reactive.server.processor.generation.exceptionmappers.ServerExceptionMapperGenerator;
 import org.jboss.resteasy.reactive.server.processor.generation.injection.TransformedFieldInjectionIndexerExtension;
 import org.jboss.resteasy.reactive.server.processor.generation.multipart.GeneratedHandlerMultipartReturnTypeIndexerExtension;
-import org.jboss.resteasy.reactive.server.processor.generation.multipart.GeneratedMultipartParamIndexerExtension;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResponseHeaderMethodScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResponseStatusMethodScanner;
@@ -149,6 +148,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.FactoryUtils;
+import io.quarkus.resteasy.reactive.common.deployment.ParameterContainersBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceInterceptorsBuildItem;
@@ -387,6 +387,7 @@ public class ResteasyReactiveProcessor {
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             ApplicationResultBuildItem applicationResultBuildItem,
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
+            List<ParameterContainersBuildItem> parameterContainersBuildItems,
             List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems,
             List<MethodScannerBuildItem> methodScanners,
             List<AnnotationsTransformerBuildItem> annotationTransformerBuildItems,
@@ -418,6 +419,11 @@ public class ResteasyReactiveProcessor {
         AdditionalWriters additionalWriters = new AdditionalWriters();
         Map<String, InjectableBean> injectableBeans = new HashMap<>();
         QuarkusServerEndpointIndexer serverEndpointIndexer;
+        Set<DotName> scannedParameterContainers = new HashSet<>();
+
+        for (ParameterContainersBuildItem parameterContainersBuildItem : parameterContainersBuildItems) {
+            scannedParameterContainers.addAll(parameterContainersBuildItem.getClassNames());
+        }
 
         ParamConverterProviders paramConverterProviders = paramConverterProvidersBuildItem.getParamConverterProviders();
         Function<String, BeanFactory<?>> factoryFunction = s -> FactoryUtils.factory(s, singletonClasses, recorder,
@@ -453,6 +459,7 @@ public class ResteasyReactiveProcessor {
                             methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(toList()))
                     .setIndex(index)
                     .setApplicationIndex(applicationIndexBuildItem.getIndex())
+                    .addParameterContainerTypes(scannedParameterContainers)
                     .addContextTypes(additionalContextTypes(contextTypeBuildItems))
                     .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                     .setEndpointInvokerFactory(
@@ -467,8 +474,6 @@ public class ResteasyReactiveProcessor {
                     .setAdditionalWriters(additionalWriters)
                     .setDefaultBlocking(appResult.getBlockingDefault())
                     .setApplicationScanningResult(appResult)
-                    .setMultipartParameterIndexerExtension(
-                            new GeneratedMultipartParamIndexerExtension(transformationConsumer, classOutput))
                     .setMultipartReturnTypeIndexerExtension(
                             new GeneratedHandlerMultipartReturnTypeIndexerExtension(classOutput))
                     .setFieldInjectionIndexerExtension(
@@ -601,9 +606,6 @@ public class ResteasyReactiveProcessor {
 
             serverEndpointIndexerBuilder.setMultipartReturnTypeIndexerExtension(new QuarkusMultipartReturnTypeHandler(
                     generatedClassBuildItemBuildProducer, applicationClassPredicate, reflectiveClassBuildItemBuildProducer));
-            serverEndpointIndexerBuilder.setMultipartParameterIndexerExtension(new QuarkusMultipartParamHandler(
-                    generatedClassBuildItemBuildProducer, applicationClassPredicate, reflectiveClassBuildItemBuildProducer,
-                    bytecodeTransformerBuildItemBuildProducer));
             serverEndpointIndexer = serverEndpointIndexerBuilder.build();
 
             Map<String, List<EndpointConfig>> allMethods = new HashMap<>();

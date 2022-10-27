@@ -109,6 +109,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
@@ -228,6 +229,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final AnnotationStore annotationStore;
     protected final ApplicationScanningResult applicationScanningResult;
     private final Set<DotName> contextTypes;
+    private final Set<DotName> parameterContainerTypes;
     private final MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension;
     private final MultipartParameterIndexerExtension multipartParameterIndexerExtension;
     private final TargetJavaVersion targetJavaVersion;
@@ -250,6 +252,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.annotationStore = new AnnotationStore(builder.annotationsTransformers);
         this.applicationScanningResult = builder.applicationScanningResult;
         this.contextTypes = builder.contextTypes;
+        this.parameterContainerTypes = builder.parameterContainerTypes;
         this.multipartReturnTypeIndexerExtension = builder.multipartReturnTypeIndexerExtension;
         this.multipartParameterIndexerExtension = builder.multipartParameterIndexerExtension;
         this.targetJavaVersion = builder.targetJavaVersion;
@@ -524,8 +527,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             boolean suspended = false;
             boolean sse = false;
             boolean formParamRequired = false;
-            boolean multipart = false;
-            boolean hasBodyParam = false;
+            Type bodyParamType = null;
             TypeArgMapper typeArgMapper = new TypeArgMapper(currentMethodInfo.declaringClass(), index);
             for (int i = 0; i < methodParameters.length; ++i) {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
@@ -545,11 +547,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 String defaultValue = parameterResult.getDefaultValue();
                 ParameterType type = parameterResult.getType();
                 if (type == ParameterType.BODY) {
-                    if (hasBodyParam)
+                    if (bodyParamType != null)
                         throw new RuntimeException(
                                 "Resource method " + currentMethodInfo + " can only have a single body parameter: "
                                         + currentMethodInfo.parameterName(i));
-                    hasBodyParam = true;
+                    bodyParamType = paramType;
                 }
                 String elementType = parameterResult.getElementType();
                 boolean single = parameterResult.isSingle();
@@ -560,38 +562,38 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                         parameterResult, name, defaultValue, type, elementType, single,
                         AsmUtil.getSignature(paramType, typeArgMapper));
 
-                if (type == ParameterType.BEAN) {
+                if (type == ParameterType.BEAN
+                        || type == ParameterType.MULTI_PART_FORM) {
                     // transform the bean param
                     formParamRequired |= handleBeanParam(actualEndpointInfo, paramType, methodParameters, i);
                 } else if (type == ParameterType.FORM) {
                     formParamRequired = true;
-                } else if (type == ParameterType.MULTI_PART_FORM) {
-                    multipart = true;
-                    ClassInfo multipartClassInfo = index.getClassByName(paramType.name());
-                    multipartParameterIndexerExtension.handleMultipartParameter(multipartClassInfo, index);
                 }
             }
 
-            if (multipart) {
-                if (hasBodyParam) {
+            if (formParamRequired) {
+                if (bodyParamType != null
+                        && !bodyParamType.name().equals(ResteasyReactiveDotNames.MULTI_VALUED_MAP)
+                        && !bodyParamType.name().equals(ResteasyReactiveDotNames.STRING)) {
                     throw new RuntimeException(
-                            "'@MultipartForm' cannot be used in a resource method that contains a body parameter. Offending method is '"
+                            "'@FormParam' and '@RestForm' cannot be used in a resource method that contains a body parameter. Offending method is '"
                                     + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
                 }
                 boolean validConsumes = false;
-                if (consumes != null) {
+                if (consumes != null && consumes.length > 0) {
                     for (String c : consumes) {
-                        if (c.startsWith(MediaType.MULTIPART_FORM_DATA)) {
+                        if (c.startsWith(MediaType.MULTIPART_FORM_DATA)
+                                || c.startsWith(MediaType.APPLICATION_FORM_URLENCODED)) {
                             validConsumes = true;
                             break;
                         }
                     }
-                }
-                // TODO: does it make sense to default to MediaType.MULTIPART_FORM_DATA when no consumes is set?
-                if (!validConsumes) {
-                    throw new RuntimeException(
-                            "'@MultipartForm' can only be used on methods annotated with '@Consumes(MediaType.MULTIPART_FORM_DATA)'. Offending method is '"
-                                    + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
+                    // TODO: does it make sense to default to MediaType.MULTIPART_FORM_DATA when no consumes is set?
+                    if (!validConsumes) {
+                        throw new RuntimeException(
+                                "'@FormParam' and '@RestForm' can only be used on methods annotated with '@Consumes(MediaType.MULTIPART_FORM_DATA)' '@Consumes(MediaType.APPLICATION_FORM_URLENCODED)'. Offending method is '"
+                                        + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
+                    }
                 }
             }
 
@@ -685,7 +687,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     .setSse(sse)
                     .setStreamElementType(streamElementType)
                     .setFormParamRequired(formParamRequired)
-                    .setMultipart(multipart)
                     .setParameters(methodParameters)
                     .setSimpleReturnType(
                             toClassName(currentMethodInfo.returnType(), currentClassInfo, actualEndpointInfo, index))
@@ -1180,7 +1181,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             convertible = true;
         } else if (restHeaderParam != null) {
             if (restHeaderParam.value() == null || restHeaderParam.value().asString().isEmpty()) {
-                builder.setName(StringUtil.hyphenate(sourceName));
+                builder.setName(StringUtil.hyphenateWithCapitalFirstLetter(sourceName));
             } else {
                 builder.setName(restHeaderParam.value().asString());
             }
@@ -1189,11 +1190,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         } else if (formParam != null) {
             builder.setName(formParam.value().asString());
             builder.setType(ParameterType.FORM);
-            convertible = true;
+            convertible = isFormParamConvertible(paramType);
         } else if (restFormParam != null) {
             builder.setName(valueOrDefault(restFormParam.value(), sourceName));
             builder.setType(ParameterType.FORM);
-            convertible = true;
+            convertible = isFormParamConvertible(paramType);
         } else if (matrixParam != null) {
             builder.setName(matrixParam.value().asString());
             builder.setType(ParameterType.MATRIX);
@@ -1225,6 +1226,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     && isContextType(paramType.asClassType())) {
                 // no name required
                 builder.setType(ParameterType.CONTEXT);
+            } else if (!field
+                    && paramType.kind() == Kind.CLASS
+                    && isParameterContainerType(paramType.asClassType())) {
+                // auto @BeanParam/@MultipartForm parameters
+                builder.setType(ParameterType.BEAN);
             } else if (!field && pathParameters.contains(sourceName)) {
                 builder.setName(sourceName);
                 builder.setType(ParameterType.PATH);
@@ -1237,22 +1243,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 if (field) {
                     return builder;
                 }
-                if ((declaredConsumes != null) && (declaredConsumes.length == 1)
-                        && (MediaType.MULTIPART_FORM_DATA.equals(declaredConsumes[0]))) {
-                    // in this case it is safe to assume that we are consuming multipart data
-                    // we already don't allow multipart to be used along with body in the same method,
-                    // so this is completely safe
-                    var type = toClassName(paramType, currentClassInfo, actualEndpointInfo, index);
-                    var typeInfo = index.getClassByName(DotName.createSimple(type));
-                    if (typeInfo != null && typeInfo.annotationsMap().containsKey(REST_FORM_PARAM)) {
-                        builder.setType(ParameterType.MULTI_PART_FORM);
-                    } else {
-                        //if the paramater does not have @RestForm annotations we treat it as a normal body
-                        builder.setType(ParameterType.BODY);
-                    }
-                } else {
-                    builder.setType(ParameterType.BODY);
-                }
+                builder.setType(ParameterType.BODY);
             }
         }
         builder.setSingle(true);
@@ -1325,7 +1316,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         } else if (paramType.kind() == Kind.ARRAY) {
             ArrayType at = paramType.asArrayType();
             typeHandled = true;
-            builder.setSingle(false);
+            // special case do not treat byte[] for multipart form values
+            if (builder.type != ParameterType.FORM
+                    || convertible) {
+                builder.setSingle(false);
+            }
             elementType = toClassName(at.component(), currentClassInfo, actualEndpointInfo, index);
             if (convertible) {
                 handleArrayParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
@@ -1349,6 +1344,17 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
         builder.setElementType(elementType);
         return builder;
+    }
+
+    private boolean isFormParamConvertible(Type paramType) {
+        // let's not call the array converter for byte[] for multipart
+        if (paramType.kind() == Kind.ARRAY
+                && paramType.asArrayType().component().kind() == Kind.PRIMITIVE
+                && paramType.asArrayType().component().asPrimitiveType().primitive() == Primitive.BYTE) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     protected boolean handleCustomParameter(Map<DotName, AnnotationInstance> anns, PARAM builder, Type paramType, boolean field,
@@ -1414,6 +1420,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return contextTypes.contains(klass.name());
     }
 
+    final boolean isParameterContainerType(ClassType klass) {
+        return parameterContainerTypes.contains(klass.name());
+    }
+
     private String valueOrDefault(AnnotationValue annotation, String defaultValue) {
         if (annotation == null)
             return defaultValue;
@@ -1431,6 +1441,19 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected AnnotationStore getAnnotationStore() {
         return annotationStore;
+    }
+
+    protected String getPartMime(Map<DotName, AnnotationInstance> annotations) {
+        AnnotationInstance partType = annotations.get(ResteasyReactiveDotNames.PART_TYPE_NAME);
+        String mimeType = null;
+        if (partType != null && partType.value() != null) {
+            mimeType = partType.value().asString();
+            // remove what ends up being the default
+            if (MediaType.TEXT_PLAIN.equals(mimeType)) {
+                mimeType = null;
+            }
+        }
+        return mimeType;
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -1452,6 +1475,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Collection<AnnotationsTransformer> annotationsTransformers;
         private ApplicationScanningResult applicationScanningResult;
         private Set<DotName> contextTypes = new HashSet<>(DEFAULT_CONTEXT_TYPES);
+        private Set<DotName> parameterContainerTypes = new HashSet<>();
         private MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension = new MultipartReturnTypeIndexerExtension() {
             @Override
             public boolean handleMultipartForReturnType(AdditionalWriters additionalWriters, ClassInfo multipartClassInfo,
@@ -1503,6 +1527,16 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         public B addContextTypes(Collection<DotName> contextTypes) {
             this.contextTypes.addAll(contextTypes);
+            return (B) this;
+        }
+
+        public B addParameterContainerType(DotName parameterContainerType) {
+            this.parameterContainerTypes.add(parameterContainerType);
+            return (B) this;
+        }
+
+        public B addParameterContainerTypes(Collection<DotName> parameterContainerTypes) {
+            this.parameterContainerTypes.addAll(parameterContainerTypes);
             return (B) this;
         }
 

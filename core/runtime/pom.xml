@@ -94,6 +94,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-fs-util</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.github.crac</groupId>
+            <artifactId>org-crac</artifactId>
+        </dependency>
 
         <!--
           This is required to ensure that the extension processor is built.

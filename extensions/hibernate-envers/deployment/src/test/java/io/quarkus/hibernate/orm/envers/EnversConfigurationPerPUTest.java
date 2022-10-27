@@ -3,7 +3,6 @@ package io.quarkus.hibernate.orm.envers;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.inject.Inject;
-import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -29,34 +28,65 @@ public class EnversConfigurationPerPUTest {
 
     @Inject
     @PersistenceUnit("db1")
-    EntityManager em1;
+    EntityManagerFactory emf1;
 
     @Inject
     @PersistenceUnit("db2")
-    EntityManager em2;
+    EntityManagerFactory emf2;
 
     @Test
     public void testTableName() {
-        String generatedTableName = getAuditConfiguration().getAuditTableName("entity", "table");
+        String generatedTableName = getAuditConfiguration("default").getAuditTableName("entity", "table");
         assertThat(generatedTableName).isEqualTo("P_table");
+
+        generatedTableName = getAuditConfiguration("db1").getAuditTableName("entity", "table");
+        assertThat(generatedTableName).isEqualTo("T_table");
+
+        generatedTableName = getAuditConfiguration("db2").getAuditTableName("entity", "table");
+        assertThat(generatedTableName).isEqualTo("R_table");
     }
 
     @Test
     public void testRevisionFieldName() {
-        String configuredRevisionFieldName = getAuditConfiguration().getRevisionFieldName();
+        String configuredRevisionFieldName = getAuditConfiguration("default").getRevisionFieldName();
         assertThat(configuredRevisionFieldName).isEqualTo("GEN");
+
+        configuredRevisionFieldName = getAuditConfiguration("db1").getRevisionFieldName();
+        assertThat(configuredRevisionFieldName).isEqualTo("REVISION");
+
+        configuredRevisionFieldName = getAuditConfiguration("db2").getRevisionFieldName();
+        assertThat(configuredRevisionFieldName).isEqualTo("REV");
     }
 
     @Test
     public void testRevisionTypeName() {
-        String configuredRevisionTypeName = getAuditConfiguration().getRevisionTypePropName();
+        String configuredRevisionTypeName = getAuditConfiguration("default").getRevisionTypePropName();
         assertThat(configuredRevisionTypeName).isEqualTo("GEN_TYPE");
+
+        configuredRevisionTypeName = getAuditConfiguration("db1").getRevisionTypePropName();
+        assertThat(configuredRevisionTypeName).isEqualTo("REV_TYPE");
+
+        configuredRevisionTypeName = getAuditConfiguration("db2").getRevisionTypePropName();
+        assertThat(configuredRevisionTypeName).isEqualTo("REVTYPE");
     }
 
-    private AuditEntitiesConfiguration getAuditConfiguration() {
-        return ((((SessionFactoryImplementor) emf
-                .unwrap(SessionFactoryImpl.class))
-                .getServiceRegistry()).getParentServiceRegistry())
-                .getService(EnversService.class).getAuditEntitiesConfiguration();
+    private AuditEntitiesConfiguration getAuditConfiguration(String auditConfig) {
+        switch (auditConfig) {
+            case "db1":
+                return ((((SessionFactoryImplementor) emf1
+                        .unwrap(SessionFactoryImpl.class))
+                        .getServiceRegistry()).getParentServiceRegistry())
+                        .getService(EnversService.class).getAuditEntitiesConfiguration();
+            case "db2":
+                return ((((SessionFactoryImplementor) emf2
+                        .unwrap(SessionFactoryImpl.class))
+                        .getServiceRegistry()).getParentServiceRegistry())
+                        .getService(EnversService.class).getAuditEntitiesConfiguration();
+            default:
+                return ((((SessionFactoryImplementor) emf
+                        .unwrap(SessionFactoryImpl.class))
+                        .getServiceRegistry()).getParentServiceRegistry())
+                        .getService(EnversService.class).getAuditEntitiesConfiguration();
+        }
     }
 }

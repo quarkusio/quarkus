@@ -18,6 +18,7 @@ import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 
 @SuppressWarnings("unchecked")
+@RequiresCommand("graph.query")
 public class TransactionalGraphCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource blocking;

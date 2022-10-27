@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.redis.datasource.countmin.CountMinCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
+@RequiresCommand("cms.query")
 public class CountMinCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource ds;

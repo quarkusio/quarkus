@@ -68,6 +68,7 @@ public class ValueCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void getdel() {
         values.set(key, value);
         assertThat(values.getdel(key)).isEqualTo(value);
@@ -75,6 +76,7 @@ public class ValueCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void getex() {
         values.set(key, value);
         assertThat(values.getex(key, new GetExArgs().ex(Duration.ofSeconds(100)))).isEqualTo(value);
@@ -176,6 +178,7 @@ public class ValueCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void setExAt() {
         KeyCommands<String> keys = ds.key(String.class);
 
@@ -187,6 +190,7 @@ public class ValueCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void setKeepTTL() {
         KeyCommands<String> keys = ds.key(String.class);
 
@@ -207,6 +211,7 @@ public class ValueCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void setGet() {
         assertThat(values.setGet(key, value)).isNull();
         assertThat(values.setGet(key, "value2")).isEqualTo(value);
@@ -214,6 +219,7 @@ public class ValueCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void setGetWithArgs() {
         KeyCommands<String> keys = ds.key(String.class);
 

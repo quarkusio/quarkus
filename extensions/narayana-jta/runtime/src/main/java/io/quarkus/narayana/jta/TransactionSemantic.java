@@ -5,8 +5,7 @@ import java.util.function.Function;
 /**
  * Enum that can be used to control the transaction behaviour in the presence or absence of an existing transaction.
  *
- * @see QuarkusTransaction#runner()
- * @see TransactionRunnerSemanticOptions
+ * @see QuarkusTransaction#runner(TransactionSemantic)
  */
 public enum TransactionSemantic {
 
@@ -19,7 +18,7 @@ public enum TransactionSemantic {
     /**
      * If no transaction is active then a new transaction will be started, and committed when the method ends.
      * If an exception is thrown the exception handler registered by
-     * {@link TransactionRunnerRunOptions#exceptionHandler(Function)} will be called to
+     * {@link TransactionRunnerOptions#exceptionHandler(Function)} will be called to
      * decide if the TX should be committed or rolled back.
      * <p>
      * If an existing transaction is active then the method is run in the context of the existing transaction. If an

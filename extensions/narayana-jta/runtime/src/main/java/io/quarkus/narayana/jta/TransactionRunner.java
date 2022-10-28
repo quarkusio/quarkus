@@ -5,14 +5,14 @@ import java.util.concurrent.Callable;
 /**
  * Runs tasks in transactions with pre-defined semantics and options.
  *
- * @see QuarkusTransaction#runner()
+ * @see QuarkusTransaction#runner(TransactionSemantic)
  * @see TransactionSemantic
  */
 public interface TransactionRunner {
 
     /**
      * Runs the given runnable,
-     * starting/suspending transactions as required by the {@link TransactionRunnerSemanticOptions selected semantic}.
+     * starting/suspending transactions as required by the selected {@link TransactionSemantic semantic}.
      *
      * @param task A task to run with the selected transaction semantic.
      */
@@ -20,7 +20,7 @@ public interface TransactionRunner {
 
     /**
      * Calls the given callable,
-     * starting/suspending transactions as required by the {@link TransactionRunnerSemanticOptions selected semantic}.
+     * starting/suspending transactions as required by the selected {@link TransactionSemantic semantic}.
      * <p>
      * If the task throws a checked exception it will be wrapped with a {@link QuarkusTransactionException}
      *

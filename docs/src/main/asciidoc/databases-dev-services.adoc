@@ -23,6 +23,9 @@ Dev Services is supported for the following databases:
 If you want to use Dev Services then all you need to do is include the relevant extension for the type of database you want (either reactive or JDBC, or both).
 Don't configure a database URL, username and password - Quarkus will provide the database and you can just start coding without worrying about config.
 
+NOTE: If you still decide to configure a database URL, username or password Quarkus Dev Services will still start up, but it will only work correctly if you configure a fixed port for the dev services database to run on.
+So smth. like `quarkus.datasource.reactive.url=vertx-reactive:postgresql://localhost:${quarkus.datasource.devservices.port}/postgres` will not work unless you have specified `quarkus.datasource.devservices.port`.
+
 Production databases need to be configured as normal, so if you want to include a production database config in your
 `application.properties` and continue to use Dev Services we recommend that you use the `%prod.` profile to define your database settings.
 

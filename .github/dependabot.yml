@@ -42,6 +42,7 @@ updates:
       # Elytron
       - dependency-name: org.wildfly.security:wildfly-elytron
       - dependency-name: org.wildfly.security:wildfly-elytron-*
+      - dependency-name: org.wildfly.openssl:*
       # JDBC Drivers
       - dependency-name: org.postgresql:postgresql
       - dependency-name: org.mariadb.jdbc:mariadb-java-client
@@ -175,6 +176,7 @@ updates:
       - dependency-name: org.jboss.jdeparser:jdeparser
       - dependency-name: com.github.javaparser:javaparser-core
       - dependency-name: com.h2database:h2
+      - dependency-name: io.github.crac:org-crac
       # Jakarta 9/10 preparation
       - dependency-name: jakarta.activation:jakarta.activation-api
       - dependency-name: org.eclipse.angus:angus-activation

@@ -6,14 +6,14 @@ import javax.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.faulttolerance.Retry;
 
-import io.smallrye.common.annotation.NonBlocking;
+import io.smallrye.faulttolerance.api.AsynchronousNonBlocking;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class MutinyHelloService {
     static final AtomicInteger COUNTER = new AtomicInteger(0);
 
-    @NonBlocking
+    @AsynchronousNonBlocking
     @Retry
     public Uni<String> hello() {
         COUNTER.incrementAndGet();

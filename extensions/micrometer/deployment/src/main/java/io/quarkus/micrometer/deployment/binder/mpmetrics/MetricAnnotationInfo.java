@@ -4,7 +4,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.jboss.jandex.*;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.processor.DotNames;
@@ -116,7 +123,7 @@ public class MetricAnnotationInfo {
         if (tags.size() % 2 == 1) {
             log.warnf("Problem parsing tag values from %s", annotation);
         }
-        return tags.toArray(new String[tags.size()]);
+        return tags.toArray(new String[0]);
     }
 
     public AnnotationValue[] getAnnotationValues() {

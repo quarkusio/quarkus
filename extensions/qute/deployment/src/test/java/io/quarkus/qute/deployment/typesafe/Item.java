@@ -18,4 +18,5 @@ public class Item {
     public OtherItem[] getOtherItems() {
         return otherItems;
     }
+
 }

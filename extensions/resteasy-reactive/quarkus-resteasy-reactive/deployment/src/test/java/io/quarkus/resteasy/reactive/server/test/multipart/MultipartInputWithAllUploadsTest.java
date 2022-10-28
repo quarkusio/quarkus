@@ -76,4 +76,25 @@ public class MultipartInputWithAllUploadsTest extends AbstractMultipartTest {
         // ensure that the 3 uploaded files where created on disk
         Assertions.assertEquals(3, uploadDir.toFile().listFiles().length);
     }
+
+    @Test
+    public void testSimpleParam() throws IOException {
+        RestAssured.given()
+                .multiPart("name", "Alice")
+                .multiPart("active", "true")
+                .multiPart("num", "25")
+                .multiPart("status", "WORKING")
+                .multiPart("htmlFile", HTML_FILE, "text/html")
+                .multiPart("xmlFile", XML_FILE, "text/xml")
+                .multiPart("txtFile", TXT_FILE, "text/plain")
+                .accept("text/plain")
+                .when()
+                .post("/multipart-all/param/simple/2")
+                .then()
+                .statusCode(200)
+                .body(equalTo("Alice - true - 50 - WORKING - 3 - text/plain"));
+
+        // ensure that the 3 uploaded files where created on disk
+        Assertions.assertEquals(3, uploadDir.toFile().listFiles().length);
+    }
 }

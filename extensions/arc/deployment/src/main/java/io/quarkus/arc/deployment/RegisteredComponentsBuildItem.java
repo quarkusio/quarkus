@@ -27,8 +27,18 @@ abstract class RegisteredComponentsBuildItem extends SimpleBuildItem {
 
     /**
      * @return the registered beans
+     *
+     * @deprecated in favor of {@link #getBeans()}
      */
+    @Deprecated(forRemoval = true)
     public Collection<BeanInfo> geBeans() {
+        return beans;
+    }
+
+    /**
+     * @return the registered beans
+     */
+    public Collection<BeanInfo> getBeans() {
         return beans;
     }
 

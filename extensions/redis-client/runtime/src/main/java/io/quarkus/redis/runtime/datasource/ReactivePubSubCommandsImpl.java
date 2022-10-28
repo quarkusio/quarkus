@@ -7,11 +7,13 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
+import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -55,16 +57,39 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
 
     @Override
     public Uni<ReactiveRedisSubscriber> subscribe(String channel, Consumer<V> onMessage) {
-        return subscribe(List.of(channel), onMessage);
+        return subscribe(channel, onMessage, null, null);
     }
 
     @Override
     public Uni<ReactiveRedisSubscriber> subscribeToPattern(String pattern, Consumer<V> onMessage) {
-        return subscribeToPatterns(List.of(pattern), onMessage);
+        return subscribeToPattern(pattern, onMessage, null, null);
     }
 
     @Override
     public Uni<ReactiveRedisSubscriber> subscribeToPatterns(List<String> patterns, Consumer<V> onMessage) {
+        return subscribeToPatterns(patterns, onMessage, null, null);
+    }
+
+    @Override
+    public Uni<ReactiveRedisSubscriber> subscribe(List<String> channels, Consumer<V> onMessage) {
+        return subscribe(channels, onMessage, null, null);
+    }
+
+    @Override
+    public Uni<ReactiveRedisSubscriber> subscribe(String channel, Consumer<V> onMessage, Runnable onEnd,
+            Consumer<Throwable> onException) {
+        return subscribe(List.of(channel), onMessage, onEnd, onException);
+    }
+
+    @Override
+    public Uni<ReactiveRedisSubscriber> subscribeToPattern(String pattern, Consumer<V> onMessage, Runnable onEnd,
+            Consumer<Throwable> onException) {
+        return subscribeToPatterns(List.of(pattern), onMessage, onEnd, onException);
+    }
+
+    @Override
+    public Uni<ReactiveRedisSubscriber> subscribeToPatterns(List<String> patterns, Consumer<V> onMessage, Runnable onEnd,
+            Consumer<Throwable> onException) {
         notNullOrEmpty(patterns, "patterns");
         nonNull(onMessage, "onMessage");
 
@@ -80,15 +105,16 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
         return client.connect()
                 .chain(conn -> {
                     RedisAPI api = RedisAPI.api(conn);
-                    ReactiveRedisPatternSubscriberImpl subscriber = new ReactiveRedisPatternSubscriberImpl(conn, api, onMessage,
-                            patterns);
+                    ReactiveRedisPatternSubscriberImpl subscriber = new ReactiveRedisPatternSubscriberImpl(conn, api, patterns,
+                            onMessage, onEnd, onException);
                     return subscriber.subscribe()
                             .replaceWith(subscriber);
                 });
     }
 
     @Override
-    public Uni<ReactiveRedisSubscriber> subscribe(List<String> channels, Consumer<V> onMessage) {
+    public Uni<ReactiveRedisSubscriber> subscribe(List<String> channels, Consumer<V> onMessage, Runnable onEnd,
+            Consumer<Throwable> onException) {
         notNullOrEmpty(channels, "channels");
         nonNull(onMessage, "onMessage");
 
@@ -105,7 +131,7 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
                 .chain(conn -> {
                     RedisAPI api = RedisAPI.api(conn);
                     ReactiveAbstractRedisSubscriberImpl subscriber = new ReactiveAbstractRedisSubscriberImpl(conn, api,
-                            onMessage, channels);
+                            channels, onMessage, onEnd, onException);
                     return subscriber.subscribe()
                             .replaceWith(subscriber);
                 });
@@ -142,30 +168,28 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
         final RedisAPI api;
         final String id;
         final Consumer<V> onMessage;
+        final Runnable onEnd;
+        final Consumer<Throwable> onException;
 
-        private AbstractRedisSubscriber(RedisConnection connection, RedisAPI api, Consumer<V> onMessage) {
+        private AbstractRedisSubscriber(RedisConnection connection, RedisAPI api, Consumer<V> onMessage,
+                Runnable onEnd, Consumer<Throwable> onException) {
             this.connection = connection;
             this.api = api;
             this.id = UUID.randomUUID().toString();
             this.onMessage = onMessage;
+            this.onEnd = onEnd;
+            this.onException = onException;
         }
 
         abstract Uni<Void> subscribeToRedis();
 
         public Uni<String> subscribe() {
             Uni<Void> handled = Uni.createFrom().emitter(emitter -> {
-                connection.handler(r -> {
-                    if (r != null && r.size() > 0) {
-                        Context ctxt = Vertx.currentContext();
-                        if (ctxt != null) {
-                            handleRedisEvent(emitter, r);
-                        } else {
-                            datasource.getVertx().runOnContext(() -> {
-                                handleRedisEvent(emitter, r);
-                            });
-                        }
-                    }
-                });
+                connection.handler(r -> runOnDuplicatedContext(() -> handleRedisEvent(emitter, r)));
+                if (onEnd != null)
+                    connection.endHandler(() -> runOnDuplicatedContext(onEnd));
+                if (onException != null)
+                    connection.exceptionHandler(t -> runOnDuplicatedContext(() -> onException.accept(t)));
             });
 
             Uni<Void> subscribed = subscribeToRedis();
@@ -174,15 +198,26 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
                     .replaceWith(id);
         }
 
+        private void runOnDuplicatedContext(Runnable runnable) {
+            Consumer<Context> contextConsumer = c -> {
+                Context context = VertxContext.getOrCreateDuplicatedContext(c);
+                VertxContextSafetyToggle.setContextSafe(context, true);
+                context.runOnContext(ignored -> runnable.run());
+            };
+            Optional.ofNullable(Vertx.currentContext()).ifPresentOrElse(contextConsumer,
+                    () -> datasource.getVertx().runOnContext(() -> contextConsumer.accept(Vertx.currentContext())));
+        }
+
         private void handleRedisEvent(UniEmitter<? super Void> emitter, Response r) {
-            Context context = VertxContext.getOrCreateDuplicatedContext(Vertx.currentContext());
-            String command = r.get(0).toString();
-            if ("subscribe".equalsIgnoreCase(command) || "psubscribe".equalsIgnoreCase(command)) {
-                emitter.complete(null); // Subscribed
-            } else if ("message".equalsIgnoreCase(command)) {
-                context.runOnContext(x -> onMessage.accept(marshaller.decode(classOfMessage, r.get(2))));
-            } else if ("pmessage".equalsIgnoreCase(command)) {
-                context.runOnContext(x -> onMessage.accept(marshaller.decode(classOfMessage, r.get(3))));
+            if (r != null && r.size() > 0) {
+                String command = r.get(0).toString();
+                if ("subscribe".equalsIgnoreCase(command) || "psubscribe".equalsIgnoreCase(command)) {
+                    emitter.complete(null); // Subscribed
+                } else if ("message".equalsIgnoreCase(command)) {
+                    onMessage.accept(marshaller.decode(classOfMessage, r.get(2)));
+                } else if ("pmessage".equalsIgnoreCase(command)) {
+                    onMessage.accept(marshaller.decode(classOfMessage, r.get(3)));
+                }
             }
         }
 
@@ -199,9 +234,10 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
 
         private final List<String> channels;
 
-        public ReactiveAbstractRedisSubscriberImpl(RedisConnection connection, RedisAPI api, Consumer<V> onMessage,
-                List<String> channels) {
-            super(connection, api, onMessage);
+        public ReactiveAbstractRedisSubscriberImpl(RedisConnection connection, RedisAPI api, List<String> channels,
+                Consumer<V> onMessage, Runnable onEnd,
+                Consumer<Throwable> onException) {
+            super(connection, api, onMessage, onEnd, onException);
             this.channels = new ArrayList<>(channels);
         }
 
@@ -236,9 +272,10 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
 
         private final List<String> patterns;
 
-        public ReactiveRedisPatternSubscriberImpl(RedisConnection connection, RedisAPI api, Consumer<V> onMessage,
-                List<String> patterns) {
-            super(connection, api, onMessage);
+        public ReactiveRedisPatternSubscriberImpl(RedisConnection connection, RedisAPI api, List<String> patterns,
+                Consumer<V> onMessage, Runnable onEnd,
+                Consumer<Throwable> onException) {
+            super(connection, api, onMessage, onEnd, onException);
             this.patterns = new ArrayList<>(patterns);
         }
 

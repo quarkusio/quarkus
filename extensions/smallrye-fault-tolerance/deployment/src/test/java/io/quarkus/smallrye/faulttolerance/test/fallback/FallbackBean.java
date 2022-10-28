@@ -8,6 +8,10 @@ import org.eclipse.microprofile.faulttolerance.FallbackHandler;
 
 @ApplicationScoped
 public class FallbackBean {
+    @Fallback(RecoverFallback.class)
+    public String hello() {
+        throw new RuntimeException();
+    }
 
     public static class RecoverFallback implements FallbackHandler<String> {
         @Override
@@ -15,10 +19,4 @@ public class FallbackBean {
             return RecoverFallback.class.getName();
         }
     }
-
-    @Fallback(RecoverFallback.class)
-    public String ping() {
-        throw new RuntimeException();
-    }
-
 }

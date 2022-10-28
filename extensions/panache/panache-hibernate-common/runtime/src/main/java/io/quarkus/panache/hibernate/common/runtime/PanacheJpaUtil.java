@@ -66,11 +66,6 @@ public class PanacheJpaUtil {
             return "FROM " + getEntityName(entityClass);
         }
 
-        if (isNamedQuery(query)) {
-            // we return named query as is
-            return query;
-        }
-
         String trimmedLc = trimmed.toLowerCase();
         if (trimmedLc.startsWith("from ") || trimmedLc.startsWith("select ")) {
             return query;

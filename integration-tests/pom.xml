@@ -247,6 +247,7 @@
                 <module>container-image</module>
                 <module>kubernetes</module>
                 <module>kubernetes-client</module>
+                <module>kubernetes-client-devservices</module>
                 <module>kubernetes-service-binding-jdbc</module>
                 <module>kubernetes-service-binding-reactive</module>
                 <module>openshift-client</module>
@@ -339,6 +340,20 @@
                 <module>grpc-stork-response-time</module>
                 <module>google-cloud-functions-http</module>
                 <module>google-cloud-functions</module>
+            </modules>
+        </profile>
+
+        <!-- Java 17 test profile that restricts running in 17+ JVM version -->
+        <profile>
+            <id>java-17</id>
+            <activation>
+                <property>
+                    <name>!no-test-modules</name>
+                </property>
+                <jdk>[17,)</jdk>
+            </activation>
+            <modules>
+                <module>java-17</module>
             </modules>
         </profile>
 

@@ -14,7 +14,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class HibernateSearchElasticsearchBuildTimeConfig {
 
     /**
-     * Whether Hibernate Search is enabled <strong>during the build</strong>.
+     * Whether Hibernate Search is enabled **during the build**.
      *
      * If Hibernate Search is disabled during the build, all processing related to Hibernate Search will be skipped,
      * but it will not be possible to activate Hibernate Search at runtime:

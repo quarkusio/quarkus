@@ -54,7 +54,7 @@ public final class PanacheJpaCommonResourceProcessor {
     }
 
     private void lookupNamedQueries(CombinedIndexBuildItem index, DotName name, Set<String> namedQueries) {
-        ClassInfo classInfo = index.getIndex().getClassByName(name);
+        ClassInfo classInfo = index.getComputingIndex().getClassByName(name);
         if (classInfo == null) {
             return;
         }
@@ -80,7 +80,7 @@ public final class PanacheJpaCommonResourceProcessor {
         // climb up the hierarchy of types
         if (!classInfo.superClassType().name().equals(JandexUtil.DOTNAME_OBJECT)) {
             Type superType = classInfo.superClassType();
-            ClassInfo superClass = index.getIndex().getClassByName(superType.name());
+            ClassInfo superClass = index.getComputingIndex().getClassByName(superType.name());
             if (superClass != null) {
                 lookupNamedQueries(index, superClass.name(), namedQueries);
             }

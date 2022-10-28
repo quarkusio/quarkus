@@ -4,12 +4,15 @@ import static org.jboss.resteasy.reactive.common.util.DeploymentUtils.loadClass;
 import static org.jboss.resteasy.reactive.common.util.types.Types.getEffectiveReturnType;
 import static org.jboss.resteasy.reactive.common.util.types.Types.getRawType;
 
+import java.io.File;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,12 +36,13 @@ import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
-import org.jboss.resteasy.reactive.common.reflection.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.common.types.AllWriteableMarker;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.common.util.types.TypeSignatureParser;
+import org.jboss.resteasy.reactive.common.util.types.Types;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.core.parameters.AsyncResponseExtractor;
@@ -50,6 +54,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.HeaderParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.InjectParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.LocatableResourcePathParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.MatrixParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.MultipartFormParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.NullParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.PathParamExtractor;
@@ -276,7 +281,7 @@ public class RuntimeResourceDeployment {
         }
         // form params can be everywhere (field, beanparam, param)
         boolean checkReadBodyRequestFilters = false;
-        if (method.isFormParamRequired() || method.isMultipart()) {
+        if (method.isFormParamRequired()) {
             // read the body as multipart in one go
             handlers.add(new FormBodyHandler(bodyParameter != null, executorSupplier));
             checkReadBodyRequestFilters = true;
@@ -333,10 +338,7 @@ public class RuntimeResourceDeployment {
         addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.RESOLVE_METHOD_PARAMETERS);
         for (int i = 0; i < parameters.length; i++) {
             ServerMethodParameter param = (ServerMethodParameter) parameters[i];
-            boolean single = param.isSingle();
-            ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, locatableResource, param.parameterType,
-                    param.type, param.name,
-                    single, param.encoded, param.customParameterExtractor);
+            ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, locatableResource, param);
             ParameterConverter converter = null;
             ParamConverterProviders paramConverterProviders = info.getParamConverterProviders();
             boolean userProviderConvertersExist = !paramConverterProviders.getParamConverterProviders().isEmpty();
@@ -618,49 +620,76 @@ public class RuntimeResourceDeployment {
     }
 
     public ParameterExtractor parameterExtractor(Map<String, Integer> pathParameterIndexes, boolean locatableResource,
-            ParameterType type, String javaType,
-            String name,
-            boolean single, boolean encoded, ParameterExtractor customExtractor) {
+            ServerMethodParameter param) {
         ParameterExtractor extractor;
-        switch (type) {
+        switch (param.parameterType) {
             case HEADER:
-                return new HeaderParamExtractor(name, single);
+                return new HeaderParamExtractor(param.name, param.isSingle());
             case COOKIE:
-                return new CookieParamExtractor(name, javaType);
+                return new CookieParamExtractor(param.name, param.type);
             case FORM:
-                return new FormParamExtractor(name, single, encoded);
+                MultipartFormParamExtractor.Type multiPartType = null;
+                Class<Object> typeClass = null;
+                Type genericType = null;
+                if (param.type.equals(FileUpload.class.getName())) {
+                    multiPartType = MultipartFormParamExtractor.Type.FileUpload;
+                } else if (param.type.equals(File.class.getName())) {
+                    multiPartType = MultipartFormParamExtractor.Type.File;
+                } else if (param.type.equals(Path.class.getName())) {
+                    multiPartType = MultipartFormParamExtractor.Type.Path;
+                } else if (param.type.equals(String.class.getName())) {
+                    multiPartType = MultipartFormParamExtractor.Type.String;
+                } else if (param.type.equals(InputStream.class.getName())) {
+                    multiPartType = MultipartFormParamExtractor.Type.InputStream;
+                } else if (param.type.equals(byte[].class.getName())) {
+                    multiPartType = MultipartFormParamExtractor.Type.ByteArray;
+                } else if (param.mimeType != null && !param.mimeType.equals(MediaType.TEXT_PLAIN)) {
+                    multiPartType = MultipartFormParamExtractor.Type.PartType;
+                    // TODO: special primitive handling?
+                    // FIXME: by using the element type, we're also getting converters for parameter collection types such as List/Array/Set
+                    // but also others we may not want?
+                    typeClass = loadClass(param.type);
+                    genericType = TypeSignatureParser.parse(param.signature);
+                    // strip the element type for the message body readers
+                    genericType = Types.getMultipartElementType(genericType);
+                }
+                if (multiPartType != null) {
+                    return new MultipartFormParamExtractor(param.name, param.isSingle(), multiPartType, typeClass, genericType,
+                            param.mimeType, param.encoded);
+                }
+                // regular form
+                return new FormParamExtractor(param.name, param.isSingle(), param.encoded);
             case PATH:
-                Integer index = pathParameterIndexes.get(name);
+                Integer index = pathParameterIndexes.get(param.name);
                 if (index == null) {
                     if (locatableResource) {
-                        extractor = new LocatableResourcePathParamExtractor(name);
+                        extractor = new LocatableResourcePathParamExtractor(param.name);
                     } else {
                         extractor = new NullParamExtractor();
                     }
                 } else {
-                    extractor = new PathParamExtractor(index, encoded, single);
+                    extractor = new PathParamExtractor(index, param.encoded, param.isSingle());
                 }
                 return extractor;
             case CONTEXT:
-                return new ContextParamExtractor(javaType);
+                return new ContextParamExtractor(param.type);
             case ASYNC_RESPONSE:
                 return new AsyncResponseExtractor();
             case QUERY:
-                extractor = new QueryParamExtractor(name, single, encoded);
+                extractor = new QueryParamExtractor(param.name, param.isSingle(), param.encoded);
                 return extractor;
             case BODY:
                 return new BodyParamExtractor();
             case MATRIX:
-                extractor = new MatrixParamExtractor(name, single, encoded);
+                extractor = new MatrixParamExtractor(param.name, param.isSingle(), param.encoded);
                 return extractor;
             case BEAN:
-                return new InjectParamExtractor((BeanFactory<Object>) info.getFactoryCreator().apply(loadClass(javaType)));
             case MULTI_PART_FORM:
-                return new InjectParamExtractor((BeanFactory<Object>) new ReflectionBeanFactoryCreator().apply(javaType));
+                return new InjectParamExtractor((BeanFactory<Object>) info.getFactoryCreator().apply(loadClass(param.type)));
             case CUSTOM:
-                return customExtractor;
+                return param.customParameterExtractor;
             default:
-                throw new RuntimeException("Unknown param type: " + type);
+                throw new RuntimeException("Unknown param type: " + param.parameterType);
         }
     }
 

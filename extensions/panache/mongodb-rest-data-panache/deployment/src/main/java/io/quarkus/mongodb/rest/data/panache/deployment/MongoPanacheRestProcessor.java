@@ -71,13 +71,13 @@ class MongoPanacheRestProcessor {
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformersProducer) {
-        EntityClassHelper entityClassHelper = new EntityClassHelper(index.getIndex());
+        EntityClassHelper entityClassHelper = new EntityClassHelper(index.getComputingIndex());
         ResourceImplementor resourceImplementor = new ResourceImplementor(entityClassHelper);
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
-        for (ClassInfo classInfo : index.getIndex()
+        for (ClassInfo classInfo : index.getComputingIndex()
                 .getKnownDirectImplementors(PANACHE_MONGO_ENTITY_RESOURCE_INTERFACE)) {
-            validateResource(index.getIndex(), classInfo);
+            validateResource(index.getComputingIndex(), classInfo);
 
             List<Type> generics = getGenericTypes(classInfo);
             String resourceInterface = classInfo.name().toString();
@@ -103,13 +103,13 @@ class MongoPanacheRestProcessor {
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformersProducer) {
-        EntityClassHelper entityClassHelper = new EntityClassHelper(index.getIndex());
+        EntityClassHelper entityClassHelper = new EntityClassHelper(index.getComputingIndex());
         ResourceImplementor resourceImplementor = new ResourceImplementor(entityClassHelper);
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
-        for (ClassInfo classInfo : index.getIndex()
+        for (ClassInfo classInfo : index.getComputingIndex()
                 .getKnownDirectImplementors(PANACHE_MONGO_REPOSITORY_RESOURCE_INTERFACE)) {
-            validateResource(index.getIndex(), classInfo);
+            validateResource(index.getComputingIndex(), classInfo);
 
             List<Type> generics = getGenericTypes(classInfo);
             String resourceInterface = classInfo.name().toString();

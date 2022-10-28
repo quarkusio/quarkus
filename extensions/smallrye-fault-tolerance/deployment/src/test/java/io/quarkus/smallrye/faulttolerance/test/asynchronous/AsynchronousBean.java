@@ -9,9 +9,8 @@ import org.eclipse.microprofile.faulttolerance.Asynchronous;
 
 @ApplicationScoped
 public class AsynchronousBean {
-
     @Asynchronous
-    public CompletionStage<String> asynchronous() {
+    public CompletionStage<String> hello() {
         return CompletableFuture.completedFuture("hello");
     }
 }

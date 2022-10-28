@@ -34,8 +34,8 @@ public class Dev extends BaseBuildCommand implements Callable<Integer> {
             output.throwIfUnmatchedArguments(spec.commandLine());
 
             BuildSystemRunner runner = getRunner();
-            List<Supplier<BuildSystemRunner.BuildCommandArgs>> commandArgs = runner.prepareDevMode(devOptions, debugOptions,
-                    params);
+            List<Supplier<BuildSystemRunner.BuildCommandArgs>> commandArgs = runner.prepareDevTestMode(
+                    true, devOptions, debugOptions, params);
 
             if (devOptions.isDryRun()) {
                 dryRunDev(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs.iterator().next().get());

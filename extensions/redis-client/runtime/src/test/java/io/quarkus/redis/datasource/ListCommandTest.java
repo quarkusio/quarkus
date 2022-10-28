@@ -157,6 +157,7 @@ public class ListCommandTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void lpopCount() {
         assertThat(lists.lpop(key, 1)).isEqualTo(List.of());
         lists.rpush(key, Person.person1, Person.person2);
@@ -164,6 +165,7 @@ public class ListCommandTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void lpos() {
 
         lists.rpush(key, Person.person4, Person.person5, Person.person6, Person.person1, Person.person2, Person.person3,
@@ -259,6 +261,7 @@ public class ListCommandTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void rpopCount() {
         assertThat(lists.rpop(key, 1)).isEqualTo(List.of());
         lists.rpush(key, Person.person1, Person.person2);
@@ -301,6 +304,7 @@ public class ListCommandTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void lmove() {
         String list1 = key;
         String list2 = key + "-2";
@@ -313,6 +317,7 @@ public class ListCommandTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void blmove() {
         String list1 = key;
         String list2 = key + "-2";
@@ -325,6 +330,7 @@ public class ListCommandTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void sort() {
         ListCommands<String, String> commands = ds.list(String.class, String.class);
         commands.rpush(key, "9", "5", "1", "3", "5", "8", "7", "6", "2", "4");

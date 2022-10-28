@@ -19,7 +19,7 @@ public class BeanLifecycleMethodsOverridenTest {
     ArcTestContainer container = new ArcTestContainer(Bird.class, Eagle.class, Falcon.class);
 
     @Test
-    public void testOverridenMethodWithNoAnnotation() {
+    public void testOverriddenMethodWithNoAnnotation() {
         resetAll();
         InstanceHandle<Falcon> falconInstanceHandle = Arc.container().instance(Falcon.class);
         falconInstanceHandle.get().ping();
@@ -31,7 +31,7 @@ public class BeanLifecycleMethodsOverridenTest {
     }
 
     @Test
-    public void testOverridenMethodWithLifecycleAnnotation() {
+    public void testOverriddenMethodWithLifecycleAnnotation() {
         resetAll();
         InstanceHandle<Eagle> eagleInstanceHandle = Arc.container().instance(Eagle.class);
         eagleInstanceHandle.get().ping();

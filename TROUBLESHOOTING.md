@@ -148,6 +148,10 @@ mvn quarkus:dev -Djvm.args="-agentpath:/path/to/async-profiler/build/libasyncPro
 
 You can also configure the `jvm.args` system property directly inside the `quarkus-maven-plugin` section of your pom.xml.
 
+## Printing build step execution time
+
+When trying to debug startup performance it is convenient to log build steps execution time. This can be achieved by adding the following system property: `-Dquarkus.debug.print-startup-times=true`.
+
 ## And what about Windows?
 
 If you are on Windows, you can still get useful performance insights using JFR - Java Flight Recorder.
@@ -155,7 +159,7 @@ If you are on Windows, you can still get useful performance insights using JFR -
 The following Java options will enable JFR to record profiling data inside a `myrecording.jfr` file that can then be used by JMC - Java Mission Control for analysis.
 
 ```shell script
--XX:+FlightRecorder -XX:StartFlightRecording=filename=myrecording.jfr,settings=profile -XX:FlightRecorderOptions=stackdepth=64
+-XX:StartFlightRecording=filename=myrecording.jfr,settings=profile -XX:FlightRecorderOptions=stackdepth=64
 ```
 
 Here we configure JFR with a deeper stack depth as the default is usually not enough.

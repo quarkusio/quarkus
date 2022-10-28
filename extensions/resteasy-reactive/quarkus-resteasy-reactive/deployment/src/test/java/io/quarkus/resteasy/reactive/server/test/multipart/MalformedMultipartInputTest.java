@@ -8,6 +8,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.function.Supplier;
 
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -19,7 +20,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
-import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.common.providers.serialisers.PrimitiveBodyHandler;
@@ -77,7 +77,7 @@ public class MalformedMultipartInputTest {
         @Produces(MediaType.TEXT_PLAIN)
         @Consumes(MediaType.MULTIPART_FORM_DATA)
         @POST
-        public MyEnum test(@MultipartForm Input formData) {
+        public MyEnum test(@BeanParam Input formData) {
             return formData.format;
         }
     }

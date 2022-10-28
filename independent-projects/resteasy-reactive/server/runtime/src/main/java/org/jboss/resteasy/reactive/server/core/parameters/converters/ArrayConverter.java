@@ -54,6 +54,7 @@ public class ArrayConverter implements ParameterConverter {
         public ArraySupplier() {
         }
 
+        // invoked by reflection for BeanParam in ClassInjectorTransformer
         public ArraySupplier(ParameterConverterSupplier delegate, String elementType) {
             this.delegate = delegate;
             this.elementType = elementType;

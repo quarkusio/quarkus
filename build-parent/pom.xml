@@ -38,12 +38,7 @@
         <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
-        <!-- The Graal version we suggest using in documentation - as that's
-           what we work with by self downloading it: -->
-        <graal-sdk.version-for-documentation>22.2.0</graal-sdk.version-for-documentation>
-        <mandrel.version-for-documentation>22.2</mandrel.version-for-documentation>
-
-        <asciidoctorj.version>2.5.6</asciidoctorj.version>
+        <asciidoctorj.version>2.5.7</asciidoctorj.version>
         <htmlunit.version>2.40.0</htmlunit.version>
         <javaparser-core.version>3.24.2</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
@@ -51,7 +46,7 @@
 
         <!-- Dev tools -->
         <freemarker.version>2.3.31</freemarker.version>
-        <commonmark.version>0.19.0</commonmark.version>
+        <commonmark.version>0.20.0</commonmark.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.7.0.Alpha10</arquillian.version>
@@ -103,7 +98,7 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
-        <keycloak.version>19.0.2</keycloak.version>
+        <keycloak.version>19.0.3</keycloak.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.version}-legacy</keycloak.docker.legacy.image>
 
@@ -157,7 +152,7 @@
         <!-- Skip the API checks by default. Let the modules opt in. -->
         <revapi.skip>true</revapi.skip>
         <!-- By default don't check dependencies -->
-        <revapi.checkdeps>false</revapi.checkdeps>
+        <revapi.checkdeps>true</revapi.checkdeps>
         <!-- The message that is appended to the end of the plugin error output when the API problems fail the build -->
         <revapi.buildFailureMessage>Run "jbang revapi-update" to update api-changes.xml file and also add the justification for those changes in that file.</revapi.buildFailureMessage>
 

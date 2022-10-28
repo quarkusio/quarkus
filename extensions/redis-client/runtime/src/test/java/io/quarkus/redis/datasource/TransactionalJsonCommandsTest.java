@@ -19,6 +19,7 @@ import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
+@RequiresCommand("json.get")
 public class TransactionalJsonCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource blocking;

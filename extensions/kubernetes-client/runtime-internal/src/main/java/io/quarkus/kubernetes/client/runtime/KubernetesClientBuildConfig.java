@@ -161,4 +161,10 @@ public class KubernetesClientBuildConfig {
     @ConfigItem(defaultValue = "true")
     public boolean generateRbac;
 
+    /**
+     * Config for dev services
+     */
+    @ConfigItem
+    public KubernetesDevServicesBuildTimeConfig devservices;
+
 }

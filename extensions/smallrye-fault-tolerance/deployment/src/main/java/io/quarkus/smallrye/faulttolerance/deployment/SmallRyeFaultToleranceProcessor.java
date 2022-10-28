@@ -17,7 +17,6 @@ import javax.enterprise.inject.spi.DefinitionException;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.faulttolerance.FallbackHandler;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -101,8 +100,7 @@ public class SmallRyeFaultToleranceProcessor {
 
         // Add reflective access to fallback handlers
         Set<String> fallbackHandlers = new HashSet<>();
-        for (ClassInfo implementor : index
-                .getAllKnownImplementors(DotName.createSimple(FallbackHandler.class.getName()))) {
+        for (ClassInfo implementor : index.getAllKnownImplementors(DotNames.FALLBACK_HANDLER)) {
             fallbackHandlers.add(implementor.name().toString());
         }
         if (!fallbackHandlers.isEmpty()) {
@@ -227,11 +225,10 @@ public class SmallRyeFaultToleranceProcessor {
             @Override
             public void transform(TransformationContext ctx) {
                 if (ctx.isClass()) {
-                    if (!ctx.getTarget().asClass().name().toString()
-                            .equals("io.smallrye.faulttolerance.FaultToleranceInterceptor")) {
+                    if (!ctx.getTarget().asClass().name().equals(DotNames.FAULT_TOLERANCE_INTERCEPTOR)) {
                         return;
                     }
-                    final Config config = ConfigProvider.getConfig();
+                    Config config = ConfigProvider.getConfig();
 
                     OptionalInt priority = config.getValue("mp.fault.tolerance.interceptor.priority", OptionalInt.class);
                     if (priority.isPresent()) {
@@ -248,7 +245,7 @@ public class SmallRyeFaultToleranceProcessor {
     @BuildStep
     // needs to be RUNTIME_INIT because we need to read MP Config
     @Record(ExecutionTime.RUNTIME_INIT)
-    void validateFaultToleranceAnnotations(SmallRyeFaultToleranceRecorder recorder,
+    void processFaultToleranceAnnotations(SmallRyeFaultToleranceRecorder recorder,
             RecorderContext recorderContext,
             ValidationPhaseBuildItem validationPhase,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
@@ -287,21 +284,28 @@ public class SmallRyeFaultToleranceProcessor {
                 continue;
             }
 
-            for (String exceptionConfig : exceptionConfigs) {
-                Optional<String[]> exceptionNames = config.getOptionalValue(beanClass.name().toString()
-                        + "/" + exceptionConfig, String[].class);
-                if (exceptionNames.isPresent()) {
-                    reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, exceptionNames.get()));
-                }
-            }
-
             if (scanner.hasFTAnnotations(beanClass)) {
+                for (String exceptionConfig : exceptionConfigs) {
+                    Optional<String[]> exceptionNames = config.getOptionalValue(beanClass.name().toString()
+                            + "/" + exceptionConfig, String[].class);
+                    if (exceptionNames.isPresent()) {
+                        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, exceptionNames.get()));
+                    }
+                }
+
                 scanner.forEachMethod(beanClass, method -> {
                     FaultToleranceMethod ftMethod = scanner.createFaultToleranceMethod(beanClass, method);
                     if (ftMethod.isLegitimate()) {
                         ftMethods.add(ftMethod);
 
-                        if (method.hasAnnotation(DotNames.BLOCKING) && method.hasAnnotation(DotNames.NON_BLOCKING)) {
+                        if (annotationStore.hasAnnotation(method, DotNames.ASYNCHRONOUS)
+                                && annotationStore.hasAnnotation(method, DotNames.ASYNCHRONOUS_NON_BLOCKING)) {
+                            exceptions.add(new DefinitionException(
+                                    "Both @Asynchronous and @AsynchronousNonBlocking present on '" + method + "'"));
+                        }
+
+                        if (annotationStore.hasAnnotation(method, DotNames.BLOCKING)
+                                && annotationStore.hasAnnotation(method, DotNames.NON_BLOCKING)) {
                             exceptions.add(
                                     new DefinitionException("Both @Blocking and @NonBlocking present on '" + method + "'"));
                         }
@@ -316,8 +320,14 @@ public class SmallRyeFaultToleranceProcessor {
                     }
                 });
 
-                if (beanClass.classAnnotation(DotNames.BLOCKING) != null
-                        && beanClass.classAnnotation(DotNames.NON_BLOCKING) != null) {
+                if (annotationStore.hasAnnotation(beanClass, DotNames.ASYNCHRONOUS)
+                        && annotationStore.hasAnnotation(beanClass, DotNames.ASYNCHRONOUS_NON_BLOCKING)) {
+                    exceptions.add(new DefinitionException(
+                            "Both @Asynchronous and @AsynchronousNonBlocking present on '" + beanClass + "'"));
+                }
+
+                if (annotationStore.hasAnnotation(beanClass, DotNames.BLOCKING)
+                        && annotationStore.hasAnnotation(beanClass, DotNames.NON_BLOCKING)) {
                     exceptions.add(new DefinitionException("Both @Blocking and @NonBlocking present on '" + beanClass + "'"));
                 }
             }
@@ -325,6 +335,8 @@ public class SmallRyeFaultToleranceProcessor {
 
         recorder.createFaultToleranceOperation(ftMethods);
 
+        // since annotation transformations are applied lazily, we can't know
+        // all transformed `@CircuitBreakerName`s and have to rely on Jandex here
         Map<String, Set<String>> existingCircuitBreakerNames = new HashMap<>();
         for (AnnotationInstance it : index.getAnnotations(DotNames.CIRCUIT_BREAKER_NAME)) {
             if (it.target().kind() == Kind.METHOD) {
@@ -340,12 +352,11 @@ public class SmallRyeFaultToleranceProcessor {
             }
         }
 
+        // since annotation transformations are applied lazily, we can't know
+        // all transformed `@*Backoff`s and have to rely on Jandex here
         for (DotName backoffAnnotation : DotNames.BACKOFF_ANNOTATIONS) {
             for (AnnotationInstance it : index.getAnnotations(backoffAnnotation)) {
-                if (it.target().kind() == Kind.CLASS && it.target().asClass().classAnnotation(DotNames.RETRY) == null) {
-                    exceptions.add(new DefinitionException("Backoff annotation @" + backoffAnnotation.withoutPackagePrefix()
-                            + " present on '" + it.target() + "', but @Retry is missing"));
-                } else if (it.target().kind() == Kind.METHOD && !it.target().asMethod().hasAnnotation(DotNames.RETRY)) {
+                if (!annotationStore.hasAnnotation(it.target(), DotNames.RETRY)) {
                     exceptions.add(new DefinitionException("Backoff annotation @" + backoffAnnotation.withoutPackagePrefix()
                             + " present on '" + it.target() + "', but @Retry is missing"));
                 }

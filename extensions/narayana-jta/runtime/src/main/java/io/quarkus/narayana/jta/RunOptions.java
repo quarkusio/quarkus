@@ -5,12 +5,11 @@ import java.util.function.Function;
 /**
  * Builder interface to allow a transaction to be customized, including things like timeout and semantics when an existing
  * transaction is present.
+ *
+ * @deprecated Use {@link QuarkusTransaction#runner()} instead.
  */
-public class RunOptions {
-
-    Semantic semantic = Semantic.REQUIRE_NEW;
-    int timeout = 0;
-    Function<Throwable, ExceptionResult> exceptionHandler;
+@Deprecated
+public class RunOptions extends RunOptionsBase {
 
     /**
      * Sets the transaction timeout for transactions created by this builder. A value of zero refers to the system default.
@@ -20,10 +19,7 @@ public class RunOptions {
      * @return This builder
      */
     public RunOptions timeout(int seconds) {
-        if (seconds < 0) {
-            throw new IllegalArgumentException("seconds cannot be negative");
-        }
-        this.timeout = seconds;
+        setTimeout(seconds);
         return this;
     }
 
@@ -35,7 +31,26 @@ public class RunOptions {
      * @return This builder
      */
     public RunOptions semantic(Semantic semantic) {
-        this.semantic = semantic;
+        if (semantic == null) {
+            setSemantic(null);
+            return this;
+        }
+        switch (semantic) {
+            case DISALLOW_EXISTING:
+                setSemantic(TransactionSemantic.DISALLOW_EXISTING);
+                break;
+            case JOIN_EXISTING:
+                setSemantic(TransactionSemantic.JOIN_EXISTING);
+                break;
+            case REQUIRE_NEW:
+                setSemantic(TransactionSemantic.REQUIRE_NEW);
+                break;
+            case SUSPEND_EXISTING:
+                setSemantic(TransactionSemantic.SUSPEND_EXISTING);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported value: " + semantic);
+        }
         return this;
     }
 
@@ -53,7 +68,19 @@ public class RunOptions {
      * @return This builder
      */
     public RunOptions exceptionHandler(Function<Throwable, ExceptionResult> handler) {
-        this.exceptionHandler = handler;
+        setExceptionHandler(handler.andThen(result -> {
+            if (result == null) {
+                return null;
+            }
+            switch (result) {
+                case COMMIT:
+                    return TransactionExceptionResult.COMMIT;
+                case ROLLBACK:
+                    return TransactionExceptionResult.ROLLBACK;
+                default:
+                    throw new IllegalArgumentException("Unsupported value: " + result);
+            }
+        }));
         return this;
     }
 

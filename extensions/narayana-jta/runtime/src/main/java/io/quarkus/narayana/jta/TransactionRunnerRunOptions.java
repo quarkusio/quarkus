@@ -25,7 +25,7 @@ public interface TransactionRunnerRunOptions extends TransactionRunner {
 
     /**
      * Provides an exception handler that can make a decision to rollback or commit based on the type of exception. If the
-     * predicate returns {@link RunOptions.ExceptionResult#ROLLBACK} the transaction is rolled back,
+     * predicate returns {@link TransactionExceptionResult#ROLLBACK} the transaction is rolled back,
      * otherwise it is committed.
      * <p>
      * This exception will still be propagated to the caller, so this method should not log or perform any other actions other
@@ -36,6 +36,6 @@ public interface TransactionRunnerRunOptions extends TransactionRunner {
      * @param handler The exception handler
      * @return This builder
      */
-    TransactionRunnerRunOptions exceptionHandler(Function<Throwable, RunOptions.ExceptionResult> handler);
+    TransactionRunnerRunOptions exceptionHandler(Function<Throwable, TransactionExceptionResult> handler);
 
 }

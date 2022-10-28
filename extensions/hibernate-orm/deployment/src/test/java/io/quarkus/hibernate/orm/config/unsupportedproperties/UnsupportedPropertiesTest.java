@@ -114,7 +114,7 @@ public class UnsupportedPropertiesTest {
     public void testInsertsOrdered() {
         var listener = new BatchCountSpyingEventListener();
 
-        QuarkusTransaction.run(() -> {
+        QuarkusTransaction.runner().requireNew().run(() -> {
             em.unwrap(Session.class).addEventListeners(listener);
 
             ParentEntity parent1 = new ParentEntity(1);

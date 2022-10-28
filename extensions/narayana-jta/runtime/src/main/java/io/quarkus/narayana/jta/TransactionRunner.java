@@ -6,7 +6,7 @@ import java.util.concurrent.Callable;
  * Runs tasks in transactions with pre-defined semantics and options.
  *
  * @see QuarkusTransaction#runner()
- * @see RunOptions.Semantic
+ * @see TransactionSemantic
  */
 public interface TransactionRunner {
 

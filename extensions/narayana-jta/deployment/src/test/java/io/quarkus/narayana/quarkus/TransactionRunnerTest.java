@@ -22,7 +22,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.narayana.jta.QuarkusTransactionException;
-import io.quarkus.narayana.jta.RunOptions;
+import io.quarkus.narayana.jta.TransactionExceptionResult;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class TransactionRunnerTest {
@@ -140,7 +140,7 @@ public class TransactionRunnerTest {
     public void exceptionHandler() {
         var sync1 = new TestSync();
         assertThrows(MyRuntimeException.class, () -> QuarkusTransaction.runner().requireNew()
-                .exceptionHandler((e) -> RunOptions.ExceptionResult.COMMIT)
+                .exceptionHandler((e) -> TransactionExceptionResult.COMMIT)
                 .run(() -> {
                     register(sync1);
                     throw new MyRuntimeException();
@@ -149,7 +149,7 @@ public class TransactionRunnerTest {
 
         var sync2 = new TestSync();
         assertThrows(MyRuntimeException.class, () -> QuarkusTransaction.runner().requireNew()
-                .exceptionHandler((e) -> RunOptions.ExceptionResult.COMMIT)
+                .exceptionHandler((e) -> TransactionExceptionResult.COMMIT)
                 .call(() -> {
                     register(sync2);
                     throw new MyRuntimeException();
@@ -158,7 +158,7 @@ public class TransactionRunnerTest {
 
         var sync3 = new TestSync();
         assertThrows(QuarkusTransactionException.class, () -> QuarkusTransaction.runner().requireNew()
-                .exceptionHandler((e) -> RunOptions.ExceptionResult.COMMIT)
+                .exceptionHandler((e) -> TransactionExceptionResult.COMMIT)
                 .call(() -> {
                     register(sync3);
                     throw new MyCheckedException();

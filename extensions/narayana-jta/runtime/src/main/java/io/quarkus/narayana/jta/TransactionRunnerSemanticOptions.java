@@ -10,7 +10,7 @@ import java.util.function.Function;
 public interface TransactionRunnerSemanticOptions {
 
     /**
-     * Sets the transaction semantic of the runner to {@link RunOptions.Semantic#JOIN_EXISTING}.
+     * Sets the transaction semantic of the runner to {@link TransactionSemantic#JOIN_EXISTING}.
      * <p>
      * If no transaction is active then a new transaction will be started, and committed when the method ends.
      * If an exception is thrown the exception handler registered by
@@ -28,7 +28,7 @@ public interface TransactionRunnerSemanticOptions {
     TransactionRunnerRunOptions joinExisting();
 
     /**
-     * Sets the transaction semantic of the runner to {@link RunOptions.Semantic#REQUIRE_NEW}.
+     * Sets the transaction semantic of the runner to {@link TransactionSemantic#REQUIRE_NEW}.
      * <p>
      * If an existing transaction is already associated with the current thread then the transaction is suspended, and
      * resumed once
@@ -42,7 +42,7 @@ public interface TransactionRunnerSemanticOptions {
     TransactionRunnerRunOptions requireNew();
 
     /**
-     * Sets the transaction semantic of the runner to {@link RunOptions.Semantic#SUSPEND_EXISTING}.
+     * Sets the transaction semantic of the runner to {@link TransactionSemantic#SUSPEND_EXISTING}.
      * <p>
      * If no transaction is active then this semantic is basically a no-op.
      * <p>
@@ -59,7 +59,7 @@ public interface TransactionRunnerSemanticOptions {
     TransactionRunnerRunOptions suspendExisting();
 
     /**
-     * Sets the transaction semantic of the runner to {@link RunOptions.Semantic#DISALLOW_EXISTING}.
+     * Sets the transaction semantic of the runner to {@link TransactionSemantic#DISALLOW_EXISTING}.
      * <p>
      * If a transaction is already associated with the current thread a {@link QuarkusTransactionException} will be thrown,
      * otherwise a new transaction is started, and follows all the normal lifecycle rules.
@@ -75,6 +75,6 @@ public interface TransactionRunnerSemanticOptions {
      * @return A {@link TransactionRunnerRunOptions} that can be used to set additional options or to run a task with the
      *         selected semantic.
      */
-    TransactionRunnerRunOptions semantic(RunOptions.Semantic semantic);
+    TransactionRunnerRunOptions semantic(TransactionSemantic semantic);
 
 }

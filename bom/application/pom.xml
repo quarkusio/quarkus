@@ -157,7 +157,7 @@
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.0.11</jboss-logmanager.version>
-        <flyway.version>9.5.1</flyway.version>
+        <flyway.version>9.6.0</flyway.version>
         <yasson.version>1.0.11</yasson.version>
         <liquibase.version>4.16.1</liquibase.version>
         <snakeyaml.version>1.33</snakeyaml.version>
@@ -199,10 +199,11 @@
         <jacoco.version>0.8.8</jacoco.version>
         <testcontainers.version>1.17.5</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
         <docker-java.version>3.2.13</docker-java.version> <!-- must be the version Testcontainers use -->
+        <com.dajudge.kindcontainer>1.3.0</com.dajudge.kindcontainer>
         <aesh-readline.version>2.2</aesh-readline.version>
         <aesh.version>2.6</aesh.version>
         <!-- these two artifacts needs to be compatible together -->
-        <strimzi-oauth.version>0.10.0</strimzi-oauth.version>
+        <strimzi-oauth.version>0.11.0</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>9.25.6</strimzi-oauth.nimbus.version>
         <java-buildpack-client.version>0.0.6</java-buildpack-client.version>
         <org-crac.version>0.1.3</org-crac.version>
@@ -5843,6 +5844,17 @@
                 <groupId>io.github.crac</groupId>
                 <artifactId>org-crac</artifactId>
                 <version>${org-crac.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dajudge.kindcontainer</groupId>
+                <artifactId>kindcontainer</artifactId>
+                <version>${com.dajudge.kindcontainer}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <!-- Relocations -->

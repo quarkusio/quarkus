@@ -81,6 +81,14 @@ The Kogito Dev Service will be enabled when either `kogito-quarkus` or `kogito-q
 
 include::{includes}/kogito-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
 
+== Kubernetes
+
+The Kubernetes Dev Service will be enabled when `kubernetes-client` extension is present in your application, and 
+the API server address has not been explicitly configured. More information can be found at the
+xref:kubernetes-dev-services.adoc[Kubernetes Dev Services Guide].
+
+include::{generated-dir}/config/quarkus-kubernetes-client-config-group-kubernetes-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+
 == MongoDB
 
 The MongoDB Dev Service will be enabled when the `quarkus-mongodb-client` extension is present in your application, and

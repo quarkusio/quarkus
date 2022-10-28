@@ -57,6 +57,32 @@ import io.restassured.RestAssured;
 public class DevMojoIT extends RunAndCheckMojoTestBase {
 
     @Test
+    public void testConfigFactoryInAppModuleBannedInCodeGen() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/codegen-config-factory");
+        run(true);
+        assertThat(DevModeTestUtils.getHttpResponse("/codegen-config/acme-config-factory")).isEqualTo("n/a");
+        assertThat(DevModeTestUtils.getHttpResponse("/codegen-config/acme-config-provider")).isEqualTo("n/a");
+        assertThat(DevModeTestUtils.getHttpResponse("/runtime-config/acme-config-factory"))
+                .isEqualTo("org.acme.AppConfigSourceFactory");
+        assertThat(DevModeTestUtils.getHttpResponse("/runtime-config/acme-config-provider"))
+                .isEqualTo("org.acme.AppConfigSourceProvider");
+    }
+
+    @Test
+    public void testConfigFactoryInAppModuleFilteredInCodeGen() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/codegen-config-factory");
+        run(true, "-Dconfig-factory.enabled");
+        assertThat(DevModeTestUtils.getHttpResponse("/codegen-config/acme-config-factory"))
+                .isEqualTo("org.acme.config.AcmeConfigSourceFactory");
+        assertThat(DevModeTestUtils.getHttpResponse("/codegen-config/acme-config-provider"))
+                .isEqualTo("org.acme.config.AcmeConfigSourceProvider");
+        assertThat(DevModeTestUtils.getHttpResponse("/runtime-config/acme-config-factory"))
+                .isEqualTo("org.acme.AppConfigSourceFactory");
+        assertThat(DevModeTestUtils.getHttpResponse("/runtime-config/acme-config-provider"))
+                .isEqualTo("org.acme.AppConfigSourceProvider");
+    }
+
+    @Test
     public void testSystemPropertiesConfig() throws MavenInvocationException, IOException {
         testDir = initProject("projects/dev-mode-sys-props-config");
         run(true);

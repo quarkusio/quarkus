@@ -42,7 +42,6 @@ class VertxDispatcher(private val vertxContext: Context, private val requestScop
             try {
                 block.run()
             } finally {
-                CurrentRequestManager.set(null)
                 requestScope.deactivate()
             }
         }

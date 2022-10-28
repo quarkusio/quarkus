@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.server.processor.util;
+package org.jboss.resteasy.reactive.common.processor;
 
 import org.jboss.jandex.DotName;
 

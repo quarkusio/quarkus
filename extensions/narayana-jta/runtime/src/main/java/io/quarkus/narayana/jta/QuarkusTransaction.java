@@ -20,8 +20,9 @@ import io.quarkus.arc.Arc;
  * <li><b>No Transaction Leaks: </b>Transactions are tied to the request scope, if the scope is destroyed before the transaction
  * is committed the transaction is rolled back. Note that this means this can only currently be used when the request scope is
  * active.</li>
- * <li><b>Per Transaction Timeouts: </b>{@link RunOptions#timeout(int)} can be used to set the new transactions
- * timeout, without affecting the per thread default.</li>
+ * <li><b>Per Transaction Timeouts:</b>
+ * {{@link BeginOptions#timeout(int)}/{@link TransactionRunnerRunOptions#timeout(int)}/{@link RunOptions#timeout(int)}
+ * can be used to set the new transactions timeout, without affecting the per thread default.</li>
  * <li><b>Lambda Style Transactions: </b> {@link Runnable} and {@link Callable} instances can be run inside the scope of a new
  * transaction.</li>
  * </ul>
@@ -103,6 +104,31 @@ public interface QuarkusTransaction {
     }
 
     /**
+     * Starts the definition of a transaction runner,
+     * which can then be used to run a task ({@link Runnable}, {@link Callable}, ...),
+     * automatically starting/suspending transactions as required.
+     * <p>
+     * Examples of use:
+     *
+     * <pre>{@code
+     * QuarkusTransaction.runner().requireNew().run(() -> ...);
+     * QuarkusTransaction.runner().joinExisting().run(() -> ...);
+     * QuarkusTransaction.runner().suspendExisting().run(() -> ...);
+     * QuarkusTransaction.runner().disallowExisting().run(() -> ...);
+     * int value = QuarkusTransaction.runner().requireNew().call(() -> { ...; return 42; });
+     * int value = QuarkusTransaction.runner().joinExisting().call(() -> { ...; return 42; });
+     * int value = QuarkusTransaction.runner().suspendExisting().call(() -> { ...; return 42; });
+     * int value = QuarkusTransaction.runner().disallowExisting().call(() -> { ...; return 42; });
+     * }</pre>
+     *
+     * @return An interface that allows selecting the transaction semantics of the runner.
+     * @see TransactionRunnerSemanticOptions
+     */
+    static TransactionRunnerSemanticOptions runner() {
+        return new TransactionRunnerImpl();
+    }
+
+    /**
      * Runs a task in a new transaction with the default timeout. This defaults to {@link Transactional.TxType#REQUIRES_NEW}
      * semantics, however alternate semantics can be requested using {@link #run(RunOptions, Runnable)}.
      *
@@ -143,10 +169,11 @@ public interface QuarkusTransaction {
 
     /**
      * Calls a task in a new transaction with the default timeout. This defaults to {@link Transactional.TxType#REQUIRES_NEW}
-     * semantics, however alternate semantics can be requested using {@link #call(RunOptions, Callable)}.
+     * semantics, however alternate semantics can be requested using the {@code options} parameter.
      * <p>
      * If the task throws a checked exception it will be wrapped with a {@link QuarkusTransactionException}
      *
+     * @param options Options that apply to the new transaction
      * @param task The task to run in a transaction
      */
     static <T> T call(RunOptions options, Callable<T> task) {

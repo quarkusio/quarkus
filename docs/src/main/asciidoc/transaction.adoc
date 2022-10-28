@@ -176,12 +176,12 @@ public class TransactionExample {
     }
 
     public void runnerExample() {
-        QuarkusTransaction.runner().requireNew().run(() -> {
+        QuarkusTransaction.runner(TransactionSemantic.REQUIRE_NEW).run(() -> {
             //do work
         });
 
 
-        int result = QuarkusTransaction.runner().requireNew()
+        int result = QuarkusTransaction.runner(TransactionSemantic.REQUIRE_NEW)
                 .timeout(10)
                 .exceptionHandler((throwable) -> {
                     if (throwable instanceof SomeException) {
@@ -205,7 +205,7 @@ be automatically rolled back. This removes the need to explicitly catch exceptio
 against inadvertent transaction leaks, however it does mean that this can only be used when the request scope is active. The second
 example in the method calls begin with a timeout option, and then rolls back the transaction.
 
-The second method shows the use of lambda scoped transactions with `QuarkusTransaction.runner()`;
+The second method shows the use of lambda scoped transactions with `QuarkusTransaction.runner(...)`;
 the first example just runs a `Runnable` within a new transaction,
 the second calls a `Callable` with some specific options.
 In particular the `exceptionHandler` method can be used to control if the transaction is rolled back or not on exception.

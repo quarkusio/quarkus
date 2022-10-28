@@ -5,8 +5,8 @@ import java.util.function.Function;
 /**
  * Enum that can be used to control the decision to rollback or commit based on the type of an exception.
  *
- * @see QuarkusTransaction#runner()
- * @see TransactionRunnerRunOptions#exceptionHandler(Function)
+ * @see QuarkusTransaction#runner(TransactionSemantic)
+ * @see TransactionRunnerOptions#exceptionHandler(Function)
  */
 public enum TransactionExceptionResult {
 

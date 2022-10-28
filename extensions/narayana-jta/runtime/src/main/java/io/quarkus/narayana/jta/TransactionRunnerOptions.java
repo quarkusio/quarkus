@@ -10,9 +10,9 @@ import java.util.function.Function;
  * so it can be used to run a task directly with {@link #run(Runnable)}/{@link #call(Callable)},
  * even if no options need to be customized.
  *
- * @see QuarkusTransaction#runner()
+ * @see QuarkusTransaction#runner(TransactionSemantic)
  */
-public interface TransactionRunnerRunOptions extends TransactionRunner {
+public interface TransactionRunnerOptions extends TransactionRunner {
 
     /**
      * Sets the transaction timeout for transactions created by this runner. A value of zero refers to the system default.
@@ -21,7 +21,7 @@ public interface TransactionRunnerRunOptions extends TransactionRunner {
      * @param seconds The timeout in seconds
      * @return This builder
      */
-    TransactionRunnerRunOptions timeout(int seconds);
+    TransactionRunnerOptions timeout(int seconds);
 
     /**
      * Provides an exception handler that can make a decision to rollback or commit based on the type of exception. If the
@@ -36,6 +36,6 @@ public interface TransactionRunnerRunOptions extends TransactionRunner {
      * @param handler The exception handler
      * @return This builder
      */
-    TransactionRunnerRunOptions exceptionHandler(Function<Throwable, TransactionExceptionResult> handler);
+    TransactionRunnerOptions exceptionHandler(Function<Throwable, TransactionExceptionResult> handler);
 
 }

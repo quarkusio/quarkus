@@ -21,7 +21,7 @@ import io.quarkus.arc.Arc;
  * is committed the transaction is rolled back. Note that this means this can only currently be used when the request scope is
  * active.</li>
  * <li><b>Per Transaction Timeouts:</b>
- * {{@link BeginOptions#timeout(int)}/{@link TransactionRunnerRunOptions#timeout(int)}
+ * {{@link BeginOptions#timeout(int)}/{@link TransactionRunnerOptions#timeout(int)}
  * can be used to set the new transactions timeout, without affecting the per thread default.</li>
  * <li><b>Lambda Style Transactions: </b> {@link Runnable} and {@link Callable} instances can be run inside the scope of a new
  * transaction.</li>
@@ -111,21 +111,23 @@ public interface QuarkusTransaction {
      * Examples of use:
      *
      * <pre>{@code
-     * QuarkusTransaction.runner().requireNew().run(() -> ...);
-     * QuarkusTransaction.runner().joinExisting().run(() -> ...);
-     * QuarkusTransaction.runner().suspendExisting().run(() -> ...);
-     * QuarkusTransaction.runner().disallowExisting().run(() -> ...);
-     * int value = QuarkusTransaction.runner().requireNew().call(() -> { ...; return 42; });
-     * int value = QuarkusTransaction.runner().joinExisting().call(() -> { ...; return 42; });
-     * int value = QuarkusTransaction.runner().suspendExisting().call(() -> { ...; return 42; });
-     * int value = QuarkusTransaction.runner().disallowExisting().call(() -> { ...; return 42; });
+     * QuarkusTransaction.runner(TransactionSemantic.REQUIRE_NEW).run(() -> ...);
+     * QuarkusTransaction.runner(TransactionSemantic.JOIN_EXISTING).run(() -> ...);
+     * QuarkusTransaction.runner(TransactionSemantic.SUSPEND_EXISTING).run(() -> ...);
+     * QuarkusTransaction.runner(TransactionSemantic.DISALLOW_EXISTING).run(() -> ...);
+     * int value = QuarkusTransaction.runner(TransactionSemantic.REQUIRE_NEW).call(() -> { ...; return 42; });
+     * int value = QuarkusTransaction.runner(TransactionSemantic.JOIN_EXISTING).call(() -> { ...; return 42; });
+     * int value = QuarkusTransaction.runner(TransactionSemantic.SUSPEND_EXISTING).call(() -> { ...; return 42; });
+     * int value = QuarkusTransaction.runner(TransactionSemantic.DISALLOW_EXISTING).call(() -> { ...; return 42; });
      * }</pre>
      *
-     * @return An interface that allows selecting the transaction semantics of the runner.
-     * @see TransactionRunnerSemanticOptions
+     * @param semantic The selected {@link TransactionSemantic}.
+     * @return An interface that allow various options of a transaction runner to be customized,
+     *         or a {@link Runnable}/{@link Callable} to be executed.
+     * @see TransactionRunnerOptions
      */
-    static TransactionRunnerSemanticOptions runner() {
-        return new TransactionRunnerImpl();
+    static TransactionRunnerOptions runner(TransactionSemantic semantic) {
+        return new TransactionRunnerImpl(semantic);
     }
 
     /**
@@ -133,8 +135,8 @@ public interface QuarkusTransaction {
      * semantics, however alternate semantics can be requested using {@link #run(RunOptions, Runnable)}.
      *
      * @param task The task to run in a transaction
-     * @deprecated For the same semantics, use {@code QuarkusTransaction.runner().requireNew().run(task)}.
-     *             {@link #runner()} can also be used for alternate semantics and options.
+     * @deprecated For the same semantics, use {@code QuarkusTransaction.runner(TransactionSemantic.REQUIRE_NEW).run(task)}.
+     *             {@link #runner(TransactionSemantic)} can also be used for alternate semantics and options.
      */
     @Deprecated
     static void run(Runnable task) {
@@ -147,7 +149,7 @@ public interface QuarkusTransaction {
      *
      * @param options Options that apply to the new transaction
      * @param task The task to run in a transaction
-     * @deprecated Use {@link #runner()} instead.
+     * @deprecated Use {@link #runner(TransactionSemantic)} instead.
      */
     @Deprecated
     static void run(RunOptions options, Runnable task) {
@@ -167,8 +169,8 @@ public interface QuarkusTransaction {
      * If the task throws a checked exception it will be wrapped with a {@link QuarkusTransactionException}
      *
      * @param task The task to run in a transaction
-     * @deprecated For the same semantics, use {@code QuarkusTransaction.runner().requireNew().call(task)}.
-     *             {@link #runner()} can also be used for alternate semantics and options.
+     * @deprecated For the same semantics, use {@code QuarkusTransaction.runner(TransactionSemantic.REQUIRE_NEW).call(task)}.
+     *             {@link #runner(TransactionSemantic)} can also be used for alternate semantics and options.
      */
     @Deprecated
     static <T> T call(Callable<T> task) {
@@ -183,7 +185,7 @@ public interface QuarkusTransaction {
      *
      * @param options Options that apply to the new transaction
      * @param task The task to run in a transaction
-     * @deprecated Use {@link #runner()} instead.
+     * @deprecated Use {@link #runner(TransactionSemantic)} instead.
      */
     @Deprecated
     static <T> T call(RunOptions options, Callable<T> task) {
@@ -192,7 +194,7 @@ public interface QuarkusTransaction {
 
     /**
      * @return a new RunOptions
-     * @deprecated Use {@link #runner()} instead.
+     * @deprecated Use {@link #runner(TransactionSemantic)} instead.
      */
     @Deprecated
     static RunOptions runOptions() {

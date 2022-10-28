@@ -175,7 +175,7 @@ public class TransactionExample {
         QuarkusTransaction.rollback();
     }
 
-    public void lambdaExample() {
+    public void runOrCallExample() {
         QuarkusTransaction.run(() -> {
             //do work
         });
@@ -194,18 +194,48 @@ public class TransactionExample {
             return 0;
         });
     }
+
+    public void runnerExample() {
+        QuarkusTransaction.runner().requireNew().run(() -> {
+            //do work
+        });
+
+
+        int result = QuarkusTransaction.runner().suspendExisting()
+                .timeout(10)
+                .exceptionHandler((throwable) -> {
+                    if (throwable instanceof SomeException) {
+                        return RunOptions.ExceptionResult.COMMIT;
+                    }
+                    return RunOptions.ExceptionResult.ROLLBACK;
+                })
+                .call(() -> {
+                    //do work
+                    return 0;
+                });
+    }
 }
 ----
 
-The above example shows a few different ways the API can be used. The first method simply calls begin, does some work and commits it.
+The above example shows a few different ways the API can be used.
+
+The first method simply calls begin, does some work and commits it.
 This created transaction is tied to the CDI request scope, so if it is still active when the request scope is destroyed then it will
 be automatically rolled back. This removes the need to explicitly catch exceptions and call `rollback`, and acts as a safety net
 against inadvertent transaction leaks, however it does mean that this can only be used when the request scope is active. The second
 example in the method calls begin with a timeout option, and then rolls back the transaction.
 
-The second example shows the use of lambda scoped transactions, the first just runs a `Runnable` within a transaction, the second,
-runs `Callable` with some specific options. In particular the `exceptionHandler` method can be used to control if the transaction
+The second method shows the use of lambda scoped transactions with `QuarkusTransaction.run(...)`/`QuarkusTransaction.call(...)`;
+the first example just runs a `Runnable` within a new transaction,
+the second example calls a  `Callable` with some specific options.
+In particular the `exceptionHandler` method can be used to control if the transaction
 is rolled back or not on exception, and the `semantic` method controls the behaviour if an existing transaction is already started.
+
+The third method shows the use of lambda scoped transactions with `QuarkusTransaction.runner()`;
+the first example just runs a `Runnable` within a new transaction,
+the second calls a `Callable` with some specific options.
+In particular the semantic (which must be explicit) is set to `SUSPEND_EXISTING`,
+and the `exceptionHandler` method can be used to control if the transaction is rolled back or not on exception.
 
 The following semantics are supported:
 

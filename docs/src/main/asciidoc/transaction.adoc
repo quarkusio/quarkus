@@ -175,33 +175,13 @@ public class TransactionExample {
         QuarkusTransaction.rollback();
     }
 
-    public void runOrCallExample() {
-        QuarkusTransaction.run(() -> {
-            //do work
-        });
-
-
-        int result = QuarkusTransaction.call(QuarkusTransaction.runOptions()
-                .timeout(10)
-                .exceptionHandler((throwable) -> {
-                    if (throwable instanceof SomeException) {
-                        return RunOptions.ExceptionResult.COMMIT;
-                    }
-                    return RunOptions.ExceptionResult.ROLLBACK;
-                })
-                .semantic(RunOptions.Semantic.REQUIRE_NEW), () -> {
-            //do work
-            return 0;
-        });
-    }
-
     public void runnerExample() {
         QuarkusTransaction.runner().requireNew().run(() -> {
             //do work
         });
 
 
-        int result = QuarkusTransaction.runner().suspendExisting()
+        int result = QuarkusTransaction.runner().requireNew()
                 .timeout(10)
                 .exceptionHandler((throwable) -> {
                     if (throwable instanceof SomeException) {
@@ -225,17 +205,10 @@ be automatically rolled back. This removes the need to explicitly catch exceptio
 against inadvertent transaction leaks, however it does mean that this can only be used when the request scope is active. The second
 example in the method calls begin with a timeout option, and then rolls back the transaction.
 
-The second method shows the use of lambda scoped transactions with `QuarkusTransaction.run(...)`/`QuarkusTransaction.call(...)`;
-the first example just runs a `Runnable` within a new transaction,
-the second example calls a  `Callable` with some specific options.
-In particular the `exceptionHandler` method can be used to control if the transaction
-is rolled back or not on exception, and the `semantic` method controls the behaviour if an existing transaction is already started.
-
-The third method shows the use of lambda scoped transactions with `QuarkusTransaction.runner()`;
+The second method shows the use of lambda scoped transactions with `QuarkusTransaction.runner()`;
 the first example just runs a `Runnable` within a new transaction,
 the second calls a `Callable` with some specific options.
-In particular the semantic (which must be explicit) is set to `SUSPEND_EXISTING`,
-and the `exceptionHandler` method can be used to control if the transaction is rolled back or not on exception.
+In particular the `exceptionHandler` method can be used to control if the transaction is rolled back or not on exception.
 
 The following semantics are supported:
 
@@ -257,11 +230,10 @@ a result of `ExceptionResult#ROLLBACK` will result in the TX marked as rollback 
 
 REQUIRE_NEW::
 
-This is the default semantic.
-If an existing transaction is already associated with the current thread then the transaction is suspended, and
-resumed once
-the current transaction is complete.
-A new transaction is started after the existing transaction is suspended, and follows all the normal lifecycle rules.
+If an existing transaction is already associated with the current thread then the transaction is suspended,
+then a new transaction is started which follows all the normal lifecycle rules,
+and when it's complete the original transaction is resumed.
+Otherwise, a new transaction is started, and follows all the normal lifecycle rules.
 
 SUSPEND_EXISTING::
 

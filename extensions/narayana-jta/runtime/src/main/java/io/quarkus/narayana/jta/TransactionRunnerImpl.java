@@ -3,43 +3,43 @@ package io.quarkus.narayana.jta;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 
-class TransactionRunnerImpl extends RunOptions
+class TransactionRunnerImpl extends RunOptionsBase
         implements TransactionRunnerSemanticOptions, TransactionRunnerRunOptions, TransactionRunner {
     @Override
     public TransactionRunnerImpl joinExisting() {
-        return semantic(Semantic.JOIN_EXISTING);
+        return semantic(TransactionSemantic.JOIN_EXISTING);
     }
 
     @Override
     public TransactionRunnerImpl requireNew() {
-        return semantic(Semantic.REQUIRE_NEW);
+        return semantic(TransactionSemantic.REQUIRE_NEW);
     }
 
     @Override
     public TransactionRunnerImpl suspendExisting() {
-        return semantic(Semantic.SUSPEND_EXISTING);
+        return semantic(TransactionSemantic.SUSPEND_EXISTING);
     }
 
     @Override
     public TransactionRunnerImpl disallowExisting() {
-        return semantic(Semantic.DISALLOW_EXISTING);
+        return semantic(TransactionSemantic.DISALLOW_EXISTING);
     }
 
     @Override
-    public TransactionRunnerImpl semantic(Semantic semantic) {
-        super.semantic(semantic);
+    public TransactionRunnerImpl semantic(TransactionSemantic semantic) {
+        setSemantic(semantic);
         return this;
     }
 
     @Override
     public TransactionRunnerImpl timeout(int seconds) {
-        super.timeout(seconds);
+        setTimeout(seconds);
         return this;
     }
 
     @Override
-    public TransactionRunnerImpl exceptionHandler(Function<Throwable, ExceptionResult> handler) {
-        super.exceptionHandler(handler);
+    public TransactionRunnerImpl exceptionHandler(Function<Throwable, TransactionExceptionResult> handler) {
+        setExceptionHandler(handler);
         return this;
     }
 

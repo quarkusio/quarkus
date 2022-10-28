@@ -21,7 +21,7 @@ import io.quarkus.arc.Arc;
  * is committed the transaction is rolled back. Note that this means this can only currently be used when the request scope is
  * active.</li>
  * <li><b>Per Transaction Timeouts:</b>
- * {{@link BeginOptions#timeout(int)}/{@link TransactionRunnerRunOptions#timeout(int)}/{@link RunOptions#timeout(int)}
+ * {{@link BeginOptions#timeout(int)}/{@link TransactionRunnerRunOptions#timeout(int)}
  * can be used to set the new transactions timeout, without affecting the per thread default.</li>
  * <li><b>Lambda Style Transactions: </b> {@link Runnable} and {@link Callable} instances can be run inside the scope of a new
  * transaction.</li>
@@ -133,7 +133,10 @@ public interface QuarkusTransaction {
      * semantics, however alternate semantics can be requested using {@link #run(RunOptions, Runnable)}.
      *
      * @param task The task to run in a transaction
+     * @deprecated For the same semantics, use {@code QuarkusTransaction.runner().requireNew().run(task)}.
+     *             {@link #runner()} can also be used for alternate semantics and options.
      */
+    @Deprecated
     static void run(Runnable task) {
         run(runOptions(), task);
     }
@@ -144,7 +147,9 @@ public interface QuarkusTransaction {
      *
      * @param options Options that apply to the new transaction
      * @param task The task to run in a transaction
+     * @deprecated Use {@link #runner()} instead.
      */
+    @Deprecated
     static void run(RunOptions options, Runnable task) {
         call(options, new Callable<Object>() {
             @Override
@@ -162,7 +167,10 @@ public interface QuarkusTransaction {
      * If the task throws a checked exception it will be wrapped with a {@link QuarkusTransactionException}
      *
      * @param task The task to run in a transaction
+     * @deprecated For the same semantics, use {@code QuarkusTransaction.runner().requireNew().call(task)}.
+     *             {@link #runner()} can also be used for alternate semantics and options.
      */
+    @Deprecated
     static <T> T call(Callable<T> task) {
         return call(runOptions(), task);
     }
@@ -175,14 +183,18 @@ public interface QuarkusTransaction {
      *
      * @param options Options that apply to the new transaction
      * @param task The task to run in a transaction
+     * @deprecated Use {@link #runner()} instead.
      */
+    @Deprecated
     static <T> T call(RunOptions options, Callable<T> task) {
         return QuarkusTransactionImpl.call(options, task);
     }
 
     /**
      * @return a new RunOptions
+     * @deprecated Use {@link #runner()} instead.
      */
+    @Deprecated
     static RunOptions runOptions() {
         return new RunOptions();
     }

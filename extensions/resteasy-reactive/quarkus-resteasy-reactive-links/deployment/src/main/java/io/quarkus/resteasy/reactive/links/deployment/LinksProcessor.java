@@ -176,18 +176,17 @@ final class LinksProcessor {
                                 index);
                         fieldInfo = byIdAnnotation.get();
                     }
-                    if (fieldInfo == null) {
-                        throw new RuntimeException(
-                                String.format("Class '%s' field '%s' was not found", className, parameterName));
-                    }
-                    GetterMetadata getterMetadata = new GetterMetadata(fieldInfo);
-                    if (!implementedGetters.contains(getterMetadata)) {
-                        implementGetterWithAccessor(classOutput, bytecodeTransformersProducer, getterMetadata);
-                        implementedGetters.add(getterMetadata);
-                    }
 
-                    getterAccessorsContainerRecorder.addAccessor(getterAccessorsContainer,
-                            entityType, getterMetadata.getFieldName(), getterMetadata.getGetterAccessorName());
+                    if (fieldInfo != null) {
+                        GetterMetadata getterMetadata = new GetterMetadata(fieldInfo);
+                        if (!implementedGetters.contains(getterMetadata)) {
+                            implementGetterWithAccessor(classOutput, bytecodeTransformersProducer, getterMetadata);
+                            implementedGetters.add(getterMetadata);
+                        }
+
+                        getterAccessorsContainerRecorder.addAccessor(getterAccessorsContainer,
+                                entityType, getterMetadata.getFieldName(), getterMetadata.getGetterAccessorName());
+                    }
                 }
             }
         }

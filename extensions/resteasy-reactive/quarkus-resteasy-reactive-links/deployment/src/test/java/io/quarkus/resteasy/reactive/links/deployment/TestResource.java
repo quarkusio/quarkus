@@ -68,4 +68,16 @@ public class TestResource {
                 .findFirst()
                 .orElseThrow(NotFoundException::new);
     }
+
+    @GET
+    @Path("/slugOrId/{slugOrId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RestLink(rel = "get-by-slug-or-id")
+    public TestRecord getBySlugOrId(@PathParam("slugOrId") String slugOrId) {
+        return RECORDS.stream()
+                .filter(record -> record.getSlug().equals(slugOrId)
+                        || slugOrId.equalsIgnoreCase(String.valueOf(record.getId())))
+                .findFirst()
+                .orElseThrow(NotFoundException::new);
+    }
 }

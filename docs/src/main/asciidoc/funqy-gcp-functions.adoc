@@ -269,9 +269,9 @@ The `--trigger-bucket=` option defines the name of the Cloud Storage bucket.
 
 To trigger the event, you can send a file to the GCS `example-cloud-event` bucket.
 
-== Testing locally
+== Running locally
 
-The easiest way to locally test your function is using the Cloud Function invoker JAR.
+The easiest way to locally run your function is using the Cloud Function invoker JAR.
 
 You can download it via Maven using the following command:
 
@@ -376,6 +376,140 @@ curl localhost:8080 \
 ----
 
 This will call your cloud events function with an event on the `"MY_FILE.txt` file.
+
+== Testing your function
+
+Quarkus provides built-in support for testing your Funqy Google Cloud functions via the `quarkus-test-google-cloud-functions` dependency.
+
+To use it, you must add the following test dependency in your `pom.xml`.
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-google-cloud-functions</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+This extension provides a `@WithFunction` annotation that can be used to annotate `@QuarkusTest` test cases to start a Cloud Function invoker before you test cases and stop it at the end.
+This annotation must be configured with the type of the function you want to launch, and optionally the name of the function in case you have multiple functions inside your application.
+
+=== Background Functions - PubSub
+
+[source,java]
+----
+import static io.restassured.RestAssured.given;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.google.cloud.functions.test.FunctionType;
+import io.quarkus.google.cloud.functions.test.WithFunction;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest // <1>
+@WithFunction(FunctionType.FUNQY_BACKGROUND) // <2>
+class GreetingFunctionsPubsubTest {
+    @Test
+    public void test() {
+        given()
+                .body("{\"data\":{\"data\":\"world\"}}") // <3>
+                .when()
+                .post()
+                .then()
+                .statusCode(200);
+    }
+}
+
+----
+
+1. This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
+2. `@WithFunction(FunctionType.FUNQY_BACKGROUND)` indicates to launch the function as a Funqy background function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
+3. REST-assured is used to test the function, `{"data":"world"}` will be sent to it via the invoker.
+
+=== Background Functions - Cloud Storage
+
+[source,java]
+----
+import static io.restassured.RestAssured.given;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.google.cloud.functions.test.FunctionType;
+import io.quarkus.google.cloud.functions.test.WithFunction;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest // <1>
+@WithFunction(FunctionType.FUNQY_BACKGROUND) // <2>
+class GreetingFunctionsStorageTest {
+    @Test
+    public void test() {
+        given()
+                .body("{\"data\":{\"name\":\"hello.txt\"}}") // <2>
+                .when()
+                .post()
+                .then()
+                .statusCode(200);
+    }
+}
+----
+
+1. This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
+2. `@WithFunction(FunctionType.FUNQY_BACKGROUND)` indicates to launch the function as a Funqy background function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
+3. REST-assured is used to test the function, `{"name":"hello.txt"}` will be sent to it via the invoker.
+
+=== Cloud Events Functions - Cloud Storage
+
+WARNING: Cloud Events Function is a feature of Cloud Functions gen 2 only.
+
+[source,java]
+----
+import static io.restassured.RestAssured.given;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.google.cloud.functions.test.FunctionType;
+import io.quarkus.google.cloud.functions.test.WithFunction;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest // <1>
+@WithFunction(FunctionType.FUNQY_CLOUD_EVENTS) // <2>
+class GreetingFunctionsCloudEventTest {
+    @Test
+    public void test() {
+        given()
+                .body("{\n" + // <3>
+                        "        \"bucket\": \"MY_BUCKET\",\n" +
+                        "        \"contentType\": \"text/plain\",\n" +
+                        "        \"kind\": \"storage#object\",\n" +
+                        "        \"md5Hash\": \"...\",\n" +
+                        "        \"metageneration\": \"1\",\n" +
+                        "        \"name\": \"MY_FILE.txt\",\n" +
+                        "        \"size\": \"352\",\n" +
+                        "        \"storageClass\": \"MULTI_REGIONAL\",\n" +
+                        "        \"timeCreated\": \"2020-04-23T07:38:57.230Z\",\n" +
+                        "        \"timeStorageClassUpdated\": \"2020-04-23T07:38:57.230Z\",\n" +
+                        "        \"updated\": \"2020-04-23T07:38:57.230Z\"\n" +
+                        "      }")
+                .header("ce-id", "123451234512345") // <4>
+                .header("ce-specversion", "1.0")
+                .header("ce-time", "2020-01-02T12:34:56.789Z")
+                .header("ce-type", "google.cloud.storage.object.v1.finalized")
+                .header("ce-source", "//storage.googleapis.com/projects/_/buckets/MY-BUCKET-NAME")
+                .header("ce-subject", "objects/MY_FILE.txt")
+                .when()
+                .post()
+                .then()
+                .statusCode(200);
+    }
+}
+----
+
+1. This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
+2. `@WithFunction(FunctionType.FUNQY_CLOUD_EVENTS)` indicates to launch the function as a Funqy cloud events function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
+3. REST-assured is used to test the function, this payload that describe a storage event will be sent to it via the invoker.
+4. The cloud events headers must be sent via HTTP headers.
+
 
 == What's next?
 

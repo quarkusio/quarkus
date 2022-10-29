@@ -32,7 +32,7 @@ public class AmazonLambdaRecorder {
     private static final Logger log = Logger.getLogger(AmazonLambdaRecorder.class);
 
     private static Class<? extends RequestHandler<?, ?>> handlerClass;
-    private static Class<? extends RequestStreamHandler> streamHandlerClass;
+    static Class<? extends RequestStreamHandler> streamHandlerClass;
     private static BeanContainer beanContainer;
     private static LambdaInputReader objectReader;
     private static LambdaOutputWriter objectWriter;
@@ -44,18 +44,16 @@ public class AmazonLambdaRecorder {
         this.config = config;
     }
 
-    public void setStreamHandlerClass(Class<? extends RequestStreamHandler> handler, BeanContainer container) {
+    public void setStreamHandlerClass(Class<? extends RequestStreamHandler> handler) {
         streamHandlerClass = handler;
-        beanContainer = container;
     }
 
     public void setExpectedExceptionClasses(Set<Class<?>> classes) {
         expectedExceptionClasses = classes;
     }
 
-    public void setHandlerClass(Class<? extends RequestHandler<?, ?>> handler, BeanContainer container) {
+    static void initializeHandlerClass(Class<? extends RequestHandler<?, ?>> handler) {
         handlerClass = handler;
-        beanContainer = container;
         ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper;
         Method handlerMethod = discoverHandlerMethod(handlerClass);
         Class<?> parameterType = handlerMethod.getParameterTypes()[0];
@@ -65,6 +63,10 @@ public class AmazonLambdaRecorder {
             objectReader = new JacksonInputReader(objectMapper.readerFor(parameterType));
         }
         objectWriter = new JacksonOutputWriter(objectMapper.writerFor(handlerMethod.getReturnType()));
+    }
+
+    public void setBeanContainer(BeanContainer container) {
+        beanContainer = container;
     }
 
     /**
@@ -87,7 +89,7 @@ public class AmazonLambdaRecorder {
         }
     }
 
-    private Method discoverHandlerMethod(Class<? extends RequestHandler<?, ?>> handlerClass) {
+    private static Method discoverHandlerMethod(Class<? extends RequestHandler<?, ?>> handlerClass) {
         final Method[] methods = handlerClass.getMethods();
         Method method = null;
         for (int i = 0; i < methods.length && method == null; i++) {
@@ -112,8 +114,7 @@ public class AmazonLambdaRecorder {
     public void chooseHandlerClass(List<Class<? extends RequestHandler<?, ?>>> unnamedHandlerClasses,
             Map<String, Class<? extends RequestHandler<?, ?>>> namedHandlerClasses,
             List<Class<? extends RequestStreamHandler>> unnamedStreamHandlerClasses,
-            Map<String, Class<? extends RequestStreamHandler>> namedStreamHandlerClasses,
-            BeanContainer container) {
+            Map<String, Class<? extends RequestStreamHandler>> namedStreamHandlerClasses) {
 
         Class<? extends RequestHandler<?, ?>> handlerClass = null;
         Class<? extends RequestStreamHandler> handlerStreamClass = null;
@@ -153,9 +154,9 @@ public class AmazonLambdaRecorder {
         }
 
         if (handlerStreamClass != null) {
-            setStreamHandlerClass(handlerStreamClass, container);
+            setStreamHandlerClass(handlerStreamClass);
         } else {
-            setHandlerClass(handlerClass, container);
+            initializeHandlerClass(handlerClass);
         }
     }
 

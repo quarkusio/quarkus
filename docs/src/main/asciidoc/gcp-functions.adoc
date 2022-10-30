@@ -366,9 +366,9 @@ You can also use the new Java 17 runtime by using `--runtime=java17` in the gclo
 
 To trigger the event, you can send a file to the GCS `example-cloud-event` bucket.
 
-== Testing locally
+== Running locally
 
-The easiest way to locally test your function is using the Cloud Function invoker JAR.
+The easiest way to locally run your function is using the Cloud Function invoker JAR.
 
 You can download it via Maven using the following command:
 
@@ -385,7 +385,7 @@ include::{includes}/devtools/build.adoc[]
 
 === The HttpFunction
 
-To test an `HttpFunction`, you can use this command to launch your function locally.
+For an `HttpFunction`, you can use this command to launch your function locally.
 
 [source,bash,subs="attributes"]
 ----
@@ -486,3 +486,172 @@ curl localhost:8080 \
 ----
 
 This will call your cloud events function with an event on the `"MY_FILE.txt` file.
+
+== Testing your function
+
+Quarkus provides built-in support for testing your Google Cloud functions via the `quarkus-test-google-cloud-functions` dependency.
+
+To use it, you must add the following test dependency in your `pom.xml`.
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-google-cloud-functions</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+This extension provides a `@WithFunction` annotation that can be used to annotate `@QuarkusTest` test cases to start a Cloud Function invoker before you test cases and stop it at the end.
+This annotation must be configured with the type of the function you want to launch, and optionally the name of the function in case you have multiple functions inside your application.
+
+=== The HttpFunction
+
+[source,java]
+----
+import static io.restassured.RestAssured.when;
+import static org.hamcrest.Matchers.is;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.google.cloud.functions.test.FunctionType;
+import io.quarkus.google.cloud.functions.test.WithFunction;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest // <1>
+@WithFunction(FunctionType.HTTP) // <2>
+class HttpFunctionTestCase {
+    @Test
+    public void test() {
+        when()
+                .get()
+                .then()
+                .statusCode(200)
+                .body(is("Hello World!")); // <3>
+    }
+}
+----
+
+1. This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
+2. `@WithFunction(FunctionType.HTTP)` indicates to launch the function as an HTTP function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
+3. REST-assured is used to test the function, `Hello World!` will be sent to it via the invoker.
+
+=== The BackgroundFunction
+
+[source,java]
+----
+import static io.restassured.RestAssured.given;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.google.cloud.functions.test.FunctionType;
+import io.quarkus.google.cloud.functions.test.WithFunction;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest // <1>
+@WithFunction(FunctionType.BACKGROUND) // <2>
+class BackgroundFunctionStorageTestCase {
+    @Test
+    public void test() {
+        given()
+                .body("{\"data\":{\"name\":\"hello.txt\"}}") // <3>
+                .when()
+                .post()
+                .then()
+                .statusCode(200);
+    }
+}
+----
+
+1. This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
+2. `@WithFunction(FunctionType.BACKGROUND)` indicates to launch the function as a background function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
+3. REST-assured is used to test the function, `{"name":"hello.txt"}` will be sent to it via the invoker.
+
+=== The RawBackgroundFunction
+
+[source,java]
+----
+import static io.restassured.RestAssured.given;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.google.cloud.functions.test.FunctionType;
+import io.quarkus.google.cloud.functions.test.WithFunction;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest // <1>
+@WithFunction(FunctionType.RAW_BACKGROUND) // <2>
+class RawBackgroundFunctionPubSubTestCase {
+    @Test
+    public void test() {
+        given()
+                .body("{\"data\":{\"name\":\"hello.txt\"}}") // <3>
+                .when()
+                .post()
+                .then()
+                .statusCode(200);
+    }
+}
+----
+
+1. This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
+2. `@WithFunction(FunctionType.RAW_BACKGROUND)` indicates to launch the function as a raw background function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
+3. REST-assured is used to test the function, `{"name":"hello.txt"}` will be sent to it via the invoker.
+
+=== The CloudEventsFunction
+
+WARNING: Cloud Events Function is a feature of Cloud Functions gen 2 only.
+
+[source,java]
+----
+import static io.restassured.RestAssured.given;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.google.cloud.functions.test.FunctionType;
+import io.quarkus.google.cloud.functions.test.WithFunction;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest // <1>
+@WithFunction(FunctionType.CLOUD_EVENTS) // <2>
+class CloudEventStorageTestCase {
+    @Test
+    public void test() {
+        // test the function using RestAssured
+        given()
+                .body("{\n" + // <3>
+                        "        \"bucket\": \"MY_BUCKET\",\n" +
+                        "        \"contentType\": \"text/plain\",\n" +
+                        "        \"kind\": \"storage#object\",\n" +
+                        "        \"md5Hash\": \"...\",\n" +
+                        "        \"metageneration\": \"1\",\n" +
+                        "        \"name\": \"MY_FILE.txt\",\n" +
+                        "        \"size\": \"352\",\n" +
+                        "        \"storageClass\": \"MULTI_REGIONAL\",\n" +
+                        "        \"timeCreated\": \"2020-04-23T07:38:57.230Z\",\n" +
+                        "        \"timeStorageClassUpdated\": \"2020-04-23T07:38:57.230Z\",\n" +
+                        "        \"updated\": \"2020-04-23T07:38:57.230Z\"\n" +
+                        "      }")
+                .header("ce-specversion", "1.0") // <4>
+                .header("ce-id", "1234567890")
+                .header("ce-type", "google.cloud.storage.object.v1.finalized")
+                .header("ce-source", "//storage.googleapis.com/projects/_/buckets/MY-BUCKET-NAME")
+                .header("ce-subject", "objects/MY_FILE.txt")
+                .when()
+                .post()
+                .then()
+                .statusCode(200);
+    }
+}
+----
+
+1. This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
+2. `@WithFunction(FunctionType.CLOUD_EVENTS)` indicates to launch the function as a cloud events function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
+3. REST-assured is used to test the function, this payload that describe a storage event will be sent to it via the invoker.
+4. The cloud events headers must be sent via HTTP headers.
+
+== What's next?
+
+If you are looking for JAX-RS, Servlet or Vert.x support for Google Cloud Functions, we have it thanks to our xref:gcp-functions-http.adoc[Google Cloud Functions HTTP binding].
+
+If you are looking for a provider-agnostic implementation of your Google Cloud Functions, we have it thanks to our xref:funqy-gcp-functions.adoc[Funqy Google Cloud Functions extension].

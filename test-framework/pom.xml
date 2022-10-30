@@ -45,6 +45,7 @@
         <module>mongodb</module>
         <module>infinispan-client</module>
         <module>kafka-companion</module>
+        <module>google-cloud-functions</module>
     </modules>
 
 </project>

@@ -15,7 +15,7 @@ import io.quarkus.runtime.annotations.Recorder;
 public class HibernateEnversRecorder {
 
     public HibernateOrmIntegrationStaticInitListener createStaticInitListener(HibernateEnversBuildTimeConfig buildTimeConfig,
-                                                                              String puName) {
+            String puName) {
         return new HibernateEnversIntegrationStaticInitListener(buildTimeConfig, puName);
     }
 
@@ -84,13 +84,13 @@ public class HibernateEnversRecorder {
         }
 
         public static <T> void addConfigIfPresent(BiConsumer<String, Object> propertyCollector, String configPath,
-                                                  Optional<T> value) {
+                Optional<T> value) {
             value.ifPresent(t -> propertyCollector.accept(configPath, t));
         }
 
         @Override
         public void onMetadataInitialized(Metadata metadata, BootstrapContext bootstrapContext,
-                                          BiConsumer<String, Object> propertyCollector) {
+                BiConsumer<String, Object> propertyCollector) {
         }
     }
 
@@ -110,7 +110,7 @@ public class HibernateEnversRecorder {
 
         @Override
         public void onMetadataInitialized(Metadata metadata, BootstrapContext bootstrapContext,
-                                          BiConsumer<String, Object> propertyCollector) {
+                BiConsumer<String, Object> propertyCollector) {
         }
     }
 }

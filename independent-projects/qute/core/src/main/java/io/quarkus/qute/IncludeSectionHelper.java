@@ -113,7 +113,11 @@ public class IncludeSectionHelper implements SectionHelper {
                     // {#include foo _isolated=true /}
                     || key.equals(ISOLATED)
                     // {#include foo _isolated /}
-                    || value.equals(ISOLATED);
+                    || value.equals(ISOLATED)
+                    // {#include foo _ignoreFragments=true /}
+                    || key.equals(IGNORE_FRAGMENTS)
+                    // {#include foo _ignoreFragments /}
+                    || value.equals(IGNORE_FRAGMENTS);
         }
 
         @Override
@@ -136,6 +140,7 @@ public class IncludeSectionHelper implements SectionHelper {
     static abstract class AbstractIncludeFactory<T extends SectionHelper> implements SectionHelperFactory<T> {
 
         static final String ISOLATED = "_isolated";
+        static final String IGNORE_FRAGMENTS = "_ignoreFragments";
         static final String ISOLATED_DEFAULT_VALUE = "false";
 
         @Override
@@ -151,6 +156,14 @@ public class IncludeSectionHelper implements SectionHelper {
                                 @Override
                                 public boolean test(String v) {
                                     return ISOLATED.equals(v);
+                                }
+                            }).build())
+                    .addParameter(Parameter.builder(IGNORE_FRAGMENTS).defaultValue(ISOLATED_DEFAULT_VALUE).optional()
+                            .valuePredicate(new Predicate<String>() {
+
+                                @Override
+                                public boolean test(String v) {
+                                    return IGNORE_FRAGMENTS.equals(v);
                                 }
                             }).build())
                     .build();
@@ -180,6 +193,7 @@ public class IncludeSectionHelper implements SectionHelper {
         public T initialize(SectionInitContext context) {
             boolean isEmpty = context.getBlocks().size() == 1 && context.getBlocks().get(0).isEmpty();
             boolean isolatedValue = false;
+            boolean ignoreFragments = false;
             Map<String, SectionBlock> extendingBlocks;
 
             if (isEmpty) {
@@ -210,19 +224,28 @@ public class IncludeSectionHelper implements SectionHelper {
                         isolatedValue = true;
                         continue;
                     }
+                    if (value.equals(IGNORE_FRAGMENTS)) {
+                        ignoreFragments = true;
+                        continue;
+                    }
                     handleParamInit(key, value, context, params);
                 }
             }
 
             // foo - no fragment
-            // foo[bar] - template "foo" and fragment "bar"
-            // [fragment_01] - current template and fragment "fragment_01"
+            // foo$bar - template "foo" and fragment "bar"
+            // $fragment_01 - current template and fragment "fragment_01"
             String templateId = getTemplateId(context);
-            final String fragmentId = getFragmentId(templateId, context);
+
+            //
+            if (!ignoreFragments) {
+                ignoreFragments = Boolean.parseBoolean(context.getParameterOrDefault(IGNORE_FRAGMENTS, ISOLATED_DEFAULT_VALUE));
+            }
+            final String fragmentId = ignoreFragments ? null : getFragmentId(templateId, context);
             Supplier<Template> currentTemplate;
             if (fragmentId != null) {
                 // remove the trailing fragment part
-                templateId = templateId.substring(0, templateId.lastIndexOf('['));
+                templateId = templateId.substring(0, templateId.lastIndexOf('$'));
                 if (templateId.isEmpty()) {
                     // use the current template
                     currentTemplate = context.getCurrentTemplate();
@@ -274,20 +297,18 @@ public class IncludeSectionHelper implements SectionHelper {
         protected abstract String getTemplateId(SectionInitContext context);
 
         protected String getFragmentId(String templateId, SectionInitContext context) {
-            if (templateId.endsWith("]")) {
-                // the fragment id can be found in the square brackets at the end of the template id
-                int lastLeftSquareBracket = templateId.lastIndexOf('[');
-                if (lastLeftSquareBracket != -1) {
-                    String fragmentId = templateId.substring(lastLeftSquareBracket + 1, templateId.length() - 1);
-                    if (FragmentSectionHelper.Factory.FRAGMENT_PATTERN.matcher(fragmentId).matches()) {
-                        return fragmentId;
-                    } else {
-                        throw context.getEngine().error("invalid fragment identifier [{fragmentId}]")
-                                .code(Code.INVALID_FRAGMENT_ID)
-                                .argument("fragmentId", fragmentId)
-                                .origin(context.getOrigin())
-                                .build();
-                    }
+            int idx = templateId.lastIndexOf('$');
+            if (idx != -1) {
+                // the part after the last occurence of a dollar sign is the fragment identifier
+                String fragmentId = templateId.substring(idx + 1, templateId.length());
+                if (FragmentSectionHelper.Factory.FRAGMENT_PATTERN.matcher(fragmentId).matches()) {
+                    return fragmentId;
+                } else {
+                    throw context.getEngine().error("invalid fragment identifier [{fragmentId}]")
+                            .code(Code.INVALID_FRAGMENT_ID)
+                            .argument("fragmentId", fragmentId)
+                            .origin(context.getOrigin())
+                            .build();
                 }
             }
             return null;

@@ -20,6 +20,7 @@ import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 
+@RequiresRedis6OrHigher
 public class TransactionalGeoCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource blocking;

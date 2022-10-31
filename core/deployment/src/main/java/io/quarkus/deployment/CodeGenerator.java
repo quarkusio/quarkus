@@ -1,30 +1,35 @@
 package io.quarkus.deployment;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.ServiceLoader;
+import java.util.StringJoiner;
 import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.Config;
 
-import io.quarkus.bootstrap.classloading.ClassPathElement;
-import io.quarkus.bootstrap.classloading.FilteredClassPathElement;
+import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.codegen.CodeGenData;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.util.ClassPathUtils;
 import io.smallrye.config.KeyMap;
 import io.smallrye.config.KeyMapBackedConfigSource;
 import io.smallrye.config.NameIterator;
@@ -37,7 +42,9 @@ import io.smallrye.config.SysPropConfigSource;
  */
 public class CodeGenerator {
 
-    private static final String MP_CONFIG_SPI_CONFIG_SOURCE_PROVIDER = "META-INF/services/org.eclipse.microprofile.config.spi.ConfigSourceProvider";
+    private static final List<String> CONFIG_SOURCE_FACTORY_INTERFACES = List.of(
+            "META-INF/services/io.smallrye.config.ConfigSourceFactory",
+            "META-INF/services/org.eclipse.microprofile.config.spi.ConfigSourceProvider");
 
     // used by Gradle and Maven
     public static void initAndRun(QuarkusClassLoader classLoader,
@@ -113,6 +120,7 @@ public class CodeGenerator {
         });
     }
 
+    @SuppressWarnings("unchecked")
     private static List<CodeGenProvider> loadCodeGenProviders(ClassLoader deploymentClassLoader)
             throws CodeGenException {
         Class<? extends CodeGenProvider> codeGenProviderClass;
@@ -174,42 +182,94 @@ public class CodeGenerator {
     public static Config getConfig(ApplicationModel appModel, LaunchMode launchMode, Properties buildSystemProps,
             QuarkusClassLoader deploymentClassLoader) throws CodeGenException {
         // Config instance that is returned by this method should be as close to the one built in the ExtensionLoader as possible
-        if (appModel.getAppArtifact().getContentTree()
-                .contains(MP_CONFIG_SPI_CONFIG_SOURCE_PROVIDER)) {
-            final List<ClassPathElement> allElements = ((QuarkusClassLoader) deploymentClassLoader).getAllElements(false);
-            // we don't want to load config sources from the current module because they haven't been compiled yet
-            final QuarkusClassLoader.Builder configClBuilder = QuarkusClassLoader
-                    .builder("CodeGenerator Config ClassLoader", QuarkusClassLoader.getSystemClassLoader(), false);
-            final Collection<Path> appRoots = appModel.getAppArtifact().getContentTree().getRoots();
-            for (ClassPathElement e : allElements) {
-                if (appRoots.contains(e.getRoot())) {
-                    configClBuilder.addElement(new FilteredClassPathElement(e, List.of(MP_CONFIG_SPI_CONFIG_SOURCE_PROVIDER)));
-                } else {
-                    configClBuilder.addElement(e);
+        final Map<String, List<String>> appModuleConfigFactories = getConfigSourceFactoryImpl(appModel.getAppArtifact());
+        if (!appModuleConfigFactories.isEmpty()) {
+            final Map<String, List<String>> allConfigFactories = new HashMap<>(appModuleConfigFactories.size());
+            final Map<String, byte[]> allowedConfigFactories = new HashMap<>(appModuleConfigFactories.size());
+            final Map<String, byte[]> bannedConfigFactories = new HashMap<>(appModuleConfigFactories.size());
+            for (Map.Entry<String, List<String>> appModuleFactories : appModuleConfigFactories.entrySet()) {
+                final String factoryImpl = appModuleFactories.getKey();
+                try {
+                    ClassPathUtils.consumeAsPaths(deploymentClassLoader, factoryImpl, p -> {
+                        try {
+                            allConfigFactories.computeIfAbsent(factoryImpl, k -> new ArrayList<>())
+                                    .addAll(Files.readAllLines(p));
+                        } catch (IOException e) {
+                            throw new UncheckedIOException("Failed to read " + p, e);
+                        }
+                    });
+                } catch (IOException e) {
+                    throw new CodeGenException("Failed to read resources from classpath", e);
                 }
+                final List<String> allFactories = allConfigFactories.getOrDefault(factoryImpl, List.of());
+                allFactories.removeAll(appModuleFactories.getValue());
+                if (allFactories.isEmpty()) {
+                    bannedConfigFactories.put(factoryImpl, new byte[0]);
+                } else {
+                    final StringJoiner joiner = new StringJoiner(System.lineSeparator());
+                    allFactories.forEach(f -> joiner.add(f));
+                    allowedConfigFactories.put(factoryImpl, joiner.toString().getBytes());
+                }
+            }
+
+            // we don't want to load config source factories/providers from the current module because they haven't been compiled yet
+            QuarkusClassLoader.Builder configClBuilder = QuarkusClassLoader.builder("CodeGenerator Config ClassLoader",
+                    deploymentClassLoader, false);
+            if (!allowedConfigFactories.isEmpty()) {
+                configClBuilder.addElement(new MemoryClassPathElement(allowedConfigFactories, true));
+            }
+            if (!bannedConfigFactories.isEmpty()) {
+                configClBuilder.addBannedElement(new MemoryClassPathElement(bannedConfigFactories, true));
             }
             deploymentClassLoader = configClBuilder.build();
         }
-        final SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, launchMode)
-                .forClassLoader(deploymentClassLoader);
-        final PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
-        final SysPropConfigSource spcs = new SysPropConfigSource();
+        try {
+            final SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, launchMode)
+                    .forClassLoader(deploymentClassLoader);
+            final PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
+            final SysPropConfigSource spcs = new SysPropConfigSource();
 
-        final Map<String, String> platformProperties = appModel.getPlatformProperties();
-        if (platformProperties.isEmpty()) {
-            builder.withSources(pcs, spcs);
-        } else {
-            final KeyMap<String> props = new KeyMap<>(platformProperties.size());
-            for (Map.Entry<String, String> prop : platformProperties.entrySet()) {
-                props.findOrAdd(new NameIterator(prop.getKey())).putRootValue(prop.getValue());
+            final Map<String, String> platformProperties = appModel.getPlatformProperties();
+            if (platformProperties.isEmpty()) {
+                builder.withSources(pcs, spcs);
+            } else {
+                final KeyMap<String> props = new KeyMap<>(platformProperties.size());
+                for (Map.Entry<String, String> prop : platformProperties.entrySet()) {
+                    props.findOrAdd(new NameIterator(prop.getKey())).putRootValue(prop.getValue());
+                }
+                final KeyMapBackedConfigSource platformConfigSource = new KeyMapBackedConfigSource("Quarkus platform",
+                        // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
+                        // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
+                        Integer.MIN_VALUE + 1000, props);
+                builder.withSources(platformConfigSource, pcs, spcs);
             }
-            final KeyMapBackedConfigSource platformConfigSource = new KeyMapBackedConfigSource("Quarkus platform",
-                    // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
-                    // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
-                    Integer.MIN_VALUE + 1000, props);
-            builder.withSources(platformConfigSource, pcs, spcs);
+            return builder.build();
+        } finally {
+            if (!appModuleConfigFactories.isEmpty()) {
+                deploymentClassLoader.close();
+            }
         }
-        return builder.build();
+    }
+
+    private static Map<String, List<String>> getConfigSourceFactoryImpl(ResolvedDependency dep) throws CodeGenException {
+        final Map<String, List<String>> configFactoryImpl = new HashMap<>(CONFIG_SOURCE_FACTORY_INTERFACES.size());
+        try (OpenPathTree openTree = dep.getContentTree().open()) {
+            for (String s : CONFIG_SOURCE_FACTORY_INTERFACES) {
+                openTree.accept(s, v -> {
+                    if (v == null) {
+                        return;
+                    }
+                    try {
+                        configFactoryImpl.put(s, Files.readAllLines(v.getPath()));
+                    } catch (IOException e) {
+                        throw new UncheckedIOException("Failed to read " + v.getPath(), e);
+                    }
+                });
+            }
+        } catch (IOException e) {
+            throw new CodeGenException("Failed to read " + dep.getResolvedPaths(), e);
+        }
+        return configFactoryImpl;
     }
 
     private static Path codeGenOutDir(Path generatedSourcesDir,

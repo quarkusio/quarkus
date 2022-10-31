@@ -20,7 +20,7 @@ class Redis7OrHigherCondition implements ExecutionCondition {
                 RequiresRedis7OrHigher.class);
 
         if (optional.isPresent()) {
-            String version = DatasourceTestBase.getRedisVersion();
+            String version = RedisServerExtension.getRedisVersion();
 
             return isRedis7orHigher(version) ? enabled("Redis " + version + " >= 7")
                     : disabled("Disabled, Redis " + version + " < 7");

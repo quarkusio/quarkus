@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.redis.datasource.topk.TopKCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
+@RequiresCommand("topk.add")
 public class TopKCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource ds;

@@ -14,6 +14,7 @@ import io.quarkus.redis.datasource.bloom.BfReserveArgs;
 import io.quarkus.redis.datasource.bloom.BloomCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
+@RequiresCommand("bf.add")
 public class BloomCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource ds;

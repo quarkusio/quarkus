@@ -45,15 +45,6 @@ recipeList:
       key: expressly.version
       newValue: 5.0.0
       addIfMissing: true
-  # TODO once ArC is aligned, we can remove this one
-  - org.openrewrite.maven.AddManagedDependency:
-      groupId: jakarta.el
-      artifactId: jakarta.el-api
-      version: "${jakarta.el-api.version}"
-  - org.openrewrite.maven.ChangePropertyValue:
-      key: jakarta.el-api.version
-      newValue: 5.0.1
-      addIfMissing: true
   # CDI
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.cdi
@@ -72,7 +63,7 @@ recipeList:
   # JAX-RS - See below for the specs
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy.version
-      newValue: 6.2.0.Final
+      newValue: 6.2.1.Final
   # JAXB - See below
   # JSON - See below
   # JSON Bind
@@ -165,7 +156,7 @@ recipeList:
   # Validation
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.validation-api.version
-      newValue: 3.0.1
+      newValue: 3.0.2
   - org.openrewrite.maven.ChangePropertyValue:
       key: hibernate-validator.version
       newValue: 8.0.0.Final
@@ -184,6 +175,19 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: wildfly-elytron.version
       newValue: 2.0.0.Final
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.jakarta-el
+displayName: Add Jakarta EL management
+recipeList:
+  - org.openrewrite.maven.AddManagedDependency:
+      groupId: jakarta.el
+      artifactId: jakarta.el-api
+      version: "${jakarta.el-api.version}"
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: jakarta.el-api.version
+      newValue: 5.0.1
+      addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-jaxrs-jaxb
@@ -557,7 +561,7 @@ recipeList:
       newValue: 1.3
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-context-propagation.version
-      newValue: 2.0.0-RC1
+      newValue: 2.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-config-api.version
       newValue: 3.0
@@ -578,7 +582,7 @@ recipeList:
       newValue: 2.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-jwt.version
-      newValue: 4.0.0-RC2
+      newValue: 4.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-lra.version
       newValue: 2.0-RC1
@@ -616,7 +620,7 @@ recipeList:
       newValue: 3.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-opentracing.version
-      newValue: 3.0.0-RC1
+      newValue: 3.0.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-reactive-messaging.version
       newValue: 4.0.0
@@ -772,7 +776,7 @@ recipeList:
       newVersion: "${resteasy-microprofile.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy-microprofile.version
-      newValue: 2.0.0.Beta1
+      newValue: 2.0.0.Final
       addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe
@@ -801,7 +805,7 @@ recipeList:
       newVersion: "${resteasy-spring-web.version}"
   - org.openrewrite.maven.ChangePropertyValue:
       key: resteasy-spring-web.version
-      newValue: 3.0.0.Alpha2
+      newValue: 3.0.0.Beta3
       addIfMissing: true
 ---
 type: specs.openrewrite.org/v1beta/recipe

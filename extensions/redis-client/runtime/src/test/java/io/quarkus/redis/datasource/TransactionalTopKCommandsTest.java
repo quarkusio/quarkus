@@ -18,6 +18,7 @@ import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 
 @SuppressWarnings({ "unchecked", "ConstantConditions" })
+@RequiresCommand("topk.add")
 public class TransactionalTopKCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource blocking;

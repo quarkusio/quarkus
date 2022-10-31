@@ -151,7 +151,7 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     public ProvidersImpl getProviders() {
-        // this is rarely called (basically only of '@Context Providers' is used),
+        // this is rarely called (basically only if '@Context Providers' is used),
         // so let's avoid creating an extra field
         return new ProvidersImpl(deployment);
     }

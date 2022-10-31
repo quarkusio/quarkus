@@ -16,6 +16,8 @@ public class OrOperatorTemplateExtensionTest {
     public static final String ITEM_NAME = "Test Name";
     public static final String ITEM_WITH_NAME = "itemWithName";
     public static final String ITEM = "item";
+    public static final String ITEMS = "items";
+    public static final String ITEMS_2 = "items2";
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -24,10 +26,14 @@ public class OrOperatorTemplateExtensionTest {
                     .addAsResource(new StringAsset(
                             "{@io.quarkus.qute.deployment.typesafe.ItemWithName itemWithName}\n" +
                                     "{@io.quarkus.qute.deployment.typesafe.Item item}\n" +
+                                    "{@io.quarkus.qute.deployment.typesafe.Item[] items}\n" +
+                                    "{@io.quarkus.qute.deployment.typesafe.Item[] items2}\n" +
                                     "{#for otherItem in item.otherItems}\n" +
-                                    "{missing.or(alsoMissing.or('item id is: ')).toLowerCase}" +
+                                    "{missing.or(alsoMissing.or('result is: ')).toLowerCase}" +
                                     "{item.name.or(itemWithName.name).toUpperCase}" +
-                                    "{otherItem.id.or(itemWithName.id).longValue()}" +
+                                    "{items.or(items2).length}" + // test arrays
+                                    "{otherItem.id.or(itemWithName.id).longValue()}" + // tests boxed type
+                                    "{otherItem.getPrimitiveId().or(itemWithName.getPrimitiveId()).longValue()}" + // tests primitive type
                                     "{/for}\n"),
                             "templates/item.html"));
 
@@ -36,18 +42,22 @@ public class OrOperatorTemplateExtensionTest {
 
     @Test
     public void test() {
-        final String expected = "item id is: " + ITEM_NAME.toUpperCase();
+        final String expected = "result is: " + ITEM_NAME.toUpperCase();
         final ItemWithName itemWithName = new ItemWithName(new ItemWithName.Name());
 
-        // id comes from OtherItem, name is String and toUpperCase is method from String
-        assertEquals(expected + OtherItem.ID,
-                item.data(ITEM, new Item(ITEM_NAME.toUpperCase(), new OtherItem()), ITEM_WITH_NAME, itemWithName).render()
+        // ids comes from OtherItem, name is String and toUpperCase is method from String
+        Item[] items = new Item[4];
+        assertEquals(expected + items.length + OtherItem.ID + OtherItem.PRIMITIVE_ID,
+                item.data(ITEM, new Item(ITEM_NAME.toUpperCase(), new OtherItem()), ITEM_WITH_NAME, itemWithName,
+                        ITEMS, items, ITEMS_2, null).render()
                         .trim());
 
-        // id comes from ItemWithName, name comes from ItemWithName.Name and toUpperCase is regular method
+        // ids comes from ItemWithName, name comes from ItemWithName.Name and toUpperCase is regular method
+        Item[] items2 = new Item[2];
         assertEquals(
-                expected + itemWithName.getId(),
-                item.data(ITEM, new Item(null, (OtherItem) null), ITEM_WITH_NAME, itemWithName).render().trim());
+                expected + items2.length + itemWithName.getId() + itemWithName.getPrimitiveId(),
+                item.data(ITEM, new Item(null, (OtherItem) null), ITEM_WITH_NAME, itemWithName,
+                        ITEMS, null, ITEMS_2, items2).render().trim());
     }
 
 }

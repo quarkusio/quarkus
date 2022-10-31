@@ -114,6 +114,7 @@ public class SetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void smismember() {
         assertThat(sets.smismember(key, person1)).isEqualTo(List.of(false));
         sets.sadd(key, person1);
@@ -309,6 +310,7 @@ public class SetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void sort() {
         SetCommands<String, String> commands = ds.set(String.class, String.class);
         commands.sadd(key, "9", "5", "1", "3", "5", "8", "7", "6", "2", "4");

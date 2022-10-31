@@ -97,15 +97,30 @@ public class Marshaller {
     }
 
     public <F, V> Map<F, V> decodeAsMap(Response response, Class<F> typeOfField, Class<V> typeOfValue) {
-        if (response == null) {
+        if (response == null || response.size() == 0) {
             return Collections.emptyMap();
         }
         Map<F, V> map = new LinkedHashMap<>();
-        for (Response member : response) {
-            for (String key : member.getKeys()) {
-                F field = decode(typeOfField, key.getBytes(StandardCharsets.UTF_8));
-                V val = decode(typeOfValue, response.get(key));
-                map.put(field, val);
+        if (response.iterator().next().type() == ResponseType.BULK) {
+            // Redis 5
+            F current = null; // Just in case it's Redis 5.
+            for (Response member : response) {
+                if (current == null) {
+                    current = decode(typeOfField, member.toString().getBytes(StandardCharsets.UTF_8));
+                } else {
+                    V val = decode(typeOfValue, member);
+                    map.put(current, val);
+                    current = null;
+                }
+            }
+        } else {
+            // MULTI - Redis 6+
+            for (Response member : response) {
+                for (String key : member.getKeys()) {
+                    F field = decode(typeOfField, key.getBytes(StandardCharsets.UTF_8));
+                    V val = decode(typeOfValue, response.get(key));
+                    map.put(field, val);
+                }
             }
         }
         return map;

@@ -39,7 +39,7 @@
         <microprofile-rest-client.version>2.0</microprofile-rest-client.version>
         <microprofile-jwt.version>1.2</microprofile-jwt.version>
         <microprofile-lra.version>1.0</microprofile-lra.version>
-        <smallrye-common.version>1.13.1</smallrye-common.version>
+        <smallrye-common.version>1.13.2</smallrye-common.version>
         <smallrye-config.version>2.12.1</smallrye-config.version>
         <smallrye-health.version>3.3.0</smallrye-health.version>
         <smallrye-metrics.version>3.0.5</smallrye-metrics.version>
@@ -201,7 +201,7 @@
         <aesh-readline.version>2.2</aesh-readline.version>
         <aesh.version>2.6</aesh.version>
         <!-- these two artifacts needs to be compatible together -->
-        <strimzi-oauth.version>0.10.0</strimzi-oauth.version>
+        <strimzi-oauth.version>0.11.0</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>9.25.6</strimzi-oauth.nimbus.version>
         <java-buildpack-client.version>0.0.6</java-buildpack-client.version>
         <org-crac.version>0.1.1</org-crac.version>
@@ -6156,6 +6156,7 @@
                                 <recipe>io.quarkus.maven.javax.managed</recipe>
                                 <recipe>io.quarkus.maven.javax.versions</recipe>
                                 <recipe>io.quarkus.jakarta-versions</recipe>
+                                <recipe>io.quarkus.jakarta-el</recipe>
                                 <recipe>io.quarkus.jakarta-jaxrs-jaxb</recipe>
                                 <recipe>io.quarkus.jakarta-security</recipe>
                                 <recipe>io.quarkus.smallrye</recipe>

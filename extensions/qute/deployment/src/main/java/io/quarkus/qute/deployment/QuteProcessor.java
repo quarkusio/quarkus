@@ -151,6 +151,7 @@ public class QuteProcessor {
     private static final String CHECKED_TEMPLATE_REQUIRE_TYPE_SAFE = "requireTypeSafeExpressions";
     private static final String CHECKED_TEMPLATE_BASE_PATH = "basePath";
     private static final String CHECKED_TEMPLATE_DEFAULT_NAME = "defaultName";
+    private static final String IGNORE_FRAGMENTS = "ignoreFragments";
     private static final String BASE_PATH = "templates";
 
     private static final Set<String> ITERATION_METADATA_KEYS = Set.of("count", "index", "indexParity", "hasNext", "odd",
@@ -312,11 +313,7 @@ public class QuteProcessor {
                         throw new TemplateException("Incompatible checked template return type: " + methodInfo.returnType()
                                 + " only " + supportedAdaptors);
                 }
-                String fragmentId = null;
-                if (methodInfo.hasDeclaredAnnotation(Names.CHECKED_FRAGMENT)) {
-                    fragmentId = getCheckedFragmentId(methodInfo, annotation);
-                }
-
+                String fragmentId = getCheckedFragmentId(methodInfo, annotation);
                 StringBuilder templatePathBuilder = new StringBuilder();
                 AnnotationValue basePathValue = annotation.value(CHECKED_TEMPLATE_BASE_PATH);
                 if (basePathValue != null && !basePathValue.asString().equals(CheckedTemplate.DEFAULTED)) {
@@ -344,7 +341,8 @@ public class QuteProcessor {
                                 templatePath)) {
                     List<String> startsWith = new ArrayList<>();
                     for (String filePath : filePaths.getFilePaths()) {
-                        if (filePath.startsWith(templatePath)) {
+                        if (filePath.startsWith(templatePath)
+                                && filePath.charAt(templatePath.length()) == '.') {
                             startsWith.add(filePath);
                         }
                     }
@@ -402,20 +400,22 @@ public class QuteProcessor {
     }
 
     private String getCheckedFragmentId(MethodInfo method, AnnotationInstance checkedTemplateAnnotation) {
+        AnnotationValue ignoreFragmentsValue = checkedTemplateAnnotation.value(IGNORE_FRAGMENTS);
+        if (ignoreFragmentsValue != null && ignoreFragmentsValue.asBoolean()) {
+            return null;
+        }
+        String methodName = method.name();
+        // the id is the part after the last occurence of a dollar sign
+        int idx = methodName.lastIndexOf('$');
+        if (idx == -1 || idx == methodName.length()) {
+            return null;
+        }
         AnnotationValue nameValue = checkedTemplateAnnotation.value(CHECKED_TEMPLATE_DEFAULT_NAME);
         String defaultName;
         if (nameValue == null) {
             defaultName = CheckedTemplate.ELEMENT_NAME;
         } else {
             defaultName = nameValue.asString();
-        }
-        String methodName = method.name();
-        // the id is the part after the last occurence of a dollar sign
-        int idx = methodName.lastIndexOf('$');
-        if (idx == -1 || idx == methodName.length()) {
-            throw new TemplateException(
-                    "[" + method.name() + "] is not a valid name of a checked fragment method: "
-                            + method.declaringClass().name().withoutPackagePrefix() + "." + method.name() + "()");
         }
         return defaultedName(defaultName, methodName.substring(idx + 1, methodName.length()));
     }
@@ -1998,6 +1998,17 @@ public class QuteProcessor {
         }
         // If needed attempt to resolve the type variables using the declaring type
         if (Types.containsTypeVariable(matchType)) {
+
+            if (match.clazz == null) {
+                if (member.kind() == Kind.METHOD && match.isPrimitive()) {
+                    final Type wrapperType = Types.box(match.type.asPrimitiveType());
+                    match.setValues(index.getClassByName(wrapperType.name()), wrapperType);
+                } else {
+                    // we can't resolve type without class
+                    return matchType;
+                }
+            }
+
             // First get the type closure of the current match type
             Set<Type> closure = Types.getTypeClosure(match.clazz,
                     Types.buildResolvedMap(
@@ -2046,11 +2057,18 @@ public class QuteProcessor {
                                 for (int i = 1; i < params.size() && (i - 1) < paramExpressions.size(); i++) {
                                     // whether params.get(i) has same type as the extension base (e.g. T)
                                     if (params.get(i).name().equals(extensionMatchBase.name())) {
-                                        final var paramMatch = results.get(paramExpressions.get(i - 1).toOriginalString());
-                                        // if all T params are not of exactly same type, we do not try to determine
-                                        // right superclass/interface as it's expensive
-                                        if (paramMatch != null && !match.type().equals(paramMatch.type())) {
-                                            return matchType;
+                                        var paramMatch = results.get(paramExpressions.get(i - 1).toOriginalString());
+                                        if (paramMatch != null) {
+                                            Type paramMatchType = paramMatch.type();
+                                            if (paramMatch.isPrimitive()) {
+                                                // use boxed type
+                                                paramMatchType = Types.box(paramMatch.type());
+                                            }
+                                            // if all T params are not of exactly same type, we do not try to determine
+                                            // right superclass/interface as it's expensive
+                                            if (!match.type().equals(paramMatchType)) {
+                                                return matchType;
+                                            }
                                         }
                                     }
                                 }
@@ -2744,7 +2762,7 @@ public class QuteProcessor {
                         targetEnum);
                 continue;
             }
-            if (targetEnum.classAnnotation(ValueResolverGenerator.TEMPLATE_DATA) != null) {
+            if (targetEnum.declaredAnnotation(ValueResolverGenerator.TEMPLATE_DATA) != null) {
                 LOGGER.debugf("@TemplateEnum declared on %s is ignored: enum is annotated with @TemplateData", targetEnum);
                 continue;
             }

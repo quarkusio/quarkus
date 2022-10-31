@@ -19,4 +19,8 @@ public class Item {
         return otherItems;
     }
 
+    public int getPrimitiveId() {
+        return 9;
+    }
+
 }

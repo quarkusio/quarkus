@@ -23,6 +23,7 @@ public class OrOperatorTemplateExtensionFailureTest {
                                     "{@io.quarkus.qute.deployment.typesafe.Item item}\n" +
                                     "  {data:item.name.or(item2.name).pleaseMakeMyCaseUpper}\n" +
                                     "  {item.name.or(item2.name).pleaseMakeMyCaseUpper}\n" +
+                                    "  {item.getPrimitiveId().or(item2.getPrimitiveId()).missingMethod()}\n" +
                                     "{/for}\n"),
                             "templates/item.html"))
             .assertException(t -> {
@@ -42,6 +43,9 @@ public class OrOperatorTemplateExtensionFailureTest {
                 // validation failure in data namespace
                 assertTrue(te.getMessage().contains(
                         "{data:item.name.or(item2.name).pleaseMakeMyCaseUpper}: Property/method [pleaseMakeMyCaseUpper] not found on class [java.lang.String]"),
+                        te.getMessage());
+                assertTrue(te.getMessage().contains(
+                        "{item.getPrimitiveId().or(item2.getPrimitiveId()).missingMethod()}: Property/method [missingMethod()]"),
                         te.getMessage());
             });
 

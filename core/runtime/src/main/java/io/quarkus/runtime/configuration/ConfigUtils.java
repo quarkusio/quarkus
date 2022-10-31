@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 
 import org.eclipse.microprofile.config.Config;
@@ -35,13 +36,12 @@ import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
-import io.smallrye.config.ConfigValue;
 import io.smallrye.config.DotEnvConfigSourceProvider;
 import io.smallrye.config.EnvConfigSource;
 import io.smallrye.config.FallbackConfigSourceInterceptor;
 import io.smallrye.config.KeyMap;
+import io.smallrye.config.NameIterator;
 import io.smallrye.config.Priorities;
-import io.smallrye.config.ProfileConfigSourceInterceptor;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -143,19 +143,28 @@ public final class ConfigUtils {
                 relocations.put(SMALLRYE_CONFIG_LOCATIONS, "quarkus.config.locations");
                 relocations.put(SMALLRYE_CONFIG_PROFILE_PARENT, "quarkus.config.profile.parent");
 
-                // Also adds to the relocations the profile parent in the active profile
-                ConfigValue profileValue = context.proceed(SMALLRYE_CONFIG_PROFILE);
-                if (profileValue != null) {
-                    List<String> profiles = ProfileConfigSourceInterceptor.convertProfile(profileValue.getValue());
-                    for (String profile : profiles) {
-                        relocations.put("%" + profile + "." + SMALLRYE_CONFIG_LOCATIONS,
-                                "%" + profile + "." + "quarkus.config.locations");
-                        relocations.put("%" + profile + "." + SMALLRYE_CONFIG_PROFILE_PARENT,
-                                "%" + profile + "." + "quarkus.config.profile.parent");
-                    }
-                }
+                // Also adds relocations to all profiles
+                return new RelocateConfigSourceInterceptor(new Function<String, String>() {
+                    @Override
+                    public String apply(final String name) {
+                        String relocate = relocations.get(name);
+                        if (relocate != null) {
+                            return relocate;
+                        }
 
-                return new RelocateConfigSourceInterceptor(relocations);
+                        if (name.startsWith("%") && name.endsWith(SMALLRYE_CONFIG_LOCATIONS)) {
+                            io.smallrye.config.NameIterator ni = new io.smallrye.config.NameIterator(name);
+                            return ni.getNextSegment() + "." + "quarkus.config.locations";
+                        }
+
+                        if (name.startsWith("%") && name.endsWith(SMALLRYE_CONFIG_PROFILE_PARENT)) {
+                            io.smallrye.config.NameIterator ni = new NameIterator(name);
+                            return ni.getNextSegment() + "." + "quarkus.config.profile.parent";
+                        }
+
+                        return name;
+                    }
+                });
             }
 
             @Override

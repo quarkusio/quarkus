@@ -5,6 +5,7 @@ import javax.enterprise.event.Observes;
 import javax.inject.Named;
 
 import org.hamcrest.Matchers;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,7 +21,8 @@ public class DevConsoleArcSmokeTest {
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(Foo.class));
+                    .addClasses(Foo.class).addAsResource(new StringAsset("quarkus.arc.dev-mode.monitoring-enabled=true"),
+                            "application.properties"));
 
     @Test
     public void testPages() {

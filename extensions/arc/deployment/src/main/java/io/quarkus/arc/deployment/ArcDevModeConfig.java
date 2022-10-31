@@ -9,7 +9,7 @@ public class ArcDevModeConfig {
     /**
      * If set to true then the container monitors business method invocations and fired events during the development mode.
      */
-    @ConfigItem(defaultValue = "true")
+    @ConfigItem(defaultValue = "false")
     public boolean monitoringEnabled;
 
 }

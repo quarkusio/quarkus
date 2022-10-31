@@ -30,9 +30,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.google.cloud.functions.invoker</groupId>
-            <artifactId>java-function-invoker</artifactId>
-            <version>${gcf-invoker.version}</version>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-google-cloud-functions</artifactId>
             <scope>test</scope>
         </dependency>
 

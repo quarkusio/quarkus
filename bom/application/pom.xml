@@ -39,7 +39,7 @@
         <microprofile-rest-client.version>2.0</microprofile-rest-client.version>
         <microprofile-jwt.version>1.2</microprofile-jwt.version>
         <microprofile-lra.version>1.0</microprofile-lra.version>
-        <smallrye-common.version>1.13.1</smallrye-common.version>
+        <smallrye-common.version>1.13.2</smallrye-common.version>
         <smallrye-config.version>2.12.1</smallrye-config.version>
         <smallrye-health.version>3.3.0</smallrye-health.version>
         <smallrye-metrics.version>3.0.5</smallrye-metrics.version>
@@ -101,7 +101,8 @@
         <!-- for the now proprietary components of Elasticsearch, we use the last Open Source version -->
         <elasticsearch-proprietary-components-keeping-old-opensource-version.version>7.10.2</elasticsearch-proprietary-components-keeping-old-opensource-version.version>
         <rxjava.version>2.2.21</rxjava.version>
-        <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
+        <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
+        <wildfly.openssl-linux.version>2.2.2.Final</wildfly.openssl-linux.version>
         <jboss-logging-annotations.version>2.2.1.Final</jboss-logging-annotations.version>
         <slf4j.version>1.7.36</slf4j.version>
         <slf4j-jboss-logmanager.version>1.2.0.Final</slf4j-jboss-logmanager.version>
@@ -156,7 +157,7 @@
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.0.11</jboss-logmanager.version>
-        <flyway.version>9.5.1</flyway.version>
+        <flyway.version>9.6.0</flyway.version>
         <yasson.version>1.0.11</yasson.version>
         <liquibase.version>4.16.1</liquibase.version>
         <snakeyaml.version>1.33</snakeyaml.version>
@@ -198,10 +199,11 @@
         <jacoco.version>0.8.8</jacoco.version>
         <testcontainers.version>1.17.5</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
         <docker-java.version>3.2.13</docker-java.version> <!-- must be the version Testcontainers use -->
+        <com.dajudge.kindcontainer>1.3.0</com.dajudge.kindcontainer>
         <aesh-readline.version>2.2</aesh-readline.version>
         <aesh.version>2.6</aesh.version>
         <!-- these two artifacts needs to be compatible together -->
-        <strimzi-oauth.version>0.10.0</strimzi-oauth.version>
+        <strimzi-oauth.version>0.11.0</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>9.25.6</strimzi-oauth.nimbus.version>
         <java-buildpack-client.version>0.0.6</java-buildpack-client.version>
         <org-crac.version>0.1.3</org-crac.version>
@@ -2753,6 +2755,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-test-google-cloud-functions</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-micrometer-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -4257,6 +4264,12 @@
                 <artifactId>jandex</artifactId>
                 <version>${jandex.version}</version>
             </dependency>
+            <!-- this is a relocation to io.smallrye:jandex, for consumers who didn't move yet -->
+            <dependency>
+                <groupId>org.jboss</groupId>
+                <artifactId>jandex</artifactId>
+                <version>${jandex.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.graalvm.nativeimage</groupId>
@@ -4609,12 +4622,12 @@
             <dependency>
                 <groupId>org.wildfly.openssl</groupId>
                 <artifactId>wildfly-openssl-java</artifactId>
-                <version>${wildfly.openssl.version}</version>
+                <version>${wildfly.openssl-java.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.wildfly.openssl</groupId>
                 <artifactId>wildfly-openssl-linux-x86_64</artifactId>
-                <version>${wildfly.openssl.version}</version>
+                <version>${wildfly.openssl-linux.version}</version>
             </dependency>
 
             <dependency>
@@ -5842,6 +5855,17 @@
                 <groupId>io.github.crac</groupId>
                 <artifactId>org-crac</artifactId>
                 <version>${org-crac.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dajudge.kindcontainer</groupId>
+                <artifactId>kindcontainer</artifactId>
+                <version>${com.dajudge.kindcontainer}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <!-- Relocations -->

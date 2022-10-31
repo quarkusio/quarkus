@@ -11,6 +11,10 @@ public class ItemWithName {
         return 2;
     }
 
+    public int getPrimitiveId() {
+        return getId() * -1;
+    }
+
     public Name getName() {
         return name;
     }

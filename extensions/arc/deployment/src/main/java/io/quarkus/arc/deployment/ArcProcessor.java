@@ -156,6 +156,7 @@ public class ArcProcessor {
                 quarkusApplications.add(quarkusApplication.name().toString());
             }
         }
+
         return AdditionalBeanBuildItem.builder().setUnremovable()
                 .setDefaultScope(DotName.createSimple(ApplicationScoped.class.getName()))
                 .addBeanClasses(quarkusApplications)

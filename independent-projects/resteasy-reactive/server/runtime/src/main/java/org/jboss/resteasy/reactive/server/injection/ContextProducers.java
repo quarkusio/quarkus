@@ -4,6 +4,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ResourceContext;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Application;
@@ -12,7 +13,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.Providers;
 import javax.ws.rs.sse.Sse;
 
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
@@ -52,6 +52,13 @@ public class ContextProducers {
         return getContext().getHttpHeaders();
     }
 
+    // this is added for compatibility reasons
+    @RequestScoped
+    @Produces
+    ContainerRequestContext containerRequestContext() {
+        return getContext().getContainerRequestContext();
+    }
+
     @ApplicationScoped
     @Produces
     Sse sse() {
@@ -79,11 +86,14 @@ public class ContextProducers {
     //        return CurrentRequest.get().getContext().response();
     //    }
 
-    @ApplicationScoped
-    @Produces
-    Providers providers() {
-        return getContext().getProviders();
-    }
+    // TODO: ideally we would declare this bean with a lesser priority and let Quarkus override it using a higher priority,
+    //  however that is not possible because @Priority cannot be applied to methods
+
+    //    @ApplicationScoped
+    //    @Produces
+    //    Providers providers() {
+    //        return getContext().getProviders();
+    //    }
 
     @RequestScoped
     @Produces

@@ -247,6 +247,7 @@
                 <module>container-image</module>
                 <module>kubernetes</module>
                 <module>kubernetes-client</module>
+                <module>kubernetes-client-devservices</module>
                 <module>kubernetes-service-binding-jdbc</module>
                 <module>kubernetes-service-binding-reactive</module>
                 <module>openshift-client</module>

@@ -159,7 +159,7 @@ public class MessageBundleProcessor {
                     }
                     Map<String, ClassInfo> localeToInterface = new HashMap<>();
                     for (ClassInfo localizedInterface : localized) {
-                        String locale = localizedInterface.classAnnotation(Names.LOCALIZED).value().asString();
+                        String locale = localizedInterface.declaredAnnotation(Names.LOCALIZED).value().asString();
                         if (defaultLocale.equals(locale)) {
                             throw new MessageBundleException(
                                     String.format(
@@ -234,7 +234,7 @@ public class MessageBundleProcessor {
             beanRegistration.getContext().configure(bundleInterface.name()).addType(bundle.getDefaultBundleInterface().name())
                     // The default message bundle - add both @Default and @Localized
                     .addQualifier(DotNames.DEFAULT).addQualifier().annotation(Names.LOCALIZED)
-                    .addValue("value", getDefaultLocale(bundleInterface.classAnnotation(Names.BUNDLE), locales)).done()
+                    .addValue("value", getDefaultLocale(bundleInterface.declaredAnnotation(Names.BUNDLE), locales)).done()
                     .unremovable()
                     .scope(Singleton.class).creator(mc -> {
                         // Just create a new instance of the generated class
@@ -247,7 +247,7 @@ public class MessageBundleProcessor {
             for (ClassInfo localizedInterface : bundle.getLocalizedInterfaces().values()) {
                 beanRegistration.getContext().configure(localizedInterface.name())
                         .addType(bundle.getDefaultBundleInterface().name())
-                        .addQualifier(localizedInterface.classAnnotation(Names.LOCALIZED))
+                        .addQualifier(localizedInterface.declaredAnnotation(Names.LOCALIZED))
                         .unremovable()
                         .scope(Singleton.class).creator(mc -> {
                             // Just create a new instance of the generated class
@@ -770,8 +770,8 @@ public class MessageBundleProcessor {
         ClassInfo bundleInterface = bundleInterfaceWrapper.getClassInfo();
         LOGGER.debugf("Generate bundle implementation for %s", bundleInterface);
         AnnotationInstance bundleAnnotation = defaultBundleInterface != null
-                ? defaultBundleInterface.classAnnotation(Names.BUNDLE)
-                : bundleInterface.classAnnotation(Names.BUNDLE);
+                ? defaultBundleInterface.declaredAnnotation(Names.BUNDLE)
+                : bundleInterface.declaredAnnotation(Names.BUNDLE);
         AnnotationValue nameValue = bundleAnnotation.value();
         String bundleName = nameValue != null ? nameValue.asString() : MessageBundle.DEFAULT_NAME;
         AnnotationValue defaultKeyValue = bundleAnnotation.value(BUNDLE_DEFAULT_KEY);
@@ -864,7 +864,7 @@ public class MessageBundleProcessor {
             if (messageTemplate.contains("}")) {
                 if (defaultBundleInterface != null) {
                     if (locale == null) {
-                        AnnotationInstance localizedAnnotation = bundleInterface.classAnnotation(Names.LOCALIZED);
+                        AnnotationInstance localizedAnnotation = bundleInterface.declaredAnnotation(Names.LOCALIZED);
                         locale = localizedAnnotation.value().asString();
                     }
                     templateId = bundleName + "_" + locale + "_" + key;

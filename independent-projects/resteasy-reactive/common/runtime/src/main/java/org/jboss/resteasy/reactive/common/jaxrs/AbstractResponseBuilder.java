@@ -131,9 +131,11 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
     }
 
     public void setAllHeaders(MultivaluedMap<String, String> values) {
-        for (Map.Entry<String, List<String>> i : values.entrySet()) {
-            for (String v : i.getValue()) {
-                metadata.add(i.getKey(), v);
+        if (values != null) {
+            for (Map.Entry<String, List<String>> i : values.entrySet()) {
+                for (String v : i.getValue()) {
+                    metadata.add(i.getKey(), v);
+                }
             }
         }
     }

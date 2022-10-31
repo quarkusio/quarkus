@@ -12,6 +12,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.liquibase.LiquibaseFactory;
+import io.quarkus.runtime.PreventFurtherStepsException;
 import io.quarkus.runtime.annotations.Recorder;
 import liquibase.Liquibase;
 import liquibase.lockservice.LockServiceFactory;
@@ -75,6 +76,15 @@ public class LiquibaseRecorder {
                 } catch (UnsatisfiedResolutionException e) {
                     //ignore, the DS is not configured
                 }
+            }
+
+            for (InstanceHandle<LiquibaseFactory> liquibaseFactoryHandle : liquibaseFactoryInstance.handles()) {
+                LiquibaseFactory liquibaseFactory = liquibaseFactoryHandle.get();
+                var config = liquibaseFactory.getConfiguration();
+                if (config.runAndExit) {
+                    throw new PreventFurtherStepsException();
+                }
+
             }
         } catch (Exception e) {
             throw new IllegalStateException("Error starting Liquibase", e);

@@ -9,6 +9,8 @@ public class FlywayContainer {
     private final boolean migrateAtStart;
     private final boolean repairAtStart;
 
+    private final boolean runAndExit;
+
     private final boolean validateAtStart;
     private final String dataSourceName;
     private final boolean hasMigrations;
@@ -17,12 +19,14 @@ public class FlywayContainer {
 
     public FlywayContainer(Flyway flyway, boolean cleanAtStart, boolean migrateAtStart, boolean repairAtStart,
             boolean validateAtStart,
+            boolean runAndExit,
             String dataSourceName, boolean hasMigrations, boolean createPossible) {
         this.flyway = flyway;
         this.cleanAtStart = cleanAtStart;
         this.migrateAtStart = migrateAtStart;
         this.repairAtStart = repairAtStart;
         this.validateAtStart = validateAtStart;
+        this.runAndExit = runAndExit;
         this.dataSourceName = dataSourceName;
         this.hasMigrations = hasMigrations;
         this.createPossible = createPossible;
@@ -47,6 +51,10 @@ public class FlywayContainer {
 
     public boolean isValidateAtStart() {
         return validateAtStart;
+    }
+
+    public boolean isRunAndExit() {
+        return runAndExit;
     }
 
     public String getDataSourceName() {

@@ -34,6 +34,11 @@ public class LiquibaseConfig {
     public boolean cleanAtStart = false;
 
     /**
+     * The run and exit flag
+     */
+    public boolean runAndExit;
+
+    /**
      * The list of contexts
      */
     public List<String> contexts = null;

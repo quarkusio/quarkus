@@ -2,12 +2,13 @@ package io.quarkus.opentelemetry.deployment.instrumentation;
 
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_HOST;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_METHOD;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_ROUTE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_STATUS_CODE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_TARGET;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_URL;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_HOST_NAME;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_HOST_PORT;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -72,7 +73,8 @@ public class VertxClientOpenTelemetryTest {
         assertEquals(HTTP_OK, server.getAttributes().get(HTTP_STATUS_CODE));
         assertEquals(HttpMethod.GET, server.getAttributes().get(HTTP_METHOD));
         assertEquals("/hello", server.getAttributes().get(HTTP_ROUTE));
-        assertEquals(uri.getHost() + ":" + uri.getPort(), server.getAttributes().get(HTTP_HOST));
+        assertEquals(uri.getHost(), server.getAttributes().get(NET_HOST_NAME));
+        assertEquals(uri.getPort(), server.getAttributes().get(NET_HOST_PORT));
         assertEquals(uri.getPath() + "hello", server.getAttributes().get(HTTP_TARGET));
 
         SpanData client = spans.get(1);
@@ -104,7 +106,8 @@ public class VertxClientOpenTelemetryTest {
         assertEquals(HTTP_OK, server.getAttributes().get(HTTP_STATUS_CODE));
         assertEquals(HttpMethod.GET, server.getAttributes().get(HTTP_METHOD));
         assertEquals("/hello/:name", server.getAttributes().get(HTTP_ROUTE));
-        assertEquals(uri.getHost() + ":" + uri.getPort(), server.getAttributes().get(HTTP_HOST));
+        assertEquals(uri.getHost(), server.getAttributes().get(NET_HOST_NAME));
+        assertEquals(uri.getPort(), server.getAttributes().get(NET_HOST_PORT));
         assertEquals(uri.getPath() + "hello/naruto", server.getAttributes().get(HTTP_TARGET));
 
         SpanData client = spans.get(1);

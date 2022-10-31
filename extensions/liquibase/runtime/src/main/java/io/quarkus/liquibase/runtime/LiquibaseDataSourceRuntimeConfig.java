@@ -59,6 +59,13 @@ public final class LiquibaseDataSourceRuntimeConfig {
     public boolean cleanAtStart;
 
     /**
+     * true to quit exit right after the operation.
+     *
+     */
+    @ConfigItem
+    public boolean runAndExit;
+
+    /**
      * Comma-separated case-sensitive list of ChangeSet contexts to execute for liquibase.
      */
     @ConfigItem

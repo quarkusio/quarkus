@@ -973,6 +973,14 @@ public class JarResultBuildStep {
 
             log.info("Building native image source jar: " + runnerJar);
 
+            // Remove svm and graal-sdk artifacts as they are provided by GraalVM itself
+            if (classLoadingConfig.removedArtifacts.isEmpty()) {
+                classLoadingConfig.removedArtifacts = Optional.of(new ArrayList<>(2));
+            }
+            List<String> removedArtifacts = classLoadingConfig.removedArtifacts.get();
+            removedArtifacts.add("org.graalvm.nativeimage:svm");
+            removedArtifacts.add("org.graalvm.sdk:graal-sdk");
+
             doLegacyThinJarGeneration(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem, applicationInfo, packageConfig, generatedResources, libDir, allClasses,
                     runnerZipFs, mainClassBuildItem, classLoadingConfig);

@@ -104,6 +104,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zaddch() {
         assertThat(setOfPlaces.zadd(key, 1.0, Place.crussol)).isTrue();
         assertThat(setOfPlaces.zadd(key, new ZAddArgs().ch().xx(), 2.0, Place.crussol)).isTrue();
@@ -114,6 +115,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zaddincr() {
         assertThat(setOfPlaces.zadd(key, 1.0, Place.crussol)).isTrue();
         assertThat(setOfPlaces.zaddincr(key, 2.0, Place.crussol)).isEqualTo(3.0);
@@ -138,6 +140,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zaddgt() {
         assertThat(setOfPlaces.zadd(key, 1.0, Place.crussol)).isTrue();
         // new score less than the current score
@@ -155,6 +158,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zaddlt() {
         assertThat(setOfPlaces.zadd(key, 2.0, Place.crussol)).isTrue();
         // new score greater than the current score
@@ -195,6 +199,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zdiff() {
         String zset1 = "zset1";
         String zset2 = "zset2";
@@ -213,6 +218,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zdiffstore() {
         String zset1 = "zset1";
         String zset2 = "zset2";
@@ -255,6 +261,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zinterstoreWithArgs() {
         setOfPlaces.zadd("zset1", Map.of(Place.crussol, 1.0, Place.grignan, 2.0));
         setOfPlaces.zadd("zset2", Map.of(Place.crussol, 2.0, Place.grignan, 3.0, Place.suze, 4.0));
@@ -301,6 +308,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zrandmember() {
         setOfPlaces.zadd("zset", Map.of(Place.crussol, 2.0, Place.grignan, 3.0, Place.suze, 4.0));
         assertThat(setOfPlaces.zrandmember("zset")).isIn(Place.crussol, Place.grignan, Place.suze);
@@ -326,6 +334,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zrangebyscore() {
         setOfPlaces.zadd(key, Map.of(Place.crussol, 1.0, Place.grignan, 2.0, Place.suze, 3.0, Place.adhemar, 4.0));
 
@@ -343,6 +352,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zrangebyscoreWithScores() {
         setOfPlaces.zadd(key, Map.of(Place.crussol, 1.0, Place.grignan, 2.0, Place.suze, 3.0, Place.adhemar, 4.0));
 
@@ -366,6 +376,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zrangebyscoreWithScoresInfinity() {
         setOfPlaces.zadd(key, Map.of(Place.crussol, Double.POSITIVE_INFINITY, Place.grignan, Double.NEGATIVE_INFINITY));
         assertThat(setOfPlaces.zrangebyscoreWithScores(key, new ScoreRange<>(null, null))).hasSize(2);
@@ -373,6 +384,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zrangestorebylex() {
         setOfStrings.zadd(key, Map.of("a", 1.0, "b", 2.0, "c", 3.0, "d", 4.0));
         assertThat(setOfStrings.zrangestorebylex("key1", key, new Range<>("b", "d"), new ZRangeArgs().limit(0, 4)))
@@ -384,6 +396,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zrangestorebyscore() {
         setOfPlaces.zadd(key, Map.of(Place.crussol, 1.0, Place.grignan, 2.0, Place.suze, 3.0, Place.adhemar, 4.0));
         assertThat(setOfPlaces.zrangestorebyscore("key1", key, new ScoreRange<>(0.0, 2.0),
@@ -395,6 +408,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zrangestore() {
         setOfPlaces.zadd(key, Map.of(Place.crussol, 1.0, Place.grignan, 2.0, Place.suze, 3.0, Place.adhemar, 4.0));
         assertThat(setOfPlaces.zrangestore("key1", key, 0, -1)).isEqualTo(4);
@@ -447,6 +461,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zrevrange() {
         populate();
         assertThat(setOfPlaces.zrange(key, 0, -1, new ZRangeArgs().rev()))
@@ -454,6 +469,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zrevrangeWithScores() {
         populate();
         assertThat(setOfPlaces.zrangeWithScores(key, 0, -1, new ZRangeArgs().rev()))
@@ -462,6 +478,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zrevrangebylex() {
         populateManyStringEntries();
         assertThat(setOfStrings.zrangebylex(key, Range.unbounded(), new ZRangeArgs().rev())).hasSize(100);
@@ -474,6 +491,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zrevrangebyscore() {
         setOfPlaces.zadd(key, Map.of(Place.crussol, 1.0, Place.grignan, 2.0, Place.suze, 3.0, Place.adhemar, 4.0));
         ZRangeArgs rev = new ZRangeArgs().rev();
@@ -492,6 +510,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zrevrangebyscoreWithScores() {
         setOfPlaces.zadd(key, Map.of(Place.crussol, 1.0, Place.grignan, 2.0, Place.suze, 3.0, Place.adhemar, 4.0));
         ZRangeArgs rev = new ZRangeArgs().rev();
@@ -523,6 +542,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zrevrangestorebylex() {
         setOfStrings.zadd(key, Map.of("a", 1.0, "b", 2.0, "c", 3.0, "d", 4.0));
         assertThat(setOfStrings.zrangestorebylex("key1", key, new Range<>("c", "-"),
@@ -531,6 +551,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zrevrangestorebyscore() {
         setOfPlaces.zadd(key, Map.of(Place.crussol, 1.0, Place.grignan, 2.0, Place.suze, 3.0, Place.adhemar, 4.0));
         assertThat(
@@ -728,6 +749,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     public void zmscore() {
         setOfPlaces.zadd("zset1", Map.of(Place.crussol, 1.0, Place.grignan, 2.0));
         assertThat(setOfPlaces.zmscore("zset1", Place.crussol, Place.suze, Place.grignan))
@@ -821,6 +843,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zrangebylex() {
         populateManyStringEntries();
 
@@ -836,6 +859,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zremrangebylex() {
         populateManyStringEntries();
         assertThat(setOfStrings.zremrangebylex(key, new Range<>("aaa", false, "zzz", true))).isEqualTo(100);
@@ -845,6 +869,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zunion() {
         String zset1 = "zset1";
         String zset2 = "zset2";
@@ -868,6 +893,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zinter() {
         String zset1 = "zset1";
         String zset2 = "zset2";
@@ -887,6 +913,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zinterWithScores() {
         String zset1 = "zset1";
         String zset2 = "zset2";
@@ -904,6 +931,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void zinterWithArgs() {
         String zset1 = "zset1";
         String zset2 = "zset2";
@@ -931,6 +959,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void sort() {
         SortedSetCommands<String, String> commands = ds.sortedSet(String.class, String.class);
         commands.zadd(key, Map.of("9", 9.0, "1", 1.0, "3", 3.0, "5", 5.0,

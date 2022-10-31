@@ -246,7 +246,7 @@ public class TemplateProducer {
                 if (!attributes.isEmpty()) {
                     attributes.forEach(instance::setAttribute);
                 }
-                if (!renderedActions.isEmpty()) {
+                if (renderedActions != null) {
                     renderedActions.forEach(instance::onRendered);
                 }
                 return instance;

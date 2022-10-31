@@ -31,9 +31,9 @@ public class NamespaceResolversTest {
 
     @Test
     public void testMultipleAndNotFound() {
-        // This one should we used first but returns NOT_FOUND and so the other resolver is used
         Engine engine = Engine.builder().addValueResolver(new ReflectionValueResolver())
                 .addNamespaceResolver(NamespaceResolver.builder("foo").resolve(e -> "foo1").build())
+                // This one should we used first but returns NOT_FOUND and so the other resolver is used
                 .addNamespaceResolver(NamespaceResolver.builder("foo").priority(50).resolve(Results.NotFound::from).build())
                 .build();
         assertEquals("FOO1", engine.parse("{foo:baz.toUpperCase}").render());

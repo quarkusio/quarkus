@@ -38,7 +38,6 @@ Add the following dependencies to your project:
   - `blaze-persistence-integration-jackson` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#Jackson%20integration[Jackson]
   - `blaze-persistence-integration-jaxrs` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#jaxrs-integration[JAX-RS]
 
-
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .Example dependencies using Maven
 ----

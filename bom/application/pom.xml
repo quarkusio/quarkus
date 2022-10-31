@@ -39,14 +39,14 @@
         <microprofile-rest-client.version>2.0</microprofile-rest-client.version>
         <microprofile-jwt.version>1.2</microprofile-jwt.version>
         <microprofile-lra.version>1.0</microprofile-lra.version>
-        <smallrye-common.version>1.13.1</smallrye-common.version>
+        <smallrye-common.version>1.13.2</smallrye-common.version>
         <smallrye-config.version>2.12.1</smallrye-config.version>
         <smallrye-health.version>3.3.0</smallrye-health.version>
         <smallrye-metrics.version>3.0.5</smallrye-metrics.version>
         <smallrye-open-api.version>2.3.1</smallrye-open-api.version>
-        <smallrye-graphql.version>1.8.1</smallrye-graphql.version>
+        <smallrye-graphql.version>1.8.2</smallrye-graphql.version>
         <smallrye-opentracing.version>2.1.1</smallrye-opentracing.version>
-        <smallrye-fault-tolerance.version>5.5.0</smallrye-fault-tolerance.version>
+        <smallrye-fault-tolerance.version>5.6.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>3.5.4</smallrye-jwt.version>
         <smallrye-context-propagation.version>1.2.2</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
@@ -76,13 +76,13 @@
         <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
         <asm.version>9.4</asm.version>
         <commons-io.version>2.11.0</commons-io.version>
-        <jboss-metadata-web.version>15.1.0.Final</jboss-metadata-web.version>
+        <jboss-metadata-web.version>15.2.0.Final</jboss-metadata-web.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <plexus-utils.version>3.3.0</plexus-utils.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
         <graal-sdk.version>22.2.0</graal-sdk.version>
         <graal-svm.version>${graal-sdk.version}</graal-svm.version>
-        <gizmo.version>1.3.0.Final</gizmo.version>
+        <gizmo.version>1.4.0.Final</gizmo.version>
         <jackson-bom.version>2.13.4.20221013</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
@@ -101,7 +101,8 @@
         <!-- for the now proprietary components of Elasticsearch, we use the last Open Source version -->
         <elasticsearch-proprietary-components-keeping-old-opensource-version.version>7.10.2</elasticsearch-proprietary-components-keeping-old-opensource-version.version>
         <rxjava.version>2.2.21</rxjava.version>
-        <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
+        <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
+        <wildfly.openssl-linux.version>2.2.2.Final</wildfly.openssl-linux.version>
         <jboss-logging-annotations.version>2.2.1.Final</jboss-logging-annotations.version>
         <slf4j.version>1.7.36</slf4j.version>
         <slf4j-jboss-logmanager.version>1.2.0.Final</slf4j-jboss-logmanager.version>
@@ -130,9 +131,9 @@
         <junit.jupiter.version>5.9.1</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
         <testng.version>6.14.2</testng.version>
-        <infinispan.version>14.0.0.Final</infinispan.version>
+        <infinispan.version>14.0.1.Final</infinispan.version>
         <infinispan.protostream.version>4.5.0.Final</infinispan.protostream.version>
-        <caffeine.version>2.9.3</caffeine.version>
+        <caffeine.version>3.1.1</caffeine.version>
         <netty.version>4.1.82.Final</netty.version>
         <brotli4j.version>1.8.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
@@ -151,12 +152,12 @@
         <kotlin.version>1.7.20</kotlin.version>
         <kotlin.coroutine.version>1.6.4</kotlin.coroutine.version>
         <kotlin-serialization.version>1.4.1</kotlin-serialization.version>
-        <kubernetes-client.version>6.1.1</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
-        <dekorate.version>3.0.0</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
+        <kubernetes-client.version>6.2.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
+        <dekorate.version>3.1.1</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <jboss-logmanager.version>1.0.10</jboss-logmanager.version>
-        <flyway.version>9.4.0</flyway.version>
+        <jboss-logmanager.version>1.0.11</jboss-logmanager.version>
+        <flyway.version>9.6.0</flyway.version>
         <yasson.version>1.0.11</yasson.version>
         <liquibase.version>4.16.1</liquibase.version>
         <snakeyaml.version>1.33</snakeyaml.version>
@@ -173,11 +174,11 @@
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.3.Final</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
-        <mockito.version>4.8.0</mockito.version>
+        <mockito.version>4.8.1</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.9.2</antlr.version>
         <quarkus-security.version>1.1.4.Final</quarkus-security.version>
-        <keycloak.version>19.0.2</keycloak.version>
+        <keycloak.version>19.0.3</keycloak.version>
         <logstash-gelf.version>1.15.0</logstash-gelf.version>
         <checker-qual.version>3.26.0</checker-qual.version>
         <error-prone-annotations.version>2.16</error-prone-annotations.version>
@@ -188,7 +189,7 @@
         <google-cloud-functions.version>1.0.4</google-cloud-functions.version>
         <commons-compress.version>1.21</commons-compress.version>
         <commons-text.version>1.10.0</commons-text.version>
-        <gson.version>2.9.1</gson.version>
+        <gson.version>2.10</gson.version>
         <log4j2-jboss-logmanager.version>1.1.1.Final</log4j2-jboss-logmanager.version>
         <log4j2-api.version>2.19.0</log4j2-api.version>
         <log4j-jboss-logmanager.version>1.3.0.Final</log4j-jboss-logmanager.version>
@@ -198,13 +199,14 @@
         <jacoco.version>0.8.8</jacoco.version>
         <testcontainers.version>1.17.5</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
         <docker-java.version>3.2.13</docker-java.version> <!-- must be the version Testcontainers use -->
+        <com.dajudge.kindcontainer>1.3.0</com.dajudge.kindcontainer>
         <aesh-readline.version>2.2</aesh-readline.version>
         <aesh.version>2.6</aesh.version>
         <!-- these two artifacts needs to be compatible together -->
-        <strimzi-oauth.version>0.10.0</strimzi-oauth.version>
-        <strimzi-oauth.nimbus.version>9.25.4</strimzi-oauth.nimbus.version>
+        <strimzi-oauth.version>0.11.0</strimzi-oauth.version>
+        <strimzi-oauth.nimbus.version>9.25.6</strimzi-oauth.nimbus.version>
         <java-buildpack-client.version>0.0.6</java-buildpack-client.version>
-        <org-crac.version>0.1.1</org-crac.version>
+        <org-crac.version>0.1.3</org-crac.version>
         <mutiny-zero.version>0.4.3</mutiny-zero.version>
     </properties>
 
@@ -2754,6 +2756,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-test-google-cloud-functions</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-micrometer-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -3013,6 +3020,12 @@
             <dependency>
                 <groupId>io.dekorate</groupId>
                 <artifactId>certmanager-annotations</artifactId>
+                <version>${dekorate.version}</version>
+                <classifier>noapt</classifier>
+            </dependency>
+            <dependency>
+                <groupId>io.dekorate</groupId>
+                <artifactId>kind-annotations</artifactId>
                 <version>${dekorate.version}</version>
                 <classifier>noapt</classifier>
             </dependency>
@@ -4604,12 +4617,12 @@
             <dependency>
                 <groupId>org.wildfly.openssl</groupId>
                 <artifactId>wildfly-openssl-java</artifactId>
-                <version>${wildfly.openssl.version}</version>
+                <version>${wildfly.openssl-java.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.wildfly.openssl</groupId>
                 <artifactId>wildfly-openssl-linux-x86_64</artifactId>
-                <version>${wildfly.openssl.version}</version>
+                <version>${wildfly.openssl-linux.version}</version>
             </dependency>
 
             <dependency>
@@ -5843,6 +5856,17 @@
                 <artifactId>org-crac</artifactId>
                 <version>${org-crac.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.dajudge.kindcontainer</groupId>
+                <artifactId>kindcontainer</artifactId>
+                <version>${com.dajudge.kindcontainer}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
 
             <!-- Relocations -->
             <dependency>
@@ -6156,6 +6180,7 @@
                                 <recipe>io.quarkus.maven.javax.managed</recipe>
                                 <recipe>io.quarkus.maven.javax.versions</recipe>
                                 <recipe>io.quarkus.jakarta-versions</recipe>
+                                <recipe>io.quarkus.jakarta-el</recipe>
                                 <recipe>io.quarkus.jakarta-jaxrs-jaxb</recipe>
                                 <recipe>io.quarkus.jakarta-security</recipe>
                                 <recipe>io.quarkus.smallrye</recipe>

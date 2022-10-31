@@ -1,12 +1,16 @@
 package io.quarkus.resteasy.reactive.server.test.multipart;
 
+import java.util.List;
+
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.jboss.resteasy.reactive.MultipartForm;
+import org.jboss.resteasy.reactive.PartType;
+import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import io.quarkus.runtime.BlockingOperationControl;
@@ -20,7 +24,7 @@ public class MultipartResourceWithAllUploads {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @NonBlocking
     @Path("/simple/{times}")
-    public String simple(@MultipartForm FormDataWithAllUploads formData, Integer times) {
+    public String simple(@BeanParam FormDataWithAllUploads formData, Integer times) {
         if (BlockingOperationControl.isBlockingAllowed()) {
             throw new RuntimeException("should not have dispatched");
         }
@@ -29,4 +33,25 @@ public class MultipartResourceWithAllUploads {
                 + " - " + formData.getUploads().size() + " - " + txtFile.contentType();
     }
 
+    @POST
+    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @NonBlocking
+    @Path("/param/simple/{times}")
+    public String simple(
+            @RestForm
+            // don't set a part type, use the default
+            String name,
+            @RestForm @PartType(MediaType.TEXT_PLAIN) Status status,
+            @RestForm(FileUpload.ALL) List<FileUpload> uploads,
+            @RestForm @PartType(MediaType.TEXT_PLAIN) boolean active,
+            @RestForm @PartType(MediaType.TEXT_PLAIN) int num,
+            Integer times) {
+        if (BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("should not have dispatched");
+        }
+        FileUpload txtFile = uploads.stream().filter(f -> f.name().equals("txtFile")).findFirst().get();
+        return name + " - " + active + " - " + times * num + " - " + status
+                + " - " + uploads.size() + " - " + txtFile.contentType();
+    }
 }

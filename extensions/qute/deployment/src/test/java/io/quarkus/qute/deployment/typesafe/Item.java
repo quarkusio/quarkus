@@ -18,4 +18,9 @@ public class Item {
     public OtherItem[] getOtherItems() {
         return otherItems;
     }
+
+    public int getPrimitiveId() {
+        return 9;
+    }
+
 }

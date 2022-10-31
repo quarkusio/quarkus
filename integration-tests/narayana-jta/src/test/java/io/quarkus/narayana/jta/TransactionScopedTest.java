@@ -59,8 +59,8 @@ class TransactionScopedTest {
     }
 
     @Test
-    void scopeEventsAreEmitted() {
-        beanEvents.cleanCounts();
+    void scopeEventsAreEmitted() throws Exception {
+        TransactionBeanWithEvents.cleanCounts();
 
         beanEvents.doInTransaction(true);
 
@@ -70,11 +70,14 @@ class TransactionScopedTest {
             // expect runtime exception to rollback the call
         }
 
-        assertEquals(2, beanEvents.getInitialized(), "Expected @Initialized to be observed");
-        assertEquals(2, beanEvents.getBeforeDestroyed(), "Expected @BeforeDestroyed to be observer");
-        assertEquals(2, beanEvents.getDestroyed(), "Expected @Destroyed to be observer");
-        assertEquals(1, beanEvents.getCommited(), "Expected commit to be called once");
-        assertEquals(1, beanEvents.getRolledBack(), "Expected rollback to be called once");
+        tx.begin();
+        tx.commit();
+
+        assertEquals(3, TransactionBeanWithEvents.getInitialized(), "Expected @Initialized to be observed");
+        assertEquals(3, TransactionBeanWithEvents.getBeforeDestroyed(), "Expected @BeforeDestroyed to be observer");
+        assertEquals(3, TransactionBeanWithEvents.getDestroyed(), "Expected @Destroyed to be observer");
+        assertEquals(1, TransactionBeanWithEvents.getCommited(), "Expected commit to be called once");
+        assertEquals(1, TransactionBeanWithEvents.getRolledBack(), "Expected rollback to be called once");
     }
 
 }

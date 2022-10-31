@@ -11,6 +11,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.server.core.multipart.MultipartMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.processor.generation.multipart.FormDataOutputMapperGenerator;
 
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;

@@ -6,9 +6,8 @@ import org.eclipse.microprofile.faulttolerance.Timeout;
 
 @ApplicationScoped
 public class TimeoutBean {
-
-    @Timeout(50)
-    public void timeout() throws InterruptedException {
-        Thread.sleep(100);
+    @Timeout(10)
+    public void hello() throws InterruptedException {
+        Thread.sleep(250);
     }
 }

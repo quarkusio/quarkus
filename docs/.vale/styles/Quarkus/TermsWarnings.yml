@@ -1,0 +1,12 @@
+---
+extends: substitution
+ignorecase: true
+level: warning
+link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-reference.adoc
+message: "Consider using '%s' rather than '%s' unless updating existing content that uses it."
+source: Quarkus contributor guide
+action:
+  name: replace
+swap:
+  "I(?!/O)": you
+  he|she: you

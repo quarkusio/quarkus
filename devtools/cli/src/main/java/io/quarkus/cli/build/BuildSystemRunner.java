@@ -106,8 +106,8 @@ public interface BuildSystemRunner {
 
     BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params);
 
-    List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, DebugOptions debugOptions,
-            List<String> params);
+    List<Supplier<BuildCommandArgs>> prepareDevTestMode(boolean devMode, DevOptions commonOptions,
+            DebugOptions debugOptions, List<String> params);
 
     Path getProjectRoot();
 

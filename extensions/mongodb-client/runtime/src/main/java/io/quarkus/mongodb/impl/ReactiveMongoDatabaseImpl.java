@@ -209,7 +209,7 @@ public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
 
     @Override
     public Multi<ChangeStreamDocument<Document>> watch(ChangeStreamOptions options) {
-        return null;
+        return Wrappers.toMulti(apply(options, database.watch()));
     }
 
     @Override

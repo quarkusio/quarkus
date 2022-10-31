@@ -309,8 +309,8 @@ public class CliProjectGradleTest {
         Assertions.assertFalse(result.stdout.contains(" clean"),
                 "gradle command should not specify 'clean'\n" + result);
 
-        Assertions.assertTrue(result.stdout.contains("-x test"),
-                "gradle command should specify '-x test'\n" + result);
+        Assertions.assertFalse(result.stdout.contains("-x test"),
+                "gradle command should not specify '-x test' (ignored)\n" + result);
 
         Assertions.assertTrue(result.stdout.contains("-Ddebug=false"),
                 "gradle command should specify '-Ddebug=false'\n" + result);

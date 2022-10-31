@@ -341,8 +341,8 @@ public class VertxHttpRecorder {
             LiveReloadConfig liveReloadConfig, Optional<RuntimeValue<Router>> mainRouterRuntimeValue,
             RuntimeValue<Router> httpRouterRuntimeValue, RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter,
             RuntimeValue<Router> frameworkRouter,
-            boolean nonApplicationDedicatedRouter, boolean nonApplicationAttachedToMainRouter,
-            String rootPath, LaunchMode launchMode, boolean requireBodyHandler,
+            String rootPath, String nonRootPath,
+            LaunchMode launchMode, boolean requireBodyHandler,
             Handler<RoutingContext> bodyHandler,
             GracefulShutdownFilter gracefulShutdownFilter, ShutdownConfig shutdownConfig,
             Executor executor) {
@@ -560,10 +560,17 @@ public class VertxHttpRecorder {
             }
             AccessLogHandler handler = new AccessLogHandler(receiver, accessLog.pattern, getClass().getClassLoader(),
                     accessLog.excludePattern);
-            if (nonApplicationDedicatedRouter && !nonApplicationAttachedToMainRouter) {
+            if (rootPath.equals("/") || nonRootPath.equals("/")) {
+                mainRouterRuntimeValue.orElse(httpRouterRuntimeValue).getValue().route().order(Integer.MIN_VALUE)
+                        .handler(handler);
+            } else if (nonRootPath.startsWith(rootPath)) {
+                httpRouteRouter.route().order(Integer.MIN_VALUE).handler(handler);
+            } else if (rootPath.startsWith(nonRootPath)) {
+                frameworkRouter.getValue().route().order(Integer.MIN_VALUE).handler(handler);
+            } else {
+                httpRouteRouter.route().order(Integer.MIN_VALUE).handler(handler);
                 frameworkRouter.getValue().route().order(Integer.MIN_VALUE).handler(handler);
             }
-            httpRouteRouter.route().order(Integer.MIN_VALUE).handler(handler);
 
             quarkusWrapperNeeded = true;
         }

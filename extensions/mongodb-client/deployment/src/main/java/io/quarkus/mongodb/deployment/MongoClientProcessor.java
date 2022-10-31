@@ -67,12 +67,13 @@ import io.quarkus.mongodb.runtime.MongoServiceBindingConverter;
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.mongodb.runtime.dns.MongoDnsClient;
 import io.quarkus.mongodb.runtime.dns.MongoDnsClientProvider;
+import io.quarkus.mongodb.tracing.MongoTracingCommandListener;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
 public class MongoClientProcessor {
-    private static final String MONGODB_TRACING_COMMANDLISTENER_CLASSNAME = "io.quarkus.mongodb.tracing.MongoTracingCommandListener";
+    private static final String MONGODB_TRACING_COMMAND_LISTENER = MongoTracingCommandListener.class.getName();
     private static final DotName MONGO_CLIENT_ANNOTATION = DotName.createSimple(MongoClientName.class.getName());
 
     private static final DotName MONGO_CLIENT = DotName.createSimple(MongoClient.class.getName());
@@ -144,7 +145,7 @@ public class MongoClientProcessor {
                 .map(ci -> ci.name().toString())
                 .collect(Collectors.toList());
         if (buildTimeConfig.tracingEnabled && capabilities.isPresent(Capability.OPENTRACING)) {
-            names.add(MONGODB_TRACING_COMMANDLISTENER_CLASSNAME);
+            names.add(MONGODB_TRACING_COMMAND_LISTENER);
         }
         return new CommandListenerBuildItem(names);
     }

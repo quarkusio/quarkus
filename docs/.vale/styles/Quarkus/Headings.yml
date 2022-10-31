@@ -1,0 +1,209 @@
+---
+extends: capitalization
+level: suggestion
+link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-reference.adoc
+match: $sentence
+message: "Use sentence-style capitalization in '%s'."
+scope: heading
+source: Quarkus contributor guide
+indicators:
+  - ":"
+exceptions:
+  - Annobin
+  - Ansible
+  - Antora
+  - Apache
+  - API
+  - AsciiDoc
+  - Asciidoctor
+  - AWS
+  - Azure
+  - Bierner
+  - Bitbucket
+  - Bonjour
+  - Btrfs
+  - Bugzilla
+  - Camel
+  - CapEx
+  - CDs
+  - CentOS
+  - Ceph
+  - cgroup
+  - Che-Theia
+  - Ciphertext
+  - Civetweb
+  - ClassLoader
+  - Classloader
+  - Cloud
+  - Cloudbursting
+  - Cloudwashing
+  - CodeReady
+  - Community
+  - ConfigMap
+  - ConfigMaps
+  - Containerfile
+  - Containerfiles
+  - Cookiecutter
+  - CR
+  - CRD
+  - CRDs
+  - CRs
+  - Ctrl
+  - Cygmon
+  - DaemonSet
+  - Datadog
+  - Dev
+  - DevOps
+  - DevWorkspace
+  - Dex
+  - DNS
+  - Docker
+  - Dockerfile
+  - Dockerfiles
+  - Dotnet
+  - Eclipse
+  - Dyninst
+  - Endevor
+  - Endian
+  - eServer
+  - Esprima
+  - Exif
+  - Fabrice
+  - Fortran
+  - GCC
+  - Git
+  - GitHub
+  - GitHub Action
+  - GitLab Code Quality
+  - GitLab
+  - Gluster
+  - GraalVM
+  - Gradle
+  - Grayscale
+  - GTKplus
+  - GUI
+  - Hashicorp
+  - Helgrind
+  - Helm
+  - Hibernate ORM
+  - Homebrew
+  - HTTP
+  - HTTPS
+  - IBM
+  - IDE
+  - IDEs
+  - InfiniBand
+  - Infinispan
+  - Intelephense
+  - IntelliJ
+  - IPSec
+  - ISeries
+  - Itanium
+  - Jakarta
+  - Java
+  - Jave
+  - Jetbrains
+  - Jira
+  - Jolokia
+  - Joyent
+  - JUnit
+  - JVM
+  - Kibana
+  - Knative
+  - Kogito
+  - Kompose
+  - Kubespray
+  - Kylin
+  - Laravel
+  - Lombok
+  - Makefile
+  - Mandrel
+  - Mattermost
+  - Maven
+  - Maven Failsafe
+  - MicroProfile
+  - Microsoft
+  - Middleware
+  - Minikube
+  - Minishift
+  - Mirantis
+  - MongoDB
+  - mutual TLS
+  - MySQL
+  - Nagios
+  - Neoverse
+  - NetcoredebugOutput
+  - Netty
+  - Newdoc
+  - Nginx
+  - NuGet
+  - OAuth
+  - OmniSharp
+  - OpenID Connect
+  - OpenJDK
+  - OpenShift
+  - OpenTracing
+  - OpEx
+  - ORM
+  - PHP
+  - Podman
+  - PostgreSQL
+  - PostScript
+  - PowerPC
+  - Productize
+  - Productized
+  - Proof Key for Code Exchange
+  - Prometheus
+  - Pytorch
+  - qeth
+  - Quarkiverse
+  - Quarkus
+  - Quarkus Security
+  - Red Hat
+  - RedBoot
+  - Redistributions
+  - RESTEasy
+  - Rolfe
+  - Sakila
+  - SCM
+  - SELinux
+  - Semeru
+  - SmallRye
+  - Shadowman
+  - StarOffice
+  - startx
+  - Suchow
+  - SVG
+  - System
+  - SysV
+  - Tekton
+  - Telekom
+  - Tensorflow
+  - Texinfo
+  - Toolset
+  - Traefik
+  - Uber
+  - UltraSPARC
+  - URI
+  - URIs
+  - URL
+  - URLs
+  - Vale
+  - Valgrind
+  - Velero
+  - Vert.x
+  - vNIC
+  - vNUMA
+  - WebAuthn
+  - Webview
+  - Webviews
+  - Wildfly
+  - Window Maker
+  - Woopra
+  - Wordpress
+  - XEmacs
+  - xterm
+  - Yana
+  - Yeoman
+  - Zowe
+  - GitLab Code Quality

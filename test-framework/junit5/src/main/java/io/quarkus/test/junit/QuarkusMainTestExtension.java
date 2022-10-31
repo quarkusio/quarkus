@@ -2,7 +2,6 @@ package io.quarkus.test.junit;
 
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResources;
-import static io.quarkus.test.junit.QuarkusTestExtension.IO_QUARKUS_TESTING_TYPE;
 
 import java.io.Closeable;
 import java.lang.reflect.Method;
@@ -36,7 +35,6 @@ import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
 import io.quarkus.test.junit.main.QuarkusMainIntegrationTest;
 import io.quarkus.test.junit.main.QuarkusMainLauncher;
-import io.quarkus.test.junit.main.QuarkusMainTest;
 
 public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         implements InvocationInterceptor, BeforeEachCallback, AfterEachCallback, ParameterResolver, BeforeAllCallback,
@@ -63,27 +61,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
     private void ensurePrepared(ExtensionContext extensionContext, Class<? extends QuarkusTestProfile> profile)
             throws Exception {
         JBossVersion.disableVersionLogging();
-
-        boolean mixedWithQuarkusTest = false;
-        ExtensionContext.Store store = extensionContext.getStore(ExtensionContext.Namespace.GLOBAL);
-        Class<?> testType = store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
-        if (testType != null) {
-            if (testType != QuarkusMainTest.class) {
-                if (testType.equals(QuarkusTest.class)) {
-                    mixedWithQuarkusTest = true;
-                } else {
-                    throw new IllegalStateException(
-                            "Cannot mix both @QuarkusMainTest based tests and " + testType.getName()
-                                    + " based tests in the same run");
-                }
-            }
-        } else {
-            store.put(IO_QUARKUS_TESTING_TYPE, QuarkusMainTest.class);
-        }
-
-        QuarkusTestExtension.ExtensionState state = store.get(QuarkusTestExtension.ExtensionState.class.getName(),
-                QuarkusTestExtension.ExtensionState.class);
-        boolean wrongProfile = !Objects.equals(profile, quarkusTestProfile) || mixedWithQuarkusTest;
+        QuarkusTestExtensionState state = getState(extensionContext);
+        boolean wrongProfile = !Objects.equals(profile, quarkusTestProfile);
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
         boolean reloadTestResources = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
                 && (hasPerTestResources || hasPerTestResources(extensionContext));

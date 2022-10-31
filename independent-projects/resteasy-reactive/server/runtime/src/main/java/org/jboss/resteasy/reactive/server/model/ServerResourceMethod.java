@@ -24,11 +24,11 @@ public class ServerResourceMethod extends ResourceMethod {
 
     public ServerResourceMethod(String httpMethod, String path, String[] produces, String streamElementType, String[] consumes,
             Set<String> nameBindingNames, String name, String returnType, String simpleReturnType, MethodParameter[] parameters,
-            boolean blocking, boolean suspended, boolean sse, boolean formParamRequired, boolean multipart,
+            boolean blocking, boolean suspended, boolean sse, boolean formParamRequired,
             List<ResourceMethod> subResourceMethods, Supplier<EndpointInvoker> invoker, Set<String> methodAnnotationNames,
             List<HandlerChainCustomizer> handlerChainCustomizers, ParameterExtractor customerParameterExtractor) {
         super(httpMethod, path, produces, streamElementType, consumes, nameBindingNames, name, returnType, simpleReturnType,
-                parameters, blocking, suspended, sse, formParamRequired, multipart, subResourceMethods);
+                parameters, blocking, suspended, sse, formParamRequired, subResourceMethods);
         this.invoker = invoker;
         this.methodAnnotationNames = methodAnnotationNames;
         this.handlerChainCustomizers = handlerChainCustomizers;

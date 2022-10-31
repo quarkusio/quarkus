@@ -27,7 +27,8 @@ import io.quarkus.arc.test.MyQualifier;
 public class ListAllTest {
 
     @RegisterExtension
-    public ArcTestContainer container = new ArcTestContainer(Service.class, ServiceAlpha.class, ServiceBravo.class);
+    public ArcTestContainer container = new ArcTestContainer(Service.class, ServiceAlpha.class, ServiceBravo.class,
+            MyQualifier.class);
 
     @SuppressWarnings("serial")
     @Test

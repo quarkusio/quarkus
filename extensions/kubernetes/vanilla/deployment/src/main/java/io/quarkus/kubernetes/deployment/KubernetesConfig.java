@@ -527,11 +527,6 @@ public class KubernetesConfig implements PlatformConfiguration {
         return resources;
     }
 
-    @Override
-    public boolean isExpose() {
-        return expose;
-    }
-
     public Optional<String> getAppSecret() {
         return appSecret;
     }

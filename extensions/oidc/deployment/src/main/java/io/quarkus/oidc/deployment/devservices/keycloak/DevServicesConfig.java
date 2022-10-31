@@ -27,7 +27,7 @@ public class DevServicesConfig {
      *
      * Image with a Quarkus based distribution is used by default.
      * Image with a WildFly based distribution can be selected instead, for example:
-     * 'quay.io/keycloak/keycloak:19.0.2-legacy'.
+     * 'quay.io/keycloak/keycloak:19.0.3-legacy'.
      * <p>
      * Note Keycloak Quarkus and Keycloak WildFly images are initialized differently.
      * By default, Dev Services for Keycloak will assume it is a Keycloak Quarkus image if the image version does not end with a
@@ -35,7 +35,7 @@ public class DevServicesConfig {
      * string.
      * Set 'quarkus.keycloak.devservices.keycloak-x-image' to override this check.
      */
-    @ConfigItem(defaultValue = "quay.io/keycloak/keycloak:19.0.2")
+    @ConfigItem(defaultValue = "quay.io/keycloak/keycloak:19.0.3")
     public String imageName;
 
     /**

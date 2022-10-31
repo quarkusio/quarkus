@@ -74,8 +74,12 @@ public class KnativeEventsBindingRecorder {
             String trigger;
             CloudEventMapping annotation = method.getAnnotation(CloudEventMapping.class);
             final List<Predicate<CloudEvent>> filter;
-            if (annotation != null && !annotation.trigger().isEmpty()) {
-                trigger = annotation.trigger();
+            if (annotation != null) {
+                if (!annotation.trigger().isEmpty()) {
+                    trigger = annotation.trigger();
+                } else {
+                    trigger = invoker.getName();
+                }
                 filter = filter(invoker.getName(), annotation);
             } else {
                 trigger = invoker.getName();

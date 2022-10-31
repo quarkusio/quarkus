@@ -61,6 +61,11 @@ final class ExpressionImpl implements Expression {
         this.origin = origin;
     }
 
+    @Override
+    public boolean hasNamespace() {
+        return namespace != null;
+    }
+
     public String getNamespace() {
         return namespace;
     }

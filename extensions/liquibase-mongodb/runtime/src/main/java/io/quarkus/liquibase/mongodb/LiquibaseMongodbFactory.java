@@ -46,7 +46,9 @@ public class LiquibaseMongodbFactory {
                                 + "${options}");
             }
             if (mongoClientConfig.credentials.authSource.isPresent()) {
-                connectionString += "?authSource=" + mongoClientConfig.credentials.authSource.get();
+                boolean alreadyHasQueryParams = connectionString.contains("?");
+                connectionString += (alreadyHasQueryParams ? "&" : "?") + "authSource="
+                        + mongoClientConfig.credentials.authSource.get();
             }
 
             Database database = DatabaseFactory.getInstance().openDatabase(connectionString,

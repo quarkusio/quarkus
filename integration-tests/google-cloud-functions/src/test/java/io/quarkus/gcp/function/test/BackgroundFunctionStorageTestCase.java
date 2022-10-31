@@ -4,42 +4,21 @@ import static io.restassured.RestAssured.given;
 
 import org.junit.jupiter.api.Test;
 
-import com.google.cloud.functions.invoker.runner.Invoker;
-
+import io.quarkus.google.cloud.functions.test.FunctionType;
+import io.quarkus.google.cloud.functions.test.WithFunction;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.QuarkusTestProfile;
-import io.quarkus.test.junit.TestProfile;
 
 @QuarkusTest
-@TestProfile(BackgroundFunctionStorageTestCase.BackgroundFunctionTestProfile.class)
+@WithFunction(value = FunctionType.BACKGROUND, functionName = "storageTest")
 class BackgroundFunctionStorageTestCase {
     @Test
-    public void test() throws Exception {
-        // start the invoker without joining to avoid blocking the thread
-        Invoker invoker = new Invoker(
-                8081,
-                "io.quarkus.gcp.functions.QuarkusBackgroundFunction",
-                "event",
-                Thread.currentThread().getContextClassLoader());
-        invoker.startTestServer();
-
+    public void test() {
         // test the function using RestAssured
         given()
                 .body("{\"data\":{\"name\":\"hello.txt\"}}")
                 .when()
-                .post("http://localhost:8081")
+                .post()
                 .then()
                 .statusCode(200);
-
-        // stop the invoker
-        invoker.stopServer();
-    }
-
-    public static class BackgroundFunctionTestProfile implements QuarkusTestProfile {
-
-        @Override
-        public String getConfigProfile() {
-            return "background";
-        }
     }
 }

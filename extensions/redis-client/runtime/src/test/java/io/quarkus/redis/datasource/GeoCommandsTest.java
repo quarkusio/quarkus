@@ -88,8 +88,13 @@ public class GeoCommandsTest extends DatasourceTestBase {
 
         added = geo.geoadd(key, GeoItem.of(Place.suze, SUZE_LONGITUDE, SUZE_LATITUDE));
         assertThat(added).isTrue();
+    }
 
-        added = geo.geoadd(key, GeoItem.of(new Place("foo", 1), CRUSSOL_LONGITUDE, CRUSSOL_LATITUDE), new GeoAddArgs().nx());
+    @Test
+    @RequiresRedis6OrHigher
+    void geoaddWithNx() {
+        boolean added = geo.geoadd(key, GeoItem.of(new Place("foo", 1), CRUSSOL_LONGITUDE, CRUSSOL_LATITUDE),
+                new GeoAddArgs().nx());
         assertThat(added).isTrue();
     }
 
@@ -106,6 +111,7 @@ public class GeoCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void geoAddWithXXorCH() {
 
         boolean added = geo.geoadd(key, 44.9396, CRUSSOL_LATITUDE, Place.crussol, new GeoAddArgs().xx());
@@ -363,6 +369,7 @@ public class GeoCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void georadiusbymemberStoreDistWithCountAndSort() {
         populate();
         String resultKey = key + "-2";
@@ -374,6 +381,19 @@ public class GeoCommandsTest extends DatasourceTestBase {
         List<ScoredValue<String>> dist = commands.zrangeWithScores(resultKey, 0, -1);
         assertThat(dist).hasSize(2);
         assertThat(dist.get(0).score()).isBetween(55d, 60d);
+    }
+
+    @Test
+    void georadiusbymemberStoreDistWithSort() {
+        populate();
+        String resultKey = key + "-2";
+        long result = geo.georadiusbymember(key, Place.crussol, 100, GeoUnit.KM,
+                new GeoRadiusStoreArgs<String>().descending().storeDistKey(resultKey));
+        assertThat(result).isEqualTo(3);
+
+        SortedSetCommands<String, String> commands = ds.sortedSet(String.class);
+        List<ScoredValue<String>> dist = commands.zrangeWithScores(resultKey, 0, -1);
+        assertThat(dist).hasSize(3);
     }
 
     @Test
@@ -442,6 +462,7 @@ public class GeoCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void geosearchWithCountAndSort() {
         populate();
 
@@ -460,6 +481,7 @@ public class GeoCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void geosearchWithArgs() {
         populate();
 
@@ -508,6 +530,7 @@ public class GeoCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void geosearchStoreWithCountAndSort() {
         populate();
         String resultKey = key + "-2";

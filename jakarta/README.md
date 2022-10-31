@@ -56,7 +56,9 @@ The installed artifacts have the `999-jakarta-SNAPSHOT` version so make sure to 
 
 ## Transforming
 
-This directory contains scripts and configuration files to automate the migration to Jakarta EE 9 (for now) and hopefully Jakarta EE 10 soon.
+This directory contains scripts and configuration files to automate the migration to Jakarta EE 10 soon.
+
+This is a work in progress and some pieces are still missing (JPA 3.1 and Hibernate ORM 6 for instance).
 
 ### jakarta/transform.sh
 

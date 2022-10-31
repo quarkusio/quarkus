@@ -17,6 +17,7 @@ import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 
 @SuppressWarnings({ "unchecked", "ConstantConditions" })
+@RequiresCommand("cms.query")
 public class TransactionalCountMinCommandsTest extends DatasourceTestBase {
 
     private RedisDataSource blocking;

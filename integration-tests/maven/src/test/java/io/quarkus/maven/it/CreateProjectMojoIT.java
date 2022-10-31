@@ -397,6 +397,34 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
     }
 
     @Test
+    public void testBadArtifactId() throws Exception {
+        testDir = initEmptyProject("projects/project-generation-with-bad-artifact-id");
+        assertThat(testDir).isDirectory();
+        invoker = initInvoker(testDir);
+
+        Properties properties = new Properties();
+        properties.put("projectArtifactId", "acme,fail");
+        properties.put("extensions", "resteasy,commons-io:commons-io:2.5");
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isNotZero();
+    }
+
+    @Test
+    public void testBadGroupId() throws Exception {
+        testDir = initEmptyProject("projects/project-generation-with-bad-group-id");
+        assertThat(testDir).isDirectory();
+        invoker = initInvoker(testDir);
+
+        Properties properties = new Properties();
+        properties.put("projectGroupId", "acme,fail");
+        properties.put("extensions", "resteasy,commons-io:commons-io:2.5");
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isNotZero();
+    }
+
+    @Test
     public void testProjectGenerationFromScratchWithAppConfigParameter() throws MavenInvocationException, IOException {
         testDir = initEmptyProject("projects/project-generation-with-config-param");
         assertThat(testDir).isDirectory();

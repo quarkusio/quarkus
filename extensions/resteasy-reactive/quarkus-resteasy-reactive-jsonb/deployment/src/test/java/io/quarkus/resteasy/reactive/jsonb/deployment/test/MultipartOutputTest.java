@@ -38,7 +38,6 @@ public class MultipartOutputTest {
                 .then()
                 .contentType(ContentType.MULTIPART)
                 .statusCode(200)
-                .log().all()
                 .extract().asString();
 
         assertContains(response, "name", MediaType.TEXT_PLAIN, EXPECTED_RESPONSE_NAME);

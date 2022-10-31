@@ -1,0 +1,292 @@
+---
+extends: substitution
+ignorecase: true
+level: warning
+link: https://redhat-documentation.github.io/vale-at-red-hat/docs/reference-guide/termserrors/
+message: "Use '%s' rather than '%s'."
+source: Quarkus contributor guide
+action:
+  name: replace
+# swap maps tokens in form of bad: good
+swap:
+  '\b(?:eg|e\.g\.)[\s,]': for example
+  '\b(?:ie|i\.e\.)[\s,]': that is
+  "(?<!mobile |cell )phone": "telephone|cell phone|mobile phone"
+  "(?<!Mozilla )Firefox": Mozilla Firefox
+  "(?<!Mozilla )Thunderbird": Mozilla Thunderbird
+  "a lot(?: of)?": many|much
+  "backward(?:-)?compatible": compatible with earlier versions
+  "bottle neck|bottle-neck": bottleneck
+  "bottom(?:-)?left": lower left|lower-left
+  "bottom(?:-)?right": lower right|lower-right
+  "broad cast|broad-cast": broadcast
+  "down(?:-)?level": earlier|previous|not at the latest level
+  "non-English(?!-language?)": in languages other than English|non-English-language
+  "pop-up (?:blocker|killer)": software to block pop-up ad windows
+  "re(?:-)?occur": recur
+  "top(?:-)?left": upper left|upper right|upper-left|upper-right
+  "top(?:-)?right": upper left|upper right|upper-left|upper-right
+  # "app(?:.)": app
+  a number of: several
+  abort: cancel|stop
+  administrate: administer
+  air wall: air gap
+  all caps: uppercase
+  alright|all right: "correct|as expected"
+  analyse: analyze
+  and/or: a or b|a, b, or both
+  as long as: if|provided that
+  as per: according to|as|as in
+  autodetect: auto-detect
+  back-level: earlier|previous|not at the latest level
+  bi-monthly: bimonthly
+  bi-weekly: biweekly
+  blink: flash
+  blue screen of death: stop error
+  boot diskette: boot disk
+  bootloader: boot loader
+  breadcrumbing: breadcrumb trail
+  bugfix: bug fix
+  builtin|built in: built-in
+  canned: preplanned|preconfigured|predefined
+  case insensitive: not case-sensitive
+  catastrophic error: unrecoverable error
+  CBE: Common Base Event
+  CBTS: CICS BTS|BTS
+  CD burner|burner: CD writer
+  centre: center
+  cipher text|cyphertext|cypher text|cipher-text|cypher-text: ciphertext
+  cloud-bursting: cloudbursting
+  cloud-washing: cloudwashing
+  co-locate|collocate: colocate
+  cold backup: offline backup
+  cold boot: hardware restart
+  cold start: hardware restart
+  colour: color
+  comes with: includes
+  comma delimited|commadelimited: comma-delimited
+  comma-delimited values|comma delimited values|comma separated values: comma-separated values
+  command driven|commanddriven: command-driven
+  command prompt: shell prompt
+  command-language: command language
+  componentization: component-based development|component model|component architecture|shared components
+  componentize: develop components
+  comprised of: consist of
+  computer farm|computer ranch: server farm
+  connect with: connect to
+  container based: container-based
+  containerised: containerized
+  context menu: menu|pop-up menu
+  contextual help: help|context-sensitive help
+  crash: fail|lock up|stop|stop responding
+  cross site scripting: cross-site scripting
+  crossplatform|cross platform: cross-platform
+  CRUD: create retrieve update and delete
+  daisy-chain|daisychain: daisy chain
+  datacenter|data-center|data centre|datacentre: data center
+  datamirroring|data-mirroring: data mirroring
+  datapath: data path
+  datum: data
+  de-bug: debug
+  debuggable: debug
+  deconfigure: unconfigure
+  deinstall: uninstall
+  deinstallation: uninstallation
+  demilitarized zone: DMZ
+  demo: demonstration
+  demon: daemon
+  depress: press|type
+  deregister: unregister
+  desire: want|required
+  desire|wish: need
+  desk top|desk-top: desktop
+  destroy: delete from the database
+  different than|different to: different from
+  disklabel|disk-label: disk label
+  dismount: demount|unmount|remove
+  domainname|domain-name: domain name
+  down-load|down load: download
+  down-stream|down stream: downstream
+  downgrade: upgrade|fallback|fall back|rollback|roll back
+  downward compatible: compatible with earlier versions
+  drag and drop: drag
+  drill up: navigate
+  dualboot|dual boot: dual-boot
+  e-fix: fix|interim fix
+  eFix: fix|interim fix
+  emphasise: emphasize
+  end user: user
+  end-user interface: graphical interface|interface
+  entitlement: subscription
+  env: environment
+  etc: and so on
+  EUI: graphical user interface|interface
+  fill in: complete|enter|specify
+  finalise: finalize
+  firm ware|firm-ware: firmware
+  fixed disk drive: hard disk drive
+  flavor: version|method
+  floating-point: floating point
+  floppy disk: diskette|diskette drive
+  floppy drive: diskette|diskette drive
+  floppy: diskette|diskette drive
+  focussed: focused
+  fore-ground|forground: foreground
+  forward compatible: compatible with later versions
+  gray-scale|gray scale: grayscale
+  gzip: compress
+  gzipped: archive|compressed file
+  Hammer|x86_64|x86-64|x64|64-bit x86: AMD64
+  hard drive: hard disk|hard disk drive
+  hard file: hard disk|hard disk drive
+  hardcode: hard code
+  hardcoded: hard-coded
+  healthcheck|health-check: health check
+  helpdesk|help-desk: help desk
+  hence: therefore
+  hostgroup: host group
+  hot-line: hotline
+  hotadd|hot-add: hot add
+  hotplug|hot-plug: hot plug
+  hotswap|hot-swap: hot swap
+  hyper-converged: hyperconverged
+  i-fix: interim fix
+  i-Fix: interim fix
+  IBM's: IBM
+  ifix: interim fix
+  iFix: interim fix
+  in order to: to
+  in other words: for example|that is
+  in spite of: regardless of|despite
+  in the event: in case|if|when
+  inactivate: deactivate
+  information on: information about
+  information technology: IT
+  instead of: rather than
+  insure: ensure
+  Internet address: IP address|URL|Internet email address|web address
+  irrecoverable: unrecoverable
+  jar: compress|archive
+  keep in mind: remember
+  kernelspace: kernel-space
+  knowledgebase: knowledge base
+  labour: labor
+  laptop: notebook
+  large page|super page: huge page
+  launch: start|open
+  learnt: learned
+  leave out: omit
+  left-hand: left
+  leverage: use
+  line cord: power cable|power cord
+  Linux specific|chip specific: specific
+  look at: examine
+  lots of|bunches of: many
+  main directory: root directory
+  make sure: verify
+  manpage: man page
+  matrices: matrixes
+  memory stick: USB flash drive
+  menu driven|menudriven: menu-driven
+  microcomputer: PC
+  motherboard: system board
+  mouse over: point to|move the mouse pointer over
+  mouse-button|mousebutton: mouse button
+  multi-processing: multiprocessing
+  multi-tenant: multitenant
+  network-centric computing: network computing
+  nonrecoverable: unrecoverable
+  nonsecure|non-secure: insecure
+  notion: concept
+  off-premise: on-premises|off-premises|onsite|offsite
+  offline storage: auxiliary storage
+  OK button: OK
+  okay: OK
+  on ramp: access method
+  on the fly: dynamically|as needed|in real time|immediately
+  on the other hand: however|alternatively|conversely
+  on-premise: on-premises|off-premises|onsite|offsite
+  on-ramp: access method
+  op-code: opcode
+  organise: organize
+  organised: organized
+  organising: organizing
+  over-ride|over ride: override
+  pain point: challenge|concern|difficulty|issue
+  parent task: parent process
+  perfcounter: performance counter
+  perimeter network: DMZ
+  plaintext|plain-text|cleartext|clear text: plain text
+  #plugin|plugins|plug in|plug ins: plug-in # https://www.merriam-webster.com/dictionary/plug-in
+  power down: turn off
+  power off: turn off
+  power on: turn on
+  preload: preinstall|preinstalled
+  preloaded: preinstall|preinstalled
+  prepend: add a prefix to
+  proof of concepts: proofs of concept|proofs of concept
+  pseudo ops|pseudoops: pseudo-ops
+  pull-down: pulldown
+  recognise: recognize
+  remote-access server: remote access server
+  remote-access: remote access
+  right double-click: double right-click
+  right now: now
+  right-hand: right
+  round table: roundtable
+  rule of thumb: rule
+  run level|run-level: runlevel
+  sanity check: test|evaluate
+  screensaver: screen saver
+  scroll bar|scroll-bar: scrollbar
+  secondary storage: auxiliary storage
+  selection button: left mouse button
+  send out: emit
+  sharename|Sharename: share name
+  shift-click: press Shift and click
+  ship: include|included
+  Simple Object Access Protocol: SOAP
+  single quote mark: single quotation mark
+  single quote: single quotation mark
+  spelt: spelled
+  stand-alone: standalone
+  start up: start
+  straight forward|straight-forward: straightforward
+  sub-command: subcommand
+  sub-directory: subdirectory
+  sub-menu: submenu
+  sub-package: subpackage
+  sunset: withdraw from service|withdraw from marketing|discontinue|no longer support
+  super-user|super user: superuser
+  swapspace: swap space
+  switch off: turn off
+  switch on: turn on
+  tarball: tar file
+  text based: text-based
+  textmode|text-mode: text mode
+  the installer: installation program
+  thin provisioned|thinly provisioned|thinly-provisioned: thin-provisioned
+  thumbstick: USB flash drive
+  thus: therefore
+  tier-one|tier 1: tier-1
+  timeframe|time-frame: time frame
+  toggle off: toggle
+  uncheck: clear
+  uncompress: decompress
+  undeploy: remove|withdraw
+  unjar: extract
+  unselect: clear|deselect
+  untar: extract
+  unzip: extract|decompress
+  up-grade|up grade: upgrade
+  up-sell: upsell
+  up-selling|up selling: upselling
+  up-stream|up stream: upstream
+  up-time|up time: uptime
+  upward compatible: compatible with later versions
+  utilize: use
+  versus: compared to
+  via: through
+  vs: compared to
+  wish: want
+  wish|would like: want

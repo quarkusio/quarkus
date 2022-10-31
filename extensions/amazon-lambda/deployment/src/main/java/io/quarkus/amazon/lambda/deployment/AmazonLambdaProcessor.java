@@ -24,6 +24,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaRecorder;
+import io.quarkus.amazon.lambda.runtime.AmazonLambdaStaticRecorder;
 import io.quarkus.amazon.lambda.runtime.FunctionError;
 import io.quarkus.amazon.lambda.runtime.LambdaBuildTimeConfig;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -180,13 +181,13 @@ public final class AmazonLambdaProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void recordHandlerClass(List<AmazonLambdaBuildItem> lambdas,
+    @Record(ExecutionTime.STATIC_INIT)
+    public void recordStaticInitHandlerClass(List<AmazonLambdaBuildItem> lambdas,
+            LambdaObjectMapperInitializedBuildItem mapper, // ordering!
             Optional<ProvidedAmazonLambdaHandlerBuildItem> providedLambda,
-            BeanContainerBuildItem beanContainerBuildItem,
-            AmazonLambdaRecorder recorder,
-            List<ServiceStartBuildItem> orderServicesFirst, // try to order this after service recorders
+            AmazonLambdaStaticRecorder recorder,
             RecorderContext context) {
+        // can set handler within static initialization if only one handler exists in deployment
         if (providedLambda.isPresent()) {
             boolean useStreamHandler = false;
             for (Class handleInterface : providedLambda.get().getHandlerClass().getInterfaces()) {
@@ -198,14 +199,55 @@ public final class AmazonLambdaProcessor {
             if (useStreamHandler) {
                 Class<? extends RequestStreamHandler> handlerClass = (Class<? extends RequestStreamHandler>) context
                         .classProxy(providedLambda.get().getHandlerClass().getName());
-                recorder.setStreamHandlerClass(handlerClass, beanContainerBuildItem.getValue());
+                recorder.setStreamHandlerClass(handlerClass);
             } else {
                 Class<? extends RequestHandler<?, ?>> handlerClass = (Class<? extends RequestHandler<?, ?>>) context
                         .classProxy(providedLambda.get().getHandlerClass().getName());
 
-                recorder.setHandlerClass(handlerClass, beanContainerBuildItem.getValue());
+                recorder.setHandlerClass(handlerClass);
             }
-        } else if (lambdas != null) {
+        } else if (lambdas != null && lambdas.size() == 1) {
+            AmazonLambdaBuildItem item = lambdas.get(0);
+            if (item.isStreamHandler()) {
+                Class<? extends RequestStreamHandler> handlerClass = (Class<? extends RequestStreamHandler>) context
+                        .classProxy(item.getHandlerClass());
+                recorder.setStreamHandlerClass(handlerClass);
+
+            } else {
+                Class<? extends RequestHandler<?, ?>> handlerClass = (Class<? extends RequestHandler<?, ?>>) context
+                        .classProxy(item.getHandlerClass());
+
+                recorder.setHandlerClass(handlerClass);
+
+            }
+        } else if (lambdas == null || lambdas.isEmpty()) {
+            String errorMessage = "Unable to find handler class, make sure your deployment includes a single "
+                    + RequestHandler.class.getName() + " or, " + RequestStreamHandler.class.getName() + " implementation";
+            throw new RuntimeException(errorMessage);
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void recordBeanContainer(BeanContainerBuildItem beanContainerBuildItem,
+            AmazonLambdaRecorder recorder,
+            // try to order this after service recorders
+            List<ServiceStartBuildItem> orderServicesFirst) {
+        recorder.setBeanContainer(beanContainerBuildItem.getValue());
+
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void recordHandlerClass(List<AmazonLambdaBuildItem> lambdas,
+            Optional<ProvidedAmazonLambdaHandlerBuildItem> providedLambda,
+            BeanContainerBuildItem beanContainerBuildItem,
+            AmazonLambdaRecorder recorder,
+            List<ServiceStartBuildItem> orderServicesFirst, // try to order this after service recorders
+            RecorderContext context) {
+        // Have to set lambda class at runtime if there is not a provided lambda or there is more than one lambda in
+        // deployment
+        if (!providedLambda.isPresent() && lambdas != null && lambdas.size() > 1) {
             List<Class<? extends RequestHandler<?, ?>>> unnamed = new ArrayList<>();
             Map<String, Class<? extends RequestHandler<?, ?>>> named = new HashMap<>();
 
@@ -230,8 +272,7 @@ public final class AmazonLambdaProcessor {
                 }
             }
 
-            recorder.chooseHandlerClass(unnamed, named, unnamedStreamHandler, namedStreamHandler,
-                    beanContainerBuildItem.getValue());
+            recorder.chooseHandlerClass(unnamed, named, unnamedStreamHandler, namedStreamHandler);
         }
     }
 

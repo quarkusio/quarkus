@@ -80,6 +80,7 @@ public final class CountMethodImplementor extends StandardMethodImplementor {
         addGetAnnotation(methodCreator);
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
         addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_METHOD_NAME), RESOURCE_METHOD_NAME));
+        addOpenApiResponseAnnotation(methodCreator, Response.Status.OK, Long.class, false);
         addSecurityAnnotations(methodCreator, resourceProperties);
         if (!isResteasyClassic()) {
             // We only add the Links annotation in Resteasy Reactive because Resteasy Classic ignores the REL parameter:

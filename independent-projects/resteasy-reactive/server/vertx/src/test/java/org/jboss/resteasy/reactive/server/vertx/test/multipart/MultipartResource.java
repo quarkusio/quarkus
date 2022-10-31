@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.server.vertx.test.multipart;
 import java.io.IOException;
 import java.nio.file.Files;
 
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.POST;
@@ -11,7 +12,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
 
@@ -26,7 +26,7 @@ public class MultipartResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Path("/simple/{times}")
     @NonBlocking
-    public String simple(@MultipartForm FormData formData, Integer times) {
+    public String simple(@BeanParam FormData formData, Integer times) {
         if (BlockingOperationSupport.isBlockingAllowed()) {
             throw new RuntimeException("should not have dispatched");
         }
@@ -72,7 +72,7 @@ public class MultipartResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Path("/optional")
     @NonBlocking
-    public String optional(@MultipartForm FormData formData) {
+    public String optional(@BeanParam FormData formData) {
         if (BlockingOperationSupport.isBlockingAllowed()) {
             throw new RuntimeException("should not have dispatched");
         }

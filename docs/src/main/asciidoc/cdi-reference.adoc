@@ -216,9 +216,7 @@ public class CounterBean {
 ** Programmatic lookup via `javax.enterprise.inject.Instance`
 ** Client proxies
 ** Injection point metadata
-* Scopes and contexts
-** `@Dependent`, `@ApplicationScoped`, `@Singleton`, `@RequestScoped` and `@SessionScoped`
-** Custom scopes and contexts
+* Scopes and contexts; see xref:cdi.adoc#bean-scope-available[here] for details
 * Interceptors
 ** Business method interceptors: `@AroundInvoke`
 ** Interceptors for lifecycle event callbacks: `@PostConstruct`, `@PreDestroy`, `@AroundConstruct`

@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.core.multipart;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -24,6 +23,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.reflection.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.multipart.FileDownload;
+import org.jboss.resteasy.reactive.server.NoopCloseAndFlushOutputStream;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
@@ -184,11 +184,10 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
         boolean wrote = false;
         for (MessageBodyWriter<Object> writer : writers) {
             if (writer.isWriteable(entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType)) {
-                try (ByteArrayOutputStream writerOutput = new ByteArrayOutputStream()) {
+                try (NoopCloseAndFlushOutputStream writerOutput = new NoopCloseAndFlushOutputStream(os)) {
                     // FIXME: spec doesn't really say what headers we should use here
                     writer.writeTo(entity, entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType,
                             Serialisers.EMPTY_MULTI_MAP, writerOutput);
-                    writerOutput.writeTo(os);
                     wrote = true;
                 }
 

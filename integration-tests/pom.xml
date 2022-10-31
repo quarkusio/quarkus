@@ -325,6 +325,7 @@
                 <module>locales</module>
                 <module>redis-devservices</module>
                 <!-- gRPC tests -->
+                <module>grpc-vertx</module>
                 <module>grpc-tls</module>
                 <module>grpc-plain-text-gzip</module>
                 <module>grpc-plain-text-mutiny</module>

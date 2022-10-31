@@ -67,6 +67,8 @@ import io.quarkus.grpc.deployment.GrpcClientBuildItem.ClientType;
 import io.quarkus.grpc.runtime.ClientInterceptorStorage;
 import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
 import io.quarkus.grpc.runtime.GrpcClientRecorder;
+import io.quarkus.grpc.runtime.config.GrpcClientBuildTimeConfig;
+import io.quarkus.grpc.runtime.stork.GrpcStorkRecorder;
 import io.quarkus.grpc.runtime.stork.StorkMeasuringGrpcInterceptor;
 import io.quarkus.grpc.runtime.supports.Channels;
 import io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider;
@@ -92,6 +94,12 @@ public class GrpcClientProcessor {
     @BuildStep
     void registerStorkInterceptor(BuildProducer<AdditionalBeanBuildItem> beans) {
         beans.produce(new AdditionalBeanBuildItem(StorkMeasuringGrpcInterceptor.class));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void setUpStork(GrpcStorkRecorder storkRecorder, GrpcClientBuildTimeConfig config) {
+        storkRecorder.init(config.storkProactiveConnections);
     }
 
     @BuildStep

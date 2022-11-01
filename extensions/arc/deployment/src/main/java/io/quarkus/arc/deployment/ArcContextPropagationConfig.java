@@ -1,5 +1,7 @@
 package io.quarkus.arc.deployment;
 
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -7,10 +9,11 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class ArcContextPropagationConfig {
 
     /**
-     * If set to true and SmallRye Context Propagation extension is present then enable the context propagation for CDI
-     * contexts.
+     * Support for context propagation will be enabled if the {@code quarkus-smallrye-context-propagation} extension is present,
+     * and this value is {@code true}. If this value is unset then the support will be enabled unless the {@code quarkus-vertx}
+     * extension is present and the {@code io.quarkus.vertx.runtime.VertxCurrentContextFactory} is registered.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled;
+    @ConfigItem
+    public Optional<Boolean> enabled;
 
 }

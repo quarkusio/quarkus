@@ -834,8 +834,11 @@ public class ArcProcessor {
     }
 
     @BuildStep
-    void registerContextPropagation(ArcConfig config, BuildProducer<ThreadContextProviderBuildItem> threadContextProvider) {
-        if (config.contextPropagation.enabled) {
+    void registerContextPropagation(ArcConfig config, Capabilities capabilities,
+            Optional<CurrentContextFactoryBuildItem> currentContextFactory,
+            BuildProducer<ThreadContextProviderBuildItem> threadContextProvider) {
+        if (config.contextPropagation.enabled
+                .orElse(capabilities.isMissing(Capability.VERTX) || currentContextFactory.isEmpty())) {
             threadContextProvider.produce(new ThreadContextProviderBuildItem(ArcContextProvider.class));
         }
     }

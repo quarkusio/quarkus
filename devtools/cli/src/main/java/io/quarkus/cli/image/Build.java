@@ -15,7 +15,7 @@ import picocli.CommandLine;
                         + "%n" }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class Build extends BaseImageCommand {
 
-    private static final Map<BuildTool, String> ACTION_MAPPING = Map.of(BuildTool.MAVEN, "compile quarkus:image-build",
+    private static final Map<BuildTool, String> ACTION_MAPPING = Map.of(BuildTool.MAVEN, "quarkus:image-build",
             BuildTool.GRADLE, "imageBuild");
 
     @Override

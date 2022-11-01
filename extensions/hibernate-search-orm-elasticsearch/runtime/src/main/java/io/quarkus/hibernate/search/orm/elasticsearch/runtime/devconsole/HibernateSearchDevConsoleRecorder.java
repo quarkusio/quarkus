@@ -28,7 +28,10 @@ public class HibernateSearchDevConsoleRecorder {
         Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> puConfigs = runtimeConfig
                 .getAllPersistenceUnitConfigsAsMap();
         Set<String> activePersistenceUnitNames = persistenceUnitNames.stream()
-                .filter(name -> puConfigs.get(name).active.orElse(true))
+                .filter(name -> {
+                    var puConfig = puConfigs.get(name);
+                    return puConfig == null || puConfig.active.orElse(true);
+                })
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         return new HibernateSearchSupplier(activePersistenceUnitNames);
     }

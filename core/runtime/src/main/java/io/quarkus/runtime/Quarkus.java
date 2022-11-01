@@ -2,6 +2,7 @@ package io.quarkus.runtime;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.function.BiConsumer;
 
 import org.crac.Context;
@@ -182,6 +183,12 @@ public class Quarkus {
      * Must not be called by the main thread, or a deadlock will result.
      */
     public static void blockingExit() {
+        if (Thread.currentThread().getThreadGroup().getName().equals("main") &&
+                Thread.currentThread().getName().toLowerCase(Locale.ROOT).contains("main")) {
+            Logger.getLogger(Quarkus.class).error(
+                    "'Quarkus#blockingExit' was called on the main thread. This will result in deadlocking the application!");
+        }
+
         Application app = Application.currentApplication();
         asyncExit();
         if (app != null) {

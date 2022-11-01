@@ -20,6 +20,9 @@ public class DependenciesFilter {
         final Map<ArtifactKey, WorkspaceDependencies> modules = new HashMap<>();
         StringBuilder nonReloadable = null;
         for (ResolvedDependency d : appModel.getDependencies()) {
+            if (!d.isJar()) {
+                continue;
+            }
             if (d.isReloadable()) {
                 modules.put(d.getKey(), new WorkspaceDependencies(d));
             } else if (d.isWorkspaceModule()) {

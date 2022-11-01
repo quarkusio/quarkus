@@ -1,26 +1,19 @@
 package io.quarkus.resteasy.reactive.kotlin.serialization.common.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 
-import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.resteasy.reactive.kotlin.serialization.common.runtime.KotlinSerializationConfig;
-import io.quarkus.resteasy.reactive.kotlin.serialization.common.runtime.KotlinSerializerRecorder;
-import kotlinx.serialization.json.Json;
+import io.quarkus.resteasy.reactive.kotlin.serialization.common.runtime.JsonProducer;
 
 public class KotlinSerializationCommonProcessor {
 
@@ -58,12 +51,7 @@ public class KotlinSerializationCommonProcessor {
     }
 
     @BuildStep
-    @Record(STATIC_INIT)
-    public SyntheticBeanBuildItem createJson(KotlinSerializerRecorder recorder, KotlinSerializationConfig config) {
-        return SyntheticBeanBuildItem
-                .configure(Json.class)
-                .scope(Singleton.class)
-                .supplier(recorder.configFactory(config))
-                .unremovable().done();
+    public void arcIntegration(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(JsonProducer.class));
     }
 }

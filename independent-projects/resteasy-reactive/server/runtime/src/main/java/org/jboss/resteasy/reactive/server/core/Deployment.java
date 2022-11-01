@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
@@ -42,7 +43,7 @@ public class Deployment {
     private final ThreadSetupAction threadSetupAction;
     private final RequestContextFactory requestContextFactory;
     private final List<ServerRestHandler> preMatchHandlers;
-    private final List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
+    private final ArrayList<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
     private final List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers;
     private final RuntimeExceptionMapper exceptionMapper;
     private final boolean resumeOn404;
@@ -57,7 +58,7 @@ public class Deployment {
             ConfigurationImpl configuration, Supplier<Application> applicationSupplier,
             ThreadSetupAction threadSetupAction, RequestContextFactory requestContextFactory,
             List<ServerRestHandler> preMatchHandlers,
-            List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers,
+            ArrayList<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers,
             List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers,
             RuntimeExceptionMapper exceptionMapper,
             boolean resumeOn404,
@@ -138,7 +139,7 @@ public class Deployment {
         return preMatchHandlers;
     }
 
-    public List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> getClassMappers() {
+    public ArrayList<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> getClassMappers() {
         return classMappers;
     }
 

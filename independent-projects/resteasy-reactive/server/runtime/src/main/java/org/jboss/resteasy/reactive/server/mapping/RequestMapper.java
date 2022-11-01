@@ -14,18 +14,18 @@ public class RequestMapper<T> {
 
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
-    private final PathMatcher<List<RequestPath<T>>> requestPaths;
-    private final PathMatcher.Builder<List<RequestPath<T>>> pathMatcherBuilder;
-    private final List<RequestPath<T>> templates;
+    private final PathMatcher<ArrayList<RequestPath<T>>> requestPaths;
+    private final PathMatcher.Builder<ArrayList<RequestPath<T>>> pathMatcherBuilder;
+    private final ArrayList<RequestPath<T>> templates;
     final int maxParams;
 
-    public RequestMapper(List<RequestPath<T>> templates) {
+    public RequestMapper(ArrayList<RequestPath<T>> templates) {
         pathMatcherBuilder = new PathMatcher.Builder<>();
         this.templates = templates;
         int max = 0;
-        Map<String, List<RequestPath<T>>> aggregates = new HashMap<>();
+        Map<String, ArrayList<RequestPath<T>>> aggregates = new HashMap<>();
         for (RequestPath<T> i : templates) {
-            List<RequestPath<T>> paths = aggregates.get(i.template.stem);
+            ArrayList<RequestPath<T>> paths = aggregates.get(i.template.stem);
             if (paths == null) {
                 aggregates.put(i.template.stem, paths = new ArrayList<>());
             }
@@ -47,19 +47,19 @@ public class RequestMapper<T> {
         });
     }
 
-    private void addPrefixPaths(String stem, List<RequestPath<T>> list) {
+    private void addPrefixPaths(String stem, ArrayList<RequestPath<T>> list) {
         pathMatcherBuilder.addPrefixPath(stem, list);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public RequestMatch<T> map(String path) {
         int pathLength = path.length();
-        PathMatcher.PathMatch<List<RequestPath<T>>> initialMatch = requestPaths.match(path);
+        PathMatcher.PathMatch<ArrayList<RequestPath<T>>> initialMatch = requestPaths.match(path);
         if (initialMatch.getValue() == null) {
             return null;
         }
 
-        List<RequestPath<T>> value = initialMatch.getValue();
+        ArrayList<RequestPath<T>> value = initialMatch.getValue();
         for (int index = 0; index < value.size(); index++) {
             RequestPath<T> potentialMatch = value.get(index);
             String[] params = (maxParams > 0) ? new String[maxParams] : EMPTY_STRING_ARRAY;
@@ -193,11 +193,11 @@ public class RequestMapper<T> {
         this.requestPaths.dump(0);
     }
 
-    public PathMatcher<List<RequestPath<T>>> getRequestPaths() {
+    public PathMatcher<ArrayList<RequestPath<T>>> getRequestPaths() {
         return requestPaths;
     }
 
-    public List<RequestPath<T>> getTemplates() {
+    public ArrayList<RequestPath<T>> getTemplates() {
         return templates;
     }
 }

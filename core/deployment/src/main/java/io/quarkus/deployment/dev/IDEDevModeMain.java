@@ -89,29 +89,33 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
         final Set<Path> sourceParents = new LinkedHashSet<>();
         final PathList.Builder srcPaths = PathList.builder();
         final ArtifactSources sources = module.getSources();
-        for (SourceDir src : sources.getSourceDirs()) {
-            for (Path p : src.getSourceTree().getRoots()) {
-                sourceParents.add(p.getParent());
-                if (!srcPaths.contains(p)) {
-                    srcPaths.add(p);
+        if (sources != null) {
+            for (SourceDir src : sources.getSourceDirs()) {
+                for (Path p : src.getSourceTree().getRoots()) {
+                    sourceParents.add(p.getParent());
+                    if (!srcPaths.contains(p)) {
+                        srcPaths.add(p);
+                    }
                 }
-            }
-            if (classesDir == null) {
-                classesDir = src.getOutputDir().toString();
+                if (classesDir == null) {
+                    classesDir = src.getOutputDir().toString();
+                }
             }
         }
 
         String resourceDirectory = null;
         final PathList.Builder resourcesPaths = PathList.builder();
-        for (SourceDir src : sources.getResourceDirs()) {
-            for (Path p : src.getSourceTree().getRoots()) {
-                if (!resourcesPaths.contains(p)) {
-                    resourcesPaths.add(p);
+        if (sources != null) {
+            for (SourceDir src : sources.getResourceDirs()) {
+                for (Path p : src.getSourceTree().getRoots()) {
+                    if (!resourcesPaths.contains(p)) {
+                        resourcesPaths.add(p);
+                    }
                 }
-            }
-            if (resourceDirectory == null) {
-                // Peek the first one as we assume that it is the primary
-                resourceDirectory = src.getOutputDir().toString();
+                if (resourceDirectory == null) {
+                    // Peek the first one as we assume that it is the primary
+                    resourceDirectory = src.getOutputDir().toString();
+                }
             }
         }
 

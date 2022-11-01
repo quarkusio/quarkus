@@ -268,6 +268,17 @@ class ReactiveRoutesProcessor {
     }
 
     @BuildStep
+    @Record(value = ExecutionTime.STATIC_INIT)
+    public void replaceDefaultAuthFailureHandler(VertxWebRecorder recorder, Capabilities capabilities,
+            BuildProducer<FilterBuildItem> filterBuildItemBuildProducer) {
+        if (capabilities.isMissing(Capability.RESTEASY_REACTIVE)) {
+            // replace default auth failure handler added by vertx-http so that route failure handlers can customize response
+            filterBuildItemBuildProducer
+                    .produce(new FilterBuildItem(recorder.addAuthFailureHandler(), FilterBuildItem.AUTHENTICATION - 1));
+        }
+    }
+
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void addAdditionalRoutes(
             VertxWebRecorder recorder,

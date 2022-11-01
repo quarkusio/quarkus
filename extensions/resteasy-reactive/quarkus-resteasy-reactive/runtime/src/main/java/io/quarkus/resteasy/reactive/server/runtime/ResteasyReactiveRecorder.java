@@ -220,9 +220,17 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                 route.failureHandler(new Handler<RoutingContext>() {
                     @Override
                     public void handle(RoutingContext event) {
-                        if (event.failure() instanceof AuthenticationFailedException
+
+                        // this condition prevent exception mappers from handling auth failure exceptions when proactive
+                        // security is enabled as for now, community decided that's expected behavior and only way for
+                        // users to handle the exceptions is to define their own failure handler as in Reactive Routes
+                        // more info here: https://github.com/quarkusio/quarkus/pull/28648#issuecomment-1287203946
+                        final boolean eventFailedByRESTEasyReactive = event
+                                .get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof FailingDefaultAuthFailureHandler;
+
+                        if (eventFailedByRESTEasyReactive && (event.failure() instanceof AuthenticationFailedException
                                 || event.failure() instanceof AuthenticationCompletionException
-                                || event.failure() instanceof AuthenticationRedirectException) {
+                                || event.failure() instanceof AuthenticationRedirectException)) {
                             restInitialHandler.beginProcessing(event, event.failure());
                         } else {
                             event.next();
@@ -334,7 +342,14 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
 
         @Override
         public void accept(RoutingContext event, Throwable throwable) {
-            event.fail(throwable);
+            if (event.failed()) {
+                //auth failure handler should never get called from route failure handlers
+                //but if we get to this point bad things have happened,
+                //so it is better to send a response than to hang
+                event.end();
+            } else {
+                event.fail(throwable);
+            }
         }
     }
 

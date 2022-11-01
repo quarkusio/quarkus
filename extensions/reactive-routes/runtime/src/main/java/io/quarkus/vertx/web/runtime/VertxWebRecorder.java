@@ -12,6 +12,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCompression;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniSubscriber;
@@ -130,6 +131,33 @@ public class VertxWebRecorder {
                     route.handler(bodyHandler);
                 }
                 return route;
+            }
+        };
+    }
+
+    public Handler<RoutingContext> addAuthFailureHandler() {
+        return new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext event) {
+                if (event.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof DefaultAuthFailureHandler) {
+                    // failing event rather than end it makes it possible to customize response
+                    // QuarkusErrorHandler will send response if the failure is not handled elsewhere
+                    event.put(QuarkusHttpUser.AUTH_FAILURE_HANDLER, new DefaultAuthFailureHandler() {
+                        @Override
+                        protected void proceed(Throwable throwable) {
+
+                            if (event.failed()) {
+                                //auth failure handler should never get called from route failure handlers
+                                //but if we get to this point bad things have happened,
+                                //so it is better to send a response than to hang
+                                event.end();
+                            } else {
+                                event.fail(throwable);
+                            }
+                        }
+                    });
+                }
+                event.next();
             }
         };
     }

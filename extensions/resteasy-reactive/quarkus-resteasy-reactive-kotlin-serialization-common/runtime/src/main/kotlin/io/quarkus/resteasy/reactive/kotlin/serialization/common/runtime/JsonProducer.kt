@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.kotlin.serialization.common.runtime
 
+import io.quarkus.arc.DefaultBean
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import javax.enterprise.inject.Produces
@@ -11,6 +12,7 @@ class JsonProducer {
     @ExperimentalSerializationApi
     @Singleton
     @Produces
+    @DefaultBean
     fun json(configuration: KotlinSerializationConfig) = Json {
         allowSpecialFloatingPointValues = configuration.json.allowSpecialFloatingPointValues
         allowStructuredMapKeys = configuration.json.allowStructuredMapKeys

@@ -2,7 +2,6 @@ package io.quarkus.resteasy.reactive.kotlin.serialization.common
 
 import io.quarkus.arc.Arc
 import io.quarkus.test.QuarkusUnitTest
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import org.jboss.shrinkwrap.api.spec.JavaArchive
@@ -38,6 +37,4 @@ class BasicTest {
             Arc.container().instance(Json::class.java).get().decodeFromString(serializer(Greeting::class.createType()), """{"name" : "foo", "message" : "hello", "test": "dummy"}"""))
     }
 
-    @Serializable
-    data class Greeting(val name: String, val message: String)
 }

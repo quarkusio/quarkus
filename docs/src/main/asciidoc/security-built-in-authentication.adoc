@@ -124,7 +124,38 @@ for the xref:reactive-routes.adoc[Reactive routes] if a route response is synchr
 
 === How to customize authentication exception responses
 
-By default, the authentication security constraints are enforced before the JAX-RS chain starts.
+By default, the authentication security constraints are enforced before the JAX-RS chain starts and only way to handle Quarkus Security authentication exceptions is to provide a failure handler like this one:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
+
+import io.quarkus.security.AuthenticationFailedException;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
+
+@ApplicationScoped
+public class AuthenticationFailedExceptionHandler {
+
+    public void init(@Observes Router router) {
+        router.route().failureHandler(new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext event) {
+                if (event.failure() instanceof AuthenticationFailedException) {
+                    event.response().setStatusCode(401).end(CUSTOMIZED_RESPONSE);
+                } else {
+                    event.next();
+                }
+            }
+        });
+    }
+}
+----
+
 Disabling the proactive authentication effectively shifts this process to the moment when the JAX-RS chain starts running thus making it possible to use JAX-RS `ExceptionMapper` to capture Quarkus Security authentication exceptions such as `io.quarkus.security.AuthenticationFailedException`, for example:
 
 [source,java]

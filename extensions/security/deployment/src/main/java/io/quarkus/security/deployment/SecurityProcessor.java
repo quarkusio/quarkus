@@ -489,6 +489,7 @@ public class SecurityProcessor {
         syntheticBeans.produce(
                 SyntheticBeanBuildItem.configure(SecurityCheckStorage.class)
                         .scope(ApplicationScoped.class)
+                        .unremovable()
                         .creator(creator -> {
                             ResultHandle ret = creator.invokeStaticMethod(MethodDescriptor.ofMethod(SecurityCheckRecorder.class,
                                     "getStorage", SecurityCheckStorage.class));

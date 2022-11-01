@@ -17,13 +17,16 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
 import io.quarkus.hibernate.orm.deployment.JpaModelBuildItem;
 import io.quarkus.hibernate.orm.panache.common.runtime.PanacheHibernateRecorder;
 
+@BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public final class PanacheJpaCommonResourceProcessor {
 
     private static final DotName DOTNAME_NAMED_QUERY = DotName.createSimple(NamedQuery.class.getName());

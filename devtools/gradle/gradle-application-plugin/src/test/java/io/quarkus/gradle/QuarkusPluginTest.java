@@ -156,7 +156,7 @@ public class QuarkusPluginTest {
         assertEquals(SUCCESS, result.task(":quarkus:quarkusGenerateCode").getOutcome());
     }
 
-    private static List<String> getDependantProvidedTaskName(Task task) {
+    private static final List<String> getDependantProvidedTaskName(Task task) {
         List<String> dependantTaskNames = new ArrayList<>();
         for (Object t : task.getDependsOn()) {
             try {

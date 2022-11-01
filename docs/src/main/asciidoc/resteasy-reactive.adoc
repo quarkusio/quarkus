@@ -544,6 +544,35 @@ public class Endpoint {
 }
 ----
 
+Additionally, you can also manually append the parts of the form using the class `MultipartFormDataOutput` as:
+
+[source,java]
+----
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import org.jboss.resteasy.reactive.server.core.multipart.MultipartFormDataOutput;
+
+@Path("multipart")
+public class Endpoint {
+
+    @GET
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    @Path("file")
+    public MultipartFormDataOutput getFile() {
+        MultipartFormDataOutput form = new MultipartFormDataOutput();
+        form.addFormData("person", new Person("John"), MediaType.APPLICATION_JSON_TYPE);
+        form.addFormData("status", "a status", MediaType.TEXT_PLAIN_TYPE)
+                .getHeaders().putSingle("extra-header", "extra-value");
+        return form;
+    }
+}
+----
+
+This last approach allows you adding extra headers to the output part. 
+
 WARNING: For the time being, returning Multipart data is limited to be blocking endpoints.
 
 ==== Handling malformed input

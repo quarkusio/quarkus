@@ -240,7 +240,7 @@ annotation:
     @Path("/prices")
     @RestStreamElementType(MediaType.TEXT_PLAIN)
     // Get rid of all context propagation, since we don't need it here
-    @CurrentThreadContext(unchanged = ThreadContext.ALL_REMAINING)
+    @CurrentThreadContext(propagated = {}, unchanged = ThreadContext.ALL_REMAINING)
     public Publisher<Double> prices() {
         // get the next three prices from the price stream
         return Multi.createFrom().publisher(prices)

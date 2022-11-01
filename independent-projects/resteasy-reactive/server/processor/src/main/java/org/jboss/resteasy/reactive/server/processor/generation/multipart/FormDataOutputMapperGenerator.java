@@ -4,7 +4,6 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
 
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.ws.rs.core.MediaType;
@@ -19,6 +18,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.server.core.multipart.MultipartFormDataOutput;
 import org.jboss.resteasy.reactive.server.core.multipart.MultipartMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.core.multipart.MultipartOutputInjectionTarget;
 import org.jboss.resteasy.reactive.server.core.multipart.PartItem;
@@ -32,12 +32,12 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 
-final class FormDataOutputMapperGenerator {
+public final class FormDataOutputMapperGenerator {
 
     private static final Logger LOGGER = Logger.getLogger(FormDataOutputMapperGenerator.class);
 
     private static final String TRANSFORM_METHOD_NAME = "mapFrom";
-    private static final String ARRAY_LIST_ADD_METHOD_NAME = "add";
+    private static final String ADD_FORM_DATA_METHOD_NAME = "addFormData";
 
     private FormDataOutputMapperGenerator() {
     }
@@ -121,29 +121,30 @@ final class FormDataOutputMapperGenerator {
      * <pre>
      * public class FormData_generated_mapper implements MultipartOutputInjectionTarget {
      *
-     *     public FormDataOutput mapFrom(Object var1) {
-     *         FormDataOutput var2 = new FormDataOutput();
+     *     public MultipartFormDataOutput mapFrom(Object var1) {
+     *         MultipartFormDataOutput var2 = new MultipartFormDataOutput();
      *         FormData var4 = (FormData) var1;
      *         File var3 = var4.data;
-     *         MultipartSupport.addPartItemToFormDataOutput(var2, "file", "application/octet-stream", var3);
+     *         var2.addFormData("file", var3, "application/octet-stream");
      *         File var5 = var4.text;
-     *         MultipartSupport.addPartItemToFormDataOutput(var2, "text", "text/plain", var5);
+     *         var2.addFormData("text", var5, "text/plain");
      *         return var2;
      *     }
      * }
      * </pre>
      */
-    static String generate(ClassInfo returnTypeClassInfo, ClassOutput classOutput, IndexView index) {
+    public static String generate(ClassInfo returnTypeClassInfo, ClassOutput classOutput, IndexView index) {
         String returnClassName = returnTypeClassInfo.name().toString();
         String generateClassName = MultipartMessageBodyWriter.getGeneratedMapperClassNameFor(returnClassName);
         String interfaceClassName = MultipartOutputInjectionTarget.class.getName();
         try (ClassCreator cc = new ClassCreator(classOutput, generateClassName, null, Object.class.getName(),
                 interfaceClassName)) {
-            MethodCreator populate = cc.getMethodCreator(TRANSFORM_METHOD_NAME, List.class.getName(),
+            MethodCreator populate = cc.getMethodCreator(TRANSFORM_METHOD_NAME, MultipartFormDataOutput.class.getName(),
                     Object.class);
             populate.setModifiers(Modifier.PUBLIC);
 
-            ResultHandle listPartItemListInstanceHandle = populate.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+            ResultHandle formDataInstanceHandle = populate.newInstance(MethodDescriptor
+                    .ofConstructor(MultipartFormDataOutput.class));
             ResultHandle inputInstanceHandle = populate.checkCast(populate.getMethodParam(0), returnClassName);
 
             // go up the class hierarchy until we reach Object
@@ -218,24 +219,20 @@ final class FormDataOutputMapperGenerator {
                     }
 
                     // Get parameterized type if field type is a parameterized class
-                    String firstParamType = "";
+                    String genericType = "";
                     if (fieldType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
                         List<Type> argumentTypes = fieldType.asParameterizedType().arguments();
                         if (argumentTypes.size() > 0) {
-                            firstParamType = argumentTypes.get(0).name().toString();
+                            genericType = argumentTypes.get(0).name().toString();
                         }
                     }
 
-                    // Create Part Item instance
-                    ResultHandle partItemInstanceHandle = populate.newInstance(
-                            MethodDescriptor.ofConstructor(PartItem.class,
-                                    String.class, MediaType.class, Object.class, String.class),
-                            populate.load(formAttrName), partTypeHandle, resultHandle, populate.load(firstParamType));
-
-                    // Add it to the list
+                    // Add it to the form data object
                     populate.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(ArrayList.class, ARRAY_LIST_ADD_METHOD_NAME, boolean.class, Object.class),
-                            listPartItemListInstanceHandle, partItemInstanceHandle);
+                            MethodDescriptor.ofMethod(MultipartFormDataOutput.class, ADD_FORM_DATA_METHOD_NAME, PartItem.class,
+                                    String.class, Object.class, String.class, MediaType.class),
+                            formDataInstanceHandle,
+                            populate.load(formAttrName), resultHandle, populate.load(genericType), partTypeHandle);
                 }
 
                 DotName superClassDotName = currentClassInHierarchy.superName();
@@ -250,7 +247,7 @@ final class FormDataOutputMapperGenerator {
                 currentClassInHierarchy = newCurrentClassInHierarchy;
             }
 
-            populate.returnValue(listPartItemListInstanceHandle);
+            populate.returnValue(formDataInstanceHandle);
         }
         return generateClassName;
     }

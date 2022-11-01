@@ -34,6 +34,17 @@
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.checkerframework</groupId>
+          <artifactId>checker-qual</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
 
     <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
     <dependency>

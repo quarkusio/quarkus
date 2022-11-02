@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.quarkus.it.rest.client.main.MyResponseExceptionMapper.MyException;
 import io.quarkus.it.rest.client.main.selfsigned.ExternalSelfSignedClient;
+import io.quarkus.it.rest.client.main.wronghost.WrongHostClient;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Future;
 import io.vertx.core.json.Json;
@@ -47,6 +48,9 @@ public class ClientCallingResource {
 
     @RestClient
     ExternalSelfSignedClient externalSelfSignedClient;
+
+    @RestClient
+    WrongHostClient wrongHostClient;
 
     @Inject
     InMemorySpanExporter inMemorySpanExporter;
@@ -172,6 +176,9 @@ public class ClientCallingResource {
 
         router.get("/self-signed").blockingHandler(
                 rc -> rc.response().setStatusCode(200).end(String.valueOf(externalSelfSignedClient.invoke().getStatus())));
+
+        router.get("/wrong-host").blockingHandler(
+                rc -> rc.response().setStatusCode(200).end(String.valueOf(wrongHostClient.invoke().getStatus())));
     }
 
     private Future<Void> success(RoutingContext rc, String body) {

@@ -14,6 +14,8 @@
     <properties>
         <self-signed.trust-store>${project.build.directory}/self-signed.p12</self-signed.trust-store>
         <self-signed.trust-store-password>changeit</self-signed.trust-store-password>
+        <wrong-host.trust-store>${project.build.directory}/wrong-host.p12</wrong-host.trust-store>
+        <wrong-host.trust-store-password>changeit</wrong-host.trust-store-password>
     </properties>
 
     <!--todo add ssl tests-->
@@ -170,6 +172,23 @@
                             <truststorePassword>${self-signed.trust-store-password}</truststorePassword>
                             <servers>
                                 <server>self-signed.badssl.com:443</server>
+                            </servers>
+                            <trustAllCertificates>true</trustAllCertificates>
+                            <includeCertificates>LEAF</includeCertificates>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>wrong-host-truststore</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>generate-truststore</goal>
+                        </goals>
+                        <configuration>
+                            <truststoreFormat>PKCS12</truststoreFormat>
+                            <truststoreFile>${wrong-host.trust-store}</truststoreFile>
+                            <truststorePassword>${wrong-host.trust-store-password}</truststorePassword>
+                            <servers>
+                                <server>wrong.host.badssl.com:443</server>
                             </servers>
                             <trustAllCertificates>true</trustAllCertificates>
                             <includeCertificates>LEAF</includeCertificates>

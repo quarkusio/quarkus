@@ -218,6 +218,14 @@ public class RestClientsConfig {
     public Optional<QueryParamStyle> queryParamStyle;
 
     /**
+     * Set whether hostname verification is enabled.
+     *
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    public Optional<Boolean> verifyHost;
+
+    /**
      * The trust store location. Can point to either a classpath resource or a file.
      *
      * Can be overwritten by client-specific settings.

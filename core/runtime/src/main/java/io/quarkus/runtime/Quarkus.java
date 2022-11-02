@@ -212,7 +212,7 @@ public class Quarkus {
     private static Application manualApp;
     private static final int MANUAL_BEGIN = 0;
     private static final int MANUAL_BEGIN_INITIALIZATION = 1;
-    private static final int MANUAL_INITALIZED = 2;
+    private static final int MANUAL_INITIALIZED = 2;
     private static final int MANUAL_STARTING = 3;
     private static final int MANUAL_STARTED = 4;
     private static final int MANUAL_FAILURE = 5;
@@ -239,15 +239,15 @@ public class Quarkus {
                 return;
             if (tmpState == MANUAL_FAILURE)
                 throw new RuntimeException("Quarkus manual bootstrap failed");
-            manualState = tmpState = MANUAL_BEGIN_INITIALIZATION;
+            manualState = MANUAL_BEGIN_INITIALIZATION;
         }
 
         try {
             // if Application instantiation is removed from manualInit()
             // then Class.forName() should for class static initialization of ApplicationImpl
-            Class appClass = Class.forName("io.quarkus.runner.ApplicationImpl");
+            Class<?> appClass = Class.forName("io.quarkus.runner.ApplicationImpl");
             manualApp = (Application) appClass.getDeclaredConstructor().newInstance();
-            manualState = MANUAL_INITALIZED;
+            manualState = MANUAL_INITIALIZED;
             Core.getGlobalContext().register(new QuarkusCracBootstrapResource());
         } catch (Exception e) {
             manualState = MANUAL_FAILURE;
@@ -276,9 +276,9 @@ public class Quarkus {
                 throw new RuntimeException("Quarkus manual bootstrap failed");
             if (tmpState >= MANUAL_STARTING)
                 return;
-            if (tmpState != MANUAL_INITALIZED)
+            if (tmpState != MANUAL_INITIALIZED)
                 throw new IllegalStateException("Quarkus manual start cannot proceed as manual initialization did not run");
-            manualState = tmpState = MANUAL_STARTING;
+            manualState = MANUAL_STARTING;
         }
         try {
             String[] args = {};

@@ -59,6 +59,7 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     private boolean followRedirects;
     private boolean trustAll;
+    private boolean verifyHost;
 
     private LoggingScope loggingScope;
     private Integer loggingBodySize = 100;
@@ -178,6 +179,7 @@ public class ClientBuilderImpl extends ClientBuilder {
         HttpClientOptions options = Optional.ofNullable(configuration.getFromContext(HttpClientOptions.class))
                 .orElseGet(HttpClientOptions::new);
 
+        options.setVerifyHost(verifyHost);
         if (trustAll) {
             options.setTrustAll(true);
             options.setVerifyHost(false);
@@ -344,6 +346,11 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     public ClientBuilderImpl trustAll(boolean trustAll) {
         this.trustAll = trustAll;
+        return this;
+    }
+
+    public ClientBuilderImpl verifyHost(boolean verifyHost) {
+        this.verifyHost = verifyHost;
         return this;
     }
 

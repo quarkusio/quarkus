@@ -31,6 +31,7 @@ public class RestClientFallbackConfigSourceInterceptor extends FallbackConfigSou
         CLIENT_PROPERTIES.put("connect-timeout", "connectTimeout");
         CLIENT_PROPERTIES.put("read-timeout", "readTimeout");
         CLIENT_PROPERTIES.put("hostname-verifier", "hostnameVerifier");
+        CLIENT_PROPERTIES.put("verify-host", "verifyHost");
         CLIENT_PROPERTIES.put("trust-store", "trustStore");
         CLIENT_PROPERTIES.put("trust-store-password", "trustStorePassword");
         CLIENT_PROPERTIES.put("trust-store-type", "trustStoreType");

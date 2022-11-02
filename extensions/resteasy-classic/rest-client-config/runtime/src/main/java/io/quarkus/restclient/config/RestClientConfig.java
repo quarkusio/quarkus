@@ -31,6 +31,7 @@ public class RestClientConfig {
         EMPTY.proxyPassword = Optional.empty();
         EMPTY.nonProxyHosts = Optional.empty();
         EMPTY.queryParamStyle = Optional.empty();
+        EMPTY.verifyHost = Optional.empty();
         EMPTY.trustStore = Optional.empty();
         EMPTY.trustStorePassword = Optional.empty();
         EMPTY.trustStoreType = Optional.empty();
@@ -133,6 +134,12 @@ public class RestClientConfig {
      */
     @ConfigItem
     public Optional<QueryParamStyle> queryParamStyle;
+
+    /**
+     * Set whether hostname verification is enabled.
+     */
+    @ConfigItem
+    public Optional<Boolean> verifyHost;
 
     /**
      * The trust store location. Can point to either a classpath resource or a file.
@@ -246,6 +253,7 @@ public class RestClientConfig {
         instance.proxyPassword = getConfigValue(configKey, "proxy-password", String.class);
         instance.nonProxyHosts = getConfigValue(configKey, "non-proxy-hosts", String.class);
         instance.queryParamStyle = getConfigValue(configKey, "query-param-style", QueryParamStyle.class);
+        instance.verifyHost = getConfigValue(configKey, "verify-host", Boolean.class);
         instance.trustStore = getConfigValue(configKey, "trust-store", String.class);
         instance.trustStorePassword = getConfigValue(configKey, "trust-store-password", String.class);
         instance.trustStoreType = getConfigValue(configKey, "trust-store-type", String.class);
@@ -279,6 +287,7 @@ public class RestClientConfig {
         instance.proxyPassword = getConfigValue(interfaceClass, "proxy-password", String.class);
         instance.nonProxyHosts = getConfigValue(interfaceClass, "non-proxy-hosts", String.class);
         instance.queryParamStyle = getConfigValue(interfaceClass, "query-param-style", QueryParamStyle.class);
+        instance.verifyHost = getConfigValue(interfaceClass, "verify-host", Boolean.class);
         instance.trustStore = getConfigValue(interfaceClass, "trust-store", String.class);
         instance.trustStorePassword = getConfigValue(interfaceClass, "trust-store-password", String.class);
         instance.trustStoreType = getConfigValue(interfaceClass, "trust-store-type", String.class);

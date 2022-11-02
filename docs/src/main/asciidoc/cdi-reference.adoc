@@ -455,7 +455,7 @@ Unused interceptors and decorators are not associated with any bean.
 
 [TIP]
 ====
-When using the dev mode (running `./mvnw clean compile quarkus:dev`), you can see more information about which beans are being removed:
+When using the dev mode (running `./mvnw quarkus:dev`), you can see more information about which beans are being removed:
 
 1. In the console - just enable the DEBUG level in your `application.properties`, i.e. `quarkus.log.category."io.quarkus.arc.processor".level=DEBUG`
 2. In the relevant Dev UI page

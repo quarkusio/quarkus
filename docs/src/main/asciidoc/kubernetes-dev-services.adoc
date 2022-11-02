@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 :summary: Start a Kubernetes API server automatically in dev and test modes.
 
 Dev Services for Kubernetes automatically starts a Kubernetes API server in dev mode and when running tests.
-So, you don't have to start a Kubernetes cluster manually.
+So you don't have to start a Kubernetes cluster manually.
 The application is configured automatically.
 
 == Enabling / Disabling Dev Services for Kubernetes
@@ -28,12 +28,12 @@ You can configure the Kubernetes cluster access using either a Kube config file 
 == Shared cluster
 
 Most of the time you need to share the cluster between applications.
-Dev Services for Kubernetes implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single cluster.
+Dev Services for Kubernetes implements a _service discovery_ mechanism for your multiple Quarkus applications running in dev mode to share a single cluster.
 
 NOTE: Dev Services for Kubernetes starts the container with the `quarkus-dev-service-kubernetes` label which is used to identify the container.
 
-If you need multiple (shared) clusters, you can configure the `quarkus.kubernetes-client.devservices.service-name` attribute and indicate the cluster name.
-It looks for a container with the same value, or starts a new one if none can be found.
+If you need multiple (shared) clusters, you can configure the `quarkus.kubernetes-client.devservices.service-name` configuration property and indicate the cluster name.
+It looks for a container with the name defined, or starts a new one if none can be found.
 The default service name is `kubernetes`.
 
 Sharing is enabled by default in dev mode, but disabled in test mode.
@@ -50,6 +50,6 @@ quarkus.kubernetes-client.devservices.flavor=api-only # k3s or kind
 quarkus.kubernetes-client.devservices.api-version=1.22
 ----
 
-`api-only` starts only a Kubernetes API Server. If you need a feature rich Kubernetes cluster that can spin up Pods, you can use `k3s` or `kind`. Note that they both requires to run in Docker priviledge mode.
+`api-only` only starts a Kubernetes API Server. If you need a fully-featured Kubernetes cluster that can spin up Pods, you can use `k3s` or `kind`. Note that they both requires to run in Docker privileged mode.
 
 If `api-version` is not set, the latest version for the given flavor will be used. Otherwise, the version must match a https://github.com/dajudge/kindcontainer/blob/master/k8s-versions.json[version supported by the given flavor].

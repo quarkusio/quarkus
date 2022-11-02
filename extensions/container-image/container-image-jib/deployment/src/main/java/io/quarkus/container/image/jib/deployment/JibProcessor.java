@@ -264,14 +264,14 @@ public class JibProcessor {
     }
 
     private Containerizer createContainerizer(ContainerImageConfig containerImageConfig,
-            JibConfig jibConfig, ContainerImageInfoBuildItem containerImage,
+            JibConfig jibConfig, ContainerImageInfoBuildItem containerImageInfo,
             boolean pushRequested) {
         Containerizer containerizer;
-        ImageReference imageReference = ImageReference.of(containerImage.getRegistry().orElse(null),
-                containerImage.getRepository(), containerImage.getTag());
+        ImageReference imageReference = ImageReference.of(containerImageInfo.getRegistry().orElse(null),
+                containerImageInfo.getRepository(), containerImageInfo.getTag());
 
         if (pushRequested || containerImageConfig.isPushExplicitlyEnabled()) {
-            if (!containerImageConfig.registry.isPresent()) {
+            if (imageReference.getRegistry() == null) {
                 log.info("No container image registry was set, so 'docker.io' will be used");
             }
             RegistryImage registryImage = toRegistryImage(imageReference, containerImageConfig.username,

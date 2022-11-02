@@ -4,6 +4,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ResourceContext;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Application;
@@ -49,6 +50,13 @@ public class ContextProducers {
     @Produces
     HttpHeaders headers() {
         return getContext().getHttpHeaders();
+    }
+
+    // this is added for compatibility reasons
+    @RequestScoped
+    @Produces
+    ContainerRequestContext containerRequestContext() {
+        return getContext().getContainerRequestContext();
     }
 
     @ApplicationScoped

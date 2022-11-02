@@ -15,7 +15,7 @@ Quarkus Security is a framework that provides the architecture, multiple authent
 Before you start building security into your Quarkus applications, review the overview information to learn about the Quarkus Security architecture and the different authentication and authorization mechanisms that Quarkus supports.
 
 To get started with security in Quarkus, we recommend that you first combine the Quarkus built-in xref:security-basic-auth-concept.adoc[Basic HTTP authentication] with the JPA identity provider to enable role-based access control (RBAC). 
-Complete the steps in the ref:security-getting-started.adoc[Secure a Quarkus application with Basic authentication] tutorial.
+Complete the steps in the xref:security-getting-started.adoc[Secure a Quarkus application with Basic authentication] tutorial.
 After you have successfully secured your Quarkus application with basic HTTP authentication, you can increase the security further by adding more advanced authentication mechanisms, for example, OpenID Connect (OIDC) authentication.
 
 == Security architecture

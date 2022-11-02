@@ -1768,3 +1768,27 @@ it's best to have <<debug-info,debug info builds>> of the native executables aro
 so that `gdb` can be hooked up quickly to debug the issue.
 If you also add local symbols to the debug info builds,
 you will obtain precise <<profiling,profiling information>> as well.
+
+=== Build stalled for minutes, barely using any CPU
+
+It might so happen that the build gets stalled and even ends up with:
+
+[source,bash]
+----
+Image generator watchdog detected no activity.
+----
+
+One of the possible explanations could be a lack of entropy, e.g. on an entropy constrained VM, if such a source is needed as it is the case with Bouncycastle at build time.
+
+One can check the available entropy on a Linux system with:
+
+[source,bash]
+----
+$ cat /proc/sys/kernel/random/entropy_avail
+----
+If the amount is not in hundreds, it could be a problem. A possible workaround is to compromise, acceptable for testing, and set:
+[source,bash]
+----
+export JAVA_OPTS=-Djava.security.egd=/dev/urandom
+----
+The proper solution is to increase the entropy available for the system. That is specific for each OS vendor and virtualization solution though.

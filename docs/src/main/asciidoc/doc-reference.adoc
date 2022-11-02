@@ -324,6 +324,6 @@ The complete list of externalized variables for use is given in the following ta
 |\{quickstarts-tree-url}|{quickstarts-tree-url}| Quickstarts URL to main source tree root; used for referencing directories.
 
 |\{graalvm-version}|{graalvm-version}| Recommended GraalVM version to use.
-|\{graalvm-flavor}|{graalvm-flavor}| The builder image tag of GraalVM to use e.g. `22.2-java17`. Use a `java17` version.
+|\{graalvm-flavor}|{graalvm-flavor}| The builder image tag of GraalVM to use e.g. `22.3-java17`. Use a `java17` version.
 |===
 

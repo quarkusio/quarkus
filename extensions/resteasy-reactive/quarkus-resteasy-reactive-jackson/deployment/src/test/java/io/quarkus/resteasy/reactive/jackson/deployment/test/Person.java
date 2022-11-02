@@ -2,6 +2,8 @@ package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
 import javax.validation.constraints.NotBlank;
 
+import com.fasterxml.jackson.annotation.JsonView;
+
 import io.quarkus.resteasy.reactive.jackson.SecureField;
 
 public class Person {
@@ -11,6 +13,9 @@ public class Person {
     @NotBlank(message = "Title cannot be blank")
     @SecureField(rolesAllowed = "admin")
     private String last;
+
+    @JsonView(Views.Private.class)
+    public int id = 0;
 
     public String getFirst() {
         return first;
@@ -26,5 +31,13 @@ public class Person {
 
     public void setLast(String last) {
         this.last = last;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 }

@@ -63,10 +63,11 @@ final class RestLinksProviderImpl implements RestLinksProvider {
         List<Object> values = new ArrayList<>(linkInfo.getPathParameters().size());
         for (String name : linkInfo.getPathParameters()) {
             GetterAccessor accessor = getterAccessorsContainer.get(linkInfo.getEntityType(), name);
-            if (accessor == null) {
-                throw new RuntimeException("Could not get '" + name + "' value");
+            if (accessor != null) {
+                values.add(accessor.get(instance));
+            } else {
+                values.add("{" + name + "}");
             }
-            values.add(accessor.get(instance));
         }
         return values.toArray();
     }

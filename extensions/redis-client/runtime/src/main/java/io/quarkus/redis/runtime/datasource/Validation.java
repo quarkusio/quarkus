@@ -9,22 +9,24 @@ public class Validation {
         // avoid direct instantiation
     }
 
-    static <X> void notNullOrEmpty(X[] array, String name) {
+    public static <X> X[] notNullOrEmpty(X[] array, String name) {
         if (array == null) {
             throw new IllegalArgumentException("`" + name + "` must not be `null`");
         }
         if (array.length == 0) {
             throw new IllegalArgumentException("`" + name + "` must not be empty");
         }
+        return array;
     }
 
-    static <X> void notNullOrBlank(String v, String name) {
+    public static String notNullOrBlank(String v, String name) {
         if (v == null) {
             throw new IllegalArgumentException("`" + name + "` must not be `null`");
         }
         if (v.isBlank()) {
             throw new IllegalArgumentException("`" + name + "` must not be blank");
         }
+        return v;
     }
 
     static <X> void notNullOrEmpty(Collection<X> col, String name) {

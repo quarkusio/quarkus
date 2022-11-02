@@ -21,6 +21,7 @@ import io.quarkus.redis.datasource.json.JsonCommands;
 import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.pubsub.PubSubCommands;
+import io.quarkus.redis.datasource.search.SearchCommands;
 import io.quarkus.redis.datasource.set.SetCommands;
 import io.quarkus.redis.datasource.sortedset.SortedSetCommands;
 import io.quarkus.redis.datasource.string.StringCommands;
@@ -255,6 +256,11 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     @Override
     public <K> GraphCommands<K> graph(Class<K> redisKeyType) {
         return new BlockingGraphCommandsImpl<>(this, reactive.graph(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K> SearchCommands<K> search(Class<K> redisKeyType) {
+        return new BlockingSearchCommandsImpl<>(this, reactive.search(redisKeyType), timeout);
     }
 
     @Override

@@ -13,6 +13,7 @@ import io.quarkus.redis.datasource.hyperloglog.TransactionalHyperLogLogCommands;
 import io.quarkus.redis.datasource.json.TransactionalJsonCommands;
 import io.quarkus.redis.datasource.keys.TransactionalKeyCommands;
 import io.quarkus.redis.datasource.list.TransactionalListCommands;
+import io.quarkus.redis.datasource.search.TransactionalSearchCommands;
 import io.quarkus.redis.datasource.set.TransactionalSetCommands;
 import io.quarkus.redis.datasource.sortedset.TransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.string.TransactionalStringCommands;
@@ -123,6 +124,11 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
     @Override
     public <K> TransactionalGraphCommands<K> graph(Class<K> redisKeyType) {
         return new BlockingTransactionalGraphCommandsImpl<>(this, reactive.graph(redisKeyType), timeout);
+    }
+
+    @Override
+    public <K> TransactionalSearchCommands search(Class<K> redisKeyType) {
+        return new BlockingTransactionalSearchCommandsImpl(this, reactive.search(redisKeyType), timeout);
     }
 
     @Override

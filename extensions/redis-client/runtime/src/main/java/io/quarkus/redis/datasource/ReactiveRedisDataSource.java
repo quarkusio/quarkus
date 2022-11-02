@@ -15,6 +15,7 @@ import io.quarkus.redis.datasource.json.ReactiveJsonCommands;
 import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
 import io.quarkus.redis.datasource.list.ReactiveListCommands;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
+import io.quarkus.redis.datasource.search.ReactiveSearchCommands;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveSortedSetCommands;
 import io.quarkus.redis.datasource.string.ReactiveStringCommands;
@@ -516,6 +517,27 @@ public interface ReactiveRedisDataSource {
      */
     @Experimental("The Redis graph support is experimental")
     <K> ReactiveGraphCommands<K> graph(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code search} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @param <K> the type of keys
+     * @return the object to search documents
+     */
+    @Experimental("The Redis search support is experimental")
+    <K> ReactiveSearchCommands<K> search(Class<K> redisKeyType);
+
+    /**
+     * Gets the object to emit commands from the {@code search} group.
+     * This group requires the <a href="https://redis.io/docs/stack/search/">RedisSearch module</a>.
+     *
+     * @return the object to search documents
+     */
+    @Experimental("The Redis Search support is experimental")
+    default ReactiveSearchCommands<String> search() {
+        return search(String.class);
+    }
 
     /**
      * Executes a command.

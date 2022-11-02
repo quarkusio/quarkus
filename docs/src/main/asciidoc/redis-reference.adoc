@@ -277,12 +277,14 @@ As mentioned above, the API is divided into groups:
 - stream (not available yet)
 - string - `.value(valueType)`
 - transactions - `withTransaction`
-- json - `.json()` (requires the https://redis.com/modules/redis-json/[redis-json] module on the server side)
-- bloom - `.bloom()` (requires the https://redis.com/modules/redis-bloom/[redis-bloom] module on the server side)
-- cuckoo - `.cuckoo()` (requires the https://redis.com/modules/redis-bloom/[redis-bloom] module on the server side, which also provides the cuckoo filter commands)
-- count-min - `.countmin()` (requires the https://redis.com/modules/redis-bloom/[redis-bloom] module on the server side, which also provides the count-min filter commands)
-- top-k - `.topk()` (requires the https://redis.com/modules/redis-bloom/[redis-bloom] module on the server side, which also provides the top-k filter commands)
-- graph - `.graph()` (requires the https://redis.com/modules/redis-graph/[redis-graph] module on the server side, which also provides the graph commands)
+- json - `.json()` (requires the https://redis.com/modules/redis-json/[RedisJSON] module on the server side)
+- bloom - `.bloom()` (requires the https://redis.com/modules/redis-bloom/[RedisBloom] module on the server side)
+- cuckoo - `.cuckoo()` (requires the https://redis.com/modules/redis-bloom/[rRedisBloom] module on the server side, which also provides the cuckoo filter commands)
+- count-min - `.countmin()` (requires the https://redis.com/modules/redis-bloom/[RedisBloom] module on the server side, which also provides the count-min filter commands)
+- top-k - `.topk()` (requires the https://redis.com/modules/redis-bloom/[RedisBloom] module on the server side, which also provides the top-k filter commands)
+- graph - `.graph()` (requires the https://redis.com/modules/redis-graph/[RedisGraph] module on the server side).
+These commands are marked as experimental, as we would need feedback before making them stable.
+- search - `.search()` (requires the https://redis.com/modules/redis-search/[RedisSearch] module on the server side).
 These commands are marked as experimental, as we would need feedback before making them stable.
 
 Each of these methods returns an object that lets you execute the commands related to the group.

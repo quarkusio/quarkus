@@ -24,6 +24,8 @@ we recommend that you use the `%prod.` profile to define your Redis settings.
 Dev Services for Redis relies on Docker to start the server.
 If your environment does not support Docker, you will need to start the server manually, or connect to an already running server.
 
+IMPORTANT: If you want to use Redis Stack _modules_ (bloom, graph, search...), set the image-name to `redis/redis-stack:latest`
+
 == Shared server
 
 Most of the time you need to share the server between applications.

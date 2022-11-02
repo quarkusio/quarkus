@@ -88,7 +88,7 @@ public class Marshaller {
     }
 
     @SuppressWarnings("unchecked")
-    final <T> T decode(Class<T> clazz, byte[] r) {
+    public final <T> T decode(Class<T> clazz, byte[] r) {
         if (r == null) {
             return null;
         }

@@ -22,6 +22,7 @@ import io.quarkus.redis.datasource.json.ReactiveJsonCommands;
 import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
 import io.quarkus.redis.datasource.list.ReactiveListCommands;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
+import io.quarkus.redis.datasource.search.ReactiveSearchCommands;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveSortedSetCommands;
 import io.quarkus.redis.datasource.string.ReactiveStringCommands;
@@ -316,6 +317,11 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     @Override
     public <V> ReactivePubSubCommands<V> pubsub(Class<V> messageType) {
         return new ReactivePubSubCommandsImpl<>(this, messageType);
+    }
+
+    @Override
+    public <K> ReactiveSearchCommands<K> search(Class<K> redisKeyType) {
+        return new ReactiveSearchCommandsImpl<>(this, redisKeyType);
     }
 
     @Override

@@ -64,3 +64,18 @@ participants:
           maxIssues: 2
       stale:
         maxIssues: 5
+  - username: "jmartisk"
+    timezone: "Europe/Prague"
+    triage:
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      maxIssues: 3
+    maintenance:
+      labels: ["area/graphql", "area/smallrye", "area/health", "area/kotlin", "area/metrics", "area/registry", "area/platform"]
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      reproducer:
+        needed:
+          maxIssues: 4
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 5

@@ -16,12 +16,6 @@ Quarkus provides first class support for using Kotlin as will be explained in th
 
 include::{includes}/prerequisites.adoc[]
 
-[WARNING]
-====
-If building with Mandrel, make sure to use version Mandrel 22.1 or above, for example `ubi-quarkus-mandrel:22.1-java17`.
-With older versions, you might encounter errors when trying to deserialize JSON documents that have null or missing fields, similar to the errors mentioned in the <<kotlin-jackson>> section.
-====
-
 NB: For Gradle project setup please see below, and for further reference consult the guide in the xref:gradle-tooling.adoc[Gradle setup page].
 
 == Creating the Maven project

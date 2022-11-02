@@ -1339,7 +1339,7 @@ We can now examine line `169` and get a first hint of what might be wrong
 (in this case we see that it fails at the first read from src which contains the address `0x0000`),
 or walk up the stack using `gdb`’s `up` command to see what part of our code led to this situation.
 To learn more about using gdb to debug native executables see
-https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/DebugInfo.md[here].
+https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/debugging-and-diagnostics/DebugInfo/[here].
 
 == Frequently Asked Questions
 
@@ -1616,7 +1616,7 @@ Once the image is compiled, enable and start JFR via runtime flags: `-XX:+Flight
     -XX:StartFlightRecording="filename=recording.jfr"
 ----
 
-For more details on using JFR, see https://www.graalvm.org/22.2/reference-manual/native-image/debugging-and-diagnostics/JFR/[here].
+For more details on using JFR, see https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/debugging-and-diagnostics/JFR/[here].
 
 === How can we troubleshoot performance problems only reproducible in production?
 

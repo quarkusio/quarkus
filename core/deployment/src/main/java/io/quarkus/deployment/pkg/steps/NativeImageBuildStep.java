@@ -81,8 +81,7 @@ public class NativeImageBuildStep {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void addExportsToNativeImage(BuildProducer<JPMSExportBuildItem> exports) {
         // Needed by io.quarkus.runtime.ResourceHelper.registerResources
-        exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk",
-                GraalVM.Version.VERSION_22_1_0));
+        exports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.jdk"));
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -709,11 +708,7 @@ public class NativeImageBuildStep {
                 nativeImageArgs.add("-J--add-opens=java.base/java.util=ALL-UNNAMED");
 
                 if (nativeConfig.enableReports) {
-                    if (graalVMVersion.isOlderThan(GraalVM.Version.VERSION_21_3_2)) {
-                        nativeImageArgs.add("-H:+PrintAnalysisCallTree");
-                    } else {
-                        nativeImageArgs.add("-H:PrintAnalysisCallTreeType=CSV");
-                    }
+                    nativeImageArgs.add("-H:PrintAnalysisCallTreeType=CSV");
                 }
 
                 // only available in GraalVM 22.3.0 and better.
@@ -748,12 +743,8 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("--no-fallback");
                 }
 
-                // 22.1 removes --allow-incomplete-classpath and makes it the default. --link-at-build-time is now
-                // needed to bring back the old behavior (which requires all classes to be resolvable at build time).
-                if (graalVMVersion.isNewerThan(GraalVM.Version.VERSION_22_0_0_2) && !classpathIsBroken) {
+                if (!classpathIsBroken) {
                     nativeImageArgs.add("--link-at-build-time");
-                } else if (!graalVMVersion.isNewerThan(GraalVM.Version.VERSION_22_0_0_2) && classpathIsBroken) {
-                    nativeImageArgs.add("--allow-incomplete-classpath");
                 }
 
                 if (nativeConfig.reportErrorsAtRuntime) {
@@ -852,9 +843,7 @@ public class NativeImageBuildStep {
                 if (jpmsExports != null) {
                     HashSet<JPMSExportBuildItem> deduplicatedJpmsExport = new HashSet<>(jpmsExports);
                     for (JPMSExportBuildItem jpmsExport : deduplicatedJpmsExport) {
-                        GraalVM.Version exportBeforeVersion = jpmsExport.getExportBefore();
-                        if (graalVMVersion.isNewerThan(jpmsExport.getExportAfter()) &&
-                                (exportBeforeVersion == null || graalVMVersion.isOlderThan(exportBeforeVersion))) {
+                        if (jpmsExport.isRequired(graalVMVersion)) {
                             nativeImageArgs.add(
                                     "-J--add-exports=" + jpmsExport.getModule() + "/" + jpmsExport.getPackage()
                                             + "=ALL-UNNAMED");
@@ -890,11 +879,6 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("--exclude-config");
                     nativeImageArgs.add(excludeConfig.getJarFile());
                     nativeImageArgs.add(excludeConfig.getResourceName());
-                }
-
-                // Work around https://github.com/quarkusio/quarkus/issues/21372
-                if (graalVMVersion.is(GraalVM.Version.VERSION_21_3_0) && graalVMVersion.isJava17()) {
-                    nativeImageArgs.add("-J--add-exports=java.management/sun.management=ALL-UNNAMED");
                 }
 
                 nativeImageArgs.add(nativeImageName);

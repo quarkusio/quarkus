@@ -2,6 +2,7 @@ package io.quarkus.amazon.lambda.deployment;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.inject.Named;
 
@@ -27,6 +29,7 @@ import io.quarkus.amazon.lambda.runtime.AmazonLambdaRecorder;
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaStaticRecorder;
 import io.quarkus.amazon.lambda.runtime.FunctionError;
 import io.quarkus.amazon.lambda.runtime.LambdaBuildTimeConfig;
+import io.quarkus.amazon.lambda.runtime.PreInitRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.builder.BuildException;
@@ -38,9 +41,11 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.BuildTimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
@@ -225,6 +230,20 @@ public final class AmazonLambdaProcessor {
                     + RequestHandler.class.getName() + " or, " + RequestStreamHandler.class.getName() + " implementation";
             throw new RuntimeException(errorMessage);
         }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    public void preInit(PreInitRecorder recorder) {
+        recorder.preInit();
+    }
+
+    @BuildStep
+    public GeneratedResourceBuildItem registerPreInitClasses(List<BuildTimeInitializedClassBuildItem> items) {
+        // ensure unique & sorted
+        final String names = items.stream().map(BuildTimeInitializedClassBuildItem::getClassName).sorted().distinct()
+                .map(s -> s.concat(System.lineSeparator())).collect(Collectors.joining());
+        return new GeneratedResourceBuildItem("META-INF/pre-init-classes.txt", names.getBytes(StandardCharsets.UTF_8));
     }
 
     @BuildStep

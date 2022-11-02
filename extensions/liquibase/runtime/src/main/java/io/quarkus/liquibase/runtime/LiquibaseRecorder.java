@@ -14,6 +14,7 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.runtime.annotations.Recorder;
 import liquibase.Liquibase;
+import liquibase.lockservice.LockServiceFactory;
 
 @Recorder
 public class LiquibaseRecorder {
@@ -58,10 +59,17 @@ public class LiquibaseRecorder {
                             liquibase.dropAll();
                         }
                         if (config.migrateAtStart) {
-                            if (config.validateOnMigrate) {
-                                liquibase.validate();
+                            var lockService = LockServiceFactory.getInstance()
+                                    .getLockService(liquibase.getDatabase());
+                            lockService.waitForLock();
+                            try {
+                                if (config.validateOnMigrate) {
+                                    liquibase.validate();
+                                }
+                                liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
+                            } finally {
+                                lockService.releaseLock();
                             }
-                            liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
                         }
                     }
                 } catch (UnsatisfiedResolutionException e) {

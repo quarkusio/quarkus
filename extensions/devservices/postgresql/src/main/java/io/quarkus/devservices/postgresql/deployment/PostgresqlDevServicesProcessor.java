@@ -23,6 +23,7 @@ import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerShutdownCloseable;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.runtime.LaunchMode;
 
 public class PostgresqlDevServicesProcessor {
@@ -55,6 +56,8 @@ public class PostgresqlDevServicesProcessor {
                         .withPassword(effectivePassword)
                         .withDatabaseName(effectiveDbName)
                         .withReuse(true);
+                Labels.addDataSourceLabel(container, datasourceName);
+
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);
 

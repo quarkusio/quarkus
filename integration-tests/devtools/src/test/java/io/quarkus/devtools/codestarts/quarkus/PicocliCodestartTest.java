@@ -31,7 +31,7 @@ public class PicocliCodestartTest {
         codestartTest.checkGeneratedSource("org.acme.GreetingCommand");
 
         codestartTest.assertThatGeneratedFile(JAVA, "README.md")
-                .satisfies(checkContains("./mvnw compile quarkus:dev -Dquarkus.args='Quarky"));
+                .satisfies(checkContains("./mvnw quarkus:dev -Dquarkus.args='Quarky"));
 
         codestartGradleTest.assertThatGeneratedFile(JAVA, "README.md")
                 .satisfies(checkContains("./gradlew quarkusDev --quarkus-args='Quarky'"));

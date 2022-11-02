@@ -796,7 +796,7 @@ You can launch your application with the following command line:
 
 [source,bash]
 ----
-mvnDebug clean compile quarkus:dev
+mvnDebug quarkus:dev
 ----
 
 By default, Maven will wait for a connection on `localhost:8000`.
@@ -861,7 +861,7 @@ Run the application and notice the `Installed Features` list contains the `greet
 
 [source,shell,subs=attributes+]
 ----
-$ mvn clean compile quarkus:dev
+$ mvn clean compilequarkus:dev
 [INFO] Scanning for projects...
 [INFO]
 [INFO] -----------------------< org.acme:greeting-app >------------------------

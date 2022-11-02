@@ -2278,7 +2278,7 @@ Otherwise, Quarkus attempts to monitor the extension classes and this may result
 
 [source,bash]
 ----
-./mvnw compile quarkus:dev -DnoDeps
+./mvnw quarkus:dev -DnoDeps
 ----
 
 ==== Indexer does not include your external dependency

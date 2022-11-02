@@ -4,6 +4,11 @@ import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.Matchers.emptyString;
 
+import javax.annotation.security.PermitAll;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -23,7 +28,7 @@ public class DenyAllJaxRsTest {
                     .addClasses(PermitAllResource.class, UnsecuredResource.class,
                             TestIdentityProvider.class,
                             TestIdentityController.class,
-                            UnsecuredSubResource.class)
+                            UnsecuredSubResource.class, HelloResource.class)
                     .addAsResource(new StringAsset("quarkus.security.jaxrs.deny-unannotated-endpoints = true\n"),
                             "application.properties"));
 
@@ -82,6 +87,16 @@ public class DenyAllJaxRsTest {
         assertStatus(path, 200, 200);
     }
 
+    @Test
+    public void testNonEndpointMethodAreNotDenied() {
+        // ensure io.quarkus.resteasy.test.security.DenyAllJaxRsTest.HelloResource.getHello is not secured with DenyAllInterceptor
+        given()
+                .get("/hello")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("hello"));
+    }
+
     private void assertStatus(String path, int status, int anonStatus) {
         given().auth().preemptive()
                 .basic("admin", "admin").get(path)
@@ -94,6 +109,21 @@ public class DenyAllJaxRsTest {
         when().get(path)
                 .then()
                 .statusCode(anonStatus);
+
+    }
+
+    @Path("/hello")
+    public static class HelloResource {
+
+        @PermitAll
+        @GET
+        public String hello() {
+            return getHello();
+        }
+
+        public String getHello() {
+            return "hello";
+        }
 
     }
 

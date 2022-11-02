@@ -134,6 +134,7 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
         addGetAnnotation(methodCreator);
         addProducesAnnotation(methodCreator, APPLICATION_HAL_JSON);
+        addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
         addSecurityAnnotations(methodCreator, resourceProperties);
         addSortQueryParamValidatorAnnotation(methodCreator);
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
@@ -209,6 +210,7 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
         addGetAnnotation(methodCreator);
         addProducesAnnotation(methodCreator, APPLICATION_HAL_JSON);
+        addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
         addSecurityAnnotations(methodCreator, resourceProperties);
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
 

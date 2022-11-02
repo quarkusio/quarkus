@@ -322,6 +322,26 @@ Default is `false`.
 * `path` - operation path (this is appended to the resource base path). Default is an empty string.
 * `rolesAllowed` - List of the security roles permitted to access this operation. It needs a Quarkus security extension to be present, otherwise it will be ignored. Default is empty.
 
+== Securing endpoints
+
+REST Data with Panache will use the Security annotations within the package `javax.annotation.security` that are defined on your resource interfaces:
+
+[source,java]
+----
+
+import javax.annotation.security.DenyAll;
+import javax.annotation.security.RolesAllowed;
+
+@DenyAll
+@ResourceProperties
+public interface PeopleResource extends PanacheEntityResource<Person, Long> {
+    @RolesAllowed("superuser")
+    boolean delete(Long id);
+}
+----
+
+Additionally, if you are only interested in specifying the roles that are allowed to use the resources, the `@ResourceProperties` and `@MethodProperties` annotations have the field `rolesAllowed` to list the security roles permitted to access the resource or operation.
+
 == Query parameters
 
 REST Data with Panache supports the following query parameters with the generated resources.

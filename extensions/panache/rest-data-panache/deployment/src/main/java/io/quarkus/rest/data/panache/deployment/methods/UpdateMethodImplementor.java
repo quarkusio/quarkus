@@ -143,6 +143,7 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
         addProducesJsonAnnotation(methodCreator, resourceProperties);
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_UPDATE_METHOD_NAME));
         addOpenApiResponseAnnotation(methodCreator, Response.Status.CREATED, resourceMetadata.getEntityType());
         addSecurityAnnotations(methodCreator, resourceProperties);
         // Add parameter annotations

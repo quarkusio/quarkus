@@ -10,131 +10,84 @@ updates:
     labels:
       - area/dependencies
     allow:
-      - dependency-name: org.jboss:jboss-parent
-      - dependency-name: org.jboss.resteasy:*
-      - dependency-name: org.jboss.resteasy.microprofile:*
-      - dependency-name: org.jboss.resteasy.spring:*
-      - dependency-name: org.apache.activemq:*
-      - dependency-name: org.flywaydb:*
-      - dependency-name: org.liquibase:*
-      - dependency-name: org.liquibase.ext:*
-      - dependency-name: org.freemarker:freemarker
-      - dependency-name: io.fabric8:*
-      - dependency-name: org.apache.httpcomponents:*
-      - dependency-name: org.quartz-scheduler:quartz
+      - dependency-name: biz.paluch.logging:logstash-gelf
+      - dependency-name: com.amazonaws:*
       - dependency-name: com.cronutils:cron-utils
-      - dependency-name: org.eclipse:yasson
-      - dependency-name: org.yaml:snakeyaml
-      - dependency-name: com.google.guava:guava
-      - dependency-name: com.vackosar.gitflowincrementalbuilder:gitflow-incremental-builder
-      - dependency-name: org.jboss.logging:*
-      - dependency-name: org.jboss.logmanager:*
-      - dependency-name: org.apache.logging.log4j:*
-      - dependency-name: org.slf4j:*
-      - dependency-name: org.ow2.asm:*
-      - dependency-name: org.glassfish:jakarta-el
+      - dependency-name: com.fasterxml.jackson:jackson-bom
+      - dependency-name: com.fasterxml:classmate
+      - dependency-name: com.github.ben-manes.caffeine:caffeine
+      - dependency-name: com.github.javaparser:javaparser-core
+      - dependency-name: com.github.javaparser:javaparser-core
+      - dependency-name: com.github.tomakehurst:wiremock-jre8-standalone
+      - dependency-name: com.google.api.grpc:proto-google-common-protos
+      - dependency-name: com.google.cloud.functions:*
       - dependency-name: com.google.cloud.tools:jib-core
-      # Quarkus
+      - dependency-name: com.google.code.gson:gson
+      - dependency-name: com.google.errorprone:*
+      - dependency-name: com.google.guava:guava
+      - dependency-name: com.google.http-client:*
+      - dependency-name: com.h2database:h2
+      - dependency-name: com.ibm.db2:jcc
+      - dependency-name: com.microsoft.azure.functions:*
+      - dependency-name: com.nimbusds:nimbus-jose-jwt
+      - dependency-name: com.puppycrawl.tools:checkstyle
+      - dependency-name: com.sun.xml.bind:jaxb-impl
+      - dependency-name: com.thoughtworks.xstream:xstream
+      - dependency-name: com.unboundid:unboundid-ldapsdk
+      - dependency-name: com.vackosar.gitflowincrementalbuilder:gitflow-incremental-builder
+      - dependency-name: commons-codec:commons-codec
+      - dependency-name: commons-io:commons-io
+      - dependency-name: info.picocli:*
+      - dependency-name: io.agroal:*
+      - dependency-name: io.apicurio:*
+      - dependency-name: io.dekorate:servicebinding-annotations
+      - dependency-name: io.fabric8:*
+      - dependency-name: io.fabric8:docker-maven-plugin
+      - dependency-name: io.grpc:*
+      - dependency-name: io.jaegertracing:*
+      - dependency-name: io.micrometer:micrometer-bom
+      - dependency-name: io.opentelemetry.*:*
+      - dependency-name: io.opentelemetry:*
+      - dependency-name: io.opentracing.contrib:*
       - dependency-name: io.quarkus.gizmo:gizmo
       - dependency-name: io.quarkus.http:*
       - dependency-name: io.quarkus:quarkus-fs-util
       - dependency-name: io.quarkus:quarkus-spring-*-api
-      # Elytron
-      - dependency-name: org.wildfly.security:wildfly-elytron
-      - dependency-name: org.wildfly.security:wildfly-elytron-*
-      # JDBC Drivers
-      - dependency-name: org.postgresql:postgresql
-      - dependency-name: org.mariadb.jdbc:mariadb-java-client
-      - dependency-name: mysql:mysql-connector-java
-      - dependency-name: org.apache.derby:*
-      - dependency-name: com.ibm.db2:jcc
-      # Kafka
-      - dependency-name: org.apache.kafka:*
-      - dependency-name: io.strimzi:kafka-oauth-client
-      - dependency-name: com.nimbusds:nimbus-jose-jwt
-      - dependency-name: io.apicurio:*
-      # Scala
-      - dependency-name: org.scala-lang:*
-      - dependency-name: net.alchim31.maven:scala-maven-plugin
-      # SmallRye
-      - dependency-name: io.smallrye:smallrye-jwt
-      - dependency-name: io.smallrye:smallrye-health
-      - dependency-name: io.smallrye:smallrye-metrics
-      - dependency-name: io.smallrye:smallrye-open-api
-      - dependency-name: io.smallrye:smallrye-opentracing
-      - dependency-name: io.smallrye:smallrye-fault-tolerance
-      - dependency-name: io.smallrye:smallrye-context-propagation
+      - dependency-name: io.reactivex.rxjava2:rxjava
+      - dependency-name: io.rest-assured:*
       - dependency-name: io.smallrye.common:*
       - dependency-name: io.smallrye.config:smallrye-config
       - dependency-name: io.smallrye.reactive:mutiny
       - dependency-name: io.smallrye.reactive:smallrye-reactive-messaging
-      # Swagger-UI
-      - dependency-name: org.webjars:swagger-ui
-      # RX Java 2
-      - dependency-name: io.reactivex.rxjava2:rxjava
-      # Test dependencies
-      - dependency-name: io.rest-assured:*
-      - dependency-name: org.junit:junit-bom
-      - dependency-name: org.junit.jupiter:*
-      - dependency-name: org.assertj:assertj-core
-      - dependency-name: org.testcontainers:*
-      - dependency-name: org.mockito:*
-      - dependency-name: org.awaitility:awaitility
-      - dependency-name: com.thoughtworks.xstream:xstream
-      - dependency-name: org.jacoco:*
-      # Maven plugins
-      - dependency-name: io.fabric8:docker-maven-plugin
+      - dependency-name: io.smallrye:smallrye-context-propagation
+      - dependency-name: io.smallrye:smallrye-fault-tolerance
+      - dependency-name: io.smallrye:smallrye-health
+      - dependency-name: io.smallrye:smallrye-jwt
+      - dependency-name: io.smallrye:smallrye-metrics
+      - dependency-name: io.smallrye:smallrye-open-api
+      - dependency-name: io.smallrye:smallrye-opentracing
+      - dependency-name: io.strimzi:kafka-oauth-client
+      - dependency-name: jakarta.activation:jakarta.activation-api
+      - dependency-name: jakarta.xml.bind:jakarta.xml.bind-api
+      - dependency-name: mysql:mysql-connector-java
+      - dependency-name: net.alchim31.maven:scala-maven-plugin
       - dependency-name: net.revelc.code.formatter:formatter-maven-plugin
       - dependency-name: net.revelc.code:impsort-maven-plugin
-      # Narayana
-      - dependency-name: org.jboss.narayana.jta:*
-      - dependency-name: org.jboss.narayana.jts:*
-      - dependency-name: org.jboss.narayana.stm:*
-      # Agroal
-      - dependency-name: io.agroal:*
-      # Jandex
-      - dependency-name: org.jboss:jandex
-      - dependency-name: org.jboss.jandex:jandex-maven-plugin
-      # WireMock
-      - dependency-name: com.github.tomakehurst:wiremock-jre8-standalone
-      - dependency-name: uk.co.automatictester:wiremock-maven-plugin
-      # Picocli
-      - dependency-name: info.picocli:*
-      # Caffeine
-      - dependency-name: com.github.ben-manes.caffeine:caffeine
-      # Jackson
-      - dependency-name: com.fasterxml.jackson:jackson-bom
-      - dependency-name: com.fasterxml:classmate
-      # Yasson
-      - dependency-name: org.eclipse:yasson
-      # AWS
-      - dependency-name: com.amazonaws:*
-      # Azure
-      - dependency-name: com.microsoft.azure.functions:*
-      # Apache Commons
-      - dependency-name: commons-io:commons-io
-      - dependency-name: org.apache.commons:*
-      - dependency-name: commons-codec:commons-codec
-      # Micrometer
-      - dependency-name: io.micrometer:micrometer-bom
-      # BouncyCastle
-      - dependency-name: org.bouncycastle:*
-      # Logstash
-      - dependency-name: biz.paluch.logging:logstash-gelf
-      # MongoDB
-      - dependency-name: org.mongodb:*
-      # Avro
+      - dependency-name: org.aesh:readline
+      - dependency-name: org.apache.activemq:*
       - dependency-name: org.apache.avro:*
-      # gRPC
-      - dependency-name: io.grpc:*
-      - dependency-name: com.google.api.grpc:proto-google-common-protos
-      # jaeger
-      - dependency-name: io.jaegertracing:*
-      # Kotlin
-      - dependency-name: org.jetbrains.kotlin:*
-      - dependency-name: org.jetbrains.kotlinx:*
-      - dependency-name: org.jetbrains.dokka:*
-      # TCKs
+      - dependency-name: org.apache.commons:*
+      - dependency-name: org.apache.derby:*
+      - dependency-name: org.apache.httpcomponents:*
+      - dependency-name: org.apache.kafka:*
+      - dependency-name: org.apache.logging.log4j:*
+      - dependency-name: org.asciidoctor:asciidoctorj
+      - dependency-name: org.assertj:assertj-core
+      - dependency-name: org.awaitility:awaitility
+      - dependency-name: org.bouncycastle:*
+      - dependency-name: org.checkerframework:checker-qual
+      - dependency-name: org.commonmark:commonmark
+      - dependency-name: org.eclipse.angus:angus-activation
       - dependency-name: org.eclipse.microprofile.config:microprofile-config-tck
       - dependency-name: org.eclipse.microprofile.context-propagation:microprofile-context-propagation-tck
       - dependency-name: org.eclipse.microprofile.fault-tolerance:microprofile-fault-tolerance-tck
@@ -142,46 +95,59 @@ updates:
       - dependency-name: org.eclipse.microprofile.health:microprofile-health-tck
       - dependency-name: org.eclipse.microprofile.jwt:microprofile-jwt-auth-tck
       - dependency-name: org.eclipse.microprofile.metrics:microprofile-metrics-*-tck
-      - dependency-name: org.eclipse.microprofile.reactive.messaging:microprofile-reactive-messaging-tck
       - dependency-name: org.eclipse.microprofile.openapi:microprofile-openapi-tck
       - dependency-name: org.eclipse.microprofile.opentracing:microprofile-opentracing-tck*
+      - dependency-name: org.eclipse.microprofile.reactive.messaging:microprofile-reactive-messaging-tck
       - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
-      # Dev UI web dependencies
-      - dependency-name: org.webjars:bootstrap
-      - dependency-name: org.webjars:font-awesome
-      - dependency-name: org.webjars:jquery
-      - dependency-name: org.webjars:codemirror
-      - dependency-name: org.webjars.npm:mermaid
-      # Elasticsearch - we do not update the high level client
+      - dependency-name: org.eclipse.parsson:*
+      - dependency-name: org.eclipse:yasson
+      - dependency-name: org.eclipse:yasson
       - dependency-name: org.elasticsearch.client:elasticsearch-rest-client
       - dependency-name: org.elasticsearch.client:elasticsearch-rest-client-sniffer
-      # Others
-      - dependency-name: com.puppycrawl.tools:checkstyle
-      - dependency-name: com.google.cloud.functions:*
-      - dependency-name: com.google.code.gson:gson
-      - dependency-name: com.google.errorprone:*
-      - dependency-name: com.google.http-client:*
-      - dependency-name: io.dekorate:servicebinding-annotations
-      - dependency-name: io.opentelemetry:*
-      - dependency-name: io.opentelemetry.*:*
-      - dependency-name: io.opentracing.contrib:*
-      - dependency-name: org.aesh:readline
-      - dependency-name: org.checkerframework:checker-qual
-      - dependency-name: org.jboss.metadata:jboss-metadata-web
-      - dependency-name: com.unboundid:unboundid-ldapsdk
-      - dependency-name: org.commonmark:commonmark
-      - dependency-name: org.asciidoctor:asciidoctorj
-      - dependency-name: com.github.javaparser:javaparser-core
-      - dependency-name: org.jboss.jdeparser:jdeparser
-      - dependency-name: com.github.javaparser:javaparser-core
-      - dependency-name: com.h2database:h2
-      # Jakarta 9/10 preparation
-      - dependency-name: jakarta.activation:jakarta.activation-api
-      - dependency-name: org.eclipse.angus:angus-activation
+      - dependency-name: org.flywaydb:*
+      - dependency-name: org.freemarker:freemarker
       - dependency-name: org.glassfish.expressly:expressly
-      - dependency-name: com.sun.xml.bind:jaxb-impl
-      - dependency-name: jakarta.xml.bind:jakarta.xml.bind-api
-      - dependency-name: org.eclipse.parsson:*
+      - dependency-name: org.glassfish:jakarta-el
+      - dependency-name: org.jacoco:*
+      - dependency-name: org.jboss.jandex:jandex-maven-plugin
+      - dependency-name: org.jboss.jdeparser:jdeparser
+      - dependency-name: org.jboss.logging:*
+      - dependency-name: org.jboss.logmanager:*
+      - dependency-name: org.jboss.metadata:jboss-metadata-web
+      - dependency-name: org.jboss.narayana.jta:*
+      - dependency-name: org.jboss.narayana.jts:*
+      - dependency-name: org.jboss.narayana.stm:*
+      - dependency-name: org.jboss.resteasy.microprofile:*
+      - dependency-name: org.jboss.resteasy.spring:*
+      - dependency-name: org.jboss.resteasy:*
+      - dependency-name: org.jboss:jandex
+      - dependency-name: org.jboss:jboss-parent
+      - dependency-name: org.jetbrains.dokka:*
+      - dependency-name: org.jetbrains.kotlin:*
+      - dependency-name: org.jetbrains.kotlinx:*
+      - dependency-name: org.junit.jupiter:*
+      - dependency-name: org.junit:junit-bom
+      - dependency-name: org.liquibase.ext:*
+      - dependency-name: org.liquibase:*
+      - dependency-name: org.mariadb.jdbc:mariadb-java-client
+      - dependency-name: org.mockito:*
+      - dependency-name: org.mongodb:*
+      - dependency-name: org.ow2.asm:*
+      - dependency-name: org.postgresql:postgresql
+      - dependency-name: org.quartz-scheduler:quartz
+      - dependency-name: org.scala-lang:*
+      - dependency-name: org.slf4j:*
+      - dependency-name: org.testcontainers:*
+      - dependency-name: org.webjars.npm:mermaid
+      - dependency-name: org.webjars:bootstrap
+      - dependency-name: org.webjars:codemirror
+      - dependency-name: org.webjars:font-awesome
+      - dependency-name: org.webjars:jquery
+      - dependency-name: org.webjars:swagger-ui
+      - dependency-name: org.wildfly.security:wildfly-elytron
+      - dependency-name: org.wildfly.security:wildfly-elytron-*
+      - dependency-name: org.yaml:snakeyaml
+      - dependency-name: uk.co.automatictester:wiremock-maven-plugin
     ignore:
       # this one cannot be upgraded due to the usage of proxies in new versions
       # the proxy implements interfaces in a random order which causes issues

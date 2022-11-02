@@ -327,6 +327,10 @@ public class SubclassGenerator extends AbstractGenerator {
         int groupLimit = 30;
         MethodCreator initMetadataMethod = null;
 
+        // to avoid repeatedly looking for the exact same thing in the maps
+        Map<String, ResultHandle> chainHandles = new HashMap<>();
+        Map<String, ResultHandle> bindingsHandles = new HashMap<>();
+
         methodIdx = 1;
         for (MethodInfo method : interceptedOrDecoratedMethods) {
             if (initMetadataMethod == null || methodIdx >= (group * groupLimit)) {
@@ -338,7 +342,10 @@ public class SubclassGenerator extends AbstractGenerator {
                     constructor.invokeVirtualMethod(initMetadataMethod.getMethodDescriptor(), constructor.getThis(),
                             interceptorChainMap, bindingsMap);
                 }
-                initMetadataMethod = subclass.getMethodCreator("arc$initMetadata" + group++, void.class, Map.class, Map.class);
+                initMetadataMethod = subclass.getMethodCreator("arc$initMetadata" + group++, void.class, Map.class, Map.class)
+                        .setModifiers(ACC_PRIVATE);
+                chainHandles.clear();
+                bindingsHandles.clear();
             }
 
             MethodDescriptor methodDescriptor = MethodDescriptor.of(method);
@@ -348,11 +355,14 @@ public class SubclassGenerator extends AbstractGenerator {
             List<Type> parameters = method.parameterTypes();
 
             if (interception != null) {
+                final MethodCreator initMetadataMethodFinal = initMetadataMethod;
 
                 // 1. Interceptor chain
-                ResultHandle chainHandle = initMetadataMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                        initMetadataMethod.getMethodParam(0),
-                        initMetadataMethod.load(interceptorChainKeys.get(interception.interceptors)));
+                String interceptorChainKey = interceptorChainKeys.get(interception.interceptors);
+                ResultHandle chainHandle = chainHandles.computeIfAbsent(interceptorChainKey, ignored -> {
+                    return initMetadataMethodFinal.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
+                            initMetadataMethodFinal.getMethodParam(0), initMetadataMethodFinal.load(interceptorChainKey));
+                });
 
                 // 2. Method method = Reflections.findMethod(org.jboss.weld.arc.test.interceptors.SimpleBean.class,"foo",java.lang.String.class)
                 ResultHandle[] paramsHandles = new ResultHandle[3];
@@ -375,10 +385,12 @@ public class SubclassGenerator extends AbstractGenerator {
 
                 // 3. Interceptor bindings
                 // Note that we use a shared list if possible
-                ResultHandle bindingsHandle = initMetadataMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                        initMetadataMethod.getMethodParam(1),
-                        initMetadataMethod.load(bindingKeys
-                                .get(interception.bindings.stream().map(BindingKey::new).collect(Collectors.toList()))));
+                String bindingKey = bindingKeys.get(
+                        interception.bindings.stream().map(BindingKey::new).collect(Collectors.toList()));
+                ResultHandle bindingsHandle = bindingsHandles.computeIfAbsent(bindingKey, ignored -> {
+                    return initMetadataMethodFinal.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
+                            initMetadataMethodFinal.getMethodParam(1), initMetadataMethodFinal.load(bindingKey));
+                });
 
                 // Now create metadata for the given intercepted method
                 ResultHandle methodMetadataHandle = initMetadataMethod.newInstance(

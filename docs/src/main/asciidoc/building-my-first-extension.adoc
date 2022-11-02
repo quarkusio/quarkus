@@ -861,7 +861,7 @@ Run the application and notice the `Installed Features` list contains the `greet
 
 [source,shell,subs=attributes+]
 ----
-$ mvn clean compilequarkus:dev
+$ mvn quarkus:dev
 [INFO] Scanning for projects...
 [INFO]
 [INFO] -----------------------< org.acme:greeting-app >------------------------

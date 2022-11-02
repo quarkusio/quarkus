@@ -25,7 +25,7 @@ public class MultipartTest {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(FormData.class, Person.class, MultipartResource.class)
+                            .addClasses(FormData.class, Person.class, Views.class, MultipartResource.class)
                             .addAsResource(new StringAsset("quarkus.http.body.delete-uploaded-files-on-end=true\n"),
                                     "application.properties");
                 }

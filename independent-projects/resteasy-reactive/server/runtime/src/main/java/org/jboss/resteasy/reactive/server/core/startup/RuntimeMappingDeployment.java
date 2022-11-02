@@ -22,7 +22,7 @@ class RuntimeMappingDeployment {
     private final SortedMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> nullMethod;
 
     private String currentHttpMethod;
-    private List<RequestMapper.RequestPath<RuntimeResource>> currentMapperPerMethodTemplates;
+    private ArrayList<RequestMapper.RequestPath<RuntimeResource>> currentMapperPerMethodTemplates;
 
     private Map<String, RequestMapper<RuntimeResource>> classMapper;
     private int maxMethodTemplateNameCount = -1;

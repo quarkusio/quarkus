@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -176,8 +177,23 @@ public class StartupActionImpl implements StartupAction {
             Class<?> appClass = Class.forName(className, true, runtimeClassLoader);
             Method start = appClass.getMethod("main", String[].class);
             start.invoke(null, (Object) (args == null ? new String[0] : args));
-            Class<?> q = Class.forName(Quarkus.class.getName(), true, runtimeClassLoader);
-            q.getMethod("blockingExit").invoke(null);
+
+            CountDownLatch latch = new CountDownLatch(1);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Class<?> q = Class.forName(Quarkus.class.getName(), true, runtimeClassLoader);
+                        q.getMethod("blockingExit").invoke(null);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    } finally {
+                        latch.countDown();
+                    }
+                }
+            }).start();
+            latch.await();
+
             Object newApplication = getCurrentApplication.invoke(null);
             if (oldApplication == newApplication) {
                 //quarkus was not actually started by the main method

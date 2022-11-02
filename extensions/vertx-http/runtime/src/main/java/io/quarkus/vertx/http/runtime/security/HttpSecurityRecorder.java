@@ -70,9 +70,35 @@ public class HttpSecurityRecorder {
                 event.put(HttpAuthenticator.class.getName(), authenticator);
 
                 //register the default auth failure handler
-                //if proactive auth is used this is the only one
-                //if using lazy auth this can be modified downstream, to control authentication behaviour
-                event.put(QuarkusHttpUser.AUTH_FAILURE_HANDLER, new DefaultAuthFailureHandler());
+                if (proactiveAuthentication) {
+                    //if proactive auth is used this is the only one
+                    event.put(QuarkusHttpUser.AUTH_FAILURE_HANDLER, new DefaultAuthFailureHandler() {
+                        @Override
+                        protected void proceed(Throwable throwable) {
+
+                            if (event.failed()) {
+                                //default auth failure handler should never get called from route failure handlers
+                                //but if we get to this point bad things have happened,
+                                //so it is better to send a response than to hang
+                                event.end();
+                            } else {
+                                //failing event makes it possible to customize response via failure handlers
+                                //QuarkusErrorHandler will send response if no other failure handler did
+                                event.fail(throwable);
+                            }
+                        }
+                    });
+                } else {
+                    //if using lazy auth this can be modified downstream, to control authentication behaviour
+                    event.put(QuarkusHttpUser.AUTH_FAILURE_HANDLER, new DefaultAuthFailureHandler() {
+                        @Override
+                        protected void proceed(Throwable throwable) {
+                            //we can't fail event here as request processing has already begun (e.g. in RESTEasy Reactive)
+                            //and extensions may have their ways to handle failures
+                            event.end();
+                        }
+                    });
+                }
 
                 if (proactiveAuthentication) {
                     Uni<SecurityIdentity> potentialUser = authenticator.attemptAuthentication(event).memoize().indefinitely();
@@ -284,9 +310,9 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public static final class DefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {
+    public static abstract class DefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {
 
-        private DefaultAuthFailureHandler() {
+        protected DefaultAuthFailureHandler() {
         }
 
         @Override
@@ -294,11 +320,12 @@ public class HttpSecurityRecorder {
             throwable = extractRootCause(throwable);
             //auth failed
             if (throwable instanceof AuthenticationFailedException) {
+                AuthenticationFailedException authenticationFailedException = (AuthenticationFailedException) throwable;
                 getAuthenticator(event).sendChallenge(event).subscribe().with(new Consumer<Boolean>() {
                     @Override
                     public void accept(Boolean aBoolean) {
                         if (!event.response().ended()) {
-                            event.response().end();
+                            proceed(authenticationFailedException);
                         }
                     }
                 }, new Consumer<Throwable>() {
@@ -310,18 +337,20 @@ public class HttpSecurityRecorder {
             } else if (throwable instanceof AuthenticationCompletionException) {
                 log.debug("Authentication has failed, returning HTTP status 401");
                 event.response().setStatusCode(401);
-                event.response().end();
+                proceed(throwable);
             } else if (throwable instanceof AuthenticationRedirectException) {
                 AuthenticationRedirectException redirectEx = (AuthenticationRedirectException) throwable;
                 event.response().setStatusCode(redirectEx.getCode());
                 event.response().headers().set(HttpHeaders.LOCATION, redirectEx.getRedirectUri());
                 event.response().headers().set(HttpHeaders.CACHE_CONTROL, "no-store");
                 event.response().headers().set("Pragma", "no-cache");
-                event.response().end();
+                proceed(throwable);
             } else {
                 event.fail(throwable);
             }
         }
+
+        protected abstract void proceed(Throwable throwable);
 
         private static HttpAuthenticator getAuthenticator(RoutingContext event) {
             return event.get(HttpAuthenticator.class.getName());
@@ -339,4 +368,5 @@ public class HttpSecurityRecorder {
             return throwable;
         }
     }
+
 }

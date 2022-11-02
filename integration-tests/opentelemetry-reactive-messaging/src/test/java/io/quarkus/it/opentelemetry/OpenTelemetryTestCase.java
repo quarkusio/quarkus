@@ -3,6 +3,7 @@ package io.quarkus.it.opentelemetry;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URL;
 import java.time.Duration;
@@ -117,7 +118,8 @@ public class OpenTelemetryTestCase {
         Assertions.assertEquals("GET", spanData.get("attr_http.method"));
         Assertions.assertEquals("1.1", spanData.get("attr_http.flavor"));
         Assertions.assertEquals("/direct", spanData.get("attr_http.target"));
-        Assertions.assertEquals(url.getAuthority(), spanData.get("attr_http.host"));
+        assertEquals(url.getHost(), spanData.get("attr_net.host.name"));
+        assertEquals(url.getPort(), Integer.valueOf((String) spanData.get("attr_net.host.port")));
         Assertions.assertEquals("http", spanData.get("attr_http.scheme"));
         Assertions.assertEquals("200", spanData.get("attr_http.status_code"));
         Assertions.assertNotNull(spanData.get("attr_http.client_ip"));

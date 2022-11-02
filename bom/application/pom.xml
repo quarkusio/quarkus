@@ -24,8 +24,8 @@
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
-        <opentelemetry.version>1.18.0</opentelemetry.version>
-        <opentelemetry-alpha.version>1.18.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry.version>1.19.0</opentelemetry.version>
+        <opentelemetry-alpha.version>1.19.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.8.1</jaeger.version>
         <quarkus-http.version>4.1.9</quarkus-http.version>
         <micrometer.version>1.9.5</micrometer.version><!-- keep in sync with hdrhistogram -->
@@ -125,7 +125,7 @@
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>21.5.0.0</oracle-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
-        <db2-jdbc.version>11.5.7.0</db2-jdbc.version>
+        <db2-jdbc.version>11.5.8.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>4.5.1</rest-assured.version>
         <junit.jupiter.version>5.9.1</junit.jupiter.version>
@@ -185,7 +185,7 @@
         <jib-core.version>0.22.0</jib-core.version>
         <google-http-client.version>1.42.2</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
-        <picocli.version>4.6.3</picocli.version>
+        <picocli.version>4.7.0</picocli.version>
         <google-cloud-functions.version>1.0.4</google-cloud-functions.version>
         <commons-compress.version>1.21</commons-compress.version>
         <commons-text.version>1.10.0</commons-text.version>
@@ -4262,6 +4262,12 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>
+                <artifactId>jandex</artifactId>
+                <version>${jandex.version}</version>
+            </dependency>
+            <!-- this is a relocation to io.smallrye:jandex, for consumers who didn't move yet -->
+            <dependency>
+                <groupId>org.jboss</groupId>
                 <artifactId>jandex</artifactId>
                 <version>${jandex.version}</version>
             </dependency>

@@ -216,9 +216,7 @@ public class CounterBean {
 ** Programmatic lookup via `javax.enterprise.inject.Instance`
 ** Client proxies
 ** Injection point metadata
-* Scopes and contexts
-** `@Dependent`, `@ApplicationScoped`, `@Singleton`, `@RequestScoped` and `@SessionScoped`
-** Custom scopes and contexts
+* Scopes and contexts; see xref:cdi.adoc#bean-scope-available[here] for details
 * Interceptors
 ** Business method interceptors: `@AroundInvoke`
 ** Interceptors for lifecycle event callbacks: `@PostConstruct`, `@PreDestroy`, `@AroundConstruct`
@@ -1083,6 +1081,10 @@ In the development mode, two special endpoints are registered automatically to p
 
 NOTE: These endpoints are only available in the development mode, i.e. when you run your application via `mvn quarkus:dev` (or `./gradlew quarkusDev`).
 
+=== Monitoring Business Method Invocations and Events
+
+In the development mode, it is also possible to enable monitoring of business method invocations and fired events.
+Simply set the `quarkus.arc.dev-mode.monitoring-enabled` configuration property to `true` and explore the relevant Dev UI pages.
 
 [[arc-configuration-reference]]
 == ArC Configuration Reference

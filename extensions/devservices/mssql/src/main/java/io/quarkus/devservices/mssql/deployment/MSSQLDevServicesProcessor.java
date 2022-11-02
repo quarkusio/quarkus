@@ -19,6 +19,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerShutdownCloseable;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.runtime.LaunchMode;
 
 public class MSSQLDevServicesProcessor {
@@ -44,6 +45,8 @@ public class MSSQLDevServicesProcessor {
                 // Defining the database name and the username is not supported by this container yet
                 container.withPassword(effectivePassword)
                         .withReuse(true);
+                Labels.addDataSourceLabel(container, datasourceName);
+
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);
 

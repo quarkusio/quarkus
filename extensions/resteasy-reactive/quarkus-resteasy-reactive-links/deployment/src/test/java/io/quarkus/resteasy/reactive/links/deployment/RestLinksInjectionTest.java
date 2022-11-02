@@ -37,7 +37,9 @@ public class RestLinksInjectionTest {
                 Link.fromUri(recordsUrl).rel("list").build().toString(),
                 Link.fromUri(recordsWithoutLinksUrl).rel("list-without-links").build().toString(),
                 Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/1")).rel("self").build().toString(),
-                Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/first")).rel("get-by-slug").build().toString());
+                Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/first")).rel("get-by-slug").build().toString(),
+                Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/slugOrId/{slugOrId}")).rel("get-by-slug-or-id")
+                        .build("{slugOrId}").toString());
 
         List<String> secondRecordLinks = when().get(recordsUrl + "/2")
                 .thenReturn()
@@ -50,7 +52,9 @@ public class RestLinksInjectionTest {
                 Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/second"))
                         .rel("get-by-slug")
                         .build()
-                        .toString());
+                        .toString(),
+                Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/slugOrId/{slugOrId}")).rel("get-by-slug-or-id")
+                        .build("{slugOrId}").toString());
     }
 
     @Test
@@ -63,7 +67,9 @@ public class RestLinksInjectionTest {
                 Link.fromUri(recordsUrl).rel("list").build().toString(),
                 Link.fromUri(recordsWithoutLinksUrl).rel("list-without-links").build().toString(),
                 Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/1")).rel("self").build().toString(),
-                Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/first")).rel("get-by-slug").build().toString());
+                Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/first")).rel("get-by-slug").build().toString(),
+                Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/slugOrId/{slugOrId}")).rel("get-by-slug-or-id")
+                        .build("{slugOrId}").toString());
 
         List<String> secondRecordLinks = when().get(recordsUrl + "/second")
                 .thenReturn()
@@ -76,7 +82,9 @@ public class RestLinksInjectionTest {
                 Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/second"))
                         .rel("get-by-slug")
                         .build()
-                        .toString());
+                        .toString(),
+                Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/slugOrId/{slugOrId}")).rel("get-by-slug-or-id")
+                        .build("{slugOrId}").toString());
     }
 
     @Test

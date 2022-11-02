@@ -43,6 +43,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 public class DevServicesDatasourceProcessor {
 
     private static final Logger log = Logger.getLogger(DevServicesDatasourceProcessor.class);
+    private static final int DOCKER_PS_ID_LENGTH = 12;
 
     static volatile List<RunningDevService> databases;
 
@@ -316,8 +317,13 @@ public class DevServicesDatasourceProcessor {
                 setDataSourceProperties(devDebProperties, dbName, "password", datasource.getPassword());
             }
             compressor.close();
-            log.info("Dev Services for " + prettyName
-                    + " (" + defaultDbKind.get() + ") started.");
+            if (datasource.getId() == null) {
+                log.infof("Dev Services for %s (%s) started", prettyName, defaultDbKind.get());
+            } else {
+                log.infof("Dev Services for %s (%s) started - container ID is %s", prettyName, defaultDbKind.get(),
+                        datasource.getId().length() > DOCKER_PS_ID_LENGTH ? datasource.getId().substring(0,
+                                DOCKER_PS_ID_LENGTH) : datasource.getId());
+            }
 
             List<String> devservicesPrefixes = DataSourceUtil.dataSourcePropertyKeys(dbName, "devservices.");
             for (var name : ConfigProvider.getConfig().getPropertyNames()) {

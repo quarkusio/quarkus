@@ -18,7 +18,9 @@ import org.jboss.logging.Logger;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.runtime.TemplateHtmlBuilder;
+import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
@@ -79,11 +81,21 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                 event.response().setStatusCode(HttpResponseStatus.FORBIDDEN.code()).end();
                 return;
             }
-            if (event.failure() instanceof AuthenticationFailedException) {
-                //generally this should be handled elsewhere
-                //but if we get to this point bad things have happened
+
+            if (event.failure() instanceof AuthenticationFailedException
+                    || event.failure() instanceof AuthenticationCompletionException
+                    || event.failure() instanceof AuthenticationRedirectException) {
+
+                if (event.response().getStatusCode() == HttpResponseStatus.OK.code()) {
+                    //set 401 if status wasn't set upstream
+                    event.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code());
+                }
+
+                //when proactive security is enabled and this wasn't handled elsewhere, we expect event to
+                //end here as failing event makes it possible to customize response, however when proactive security is
+                //disabled, this should be handled elsewhere and if we get to this point bad things have happened,
                 //so it is better to send a response than to hang
-                event.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code()).end();
+                event.response().end();
                 return;
             }
         } catch (IllegalStateException e) {

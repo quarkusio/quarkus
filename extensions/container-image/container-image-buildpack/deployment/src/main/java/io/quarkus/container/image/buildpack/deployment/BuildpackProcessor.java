@@ -159,7 +159,7 @@ public class BuildpackProcessor {
         log.debug("Using source root of " + dirs.get(ProjectDirs.SOURCE));
         log.debug("Using project root of " + dirs.get(ProjectDirs.ROOT));
 
-        String targetImageName = containerImage.getImage().toString();
+        String targetImageName = containerImage.getImage();
         log.debug("Using Destination image of " + targetImageName);
 
         Map<String, String> envMap = new HashMap<>(buildpackConfig.builderEnv);
@@ -204,11 +204,13 @@ public class BuildpackProcessor {
 
         log.info("Buildpack build complete");
         if (containerImageConfig.isPushExplicitlyEnabled() || pushRequest.isPresent()) {
-            if (!containerImageConfig.registry.isPresent()) {
-                log.info("No container image registry was set, so 'docker.io' will be used");
-            }
+            var registry = containerImage.getRegistry()
+                    .orElseGet(() -> {
+                        log.info("No container image registry was set, so 'docker.io' will be used");
+                        return "docker.io";
+                    });
             AuthConfig authConfig = new AuthConfig();
-            authConfig.withRegistryAddress(containerImageConfig.registry.orElse("docker.io"));
+            authConfig.withRegistryAddress(registry);
             containerImageConfig.username.ifPresent(u -> authConfig.withUsername(u));
             containerImageConfig.password.ifPresent(p -> authConfig.withPassword(p));
 

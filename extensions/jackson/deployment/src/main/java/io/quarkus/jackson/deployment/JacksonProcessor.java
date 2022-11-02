@@ -213,8 +213,10 @@ public class JacksonProcessor {
             if (value != null) {
                 // Add the type-id-resolver class
                 reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, value.asClass().name().toString()));
-                // Add the whole hierarchy of the annotated class
-                addReflectiveHierarchyClass(resolverInstance.target().asClass().name(), reflectiveHierarchyClass);
+                if (resolverInstance.target().kind() == CLASS) {
+                    // Add the whole hierarchy of the annotated class
+                    addReflectiveHierarchyClass(resolverInstance.target().asClass().name(), reflectiveHierarchyClass);
+                }
             }
         }
 

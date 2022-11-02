@@ -61,7 +61,7 @@ public class RuntimeDeploymentManager {
     private final ThreadSetupAction threadSetupAction;
     private final String rootPath;
 
-    private List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
+    private ArrayList<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
 
     public RuntimeDeploymentManager(DeploymentInfo info,
             Supplier<Executor> executorSupplier,

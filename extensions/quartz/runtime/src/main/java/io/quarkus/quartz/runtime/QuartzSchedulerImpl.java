@@ -118,6 +118,23 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             forceStart = false;
         }
 
+        var simpleTriggerConfig = runtimeConfig.simpleTriggerConfig;
+        var cronTriggerConfig = runtimeConfig.cronTriggerConfig;
+        if (!QuartzMisfirePolicy.validCronValues().contains(cronTriggerConfig.misfirePolicyConfig.misfirePolicy)) {
+            throw new IllegalArgumentException(
+                    "Global cron trigger misfire policy configured with invalid option. Valid options are: "
+                            + QuartzMisfirePolicy.validCronValues().stream()
+                                    .map(QuartzMisfirePolicy::dashedName)
+                                    .collect(Collectors.joining(", ")));
+        }
+        if (!QuartzMisfirePolicy.validSimpleValues().contains(simpleTriggerConfig.misfirePolicyConfig.misfirePolicy)) {
+            throw new IllegalArgumentException(
+                    "Global simple trigger misfire policy configured with invalid option. Valid options are: "
+                            + QuartzMisfirePolicy.validSimpleValues().stream()
+                                    .map(QuartzMisfirePolicy::dashedName)
+                                    .collect(Collectors.joining(", ")));
+        }
+
         if (!enabled) {
             LOGGER.info("Quartz scheduler is disabled by config property and will not be started");
             this.scheduler = null;
@@ -172,8 +189,6 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                                 .usingJobData(INVOKER_KEY, method.getInvokerClassName())
                                 .requestRecovery();
                         ScheduleBuilder<?> scheduleBuilder;
-                        QuartzRuntimeConfig.QuartzMisfirePolicyConfig perJobConfig = runtimeConfig.misfirePolicyPerJobs
-                                .get(identity);
                         String cron = SchedulerUtils.lookUpPropertyValue(scheduled.cron());
                         if (!cron.isEmpty()) {
                             if (SchedulerUtils.isOff(cron)) {
@@ -195,33 +210,34 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                                 }
                             }
                             CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(cron);
-                            if (perJobConfig != null) {
-                                switch (perJobConfig.misfirePolicy) {
-                                    case SMART_POLICY:
-                                        // this is the default, doing nothing
-                                        break;
-                                    case IGNORE_MISFIRE_POLICY:
-                                        cronScheduleBuilder.withMisfireHandlingInstructionIgnoreMisfires();
-                                        break;
-                                    case FIRE_NOW:
-                                        cronScheduleBuilder.withMisfireHandlingInstructionFireAndProceed();
-                                        break;
-                                    case CRON_TRIGGER_DO_NOTHING:
-                                        cronScheduleBuilder.withMisfireHandlingInstructionDoNothing();
-                                        break;
-                                    case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_EXISTING_REPEAT_COUNT:
-                                    case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_REMAINING_REPEAT_COUNT:
-                                    case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_EXISTING_COUNT:
-                                    case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_REMAINING_COUNT:
-                                        throw new IllegalArgumentException("Cron job " + identity
-                                                + " configured with invalid misfire policy "
-                                                + perJobConfig.misfirePolicy.dashedName() +
-                                                "\nValid options are: "
-                                                + QuartzMisfirePolicy.validCronValues().stream()
-                                                        .map(QuartzMisfirePolicy::dashedName)
-                                                        .collect(Collectors.joining(", ")));
-                                }
+                            QuartzRuntimeConfig.QuartzMisfirePolicyConfig perJobConfig = runtimeConfig.misfirePolicyPerJobs
+                                    .getOrDefault(identity, cronTriggerConfig.misfirePolicyConfig);
+                            switch (perJobConfig.misfirePolicy) {
+                                case SMART_POLICY:
+                                    // this is the default, doing nothing
+                                    break;
+                                case IGNORE_MISFIRE_POLICY:
+                                    cronScheduleBuilder.withMisfireHandlingInstructionIgnoreMisfires();
+                                    break;
+                                case FIRE_NOW:
+                                    cronScheduleBuilder.withMisfireHandlingInstructionFireAndProceed();
+                                    break;
+                                case CRON_TRIGGER_DO_NOTHING:
+                                    cronScheduleBuilder.withMisfireHandlingInstructionDoNothing();
+                                    break;
+                                case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_EXISTING_REPEAT_COUNT:
+                                case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_REMAINING_REPEAT_COUNT:
+                                case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_EXISTING_COUNT:
+                                case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_REMAINING_COUNT:
+                                    throw new IllegalArgumentException("Cron job " + identity
+                                            + " configured with invalid misfire policy "
+                                            + perJobConfig.misfirePolicy.dashedName() +
+                                            "\nValid options are: "
+                                            + QuartzMisfirePolicy.validCronValues().stream()
+                                                    .map(QuartzMisfirePolicy::dashedName)
+                                                    .collect(Collectors.joining(", ")));
                             }
+
                             scheduleBuilder = cronScheduleBuilder;
                         } else if (!scheduled.every().isEmpty()) {
                             OptionalLong everyMillis = SchedulerUtils.parseEveryAsMillis(scheduled);
@@ -232,38 +248,38 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                             SimpleScheduleBuilder simpleScheduleBuilder = SimpleScheduleBuilder.simpleSchedule()
                                     .withIntervalInMilliseconds(everyMillis.getAsLong())
                                     .repeatForever();
-                            if (perJobConfig != null) {
-                                switch (perJobConfig.misfirePolicy) {
-                                    case SMART_POLICY:
-                                        // this is the default, doing nothing
-                                        break;
-                                    case IGNORE_MISFIRE_POLICY:
-                                        simpleScheduleBuilder.withMisfireHandlingInstructionIgnoreMisfires();
-                                        break;
-                                    case FIRE_NOW:
-                                        simpleScheduleBuilder.withMisfireHandlingInstructionFireNow();
-                                        break;
-                                    case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_EXISTING_REPEAT_COUNT:
-                                        simpleScheduleBuilder.withMisfireHandlingInstructionNowWithExistingCount();
-                                        break;
-                                    case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_REMAINING_REPEAT_COUNT:
-                                        simpleScheduleBuilder.withMisfireHandlingInstructionNowWithRemainingCount();
-                                        break;
-                                    case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_EXISTING_COUNT:
-                                        simpleScheduleBuilder.withMisfireHandlingInstructionNextWithExistingCount();
-                                        break;
-                                    case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_REMAINING_COUNT:
-                                        simpleScheduleBuilder.withMisfireHandlingInstructionNextWithRemainingCount();
-                                        break;
-                                    case CRON_TRIGGER_DO_NOTHING:
-                                        throw new IllegalArgumentException("Simple job " + identity
-                                                + " configured with invalid misfire policy "
-                                                + perJobConfig.misfirePolicy.dashedName() +
-                                                "\nValid options are: "
-                                                + QuartzMisfirePolicy.validSimpleValues().stream()
-                                                        .map(QuartzMisfirePolicy::dashedName)
-                                                        .collect(Collectors.joining(", ")));
-                                }
+                            QuartzRuntimeConfig.QuartzMisfirePolicyConfig perJobConfig = runtimeConfig.misfirePolicyPerJobs
+                                    .getOrDefault(identity, simpleTriggerConfig.misfirePolicyConfig);
+                            switch (perJobConfig.misfirePolicy) {
+                                case SMART_POLICY:
+                                    // this is the default, doing nothing
+                                    break;
+                                case IGNORE_MISFIRE_POLICY:
+                                    simpleScheduleBuilder.withMisfireHandlingInstructionIgnoreMisfires();
+                                    break;
+                                case FIRE_NOW:
+                                    simpleScheduleBuilder.withMisfireHandlingInstructionFireNow();
+                                    break;
+                                case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_EXISTING_REPEAT_COUNT:
+                                    simpleScheduleBuilder.withMisfireHandlingInstructionNowWithExistingCount();
+                                    break;
+                                case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_REMAINING_REPEAT_COUNT:
+                                    simpleScheduleBuilder.withMisfireHandlingInstructionNowWithRemainingCount();
+                                    break;
+                                case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_EXISTING_COUNT:
+                                    simpleScheduleBuilder.withMisfireHandlingInstructionNextWithExistingCount();
+                                    break;
+                                case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_REMAINING_COUNT:
+                                    simpleScheduleBuilder.withMisfireHandlingInstructionNextWithRemainingCount();
+                                    break;
+                                case CRON_TRIGGER_DO_NOTHING:
+                                    throw new IllegalArgumentException("Simple job " + identity
+                                            + " configured with invalid misfire policy "
+                                            + perJobConfig.misfirePolicy.dashedName() +
+                                            "\nValid options are: "
+                                            + QuartzMisfirePolicy.validSimpleValues().stream()
+                                                    .map(QuartzMisfirePolicy::dashedName)
+                                                    .collect(Collectors.joining(", ")));
                             }
                             scheduleBuilder = simpleScheduleBuilder;
                         } else {

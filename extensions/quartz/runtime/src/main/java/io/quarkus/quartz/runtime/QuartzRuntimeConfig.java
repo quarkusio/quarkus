@@ -59,6 +59,18 @@ public class QuartzRuntimeConfig {
     public Duration shutdownWaitTime;
 
     /**
+     * Simple trigger default configuration
+     */
+    @ConfigItem(name = "simple-trigger")
+    public TriggerConfig simpleTriggerConfig = TriggerConfig.defaultConfig();
+
+    /**
+     * Cron trigger default configuration
+     */
+    @ConfigItem(name = "cron-trigger")
+    public TriggerConfig cronTriggerConfig = TriggerConfig.defaultConfig();
+
+    /**
      * Misfire policy per job configuration.
      */
     @ConfigDocSection
@@ -82,6 +94,25 @@ public class QuartzRuntimeConfig {
          */
         @ConfigItem(defaultValue = "smart-policy", name = ConfigItem.PARENT)
         public QuartzMisfirePolicy misfirePolicy;
+
+        public static QuartzMisfirePolicyConfig defaultConfig() {
+            return new QuartzMisfirePolicyConfig();
+        }
+    }
+
+    @ConfigGroup
+    public static class TriggerConfig {
+
+        /**
+         * Misfire policy configuration
+         * Defaults to smart-policy
+         */
+        @ConfigItem(name = "misfire-policy")
+        public QuartzMisfirePolicyConfig misfirePolicyConfig = QuartzMisfirePolicyConfig.defaultConfig();
+
+        public static TriggerConfig defaultConfig() {
+            return new TriggerConfig();
+        }
     }
 
 }

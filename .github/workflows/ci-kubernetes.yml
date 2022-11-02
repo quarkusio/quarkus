@@ -57,7 +57,7 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up Minikube-Kubernetes
-        uses: manusa/actions-setup-minikube@v2.7.0
+        uses: manusa/actions-setup-minikube@v2.7.1
         with:
           minikube version: v1.16.0
           kubernetes version: ${{ matrix.kubernetes }}
@@ -113,7 +113,7 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up OpenShift
-        uses: manusa/actions-setup-openshift@v1.1.3
+        uses: manusa/actions-setup-openshift@v1.1.4
         with:
           oc version: ${{ matrix.openshift }}
           github token: ${{ secrets.GITHUB_TOKEN }}

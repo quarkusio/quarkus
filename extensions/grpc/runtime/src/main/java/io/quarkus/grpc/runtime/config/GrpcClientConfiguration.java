@@ -13,6 +13,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class GrpcClientConfiguration {
 
     public static final String DNS = "dns";
+    public static final String XDS = "xds";
 
     /**
      * Use new Vert.x gRPC client support.
@@ -20,6 +21,12 @@ public class GrpcClientConfiguration {
      */
     @ConfigItem(defaultValue = "false")
     public boolean useQuarkusGrpcClient;
+
+    /**
+     * Configure XDS usage, if enabled.
+     */
+    @ConfigItem
+    public ClientXds xds;
 
     /**
      * The gRPC service port.

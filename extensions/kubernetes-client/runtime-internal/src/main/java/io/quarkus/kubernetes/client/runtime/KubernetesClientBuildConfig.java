@@ -3,6 +3,7 @@ package io.quarkus.kubernetes.client.runtime;
 import java.time.Duration;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -162,9 +163,10 @@ public class KubernetesClientBuildConfig {
     public boolean generateRbac;
 
     /**
-     * Config for dev services
+     * Dev Services
      */
     @ConfigItem
+    @ConfigDocSection
     public KubernetesDevServicesBuildTimeConfig devservices;
 
 }

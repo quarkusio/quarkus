@@ -53,7 +53,7 @@ quarkus.kubernetes-client.trust-certs=false
 quarkus.kubernetes-client.namespace=default
 ----
 
-Note that the full list of properties is available in the https://github.com/quarkusio/quarkus/blob/main/extensions/kubernetes-client/runtime-internal/src/main/java/io/quarkus/kubernetes/client/runtime/KubernetesClientBuildConfig.java[KubernetesClientBuildConfig] class.
+Note that the full list of properties is available in the link:#quarkus-kubernetes-client_quarkus.kubernetes-client.devservices-dev-services[Dev Services section of the configuration reference].
 
 In dev mode and when running tests, xref:kubernetes-dev-services.adoc[Dev Services for Kubernetes] automatically starts a Kubernetes API server.
 

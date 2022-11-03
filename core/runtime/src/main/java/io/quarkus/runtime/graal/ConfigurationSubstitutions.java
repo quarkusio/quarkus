@@ -2,8 +2,8 @@ package io.quarkus.runtime.graal;
 
 import org.eclipse.microprofile.config.Config;
 
+import com.oracle.svm.core.AlwaysInline;
 import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.AlwaysInline;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 

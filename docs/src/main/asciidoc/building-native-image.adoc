@@ -653,10 +653,10 @@ Building fully statically linked binaries enables the usage of a https://hub.doc
 
 Sample multistage Dockerfile for building an image from `scratch`:
 
-[source, dockerfile]
+[source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.2-java11 AS build
+FROM quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:{graalvm-flavor} AS build
 USER root
 RUN microdnf install make gcc
 COPY --chown=quarkus:quarkus mvnw /code/mvnw

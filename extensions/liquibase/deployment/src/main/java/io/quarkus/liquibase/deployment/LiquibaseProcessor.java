@@ -111,6 +111,8 @@ class LiquibaseProcessor {
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
 
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem(liquibase.diff.compare.CompareControl.class.getName()));
+        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem(
+                liquibase.sqlgenerator.core.LockDatabaseChangeLogGenerator.class.getName()));
 
         reflective.produce(new ReflectiveClassBuildItem(false, true, false,
                 liquibase.change.AbstractSQLChange.class.getName(),
@@ -135,7 +137,8 @@ class LiquibaseProcessor {
                 liquibase.sql.visitor.PrependSqlVisitor.class.getName(),
                 liquibase.sql.visitor.ReplaceSqlVisitor.class.getName(),
                 liquibase.sql.visitor.AppendSqlVisitor.class.getName(),
-                liquibase.sql.visitor.RegExpReplaceSqlVisitor.class.getName()));
+                liquibase.sql.visitor.RegExpReplaceSqlVisitor.class.getName(),
+                liquibase.resource.PathHandlerFactory.class.getName()));
 
         reflective.produce(new ReflectiveClassBuildItem(false, false, true,
                 liquibase.change.ConstraintsConfig.class.getName()));

@@ -5,9 +5,7 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.function.BiConsumer;
 
-import org.crac.Context;
 import org.crac.Core;
-import org.crac.Resource;
 import org.jboss.logging.Logger;
 
 import io.quarkus.launcher.QuarkusLauncher;
@@ -196,19 +194,6 @@ public class Quarkus {
         }
     }
 
-    private static class QuarkusCracBootstrapResource implements Resource {
-        @Override
-        public void beforeCheckpoint(Context<? extends Resource> context) throws Exception {
-
-        }
-
-        @Override
-        public void afterRestore(Context<? extends Resource> context) throws Exception {
-            manualStart();
-            Logger.getLogger(Quarkus.class).info("Started Quarkus via CRAC afterRestore()");
-        }
-    }
-
     private static Application manualApp;
     private static final int MANUAL_BEGIN = 0;
     private static final int MANUAL_BEGIN_INITIALIZATION = 1;
@@ -223,8 +208,7 @@ public class Quarkus {
      * Manual initialization of Quarkus runtime in cases where
      * Quarkus does not have control over main() i.e. Lambda or Azure Functions.
      *
-     * This method will trigger static initialization for
-     * Quarkus and register a handler for CRAC.
+     * This method will trigger static initialization
      *
      */
     public static void manualInitialize() {
@@ -235,20 +219,26 @@ public class Quarkus {
             return;
         synchronized (manualLock) {
             tmpState = manualState;
-            if (tmpState > MANUAL_BEGIN)
-                return;
             if (tmpState == MANUAL_FAILURE)
                 throw new RuntimeException("Quarkus manual bootstrap failed");
+            if (tmpState > MANUAL_BEGIN)
+                return;
             manualState = MANUAL_BEGIN_INITIALIZATION;
         }
 
         try {
             // if Application instantiation is removed from manualInit()
-            // then Class.forName() should for class static initialization of ApplicationImpl
+            // then Class.forName() should be called for class static initialization of ApplicationImpl
             Class<?> appClass = Class.forName("io.quarkus.runner.ApplicationImpl");
             manualApp = (Application) appClass.getDeclaredConstructor().newInstance();
             manualState = MANUAL_INITIALIZED;
-            Core.getGlobalContext().register(new QuarkusCracBootstrapResource());
+            if (CracRecorder.enabled) {
+                // NOTE: I tried to do this within a recorder method, but the resource was never registered
+                // with Crac.  Ideally this would be registered within CracRecorder.register()
+                Core.getGlobalContext()
+                        .register(new CracRecorder.CracResource(CracRecorder.fullWarmup));
+            }
+            manualState = MANUAL_INITIALIZED;
         } catch (Exception e) {
             manualState = MANUAL_FAILURE;
             throw new RuntimeException("Quarkus manual initialization failed", e);

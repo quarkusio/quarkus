@@ -61,7 +61,6 @@ import io.quarkus.container.spi.ContainerImageBuilderBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
-import io.quarkus.container.util.PathsUtil;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -756,7 +755,6 @@ public class JibProcessor {
      */
     private void handleExtraFiles(OutputTargetBuildItem outputTarget, JibContainerBuilder jibContainerBuilder) {
         Path outputDirectory = outputTarget.getOutputDirectory();
-        PathsUtil.findMainSourcesRoot(outputTarget.getOutputDirectory());
         Map.Entry<Path, Path> mainSourcesRoot = findMainSourcesRoot(outputDirectory);
         if (mainSourcesRoot == null) { // this should never happen
             return;

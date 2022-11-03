@@ -30,6 +30,13 @@ public final class LiquibaseRuntimeConfig {
     }
 
     /**
+     * Flag to enable / disable Liquibase.
+     *
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled;
+
+    /**
      * Liquibase configuration for the default datasource.
      */
     @ConfigItem(name = ConfigItem.PARENT)

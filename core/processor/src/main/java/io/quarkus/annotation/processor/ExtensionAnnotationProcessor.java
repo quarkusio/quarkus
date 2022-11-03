@@ -370,6 +370,11 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                     allTypesResolvable = false;
                 } else {
                     if (isAnnotationPresent(parameterTypeElement, Constants.ANNOTATION_RECORDER)) {
+                        if (parameterTypeElement.getModifiers().contains(Modifier.FINAL)) {
+                            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                                    "Class '" + parameterTypeElement.getQualifiedName()
+                                            + "' is annotated with @Recorder and therefore cannot be made as a final class.");
+                        }
                         hasRecorder = true;
                         break;
                     }

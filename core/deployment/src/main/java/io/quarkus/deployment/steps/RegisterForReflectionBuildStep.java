@@ -50,7 +50,7 @@ public class RegisterForReflectionBuildStep {
             boolean serialization = i.value("serialization") != null && i.value("serialization").asBoolean();
 
             AnnotationValue targetsValue = i.value("targets");
-            AnnotationValue registerFullHierarchyVaue = i.value("registerFullHierarchy");
+            AnnotationValue registerFullHierarchyValue = i.value("registerFullHierarchy");
             AnnotationValue classNamesValue = i.value("classNames");
             AnnotationValue lambdaCapturingTypesValue = i.value("lambdaCapturingTypes");
 
@@ -64,7 +64,7 @@ public class RegisterForReflectionBuildStep {
             if (targetsValue == null && classNamesValue == null) {
                 ClassInfo classInfo = i.target().asClass();
                 registerClass(classLoader, classInfo.name().toString(), methods, fields, ignoreNested, serialization,
-                        reflectiveClass, reflectiveClassHierarchy, processedReflectiveHierarchies, registerFullHierarchyVaue,
+                        reflectiveClass, reflectiveClassHierarchy, processedReflectiveHierarchies, registerFullHierarchyValue,
                         builder);
                 continue;
             }
@@ -74,7 +74,7 @@ public class RegisterForReflectionBuildStep {
                 for (Type type : targets) {
                     registerClass(classLoader, type.name().toString(), methods, fields, ignoreNested, serialization,
                             reflectiveClass, reflectiveClassHierarchy, processedReflectiveHierarchies,
-                            registerFullHierarchyVaue, builder);
+                            registerFullHierarchyValue, builder);
                 }
             }
 
@@ -82,7 +82,7 @@ public class RegisterForReflectionBuildStep {
                 String[] classNames = classNamesValue.asStringArray();
                 for (String className : classNames) {
                     registerClass(classLoader, className, methods, fields, ignoreNested, serialization, reflectiveClass,
-                            reflectiveClassHierarchy, processedReflectiveHierarchies, registerFullHierarchyVaue, builder);
+                            reflectiveClassHierarchy, processedReflectiveHierarchies, registerFullHierarchyValue, builder);
                 }
             }
         }
@@ -93,18 +93,18 @@ public class RegisterForReflectionBuildStep {
      *
      * @param reflectiveClassHierarchy
      * @param processedReflectiveHierarchies
-     * @param registerFullHierarchyVaue
+     * @param registerFullHierarchyValue
      * @param builder
      */
     private void registerClass(ClassLoader classLoader, String className, boolean methods, boolean fields,
             boolean ignoreNested, boolean serialization, final BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClassHierarchy, Set<DotName> processedReflectiveHierarchies,
-            AnnotationValue registerFullHierarchyVaue, Builder builder) {
+            AnnotationValue registerFullHierarchyValue, Builder builder) {
         reflectiveClass.produce(serialization ? ReflectiveClassBuildItem.serializationClass(className)
                 : new ReflectiveClassBuildItem(methods, fields, className));
 
         //Search all class hierarchy, fields and methods in order to register its classes for reflection
-        if (registerFullHierarchyVaue != null && registerFullHierarchyVaue.asBoolean()) {
+        if (registerFullHierarchyValue != null && registerFullHierarchyValue.asBoolean()) {
             registerClassDependencies(reflectiveClassHierarchy, classLoader, processedReflectiveHierarchies, methods, builder,
                     className);
         }
@@ -117,7 +117,7 @@ public class RegisterForReflectionBuildStep {
             Class<?>[] declaredClasses = classLoader.loadClass(className).getDeclaredClasses();
             for (Class<?> clazz : declaredClasses) {
                 registerClass(classLoader, clazz.getName(), methods, fields, false, serialization, reflectiveClass,
-                        reflectiveClassHierarchy, processedReflectiveHierarchies, registerFullHierarchyVaue, builder);
+                        reflectiveClassHierarchy, processedReflectiveHierarchies, registerFullHierarchyValue, builder);
             }
         } catch (ClassNotFoundException e) {
             log.warnf(e, "Failed to load Class %s", className);

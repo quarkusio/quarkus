@@ -33,7 +33,13 @@ public class MicroProfileRestClientResponseFilter implements ClientResponseFilte
                 RestClientRequestContext restClientContext = ((ClientRequestContextImpl) requestContext)
                         .getRestClientRequestContext();
                 ResponseImpl response = ClientResponseCompleteRestHandler.mapToResponse(restClientContext, false);
-                Throwable throwable = exceptionMapper.toThrowable(response);
+                Throwable throwable;
+                if (exceptionMapper instanceof ResteasyReactiveResponseExceptionMapper) {
+                    throwable = ((ResteasyReactiveResponseExceptionMapper) exceptionMapper).toThrowable(response,
+                            restClientContext);
+                } else {
+                    throwable = exceptionMapper.toThrowable(response);
+                }
                 if (throwable != null) {
                     throw new UnwrappableException(throwable);
                 }

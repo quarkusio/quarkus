@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -31,6 +32,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -51,6 +53,8 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuil
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.liquibase.LiquibaseDataSource;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.liquibase.runtime.LiquibaseBuildTimeConfig;
@@ -283,14 +287,25 @@ class LiquibaseProcessor {
     ServiceStartBuildItem startLiquibase(LiquibaseRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
-        // will actually run the actions at runtime
-        recorder.doStartActions();
 
+        recorder.doStartActions();
         // once we are done running the migrations, we produce a build item indicating that the
         // schema is "ready"
         schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(getDataSourceNames(jdbcDataSourceBuildItems)));
 
         return new ServiceStartBuildItem("liquibase");
+    }
+
+    @BuildStep
+    void configureKubernetes(ContainerImageInfoBuildItem imageInfo,
+            BuildProducer<KubernetesInitContainerBuildItem> initContainers, BuildProducer<KubernetesEnvBuildItem> env) {
+        initContainers.produce(KubernetesInitContainerBuildItem.create("liquibase")
+                .withImage(imageInfo.getImage())
+                .withEnvVars(Map.of("QUARKUS_LIQUIBASE_RUN_AND_EXIT", "true", "QUARKUS_LIQUIBASE_ENABLED", "true"))
+                .withInheritEnvVars(true)
+                .withInheritMounts(true));
+
+        env.produce(KubernetesEnvBuildItem.createSimpleVar("QUARKUS_LIQUIBASE_ENABLED", "false", null));
     }
 
     private Set<String> getDataSourceNames(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {

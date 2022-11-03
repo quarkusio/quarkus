@@ -38,6 +38,7 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -60,6 +61,9 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
 import io.quarkus.flyway.runtime.FlywayRecorder;
+import io.quarkus.flyway.runtime.FlywayRuntimeConfig;
+import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.runtime.util.ClassPathUtils;
 
 class FlywayProcessor {
@@ -204,9 +208,10 @@ class FlywayProcessor {
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     public ServiceStartBuildItem startActions(FlywayRecorder recorder,
+            FlywayRuntimeConfig config,
             BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem,
             MigrationStateBuildItem migrationsBuildItem) {
-        // will actually run the actions at runtime
+
         recorder.doStartActions();
 
         // once we are done running the migrations, we produce a build item indicating that the
@@ -214,6 +219,18 @@ class FlywayProcessor {
         schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(migrationsBuildItem.hasMigrations));
 
         return new ServiceStartBuildItem("flyway");
+    }
+
+    @BuildStep
+    void configureKubernetes(ContainerImageInfoBuildItem imageInfo,
+            BuildProducer<KubernetesInitContainerBuildItem> initContainers, BuildProducer<KubernetesEnvBuildItem> env) {
+        initContainers.produce(KubernetesInitContainerBuildItem.create("flyway")
+                .withImage(imageInfo.getImage())
+                .withEnvVars(Map.of("QUARKUS_FLYWAY_RUN_AND_EXIT", "true", "QUARKUS_FLYWAY_ENABLED", "true"))
+                .withInheritEnvVars(true)
+                .withInheritMounts(true));
+
+        env.produce(KubernetesEnvBuildItem.createSimpleVar("QUARKUS_FLYWAY_ENABLED", "false", null));
     }
 
     private Set<String> getDataSourceNames(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {

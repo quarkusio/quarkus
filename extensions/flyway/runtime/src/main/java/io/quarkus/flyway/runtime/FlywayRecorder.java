@@ -27,6 +27,12 @@ public class FlywayRecorder {
 
     static final List<FlywayContainer> FLYWAY_CONTAINERS = new ArrayList<>(2);
 
+    private final FlywayRuntimeConfig config;
+
+    public FlywayRecorder(FlywayRuntimeConfig config) {
+        this.config = config;
+    }
+
     public void setApplicationMigrationFiles(Collection<String> migrationFiles) {
         log.debugv("Setting the following application migration files: {0}", migrationFiles);
         QuarkusPathLocationScanner.setApplicationMigrationFiles(migrationFiles);
@@ -69,6 +75,9 @@ public class FlywayRecorder {
     }
 
     public void doStartActions() {
+        if (!config.enabled) {
+            return;
+        }
         for (FlywayContainer flywayContainer : FLYWAY_CONTAINERS) {
             if (flywayContainer.isCleanAtStart()) {
                 flywayContainer.getFlyway().clean();

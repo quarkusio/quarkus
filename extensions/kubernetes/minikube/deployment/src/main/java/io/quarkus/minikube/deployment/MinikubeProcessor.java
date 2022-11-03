@@ -34,6 +34,7 @@ import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
@@ -89,6 +90,7 @@ public class MinikubeProcessor {
             KubernetesConfig config,
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
+            List<KubernetesInitContainerBuildItem> initContainers,
             List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels,
             List<KubernetesEnvBuildItem> envs,
@@ -103,7 +105,8 @@ public class MinikubeProcessor {
             Optional<CustomProjectRootBuildItem> customProjectRoot) {
 
         return DevClusterHelper.createDecorators(MINIKUBE, applicationInfo, outputTarget, config, packageConfig,
-                metricsConfiguration, annotations, labels, envs, baseImage, image, command, ports, livenessPath, readinessPath,
+                metricsConfiguration, initContainers, annotations, labels, envs, baseImage, image, command, ports, livenessPath,
+                readinessPath,
                 roles, roleBindings, customProjectRoot);
     }
 }

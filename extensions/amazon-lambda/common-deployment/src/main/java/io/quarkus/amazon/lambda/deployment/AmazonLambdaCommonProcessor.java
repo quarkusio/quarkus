@@ -11,6 +11,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CracDefaultValueBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -21,6 +22,10 @@ import io.quarkus.runtime.LaunchMode;
 
 @SuppressWarnings("unchecked")
 public final class AmazonLambdaCommonProcessor {
+    @BuildStep
+    public CracDefaultValueBuildItem enableCracByDefault() {
+        return new CracDefaultValueBuildItem(true);
+    }
 
     @BuildStep(onlyIf = NativeSourcesBuild.class)
     void failForNativeSources(BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {

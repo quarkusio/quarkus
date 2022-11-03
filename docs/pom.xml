@@ -17,8 +17,8 @@
     <properties>
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
-        <graal-sdk.version-for-documentation>22.2</graal-sdk.version-for-documentation>
-        <mandrel.version-for-documentation>22.2</mandrel.version-for-documentation>
+        <graal-sdk.version-for-documentation>22.3</graal-sdk.version-for-documentation>
+        <mandrel.version-for-documentation>22.3</mandrel.version-for-documentation>
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <asciidoctorj-pdf.version>1.5.0-beta.8</asciidoctorj-pdf.version>

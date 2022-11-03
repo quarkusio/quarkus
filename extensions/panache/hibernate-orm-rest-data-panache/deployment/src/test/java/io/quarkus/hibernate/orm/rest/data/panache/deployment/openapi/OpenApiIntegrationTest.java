@@ -9,17 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.builder.Version;
-import io.quarkus.hibernate.orm.rest.data.panache.deployment.repository.AbstractEntity;
-import io.quarkus.hibernate.orm.rest.data.panache.deployment.repository.AbstractItem;
-import io.quarkus.hibernate.orm.rest.data.panache.deployment.repository.Collection;
-import io.quarkus.hibernate.orm.rest.data.panache.deployment.repository.CollectionsRepository;
-import io.quarkus.hibernate.orm.rest.data.panache.deployment.repository.CollectionsResource;
-import io.quarkus.hibernate.orm.rest.data.panache.deployment.repository.EmptyListItem;
-import io.quarkus.hibernate.orm.rest.data.panache.deployment.repository.EmptyListItemsRepository;
-import io.quarkus.hibernate.orm.rest.data.panache.deployment.repository.EmptyListItemsResource;
-import io.quarkus.hibernate.orm.rest.data.panache.deployment.repository.Item;
-import io.quarkus.hibernate.orm.rest.data.panache.deployment.repository.ItemsRepository;
-import io.quarkus.hibernate.orm.rest.data.panache.deployment.repository.ItemsResource;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusProdModeTest;
 import io.restassured.RestAssured;
@@ -73,7 +62,7 @@ class OpenApiIntegrationTest {
                         is(COLLECTIONS_SCHEMA_REF))
                 .body("paths.'/collections/{id}'.put.responses.'201'.content.'application/json'.schema.$ref",
                         is(COLLECTIONS_SCHEMA_REF))
-                .body("paths.'/collections/{id}'.put.security[0].SecurityScheme", Matchers.hasItem("user"))
+                .body("paths.'/collections/{id}'.put.security[0].SecurityScheme", Matchers.hasItem("superuser"))
                 .body("paths.'/collections/{id}'", Matchers.hasKey("delete"))
                 .body("paths.'/collections/{id}'.delete.responses", Matchers.hasKey("204"))
                 .body("paths.'/collections/{id}'.delete.security[0].SecurityScheme", Matchers.hasItem("admin"))

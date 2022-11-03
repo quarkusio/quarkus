@@ -6,6 +6,8 @@ import javax.enterprise.inject.Any;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.sql.DataSource;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.runtime.UnconfiguredDataSource;
 import io.quarkus.arc.Arc;
@@ -19,6 +21,14 @@ import liquibase.lockservice.LockServiceFactory;
 
 @Recorder
 public class LiquibaseRecorder {
+
+    private static final Logger log = Logger.getLogger(LiquibaseRecorder.class);
+
+    private final LiquibaseRuntimeConfig config;
+
+    public LiquibaseRecorder(LiquibaseRuntimeConfig config) {
+        this.config = config;
+    }
 
     public Supplier<LiquibaseFactory> liquibaseSupplier(String dataSourceName) {
         DataSource dataSource = DataSources.fromName(dataSourceName);
@@ -41,6 +51,10 @@ public class LiquibaseRecorder {
     }
 
     public void doStartActions() {
+        if (!config.enabled) {
+            return;
+        }
+
         try {
             InjectableInstance<LiquibaseFactory> liquibaseFactoryInstance = Arc.container()
                     .select(LiquibaseFactory.class, Any.Literal.INSTANCE);

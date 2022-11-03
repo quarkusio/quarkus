@@ -45,6 +45,7 @@ import io.quarkus.vertx.core.runtime.config.EventBusConfiguration;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
+import io.quarkus.vertx.runtime.VertxCurrentContextFactory;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -561,24 +562,15 @@ public class VertxCoreRecorder {
                 if (context != null && context != currentContext) {
                     // Only do context handling if it's non-null
                     ContextInternal vertxContext = (ContextInternal) context;
-                    // The request scope must not be propagated
-                    Object requestScope = null;
+                    // The CDI request context must not be propagated
                     ConcurrentMap<Object, Object> local = vertxContext.localContextData();
-                    for (Object k : local.keySet()) {
-                        if (k.getClass().getName()
-                                .equals("io.quarkus.vertx.runtime.VertxCurrentContextFactory$VertxCurrentContext")) {
-                            requestScope = k;
-                            break;
-                        }
-                    }
-                    if (requestScope != null) {
-                        // Duplicate the context, copy the data, remove the request scope
+                    if (local.containsKey(VertxCurrentContextFactory.LOCAL_KEY)) {
+                        // Duplicate the context, copy the data, remove the request context
                         vertxContext = vertxContext.duplicate();
                         vertxContext.localContextData().putAll(local);
-                        vertxContext.localContextData().remove(requestScope);
+                        vertxContext.localContextData().remove(VertxCurrentContextFactory.LOCAL_KEY);
                         VertxContextSafetyToggle.setContextSafe(vertxContext, true);
                     }
-
                     vertxContext.beginDispatch();
                     try {
                         task.run();

@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -42,6 +43,7 @@ import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
 import io.quarkus.vertx.core.runtime.config.ClusterConfiguration;
 import io.quarkus.vertx.core.runtime.config.EventBusConfiguration;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
+import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -558,7 +560,25 @@ public class VertxCoreRecorder {
                 ContextInternal currentContext = (ContextInternal) Vertx.currentContext();
                 if (context != null && context != currentContext) {
                     // Only do context handling if it's non-null
-                    final ContextInternal vertxContext = (ContextInternal) context;
+                    ContextInternal vertxContext = (ContextInternal) context;
+                    // The request scope must not be propagated
+                    Object requestScope = null;
+                    ConcurrentMap<Object, Object> local = vertxContext.localContextData();
+                    for (Object k : local.keySet()) {
+                        if (k.getClass().getName()
+                                .equals("io.quarkus.vertx.runtime.VertxCurrentContextFactory$VertxCurrentContext")) {
+                            requestScope = k;
+                            break;
+                        }
+                    }
+                    if (requestScope != null) {
+                        // Duplicate the context, copy the data, remove the request scope
+                        vertxContext = vertxContext.duplicate();
+                        vertxContext.localContextData().putAll(local);
+                        vertxContext.localContextData().remove(requestScope);
+                        VertxContextSafetyToggle.setContextSafe(vertxContext, true);
+                    }
+
                     vertxContext.beginDispatch();
                     try {
                         task.run();

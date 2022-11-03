@@ -14,6 +14,8 @@ import io.vertx.core.Vertx;
 
 public class VertxCurrentContextFactory implements CurrentContextFactory {
 
+    public static final String LOCAL_KEY = "io.quarkus.vertx.cdi-current-context";
+
     @Override
     public <T extends InjectableContext.ContextState> CurrentContext<T> create(Class<? extends Annotation> scope) {
         return new VertxCurrentContext<>();
@@ -27,7 +29,7 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
         public T get() {
             Context context = Vertx.currentContext();
             if (context != null && VertxContext.isDuplicatedContext(context)) {
-                return context.getLocal(this);
+                return context.getLocal(LOCAL_KEY);
             }
             return fallback.get();
         }
@@ -37,7 +39,7 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
             Context context = Vertx.currentContext();
             if (context != null && VertxContext.isDuplicatedContext(context)) {
                 VertxContextSafetyToggle.setContextSafe(context, true);
-                context.putLocal(this, state);
+                context.putLocal(LOCAL_KEY, state);
             } else {
                 fallback.set(state);
             }
@@ -48,7 +50,7 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
             Context context = Vertx.currentContext();
             if (context != null && VertxContext.isDuplicatedContext(context)) {
                 // NOOP - the DC should not be shared.
-                //                context.removeLocal(this);
+                // context.removeLocal(LOCAL_KEY);
             } else {
                 fallback.remove();
             }

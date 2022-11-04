@@ -2,15 +2,15 @@ package io.quarkus.cli.image;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 
 import io.quarkus.cli.build.BuildSystemRunner;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
+import picocli.CommandLine.ExitCode;
 
 @CommandLine.Command(name = "push", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Push a container image.", description = "%n"
         + "This command will build and push a container image for the project.", footer = "%n", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
-public class Push extends BaseImageCommand implements Callable<Integer> {
+public class Push extends BaseImageCommand {
 
     protected static final String QUARKUS_CONTAINER_IMAGE_EXTENSION = "io.quarkus:quarkus-container-image";
     private static final Map<BuildTool, String> ACTION_MAPPING = Map.of(BuildTool.MAVEN, "quarkus:image-push",
@@ -55,10 +55,14 @@ public class Push extends BaseImageCommand implements Callable<Integer> {
         try {
             populateImageConfiguration(propertiesOptions.properties);
             BuildSystemRunner runner = getRunner();
-
             String action = getAction().orElseThrow(
                     () -> new IllegalStateException("Unknown image push action for " + runner.getBuildTool().name()));
             BuildSystemRunner.BuildCommandArgs commandArgs = runner.prepareAction(action, buildOptions, runMode, params);
+            if (runMode.isDryRun()) {
+                System.out.println("Dry run option detected. Target command:");
+                System.out.println(commandArgs.showCommand());
+                return ExitCode.OK;
+            }
             return runner.run(commandArgs);
         } catch (Exception e) {
             return output.handleCommandException(e, "Unable to push image: " + e.getMessage());

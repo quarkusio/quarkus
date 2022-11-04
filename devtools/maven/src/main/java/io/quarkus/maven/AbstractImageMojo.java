@@ -26,10 +26,27 @@ public class AbstractImageMojo extends BuildMojo {
     @Parameter(defaultValue = "docker", property = "quarkus.container-image.builder")
     Builder builder = Builder.docker;
 
+    @Parameter(property = "quarkus.container-image.dry-run")
+    boolean dryRun;
+
     @Override
     protected boolean beforeExecute() throws MojoExecutionException {
         systemProperties.put("quarkus.container-image.builder", builder.name());
         return super.beforeExecute();
+    }
+
+    @Override
+    protected void doExecute() throws MojoExecutionException {
+        if (dryRun) {
+            getLog().info("Container image confiugration:");
+            systemProperties.entrySet().stream()
+                    .filter(e -> e.getKey().contains("quarkus.container-image"))
+                    .forEach(e -> {
+                        getLog().info(" - " + e.getKey() + ": " + e.getValue());
+                    });
+        } else {
+            super.doExecute();
+        }
     }
 
     @Override

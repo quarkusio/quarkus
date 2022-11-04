@@ -1,10 +1,12 @@
 package io.quarkus.cli.image;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,29 +42,22 @@ public class CliImageMavenTest {
     @Test
     public void testUsage() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose");
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
 
-        // 1 image --help
-        result = CliDriver.execute(project, "image", "--help");
-        Assertions.assertTrue(result.getStdout().contains("Commands:"), "Should list subcommands\n");
-        Assertions.assertTrue(result.getStdout().contains("build"), "Should list build subcommand\n");
-        Assertions.assertTrue(result.getStdout().contains("push"), "Should list build subcommand\n");
+        // 1 image --dry-run
+        result = CliDriver.execute(project, "image", "--dry-run");
+        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        // 2 image build --dry-run
+        result = CliDriver.execute(project, "image", "build", "--dry-run");
+        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        result = CliDriver.execute(project, "image", "build", "--group=mygroup", "--name=myname", "--tag=1.0", "--dry-run");
+        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertTrue(result.getStdout().contains("-Dquarkus.container-image.group=mygroup"));
+        assertTrue(result.getStdout().contains("-Dquarkus.container-image.name=myname"));
+        assertTrue(result.getStdout().contains("-Dquarkus.container-image.tag=1.0"));
 
-        // 2 image build --help
-        result = CliDriver.execute(project, "image", "build", "--help");
-        Assertions.assertTrue(result.getStdout().contains("--group"), "Should have --group option\n");
-        Assertions.assertTrue(result.getStdout().contains("--name"), "Should have --name  option\n");
-        Assertions.assertTrue(result.getStdout().contains("--tag"), "Should have --tag  option\n");
-        Assertions.assertTrue(result.getStdout().contains("Commands:"), "Should list subcommands\n");
-        Assertions.assertTrue(result.getStdout().contains("docker"), "Should list docker subcommand\n");
-        Assertions.assertTrue(result.getStdout().contains("jib"), "Should list jib subcommand\n");
-        Assertions.assertTrue(result.getStdout().contains("openshift"), "Should list openshift subcommand\n");
-        Assertions.assertTrue(result.getStdout().contains("buildpack"), "Should list buildpack subcommand\n");
-
-        // 3 image push --help
+        // 3 image push --dry-run
         result = CliDriver.execute(project, "image", "push", "--help");
-        Assertions.assertTrue(result.getStdout().contains("--group"), "Should have --group option\n");
-        Assertions.assertTrue(result.getStdout().contains("--name"), "Should have --name  option\n");
-        Assertions.assertTrue(result.getStdout().contains("--tag"), "Should have --tag  option\n");
+        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
     }
 }

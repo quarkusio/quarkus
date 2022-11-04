@@ -1,6 +1,7 @@
 package io.quarkus.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -204,6 +205,9 @@ public class CliHelpTest {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "--help");
         result.echoSystemOut();
         assertThat(result.stdout).contains("Usage");
+        assertTrue(result.getStdout().contains("Commands:"), "Should list subcommands\n");
+        assertTrue(result.getStdout().contains("build"), "Should list build subcommand\n");
+        assertTrue(result.getStdout().contains("push"), "Should list build subcommand\n");
     }
 
     @Test
@@ -212,6 +216,12 @@ public class CliHelpTest {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "build", "--help");
         result.echoSystemOut();
         assertThat(result.stdout).contains("Usage");
+        assertTrue(result.getStdout().contains("Commands:"), "Should list subcommands\n");
+        assertTrue(result.getStdout().contains("docker"), "Should list docker subcommand\n");
+        assertTrue(result.getStdout().contains("jib"), "Should list jib subcommand\n");
+        assertTrue(result.getStdout().contains("openshift"), "Should list openshift subcommand\n");
+        assertTrue(result.getStdout().contains("buildpack"), "Should list buildpack subcommand\n");
+
     }
 
     @Test
@@ -244,6 +254,10 @@ public class CliHelpTest {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "push", "--help");
         result.echoSystemOut();
         assertThat(result.stdout).contains("Usage");
+        assertThat(result.stdout).contains("--registry");
+        assertThat(result.stdout).contains("--registry-username");
+        assertThat(result.stdout).contains("--registry-password");
+        assertThat(result.stdout).contains("--registry-password-stdin");
     }
 
     @Test
@@ -270,4 +284,11 @@ public class CliHelpTest {
         assertThat(result.stdout).contains("Usage");
     }
 
+    @Test
+    @Order(99)
+    public void testImagePushBuildpackHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "push", "buildpack", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+    }
 }

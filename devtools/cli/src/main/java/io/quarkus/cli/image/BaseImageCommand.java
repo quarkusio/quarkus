@@ -24,6 +24,7 @@ public class BaseImageCommand extends BaseBuildCommand implements Callable<Integ
     private static final String QUARKUS_CONTAINER_IMAGE_NAME = "quarkus.container-image.name";
     private static final String QUARKUS_CONTAINER_IMAGE_TAG = "quarkus.container-image.tag";
     protected static final String QUARKUS_CONTAINER_IMAGE_REGISTRY = "quarkus.container-image.registry";
+    protected static final String QUARKUS_CONTAINER_IMAGE_DRY_RUN = "quarkus.container-image.dry-run";
 
     protected static final Map<BuildTool, String> ACTION_MAPPING = Map.of(BuildTool.MAVEN, "quarkus:image-build",
             BuildTool.GRADLE, "imageBuild");
@@ -45,6 +46,9 @@ public class BaseImageCommand extends BaseBuildCommand implements Callable<Integ
         imageOptions.name.ifPresent(name -> properties.put(QUARKUS_CONTAINER_IMAGE_NAME, name));
         imageOptions.tag.ifPresent(tag -> properties.put(QUARKUS_CONTAINER_IMAGE_TAG, tag));
         imageOptions.registry.ifPresent(registry -> properties.put(QUARKUS_CONTAINER_IMAGE_REGISTRY, registry));
+        if (runMode.isDryRun()) {
+            properties.put(QUARKUS_CONTAINER_IMAGE_DRY_RUN, "true");
+        }
     }
 
     public Optional<String> getAction() {

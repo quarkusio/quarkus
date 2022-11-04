@@ -9,17 +9,18 @@ import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.ws.rs.client.ClientRequestContext;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.client.OidcClient;
+import io.quarkus.oidc.client.OidcClientConfig.Grant;
 import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.token.propagation.runtime.AbstractTokenRequestFilter;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.credential.TokenCredential;
 
 public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
-    private static final String EXCHANGE_SUBJECT_TOKEN = "subject_token";
-
     // note: We can't use constructor injection for these fields because they are registered by RESTEasy
     // which doesn't know about CDI at the point of registration
 
@@ -28,18 +29,32 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
 
     @Inject
     @ConfigProperty(name = "quarkus.oidc-token-propagation.client-name")
-    Optional<String> clientName;
+    Optional<String> oidcClientName;
     @Inject
     @ConfigProperty(name = "quarkus.oidc-token-propagation.exchange-token")
     boolean exchangeToken;
 
     OidcClient exchangeTokenClient;
+    String exchangeTokenProperty;
 
     @PostConstruct
     public void initExchangeTokenClient() {
         if (exchangeToken) {
             OidcClients clients = Arc.container().instance(OidcClients.class).get();
-            exchangeTokenClient = clientName.isPresent() ? clients.getClient(clientName.get()) : clients.getClient();
+            exchangeTokenClient = oidcClientName.isPresent() ? clients.getClient(oidcClientName.get()) : clients.getClient();
+            Grant.Type exchangeTokenGrantType = ConfigProvider.getConfig()
+                    .getValue(
+                            "quarkus.oidc-client." + (oidcClientName.isPresent() ? oidcClientName.get() + "." : "")
+                                    + "grant.type",
+                            Grant.Type.class);
+            if (exchangeTokenGrantType == Grant.Type.EXCHANGE) {
+                exchangeTokenProperty = "subject_token";
+            } else if (exchangeTokenGrantType == Grant.Type.JWT) {
+                exchangeTokenProperty = "assertion";
+            } else {
+                throw new ConfigurationException("Token exchange is required but OIDC client is configured "
+                        + "to use the " + exchangeTokenGrantType.getGrantType() + " grantType");
+            }
         }
     }
 
@@ -53,7 +68,7 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
     private String exchangeTokenIfNeeded(String token) {
         if (exchangeTokenClient != null) {
             // more dynamic parameters can be configured if required
-            return exchangeTokenClient.getTokens(Collections.singletonMap(EXCHANGE_SUBJECT_TOKEN, token))
+            return exchangeTokenClient.getTokens(Collections.singletonMap(exchangeTokenProperty, token))
                     .await().indefinitely().getAccessToken();
         } else {
             return token;

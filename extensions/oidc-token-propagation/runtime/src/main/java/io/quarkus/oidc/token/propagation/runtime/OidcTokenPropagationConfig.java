@@ -42,7 +42,9 @@ public class OidcTokenPropagationConfig {
     public boolean secureJsonWebToken;
 
     /**
-     * Exchange the current token with OpenId Connect Provider for a new token before propagating it.
+     * Exchange the current token with OpenId Connect Provider for a new token using either
+     * "urn:ietf:params:oauth:grant-type:token-exchange" or "urn:ietf:params:oauth:grant-type:jwt-bearer" token grant
+     * before propagating it.
      *
      * Note this property is injected into AccessTokenRequestFilter.
      */

@@ -5,9 +5,9 @@ import java.util.function.Function;
 /**
  * Enum that can be used to control the transaction behaviour in the presence or absence of an existing transaction.
  *
- * @see QuarkusTransaction#runner(TransactionSemantic)
+ * @see QuarkusTransaction#runner(TransactionSemantics)
  */
-public enum TransactionSemantic {
+public enum TransactionSemantics {
 
     /**
      * If a transaction is already associated with the current thread a {@link QuarkusTransactionException} will be thrown,
@@ -38,14 +38,14 @@ public enum TransactionSemantic {
     REQUIRE_NEW,
 
     /**
-     * If no transaction is active then this semantic is basically a no-op.
+     * If no transaction is active then these semantics are basically a no-op.
      * <p>
      * If a transaction is active then it is suspended, and resumed after the task is run.
      * <p>
-     * The exception handler will never be consulted when this semantic is in use, specifying both an exception handler and
-     * this semantic is considered an error.
+     * The exception handler will never be consulted when these semantics are in use, specifying both an exception handler and
+     * these semantics are considered an error.
      * <p>
-     * This semantic allows for code to easily be run outside the scope of a transaction.
+     * These semantics allows for code to easily be run outside the scope of a transaction.
      */
     SUSPEND_EXISTING
 

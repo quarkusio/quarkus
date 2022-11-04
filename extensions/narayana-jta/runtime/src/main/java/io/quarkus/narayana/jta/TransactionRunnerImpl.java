@@ -5,8 +5,8 @@ import java.util.function.Function;
 
 class TransactionRunnerImpl extends RunOptionsBase
         implements TransactionRunnerOptions, TransactionRunner {
-    TransactionRunnerImpl(TransactionSemantic semantic) {
-        setSemantic(semantic);
+    TransactionRunnerImpl(TransactionSemantics semantics) {
+        setSemantics(semantics);
     }
 
     @Override

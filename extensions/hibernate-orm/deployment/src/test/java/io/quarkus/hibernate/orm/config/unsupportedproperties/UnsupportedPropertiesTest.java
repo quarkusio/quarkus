@@ -29,7 +29,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider;
 import io.quarkus.narayana.jta.QuarkusTransaction;
-import io.quarkus.narayana.jta.TransactionSemantic;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class UnsupportedPropertiesTest {
@@ -115,7 +114,7 @@ public class UnsupportedPropertiesTest {
     public void testInsertsOrdered() {
         var listener = new BatchCountSpyingEventListener();
 
-        QuarkusTransaction.runner(TransactionSemantic.REQUIRE_NEW).run(() -> {
+        QuarkusTransaction.runner(TransactionSemantics.REQUIRE_NEW).run(() -> {
             em.unwrap(Session.class).addEventListeners(listener);
 
             ParentEntity parent1 = new ParentEntity(1);

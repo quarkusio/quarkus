@@ -24,7 +24,7 @@ class QuarkusTransactionImpl {
     private static UserTransaction cachedUserTransaction;
 
     public static <T> T call(RunOptionsBase options, Callable<T> task) {
-        switch (options.semantic) {
+        switch (options.semantics) {
             case REQUIRE_NEW:
                 return callRequireNew(options, task);
             case DISALLOW_EXISTING:
@@ -34,7 +34,7 @@ class QuarkusTransactionImpl {
             case SUSPEND_EXISTING:
                 return callSuspendExisting(options, task);
         }
-        throw new IllegalArgumentException("Unknown semantic");
+        throw new IllegalArgumentException("Unknown semantics");
     }
 
     private static <T> T callSuspendExisting(RunOptionsBase options, Callable<T> task) {

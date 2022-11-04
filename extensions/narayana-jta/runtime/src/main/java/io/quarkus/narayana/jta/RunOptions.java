@@ -6,7 +6,7 @@ import java.util.function.Function;
  * Builder interface to allow a transaction to be customized, including things like timeout and semantics when an existing
  * transaction is present.
  *
- * @deprecated Use {@link QuarkusTransaction#runner(TransactionSemantic)} instead.
+ * @deprecated Use {@link QuarkusTransaction#runner(TransactionSemantics)} instead.
  */
 @Deprecated
 public class RunOptions extends RunOptionsBase {
@@ -24,7 +24,7 @@ public class RunOptions extends RunOptionsBase {
     }
 
     /**
-     * Sets the transaction semantic that is used to determine the action to take if a transaction is already active.
+     * Sets the transaction semantics that is used to determine the action to take if a transaction is already active.
      * <p>
      *
      * @param semantic The semantic
@@ -32,21 +32,21 @@ public class RunOptions extends RunOptionsBase {
      */
     public RunOptions semantic(Semantic semantic) {
         if (semantic == null) {
-            setSemantic(null);
+            setSemantics(null);
             return this;
         }
         switch (semantic) {
             case DISALLOW_EXISTING:
-                setSemantic(TransactionSemantic.DISALLOW_EXISTING);
+                setSemantics(TransactionSemantics.DISALLOW_EXISTING);
                 break;
             case JOIN_EXISTING:
-                setSemantic(TransactionSemantic.JOIN_EXISTING);
+                setSemantics(TransactionSemantics.JOIN_EXISTING);
                 break;
             case REQUIRE_NEW:
-                setSemantic(TransactionSemantic.REQUIRE_NEW);
+                setSemantics(TransactionSemantics.REQUIRE_NEW);
                 break;
             case SUSPEND_EXISTING:
-                setSemantic(TransactionSemantic.SUSPEND_EXISTING);
+                setSemantics(TransactionSemantics.SUSPEND_EXISTING);
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported value: " + semantic);

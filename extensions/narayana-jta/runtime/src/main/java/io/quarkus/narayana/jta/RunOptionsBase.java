@@ -9,7 +9,7 @@ import java.util.function.Function;
  * or the other way around, results in signature conflicts in {@code exceptionHandler(Function)}.
  */
 class RunOptionsBase {
-    TransactionSemantic semantic = TransactionSemantic.REQUIRE_NEW;
+    TransactionSemantics semantics = TransactionSemantics.REQUIRE_NEW;
     int timeout = 0;
     Function<Throwable, TransactionExceptionResult> exceptionHandler;
 
@@ -21,8 +21,8 @@ class RunOptionsBase {
         return this;
     }
 
-    RunOptionsBase setSemantic(TransactionSemantic semantic) {
-        this.semantic = semantic;
+    RunOptionsBase setSemantics(TransactionSemantics semantics) {
+        this.semantics = semantics;
         return this;
     }
 

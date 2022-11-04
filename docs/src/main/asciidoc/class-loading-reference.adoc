@@ -12,13 +12,19 @@ This document explains the Quarkus class loading architecture. It is intended fo
 authors and advanced users who want to understand exactly how Quarkus works.
 
 The Quarkus class loading architecture is slightly different depending on the mode that
-the application is run in. When running a production application everything is loaded
-in the system ClassLoader, so it is a completely flat class path. This also applies to
-native image mode which does not really support multiple ClassLoaders, and is based on
-a normal production Quarkus application.
+the application is run in.
+
+When running a production application using the `fast-jar` package type
+(which is the default), almost all dependencies are loaded via the `io.quarkus.bootstrap.runner.RunnerClassLoader`
+which indexes class at build time, while a small set of dependencies is loaded from the system ClassLoader.
+
+When running a production application using the `legacy-jar` package type everything is loaded
+in the system ClassLoader, so it is a completely flat classpath.
+
+The flat classpath strategy is also used for GraalVM native images, since GraalVM does not really support multiple ClassLoaders.
 
 For all other use cases (e.g. tests, dev mode, and building the application) Quarkus
-uses the class loading architecture outlined here.
+uses the class loading architecture outlined in following section.
 
 
 == Bootstrapping Quarkus

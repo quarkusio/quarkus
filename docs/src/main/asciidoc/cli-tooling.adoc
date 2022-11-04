@@ -566,36 +566,36 @@ complete -F _complete_quarkus q
 ----
 
 
-=== Image building and pushing
+=== Container images
 
-The quarkus cli allows building container images without tampering with your project configuration (adding / removing container image extensions).
-To perform a build:
+The Quarkus CLI allows building container images without tampering with your project configuration (adding / removing container image extensions).
+To build the image for your project:
 
 [source, shell]
 ----
 quarkus image build
 ----
 
-The build command can be used directly, or a subcommand can be selected. The available subcommands are:
+The `image build` command can be used directly, or a subcommand can be selected. The available subcommands are:
 
 - docker
 - buildpacks
 - jib
 - openshift
 
-Each subcommand corresponds to an image building tool supported by quarkus and gives access to specific configuration options.
+Each subcommand corresponds to an image building tool supported by Quarkus and gives access to specific configuration options.
 
-For example to use `buildpacks` instead of `docker` and set the builder image of choice:
+For example, to use a https://buildpacks.io/[Cloud Native Buildpack] with a custom builder image, use the following:
 
 [source, shell]
 ----
-quarkus image build buildpack --builder-image <<your builder image>>
+quarkus image build buildpack --builder-image <your builder image>
 ----
 
 
 ==== Pushing
 
-Similar to `build` the `push` command works similarly. It allows allows for pushing images and exposes some basic options related to the target registry.
+The `image push` command is similar to `image build`, and surfaces some basic options required to push images to a target container registry.
 
 [source, shell]
 ----

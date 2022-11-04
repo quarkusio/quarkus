@@ -28,7 +28,7 @@ public class GelfLogHandlerTest {
         //we need to await for a certain time as logstash needs to create the index template,
         // then elasticsearch create the index
         // then some logs being indexed.
-        await().atMost(20, TimeUnit.SECONDS)
+        await().atMost(40, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             RestAssured.given().when().get("/gelf-log-handler").then().statusCode(204);

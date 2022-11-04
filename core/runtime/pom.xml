@@ -218,6 +218,9 @@
                         <parentFirstArtifact>au.com.dius.pact.core:matcher</parentFirstArtifact>
                         <parentFirstArtifact>au.com.dius.pact.consumer:junit5</parentFirstArtifact>
                         <parentFirstArtifact>au.com.dius.pact:consumer</parentFirstArtifact>
+
+                        <!-- Make use of byteman frictionless -->
+                        <parentFirstArtifact>org.jboss.byteman:byteman</parentFirstArtifact>
                     </parentFirstArtifacts>
                     <runnerParentFirstArtifacts>
                         <runnerParentFirstArtifact>org.graalvm.sdk:graal-sdk</runnerParentFirstArtifact>
@@ -235,6 +238,8 @@
                         <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-io</runnerParentFirstArtifact>
                         <!-- QuarkusEntryPoint needs org-crac class definition -->
                         <runnerParentFirstArtifact>io.github.crac:org-crac</runnerParentFirstArtifact>
+                        <!-- Make use of byteman frictionless -->
+                        <runnerParentFirstArtifact>org.jboss.byteman:byteman</runnerParentFirstArtifact>
                     </runnerParentFirstArtifacts>
                     <excludedArtifacts>
                         <excludedArtifact>io.smallrye:smallrye-config</excludedArtifact>

@@ -189,7 +189,7 @@ public class TransactionExample {
                     }
                     return RunOptions.ExceptionResult.ROLLBACK;
                 })
-                .semantic(RunOptions.Semantic.SUSPEND_EXISTING), () -> {
+                .semantic(RunOptions.Semantic.REQUIRE_NEW), () -> {
             //do work
             return 0;
         });

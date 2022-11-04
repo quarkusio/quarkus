@@ -91,7 +91,7 @@ public class HttpAuthorizer {
      *
      */
     public void checkPermission(RoutingContext routingContext) {
-        if (!controller.isAuthorizationEnabled()) {
+        if (!controller.isAuthorizationEnabled(routingContext)) {
             routingContext.next();
             return;
         }

@@ -18,6 +18,8 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -32,8 +34,10 @@ public class RegisterForReflectionBuildStep {
 
     private static final Logger log = Logger.getLogger(RegisterForReflectionBuildStep.class);
 
+    private static final DotName KOTLIN_METADATA_ANNOTATION = DotName.createSimple("kotlin.Metadata");
+
     @BuildStep
-    public void build(CombinedIndexBuildItem combinedIndexBuildItem,
+    public void build(CombinedIndexBuildItem combinedIndexBuildItem, Capabilities capabilities,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClassHierarchy,
             BuildProducer<LambdaCapturingTypeBuildItem> lambdaCapturingTypeProducer) {
@@ -50,7 +54,7 @@ public class RegisterForReflectionBuildStep {
             boolean serialization = i.value("serialization") != null && i.value("serialization").asBoolean();
 
             AnnotationValue targetsValue = i.value("targets");
-            AnnotationValue registerFullHierarchyVaue = i.value("registerFullHierarchy");
+            AnnotationValue registerFullHierarchyValue = i.value("registerFullHierarchy");
             AnnotationValue classNamesValue = i.value("classNames");
             AnnotationValue lambdaCapturingTypesValue = i.value("lambdaCapturingTypes");
 
@@ -63,8 +67,14 @@ public class RegisterForReflectionBuildStep {
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             if (targetsValue == null && classNamesValue == null) {
                 ClassInfo classInfo = i.target().asClass();
+                if (capabilities.isPresent(Capability.KOTLIN) && ignoreNested) {
+                    // for Kotlin classes, we need to register the nested classes as well because companion classes are very often necessary at runtime
+                    if (isKotlinClass(classInfo)) {
+                        ignoreNested = false;
+                    }
+                }
                 registerClass(classLoader, classInfo.name().toString(), methods, fields, ignoreNested, serialization,
-                        reflectiveClass, reflectiveClassHierarchy, processedReflectiveHierarchies, registerFullHierarchyVaue,
+                        reflectiveClass, reflectiveClassHierarchy, processedReflectiveHierarchies, registerFullHierarchyValue,
                         builder);
                 continue;
             }
@@ -74,7 +84,7 @@ public class RegisterForReflectionBuildStep {
                 for (Type type : targets) {
                     registerClass(classLoader, type.name().toString(), methods, fields, ignoreNested, serialization,
                             reflectiveClass, reflectiveClassHierarchy, processedReflectiveHierarchies,
-                            registerFullHierarchyVaue, builder);
+                            registerFullHierarchyValue, builder);
                 }
             }
 
@@ -82,10 +92,14 @@ public class RegisterForReflectionBuildStep {
                 String[] classNames = classNamesValue.asStringArray();
                 for (String className : classNames) {
                     registerClass(classLoader, className, methods, fields, ignoreNested, serialization, reflectiveClass,
-                            reflectiveClassHierarchy, processedReflectiveHierarchies, registerFullHierarchyVaue, builder);
+                            reflectiveClassHierarchy, processedReflectiveHierarchies, registerFullHierarchyValue, builder);
                 }
             }
         }
+    }
+
+    private static boolean isKotlinClass(ClassInfo classInfo) {
+        return classInfo.hasDeclaredAnnotation(KOTLIN_METADATA_ANNOTATION);
     }
 
     /**
@@ -93,18 +107,18 @@ public class RegisterForReflectionBuildStep {
      *
      * @param reflectiveClassHierarchy
      * @param processedReflectiveHierarchies
-     * @param registerFullHierarchyVaue
+     * @param registerFullHierarchyValue
      * @param builder
      */
     private void registerClass(ClassLoader classLoader, String className, boolean methods, boolean fields,
             boolean ignoreNested, boolean serialization, final BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClassHierarchy, Set<DotName> processedReflectiveHierarchies,
-            AnnotationValue registerFullHierarchyVaue, Builder builder) {
+            AnnotationValue registerFullHierarchyValue, Builder builder) {
         reflectiveClass.produce(serialization ? ReflectiveClassBuildItem.serializationClass(className)
                 : new ReflectiveClassBuildItem(methods, fields, className));
 
         //Search all class hierarchy, fields and methods in order to register its classes for reflection
-        if (registerFullHierarchyVaue != null && registerFullHierarchyVaue.asBoolean()) {
+        if (registerFullHierarchyValue != null && registerFullHierarchyValue.asBoolean()) {
             registerClassDependencies(reflectiveClassHierarchy, classLoader, processedReflectiveHierarchies, methods, builder,
                     className);
         }
@@ -117,7 +131,7 @@ public class RegisterForReflectionBuildStep {
             Class<?>[] declaredClasses = classLoader.loadClass(className).getDeclaredClasses();
             for (Class<?> clazz : declaredClasses) {
                 registerClass(classLoader, clazz.getName(), methods, fields, false, serialization, reflectiveClass,
-                        reflectiveClassHierarchy, processedReflectiveHierarchies, registerFullHierarchyVaue, builder);
+                        reflectiveClassHierarchy, processedReflectiveHierarchies, registerFullHierarchyValue, builder);
             }
         } catch (ClassNotFoundException e) {
             log.warnf(e, "Failed to load Class %s", className);

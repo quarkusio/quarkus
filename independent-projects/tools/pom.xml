@@ -52,7 +52,7 @@
         <jackson-bom.version>2.13.4.20221013</jackson-bom.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <junit.version>5.9.1</junit.version>
-        <commons-compress.version>1.21</commons-compress.version>
+        <commons-compress.version>1.22</commons-compress.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
         <maven-core.version>3.8.6</maven-core.version>
         <mockito.version>4.8.1</mockito.version>

@@ -1,7 +1,6 @@
 package io.quarkus.resteasy.reactive.runtime.mapping;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
@@ -36,7 +35,7 @@ public class RequestMapperTestCase {
     }
 
     RequestMapper<String> mapper(String... vals) {
-        List<RequestMapper.RequestPath<String>> list = new ArrayList<>();
+        ArrayList<RequestMapper.RequestPath<String>> list = new ArrayList<>();
         for (String i : vals) {
             list.add(new RequestMapper.RequestPath<>(false, new URITemplate(i, false), i));
         }

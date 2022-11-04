@@ -33,6 +33,8 @@ public interface Capability {
 
     String JACKSON = QUARKUS_PREFIX + "jackson";
 
+    String KOTLIN = QUARKUS_PREFIX + "kotlin";
+
     String JSONB = QUARKUS_PREFIX + "jsonb";
 
     String HAL = QUARKUS_PREFIX + "hal";

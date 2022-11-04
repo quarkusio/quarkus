@@ -131,7 +131,7 @@ public class DuplicatedContextTest {
 
         Uni.join().all(unis).andFailFast()
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                .await().atMost(Duration.ofSeconds(30));
+                .await().atMost(Duration.ofSeconds(60));
 
     }
 

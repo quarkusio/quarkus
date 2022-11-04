@@ -63,6 +63,10 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
                 if (customSerializationValue != null) {
                     ObjectWriter objectWriter = perMethodWriter.computeIfAbsent(methodId,
                             new MethodObjectWriterFunction(customSerializationValue, genericType, effectiveMapper));
+                    Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder.jsonViewForMethod(methodId);
+                    if (jsonViewValue != null) {
+                        objectWriter = objectWriter.withView(jsonViewValue);
+                    }
                     objectWriter.writeValue(stream, o);
                     return;
                 }

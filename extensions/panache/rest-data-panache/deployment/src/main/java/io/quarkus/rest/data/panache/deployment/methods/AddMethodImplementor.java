@@ -106,6 +106,7 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
 
         // Add method annotations
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
+        addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
         addPostAnnotation(methodCreator);
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
         addProducesJsonAnnotation(methodCreator, resourceProperties);

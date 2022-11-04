@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 
+import javax.annotation.Nullable;
+
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributesBuilder;
@@ -26,6 +28,8 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttribut
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.net.NetServerAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.net.NetServerAttributesGetter;
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpHeaders;
@@ -115,6 +119,7 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
         return serverBuilder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(serverAttributesExtractor))
                 .addAttributesExtractor(HttpServerAttributesExtractor.create(serverAttributesExtractor))
+                .addAttributesExtractor(NetServerAttributesExtractor.create(new HttpServerNetAttributesGetter()))
                 .addAttributesExtractor(new AdditionalServerAttributesExtractor())
                 .addContextCustomizer(HttpRouteHolder.get())
                 .buildServerInstrumenter(new HttpRequestTextMapGetter());
@@ -202,15 +207,6 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
         }
 
         @Override
-        public String serverName(final HttpRequest request) {
-            SocketAddress remoteAddress = request.remoteAddress();
-            if (remoteAddress != null) {
-                return remoteAddress.hostName();
-            }
-            return null;
-        }
-
-        @Override
         public String method(final HttpRequest request) {
             return request.method().name();
         }
@@ -267,6 +263,36 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
                 final HttpResponse httpResponse,
                 final Throwable error) {
 
+        }
+    }
+
+    private static class HttpServerNetAttributesGetter implements NetServerAttributesGetter<HttpRequest> {
+        @Nullable
+        @Override
+        public String transport(HttpRequest httpRequest) {
+            return null;
+        }
+
+        @Nullable
+        @Override
+        public String hostName(HttpRequest httpRequest) {
+            if (httpRequest instanceof HttpServerRequest) {
+                return VertxUtil.extractRemoteHostname((HttpServerRequest) httpRequest);
+            }
+            return null;
+        }
+
+        @Nullable
+        @Override
+        public Integer hostPort(HttpRequest httpRequest) {
+            if (httpRequest instanceof HttpServerRequest) {
+                Long remoteHostPort = VertxUtil.extractRemoteHostPort((HttpServerRequest) httpRequest);
+                if (remoteHostPort == null) {
+                    return null;
+                }
+                return remoteHostPort.intValue();
+            }
+            return null;
         }
     }
 

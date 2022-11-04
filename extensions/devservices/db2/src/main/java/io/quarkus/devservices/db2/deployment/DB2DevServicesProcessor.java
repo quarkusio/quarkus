@@ -21,6 +21,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerShutdownCloseable;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.runtime.LaunchMode;
 
 public class DB2DevServicesProcessor {
@@ -48,6 +49,8 @@ public class DB2DevServicesProcessor {
                         .withPassword(effectivePassword)
                         .withDatabaseName(effectiveDbName)
                         .withReuse(true);
+                Labels.addDataSourceLabel(container, datasourceName);
+
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);
                 container.start();

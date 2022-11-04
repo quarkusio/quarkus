@@ -16,7 +16,7 @@
     <properties>
         <bouncycastle.version>1.70</bouncycastle.version>
         <bouncycastle.fips.version>1.0.2.3</bouncycastle.fips.version>
-        <bouncycastle.tls.fips.version>1.0.12.3</bouncycastle.tls.fips.version>
+        <bouncycastle.tls.fips.version>1.0.14</bouncycastle.tls.fips.version>
         <findbugs.version>3.0.2</findbugs.version>
         <jandex.version>3.0.1</jandex.version>
         <resteasy.version>4.7.7.Final</resteasy.version>
@@ -24,8 +24,8 @@
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
-        <opentelemetry.version>1.18.0</opentelemetry.version>
-        <opentelemetry-alpha.version>1.18.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry.version>1.19.0</opentelemetry.version>
+        <opentelemetry-alpha.version>1.19.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.8.1</jaeger.version>
         <quarkus-http.version>4.1.9</quarkus-http.version>
         <micrometer.version>1.9.5</micrometer.version><!-- keep in sync with hdrhistogram -->
@@ -80,7 +80,7 @@
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <plexus-utils.version>3.3.0</plexus-utils.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
-        <graal-sdk.version>22.2.0</graal-sdk.version>
+        <graal-sdk.version>22.3.0</graal-sdk.version>
         <graal-svm.version>${graal-sdk.version}</graal-svm.version>
         <gizmo.version>1.4.0.Final</gizmo.version>
         <jackson-bom.version>2.13.4.20221013</jackson-bom.version>
@@ -97,7 +97,7 @@
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>1.16</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>8.4.3</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>8.5.0</elasticsearch-opensource-components.version>
         <!-- for the now proprietary components of Elasticsearch, we use the last Open Source version -->
         <elasticsearch-proprietary-components-keeping-old-opensource-version.version>7.10.2</elasticsearch-proprietary-components-keeping-old-opensource-version.version>
         <rxjava.version>2.2.21</rxjava.version>
@@ -125,7 +125,7 @@
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>21.5.0.0</oracle-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
-        <db2-jdbc.version>11.5.7.0</db2-jdbc.version>
+        <db2-jdbc.version>11.5.8.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>4.5.1</rest-assured.version>
         <junit.jupiter.version>5.9.1</junit.jupiter.version>
@@ -157,9 +157,9 @@
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.0.11</jboss-logmanager.version>
-        <flyway.version>9.6.0</flyway.version>
+        <flyway.version>9.7.0</flyway.version>
         <yasson.version>1.0.11</yasson.version>
-        <liquibase.version>4.16.1</liquibase.version>
+        <liquibase.version>4.17.2</liquibase.version>
         <snakeyaml.version>1.33</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>4.7.2</mongo-client.version>
@@ -180,14 +180,14 @@
         <quarkus-security.version>1.1.4.Final</quarkus-security.version>
         <keycloak.version>19.0.3</keycloak.version>
         <logstash-gelf.version>1.15.0</logstash-gelf.version>
-        <checker-qual.version>3.26.0</checker-qual.version>
+        <checker-qual.version>3.27.0</checker-qual.version>
         <error-prone-annotations.version>2.16</error-prone-annotations.version>
-        <jib-core.version>0.22.0</jib-core.version>
-        <google-http-client.version>1.42.2</google-http-client.version>
+        <jib-core.version>0.23.0</jib-core.version>
+        <google-http-client.version>1.42.3</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
-        <picocli.version>4.6.3</picocli.version>
+        <picocli.version>4.7.0</picocli.version>
         <google-cloud-functions.version>1.0.4</google-cloud-functions.version>
-        <commons-compress.version>1.21</commons-compress.version>
+        <commons-compress.version>1.22</commons-compress.version>
         <commons-text.version>1.10.0</commons-text.version>
         <gson.version>2.10</gson.version>
         <log4j2-jboss-logmanager.version>1.1.1.Final</log4j2-jboss-logmanager.version>
@@ -4591,6 +4591,11 @@
             <dependency>
                 <groupId>io.quarkus.resteasy.reactive</groupId>
                 <artifactId>resteasy-reactive-common-processor</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus.resteasy.reactive</groupId>
+                <artifactId>resteasy-reactive-common-types</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

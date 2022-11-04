@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.jboss.logging.Logger;
@@ -15,7 +16,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.ExpressionImpl.PartImpl;
 import io.quarkus.qute.Results.NotFound;
-import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.operators.AbstractUni;
 
 class EvaluatorImpl implements Evaluator {
 
@@ -218,12 +219,16 @@ class EvaluatorImpl implements Evaluator {
 
     @SuppressWarnings("unchecked")
     private static CompletionStage<Object> toCompletionStage(Object result) {
-        if (result instanceof CompletionStage) {
-            // If the result is a completion stage return it as is
+        // Note that we intentionally avoid "result instanceof Uni"; see https://github.com/RedHatPerf/type-pollution-agent
+        // Unfortunatelly, we can't get rid of "result instanceof CompletionStage" so we at least try to test CompletableFuture and CompletedStage first
+        if (result instanceof CompletableFuture) {
+            return (CompletableFuture<Object>) result;
+        } else if (result instanceof CompletedStage) {
+            return (CompletedStage<Object>) result;
+        } else if (result instanceof AbstractUni) {
+            return ((AbstractUni<Object>) result).subscribeAsCompletionStage();
+        } else if (result instanceof CompletionStage) {
             return (CompletionStage<Object>) result;
-        } else if (result instanceof Uni) {
-            // Subscribe to the Uni
-            return ((Uni<Object>) result).subscribeAsCompletionStage();
         }
         return CompletedStage.of(result);
     }

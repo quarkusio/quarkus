@@ -52,6 +52,15 @@ public class MisfirePolicyTest {
     }
 
     @Test
+    public void testDefaultCronMisfirePolicy() throws SchedulerException {
+        Trigger defaultMisfirePolicy = quartz
+                .getTrigger(new TriggerKey("default_cron_misfire_policy", Scheduler.class.getName()));
+        assertNotNull(defaultMisfirePolicy);
+        assertEquals(Trigger.MISFIRE_INSTRUCTION_SMART_POLICY, defaultMisfirePolicy.getMisfireInstruction());
+
+    }
+
+    @Test
     public void testIgnoreMisfirePolicy() throws SchedulerException {
         Trigger simpleIgnoreMisfirePolicyTrigger = quartz
                 .getTrigger(new TriggerKey("simple_ignore_misfire_policy", Scheduler.class.getName()));
@@ -103,6 +112,10 @@ public class MisfirePolicyTest {
 
         @Scheduled(identity = "default_misfire_policy", every = "1s")
         void defaultMisfirePolicy() {
+        }
+
+        @Scheduled(identity = "default_cron_misfire_policy", cron = "0/1 * * * * ?")
+        void defaultCronMisfirePolicy() {
         }
 
         @Scheduled(identity = "simple_ignore_misfire_policy", every = "1s")

@@ -1382,7 +1382,30 @@ Link: <http://localhost:8080/records/1>; rel="update"
 Link: <http://localhost:8080/records/1>; rel="delete"
 ----
 
-Finally, when calling the delete resource, you should not see any web links as the method `delete` is not annotated with the `@InjectRestLinks` annotation.
+The `get`, `update`, and `delete` methods use the path param "id" and as the field "id" exists in the entity type "Record", the web link properly populates the value "1" in the returned links. In addition to this, we can also generate web links with path params that do not match with any field of the entity type. For example, the following method is using a path param "text" and the entity Record does not have any field named "text":
+
+[source,java]
+----
+@Path("/records")
+public class RecordsResource {
+
+    // ...
+
+    @GET
+    @Path("/search/{text}")
+    @RestLink(rel = "search records by free text")
+    @InjectRestLinks
+    public List<Record> search(@PathParam("text") String text) { <4>
+        // ...
+    }
+
+    // ...
+}
+----
+
+The generated web link for this resource is `Link: <http://localhost:8080/search/{text}>; rel="search records by free text"`.
+
+Finally, when calling the `delete` resource, you should not see any web links as the method `delete` is not annotated with the `@InjectRestLinks` annotation.
 
 ==== Programmatically access to the web links registry
 

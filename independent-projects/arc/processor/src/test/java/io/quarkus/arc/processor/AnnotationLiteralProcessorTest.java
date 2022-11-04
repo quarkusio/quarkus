@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.lang.annotation.Retention;
@@ -17,6 +18,7 @@ import org.jboss.jandex.IndexView;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Opcodes;
 
+import io.quarkus.arc.AbstractAnnotationLiteral;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
@@ -309,6 +311,10 @@ public class AnnotationLiteralProcessorTest {
         Class<?> clazz = cl.loadClass(generatedClass);
         ComplexAnnotation annotation = (ComplexAnnotation) clazz.getMethod("get").invoke(null);
         verify(annotation);
+
+        assertTrue(annotation instanceof AbstractAnnotationLiteral);
+        AbstractAnnotationLiteral annotationLiteral = (AbstractAnnotationLiteral) annotation;
+        assertEquals(annotation.annotationType(), annotationLiteral.annotationType());
 
         // verify both ways, to ensure our generated classes interop correctly with `AnnotationLiteral`
         assertEquals(complexAnnotationRuntime(), annotation);

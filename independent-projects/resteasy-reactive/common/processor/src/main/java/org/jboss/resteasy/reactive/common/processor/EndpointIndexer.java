@@ -356,6 +356,86 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     protected List<ResourceMethod> createEndpoints(ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods, Set<String> existingClassNameBindings,
             Set<String> pathParameters, String resourceClassPath, boolean considerApplication) {
+
+        List<ResourceMethod> ret = new ArrayList<>();
+
+        List<FoundEndpoint> endpoints = collectEndpoints(currentClassInfo, actualEndpointInfo, seenMethods,
+                existingClassNameBindings, considerApplication, httpAnnotationToMethod, index, applicationScanningResult,
+                getAnnotationStore());
+        Map<String, BasicResourceClassInfo> basicResourceClassInfoMap = new HashMap<>();
+        for (FoundEndpoint endpoint : endpoints) {
+
+            // assemble method path
+            String methodPath = readStringValue(getAnnotationStore().getAnnotation(endpoint.methodInfo, PATH));
+            if (endpoint.httpMethod != null) {
+                // HTTP annotation method
+                validateHttpAnnotations(endpoint.methodInfo);
+                if (methodPath != null) {
+                    if (!methodPath.startsWith("/")) {
+                        methodPath = "/" + methodPath;
+                    }
+                    if (methodPath.endsWith("/")) {
+                        methodPath = handleTrailingSlash(methodPath);
+                    }
+                } else {
+                    methodPath = "";
+                }
+            } else {
+                // resource locator method
+                if (methodPath != null) {
+                    if (!methodPath.startsWith("/")) {
+                        methodPath = "/" + methodPath;
+                    }
+                    if (methodPath.endsWith("/")) {
+                        methodPath = methodPath.substring(0, methodPath.length() - 1);
+                    }
+                }
+            }
+
+            // create BasicResourceClassInfo and remember it
+            BasicResourceClassInfo basicResourceClassInfo = basicResourceClassInfoMap.get(endpoint.classInfo.name().toString());
+            if (basicResourceClassInfo == null) {
+                String[] classProduces = extractProducesConsumesValues(
+                        getAnnotationStore().getAnnotation(endpoint.classInfo, PRODUCES));
+                String[] classConsumes = extractProducesConsumesValues(
+                        getAnnotationStore().getAnnotation(endpoint.classInfo, CONSUMES));
+                basicResourceClassInfo = new BasicResourceClassInfo(resourceClassPath, classProduces,
+                        classConsumes, pathParameters, getStreamAnnotationValue(endpoint.classInfo));
+                basicResourceClassInfoMap.put(endpoint.classInfo.name().toString(), basicResourceClassInfo);
+            }
+
+            ResourceMethod method = createResourceMethod(endpoint.classInfo, actualEndpointInfo, basicResourceClassInfo,
+                    endpoint.classNameBindings, endpoint.httpMethod, endpoint.methodInfo, methodPath);
+            ret.add(method);
+        }
+
+        return ret;
+    }
+
+    /**
+     * Return endpoints defined directly on classInfo.
+     *
+     * @param classInfo resource class
+     * @return classInfo endpoint method info
+     */
+    public static Collection<MethodInfo> collectClassEndpoints(ClassInfo classInfo,
+            Map<DotName, String> httpAnnotationToMethod, IndexView index, ApplicationScanningResult applicationScanningResult) {
+        Collection<FoundEndpoint> endpoints = collectEndpoints(classInfo, classInfo, new HashSet<>(), new HashSet<>(), true,
+                httpAnnotationToMethod, index, applicationScanningResult, new AnnotationStore(null));
+        Collection<MethodInfo> ret = new HashSet<>();
+        for (FoundEndpoint endpoint : endpoints) {
+            if (endpoint.classInfo.equals(classInfo)) {
+                ret.add(endpoint.methodInfo);
+            }
+        }
+        return ret;
+    }
+
+    private static List<FoundEndpoint> collectEndpoints(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
+            Set<String> seenMethods, Set<String> existingClassNameBindings, boolean considerApplication,
+            Map<DotName, String> httpAnnotationToMethod, IndexView index, ApplicationScanningResult applicationScanningResult,
+            AnnotationStore annotationStore) {
+
         if (considerApplication && applicationScanningResult != null
                 && !applicationScanningResult.keepClass(actualEndpointInfo.name().toString())) {
             return Collections.emptyList();
@@ -366,15 +446,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return Collections.emptyList();
         }
 
-        List<ResourceMethod> ret = new ArrayList<>();
-        String[] classProduces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentClassInfo, PRODUCES));
-        String[] classConsumes = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentClassInfo, CONSUMES));
-
-        String classStreamElementType = getStreamAnnotationValue(currentClassInfo);
-
-        BasicResourceClassInfo basicResourceClassInfo = new BasicResourceClassInfo(resourceClassPath, classProduces,
-                classConsumes, pathParameters, classStreamElementType);
-
+        List<FoundEndpoint> ret = new ArrayList<>();
         Set<String> classNameBindings = NameBindingUtil.nameBindingNames(index, currentClassInfo);
         if (classNameBindings.isEmpty()) {
             classNameBindings = existingClassNameBindings;
@@ -383,39 +455,25 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         for (DotName httpMethod : httpAnnotationToMethod.keySet()) {
             List<MethodInfo> methods = currentClassInfo.methods();
             for (MethodInfo info : methods) {
-                AnnotationInstance annotation = getAnnotationStore().getAnnotation(info, httpMethod);
+                AnnotationInstance annotation = annotationStore.getAnnotation(info, httpMethod);
                 if (annotation != null) {
                     if (!hasProperModifiers(info)) {
                         continue;
                     }
-                    validateHttpAnnotations(info);
                     String descriptor = methodDescriptor(info);
                     if (seenMethods.contains(descriptor)) {
                         continue;
                     }
                     seenMethods.add(descriptor);
-                    String methodPath = readStringValue(getAnnotationStore().getAnnotation(info, PATH));
-                    if (methodPath != null) {
-                        if (!methodPath.startsWith("/")) {
-                            methodPath = "/" + methodPath;
-                        }
-                        if (methodPath.endsWith("/")) {
-                            methodPath = handleTrailingSlash(methodPath);
-                        }
-                    } else {
-                        methodPath = "";
-                    }
-                    ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
-                            basicResourceClassInfo, classNameBindings, httpMethod, info, methodPath);
-
-                    ret.add(method);
+                    ret.add(new FoundEndpoint(currentClassInfo, classNameBindings, info, httpMethod));
                 }
             }
         }
+
         //now resource locator methods
         List<MethodInfo> methods = currentClassInfo.methods();
         for (MethodInfo info : methods) {
-            AnnotationInstance annotation = getAnnotationStore().getAnnotation(info, PATH);
+            AnnotationInstance annotation = annotationStore.getAnnotation(info, PATH);
             if (annotation != null) {
                 if (!hasProperModifiers(info)) {
                     continue;
@@ -425,18 +483,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     continue;
                 }
                 seenMethods.add(descriptor);
-                String methodPath = readStringValue(annotation);
-                if (methodPath != null) {
-                    if (!methodPath.startsWith("/")) {
-                        methodPath = "/" + methodPath;
-                    }
-                    if (methodPath.endsWith("/")) {
-                        methodPath = methodPath.substring(0, methodPath.length() - 1);
-                    }
-                }
-                ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
-                        basicResourceClassInfo, classNameBindings, null, info, methodPath);
-                ret.add(method);
+                ret.add(new FoundEndpoint(currentClassInfo, classNameBindings, info, null));
             }
         }
 
@@ -444,16 +491,16 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         if (superClassName != null && !superClassName.equals(OBJECT)) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
-                ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods, classNameBindings,
-                        pathParameters, resourceClassPath, considerApplication));
+                ret.addAll(collectEndpoints(superClass, actualEndpointInfo, seenMethods, classNameBindings, considerApplication,
+                        httpAnnotationToMethod, index, applicationScanningResult, annotationStore));
             }
         }
         List<DotName> interfaces = currentClassInfo.interfaceNames();
         for (DotName i : interfaces) {
             ClassInfo superClass = index.getClassByName(i);
             if (superClass != null) {
-                ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods, classNameBindings,
-                        pathParameters, resourceClassPath, considerApplication));
+                ret.addAll(collectEndpoints(superClass, actualEndpointInfo, seenMethods, classNameBindings, considerApplication,
+                        httpAnnotationToMethod, index, applicationScanningResult, annotationStore));
             }
         }
         return ret;
@@ -481,7 +528,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
     }
 
-    private boolean hasProperModifiers(MethodInfo info) {
+    private static boolean hasProperModifiers(MethodInfo info) {
         if (isSynthetic(info.flags())) {
             log.debug("Method '" + info.name() + " of Resource class '" + info.declaringClass().name()
                     + "' is a synthetic method and will therefore be ignored");
@@ -500,7 +547,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return true;
     }
 
-    private boolean isSynthetic(int mod) {
+    private static boolean isSynthetic(int mod) {
         return (mod & 0x1000) != 0; //0x1000 == SYNTHETIC
     }
 
@@ -1707,5 +1754,19 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
      */
     public interface MultipartParameterIndexerExtension {
         void handleMultipartParameter(ClassInfo multipartClassInfo, IndexView index);
+    }
+
+    private static final class FoundEndpoint {
+        private final ClassInfo classInfo;
+        private final Set<String> classNameBindings;
+        private final MethodInfo methodInfo;
+        private final DotName httpMethod;
+
+        private FoundEndpoint(ClassInfo classInfo, Set<String> classNameBindings, MethodInfo methodInfo, DotName httpMethod) {
+            this.classInfo = classInfo;
+            this.classNameBindings = classNameBindings;
+            this.methodInfo = methodInfo;
+            this.httpMethod = httpMethod;
+        }
     }
 }

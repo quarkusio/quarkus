@@ -3,6 +3,7 @@ package io.quarkus.resteasy.reactive.server.test.security;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 
+import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -19,7 +20,7 @@ public class DefaultRolesAllowedJaxRsTest {
                     .addClasses(PermitAllResource.class, UnsecuredResource.class,
                             TestIdentityProvider.class,
                             TestIdentityController.class,
-                            UnsecuredSubResource.class)
+                            UnsecuredSubResource.class, HelloResource.class)
                     .addAsResource(new StringAsset("quarkus.security.jaxrs.default-roles-allowed=admin\n"),
                             "application.properties"));
 
@@ -75,6 +76,15 @@ public class DefaultRolesAllowedJaxRsTest {
     public void shouldAllowPermitAllClass() {
         String path = "/permitAll/sub/subMethod";
         assertStatus(path, 200, 200, 200);
+    }
+
+    @Test
+    public void testServerExceptionMapper() {
+        given()
+                .get("/hello")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("unauthorizedExceptionMapper"));
     }
 
     private void assertStatus(String path, int adminStatus, int userStatus, int anonStatus) {

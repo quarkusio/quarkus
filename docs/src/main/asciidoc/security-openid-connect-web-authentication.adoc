@@ -507,6 +507,8 @@ quarkus.oidc.logout.backchannel.path=/back-channel-logout
 
 Absolute `Back-Channel Logout` URL is calculated by adding `quarkus.oidc.back-channel-logout.path` to the current endpoint URL, for example, `http://localhost:8080/back-channel-logout`. You will need to configure this URL in the Admin Console of your OpenID Connect Provider.
 
+Note that you will also need to configure a token age property for the logout token verification to succeed if your OpenID Connect Provider does not set an expiry claim in the current logout token, for example, `quarkus.oidc.token.age=10S` sets a number of seconds that must not elapse since the logout token's `iat` (issued at) time to 10.
+
 [[local-logout]]
 ==== Local Logout
 

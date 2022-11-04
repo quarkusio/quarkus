@@ -9,6 +9,7 @@ public final class VertxUtil {
     private static final Pattern FORWARDED_FOR_PATTERN = Pattern.compile("for=\"?([^;,\"]+)\"?");
     private static final String FORWARDED = "Forwarded";
     private static final String COMMA_SPLITTER = ",";
+    private static final String COLON_SPLITTER = ":";
     private static final int SPLIT_LIMIT = -1;
 
     private VertxUtil() {
@@ -34,6 +35,23 @@ public final class VertxUtil {
         return xForwardedForHeader.split(COMMA_SPLITTER, SPLIT_LIMIT)[0];
     }
 
+    private static String getHostHeader(HttpServerRequest httpRequest) {
+        String header = httpRequest.getHeader("host");
+        if (header == null) {
+            return null;
+        }
+        return header.split(COLON_SPLITTER, SPLIT_LIMIT)[0];
+    }
+
+    private static String getHostPortHeader(HttpServerRequest httpRequest) {
+        String header = httpRequest.getHeader("host");
+        if (header == null) {
+            return null;
+        }
+        String[] headerValues = header.split(COLON_SPLITTER, SPLIT_LIMIT);
+        return headerValues.length > 1 ? headerValues[1] : null;
+    }
+
     public static String extractClientIP(HttpServerRequest httpServerRequest) {
         // Tries to fetch Forwarded first since X-Forwarded can be lost by a proxy
         // If Forwarded is not there tries to fetch the X-Forwarded-For header
@@ -48,5 +66,28 @@ public final class VertxUtil {
             return xForwardedHeaderValue;
         }
         return httpServerRequest.remoteAddress() != null ? httpServerRequest.remoteAddress().host() : null;
+    }
+
+    public static String extractRemoteHostname(HttpServerRequest httpRequest) {
+        String hostname = getHostHeader(httpRequest);
+        if (hostname != null) {
+            return hostname;
+        }
+        return httpRequest.remoteAddress() != null ? httpRequest.remoteAddress().hostName() : null;
+    }
+
+    public static Long extractRemoteHostPort(HttpServerRequest httpRequest) {
+        String portString = getHostPortHeader(httpRequest);
+        if (portString != null) {
+            try {
+                return Long.parseLong(portString);
+            } catch (NumberFormatException e) {
+                //ignore
+            }
+        }
+        if (httpRequest.remoteAddress() != null) {
+            Integer.toUnsignedLong(httpRequest.remoteAddress().port());
+        }
+        return null;
     }
 }

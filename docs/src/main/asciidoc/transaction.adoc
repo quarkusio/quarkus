@@ -176,12 +176,14 @@ public class TransactionExample {
     }
 
     public void runnerExample() {
-        QuarkusTransaction.runner(TransactionSemantic.REQUIRE_NEW).run(() -> {
+        QuarkusTransaction.requiringNew().run(() -> {
+            //do work
+        });
+        QuarkusTransaction.joiningExisting().run(() -> {
             //do work
         });
 
-
-        int result = QuarkusTransaction.runner(TransactionSemantic.REQUIRE_NEW)
+        int result = QuarkusTransaction.requiringNew()
                 .timeout(10)
                 .exceptionHandler((throwable) -> {
                     if (throwable instanceof SomeException) {
@@ -207,18 +209,19 @@ example in the method calls begin with a timeout option, and then rolls back the
 
 The second method shows the use of lambda scoped transactions with `QuarkusTransaction.runner(...)`;
 the first example just runs a `Runnable` within a new transaction,
-the second calls a `Callable` with some specific options.
+the second does the same but joining the existing transaction (if any),
+and the third calls a `Callable` with some specific options.
 In particular the `exceptionHandler` method can be used to control if the transaction is rolled back or not on exception.
 
 The following semantics are supported:
 
 
-DISALLOW_EXISTING::
+`QuarkusTransaction.disallowingExisting()`/`DISALLOW_EXISTING`::
 
  If a transaction is already associated with the current thread a `QuarkusTransactionException` will be thrown,
  otherwise a new transaction is started, and follows all the normal lifecycle rules.
 
-JOIN_EXISTING::
+`QuarkusTransaction.joiningExisting()`/`JOIN_EXISTING`::
 
 If no transaction is active then a new transaction will be started, and committed when the method ends.
 If an exception is thrown the exception handler registered by `#exceptionHandler(Function)` will be called to
@@ -228,14 +231,14 @@ exception is thrown the exception handler will be called, however
 a result of `ExceptionResult#ROLLBACK` will result in the TX marked as rollback only, while a result of
 `ExceptionResult#COMMIT` will result in no action being taken.
 
-REQUIRE_NEW::
+`QuarkusTransaction.requiringNew()`/`REQUIRE_NEW`::
 
 If an existing transaction is already associated with the current thread then the transaction is suspended,
 then a new transaction is started which follows all the normal lifecycle rules,
 and when it's complete the original transaction is resumed.
 Otherwise, a new transaction is started, and follows all the normal lifecycle rules.
 
-SUSPEND_EXISTING::
+`QuarkusTransaction.suspendingExisting()`/`SUSPEND_EXISTING`::
 
 If no transaction is active then these semantics are basically a no-op.
 If a transaction is active then it is suspended, and resumed after the task is run.

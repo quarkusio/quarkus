@@ -5,6 +5,10 @@ import java.util.concurrent.Callable;
 /**
  * Runs tasks in transactions with pre-defined semantics and options.
  *
+ * @see QuarkusTransaction#joiningExisting()
+ * @see QuarkusTransaction#requiringNew()
+ * @see QuarkusTransaction#disallowingExisting()
+ * @see QuarkusTransaction#suspendingExisting()
  * @see QuarkusTransaction#runner(TransactionSemantics)
  * @see TransactionSemantics
  */

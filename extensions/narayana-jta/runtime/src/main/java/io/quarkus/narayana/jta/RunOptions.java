@@ -6,7 +6,9 @@ import java.util.function.Function;
  * Builder interface to allow a transaction to be customized, including things like timeout and semantics when an existing
  * transaction is present.
  *
- * @deprecated Use {@link QuarkusTransaction#runner(TransactionSemantics)} instead.
+ * @deprecated Use {@link QuarkusTransaction#requiringNew()}, {@link QuarkusTransaction#joiningExisting()},
+ *             {@link QuarkusTransaction#disallowingExisting()}, {@link QuarkusTransaction#suspendingExisting()}
+ *             or {@link QuarkusTransaction#runner(TransactionSemantics)} instead.
  */
 @Deprecated
 public class RunOptions extends RunOptionsBase {

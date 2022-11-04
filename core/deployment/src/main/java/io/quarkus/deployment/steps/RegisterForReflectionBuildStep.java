@@ -18,6 +18,8 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -32,8 +34,10 @@ public class RegisterForReflectionBuildStep {
 
     private static final Logger log = Logger.getLogger(RegisterForReflectionBuildStep.class);
 
+    private static final DotName KOTLIN_METADATA_ANNOTATION = DotName.createSimple("kotlin.Metadata");
+
     @BuildStep
-    public void build(CombinedIndexBuildItem combinedIndexBuildItem,
+    public void build(CombinedIndexBuildItem combinedIndexBuildItem, Capabilities capabilities,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClassHierarchy,
             BuildProducer<LambdaCapturingTypeBuildItem> lambdaCapturingTypeProducer) {
@@ -63,6 +67,12 @@ public class RegisterForReflectionBuildStep {
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             if (targetsValue == null && classNamesValue == null) {
                 ClassInfo classInfo = i.target().asClass();
+                if (capabilities.isPresent(Capability.KOTLIN) && ignoreNested) {
+                    // for Kotlin classes, we need to register the nested classes as well because companion classes are very often necessary at runtime
+                    if (isKotlinClass(classInfo)) {
+                        ignoreNested = false;
+                    }
+                }
                 registerClass(classLoader, classInfo.name().toString(), methods, fields, ignoreNested, serialization,
                         reflectiveClass, reflectiveClassHierarchy, processedReflectiveHierarchies, registerFullHierarchyValue,
                         builder);
@@ -86,6 +96,10 @@ public class RegisterForReflectionBuildStep {
                 }
             }
         }
+    }
+
+    private static boolean isKotlinClass(ClassInfo classInfo) {
+        return classInfo.hasDeclaredAnnotation(KOTLIN_METADATA_ANNOTATION);
     }
 
     /**

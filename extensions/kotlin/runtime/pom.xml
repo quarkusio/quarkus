@@ -39,6 +39,9 @@
                         -->
                         <lesserPriorityArtifact>org.jetbrains.kotlin:kotlin-compiler</lesserPriorityArtifact>
                     </lesserPriorityArtifacts>
+                    <capabilities>
+                        <provides>io.quarkus.kotlin</provides>
+                    </capabilities>
                 </configuration>
             </plugin>
         </plugins>

@@ -599,7 +599,5 @@ The `image push` command is similar to `image build`, and surfaces some basic op
 
 [source, shell]
 ----
-quarkus image push --registry=<<image registry>> --registry-username=<<registry username>> --registry-passowrd=<<registry password>>
+quarkus image push --registry=<<image registry>> --registry-username=<<registry username>> --registry-password-stdin
 ----
-
-Note: It's not recommended to pass username and password as command line arguments.

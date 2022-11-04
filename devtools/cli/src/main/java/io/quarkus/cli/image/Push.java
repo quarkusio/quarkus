@@ -27,12 +27,21 @@ public class Push extends BaseImageCommand implements Callable<Integer> {
             "--registry-password" }, description = "The image registry password.")
     public Optional<String> registryPassword = Optional.empty();
 
+    @CommandLine.Option(order = 10, names = {
+            "--registry-password-stdin" }, description = "Read the image registry password from stdin.")
+    public boolean registryPasswordStdin;
+
     @Override
     public void populateImageConfiguration(Map<String, String> properties) {
         super.populateImageConfiguration(properties);
         registryUsername.ifPresent(u -> properties.put(QUARKUS_CONTAINER_IMAGE_USERNAME, u));
-        registryPassword.ifPresent(p -> properties.put(QUARKUS_CONTAINER_IMAGE_PASSWORD, p));
 
+        if (registryPasswordStdin) {
+            String password = new String(System.console().readPassword("Registry password:"));
+            properties.put(QUARKUS_CONTAINER_IMAGE_PASSWORD, password);
+        } else {
+            registryPassword.ifPresent(p -> properties.put(QUARKUS_CONTAINER_IMAGE_PASSWORD, p));
+        }
         properties.put(QUARKUS_FORCED_EXTENSIONS, QUARKUS_CONTAINER_IMAGE_EXTENSION);
     }
 

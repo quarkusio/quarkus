@@ -10,6 +10,10 @@ import java.util.function.Function;
  * so it can be used to run a task directly with {@link #run(Runnable)}/{@link #call(Callable)},
  * even if no options need to be customized.
  *
+ * @see QuarkusTransaction#joiningExisting()
+ * @see QuarkusTransaction#requiringNew()
+ * @see QuarkusTransaction#disallowingExisting()
+ * @see QuarkusTransaction#suspendingExisting()
  * @see QuarkusTransaction#runner(TransactionSemantics)
  */
 public interface TransactionRunnerOptions extends TransactionRunner {

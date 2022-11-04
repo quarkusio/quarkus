@@ -5,6 +5,10 @@ import java.util.function.Function;
 /**
  * Enum that can be used to control the transaction behaviour in the presence or absence of an existing transaction.
  *
+ * @see QuarkusTransaction#joiningExisting()
+ * @see QuarkusTransaction#requiringNew()
+ * @see QuarkusTransaction#disallowingExisting()
+ * @see QuarkusTransaction#suspendingExisting()
  * @see QuarkusTransaction#runner(TransactionSemantics)
  */
 public enum TransactionSemantics {
@@ -12,6 +16,9 @@ public enum TransactionSemantics {
     /**
      * If a transaction is already associated with the current thread a {@link QuarkusTransactionException} will be thrown,
      * otherwise a new transaction is started, and follows all the normal lifecycle rules.
+     *
+     * @see QuarkusTransaction#disallowingExisting()
+     * @see QuarkusTransaction#runner(TransactionSemantics)
      */
     DISALLOW_EXISTING,
 
@@ -25,6 +32,9 @@ public enum TransactionSemantics {
      * exception is thrown the exception handler will be called, however
      * a result of {@link TransactionExceptionResult#ROLLBACK} will result in the TX marked as rollback only, while a result of
      * {@link TransactionExceptionResult#COMMIT} will result in no action being taken.
+     *
+     * @see QuarkusTransaction#joiningExisting()
+     * @see QuarkusTransaction#runner(TransactionSemantics)
      */
     JOIN_EXISTING,
 
@@ -34,6 +44,9 @@ public enum TransactionSemantics {
      * and when it's complete the original transaction is resumed.
      * <p>
      * Otherwise, a new transaction is started, and follows all the normal lifecycle rules.
+     *
+     * @see QuarkusTransaction#requiringNew()
+     * @see QuarkusTransaction#runner(TransactionSemantics)
      */
     REQUIRE_NEW,
 
@@ -46,6 +59,9 @@ public enum TransactionSemantics {
      * these semantics are considered an error.
      * <p>
      * These semantics allows for code to easily be run outside the scope of a transaction.
+     *
+     * @see QuarkusTransaction#suspendingExisting()
+     * @see QuarkusTransaction#runner(TransactionSemantics)
      */
     SUSPEND_EXISTING
 

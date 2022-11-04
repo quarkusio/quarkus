@@ -111,23 +111,23 @@ public interface QuarkusTransaction {
      * Examples of use:
      *
      * <pre>{@code
-     * QuarkusTransaction.runner(TransactionSemantic.REQUIRE_NEW).run(() -> ...);
-     * QuarkusTransaction.runner(TransactionSemantic.JOIN_EXISTING).run(() -> ...);
-     * QuarkusTransaction.runner(TransactionSemantic.SUSPEND_EXISTING).run(() -> ...);
-     * QuarkusTransaction.runner(TransactionSemantic.DISALLOW_EXISTING).run(() -> ...);
-     * int value = QuarkusTransaction.runner(TransactionSemantic.REQUIRE_NEW).call(() -> { ...; return 42; });
-     * int value = QuarkusTransaction.runner(TransactionSemantic.JOIN_EXISTING).call(() -> { ...; return 42; });
-     * int value = QuarkusTransaction.runner(TransactionSemantic.SUSPEND_EXISTING).call(() -> { ...; return 42; });
-     * int value = QuarkusTransaction.runner(TransactionSemantic.DISALLOW_EXISTING).call(() -> { ...; return 42; });
+     * QuarkusTransaction.runner(TransactionSemantics.REQUIRE_NEW).run(() -> ...);
+     * QuarkusTransaction.runner(TransactionSemantics.JOIN_EXISTING).run(() -> ...);
+     * QuarkusTransaction.runner(TransactionSemantics.SUSPEND_EXISTING).run(() -> ...);
+     * QuarkusTransaction.runner(TransactionSemantics.DISALLOW_EXISTING).run(() -> ...);
+     * int value = QuarkusTransaction.runner(TransactionSemantics.REQUIRE_NEW).call(() -> { ...; return 42; });
+     * int value = QuarkusTransaction.runner(TransactionSemantics.JOIN_EXISTING).call(() -> { ...; return 42; });
+     * int value = QuarkusTransaction.runner(TransactionSemantics.SUSPEND_EXISTING).call(() -> { ...; return 42; });
+     * int value = QuarkusTransaction.runner(TransactionSemantics.DISALLOW_EXISTING).call(() -> { ...; return 42; });
      * }</pre>
      *
-     * @param semantic The selected {@link TransactionSemantic}.
+     * @param semantics The selected {@link TransactionSemantics}.
      * @return An interface that allow various options of a transaction runner to be customized,
      *         or a {@link Runnable}/{@link Callable} to be executed.
      * @see TransactionRunnerOptions
      */
-    static TransactionRunnerOptions runner(TransactionSemantic semantic) {
-        return new TransactionRunnerImpl(semantic);
+    static TransactionRunnerOptions runner(TransactionSemantics semantics) {
+        return new TransactionRunnerImpl(semantics);
     }
 
     /**
@@ -135,8 +135,8 @@ public interface QuarkusTransaction {
      * semantics, however alternate semantics can be requested using {@link #run(RunOptions, Runnable)}.
      *
      * @param task The task to run in a transaction
-     * @deprecated For the same semantics, use {@code QuarkusTransaction.runner(TransactionSemantic.REQUIRE_NEW).run(task)}.
-     *             {@link #runner(TransactionSemantic)} can also be used for alternate semantics and options.
+     * @deprecated For the same semantics, use {@code QuarkusTransaction.runner(TransactionSemantics.REQUIRE_NEW).run(task)}.
+     *             {@link #runner(TransactionSemantics)} can also be used for alternate semantics and options.
      */
     @Deprecated
     static void run(Runnable task) {
@@ -149,7 +149,7 @@ public interface QuarkusTransaction {
      *
      * @param options Options that apply to the new transaction
      * @param task The task to run in a transaction
-     * @deprecated Use {@link #runner(TransactionSemantic)} instead.
+     * @deprecated Use {@link #runner(TransactionSemantics)} instead.
      */
     @Deprecated
     static void run(RunOptions options, Runnable task) {
@@ -169,8 +169,8 @@ public interface QuarkusTransaction {
      * If the task throws a checked exception it will be wrapped with a {@link QuarkusTransactionException}
      *
      * @param task The task to run in a transaction
-     * @deprecated For the same semantics, use {@code QuarkusTransaction.runner(TransactionSemantic.REQUIRE_NEW).call(task)}.
-     *             {@link #runner(TransactionSemantic)} can also be used for alternate semantics and options.
+     * @deprecated For the same semantics, use {@code QuarkusTransaction.runner(TransactionSemantics.REQUIRE_NEW).call(task)}.
+     *             {@link #runner(TransactionSemantics)} can also be used for alternate semantics and options.
      */
     @Deprecated
     static <T> T call(Callable<T> task) {
@@ -185,7 +185,7 @@ public interface QuarkusTransaction {
      *
      * @param options Options that apply to the new transaction
      * @param task The task to run in a transaction
-     * @deprecated Use {@link #runner(TransactionSemantic)} instead.
+     * @deprecated Use {@link #runner(TransactionSemantics)} instead.
      */
     @Deprecated
     static <T> T call(RunOptions options, Callable<T> task) {
@@ -194,7 +194,7 @@ public interface QuarkusTransaction {
 
     /**
      * @return a new RunOptions
-     * @deprecated Use {@link #runner(TransactionSemantic)} instead.
+     * @deprecated Use {@link #runner(TransactionSemantics)} instead.
      */
     @Deprecated
     static RunOptions runOptions() {

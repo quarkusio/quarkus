@@ -237,11 +237,11 @@ Otherwise, a new transaction is started, and follows all the normal lifecycle ru
 
 SUSPEND_EXISTING::
 
-If no transaction is active then this semantic is basically a no-op.
+If no transaction is active then these semantics are basically a no-op.
 If a transaction is active then it is suspended, and resumed after the task is run.
-The exception handler will never be consulted when this semantic is in use, specifying both an exception handler and
-this semantic is considered an error.
-This semantic allows for code to easily be run outside the scope of a transaction.
+The exception handler will never be consulted when these semantics are in use, specifying both an exception handler and
+these semantics are considered an error.
+These semantics allows for code to easily be run outside the scope of a transaction.
 
 
 

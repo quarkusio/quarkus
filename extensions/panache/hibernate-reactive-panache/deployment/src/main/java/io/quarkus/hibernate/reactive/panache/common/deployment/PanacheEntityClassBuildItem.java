@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.reactive.panache.deployment;
+package io.quarkus.hibernate.reactive.panache.common.deployment;
 
 import org.jboss.jandex.ClassInfo;
 

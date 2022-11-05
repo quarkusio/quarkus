@@ -16,8 +16,10 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.keycloak.admin.client.common.AutoCloseableDestroyer;
@@ -43,6 +45,13 @@ public class KeycloakAdminClientProcessor {
                 .constructors(true)
                 .methods(true)
                 .build();
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @Produce(ServiceStartBuildItem.class)
+    @BuildStep
+    public void integrate(ResteasyKeycloakAdminClientRecorder recorder) {
+        recorder.setClientProvider();
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

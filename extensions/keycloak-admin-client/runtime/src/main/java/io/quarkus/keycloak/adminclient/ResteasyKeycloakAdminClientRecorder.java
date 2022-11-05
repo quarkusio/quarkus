@@ -4,8 +4,13 @@ import static io.quarkus.keycloak.admin.client.common.KeycloakAdminClientConfigU
 
 import java.util.function.Supplier;
 
+import javax.net.ssl.SSLContext;
+import javax.ws.rs.client.Client;
+
+import org.keycloak.admin.client.ClientBuilderWrapper;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
+import org.keycloak.admin.client.spi.ResteasyClientClassicProvider;
 
 import io.quarkus.keycloak.admin.client.common.KeycloakAdminClientConfig;
 import io.quarkus.runtime.RuntimeValue;
@@ -49,5 +54,16 @@ public class ResteasyKeycloakAdminClientRecorder {
                 return keycloakBuilder.build();
             }
         };
+    }
+
+    public void setClientProvider() {
+        Keycloak.setClientProvider(new ResteasyClientClassicProvider() {
+            @Override
+            public Client newRestEasyClient(Object customJacksonProvider, SSLContext sslContext, boolean disableTrustManager) {
+                // point here is to use default Quarkus providers rather than org.keycloak.admin.client.JacksonProvider
+                // as it doesn't work properly in native mode
+                return ClientBuilderWrapper.create(sslContext, disableTrustManager).build();
+            }
+        });
     }
 }

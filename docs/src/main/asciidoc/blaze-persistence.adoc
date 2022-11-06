@@ -19,6 +19,14 @@ code and removing the need for object mapping tools.
 
 include::{includes}/platform-include.adoc[]
 
+== Solution
+
+We recommend that you go right to the completed example and follow along for further explainations.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `blazebit-quickstart` {quickstarts-tree-url}/blazebit-quickstart[directory].
+
 == Setting up and configuring Blaze-Persistence
 
 The extension comes with default producers for `CriteriaBuilderFactory` and `EntityViewManager` that work out of the
@@ -37,6 +45,8 @@ Add the following dependencies to your project:
 * further Blaze-Persistence integrations as needed:
   - `blaze-persistence-integration-jackson` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#Jackson%20integration[Jackson]
   - `blaze-persistence-integration-jaxrs` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#jaxrs-integration[JAX-RS]
+  - `blaze-persistence-integration-jaxrs-jackson` with `runtime` scope for both
+
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .Example dependencies using Maven
@@ -46,9 +56,30 @@ Add the following dependencies to your project:
     <groupId>com.blazebit</groupId>
     <artifactId>blaze-persistence-integration-quarkus</artifactId>
 </dependency>
+
 <dependency>
     <groupId>com.blazebit</groupId>
     <artifactId>blaze-persistence-integration-hibernate-5.6</artifactId>
+    <scope>runtime</scope>
+</dependency>
+
+<!-- Optional: Used only when a specific integration is needed -->
+<dependency>
+    <groupId>com.blazebit</groupId>
+    <artifactId>blaze-persistence-integration-jaxrs</artifactId>
+    <version>${blaze-persistence.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>com.blazebit</groupId>
+    <artifactId>blaze-persistence-integration-jackson</artifactId>
+    <version>${blaze-persistence.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>com.blazebit</groupId>
+    <artifactId>blaze-persistence-integration-jaxrs-jackson</artifactId>
+    <version>${blaze-persistence.version}</version>
     <scope>runtime</scope>
 </dependency>
 ----
@@ -87,10 +118,13 @@ You can then access these beans via injection:
 ----
 @ApplicationScoped
 public class SantaClausService {
+
     @Inject
     EntityManager em; <1>
+
     @Inject
     CriteriaBuilderFactory cbf; <2>
+
     @Inject
     EntityViewManager evm; <3>
 
@@ -112,11 +146,17 @@ public class SantaClausService {
 ----
 @Entity
 public class Gift {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @NotNull
+    @Column(nullable = false)
     private String name;
+    
     private String description;
 
-    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="giftSeq")
     public Long getId() {
         return id;
     }
@@ -132,7 +172,6 @@ public class Gift {
     public void setName(String name) {
         this.name = name;
     }
-
 
     public String getDescription() {
         return description;
@@ -173,11 +212,16 @@ public interface GiftUpdateView extends GiftView {
 .Example JAX-RS Resource
 ----
 @Path("/gifts")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class GiftResource {
+
     @Inject
     EntityManager entityManager;
+
     @Inject
     EntityViewManager entityViewManager;
+
     @Inject
     SantaClausService santaClausService;
 
@@ -189,7 +233,6 @@ public class GiftResource {
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public List<GiftView> getGifts() {
         return santaClausService.findAllGifts();
     }
@@ -203,10 +246,9 @@ public class GiftResource {
     }
 
     @GET
-    @Path("{id"})
-    @Produces(MediaType.APPLICATION_JSON)
-    public GiftView getGift(Long id) {
-        return return entityViewManager.find(entityManager, GiftView.class, view.getId());
+    @Path("{id}")
+    public GiftView getGift(@PathParam("id") Long id) {
+        return entityViewManager.find(entityManager, GiftView.class, id);
     }
 }
 ----

@@ -302,10 +302,10 @@ public final class AmazonLambdaProcessor {
     }
 
     @BuildStep
-    @Record(value = ExecutionTime.RUNTIME_INIT)
+    @Record(value = ExecutionTime.STATIC_INIT)
     void recordExpectedExceptions(LambdaBuildTimeConfig config,
             BuildProducer<ReflectiveClassBuildItem> registerForReflection,
-            AmazonLambdaRecorder recorder) {
+            AmazonLambdaStaticRecorder recorder) {
         Set<Class<?>> classes = config.expectedExceptions.map(Set::copyOf).orElseGet(Set::of);
         classes.stream().map(clazz -> new ReflectiveClassBuildItem(false, false, false, clazz))
                 .forEach(registerForReflection::produce);

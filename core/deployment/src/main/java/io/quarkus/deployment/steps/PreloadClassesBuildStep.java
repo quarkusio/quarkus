@@ -4,6 +4,7 @@ import static io.quarkus.runtime.PreloadClassesRecorder.QUARKUS_GENERATED_PRELOA
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import io.quarkus.deployment.annotations.BuildStep;
@@ -17,10 +18,10 @@ import io.quarkus.runtime.PreloadClassesRecorder;
 public class PreloadClassesBuildStep {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public void preInit(List<PreloadClassesEnabledBuildItem> preload, PreloadClassesRecorder recorder) {
-        if (preload == null || preload.isEmpty())
+    public void preInit(Optional<PreloadClassesEnabledBuildItem> preload, PreloadClassesRecorder recorder) {
+        if (!preload.isPresent())
             return;
-        recorder.invokePreloadClasses();
+        recorder.invokePreloadClasses(preload.get().doInitialize());
     }
 
     @BuildStep

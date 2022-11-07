@@ -6,7 +6,7 @@ import io.smallrye.common.constraint.Assert;
 /**
  * Class to be preloaded in static initialization phase of Quarkus
  */
-public class PreloadClassBuildItem extends MultiBuildItem {
+public final class PreloadClassBuildItem extends MultiBuildItem {
     private final String className;
 
     /**

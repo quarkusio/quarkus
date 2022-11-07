@@ -41,7 +41,7 @@ public abstract class Application implements Closeable {
     private final Condition stateCond = stateLock.newCondition();
 
     private int state = ST_INITIAL;
-    private static volatile Application currentApplication;
+    protected static volatile Application currentApplication;
 
     /**
      * Embedded applications don't set up or modify logging, and don't provide start/

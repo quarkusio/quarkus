@@ -14,15 +14,15 @@ import io.quarkus.runtime.annotations.Recorder;
 public class PreloadClassesRecorder {
     public static final String QUARKUS_GENERATED_PRELOAD_CLASSES_FILE = "quarkus-generated-preload-classes.txt";
 
-    public static void preloadClass(String classname) {
+    public static void preloadClass(String classname, boolean initialize) {
         try {
-            Class.forName(classname, true, PreloadClassesRecorder.class.getClassLoader());
+            Class.forName(classname, initialize, PreloadClassesRecorder.class.getClassLoader());
         } catch (Throwable ignored) {
 
         }
     }
 
-    public static void preloadClasses() {
+    public static void preloadClasses(boolean initialize) {
         try {
             Enumeration<URL> files = PreloadClassesRecorder.class.getClassLoader()
                     .getResources("META-INF/quarkus-preload-classes.txt");
@@ -31,17 +31,17 @@ public class PreloadClassesRecorder {
                 URLConnection conn = url.openConnection();
                 conn.setUseCaches(false);
                 InputStream is = conn.getInputStream();
-                preloadClassesFromStream(is);
+                preloadClassesFromStream(is, initialize);
             }
         } catch (IOException ignored) {
         }
         InputStream is = PreloadClassesRecorder.class
                 .getResourceAsStream("/META-INF/" + QUARKUS_GENERATED_PRELOAD_CLASSES_FILE);
         if (is != null)
-            preloadClassesFromStream(is);
+            preloadClassesFromStream(is, initialize);
     }
 
-    public static void preloadClassesFromStream(InputStream is) {
+    public static void preloadClassesFromStream(InputStream is, boolean initialize) {
         try (is;
                 InputStreamReader isr = new InputStreamReader(is);
                 BufferedReader reader = new BufferedReader(isr)) {
@@ -53,7 +53,7 @@ public class PreloadClassesRecorder {
                 }
                 final String className = line.stripTrailing();
                 if (!className.isBlank()) {
-                    preloadClass(className);
+                    preloadClass(className, initialize);
                 }
             }
         } catch (Exception ignored) {
@@ -61,7 +61,7 @@ public class PreloadClassesRecorder {
         }
     }
 
-    public void invokePreloadClasses() {
-        preloadClasses();
+    public void invokePreloadClasses(boolean initialize) {
+        preloadClasses(initialize);
     }
 }

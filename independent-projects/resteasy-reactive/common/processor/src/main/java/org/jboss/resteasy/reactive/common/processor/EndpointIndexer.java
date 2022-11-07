@@ -231,7 +231,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Set<DotName> contextTypes;
     private final Set<DotName> parameterContainerTypes;
     private final MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension;
-    private final MultipartParameterIndexerExtension multipartParameterIndexerExtension;
     private final TargetJavaVersion targetJavaVersion;
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
@@ -254,7 +253,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.contextTypes = builder.contextTypes;
         this.parameterContainerTypes = builder.parameterContainerTypes;
         this.multipartReturnTypeIndexerExtension = builder.multipartReturnTypeIndexerExtension;
-        this.multipartParameterIndexerExtension = builder.multipartParameterIndexerExtension;
         this.targetJavaVersion = builder.targetJavaVersion;
     }
 
@@ -1521,8 +1519,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Consumer<ResourceMethodCallbackData> resourceMethodCallback;
         private Collection<AnnotationsTransformer> annotationsTransformers;
         private ApplicationScanningResult applicationScanningResult;
-        private Set<DotName> contextTypes = new HashSet<>(DEFAULT_CONTEXT_TYPES);
-        private Set<DotName> parameterContainerTypes = new HashSet<>();
+        private final Set<DotName> contextTypes = new HashSet<>(DEFAULT_CONTEXT_TYPES);
+        private final Set<DotName> parameterContainerTypes = new HashSet<>();
         private MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension = new MultipartReturnTypeIndexerExtension() {
             @Override
             public boolean handleMultipartForReturnType(AdditionalWriters additionalWriters, ClassInfo multipartClassInfo,
@@ -1530,20 +1528,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 return false;
             }
         };
-        public MultipartParameterIndexerExtension multipartParameterIndexerExtension = new MultipartParameterIndexerExtension() {
-            @Override
-            public void handleMultipartParameter(ClassInfo multipartClassInfo, IndexView indexView) {
-            }
-        };
         private TargetJavaVersion targetJavaVersion = new TargetJavaVersion.Unknown();
 
         public B setMultipartReturnTypeIndexerExtension(MultipartReturnTypeIndexerExtension multipartReturnTypeHandler) {
             this.multipartReturnTypeIndexerExtension = multipartReturnTypeHandler;
-            return (B) this;
-        }
-
-        public B setMultipartParameterIndexerExtension(MultipartParameterIndexerExtension multipartParameterHandler) {
-            this.multipartParameterIndexerExtension = multipartParameterHandler;
             return (B) this;
         }
 

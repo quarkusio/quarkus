@@ -1675,6 +1675,15 @@ public class TestEndpoint {
                     Assertions.assertTrue(
                             exception.getMessage().startsWith("Unable to perform a projection on a 'select new' query"));
                 })
+                .invoke(() -> Cat
+                        .find("   SELECT   disTINct  'GARFIELD', 'JoN ArBuCkLe' from Cat c where name = :NamE group by name  ", Parameters.with("NamE", catName), Sort.by("name"))
+                        .project(CatProjectionBean.class))
+                .chain(projectionQuery -> projectionQuery.<CatProjectionBean> firstResult())
+                .invoke(catView -> {
+                    // Must keep the letter case
+                    Assertions.assertEquals(catView.name, "GARFIELD");
+                    Assertions.assertEquals(catView.ownerName, "JoN ArBuCkLe");
+                })
                 .replaceWith("OK");
     }
 

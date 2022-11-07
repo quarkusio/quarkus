@@ -4,7 +4,7 @@ import javax.annotation.PostConstruct;
 import javax.inject.Singleton;
 
 @Singleton
-public class LoggingBean {
+public class LoggingBean implements LoggingInterface {
     // not final to prevent constant inlining
     private static String msg = "Heya!";
 
@@ -18,6 +18,8 @@ public class LoggingBean {
     }
 
     public void doSomething() {
+        inheritedMethod("abc");
+
         if (Log.isDebugEnabled()) {
             Log.debug("starting massive computation");
         }

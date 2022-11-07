@@ -36,15 +36,10 @@ public class RedisDatasourceProcessor {
             DotName.createSimple(ReactiveRedisDataSource.class.getName()));
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void init(RedisClientRecorder recorder,
+    public void detectUsage(BuildProducer<RequestedRedisClientBuildItem> request,
             RedisBuildTimeConfig buildTimeConfig,
             BeanArchiveIndexBuildItem indexBuildItem,
-            BeanDiscoveryFinishedBuildItem beans,
-            ShutdownContextBuildItem shutdown,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            VertxBuildItem vertxBuildItem) {
-
+            BeanDiscoveryFinishedBuildItem beans) {
         // Collect the used redis datasource, the unused clients will not be instantiated.
         Set<String> names = new HashSet<>();
         IndexView indexView = indexBuildItem.getIndex();
@@ -65,6 +60,26 @@ public class RedisDatasourceProcessor {
                 .findAny()
                 .ifPresent(x -> names.addAll(configuredClientNames(buildTimeConfig, ConfigProvider.getConfig())));
 
+        for (String name : names) {
+            request.produce(new RequestedRedisClientBuildItem(name));
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void init(RedisClientRecorder recorder,
+            List<RequestedRedisClientBuildItem> clients,
+            ShutdownContextBuildItem shutdown,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            VertxBuildItem vertxBuildItem) {
+
+        if (clients.isEmpty()) {
+            return;
+        }
+        Set<String> names = new HashSet<>();
+        for (RequestedRedisClientBuildItem client : clients) {
+            names.add(client.name);
+        }
         // Inject the creation of the client when the application starts.
         recorder.initialize(vertxBuildItem.getVertx(), names);
 

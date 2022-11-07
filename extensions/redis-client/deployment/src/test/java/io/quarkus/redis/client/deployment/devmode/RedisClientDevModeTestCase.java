@@ -31,11 +31,12 @@ public class RedisClientDevModeTestCase {
             });
 
     @Test
-    public void testRedisDevMode() {
+    public void testSourceFileUpdateInDevMode() {
         RestAssured.get("/inc")
                 .then()
                 .statusCode(200)
                 .body(Matchers.equalTo("1"));
+
         RestAssured.get("/inc")
                 .then()
                 .statusCode(200)
@@ -55,5 +56,9 @@ public class RedisClientDevModeTestCase {
                 .statusCode(200)
                 .body(Matchers.equalTo("22"));
 
+        RestAssured.get("/inc")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("32"));
     }
 }

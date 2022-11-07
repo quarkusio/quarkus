@@ -1,5 +1,7 @@
 package io.quarkus.redis.it;
 
+import java.util.List;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -8,6 +10,7 @@ import javax.ws.rs.PathParam;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
 import io.quarkus.redis.datasource.value.ReactiveValueCommands;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import io.smallrye.mutiny.Uni;
@@ -18,11 +21,13 @@ public class RedisResource {
 
     private final ValueCommands<String, String> blocking;
     private final ReactiveValueCommands<String, String> reactive;
+    private final ReactiveKeyCommands<String> keys;
 
     public RedisResource(RedisDataSource ds,
             ReactiveRedisDataSource reactiveDs) {
         blocking = ds.value(String.class);
         reactive = reactiveDs.value(String.class);
+        keys = reactiveDs.key();
     }
 
     // synchronous
@@ -49,6 +54,12 @@ public class RedisResource {
     @Path("/reactive/{key}")
     public Uni<Void> setReactive(@PathParam("key") String key, String value) {
         return this.reactive.set(key, value);
+    }
+
+    @GET
+    @Path("/import")
+    public Uni<Integer> startWarsKey() {
+        return keys.keys("people:*").map(List::size);
     }
 
 }

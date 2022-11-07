@@ -656,6 +656,81 @@ The reactive variant returns a `Uni<Response>`.
 
 NOTE: You can also execute custom command in a transaction.
 
+== Preload data into Redis
+
+On startup, you can configure the Redis client to preload data into the Redis database.
+
+=== Load scripts
+
+Specify the _load script_ you want to load using:
+
+[source, properties]
+----
+quarkus.redis.load-script=import.sql # import.sql is the default in dev, no-file is the default in prod
+quarkus.redis.my-redis.load-script=actors.redis, movies.redis
+----
+
+IMPORTANT: `load-script` is a build time property than cannot be overridden at runtime.
+
+Note that each client can have a different script, even a list of scripts.
+In the case of a list, the data is imported in the list order (for example, first `actors.redis`, then `movies.redis` for the `my-redis` client).
+
+=== Load Script format
+
+The `.redis` file follows a _one command per line_ format:
+
+[source, text]
+----
+# Line starting with # and -- are ignored, as well as empty lines
+
+-- One command per line:
+HSET foo field1 abc field2 123
+
+-- Parameters with spaces must be wrapped into single or double quotes
+HSET bar field1 "abc def" field2 '123 456 '
+
+-- Parameters with double quotes must be wrapped into single quotes and the opposite
+SET key1 'A value using "double-quotes"'
+SET key2 "A value using 'single-quotes'"
+----
+
+Quarkus batches all the commands from a single file and sends all the commands.
+The loading process fails if there is any error, but the previous instructions may have been executed.
+To avoid that, you can wrap your command into a Redis _transaction_:
+
+[source, text]
+----
+-- Run inside a transaction
+MULTI
+SET key value
+SET space:key 'another value'
+INCR counter
+EXEC
+----
+
+=== Loading configuration
+
+The data is loaded when the application starts.
+By default, it drops the whole database before importing.
+You can prevent this using `quarkus.redis.flush-before-load=false`.
+
+Also, the import process only runs if the database is empty (no key).
+You can force to import even if there is data using the `quarkus.redis.load-only-if-empty=false`
+
+=== Dev/Test vs. Prod
+
+As mentioned above, in dev and test modes, Quarkus tries to import data by looking for the `src/main/resources/import.redis`.
+This behavior is disabled in _prod_ mode, and if you want to import even in production, add:
+
+[source, properties]
+----
+%prod.quarkus.redis.load-script=import.redis
+----
+
+Before importing in _prod_ mode, mae sure you configured `quarkus.redis.flush-before-load` accordingly.
+
+IMPORTANT: In dev mode, to reload the content of the `.redis` load scripts, you need to add: `%dev.quarkus.vertx.caching=false`
+
 == Vert.x Redis Client
 
 In addition to the high-level API, you can use the Vertx Redis clients directly in your code.

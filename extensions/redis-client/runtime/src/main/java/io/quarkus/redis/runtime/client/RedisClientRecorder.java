@@ -4,6 +4,7 @@ import static io.quarkus.redis.runtime.client.config.RedisConfig.DEFAULT_CLIENT_
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -22,8 +23,10 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisAPI;
+import io.vertx.mutiny.redis.client.Request;
 
 @Recorder
 public class RedisClientRecorder {
@@ -201,6 +204,29 @@ public class RedisClientRecorder {
                 dataSources.clear();
             }
         });
+    }
+
+    public void preload(String name, List<String> loadScriptPaths, boolean redisFlushBeforeLoad, boolean redisLoadOnlyIfEmpty) {
+        var tuple = clients.get(name);
+        if (tuple == null) {
+            throw new IllegalArgumentException("Unable import data into Redis - cannot find the Redis client " + name
+                    + ", available clients are: " + clients.keySet());
+        }
+
+        if (redisFlushBeforeLoad) {
+            tuple.redis.send(Request.cmd(Command.FLUSHALL)).await().indefinitely();
+        } else if (redisLoadOnlyIfEmpty) {
+            var list = tuple.redis.send(Request.cmd(Command.KEYS).arg("*")).await().indefinitely();
+            if (list.size() != 0) {
+                RedisDataLoader.LOGGER.debugf(
+                        "Skipping the Redis data loading because the database is not empty: %d keys found", list.size());
+                return;
+            }
+        }
+
+        for (String path : loadScriptPaths) {
+            RedisDataLoader.load(vertx, tuple.redis, path);
+        }
     }
 
     private static class RedisClientAndApi {

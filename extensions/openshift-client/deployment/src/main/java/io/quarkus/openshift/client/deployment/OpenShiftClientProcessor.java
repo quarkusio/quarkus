@@ -4,11 +4,8 @@ import java.util.Collections;
 
 import org.jboss.jandex.DotName;
 
-import io.fabric8.kubernetes.client.extension.ExtensionAdapter;
 import io.fabric8.openshift.client.DefaultOpenShiftClient;
-import io.fabric8.openshift.client.impl.NamespacedOpenShiftExtensionAdapter;
 import io.fabric8.openshift.client.impl.OpenShiftClientImpl;
-import io.fabric8.openshift.client.impl.OpenShiftExtensionAdapter;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.IgnoreSplitPackageBuildItem;
 import io.quarkus.deployment.Feature;
@@ -58,12 +55,6 @@ public class OpenShiftClientProcessor {
                 .produce(new ReflectiveClassBuildItem(true, true, OpenShiftClientImpl.class.getName()));
         reflectiveClasses
                 .produce(new ReflectiveClassBuildItem(true, true, DefaultOpenShiftClient.class.getName()));
-
-        // Register the default OpenShift ExtensionAdapter implementations
-        serviceProviderProducer.produce(new ServiceProviderBuildItem(
-                ExtensionAdapter.class.getName(), OpenShiftExtensionAdapter.class.getName()));
-        serviceProviderProducer.produce(new ServiceProviderBuildItem(
-                ExtensionAdapter.class.getName(), NamespacedOpenShiftExtensionAdapter.class.getName()));
     }
 
     @BuildStep

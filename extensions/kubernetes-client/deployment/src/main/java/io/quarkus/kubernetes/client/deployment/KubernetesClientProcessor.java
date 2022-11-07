@@ -29,6 +29,7 @@ import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.VersionInfo;
 import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.kubernetes.client.extension.ExtensionAdapter;
 import io.fabric8.kubernetes.client.http.HttpClient;
 import io.fabric8.kubernetes.client.impl.KubernetesClientImpl;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
@@ -222,6 +223,9 @@ public class KubernetesClientProcessor {
         // Register the default HttpClient implementation
         serviceProviderProducer.produce(new ServiceProviderBuildItem(
                 HttpClient.Factory.class.getName(), "io.fabric8.kubernetes.client.okhttp.OkHttpClientFactory"));
+
+        serviceProviderProducer.produce(ServiceProviderBuildItem.allProvidersFromClassPath(ExtensionAdapter.class.getName()));
+
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.KUBERNETES_CLIENT));
     }

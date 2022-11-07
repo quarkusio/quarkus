@@ -318,6 +318,11 @@ For more information, see the link:{vault-guide}[Quarkus and HashiCorp Vault] do
 If your Quarkus Security architecture includes RESTEasy Reactive and Jackson, Quarkus can limit the fields that are included in JSON serialization based on the configured security.
 For more information, see xref:resteasy-reactive.adoc#secure-serialization[Writing REST services with RESTEasy Reactive].
 
+== Secure auto-generated resources by REST Data with Panache
+
+If you're using the REST Data with Panache extension to auto-generate your resources, you can still use the Security annotations within the package `javax.annotation.security`. 
+For more information, see xref:rest-data-panache.adoc#securing-endpoints[Securing auto-generated resources].
+
 == National Vulnerability Database
 
 Most of the Quarkus tags are registered in the US link:https://nvd.nist.gov[National Vulnerability Database] (NVD) in Common Platform Enumeration (CPE) name format.

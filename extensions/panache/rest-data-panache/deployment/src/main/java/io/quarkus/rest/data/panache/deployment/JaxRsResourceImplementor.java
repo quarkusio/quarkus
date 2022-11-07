@@ -8,6 +8,7 @@ import javax.inject.Inject;
 import javax.ws.rs.Path;
 
 import org.apache.commons.lang3.StringUtils;
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.Capabilities;
@@ -87,6 +88,11 @@ class JaxRsResourceImplementor {
         if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
             String className = StringUtils.substringAfterLast(resourceMetadata.getResourceInterface(), ".");
             classCreator.addAnnotation(OPENAPI_TAG_ANNOTATION).add("name", className);
+        }
+        if (resourceProperties.getClassAnnotations() != null) {
+            for (AnnotationInstance classAnnotation : resourceProperties.getClassAnnotations()) {
+                classCreator.addAnnotation(classAnnotation);
+            }
         }
     }
 

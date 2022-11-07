@@ -69,8 +69,8 @@ jobs:
             # Move the tag after inclusion of documentation adjustments
             git tag -f ${{steps.metadata.outputs.current-version}}
           fi
-          # Go back to main
-          git checkout main
+          # Go back to base branch
+          git checkout ${{github.base_ref}}
 
       - name: Push changes to ${{github.base_ref}}
         uses: ad-m/github-push-action@v0.6.0

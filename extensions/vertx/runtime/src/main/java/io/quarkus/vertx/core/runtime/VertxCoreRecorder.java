@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -42,7 +43,9 @@ import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
 import io.quarkus.vertx.core.runtime.config.ClusterConfiguration;
 import io.quarkus.vertx.core.runtime.config.EventBusConfiguration;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
+import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
+import io.quarkus.vertx.runtime.VertxCurrentContextFactory;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -558,7 +561,16 @@ public class VertxCoreRecorder {
                 ContextInternal currentContext = (ContextInternal) Vertx.currentContext();
                 if (context != null && context != currentContext) {
                     // Only do context handling if it's non-null
-                    final ContextInternal vertxContext = (ContextInternal) context;
+                    ContextInternal vertxContext = (ContextInternal) context;
+                    // The CDI request context must not be propagated
+                    ConcurrentMap<Object, Object> local = vertxContext.localContextData();
+                    if (local.containsKey(VertxCurrentContextFactory.LOCAL_KEY)) {
+                        // Duplicate the context, copy the data, remove the request context
+                        vertxContext = vertxContext.duplicate();
+                        vertxContext.localContextData().putAll(local);
+                        vertxContext.localContextData().remove(VertxCurrentContextFactory.LOCAL_KEY);
+                        VertxContextSafetyToggle.setContextSafe(vertxContext, true);
+                    }
                     vertxContext.beginDispatch();
                     try {
                         task.run();

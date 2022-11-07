@@ -1,5 +1,7 @@
 package io.quarkus.rest.data.panache.deployment.methods;
 
+import java.util.Collection;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -13,6 +15,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.Capabilities;
@@ -152,6 +155,14 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
 
     protected void addSortQueryParamValidatorAnnotation(AnnotatedElement element) {
         element.addAnnotation(SortQueryParamValidator.class);
+    }
+
+    protected void addMethodAnnotations(AnnotatedElement element, Collection<AnnotationInstance> methodAnnotations) {
+        if (methodAnnotations != null) {
+            for (AnnotationInstance methodAnnotation : methodAnnotations) {
+                element.addAnnotation(methodAnnotation);
+            }
+        }
     }
 
     protected void addSecurityAnnotations(AnnotatedElement element, ResourceProperties resourceProperties) {

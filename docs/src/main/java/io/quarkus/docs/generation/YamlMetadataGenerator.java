@@ -26,7 +26,6 @@ import org.asciidoctor.ast.StructuralNode;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.exc.StreamWriteException;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,6 +48,9 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
  */
 public class YamlMetadataGenerator {
     private static Errors errors = new Errors();
+
+    final static String INCL_ATTRIBUTES = "include::_attributes.adoc[]\n";
+    final static String YAML_FRONTMATTER = "---\n";
 
     public static void main(String[] args) throws Exception {
         System.out.println("[INFO] Creating YAML metadata generator: " + List.of(args));
@@ -126,6 +128,7 @@ public class YamlMetadataGenerator {
         Options options = Options.builder()
                 .docType("book")
                 .sourceDir(srcDir.toFile())
+                .baseDir(srcDir.toFile())
                 .safe(SafeMode.UNSAFE)
                 .build();
 
@@ -133,10 +136,37 @@ public class YamlMetadataGenerator {
             try (Stream<Path> pathStream = Files.list(srcDir)) {
                 pathStream.filter(path -> includeFile(path.getFileName().toString()))
                         .forEach(path -> {
-                            Document doc = asciidoctor.loadFile(path.toFile(), options);
+                            String str;
+                            try {
+                                str = Files.readString(path);
+                            } catch (IOException e) {
+                                errors.record("ioexception", path);
+                                return;
+                            }
+
+                            // Strip off YAML frontmatter, if present
+                            if (str.startsWith(YAML_FRONTMATTER)) {
+                                int end = str.indexOf(YAML_FRONTMATTER, YAML_FRONTMATTER.length());
+                                str = str.substring(end + YAML_FRONTMATTER.length());
+                            }
+                            Document doc = asciidoctor.load(str, options);
+
+                            // Find position of "include::_attributes.adoc[]"
+                            // it should be part of the document header
+                            int includeAttr = str.indexOf(INCL_ATTRIBUTES);
+                            if (includeAttr < 0) {
+                                errors.record("missing-attributes", path);
+                            } else {
+                                String prefix = str.substring(0, includeAttr);
+                                if (prefix.contains("\n\n")) {
+                                    errors.record("detached-attributes", path);
+                                }
+                            }
+
                             String title = doc.getDoctitle();
                             String id = doc.getId();
                             Object categories = doc.getAttribute("categories");
+                            Object keywords = doc.getAttribute("keywords");
                             Object summary = doc.getAttribute("summary");
 
                             Optional<StructuralNode> preambleNode = doc.getBlocks().stream()
@@ -154,15 +184,15 @@ public class YamlMetadataGenerator {
                                 summaryString = getSummary(summary, content);
 
                                 if (content.isPresent()) {
-                                    index.add(new DocMetadata(title, path, summaryString, categories, id));
+                                    index.add(new DocMetadata(title, path, summaryString, categories, keywords, id));
                                 } else {
                                     errors.record("empty-preamble", path);
-                                    index.add(new DocMetadata(title, path, summaryString, categories, id));
+                                    index.add(new DocMetadata(title, path, summaryString, categories, keywords, id));
                                 }
                             } else {
                                 errors.record("missing-preamble", path);
                                 summaryString = getSummary(summary, Optional.empty());
-                                index.add(new DocMetadata(title, path, summaryString, categories, id));
+                                index.add(new DocMetadata(title, path, summaryString, categories, keywords, id));
                             }
 
                             long spaceCount = summaryString.chars().filter(c -> c == (int) ' ').count();
@@ -177,7 +207,7 @@ public class YamlMetadataGenerator {
     }
 
     boolean includeFile(String fileName) {
-        if (fileName.startsWith("attributes") || fileName.equals("README.adoc")) {
+        if (fileName.startsWith("_attributes") || fileName.equals("README.adoc")) {
             return false;
         }
         if (fileName.endsWith(".adoc")) {
@@ -240,6 +270,13 @@ public class YamlMetadataGenerator {
             this.name = name;
         }
 
+        public Map<String, String> toMap() {
+            Map<String, String> result = new HashMap<>();
+            result.put("cat-id", id);
+            result.put("category", name);
+            return result;
+        }
+
         public static void addAll(Set<Category> set, Object source, Path path) {
             if (source == null) {
                 return;
@@ -271,11 +308,10 @@ public class YamlMetadataGenerator {
         }
     }
 
-    @JsonTypeInfo(use = JsonTypeInfo.Id.NONE, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "errors")
     private static class Errors {
         String root;
-        Map<String, Collection<String>> errors = new HashMap<>();
-        Map<String, Collection<String>> messagesByFile = new HashMap<>();
+        Map<String, Collection<String>> messagesByFile = new TreeMap<>();
+        public final Map<String, Collection<String>> errors = new TreeMap<>();
 
         void setRoot(Path root) {
             this.root = root.toString();
@@ -289,15 +325,19 @@ public class YamlMetadataGenerator {
 
         void record(String errorKey, Path path, String message) {
             String filename = path.getFileName().toString().replace(root, "");
-            errors.computeIfAbsent(errorKey, k -> new HashSet<>()).add(filename);
             if (message == null) {
                 message = getMessageforKey(errorKey);
             }
             messagesByFile.computeIfAbsent(filename, k -> new ArrayList<>()).add(message);
+            errors.computeIfAbsent(errorKey, k -> new HashSet<>()).add(filename);
         }
 
         private String getMessageforKey(String errorKey) {
             switch (errorKey) {
+                case "missing-attributes":
+                    return "Document does not include common attributes: " + INCL_ATTRIBUTES;
+                case "detached-attributes":
+                    return "The document header ended (blank line) before common attributes were included.";
                 case "empty-preamble":
                     return "Document preamble is empty.";
                 case "missing-preamble":
@@ -322,14 +362,15 @@ public class YamlMetadataGenerator {
     public static class Index {
         Map<Type, IndexByType> types = new HashMap<>();
 
-        public Map<String, String> getCategories() {
+        public List<Map<String, String>> getCategories() {
             return Stream.of(Category.values())
-                    .collect(Collectors.toMap(c -> c.id, c -> c.name));
+                    .map(c -> c.toMap())
+                    .collect(Collectors.toList());
         }
 
-        public Map<String, IndexByType> getTypes() {
+        public Map<String, Collection<DocMetadata>> getTypes() {
             return types.entrySet().stream()
-                    .collect(Collectors.toMap(e -> e.getKey().id, Map.Entry::getValue));
+                    .collect(Collectors.toMap(e -> e.getKey().id, e -> e.getValue().getIndex()));
         }
 
         public void add(DocMetadata doc) {
@@ -338,8 +379,8 @@ public class YamlMetadataGenerator {
 
         public Map<String, DocMetadata> metadataByFile() {
             return types.values().stream()
-                    .flatMap(v -> v.getIndex().values().stream())
-                    .collect(Collectors.toMap(v -> v.filename, v -> v));
+                    .flatMap(v -> v.getIndex().stream())
+                    .collect(Collectors.toMap(v -> v.filename, v -> v, (o1, o2) -> o1, TreeMap::new));
         }
 
         // convenience
@@ -358,16 +399,10 @@ public class YamlMetadataGenerator {
             this.id = c.id;
         }
 
-        public String getId() {
-            return id;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public Map<String, DocMetadata> getIndex() {
-            return docs;
+        public Collection<DocMetadata> getIndex() {
+            return docs.values().stream()
+                    .sorted(DocMetadata::compareTo)
+                    .collect(Collectors.toList());
         }
 
         public void add(DocMetadata doc) {
@@ -376,19 +411,22 @@ public class YamlMetadataGenerator {
     }
 
     @JsonInclude(value = Include.NON_EMPTY)
-    static class DocMetadata {
+    static class DocMetadata implements Comparable<DocMetadata> {
         String title;
         String filename;
         String summary;
+        List<String> keywords;
         Set<Category> categories = new HashSet<>();
         String id;
         Type type;
 
-        DocMetadata(String title, Path path, String summary, Object categories, String id) {
+        DocMetadata(String title, Path path, String summary, Object categories, Object keywords, String id) {
             this.id = id;
-            this.title = title;
+            this.title = title == null ? "" : title;
             this.filename = path.getFileName().toString();
             this.summary = summary;
+            this.keywords = keywords == null ? List.of() : List.of(keywords.toString().split("\\s*,\\s*"));
+
             Category.addAll(this.categories, categories, path);
 
             if (this.categories.contains(Category.getting_started)) {
@@ -436,14 +474,27 @@ public class YamlMetadataGenerator {
             return summary;
         }
 
-        public List<String> getCategories() {
+        public String getUrl() {
+            return "/guides/" + filename.replace(".adoc", "");
+        }
+
+        public String getCategories() {
             return categories.stream()
                     .map(x -> x.id)
-                    .collect(Collectors.toList());
+                    .collect(Collectors.joining(", "));
+        }
+
+        public String getKeywords() {
+            return String.join(", ", keywords);
         }
 
         public String getType() {
             return type.id;
+        }
+
+        @Override
+        public int compareTo(DocMetadata that) {
+            return this.title.compareTo(that.title);
         }
     }
 }

@@ -1,6 +1,7 @@
 // for rendering the final website the attributes are set in the appropriate
 // location based on source versions in https://github.com/quarkusio/quarkusio.github.io/
 // they are duplicated here to ease the preview when editing in the IDE
+// --> No blank lines (it ends the document header)
 :idprefix:
 :idseparator: -
 :icons: font

@@ -1,4 +1,4 @@
-package io.quarkus.docs.vale;
+package io.quarkus.docs;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -15,6 +15,14 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 public class ChangedFiles implements AutoCloseable {
+
+    public static Path getPath(String propertyName, String defaultValue) {
+        String pathValue = System.getProperty(propertyName);
+        if (pathValue != null) {
+            return Path.of(pathValue);
+        }
+        return Path.of("").resolve(defaultValue);
+    }
 
     final Repository repo;
     final Git git;

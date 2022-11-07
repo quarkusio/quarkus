@@ -6,19 +6,23 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
+import io.quarkus.docs.ChangedFiles;
+import io.quarkus.docs.LintException;
 import io.quarkus.docs.generation.YamlMetadataGenerator;
 import io.quarkus.docs.generation.YamlMetadataGenerator.Index;
 import io.quarkus.docs.vale.ValeAsciidocLint.ChecksBySeverity;
 
 public class LocalValeLintTest {
     @Test
+    @EnabledIfSystemProperty(named = "vale", matches = ".*", disabledReason = "Requires a container runtime. Specifiy -Dvale to enable.")
     public void testAsciidocFiles() throws Exception {
         Path srcDir = Path.of("").resolve("src/main/asciidoc");
         Path targetDir = Path.of("").resolve("target");
 
-        Path valeDir = getPath("vale.dir", ".vale");
-        Path gitDir = getPath("git.dir", "../.git");
+        Path valeDir = ChangedFiles.getPath("vale.dir", ".vale");
+        Path gitDir = ChangedFiles.getPath("git.dir", "../.git");
 
         YamlMetadataGenerator metadataGenerator = new YamlMetadataGenerator()
                 .setSrcDir(srcDir)
@@ -85,25 +89,9 @@ public class LocalValeLintTest {
         String result = sb.toString().trim();
         if (result.length() > 0) {
             System.err.println(result);
-            throw new LintException();
+            throw new LintException("target/vale.yaml");
         } else {
             System.out.println("🥳 OK");
-        }
-    }
-
-    public Path getPath(String propertyName, String defaultValue) {
-        String pathValue = System.getProperty(propertyName);
-        if (pathValue != null) {
-            return Path.of(pathValue);
-        }
-        return Path.of("").resolve(defaultValue);
-    }
-
-    static class LintException extends RuntimeException {
-        // Exception that has no stacktrace
-        public LintException() {
-            super("Asciidoc checks and metadata errors.\nSee test output or target/vale.yaml for details.",
-                    null, false, false);
         }
     }
 }

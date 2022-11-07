@@ -42,7 +42,7 @@ public final class InvocationContexts {
      */
     public static InvocationContext postConstruct(Object target, List<InterceptorInvocation> chain,
             Set<Annotation> interceptorBindings) {
-        return new LifecycleCallbackInvocationContext(target, null, interceptorBindings, chain);
+        return new LifecycleCallbackInvocationContext(target, null, null, interceptorBindings, chain);
     }
 
     /**
@@ -54,7 +54,7 @@ public final class InvocationContexts {
      */
     public static InvocationContext preDestroy(Object target, List<InterceptorInvocation> chain,
             Set<Annotation> interceptorBindings) {
-        return new LifecycleCallbackInvocationContext(target, null, interceptorBindings, chain);
+        return new LifecycleCallbackInvocationContext(target, null, null, interceptorBindings, chain);
     }
 
     /**
@@ -65,10 +65,12 @@ public final class InvocationContexts {
      * @return a new {@link javax.interceptor.AroundConstruct} invocation context
      */
     public static InvocationContext aroundConstruct(Constructor<?> constructor,
+            Object[] parameters,
             List<InterceptorInvocation> chain,
             Supplier<Object> aroundConstructForward,
             Set<Annotation> interceptorBindings) {
-        return new AroundConstructInvocationContext(constructor, interceptorBindings, chain, aroundConstructForward);
+        return new AroundConstructInvocationContext(constructor, parameters, interceptorBindings, chain,
+                aroundConstructForward);
     }
 
 }

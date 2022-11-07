@@ -56,9 +56,12 @@ public class BackChannelLogoutHandler {
             LOG.debugf("Back channel logout request for the tenant %s received", oidcTenantConfig.getTenantId().get());
             final TenantConfigContext tenantContext = getTenantConfigContext(context);
             if (tenantContext == null) {
-                LOG.debugf(
+                LOG.errorf(
                         "Tenant configuration for the tenant %s is not available or does not match the backchannel logout path",
                         oidcTenantConfig.getTenantId().get());
+                context.response().setStatusCode(400);
+                context.response().end();
+                return;
             }
 
             if (OidcUtils.isFormUrlEncodedRequest(context)) {

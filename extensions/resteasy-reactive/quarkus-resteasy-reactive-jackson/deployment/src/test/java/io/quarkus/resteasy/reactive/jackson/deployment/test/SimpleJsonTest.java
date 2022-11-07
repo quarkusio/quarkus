@@ -314,6 +314,21 @@ public class SimpleJsonTest {
     }
 
     @Test
+    public void testSecurePersonWithPrivateView() {
+        doTestSecurePerson("/simple", "/secure-person-with-private-view");
+    }
+
+    @Test
+    public void testSecurePersonWithPublicView() {
+        doTestSecurePersonWithPublicView("/simple", "/secure-person-with-public-view");
+    }
+
+    @Test
+    public void testUniSecurePersonWithPublicView() {
+        doTestSecurePersonWithPublicView("/simple", "/uni-secure-person-with-public-view");
+    }
+
+    @Test
     public void testSecurePersonFromAbstract() {
         doTestSecurePerson("/other", "/abstract-with-security");
     }
@@ -336,6 +351,19 @@ public class SimpleJsonTest {
                 .header("transfer-encoding", nullValue())
                 .header("content-length", notNullValue())
                 .body(containsString("Bob"))
+                .body(containsString("0"))
+                .body(not(containsString("Builder")));
+    }
+
+    private void doTestSecurePersonWithPublicView(String basePath, final String path) {
+        RestAssured.get(basePath + path)
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .header("transfer-encoding", nullValue())
+                .header("content-length", notNullValue())
+                .body(containsString("Bob"))
+                .body(not(containsString("0")))
                 .body(not(containsString("Builder")));
     }
 

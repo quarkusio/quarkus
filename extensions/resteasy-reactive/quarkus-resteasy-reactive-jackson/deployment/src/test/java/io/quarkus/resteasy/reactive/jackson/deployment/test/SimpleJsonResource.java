@@ -69,6 +69,30 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return getPerson();
     }
 
+    @JsonView(Views.Public.class)
+    @EnableSecureSerialization
+    @GET
+    @Path("secure-person-with-public-view")
+    public Person getSecurePersonWithPublicView() {
+        return getPerson();
+    }
+
+    @JsonView(Views.Public.class)
+    @EnableSecureSerialization
+    @GET
+    @Path("uni-secure-person-with-public-view")
+    public Uni<Person> getUniSecurePersonWithPublicView() {
+        return Uni.createFrom().item(getPerson());
+    }
+
+    @JsonView(Views.Private.class)
+    @EnableSecureSerialization
+    @GET
+    @Path("secure-person-with-private-view")
+    public Person getSecurePersonWithPrivateView() {
+        return getPerson();
+    }
+
     @EnableSecureSerialization
     @GET
     @Path("secure-uni-person")

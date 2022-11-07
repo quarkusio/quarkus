@@ -1428,8 +1428,14 @@ public class BeanGenerator extends AbstractGenerator {
                         annotationLiterals.create(create, bindingClass, binding));
             }
 
+            // ResultHandle of Object[] holding all constructor args
+            ResultHandle ctorArgsArray = create.newArray(Object.class, create.load(providerHandles.size()));
+            for (int i = 0; i < providerHandles.size(); i++) {
+                create.writeArrayValue(ctorArgsArray, i, providerHandles.get(i));
+            }
             ResultHandle invocationContextHandle = create.invokeStaticMethod(
                     MethodDescriptors.INVOCATION_CONTEXTS_AROUND_CONSTRUCT, constructorHandle,
+                    ctorArgsArray,
                     aroundConstructsHandle, func.getInstance(),
                     create.invokeStaticMethod(MethodDescriptors.SETS_OF, bindingsArray));
             TryBlock tryCatch = create.tryBlock();

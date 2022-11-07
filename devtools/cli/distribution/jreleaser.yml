@@ -4,11 +4,9 @@ project:
   longDescription: |
     Create projects, manage extensions and perform build and development tasks for Quarkus,
     the Kubernetes Native Java stack tailored for OpenJDK HotSpot and GraalVM.
-  website: https://quarkus.io
   authors:
     - Quarkus Community
   license: Apache-2.0
-  licenseUrl: https://github.com/quarkusio/quarkus/blob/main/LICENSE.txt
   copyright: Quarkus contributors
   java:
     groupId: io.quarkus
@@ -18,6 +16,9 @@ project:
     - cli
     - quarkus
     - java
+  links:
+    homepage: https://quarkus.io
+    license: https://github.com/quarkusio/quarkus/blob/main/LICENSE.txt
 
 release:
   github:

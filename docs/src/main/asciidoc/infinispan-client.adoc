@@ -100,7 +100,7 @@ to create it on first access, use one of the following properties:
 
 [source,properties]
 ----
-quarkus.infinispan-client.cache.books.configuration-uri=cacheConfig.xml <1>
+quarkus.infinispan-client.cache.books.configuration-uri=cacheConfig.json <1>
 quarkus.infinispan-client.cache.magazine.configuration=<distributed-cache><encoding media-type="application/x-protostream"/></distributed-cache> <2>
 ----
 <1> The file name located under the `resources` folder that contains the configuration of the 'books' cache
@@ -109,13 +109,40 @@ quarkus.infinispan-client.cache.magazine.configuration=<distributed-cache><encod
 If both `configuration-uri` and `configuration` are configured for the same cache with the same Quarkus profile,
 `configuration-uri` gets preference over `configuration`.
 
+[TIP]
+====
+Cache configuration can be provided in XML, JSON or YAML. Use the Infinispan Console and the cache configuration Wizard
+to learn more about Infinispan Caches and create guided configurations.
+====
+
 If nothing is configured for a particular cache, it will be created with the following basic configuration:
 
-[source, xml]
+.XML
+[source,xml,options="nowrap",subs=attributes+,role="primary"]
 ----
 <distributed-cache>
     <encoding media-type="application/x-protostream"/>
 </distributed-cache>
+----
+
+.JSON
+[source,json,options="nowrap",subs=attributes+,role="secondary"]
+----
+{
+    "distributed-cache": {
+        "encoding": {
+            "media-type": "application/x-protostream"
+        }
+    }
+}
+----
+
+.YAML
+[source,yaml,options="nowrap",subs=attributes+,role="secondary"]
+----
+distributedCache:
+  encoding:
+    mediaType: "application/x-protostream"
 ----
 
 === Authentication mechanisms
@@ -130,10 +157,7 @@ Other authentication mechanisms, such as SCRAM and GSSAPI, are not yet verified 
 
 You can find more information on configuring authentication in https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#hotrod_endpoint_auth-hotrod-client-configuration[Hot Rod Endpoint Authentication Mechanisms].
 
-[NOTE]
-====
-You must configure authentication in the `hotrod-client.properties` file if you use Dependency Injection.
-====
+NOTE: You must configure authentication in the `hotrod-client.properties` file if you use Dependency Injection.
 
 == Serialization (Key Value types support)
 
@@ -267,10 +291,12 @@ interface BookStoreSchema extends GeneratedSchema {
 ----
 
 [TIP]
+====
 Protostream provides default Protobuf mappers for commonly used types as `BigDecimal`, included in the `org.infinispan.protostream.types` package.
+====
 
 So in this case we will automatically generate the marshaller and schemas for the included classes and
-place them in the schema package automatically. The package does not have to be provided, but if you use Infinispan query capabilities, you must know the generated package.
+place them in the schema package automatically. The package does not have to be provided, but if you use Infinispan search capabilities, you must know the generated package.
 
 NOTE: In Quarkus the `schemaFileName` and `schemaFilePath` attributes should NOT be set on the `AutoProtoSchemaBuilder` annotation. Setting either attributes causes native runtime errors.
 
@@ -439,7 +465,8 @@ the field, constructor or method. In the below code we utilize field and constru
        this.remoteCacheManager = remoteCacheManager;
     }
 
-    @Inject @Remote("myCache")
+    @Inject
+    @Remote("myCache")
     RemoteCache<String, Book> cache;
 
     RemoteCacheManager remoteCacheManager;
@@ -491,10 +518,7 @@ If a value is found in the cache, it is returned and the annotated method is nev
 If no value is found, the annotated method is invoked and the returned value is stored in the cache using the computed key.
 This annotation cannot be used on a method returning `void`.
 
-[NOTE]
-====
-Infinispan Client extension is not able yet to cache `null` values unlike the Quarkus-Cache extension.
-====
+NOTE: Infinispan Client extension is not able yet to cache `null` values unlike the Quarkus-Cache extension.
 
 === @CacheInvalidate
 
@@ -510,19 +534,94 @@ When a method annotated with `@CacheInvalidateAll` is invoked, Infinispan will r
 
 == Querying
 
-The Infinispan client supports both indexed and non-indexed querying as long as the
+The Infinispan client supports both indexed and non-indexed search as long as the
 `ProtoStreamMarshaller` is configured above. This allows the user to query based on the
-properties of the proto schema.
+properties of the proto schema. *Indexed queries are preferred for performance reasons*.
+
+.XML
+[source,xml,options="nowrap",subs=attributes+,role="primary"]
+----
+<distributed-cache name="books" statistics="true">
+    <!-- other configuration -->
+	<indexing enabled="true" storage="filesystem" startup-mode="PURGE">
+		<indexed-entities>
+			<indexed-entity>book_sample.Book</indexed-entity>
+		</indexed-entities>
+	</indexing>
+</distributed-cache>
+----
+
+.JSON
+[source,json,options="nowrap",subs=attributes+,role="secondary"]
+----
+{
+  "books": {
+    "distributed-cache": {
+      ...
+      "indexing": {
+        "enabled": true,
+        "storage": "filesystem",
+        "startupMode": "PURGE",
+        "indexed-entities": [
+          "book_sample.Book"
+        ]
+      }
+    }
+  }
+}
+----
+
+.YAML
+[source,yaml,options="nowrap",subs=attributes+,role="secondary"]
+----
+distributedCache:
+  # other configuration
+  indexing:
+    enabled: "true"
+    storage: "filesystem"
+    startupMode: "PURGE"
+    indexedEntities:
+      - "book_sample.Book"
+----
 
 Query builds upon the proto definitions you can configure when setting up the `ProtoStreamMarshaller`.
 Either method of Serialization above will automatically register the schema with the server at
 startup, meaning that you will automatically gain the ability to query objects stored in the
 remote Infinispan Server.
 
-You can read more about https://infinispan.org/docs/stable/titles/developing/developing.html#creating_ickle_queries-querying[querying] in the Infinispan documentation.
+.Book.java
+[source,java]
+----
+@Indexed <1>
+public class Book {
+
+    @ProtoFactory
+    public Book(String title, String description, int publicationYear, Set<Author> authors) {
+      ...
+    }
+
+    @ProtoField(number = 1)
+    @Text <2>
+    public String getTitle() {
+        return title;
+    }
+
+    @ProtoField(number = 2)
+    @Keyword(projectable = true, sortable = true, normalizer = "lowercase", indexNullAs = "unnamed", norms = false) <3>
+    public String getDescription() {
+        return description;
+    }
+    ...
+----
+<1> `@Indexed` annotation makes the POJO indexable
+<2> `@Basic` annotation is used for indexed fields without any special transformation
+<3> `@Keyword` annotation is used to apply a normalizer to a text field
 
 You can use either the Query DSL or the Ickle Query language with the Quarkus Infinispan client
 extension.
+
+NOTE: You can read more about https://infinispan.org/docs/stable/titles/query/query.html[querying] in the Infinispan documentation.
+
 
 == Counters
 

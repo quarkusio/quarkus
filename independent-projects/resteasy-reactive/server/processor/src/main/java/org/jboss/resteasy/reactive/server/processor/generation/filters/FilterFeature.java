@@ -34,7 +34,7 @@ public class FilterFeature implements FeatureScanner {
     public FeatureScanResult integrate(IndexView application, ScannedApplication scannedApplication) {
         List<GeneratedClass> generatedClasses = new ArrayList<>();
         List<FilterGeneration.GeneratedFilter> result = FilterGeneration.generate(application, unwrappableTypes,
-                additionalBeanAnnotations);
+                additionalBeanAnnotations, (m) -> false);
         for (var i : result) {
             generatedClasses.addAll(i.getGeneratedClasses());
             if (i.isRequestFilter()) {

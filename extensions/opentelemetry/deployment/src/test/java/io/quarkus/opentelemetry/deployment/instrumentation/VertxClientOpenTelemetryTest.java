@@ -9,6 +9,7 @@ import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_URL;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_HOST_NAME;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_HOST_PORT;
+import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -67,7 +68,13 @@ public class VertxClientOpenTelemetryTest {
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
 
-        SpanData server = spans.get(0);
+        SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
+        assertEquals("HTTP GET", client.getName());
+        assertEquals(HTTP_OK, client.getAttributes().get(HTTP_STATUS_CODE));
+        assertEquals(HttpMethod.GET, client.getAttributes().get(HTTP_METHOD));
+        assertEquals(uri.toString() + "hello", client.getAttributes().get(HTTP_URL));
+
+        SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
         assertEquals(SERVER, server.getKind());
         assertEquals("/hello", server.getName());
         assertEquals(HTTP_OK, server.getAttributes().get(HTTP_STATUS_CODE));
@@ -77,15 +84,7 @@ public class VertxClientOpenTelemetryTest {
         assertEquals(uri.getPort(), server.getAttributes().get(NET_HOST_PORT));
         assertEquals(uri.getPath() + "hello", server.getAttributes().get(HTTP_TARGET));
 
-        SpanData client = spans.get(1);
-        assertEquals(CLIENT, client.getKind());
-        assertEquals("HTTP GET", client.getName());
-        assertEquals(HTTP_OK, client.getAttributes().get(HTTP_STATUS_CODE));
-        assertEquals(HttpMethod.GET, client.getAttributes().get(HTTP_METHOD));
-        assertEquals(uri.toString() + "hello", client.getAttributes().get(HTTP_URL));
-
         assertEquals(client.getTraceId(), server.getTraceId());
-        assertEquals(server.getParentSpanId(), client.getSpanId());
     }
 
     @Test
@@ -100,7 +99,14 @@ public class VertxClientOpenTelemetryTest {
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
 
-        SpanData server = spans.get(0);
+        SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
+        assertEquals(CLIENT, client.getKind());
+        assertEquals("HTTP GET", client.getName());
+        assertEquals(HTTP_OK, client.getAttributes().get(HTTP_STATUS_CODE));
+        assertEquals(HttpMethod.GET, client.getAttributes().get(HTTP_METHOD));
+        assertEquals(uri.toString() + "hello/naruto", client.getAttributes().get(HTTP_URL));
+
+        SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
         assertEquals(SERVER, server.getKind());
         assertEquals("/hello/:name", server.getName());
         assertEquals(HTTP_OK, server.getAttributes().get(HTTP_STATUS_CODE));
@@ -110,15 +116,7 @@ public class VertxClientOpenTelemetryTest {
         assertEquals(uri.getPort(), server.getAttributes().get(NET_HOST_PORT));
         assertEquals(uri.getPath() + "hello/naruto", server.getAttributes().get(HTTP_TARGET));
 
-        SpanData client = spans.get(1);
-        assertEquals(CLIENT, client.getKind());
-        assertEquals("HTTP GET", client.getName());
-        assertEquals(HTTP_OK, client.getAttributes().get(HTTP_STATUS_CODE));
-        assertEquals(HttpMethod.GET, client.getAttributes().get(HTTP_METHOD));
-        assertEquals(uri.toString() + "hello/naruto", client.getAttributes().get(HTTP_URL));
-
         assertEquals(client.getTraceId(), server.getTraceId());
-        assertEquals(server.getParentSpanId(), client.getSpanId());
     }
 
     @Test

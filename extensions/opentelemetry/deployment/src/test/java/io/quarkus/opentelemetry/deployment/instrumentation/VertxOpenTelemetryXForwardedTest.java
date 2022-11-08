@@ -1,6 +1,8 @@
 package io.quarkus.opentelemetry.deployment.instrumentation;
 
+import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_CLIENT_IP;
+import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,6 +38,7 @@ public class VertxOpenTelemetryXForwardedTest {
 
         List<SpanData> spans = testSpanExporter.getFinishedSpanItems(2);
 
-        assertEquals("203.0.113.195", spans.get(1).getAttributes().get(HTTP_CLIENT_IP));
+        SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
+        assertEquals("203.0.113.195", server.getAttributes().get(HTTP_CLIENT_IP));
     }
 }

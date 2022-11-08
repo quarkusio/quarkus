@@ -2,6 +2,7 @@ package io.quarkus.opentelemetry.deployment;
 
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
+import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,11 +51,16 @@ public class OpenTelemetryHttpCDILegacyTest {
                 .body(is("hello"));
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
-        assertEquals("HelloBean.hello", spans.get(0).getName());
-        assertEquals(INTERNAL, spans.get(0).getKind());
-        assertEquals("/hello", spans.get(1).getName());
-        assertEquals(SERVER, spans.get(1).getKind());
-        assertEquals(spans.get(0).getParentSpanId(), spans.get(1).getSpanId());
+
+        SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
+        assertEquals("/hello", server.getName());
+        assertEquals(SERVER, server.getKind());
+
+        SpanData internal = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
+        assertEquals("HelloBean.hello", internal.getName());
+        assertEquals(INTERNAL, internal.getKind());
+
+        assertEquals(internal.getParentSpanId(), server.getSpanId());
     }
 
     @Test
@@ -65,15 +71,17 @@ public class OpenTelemetryHttpCDILegacyTest {
                 .body(is("hello"));
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(3);
-        assertEquals("HelloBean.hello", spans.get(0).getName());
-        assertEquals(INTERNAL, spans.get(0).getKind());
-        assertEquals("withSpan", spans.get(1).getName());
-        assertEquals(INTERNAL, spans.get(1).getKind());
-        assertEquals("/hello/withSpan", spans.get(2).getName());
-        assertEquals(SERVER, spans.get(2).getKind());
-        assertEquals(spans.get(0).getParentSpanId(), spans.get(1).getSpanId());
-        assertEquals(spans.get(1).getParentSpanId(), spans.get(2).getSpanId());
-        assertThat(spans.get(0).getTraceId()).isIn(spans.get(1).getTraceId(), spans.get(2).getTraceId());
+
+        final SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
+        assertEquals("/hello/withSpan", server.getName());
+
+        final SpanData internalFromBean = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
+        assertEquals("withSpan", internalFromBean.getName());
+
+        final SpanData internalFromWithSpan = getSpanByKindAndParentId(spans, INTERNAL, internalFromBean.getSpanId());
+        assertEquals("HelloBean.hello", internalFromWithSpan.getName());
+
+        assertThat(internalFromBean.getTraceId()).isIn(internalFromWithSpan.getTraceId(), server.getTraceId());
     }
 
     @Path("/hello")

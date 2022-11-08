@@ -25,6 +25,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.server.runtime.QuarkusContextProducers;
+import io.quarkus.resteasy.reactive.server.spi.SubResourcesAsBeansBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.JaxrsFeatureBuildItem;
 
@@ -50,6 +51,21 @@ public class ResteasyReactiveCDIProcessor {
         beanDefiningAnnotations
                 .produce(new BeanDefiningAnnotationBuildItem(ResteasyReactiveDotNames.PROVIDER,
                         BuiltinScope.SINGLETON.getName()));
+    }
+
+    @BuildStep
+    void subResourcesAsBeans(ResourceScanningResultBuildItem setupEndpointsResult,
+            List<SubResourcesAsBeansBuildItem> subResourcesAsBeans,
+            BuildProducer<AdditionalBeanBuildItem> producer) {
+        if (subResourcesAsBeans.isEmpty() || setupEndpointsResult.getResult().getPossibleSubResources().isEmpty()) {
+            return;
+        }
+
+        List<String> classNames = new ArrayList<>(setupEndpointsResult.getResult().getPossibleSubResources().size());
+        for (DotName subResourceClass : setupEndpointsResult.getResult().getPossibleSubResources().keySet()) {
+            classNames.add(subResourceClass.toString());
+        }
+        producer.produce(new AdditionalBeanBuildItem(classNames.toArray(new String[0])));
     }
 
     // when an interface is annotated with @Path and there is only one implementation of it that is not annotated with @Path,

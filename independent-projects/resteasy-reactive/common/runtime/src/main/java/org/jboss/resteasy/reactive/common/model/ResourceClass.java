@@ -45,10 +45,6 @@ public class ResourceClass {
      */
     private Map<String, String> classLevelExceptionMappers = new HashMap<>();
 
-    public boolean isSubResource() {
-        return path == null;
-    }
-
     public String getClassName() {
         return className;
     }

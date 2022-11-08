@@ -1,5 +1,8 @@
 package io.quarkus.arc.impl;
 
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
 import java.lang.reflect.ParameterizedType;
@@ -285,9 +288,9 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
 
     }
 
-    private static Type getRequiredType(Type type) {
-        if (type instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) type;
+    private static Type getRequiredType(final Type type) {
+        if (isParameterizedType(type)) {
+            final ParameterizedType parameterizedType = asParameterizedType(type);
             if (Provider.class.isAssignableFrom(Types.getRawType(parameterizedType.getRawType()))) {
                 return parameterizedType.getActualTypeArguments()[0];
             }

@@ -1,5 +1,7 @@
 package io.quarkus.arc.impl;
 
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
 import static javax.transaction.Status.STATUS_COMMITTED;
 
 import java.lang.annotation.Annotation;
@@ -168,8 +170,8 @@ class EventImpl<T> implements Event<T> {
     }
 
     private Type initEventType(Type type) {
-        if (type instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) type;
+        if (isParameterizedType(type)) {
+            ParameterizedType parameterizedType = asParameterizedType(type);
             if (Event.class.isAssignableFrom(Types.getRawType(parameterizedType.getRawType()))) {
                 return parameterizedType.getActualTypeArguments()[0];
             }

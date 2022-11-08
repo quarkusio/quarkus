@@ -1,5 +1,8 @@
 package io.quarkus.arc.impl;
 
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -55,26 +58,6 @@ class BeanTypeAssignabilityRules {
             }
         }
         return false;
-    }
-
-    private static boolean isParameterizedType(final Type beanType) {
-        //Check for ParameterizedTypeImpl first, as it's very likely going
-        //to be one; this prevents some cases of type cache pollution (see JDK-8180450).
-        if (beanType instanceof ParameterizedTypeImpl) {
-            return true;
-        }
-        return (beanType instanceof ParameterizedType);
-    }
-
-    private static ParameterizedType asParameterizedType(final Type beanType) {
-        //Check for ParameterizedTypeImpl first, as it's very likely going
-        //to be one; this prevents some cases of type cache pollution (see JDK-8180450).
-        if (beanType instanceof ParameterizedTypeImpl) {
-            //N.B. it's crucial for the purposes of this optimisation that
-            //we cast the to concrete type, not to the interface.
-            return (ParameterizedTypeImpl) beanType;
-        }
-        return (ParameterizedType) beanType;
     }
 
     private boolean matches(Class<?> requiredType, Class<?> beanType) {
